@@ -72,7 +72,7 @@ export default function TokenLogo({
               {...restImageProps}
             />
           ) : (
-            <div className="h-full w-full rounded-full bg-gray-200" />
+            <div className="h-full w-full" />
           )}
         </AspectRatio>
 

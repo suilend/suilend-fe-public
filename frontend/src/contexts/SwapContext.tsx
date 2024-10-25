@@ -10,20 +10,11 @@ import {
   useState,
 } from "react";
 
-import {
-  HopApi,
-  HopApiOptions,
-  GetQuoteResponse as HopGetQuoteResponse,
-  SuiExchange as HopSuiExchange,
-  VerifiedToken,
-} from "@hop.ag/sdk";
 import { CoinMetadata } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import {
   Aftermath,
-  Router as AftermathRouter,
   RouterCompleteTradeRoute as AftermathRouterCompleteTradeRoute,
-  RouterProtocolName as AftermathRouterProtocolName,
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
@@ -31,57 +22,23 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
-import {
-  COINTYPE_LOGO_MAP,
-  COINTYPE_SYMBOL_MAP,
-  isCoinType,
-} from "@/lib/coinType";
+import { isCoinType } from "@/lib/coinType";
 import { SWAP_URL } from "@/lib/navigation";
+import { SwapToken } from "@/lib/types";
 
-export enum UnifiedQuoteType {
-  HOP = "hop",
+export enum StandardizedQuoteType {
   AFTERMATH = "aftermath",
 }
-
-export type UnifiedQuote = {
+export type StandardizedQuote = {
   id: string;
   amount_in: BigNumber;
   amount_out: BigNumber;
   coin_type_in: string;
   coin_type_out: string;
-} & (
-  | { type: UnifiedQuoteType.HOP; quote: HopGetQuoteResponse }
-  | {
-      type: UnifiedQuoteType.AFTERMATH;
-      quote: AftermathRouterCompleteTradeRoute;
-    }
-);
-
-export const HOP_EXCHANGE_NAME_MAP: Record<HopSuiExchange, string> = {
-  [HopSuiExchange.CETUS]: "Cetus",
-  [HopSuiExchange.FLOWX]: "FlowX Finance",
-  [HopSuiExchange.TURBOS]: "Turbos Finance",
-  [HopSuiExchange.AFTERMATH]: "Aftermath Finance",
-  [HopSuiExchange.KRIYA]: "Kriya",
-  [HopSuiExchange.BLUEMOVE]: "BlueMove",
-  [HopSuiExchange.DEEPBOOK]: "DeepBook",
-  [HopSuiExchange.SUISWAP]: "Suiswap",
+} & {
+  type: StandardizedQuoteType.AFTERMATH;
+  quote: AftermathRouterCompleteTradeRoute;
 };
-export const AF_EXCHANGE_NAME_MAP: Record<AftermathRouterProtocolName, string> =
-  {
-    Cetus: "Cetus",
-    FlowX: "FlowX Finance",
-    Turbos: "Turbos Finance",
-    Aftermath: "Aftermath Finance",
-    Kriya: "Kriya",
-    BlueMove: "BlueMove",
-    DeepBook: "DeepBook",
-    Suiswap: "Suiswap",
-    afSUI: "afSUI",
-    BaySwap: "BaySwap",
-    FlowXClmm: "FlowX Finance",
-    Interest: "Interest",
-  };
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_OUT_SYMBOL = "USDC";
@@ -97,23 +54,21 @@ export enum TokenDirection {
 }
 
 interface SwapContext {
-  hopSdk?: HopApi;
-  aftermathSdk?: AftermathRouter;
-  tokens?: VerifiedToken[];
-  verifiedTokens?: VerifiedToken[];
+  aftermathSdk?: Aftermath;
+  verifiedTokens?: SwapToken[];
+  tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
-  tokenIn?: VerifiedToken;
-  tokenOut?: VerifiedToken;
+  tokenIn?: SwapToken;
+  tokenOut?: SwapToken;
   setTokenSymbol: (newTokenSymbol: string, direction: TokenDirection) => void;
   reverseTokenSymbols: () => void;
   coinBalancesMap?: Record<string, ParsedCoinBalance>;
 }
 
 const defaultContextValue: SwapContext = {
-  hopSdk: undefined,
   aftermathSdk: undefined,
-  tokens: undefined,
   verifiedTokens: undefined,
+  tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
   },
@@ -139,105 +94,111 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const { suiClient, rpc, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
 
-  // Hop SDK
-  const hopSdk = useMemo(() => {
-    const hop_api_options: HopApiOptions = {
-      api_key: process.env.NEXT_PUBLIC_HOP_AG_API_KEY as string,
-      fee_bps: 0,
-      fee_wallet:
-        "0x708d1c69654c3924176312dbd54d7ab2206d4935dce94e042129f8c3a2051edf",
-    };
-
-    return new HopApi(rpc.url, hop_api_options, true);
-  }, [rpc.url]);
-
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {
     const afSdk = new Aftermath("MAINNET");
     afSdk.init();
-    return afSdk.Router();
+    return afSdk;
   }, []);
 
   // Tokens
-  const [tokens, setTokens] = useState<VerifiedToken[] | undefined>(undefined);
-  const [verifiedTokens, setVerifiedTokens] = useState<
-    VerifiedToken[] | undefined
-  >(undefined);
+  const [verifiedTokens, setVerifiedTokens] = useState<SwapToken[] | undefined>(
+    undefined,
+  );
+  const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
 
-  const isFetchingVerifiedTokensRef = useRef<boolean>(false);
+  const isFetchingTokensRef = useRef<boolean>(false);
   useEffect(() => {
     (async () => {
-      if (isFetchingVerifiedTokensRef.current) return;
+      if (isFetchingTokensRef.current) return;
 
-      isFetchingVerifiedTokensRef.current = true;
+      isFetchingTokensRef.current = true;
       try {
-        const result = (await hopSdk.fetchTokens()).tokens.map((token) => {
-          const coinType = normalizeStructTag(token.coin_type);
+        const verifiedCoinTypes = (
+          await aftermathSdk.Coin().getVerifiedCoins()
+        ).map(normalizeStructTag);
 
-          return {
-            ...token,
-            coin_type: coinType,
-            ticker: COINTYPE_SYMBOL_MAP[coinType] ?? token.ticker,
-            icon_url: COINTYPE_LOGO_MAP[coinType] ?? token.icon_url,
-          };
-        }) as VerifiedToken[];
+        const coinsMetadataMap = await getCoinMetadataMap(
+          suiClient,
+          verifiedCoinTypes,
+        );
 
+        const result = Object.entries(coinsMetadataMap).map(
+          ([coinType, metadata]) => ({
+            coinType,
+            decimals: metadata.decimals,
+            symbol: metadata.symbol,
+            name: metadata.name,
+            iconUrl: metadata.iconUrl,
+          }),
+        );
+        setVerifiedTokens(result);
         setTokens((prev) => [
           ...(prev ?? []),
           ...result.filter(
-            (token) =>
-              !(prev ?? []).find((t) => t.coin_type === token.coin_type),
+            (token) => !(prev ?? []).find((t) => t.coinType === token.coinType),
           ),
         ]);
-        setVerifiedTokens(result);
       } catch (err) {
         console.error(err);
       }
     })();
-  }, [hopSdk]);
+  }, [aftermathSdk, suiClient]);
 
   const fetchingTokensMetadataRef = useRef<string[]>([]);
   const fetchTokensMetadata = useCallback(
     async (coinTypes: string[]) => {
-      const filteredCoinTypes = coinTypes.filter(
-        (coinType) => !fetchingTokensMetadataRef.current.includes(coinType),
+      const filteredCoinTypes = Array.from(
+        new Set(
+          coinTypes
+            .map(normalizeStructTag)
+            .filter(
+              (coinType) =>
+                !fetchingTokensMetadataRef.current.includes(coinType) &&
+                !(tokens || []).find((t) => t.coinType === coinType),
+            ),
+        ),
       );
       if (filteredCoinTypes.length === 0) return;
 
       fetchingTokensMetadataRef.current.push(...filteredCoinTypes);
 
-      const coinsMetadataMap = await getCoinMetadataMap(
-        suiClient,
-        filteredCoinTypes,
-      );
+      try {
+        const coinsMetadataMap = await getCoinMetadataMap(
+          suiClient,
+          filteredCoinTypes,
+        );
 
-      setTokens((prev) => [
-        ...(prev ?? []),
-        ...Object.entries(coinsMetadataMap)
-          .map(([coinType, metadata]) => ({
-            coin_type: normalizeStructTag(coinType),
-            name: metadata.name,
-            ticker: metadata.symbol,
-            icon_url: metadata.iconUrl ?? "",
-            decimals: metadata.decimals,
-          }))
-          .filter(
-            (token) =>
-              !(prev ?? []).find((t) => t.coin_type === token.coin_type),
-          ),
-      ]);
+        setTokens((prev) => [
+          ...(prev ?? []),
+          ...Object.entries(coinsMetadataMap)
+            .map(([coinType, metadata]) => ({
+              coinType,
+              decimals: metadata.decimals,
+              symbol: metadata.symbol,
+              name: metadata.name,
+              iconUrl: metadata.iconUrl,
+            }))
+            .filter(
+              (token) =>
+                !(prev ?? []).find((t) => t.coinType === token.coinType),
+            ),
+        ]);
+      } catch (err) {
+        console.error(err);
+      }
     },
-    [suiClient],
+    [tokens, suiClient],
   );
 
   useEffect(() => {
     fetchTokensMetadata([
-      ...data.lendingMarket.reserves.map((reserve) => reserve.coinType),
+      // ...data.lendingMarket.reserves.map((reserve) => reserve.coinType),
       ...data.coinBalancesRaw
         .filter((cb) => +cb.totalBalance > 0)
         .map((cb) => cb.coinType),
     ]);
-  }, [fetchTokensMetadata, data.lendingMarket.reserves, data.coinBalancesRaw]);
+  }, [fetchTokensMetadata, data.coinBalancesRaw]);
 
   // Selected tokens
   const [tokenInSymbol, tokenOutSymbol] =
@@ -259,14 +220,14 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const tokenIn = useMemo(
     () =>
       tokens?.find(
-        (t) => t.ticker === tokenInSymbol || t.coin_type === tokenInSymbol,
+        (t) => t.symbol === tokenInSymbol || t.coinType === tokenInSymbol,
       ),
     [tokens, tokenInSymbol],
   );
   const tokenOut = useMemo(
     () =>
       tokens?.find(
-        (t) => t.ticker === tokenOutSymbol || t.coin_type === tokenOutSymbol,
+        (t) => t.symbol === tokenOutSymbol || t.coinType === tokenOutSymbol,
       ),
     [tokens, tokenOutSymbol],
   );
@@ -283,13 +244,14 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       const [t1, t2] = slug[0].split("-");
       if (
-        (!isCoinType(t1) && !tokens.find((t) => t.ticker === t1)) ||
-        (!isCoinType(t2) && !tokens.find((t) => t.ticker === t2))
-      ) {
+        !isCoinType(t1) &&
+        !isCoinType(t2) &&
+        (!tokens.find((t) => t.symbol === t1) ||
+          !tokens.find((t) => t.symbol === t2))
+      )
         router.replace({ pathname: getSwapUrl() }, undefined, {
           shallow: true,
         });
-      }
     }
   }, [slug, router, tokens]);
 
@@ -327,13 +289,13 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     const coinMetadataMap = tokens.reduce(
       (acc, t) => ({
         ...acc,
-        [t.coin_type]: {
+        [t.coinType]: {
           decimals: t.decimals,
           description: "",
-          iconUrl: t.icon_url,
+          iconUrl: t.iconUrl,
           id: "",
           name: t.name,
-          symbol: t.ticker,
+          symbol: t.symbol,
         } as CoinMetadata,
       }),
       {},
@@ -350,10 +312,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: SwapContext = useMemo(
     () => ({
-      hopSdk,
       aftermathSdk,
-      tokens,
       verifiedTokens,
+      tokens,
       fetchTokensMetadata,
       tokenIn,
       tokenOut,
@@ -362,10 +323,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       coinBalancesMap,
     }),
     [
-      hopSdk,
       aftermathSdk,
-      tokens,
       verifiedTokens,
+      tokens,
       fetchTokensMetadata,
       tokenIn,
       tokenOut,
@@ -377,12 +337,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SwapContext.Provider value={contextValue}>
-      {hopSdk &&
-      aftermathSdk &&
-      tokens &&
-      verifiedTokens &&
-      tokenIn &&
-      tokenOut ? (
+      {aftermathSdk && verifiedTokens && tokens && tokenIn && tokenOut ? (
         children
       ) : (
         <FullPageSpinner />

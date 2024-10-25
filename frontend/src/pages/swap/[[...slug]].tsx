@@ -2,14 +2,13 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { HopApi, VerifiedToken } from "@hop.ag/sdk";
 import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
-import { Router as AftermathRouter } from "aftermath-ts-sdk";
+import { Aftermath } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import {
   AlertTriangle,
@@ -40,10 +39,10 @@ import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import {
+  StandardizedQuote,
+  StandardizedQuoteType,
   SwapContextProvider,
   TokenDirection,
-  UnifiedQuote,
-  UnifiedQuoteType,
   useSwapContext,
 } from "@/contexts/SwapContext";
 import { useWalletContext } from "@/contexts/WalletContext";
@@ -58,6 +57,7 @@ import { formatInteger, formatPercent, formatToken } from "@/lib/format";
 import { getFilteredRewards, getTotalAprPercent } from "@/lib/liquidityMining";
 import track from "@/lib/track";
 import { getBalanceChange } from "@/lib/transactions";
+import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const PRICE_IMPACT_TIMESTAMP_S = -1;
@@ -85,12 +85,11 @@ function Page() {
 
   const { setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
-  const hopSdk = restSwapContext.hopSdk as HopApi;
-  const aftermathSdk = restSwapContext.aftermathSdk as AftermathRouter;
-  const tokens = restSwapContext.tokens as VerifiedToken[];
-  const verifiedTokens = restSwapContext.verifiedTokens as VerifiedToken[];
-  const tokenIn = restSwapContext.tokenIn as VerifiedToken;
-  const tokenOut = restSwapContext.tokenOut as VerifiedToken;
+  const aftermathSdk = restSwapContext.aftermathSdk as Aftermath;
+  const verifiedTokens = restSwapContext.verifiedTokens as SwapToken[];
+  const tokens = restSwapContext.tokens as SwapToken[];
+  const tokenIn = restSwapContext.tokenIn as SwapToken;
+  const tokenOut = restSwapContext.tokenOut as SwapToken;
   const coinBalancesMap = restSwapContext.coinBalancesMap as Record<
     string,
     ParsedCoinBalance
@@ -100,18 +99,18 @@ function Page() {
   const suiBalance =
     coinBalancesMap[NORMALIZED_SUI_COINTYPE]?.balance ?? new BigNumber(0);
   const tokenInBalance =
-    coinBalancesMap[tokenIn.coin_type]?.balance ?? new BigNumber(0);
+    coinBalancesMap[tokenIn.coinType]?.balance ?? new BigNumber(0);
 
   // Positions
   const tokenOutDepositPosition = obligation?.deposits?.find(
-    (d) => d.coinType === tokenOut.coin_type,
+    (d) => d.coinType === tokenOut.coinType,
   );
   const tokenOutDepositPositionAmount =
     tokenOutDepositPosition?.depositedAmount ?? new BigNumber(0);
 
   // Deposit
   const tokenOutReserve = data.lendingMarket.reserves.find(
-    (reserve) => reserve.coinType === tokenOut.coin_type,
+    (reserve) => reserve.coinType === tokenOut.coinType,
   );
   const tokenOutReserveDepositAprPercent = tokenOutReserve
     ? getTotalAprPercent(
@@ -128,12 +127,12 @@ function Page() {
   const tokenInMaxCalculations = (() => {
     const result = [
       {
-        reason: `Insufficient ${tokenIn.ticker} balance`,
+        reason: `Insufficient ${tokenIn.symbol} balance`,
         isDisabled: true,
         value: tokenInBalance,
       },
     ];
-    if (isSui(tokenIn.coin_type))
+    if (isSui(tokenIn.coinType))
       result.push({
         reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
         isDisabled: true,
@@ -186,7 +185,7 @@ function Page() {
 
   // Quote
   const [quotesMap, setQuotesMap] = useState<
-    Record<number, UnifiedQuote[] | undefined>
+    Record<number, StandardizedQuote[] | undefined>
   >({});
 
   const quotes = (() => {
@@ -220,20 +219,20 @@ function Page() {
 
   const fetchQuote = useCallback(
     async (
-      _tokenIn: VerifiedToken,
-      _tokenOut: VerifiedToken,
+      _tokenIn: SwapToken,
+      _tokenOut: SwapToken,
       _value: string,
       _timestamp = new Date().getTime(),
     ) => {
-      if (_tokenIn.coin_type === _tokenOut.coin_type) return;
+      if (_tokenIn.coinType === _tokenOut.coinType) return;
       if (new BigNumber(_value || 0).lte(0)) return;
 
       setQuotesMap((o) => ({ ...o, [_timestamp]: undefined }));
 
       try {
         const params = {
-          token_in: _tokenIn.coin_type,
-          token_out: _tokenOut.coin_type,
+          token_in: _tokenIn.coinType,
+          token_out: _tokenOut.coinType,
           amount_in: BigInt(
             new BigNumber(_value)
               .times(10 ** _tokenIn.decimals)
@@ -243,60 +242,18 @@ function Page() {
         };
 
         // Fetch quotes in parallel
-        // Hop
-        (async () => {
-          console.log("Swap - fetching Hop quote");
-
-          try {
-            const quote = await hopSdk.fetchQuote(params);
-
-            quote.trade.amount_in.token = normalizeStructTag(
-              quote.trade.amount_in.token,
-            );
-            quote.trade.amount_out.token = normalizeStructTag(
-              quote.trade.amount_out.token,
-            );
-            for (const node of Object.values(quote.trade.nodes)) {
-              node.amount_in.token = normalizeStructTag(node.amount_in.token);
-              node.amount_out.token = normalizeStructTag(node.amount_out.token);
-            }
-
-            const standardizedQuote = {
-              id: uuidv4(),
-              amount_in: new BigNumber(
-                quote.trade.amount_in.amount.toString(),
-              ).div(10 ** _tokenIn.decimals),
-              amount_out: new BigNumber(
-                quote.trade.amount_out.amount.toString(),
-              ).div(10 ** _tokenOut.decimals),
-              coin_type_in: quote.trade.amount_in.token,
-              coin_type_out: quote.trade.amount_out.token,
-              type: UnifiedQuoteType.HOP,
-              quote,
-            } as UnifiedQuote;
-
-            setQuotesMap((o) => ({
-              ...o,
-              [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
-            }));
-            console.log("Swap - set Hop quote", +standardizedQuote.amount_out);
-          } catch (err) {
-            console.error(err);
-          }
-        })();
-
         // Aftermath
         (async () => {
           console.log("Swap - fetching Aftermath quote");
 
           try {
-            const quote = await aftermathSdk.getCompleteTradeRouteGivenAmountIn(
-              {
+            const quote = await aftermathSdk
+              .Router()
+              .getCompleteTradeRouteGivenAmountIn({
                 coinInType: params.token_in,
                 coinOutType: params.token_out,
                 coinInAmount: params.amount_in,
-              },
-            );
+              });
 
             quote.coinIn.type = normalizeStructTag(quote.coinIn.type);
             quote.coinOut.type = normalizeStructTag(quote.coinOut.type);
@@ -307,8 +264,6 @@ function Page() {
               for (const path of route.paths) {
                 path.coinIn.type = normalizeStructTag(path.coinIn.type);
                 path.coinOut.type = normalizeStructTag(path.coinOut.type);
-                path.pool.assets[0] = normalizeStructTag(path.pool.assets[0]);
-                path.pool.assets[1] = normalizeStructTag(path.pool.assets[1]);
               }
             }
 
@@ -322,9 +277,9 @@ function Page() {
               ),
               coin_type_in: quote.coinIn.type,
               coin_type_out: quote.coinOut.type,
-              type: UnifiedQuoteType.AFTERMATH,
+              type: StandardizedQuoteType.AFTERMATH,
               quote,
-            } as UnifiedQuote;
+            } as StandardizedQuote;
 
             setQuotesMap((o) => ({
               ...o,
@@ -353,7 +308,7 @@ function Page() {
         });
       }
     },
-    [hopSdk, aftermathSdk],
+    [aftermathSdk],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -377,28 +332,25 @@ function Page() {
     : undefined;
 
   // Value
-  const formatAndSetValue = useCallback(
-    (_value: string, token: VerifiedToken) => {
-      let formattedValue;
-      if (new BigNumber(_value || 0).lt(0)) formattedValue = _value;
-      else if (!_value.includes(".")) formattedValue = _value;
-      else {
-        const [integers, decimals] = _value.split(".");
-        const integersFormatted = formatInteger(
-          integers !== "" ? parseInt(integers) : 0,
-          false,
-        );
-        const decimalsFormatted = decimals.slice(
-          0,
-          Math.min(decimals.length, token.decimals),
-        );
-        formattedValue = `${integersFormatted}.${decimalsFormatted}`;
-      }
+  const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
+    let formattedValue;
+    if (new BigNumber(_value || 0).lt(0)) formattedValue = _value;
+    else if (!_value.includes(".")) formattedValue = _value;
+    else {
+      const [integers, decimals] = _value.split(".");
+      const integersFormatted = formatInteger(
+        integers !== "" ? parseInt(integers) : 0,
+        false,
+      );
+      const decimalsFormatted = decimals.slice(
+        0,
+        Math.min(decimals.length, token.decimals),
+      );
+      formattedValue = `${integersFormatted}.${decimalsFormatted}`;
+    }
 
-      setValue(formattedValue);
-    },
-    [],
-  );
+    setValue(formattedValue);
+  }, []);
 
   const onValueChange = (_value: string) => {
     formatAndSetValue(_value, tokenIn);
@@ -445,14 +397,13 @@ function Page() {
   const [historicalUsdPricesMap, setHistoricalUsdPriceMap] = useState<
     Record<string, HistoricalPriceData[]>
   >({});
-  const tokenInHistoricalUsdPrices = historicalUsdPricesMap[tokenIn.coin_type];
-  const tokenOutHistoricalUsdPrices =
-    historicalUsdPricesMap[tokenOut.coin_type];
+  const tokenInHistoricalUsdPrices = historicalUsdPricesMap[tokenIn.coinType];
+  const tokenOutHistoricalUsdPrices = historicalUsdPricesMap[tokenOut.coinType];
 
   const fetchTokenHistoricalUsdPrices = useCallback(
-    async (token: VerifiedToken) => {
+    async (token: SwapToken) => {
       try {
-        const url = `https://public-api.birdeye.so/defi/history_price?address=${isSui(token.coin_type) ? SUI_COINTYPE : token.coin_type}&address_type=token&type=${HISTORICAL_USD_PRICES_INTERVAL}&time_from=${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}&time_to=${Math.floor(new Date().getTime() / 1000)}`;
+        const url = `https://public-api.birdeye.so/defi/history_price?address=${isSui(token.coinType) ? SUI_COINTYPE : token.coinType}&address_type=token&type=${HISTORICAL_USD_PRICES_INTERVAL}&time_from=${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}&time_to=${Math.floor(new Date().getTime() / 1000)}`;
         const res = await fetch(url, {
           headers: {
             "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
@@ -463,7 +414,7 @@ function Page() {
         if (json.data?.items)
           setHistoricalUsdPriceMap((o) => ({
             ...o,
-            [token.coin_type]: json.data.items.map(
+            [token.coinType]: json.data.items.map(
               (item: any) =>
                 ({
                   timestampS: item.unixTime,
@@ -649,22 +600,22 @@ function Page() {
     coinType: string,
     direction: TokenDirection,
   ) => {
-    const _token = tokens.find((t) => t.coin_type === coinType);
+    const _token = tokens.find((t) => t.coinType === coinType);
     if (!_token) return;
 
     if (
-      _token.coin_type ===
-      (direction === TokenDirection.IN ? tokenOut : tokenIn).coin_type
+      _token.coinType ===
+      (direction === TokenDirection.IN ? tokenOut : tokenIn).coinType
     )
       reverseTokens();
     else {
       setQuotesMap({});
 
       const isVerifiedToken = verifiedTokens.find(
-        (t) => t.coin_type === coinType,
+        (t) => t.coinType === coinType,
       );
       setTokenSymbol(
-        isVerifiedToken ? _token.ticker : _token.coin_type,
+        isVerifiedToken ? _token.symbol : _token.coinType,
         direction,
       );
 
@@ -673,7 +624,7 @@ function Page() {
         direction === TokenDirection.IN ? tokenOut : _token,
         value,
       );
-      if (historicalUsdPricesMap[_token.coin_type] === undefined)
+      if (historicalUsdPricesMap[_token.coinType] === undefined)
         fetchTokenHistoricalUsdPrices(_token);
     }
 
@@ -710,7 +661,7 @@ function Page() {
       title: `Swap ${formatToken(new BigNumber(value), {
         dp: tokenIn.decimals,
         trimTrailingZeros: true,
-      })} ${tokenIn.ticker}`,
+      })} ${tokenIn.symbol}`,
       isDisabled: !quote || isSwappingAndDepositing,
     };
   })();
@@ -758,32 +709,21 @@ function Page() {
     };
   })();
 
-  const getTransactionForUnifiedQuote = async (
+  const getTransactionForStandardizedQuote = async (
     address: string,
-    _quote: UnifiedQuote,
+    _quote: StandardizedQuote,
     isDepositing: boolean,
   ): Promise<{
     transaction: Transaction;
     outputCoin?: TransactionObjectArgument;
   }> => {
-    if (_quote.type === UnifiedQuoteType.HOP) {
-      console.log("Swap - fetching transaction for Hop quote");
-
-      const { transaction, output_coin: outputCoin } = await hopSdk.fetchTx({
-        trade: _quote.quote.trade,
-        sui_address: address,
-        gas_budget: 0.25 * 10 ** SUI_DECIMALS, // Set to 0.25 SUI
-        max_slippage_bps: +slippagePercent * 100,
-        return_output_coin_argument: isDepositing,
-      });
-
-      return { transaction, outputCoin };
-    } else if (_quote.type === UnifiedQuoteType.AFTERMATH) {
+    if (_quote.type === StandardizedQuoteType.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
       if (isDepositing) {
-        const { tx: transaction, coinOutId: outputCoin } =
-          await aftermathSdk.addTransactionForCompleteTradeRoute({
+        const { tx: transaction, coinOutId: outputCoin } = await aftermathSdk
+          .Router()
+          .addTransactionForCompleteTradeRoute({
             tx: new Transaction(),
             walletAddress: address,
             completeRoute: _quote.quote,
@@ -792,8 +732,9 @@ function Page() {
 
         return { transaction, outputCoin };
       } else {
-        const transaction =
-          await aftermathSdk.getTransactionForCompleteTradeRoute({
+        const transaction = await aftermathSdk
+          .Router()
+          .getTransactionForCompleteTradeRoute({
             walletAddress: address,
             completeRoute: _quote.quote,
             slippage: +slippagePercent / 100,
@@ -815,7 +756,7 @@ function Page() {
     let transaction: Transaction;
     try {
       const { transaction: transaction2, outputCoin } =
-        await getTransactionForUnifiedQuote(address, quote, isDepositing);
+        await getTransactionForStandardizedQuote(address, quote, isDepositing);
       transaction = transaction2;
       transaction.setGasBudget(SUI_GAS_MIN * 10 ** SUI_DECIMALS);
 
@@ -861,7 +802,7 @@ function Page() {
       const balanceChangeIn = getBalanceChange(
         res,
         address!,
-        tokenIn.coin_type,
+        tokenIn.coinType,
         tokenIn.decimals,
         -1,
       );
@@ -873,7 +814,7 @@ function Page() {
       const balanceChangeOut = getBalanceChange(
         res,
         address!,
-        tokenOut.coin_type,
+        tokenOut.coinType,
         tokenOut.decimals,
       );
       const balanceChangeOutFormatted = formatToken(
@@ -884,10 +825,10 @@ function Page() {
       );
 
       toast.success(
-        `Swapped ${balanceChangeInFormatted} ${tokenIn.ticker} for ${balanceChangeOutFormatted} ${tokenOut.ticker}`,
+        `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
         {
           description: deposit
-            ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.ticker}`
+            ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`
             : undefined,
           icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
           action: (
@@ -901,8 +842,8 @@ function Page() {
       formatAndSetValue("", tokenIn);
 
       const properties: Record<string, string | number> = {
-        assetIn: tokenIn.ticker,
-        assetOut: tokenOut.ticker,
+        assetIn: tokenIn.symbol,
+        assetOut: tokenOut.symbol,
         amountIn: value,
         amountOut: quoteAmountOut.toFixed(
           tokenOut.decimals,
@@ -970,8 +911,8 @@ function Page() {
               onChange={onValueChange}
               usdValue={tokenInUsdValue}
               token={tokenIn}
-              onSelectToken={(t: VerifiedToken) =>
-                onTokenCoinTypeChange(t.coin_type, TokenDirection.IN)
+              onSelectToken={(t: SwapToken) =>
+                onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
               }
               onBalanceClick={useMaxValueWrapper}
             />
@@ -1007,8 +948,8 @@ function Page() {
                 isValueLoading={isFetchingQuote}
                 usdValue={tokenOutUsdValue}
                 token={tokenOut}
-                onSelectToken={(t: VerifiedToken) =>
-                  onTokenCoinTypeChange(t.coin_type, TokenDirection.OUT)
+                onSelectToken={(t: SwapToken) =>
+                  onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
                 }
               />
             </div>
@@ -1021,7 +962,7 @@ function Page() {
                     {formatToken(tokenOutDepositPositionAmount, {
                       exact: false,
                     })}{" "}
-                    {tokenOut.ticker}
+                    {tokenOut.symbol}
                   </TBody>
                 </div>
               </div>
@@ -1082,12 +1023,12 @@ function Page() {
                   >
                     <TLabel className="transition-colors group-hover:text-foreground">
                       {"1 "}
-                      {(!isInverted ? tokenIn : tokenOut).ticker}{" "}
+                      {(!isInverted ? tokenIn : tokenOut).symbol}{" "}
                       <span className="font-sans">≈</span>{" "}
                       {formatToken(quoteRatio, {
                         dp: (!isInverted ? tokenOut : tokenIn).decimals,
                       })}{" "}
-                      {(!isInverted ? tokenOut : tokenIn).ticker}
+                      {(!isInverted ? tokenOut : tokenIn).symbol}
                     </TLabel>
                     <ArrowRightLeft className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-foreground" />
                   </div>
@@ -1155,20 +1096,15 @@ function Page() {
               >
                 <TokenLogos
                   className="h-4 w-4"
-                  tokens={(!isInverted
-                    ? [tokenIn, tokenOut]
-                    : [tokenOut, tokenIn]
-                  ).map((t) => ({
-                    coinType: t.coin_type,
-                    symbol: t.ticker,
-                    iconUrl: t.icon_url,
-                  }))}
+                  tokens={
+                    !isInverted ? [tokenIn, tokenOut] : [tokenOut, tokenIn]
+                  }
                 />
 
                 <TBody>
-                  {(!isInverted ? tokenIn : tokenOut).ticker}
+                  {(!isInverted ? tokenIn : tokenOut).symbol}
                   <span className="font-sans">/</span>
-                  {(!isInverted ? tokenOut : tokenIn).ticker}
+                  {(!isInverted ? tokenOut : tokenIn).symbol}
                 </TBody>
 
                 <ArrowRightLeft className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
@@ -1203,7 +1139,7 @@ function Page() {
             <Link
               className="block flex min-w-32 max-w-56 flex-1 cursor-pointer"
               target="_blank"
-              href={`https://birdeye.so/token/${isSui(tokenIn.coin_type) ? SUI_COINTYPE : tokenIn.coin_type}?chain=sui`}
+              href={`https://birdeye.so/token/${isSui(tokenIn.coinType) ? SUI_COINTYPE : tokenIn.coinType}?chain=sui`}
             >
               <div className="pointer-events-none h-6 w-full pl-6">
                 {historicalTokenRatios !== undefined && (
@@ -1216,14 +1152,6 @@ function Page() {
 
         <TLabelSans className="opacity-50">
           {"Powered by "}
-          <TextLink
-            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
-            href="https://hop.ag/"
-            noIcon
-          >
-            Hop
-          </TextLink>
-          {" & "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
             href="https://aftermath.finance/trade"

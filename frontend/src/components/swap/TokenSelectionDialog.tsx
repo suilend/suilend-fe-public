@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { VerifiedToken } from "@hop.ag/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Check, ChevronDown, Search, Wallet } from "lucide-react";
@@ -17,11 +16,12 @@ import { useSwapContext } from "@/contexts/SwapContext";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { SUI_COINTYPE, isCoinType, isSui } from "@/lib/coinType";
 import { formatId, formatToken, replace0x } from "@/lib/format";
+import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenSelectionDialogProps {
-  token: VerifiedToken;
-  onSelectToken: (token: VerifiedToken) => void;
+  token: SwapToken;
+  onSelectToken: (token: SwapToken) => void;
 }
 
 export default function TokenSelectionDialog({
@@ -32,7 +32,7 @@ export default function TokenSelectionDialog({
   const data = appContext.data as AppData;
 
   const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
-  const tokens = restSwapContext.tokens as VerifiedToken[];
+  const tokens = restSwapContext.tokens as SwapToken[];
   const coinBalancesMap = restSwapContext.coinBalancesMap as Record<
     string,
     ParsedCoinBalance
@@ -50,7 +50,7 @@ export default function TokenSelectionDialog({
   useEffect(() => {
     if (
       !tokens.find((t) =>
-        `${t.coin_type}${t.ticker}${t.name}`
+        `${t.coinType}${t.symbol}${t.name}`
           .toLowerCase()
           .includes(filter.toLowerCase()),
       ) &&
@@ -65,37 +65,37 @@ export default function TokenSelectionDialog({
   );
 
   const priorityTokens = PRIORITY_TOKEN_SYMBOLS.map((symbol) =>
-    tokens.find((t) => t.ticker === symbol),
-  ).filter(Boolean) as VerifiedToken[];
+    tokens.find((t) => t.symbol === symbol),
+  ).filter(Boolean) as SwapToken[];
 
   const tokensWithBalance = tokens.filter((t) =>
-    (coinBalancesMap[t.coin_type]?.balance ?? new BigNumber(0)).gt(0),
+    (coinBalancesMap[t.coinType]?.balance ?? new BigNumber(0)).gt(0),
   );
 
   const mainTokens = [
     ...priorityTokens.filter((t) =>
-      tokensWithBalance.find((_t) => _t.coin_type === t.coin_type),
+      tokensWithBalance.find((_t) => _t.coinType === t.coinType),
     ),
     ...priorityTokens.filter(
-      (t) => !tokensWithBalance.find((_t) => _t.coin_type === t.coin_type),
+      (t) => !tokensWithBalance.find((_t) => _t.coinType === t.coinType),
     ),
     ...tokensWithBalance.filter(
-      (t) => !priorityTokens.find((_t) => _t.coin_type === t.coin_type),
+      (t) => !priorityTokens.find((_t) => _t.coinType === t.coinType),
     ),
   ];
   const otherTokens = tokens.filter(
-    (t) => !mainTokens.find((_t) => _t.coin_type === t.coin_type),
+    (t) => !mainTokens.find((_t) => _t.coinType === t.coinType),
   );
 
   const tokenList = [...mainTokens, ...otherTokens];
   const filteredTokenList = tokenList.filter((t) =>
-    `${t.coin_type}${t.ticker}${t.name}`
+    `${t.coinType}${t.symbol}${t.name}`
       .toLowerCase()
       .includes(filter.toLowerCase()),
   );
 
   // Select token
-  const onTokenClick = (t: VerifiedToken) => {
+  const onTokenClick = (t: SwapToken) => {
     onSelectToken(t);
     setTimeout(() => setIsOpen(false), 50);
     setTimeout(() => setFilter(""), 250);
@@ -112,17 +112,13 @@ export default function TokenSelectionDialog({
             <TokenLogo
               className="mr-1 h-5 w-5"
               imageProps={{ className: "rounded-full" }}
-              token={{
-                coinType: token.coin_type,
-                symbol: token.ticker,
-                iconUrl: token.icon_url,
-              }}
+              token={token}
             />
           }
           endIcon={<ChevronDown className="h-4 w-4 opacity-50" />}
           variant="ghost"
         >
-          {token.ticker.slice(0, 10)}
+          {token.symbol.slice(0, 10)}
         </Button>
       }
       dialogContentProps={{ className: "max-w-lg" }}
@@ -147,11 +143,11 @@ export default function TokenSelectionDialog({
 
       <div className="mb-4 flex flex-row flex-wrap gap-2 px-4">
         {priorityTokens.map((t) => {
-          const isSelected = t.coin_type === token.coin_type;
+          const isSelected = t.coinType === token.coinType;
 
           return (
             <Button
-              key={t.coin_type}
+              key={t.coinType}
               className={cn(
                 "gap-1.5 rounded-full border",
                 isSelected
@@ -162,11 +158,7 @@ export default function TokenSelectionDialog({
                 <TokenLogo
                   className="h-4 w-4"
                   imageProps={{ className: "rounded-full" }}
-                  token={{
-                    coinType: t.coin_type,
-                    symbol: t.ticker,
-                    iconUrl: t.icon_url,
-                  }}
+                  token={t}
                 />
               }
               endIcon={
@@ -177,8 +169,8 @@ export default function TokenSelectionDialog({
               variant="ghost"
               onClick={() => onTokenClick(t)}
             >
-              {/* TODO: Truncate symbol once the list of priority tokens includes non-reserves */}
-              {t.ticker}
+              {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
+              {t.symbol}
             </Button>
           );
         })}
@@ -188,12 +180,12 @@ export default function TokenSelectionDialog({
         {filteredTokenList.length > 0 ? (
           filteredTokenList.map((t) => {
             const tokenBalance =
-              coinBalancesMap[t.coin_type]?.balance ?? new BigNumber(0);
-            const isSelected = t.coin_type === token.coin_type;
+              coinBalancesMap[t.coinType]?.balance ?? new BigNumber(0);
+            const isSelected = t.coinType === token.coinType;
 
             return (
               <div
-                key={t.coin_type}
+                key={t.coinType}
                 className={cn(
                   "flex w-full cursor-pointer p-4 transition-colors hover:bg-muted/10",
                   isSelected
@@ -207,18 +199,14 @@ export default function TokenSelectionDialog({
                     showTooltip
                     className="shrink-0"
                     imageProps={{ className: "rounded-full" }}
-                    token={{
-                      coinType: t.coin_type,
-                      symbol: t.ticker,
-                      iconUrl: t.icon_url,
-                    }}
+                    token={t}
                   />
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex w-full flex-row items-center justify-between gap-4">
                       <div className="flex min-w-0 flex-row items-center gap-2">
                         <TBody className="overflow-hidden text-ellipsis text-nowrap">
-                          {t.ticker}
+                          {t.symbol}
                         </TBody>
                         {isSelected && (
                           <Check className="h-4 w-4 text-foreground" />
@@ -230,30 +218,32 @@ export default function TokenSelectionDialog({
                         <Tooltip
                           title={
                             tokenBalance.gt(0)
-                              ? `${formatToken(tokenBalance, { dp: token.decimals })} ${t.ticker}`
+                              ? `${formatToken(tokenBalance, { dp: token.decimals })} ${t.symbol}`
                               : undefined
                           }
                         >
                           <TBody className="overflow-hidden text-ellipsis text-nowrap">
                             {formatToken(tokenBalance, { exact: false })}{" "}
-                            {t.ticker}
+                            {t.symbol}
                           </TBody>
                         </Tooltip>
                       </div>
                     </div>
 
                     <div className="flex flex-row items-center gap-4">
-                      <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
-                        {t.name}
-                      </TLabelSans>
+                      {t.name && (
+                        <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
+                          {t.name}
+                        </TLabelSans>
+                      )}
 
                       <TextLink
                         className="block w-max shrink-0 text-xs text-muted-foreground no-underline hover:text-foreground"
-                        href={explorer.buildCoinUrl(t.coin_type)}
+                        href={explorer.buildCoinUrl(t.coinType)}
                       >
-                        {isSui(t.coin_type)
+                        {isSui(t.coinType)
                           ? replace0x(SUI_COINTYPE)
-                          : formatId(t.coin_type)}
+                          : formatId(t.coinType)}
                       </TextLink>
                     </div>
                   </div>

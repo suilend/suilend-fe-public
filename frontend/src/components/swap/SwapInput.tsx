@@ -1,6 +1,5 @@
 import { forwardRef, useEffect, useRef } from "react";
 
-import { VerifiedToken } from "@hop.ag/sdk";
 import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
@@ -13,6 +12,7 @@ import { useSwapContext } from "@/contexts/SwapContext";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { formatToken, formatUsd } from "@/lib/format";
+import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const INPUT_HEIGHT = 70; // px
@@ -26,8 +26,8 @@ interface SwapInputProps {
   isValueLoading?: boolean;
   onChange?: (value: string) => void;
   usdValue?: BigNumber;
-  token: VerifiedToken;
-  onSelectToken: (token: VerifiedToken) => void;
+  token: SwapToken;
+  onSelectToken: (token: SwapToken) => void;
   onBalanceClick?: () => void;
 }
 
@@ -55,7 +55,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     >;
 
     const tokenBalance =
-      coinBalancesMap[token.coin_type]?.balance ?? new BigNumber(0);
+      coinBalancesMap[token.coinType]?.balance ?? new BigNumber(0);
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -96,7 +96,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               style={{
                 height: `${INPUT_HEIGHT}px`,
                 paddingLeft: `${3 * 4}px`,
-                paddingRight: `${3 * 4 + (5 * 4 + 2 * 4 + token.ticker.slice(0, 10).length * 14.4 + 1 * 4 + 4 * 4) + 3 * 4}px`,
+                paddingRight: `${3 * 4 + (5 * 4 + 2 * 4 + token.symbol.slice(0, 10).length * 14.4 + 1 * 4 + 4 * 4) + 3 * 4}px`,
                 paddingTop: `${INPUT_PADDING_Y}px`,
                 paddingBottom: `${INPUT_PADDING_Y + USD_LABEL_HEIGHT}px`,
               }}
@@ -134,12 +134,12 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 <Tooltip
                   title={
                     !isTouchscreen && tokenBalance.gt(0)
-                      ? `${formatToken(tokenBalance, { dp: token.decimals })} ${token.ticker}`
+                      ? `${formatToken(tokenBalance, { dp: token.decimals })} ${token.symbol}`
                       : undefined
                   }
                 >
                   <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
-                    {formatToken(tokenBalance)} {token.ticker}
+                    {formatToken(tokenBalance)} {token.symbol}
                   </TLabel>
                 </Tooltip>
               </div>
