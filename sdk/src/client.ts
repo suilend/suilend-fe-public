@@ -113,6 +113,7 @@ export class SuilendClient {
       client,
       SUILEND_UPGRADE_CAP_ID,
     );
+    console.log("latestPackageId", latestPackageId);
     setPublishedAt(latestPackageId);
 
     return new SuilendClient(lendingMarket, client);
@@ -122,6 +123,12 @@ export class SuilendClient {
     lendingMarket: LendingMarket<string>,
     client: SuiClient,
   ) {
+    const latestPackageId = await getLatestPackageId(
+      client,
+      SUILEND_UPGRADE_CAP_ID,
+    );
+    setPublishedAt(latestPackageId);
+
     return new SuilendClient(lendingMarket, client);
   }
 
