@@ -49,6 +49,10 @@ export const NORMALIZED_STABLECOIN_COINTYPES = [
 
   NORMALIZED_BUCK_COINTYPE,
 ];
+export const NORMALIZED_ETH_COINTYPES = [
+  NORMALIZED_WETH_COINTYPE,
+  NORMALIZED_nbETH_COINTYPE,
+];
 
 // 128x128
 export const COINTYPE_LOGO_MAP = {
@@ -180,6 +184,8 @@ export const isSui = (coinType: string) =>
 
 export const isStablecoin = (coinType: string) =>
   NORMALIZED_STABLECOIN_COINTYPES.includes(normalizeStructTag(coinType));
+export const isEth = (coinType: string) =>
+  NORMALIZED_ETH_COINTYPES.includes(normalizeStructTag(coinType));
 
 export const isEthNativeOnly = (coinType: string) =>
   [NORMALIZED_USDT_COINTYPE].includes(coinType);

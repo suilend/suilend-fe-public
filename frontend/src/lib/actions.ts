@@ -7,13 +7,15 @@ import { Action } from "@suilend/sdk/types";
 import { SubmitButtonState } from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import { AppData } from "@/contexts/AppContext";
 import {
+  NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
+  isEth,
   isStablecoin,
   isSui,
 } from "@/lib/coinType";
 import { SUI_GAS_MIN, msPerYear } from "@/lib/constants";
 import { formatList } from "@/lib/format";
-import { LOOPING_THRESHOLD, LOOPING_WARNING_MESSAGE } from "@/lib/looping";
+import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 
 const getMaxCalculations = (
   action: Action,
@@ -261,11 +263,7 @@ export const getSubmitButtonNoValueState =
           isDisabled: true,
           title: "Reserve USD deposit limit reached",
         };
-      if (
-        getObligationBorrowedAmount(reserve.coinType, obligation).gt(
-          LOOPING_THRESHOLD,
-        )
-      )
+      if (getObligationBorrowedAmount(reserve.coinType, obligation).gt(0))
         return { isDisabled: true, title: "Cannot deposit borrowed asset" };
       if (
         obligation &&
@@ -293,11 +291,7 @@ export const getSubmitButtonNoValueState =
           isDisabled: true,
           title: "Reserve USD borrow limit reached",
         };
-      if (
-        getObligationDepositedAmount(reserve.coinType, obligation).gt(
-          LOOPING_THRESHOLD,
-        )
-      )
+      if (getObligationDepositedAmount(reserve.coinType, obligation).gt(0))
         return { isDisabled: true, title: "Cannot borrow deposited asset" };
       if (
         obligation &&
@@ -378,10 +372,17 @@ export const getSubmitWarningMessages =
           if (stablecoinCoinType === reserve.coinType) continue;
 
           if (
-            getObligationBorrowedAmount(stablecoinCoinType, obligation).gt(
-              LOOPING_THRESHOLD,
-            )
+            getObligationBorrowedAmount(stablecoinCoinType, obligation).gt(0)
           ) {
+            result.push(LOOPING_WARNING_MESSAGE("depositing", reserve.symbol));
+            break;
+          }
+        }
+      } else if (isEth(reserve.coinType)) {
+        for (const ethCoinType of NORMALIZED_ETH_COINTYPES) {
+          if (ethCoinType === reserve.coinType) continue;
+
+          if (getObligationBorrowedAmount(ethCoinType, obligation).gt(0)) {
             result.push(LOOPING_WARNING_MESSAGE("depositing", reserve.symbol));
             break;
           }
@@ -393,10 +394,17 @@ export const getSubmitWarningMessages =
           if (stablecoinCoinType === reserve.coinType) continue;
 
           if (
-            getObligationDepositedAmount(stablecoinCoinType, obligation).gt(
-              LOOPING_THRESHOLD,
-            )
+            getObligationDepositedAmount(stablecoinCoinType, obligation).gt(0)
           ) {
+            result.push(LOOPING_WARNING_MESSAGE("borrowing", reserve.symbol));
+            break;
+          }
+        }
+      } else if (isEth(reserve.coinType)) {
+        for (const ethCoinType of NORMALIZED_ETH_COINTYPES) {
+          if (ethCoinType === reserve.coinType) continue;
+
+          if (getObligationDepositedAmount(ethCoinType, obligation).gt(0)) {
             result.push(LOOPING_WARNING_MESSAGE("borrowing", reserve.symbol));
             break;
           }
