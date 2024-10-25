@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatPercent } from "@/lib/format";
 import { getFilteredRewards, getTotalAprPercent } from "@/lib/liquidityMining";
-import { DASHBOARD_URL, DISCORD_URL, X_URL } from "@/lib/navigation";
+import { DASHBOARD_URL, DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
 import suilendLogo from "@/public/assets/suilend.svg";
 
 export default function Home() {
@@ -128,7 +128,7 @@ export default function Home() {
                 </NextLink>
 
                 <div className="flex flex-row gap-4">
-                  <a href={X_URL} target="_blank">
+                  <a href={TWITTER_URL} target="_blank">
                     <Button icon={<XIcon />} variant="secondary" size="icon">
                       X
                     </Button>

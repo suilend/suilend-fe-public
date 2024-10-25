@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { reserveSort } from "@suilend/sdk/utils";
 
+import styles from "@/components/dashboard/AccountAssetTable.module.scss";
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import DataTable, {
   decimalSortingFn,
@@ -106,6 +107,7 @@ export default function AccountAssetTable({
         columns={columns}
         data={sortedAssets}
         noDataMessage={noAssetsMessage}
+        tableRowClassName={() => cn(styles.tableRow)}
         tableCellClassName={(cell) =>
           cn(
             cell && cell.column.getIsFirstColumn() && "pr-0",

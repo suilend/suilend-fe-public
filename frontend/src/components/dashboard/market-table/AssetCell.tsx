@@ -6,8 +6,10 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { getSwapUrl } from "@/contexts/SwapContext";
+import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@/lib/coinType";
 import { formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface AssetCellProps {
   isBalance?: boolean;
@@ -26,6 +28,8 @@ export default function AssetCell({
   iconUrl,
   reserve,
 }: AssetCellProps) {
+  const isTouchscreen = useIsTouchscreen();
+
   return (
     <div className="flex flex-row items-center gap-3">
       <TokenLogo showTooltip token={{ coinType, symbol, iconUrl }} />
@@ -36,7 +40,10 @@ export default function AssetCell({
 
           {isBalance && (
             <TextLink
-              className="block w-max shrink-0 text-xs uppercase text-muted-foreground no-underline hover:text-foreground"
+              className={cn(
+                "swapLink block shrink-0 text-xs uppercase text-muted-foreground no-underline opacity-0 hover:text-foreground focus:text-foreground focus:opacity-100",
+                isTouchscreen && "opacity-100",
+              )}
               href={getSwapUrl(symbol, symbol !== "USDC" ? "USDC" : "SUI")}
               isRelative
               noIcon

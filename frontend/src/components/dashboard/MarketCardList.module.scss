@@ -1,5 +1,6 @@
 .card {
   --bg-color: hsl(var(--card));
+
   &:hover {
     --bg-color: #0f1729;
   }
