@@ -1,6 +1,8 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
 import { TWITTER } from "@/lib/constants";
+import { fontClassNames } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
 
 export default function Document() {
   const description = "Money market built on the best chain for developers.";
@@ -41,14 +43,8 @@ export default function Document() {
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
         <meta name="msapplication-TileColor" content="#da532c" />
         <meta name="theme-color" content="#020A19" />
-
-        {/* Wormhole Connect */}
-        <link
-          rel="stylesheet"
-          href="https://suilend.fi/wormhole-connect@0.3.22-beta.6-development/main.css"
-        />
       </Head>
-      <body>
+      <body className={cn(fontClassNames)}>
         <Main />
         <NextScript />
       </body>
