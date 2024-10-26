@@ -28,7 +28,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
-import { isSuilendPoints } from "@/lib/coinType";
+import { isSendPoints } from "@/lib/coinType";
 import { EventType, eventSortAsc } from "@/lib/events";
 import { formatPoints, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
@@ -73,7 +73,7 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
 
       <Tooltip
         title={
-          amount !== undefined && isSuilendPoints(token.coinType) ? (
+          amount !== undefined && isSendPoints(token.coinType) ? (
             <>
               {formatPoints(amount, { dp: decimals })} {token.symbol}
             </>
@@ -83,7 +83,7 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
         <TBody className="uppercase">
           {amount === undefined
             ? "N/A"
-            : isSuilendPoints(token.coinType)
+            : isSendPoints(token.coinType)
               ? formatPoints(amount)
               : formatToken(amount, { dp: decimals })}{" "}
           {token.symbol}

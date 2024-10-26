@@ -3,7 +3,7 @@ import { ClassValue } from "clsx";
 import TokenLogo from "@/components/shared/TokenLogo";
 import {
   COINTYPE_LOGO_MAP,
-  NORMALIZED_SUILEND_POINTS_COINTYPE,
+  NORMALIZED_SEND_POINTS_COINTYPE,
 } from "@/lib/coinType";
 import { cn } from "@/lib/utils";
 
@@ -16,9 +16,9 @@ export default function PointsIcon({ className }: PointsIconProps) {
     <TokenLogo
       className={cn("h-4 w-4", className)}
       token={{
-        coinType: NORMALIZED_SUILEND_POINTS_COINTYPE,
-        symbol: "Suilend Points",
-        iconUrl: COINTYPE_LOGO_MAP[NORMALIZED_SUILEND_POINTS_COINTYPE],
+        coinType: NORMALIZED_SEND_POINTS_COINTYPE,
+        symbol: "SEND Points",
+        iconUrl: COINTYPE_LOGO_MAP[NORMALIZED_SEND_POINTS_COINTYPE],
       }}
     />
   );

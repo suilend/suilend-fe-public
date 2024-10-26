@@ -19,7 +19,7 @@ export default function PointsHeader() {
         </div>
 
         <TDisplay className="text-center text-4xl uppercase md:text-5xl">
-          Suilend Points
+          SEND Points
         </TDisplay>
       </div>
     </div>

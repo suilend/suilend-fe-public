@@ -878,7 +878,7 @@ function Page() {
   return (
     <>
       <Head>
-        <title>Suilend Swap</title>
+        <title>Suilend | Swap</title>
       </Head>
 
       <div className="flex w-full max-w-[28rem] flex-col items-center gap-8">

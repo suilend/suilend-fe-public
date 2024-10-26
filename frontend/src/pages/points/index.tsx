@@ -13,7 +13,7 @@ export default function Points() {
   return (
     <>
       <Head>
-        <title>Suilend Points</title>
+        <title>Suilend | Points</title>
       </Head>
 
       <ImpersonationModeBanner />

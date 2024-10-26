@@ -16,7 +16,7 @@ import {
   TLabelSans,
 } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { isSuilendPoints } from "@/lib/coinType";
+import { isSendPoints } from "@/lib/coinType";
 import { formatPercent, formatPoints, formatToken } from "@/lib/format";
 import {
   AprRewardSummary,
@@ -64,7 +64,7 @@ const formatPerDay = (
   newValue?: BigNumber,
 ) => {
   const formatter = (_value: BigNumber) =>
-    isSuilendPoints(coinType)
+    isSendPoints(coinType)
       ? formatPoints(_value, { dp: 3 })
       : formatToken(_value, { exact: false });
 

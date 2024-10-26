@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
-import { isSuilendPoints } from "@/lib/coinType";
+import { isSendPoints } from "@/lib/coinType";
 import {
   RewardMap,
   getBorrowShare,
@@ -31,10 +31,10 @@ export const getPointsStats = (
 
   const pointsRewards = {
     deposit: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.deposit.filter((r) => isSuilendPoints(r.stats.rewardCoinType)),
+      rewards.deposit.filter((r) => isSendPoints(r.stats.rewardCoinType)),
     ),
     borrow: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.borrow.filter((r) => isSuilendPoints(r.stats.rewardCoinType)),
+      rewards.borrow.filter((r) => isSendPoints(r.stats.rewardCoinType)),
     ),
   };
 

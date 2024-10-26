@@ -21,7 +21,7 @@ import { useDashboardContext } from "@/contexts/DashboardContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import { isSuilendPoints } from "@/lib/coinType";
+import { isSendPoints } from "@/lib/coinType";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { RewardSummary } from "@/lib/liquidityMining";
@@ -108,7 +108,7 @@ function TotalPointsStat({ totalPoints, isCentered }: TotalPointsStatProps) {
   return (
     <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
       <TLabelSans className={cn(isCentered && "text-center")}>
-        Total points
+        Total SEND Points
       </TLabelSans>
       <PointsCount points={totalPoints} />
     </div>
@@ -130,7 +130,7 @@ function PointsPerDayStat({ pointsPerDay, isCentered }: PointsPerDayStatProps) {
   return (
     <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
       <TLabelSans className={cn(isCentered && "text-center")}>
-        Points per day
+        SEND Points per day
       </TLabelSans>
       <PointsCount
         points={pointsPerDay}
@@ -170,7 +170,7 @@ export default function RewardsCard() {
   if (obligation) {
     Object.values(data.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-        if (isSuilendPoints(r.stats.rewardCoinType)) return;
+        if (isSendPoints(r.stats.rewardCoinType)) return;
         if (!r.obligationClaims[obligation.id]) return;
 
         const claimableRewards = Object.values(r.obligationClaims).reduce(
@@ -248,7 +248,7 @@ export default function RewardsCard() {
         }}
       >
         <TTitle className="text-center uppercase text-primary-foreground sm:text-[16px]">
-          Start earning points & rewards
+          Start earning SEND Points & rewards
         </TTitle>
 
         <Button
@@ -277,9 +277,7 @@ export default function RewardsCard() {
               <TTitle className="uppercase text-primary-foreground">
                 Rewards
               </TTitle>
-              <TLabelSans>
-                Boost your earnings with bonus Suilend rewards.
-              </TLabelSans>
+              <TLabelSans>Boost your earnings with bonus rewards.</TLabelSans>
             </div>
 
             <div className="flex flex-row gap-2">

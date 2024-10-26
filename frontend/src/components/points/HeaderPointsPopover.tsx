@@ -53,11 +53,11 @@ export default function PointsCountPopover() {
       }}
     >
       <div className="flex flex-col gap-4">
-        <TitleWithIcon icon={<PointsIcon />}>Suilend points</TitleWithIcon>
+        <TitleWithIcon icon={<PointsIcon />}>SEND points</TitleWithIcon>
 
         <div className="flex w-full flex-col gap-2">
           <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>Total points</TLabelSans>
+            <TLabelSans>Total Points</TLabelSans>
             <PointsCount points={pointsStats?.totalPoints.total} />
           </div>
 

@@ -25,7 +25,7 @@ export default function Bridge() {
   return (
     <>
       <Head>
-        <title>Suilend Bridge</title>
+        <title>Suilend | Bridge</title>
       </Head>
 
       <div className="flex w-full flex-col items-center">

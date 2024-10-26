@@ -32,7 +32,7 @@ export default function Dashboard() {
   return (
     <DashboardContextProvider>
       <Head>
-        <title>Suilend Dashboard</title>
+        <title>Suilend | Dashboard</title>
       </Head>
 
       <ImpersonationModeBanner />

@@ -114,7 +114,7 @@ export default function Admin() {
   return (
     <>
       <Head>
-        <title>Suilend Admin</title>
+        <title>Suilend | Admin</title>
       </Head>
 
       <div className="flex w-full flex-col items-center">
