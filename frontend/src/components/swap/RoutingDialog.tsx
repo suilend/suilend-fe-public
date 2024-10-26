@@ -291,8 +291,7 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
             .some(
               (data, index) =>
                 data.isFirst &&
-                `${(data as any).poolId}_${index}` ===
-                  `${node.object_id}_${nodeIndex}`,
+                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
             )
         )
           return;
@@ -316,9 +315,9 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
           if (index > 0) {
             const sourcePath = route.paths[index - 1];
             initialEdges.push({
-              id: `${(sourcePath as any).poolId}_${indexCount - 1}-${(path as any).poolId}_${indexCount}`,
-              source: `${(sourcePath as any).poolId}_${indexCount - 1}`,
-              target: `${(path as any).poolId}_${indexCount}`,
+              id: `${sourcePath.poolId}_${indexCount - 1}-${path.poolId}_${indexCount}`,
+              source: `${sourcePath.poolId}_${indexCount - 1}`,
+              target: `${path.poolId}_${indexCount}`,
             });
           }
           indexCount += 1;
@@ -345,8 +344,7 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
             .some(
               (data, index) =>
                 data.isLast &&
-                `${(data as any).poolId}_${index}` ===
-                  `${node.object_id}_${nodeIndex}`,
+                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
             )
         )
           return;
@@ -445,7 +443,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           if (!(inToken || inCoinMetadata) || !(outToken || outCoinMetadata))
             return undefined;
           return {
-            object_id: (path as any).poolId,
+            object_id: path.poolId,
             protocolName: path.protocolName,
             amount_in: {
               amount: path.coinIn.amount,
