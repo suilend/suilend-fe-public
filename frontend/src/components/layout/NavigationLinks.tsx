@@ -8,6 +8,7 @@ import {
   BRIDGE_URL,
   DASHBOARD_URL,
   POINTS_URL,
+  SWAP_URL,
 } from "@/lib/navigation";
 
 export default function NavigationLinks() {
@@ -28,7 +29,9 @@ export default function NavigationLinks() {
           </div>
         )}
       </div>
-      <Link href={getSwapUrl()}>Swap</Link>
+      <Link href={getSwapUrl()} activeHref={SWAP_URL}>
+        Swap
+      </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>
       {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}
     </>
