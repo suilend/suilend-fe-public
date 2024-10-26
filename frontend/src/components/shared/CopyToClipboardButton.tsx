@@ -1,7 +1,7 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { MouseEvent, ReactNode } from "react";
 
 import { ClassValue } from "clsx";
-import { Check, Copy } from "lucide-react";
+import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
 import Button from "@/components/shared/Button";
@@ -9,38 +9,25 @@ import { cn } from "@/lib/utils";
 
 interface CopyToClipboardButtonProps {
   className?: ClassValue;
+  iconClassName?: ClassValue;
   tooltip?: string | ReactNode;
   value: string;
 }
 
 export default function CopyToClipboardButton({
   className,
+  iconClassName,
   tooltip,
   value,
 }: CopyToClipboardButtonProps) {
-  // State
-  const [justCopied, setJustCopied] = useState<boolean>(false);
+  const copyToClipboard = async (e: MouseEvent) => {
+    e.stopPropagation();
 
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  useEffect(() => {
-    const timeout = timeoutRef.current;
-
-    return () => {
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [justCopied]);
-
-  // Copy
-  const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(value.toString());
-      toast.info(`Copied ${value} to clipboard`);
-      setJustCopied(true);
-
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setJustCopied(false);
-      }, 2500);
+      toast.info(`Copied ${value} to clipboard`, {
+        icon: <Copy className="h-5 w-5" />,
+      });
     } catch (err) {
       toast.error(`Failed to copy ${value} to clipboard`, {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -53,12 +40,12 @@ export default function CopyToClipboardButton({
     <Button
       className={cn("text-muted-foreground", className)}
       tooltip={tooltip ?? "Copy to clipboard"}
-      icon={justCopied ? <Check className="text-success" /> : <Copy />}
+      icon={<Copy className={cn(iconClassName)} />}
       variant="ghost"
       size="icon"
       onClick={copyToClipboard}
     >
-      {justCopied ? "Copied" : "Copy"}
+      Copy
     </Button>
   );
 }

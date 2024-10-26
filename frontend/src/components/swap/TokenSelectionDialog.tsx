@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import { Check, ChevronDown, Search, Wallet } from "lucide-react";
+import { ChevronDown, Search, Wallet } from "lucide-react";
 
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
+import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import Input from "@/components/shared/Input";
-import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
@@ -15,7 +15,7 @@ import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useSwapContext } from "@/contexts/SwapContext";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { SUI_COINTYPE, isCoinType, isSui } from "@/lib/coinType";
-import { formatId, formatToken, replace0x } from "@/lib/format";
+import { formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -142,38 +142,24 @@ export default function TokenSelectionDialog({
       </div>
 
       <div className="mb-4 flex flex-row flex-wrap gap-2 px-4">
-        {priorityTokens.map((t) => {
-          const isSelected = t.coinType === token.coinType;
-
-          return (
-            <Button
-              key={t.coinType}
-              className={cn(
-                "gap-1.5 rounded-full border",
-                isSelected
-                  ? "border-transparent bg-muted/10"
-                  : "hover:border-transparent",
-              )}
-              startIcon={
-                <TokenLogo
-                  className="h-4 w-4"
-                  imageProps={{ className: "rounded-full" }}
-                  token={t}
-                />
-              }
-              endIcon={
-                isSelected ? (
-                  <Check className="h-4 w-4 text-foreground" />
-                ) : undefined
-              }
-              variant="ghost"
-              onClick={() => onTokenClick(t)}
-            >
-              {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
-              {t.symbol}
-            </Button>
-          );
-        })}
+        {priorityTokens.map((t) => (
+          <Button
+            key={t.coinType}
+            className="gap-1.5 rounded-full border hover:border-transparent"
+            startIcon={
+              <TokenLogo
+                className="h-4 w-4"
+                imageProps={{ className: "rounded-full" }}
+                token={t}
+              />
+            }
+            variant="ghost"
+            onClick={() => onTokenClick(t)}
+          >
+            {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
+            {t.symbol}
+          </Button>
+        ))}
       </div>
 
       <div className="relative flex w-full flex-col gap-[1px] overflow-auto">
@@ -187,7 +173,7 @@ export default function TokenSelectionDialog({
               <div
                 key={t.coinType}
                 className={cn(
-                  "flex w-full cursor-pointer p-4 transition-colors hover:bg-muted/10",
+                  "flex w-full cursor-pointer px-4 py-3.5 transition-colors hover:bg-muted/10",
                   isSelected
                     ? "border-transparent bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
                     : "hover:border-transparent",
@@ -204,13 +190,15 @@ export default function TokenSelectionDialog({
 
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex w-full flex-row items-center justify-between gap-4">
-                      <div className="flex min-w-0 flex-row items-center gap-2">
+                      <div className="flex min-w-0 flex-row items-center gap-1">
                         <TBody className="overflow-hidden text-ellipsis text-nowrap">
                           {t.symbol}
                         </TBody>
-                        {isSelected && (
-                          <Check className="h-4 w-4 text-foreground" />
-                        )}
+                        <CopyToClipboardButton
+                          className="-my-0.5 h-6 w-6 hover:bg-transparent"
+                          iconClassName="w-3 h-3"
+                          value={isSui(t.coinType) ? SUI_COINTYPE : t.coinType}
+                        />
                       </div>
 
                       <div className="flex min-w-0 flex-row items-center gap-1.5">
@@ -223,28 +211,18 @@ export default function TokenSelectionDialog({
                           }
                         >
                           <TBody className="overflow-hidden text-ellipsis text-nowrap">
-                            {formatToken(tokenBalance, { exact: false })}{" "}
-                            {t.symbol}
+                            {formatToken(tokenBalance, { exact: false })}
                           </TBody>
                         </Tooltip>
                       </div>
                     </div>
 
-                    <div className="flex flex-row items-center gap-4">
+                    <div className="flex flex-row items-center gap-2">
                       {t.name && (
                         <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
                           {t.name}
                         </TLabelSans>
                       )}
-
-                      <TextLink
-                        className="block w-max shrink-0 text-xs text-muted-foreground no-underline hover:text-foreground"
-                        href={explorer.buildCoinUrl(t.coinType)}
-                      >
-                        {isSui(t.coinType)
-                          ? replace0x(SUI_COINTYPE)
-                          : formatId(t.coinType)}
-                      </TextLink>
                     </div>
                   </div>
                 </div>
