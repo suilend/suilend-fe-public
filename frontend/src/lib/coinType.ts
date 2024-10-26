@@ -186,11 +186,6 @@ export const isStablecoin = (coinType: string) =>
 export const isEth = (coinType: string) =>
   NORMALIZED_ETH_COINTYPES.includes(normalizeStructTag(coinType));
 
-export const isEthNativeOnly = (coinType: string) =>
-  [NORMALIZED_USDT_COINTYPE].includes(coinType);
-export const isSolNativeOnly = (coinType: string) =>
-  [NORMALIZED_SOL_COINTYPE].includes(coinType);
-
 export const isCoinType = (text: string) => {
   if (text.includes("-")) return false;
   try {

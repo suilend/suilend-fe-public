@@ -16,7 +16,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
 import { WalletContextProvider } from "@/contexts/WalletContext";
-import { WormholeConnectContextProvider } from "@/contexts/WormholeConnectContext";
 import { fontClassNames } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
@@ -64,17 +63,15 @@ export default function App({
               process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
             }
           >
-            <WormholeConnectContextProvider>
-              <WalletProvider>
-                <WalletContextProvider>
-                  <AppContextProvider>
-                    <PointsContextProvider>
-                      {getLayout(<Component {...pageProps} />)}
-                    </PointsContextProvider>
-                  </AppContextProvider>
-                </WalletContextProvider>
-              </WalletProvider>
-            </WormholeConnectContextProvider>
+            <WalletProvider>
+              <WalletContextProvider>
+                <AppContextProvider>
+                  <PointsContextProvider>
+                    {getLayout(<Component {...pageProps} />)}
+                  </PointsContextProvider>
+                </AppContextProvider>
+              </WalletContextProvider>
+            </WalletProvider>
           </LDProvider>
           <Toaster />
         </TooltipProvider>
