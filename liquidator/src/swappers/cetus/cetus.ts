@@ -2,13 +2,13 @@ import CetusClmmSDK, {
   SdkOptions,
   TransactionUtil,
 } from "@cetusprotocol/cetus-sui-clmm-sdk";
-import { SuiClient } from "@mysten/sui.js/client";
-import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
-import { Secp256k1Keypair } from "@mysten/sui.js/keypairs/secp256k1";
+import { SuiClient } from "@mysten/sui/client";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Secp256k1Keypair } from "@mysten/sui/keypairs/secp256k1";
 import {
-  TransactionBlock,
+  Transaction,
   TransactionObjectArgument,
-} from "@mysten/sui.js/transactions";
+} from "@mysten/sui/transactions";
 
 import { SwapArgs, Swapper } from "../interface";
 
@@ -124,7 +124,7 @@ export class CetusSwapper implements Swapper {
   async swap(args: SwapArgs): Promise<{
     fromCoin: TransactionObjectArgument;
     toCoin: TransactionObjectArgument;
-    txb: TransactionBlock;
+    txb: Transaction;
   } | null> {
     if (
       (args.fromAmount && args.toAmount) ||
@@ -150,7 +150,7 @@ export class CetusSwapper implements Swapper {
       const allCoinAssets = await this.sdk.getOwnerCoinAssets(
         this.keypair.toSuiAddress(),
       );
-      const txb = new TransactionBlock();
+      const txb = new Transaction();
       const amountLimit = routerResult.result.byAmountIn
         ? Math.round(routerResult.result.outputAmount * (1 - args.maxSlippage))
         : Math.round(routerResult.result.inputAmount * (1 + args.maxSlippage));
@@ -177,9 +177,9 @@ export class CetusSwapper implements Swapper {
         txb as any,
       );
       return {
-        fromCoin: result.fromCoin,
-        toCoin: result.toCoin,
-        txb: result.tx as any as TransactionBlock,
+        fromCoin: result.fromCoin as any as TransactionObjectArgument,
+        toCoin: result.toCoin as any as TransactionObjectArgument,
+        txb: result.tx as any as Transaction,
       };
     }
     return null;

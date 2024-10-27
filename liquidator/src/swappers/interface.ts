@@ -1,7 +1,7 @@
 import {
-  TransactionBlock,
+  Transaction,
   TransactionObjectArgument,
-} from "@mysten/sui.js/transactions";
+} from "@mysten/sui/transactions";
 
 export type SwapArgs = {
   fromCoinType: string;
@@ -9,7 +9,7 @@ export type SwapArgs = {
   toAmount?: number;
   fromAmount?: number;
   maxSlippage: number;
-  txb: TransactionBlock;
+  txb: Transaction;
 };
 
 export interface Swapper {
@@ -17,6 +17,6 @@ export interface Swapper {
   swap(args: SwapArgs): Promise<{
     fromCoin: TransactionObjectArgument;
     toCoin: TransactionObjectArgument;
-    txb: TransactionBlock;
+    txb: Transaction;
   } | null>;
 }
