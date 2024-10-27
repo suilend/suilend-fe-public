@@ -1,7 +1,6 @@
-import { SuiClient } from "@mysten/sui.js/client";
-import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
-import { Secp256k1Keypair } from "@mysten/sui.js/keypairs/secp256k1";
-import { TransactionBlock } from "@mysten/sui.js/transactions";
+import { SuiClient } from "@mysten/sui/client";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Transaction } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { SuilendClient } from "@suilend/sdk";
 import {
@@ -19,211 +18,188 @@ import { Logger } from "tslog";
 
 import { Swapper } from "./swappers/interface";
 import { COIN_TYPES } from "./utils/constants";
+import { RedisClient } from "./utils/redis";
 import {
   getLendingMarket,
+  getNow,
+  getRefreshedReserves,
   getWalletHoldings,
   mergeAllCoins,
+  shuffle,
   sleep,
 } from "./utils/utils";
+import { fetchRefreshedObligation } from "./utils/utils";
 
 const logger = new Logger({ name: "Suilend Liquidator" });
 const LIQUIDATION_CLOSE_FACTOR = 0.2;
 
-export type LiquidatorConfig = {
-  liquidateSleepSeconds: number;
-  updatePositionsSleepSeconds: number;
-  refreshObligationsMinIntervalSeconds: number;
-  rpcURL: string;
-  marketAddress: string;
+export type LiquidationDispatcherConfig = {
   lendingMarketType: string;
-  numLiquidationLoops: number;
-  liquidationAttemptDurationSeconds: number;
-  minDepositValueUSD: number;
-  statsd?: StatsD;
+  marketAddress: string;
+  pollObligationIntervalSeconds: number;
+  redisPort: number;
+  redisUrl: string;
+  refetchObligationsIntervalSeconds: number;
+  rpcURL: string;
+  statsd: StatsD;
 };
-export class Liquidator {
-  client: SuiClient;
-  suilend?: SuilendClient<string>;
-  config: LiquidatorConfig;
-  keypair: Secp256k1Keypair | Ed25519Keypair;
-  liquidationTasks: {
-    [key: string]: {
-      obligation: Obligation<string>;
-      addedAt: number;
-      liquidating: boolean;
-    };
-  };
-  swapper: Swapper;
-  pythConnection: SuiPriceServiceConnection;
-  statsd?: StatsD;
-  obligations: Obligation<string>[];
-  lastObligationRefresh: number | null; // seconds
 
-  constructor(
-    keypair: Secp256k1Keypair | Ed25519Keypair,
-    swapper: Swapper,
-    config: LiquidatorConfig,
-  ) {
-    this.keypair = keypair;
+export type LiquidationWorkerConfig = {
+  keypair: Ed25519Keypair;
+  lendingMarketType: string;
+  liquidationAttemptDurationSeconds: number;
+  marketAddress: string;
+  redisPort: number;
+  redisUrl: string;
+  rpcURL: string;
+  statsd: StatsD;
+  suiHoldingsTarget: number;
+  swapper: Swapper;
+};
+
+export class LiquidationDispatcher {
+  config: LiquidationDispatcherConfig;
+  lastObligationRefresh: number | null; // seconds
+  obligations: Obligation<string>[];
+  pythConnection: SuiPriceServiceConnection;
+  redis: RedisClient;
+  statsd: StatsD;
+  suiClient: SuiClient;
+
+  constructor(config: LiquidationDispatcherConfig) {
     this.config = config;
-    this.swapper = swapper;
-    this.client = new SuiClient({ url: this.config.rpcURL });
+    this.redis = new RedisClient(this.config.redisUrl, this.config.redisPort);
+    this.obligations = [];
+    this.suiClient = new SuiClient({ url: this.config.rpcURL });
+    this.lastObligationRefresh = null;
     this.pythConnection = new SuiPriceServiceConnection(
       "https://hermes.pyth.network",
     );
-    this.liquidationTasks = {};
-    this.statsd = config.statsd;
-    this.obligations = [];
-    this.lastObligationRefresh = null;
+    this.statsd = this.config.statsd;
   }
 
   async run() {
-    logger.info("Initializing Suilend Liquidator");
-    this.statsd && this.statsd.increment("restart", 1);
-    this.suilend = await SuilendClient.initialize(
-      this.config.marketAddress,
-      this.config.lendingMarketType,
-      this.client,
-    );
-    const loops = [this.updateLiquidatablePositions()];
-    for (let i = 0; i < this.config.numLiquidationLoops; i++) {
-      loops.push(this.liquidationWorker());
+    while (true) {
+      try {
+        await this.updatePositions();
+      } catch (e: any) {
+        logger.error(e);
+      } finally {
+        await sleep(this.config.pollObligationIntervalSeconds * 1000);
+      }
     }
-    await Promise.all(loops);
+  }
+
+  async updatePositions() {
+    this.statsd.increment("heartbeat", { task: "update_positions" });
+    const now = getNow();
+    if (
+      !this.lastObligationRefresh ||
+      now - this.lastObligationRefresh! >
+        this.config.refetchObligationsIntervalSeconds
+    ) {
+      await this.refreshObligationCache();
+    }
+    const refreshedReserves = await getRefreshedReserves(
+      this.suiClient,
+      this.pythConnection,
+    );
+    const obligationsToLiquidate = [];
+    for (const obligation of this.obligations) {
+      const refreshedObligation = simulate.refreshObligation(
+        obligation,
+        refreshedReserves,
+      );
+      if (shouldAttemptLiquidations(refreshedObligation)) {
+        this.statsd && this.statsd.increment("enqueue_liquidation", 1);
+        logger.info(`Enqueueing ${obligation.id} for liquidation`);
+        obligationsToLiquidate.push(obligation.id);
+      }
+    }
+    logger.info("Enqueuing", obligationsToLiquidate.length, "obligations");
+    await this.redis.setObligationIds(obligationsToLiquidate);
   }
 
   async refreshObligationCache() {
-    const start = Date.now();
+    const start = getNow();
     this.obligations = (
-      await fetchAllObligationsForMarket(this.client, this.config.marketAddress)
+      await fetchAllObligationsForMarket(
+        this.suiClient,
+        this.config.marketAddress,
+      )
     ).filter((obligation) => {
-      return (
-        obligation.borrows.length > 0 &&
-        simulate
-          .decimalToBigNumber(obligation.depositedValueUsd)
-          .gte(new BigNumber(this.config.minDepositValueUSD))
-      );
+      return obligation.borrows.length > 0;
     });
     shuffle(this.obligations);
-    this.statsd &&
-      this.statsd.gauge("fetch_obligations_duration", Date.now() - start);
-    this.statsd &&
-      this.statsd.gauge("obligation_count", this.obligations.length);
+    this.statsd.gauge("fetch_obligations_duration", getNow() - start);
+    this.statsd.gauge("obligation_count", this.obligations.length);
     logger.info(`Fetched ${this.obligations.length} obligations`);
-    logger.info(`Obligatio example: ${this.obligations[0].id}`);
-    this.lastObligationRefresh = Math.round(Date.now() / 1000);
+    this.lastObligationRefresh = getNow();
+  }
+}
+
+export class LiquidationWorker {
+  config: LiquidationWorkerConfig;
+  redis: RedisClient;
+  statsd: StatsD;
+  swapper: Swapper;
+  suiClient: SuiClient;
+  pythConnection: SuiPriceServiceConnection;
+  suilend?: SuilendClient<string>;
+
+  constructor(config: LiquidationWorkerConfig) {
+    this.config = config;
+    this.redis = new RedisClient(this.config.redisUrl, this.config.redisPort);
+    this.statsd = this.config.statsd;
+    this.suiClient = new SuiClient({ url: this.config.rpcURL });
+    this.swapper = config.swapper;
+    this.pythConnection = new SuiPriceServiceConnection(
+      "https://hermes.pyth.network",
+    );
   }
 
-  async updateLiquidatablePositions() {
-    await this.refreshObligationCache();
+  async run() {
+    this.suilend = await SuilendClient.initialize(
+      this.config.marketAddress,
+      this.config.lendingMarketType,
+      this.suiClient,
+    );
     while (true) {
-      this.statsd &&
-        this.statsd.increment("heartbeat", { task: "update_positions" });
-      try {
-        const now = Math.round(Date.now() / 1000);
-        if (
-          now - this.lastObligationRefresh! >
-          this.config.refreshObligationsMinIntervalSeconds
-        ) {
-          await this.refreshObligationCache();
-        }
-        let liquidationsQueued = 0;
-        const lendingMarket = await this.getLendingMarket();
-        const refreshedReserves = await simulate.refreshReservePrice(
-          lendingMarket.reserves.map((r: Reserve<string>) =>
-            simulate.compoundReserveInterest(r, now),
-          ),
-          this.pythConnection,
-        );
-        try {
-          await this.rebalanceWallet();
-        } catch (e: any) {
-          logger.error("Error rebalancing:", e);
-          this.statsd &&
-            this.statsd.increment("liquidate_error", { type: "rebalance" });
-        }
-        let ongoingLiquidations = 0;
-        for (const obligation of this.obligations) {
-          if (this.liquidationTasks[obligation.id]) {
-            ongoingLiquidations += 1;
-            continue;
-          }
-          const refreshedObligation = await this.simulateRefreshObligation(
-            obligation,
-            refreshedReserves,
-          );
-          if (this.shouldAttemptLiquidations(refreshedObligation)) {
-            liquidationsQueued += 1;
-            this.statsd && this.statsd.increment("enqueue_liquidation", 1);
-            logger.info(`Enqueueing ${obligation.id} for liquidation`);
-            this.liquidationTasks[refreshedObligation.id] = {
-              obligation: refreshedObligation,
-              addedAt: Math.round(Date.now() / 1000),
-              liquidating: false,
-            };
-          }
-        }
-        logger.info(`${ongoingLiquidations} ongoing liquidations`);
-        console.log(this.liquidationTasks);
-        logger.info(`${liquidationsQueued} obligations marked for liquidation`);
-        if (liquidationsQueued + ongoingLiquidations === 0) {
-          logger.info(
-            `Nothing interesting happening. Going to sleep for ${this.config.updatePositionsSleepSeconds} seconds`,
-          );
-          await sleep(this.config.updatePositionsSleepSeconds * 1000);
-        }
-      } catch (e: any) {
-        logger.error(e);
-        this.statsd &&
-          this.statsd.increment("liquidate_error", 1, {
-            type: "update_positions",
-          });
-        await sleep(1000);
+      const obligations = await this.redis.getObligationIds();
+      shuffle(obligations);
+      this.statsd.increment("heartbeat", { task: "liquidation_worker" });
+      if (obligations.length === 0) {
+        logger.info("No obligations to liquidate. Sleeping");
+        await this.rebalanceWallet();
+        await sleep(30 * 1000);
         continue;
       }
-    }
-  }
-
-  async liquidationWorker() {
-    while (true) {
-      this.statsd &&
+      for (const obligationId of obligations) {
         this.statsd.increment("heartbeat", { task: "liquidation_worker" });
-      if (
-        Object.values(this.liquidationTasks).filter(
-          (x) => x.liquidating === false,
-        ).length == 0
-      ) {
-        await sleep(this.config.liquidateSleepSeconds * 1000);
-        continue;
+        try {
+          const refreshedObligation = await fetchRefreshedObligation(
+            obligationId,
+            this.suiClient,
+            this.pythConnection,
+          );
+          if (shouldAttemptLiquidations(refreshedObligation)) {
+            logger.info("Attempting to liquidate", obligationId);
+            await this.tryLiquidatePosition(refreshedObligation);
+          } else {
+            logger.info("Ignoring liquidation task", obligationId);
+          }
+        } catch (e: any) {
+          logger.error("Failed to liqudiate obligation. Moving on...");
+          logger.error(e);
+        }
       }
-      // Sort by the debt amount
-      const details = Object.values(this.liquidationTasks)
-        .filter((x) => x.liquidating === false)
-        .sort((x, y) => 0)[0];
-      this.statsd && this.statsd.increment("started_liquidation_task", 1);
-      this.statsd &&
-        this.statsd.gauge(
-          "task_delay",
-          Math.round(Date.now() / 1000) - details.addedAt,
-        );
-      this.liquidationTasks[details.obligation.id].liquidating = true;
-      try {
-        await this.tryLiquidatePosition(details.obligation);
-      } catch (e: any) {
-        this.statsd &&
-          this.statsd.increment("liquidate_error", {
-            type: "try_liquidate_error",
-          });
-        logger.error(e);
-      }
-      delete this.liquidationTasks[details.obligation.id];
     }
   }
 
   async tryLiquidatePosition(obligation: Obligation<string>) {
     logger.info(`Beginning liquidation of ${obligation.id}`);
     let liquidationDigest;
-    const startTime = Date.now() / 1000;
+    const startTime = getNow();
     const withdrawCoinType = this.selectWithdrawAsset(obligation);
     let attemptCount = 0;
     while (true) {
@@ -235,13 +211,13 @@ export class Liquidator {
           lendingMarket.reserves,
         );
 
-        let txb = new TransactionBlock();
+        let txb = new Transaction();
         let repayCoin;
         if (repayCoinType === COIN_TYPES.USDC) {
           // TODO: Would better to merge here.
           logger.info("Repay is USDC. No need to swap.");
           const holding = (
-            await getWalletHoldings(this.client, this.keypair)
+            await getWalletHoldings(this.suiClient, this.config.keypair)
           ).find((h) => h.coinType === COIN_TYPES.USDC);
           repayCoin = holding?.coinObjectId;
         } else {
@@ -256,7 +232,7 @@ export class Liquidator {
           txb = swapResult!.txb;
           txb.transferObjects(
             [swapResult!.fromCoin],
-            this.keypair.toSuiAddress(),
+            this.config.keypair.toSuiAddress(),
           );
           repayCoin = swapResult?.toCoin;
         }
@@ -277,14 +253,13 @@ export class Liquidator {
         );
         txb.transferObjects(
           [withdrawAsset, repayCoin],
-          this.keypair.toSuiAddress(),
+          this.config.keypair.toSuiAddress(),
         );
-        const liquidateResult =
-          await this.client.signAndExecuteTransactionBlock({
-            transactionBlock: txb,
-            signer: this.keypair,
-          });
-        await this.client.waitForTransactionBlock({
+        const liquidateResult = await this.suiClient.signAndExecuteTransaction({
+          transaction: txb,
+          signer: this.config.keypair,
+        });
+        await this.suiClient.waitForTransaction({
           digest: liquidateResult.digest,
           timeout: 30,
           pollInterval: 1,
@@ -304,7 +279,7 @@ export class Liquidator {
             type: "error_liquidating",
           });
         if (
-          Date.now() / 1000 - startTime >
+          getNow() - startTime >
           this.config.liquidationAttemptDurationSeconds
         ) {
           logger.info(`Unable to liquidate ${obligation.id}. Giving up.`);
@@ -315,7 +290,10 @@ export class Liquidator {
     }
     if (liquidationDigest) {
       logger.info("Dumping withdrawn assets.");
-      const redeemEvent = await getRedeemEvent(this.client, liquidationDigest);
+      const redeemEvent = await getRedeemEvent(
+        this.suiClient,
+        liquidationDigest,
+      );
       if (!redeemEvent) {
         logger.error(
           `Could not find redeem event in liquidation ${liquidationDigest}`,
@@ -334,89 +312,78 @@ export class Liquidator {
   }
 
   async rebalanceWallet() {
-    if (Object.keys(this.liquidationTasks).length > 0) {
-      logger.info("Not rebalancing wallet: Liquidations ongoing.");
-      return;
-    }
-    const SUI_HOLDINGS_TARGET = 5 * 1000000000;
-    await mergeAllCoins(this.client, this.keypair, { waitForCommitment: true });
-    const holdings = await getWalletHoldings(this.client, this.keypair);
-    for (const holding of holdings) {
-      this.statsd &&
-        holding.symbol &&
-        this.statsd.gauge(
-          "wallet_balance",
-          holding.balance.div(new BN(10 ** holding.decimals)).toNumber(),
-          {
-            symbol: holding.symbol,
-          },
-        );
-      if (
-        holding.coinType === COIN_TYPES.SUI ||
-        holding.coinType === COIN_TYPES.USDC
-      ) {
-        continue;
+    try {
+      const SUI_HOLDINGS_TARGET = this.config.suiHoldingsTarget * 1000000000;
+      await mergeAllCoins(this.suiClient, this.config.keypair, {
+        waitForCommitment: true,
+      });
+      const holdings = await getWalletHoldings(
+        this.suiClient,
+        this.config.keypair,
+      );
+      for (const holding of holdings) {
+        this.statsd &&
+          holding.symbol &&
+          this.statsd.gauge(
+            "wallet_balance",
+            holding.balance.div(new BN(10 ** holding.decimals)).toNumber(),
+            {
+              symbol: holding.symbol,
+            },
+          );
+        if (
+          holding.coinType === COIN_TYPES.SUI ||
+          holding.coinType === COIN_TYPES.USDC
+        ) {
+          continue;
+        }
+        // TODO: Only balance the assets that are listed in the market
+        // If we have a ctoken, then we should probably try to redeem it.
+        if (holding.coinType.includes("CToken")) {
+          continue;
+        }
+        try {
+          logger.info(`Swapping ${holding.coinType} for USDC`);
+          await this.swapAndConfirm({
+            fromCoinType: holding.coinType,
+            toCoinType: COIN_TYPES.USDC,
+            fromAmount: holding.balance.toNumber(),
+          });
+        } catch (e: any) {
+          logger.error(`Failed to dump ${holding.coinType}. Moving on...`);
+        }
       }
-      // TODO: Only balance the assets that are listed in the market
-      // If we have a ctoken, then we should probably try to redeem it.
-      if (holding.coinType.includes("CToken")) {
-        continue;
-      }
-      try {
-        logger.info(`Swapping ${holding.coinType} for USDC`);
+      const updatedHoldings = await getWalletHoldings(
+        this.suiClient,
+        this.config.keypair,
+      );
+      const suiHoldings = updatedHoldings.find(
+        (x) => x.coinType === COIN_TYPES.SUI,
+      );
+      if (suiHoldings!.balance.toNumber() > SUI_HOLDINGS_TARGET * 1.1) {
+        logger.info(`Holding too much SUI. Selling to rebalance.`);
         await this.swapAndConfirm({
-          fromCoinType: holding.coinType,
+          fromCoinType: COIN_TYPES.SUI,
           toCoinType: COIN_TYPES.USDC,
-          fromAmount: holding.balance.toNumber(),
+          fromAmount: suiHoldings?.balance
+            .sub(new BN(SUI_HOLDINGS_TARGET))
+            .toNumber(),
         });
-      } catch (e: any) {
-        logger.error(`Failed to dump ${holding.coinType}. Moving on...`);
+      } else if (suiHoldings!.balance.toNumber() < SUI_HOLDINGS_TARGET * 0.9) {
+        // TODO: Handle the case where we don't have enough USDC for this
+        logger.info(`Holding not enough SUI. Buying to rebalance.`);
+        await this.swapAndConfirm({
+          fromCoinType: COIN_TYPES.USDC,
+          toCoinType: COIN_TYPES.SUI,
+          toAmount: new BN(SUI_HOLDINGS_TARGET)
+            .sub(suiHoldings!.balance)
+            .toNumber(),
+        });
       }
+    } catch (e: any) {
+      logger.error("Error rebalancing");
+      logger.error(e);
     }
-    const updatedHoldings = await getWalletHoldings(this.client, this.keypair);
-    const suiHoldings = updatedHoldings.find(
-      (x) => x.coinType === COIN_TYPES.SUI,
-    );
-    if (suiHoldings!.balance.toNumber() > SUI_HOLDINGS_TARGET * 1.1) {
-      logger.info(`Holding too much SUI. Selling to rebalance.`);
-      await this.swapAndConfirm({
-        fromCoinType: COIN_TYPES.SUI,
-        toCoinType: COIN_TYPES.USDC,
-        fromAmount: suiHoldings?.balance
-          .sub(new BN(SUI_HOLDINGS_TARGET))
-          .toNumber(),
-      });
-    } else if (suiHoldings!.balance.toNumber() < SUI_HOLDINGS_TARGET * 0.9) {
-      // TODO: Handle the case where we don't have enough USDC for this
-      logger.info(`Holding not enough SUI. Buying to rebalance.`);
-      await this.swapAndConfirm({
-        fromCoinType: COIN_TYPES.USDC,
-        toCoinType: COIN_TYPES.SUI,
-        toAmount: new BN(SUI_HOLDINGS_TARGET)
-          .sub(suiHoldings!.balance)
-          .toNumber(),
-      });
-    }
-  }
-
-  async simulateRefreshObligation(
-    obligation: Obligation<string>,
-    refreshedReserves: Reserve<string>[],
-  ): Promise<Obligation<string>> {
-    return await simulate.refreshObligation(obligation, refreshedReserves);
-  }
-  shouldAttemptLiquidations(obligation: Obligation<string>): boolean {
-    if (Math.floor(Math.random() * 1000) == 0) {
-      console.log({
-        obligationId: obligation.id,
-        wbv: obligation.weightedBorrowedValueUsd,
-        uhbv: obligation.unhealthyBorrowValueUsd,
-      });
-    }
-
-    return simulate
-      .decimalToBigNumber(obligation.weightedBorrowedValueUsd)
-      .gt(simulate.decimalToBigNumber(obligation.unhealthyBorrowValueUsd));
   }
 
   selectRepay(
@@ -489,7 +456,7 @@ export class Liquidator {
   }
 
   async getLendingMarket() {
-    return await getLendingMarket(this.client, this.config.marketAddress);
+    return await getLendingMarket(this.suiClient, this.config.marketAddress);
   }
 
   async swapAndConfirm(params: {
@@ -498,7 +465,7 @@ export class Liquidator {
     fromAmount?: number;
     toAmount?: number;
   }) {
-    const txb = new TransactionBlock();
+    const txb = new Transaction();
     const result = await this.swapper.swap({
       fromCoinType: params.fromCoinType,
       toCoinType: params.toCoinType,
@@ -512,13 +479,13 @@ export class Liquidator {
     }
     result.txb.transferObjects(
       [result?.fromCoin, result?.toCoin],
-      this.keypair.toSuiAddress(),
+      this.config.keypair.toSuiAddress(),
     );
-    const txResult = await this.client.signAndExecuteTransactionBlock({
-      transactionBlock: result.txb,
-      signer: this.keypair,
+    const txResult = await this.suiClient.signAndExecuteTransaction({
+      transaction: result.txb,
+      signer: this.config.keypair,
     });
-    return await this.client.waitForTransactionBlock({
+    return await this.suiClient.waitForTransaction({
       digest: txResult.digest,
       timeout: 60,
       pollInterval: 1,
@@ -526,12 +493,15 @@ export class Liquidator {
   }
 }
 
-const shuffle = (array: Obligation<string>[]) => {
-  array.sort(() => Math.random() - 0.5);
-};
-
-/*
-TODO:
-1. Fix repayment amount
-2. Make refresh obligation interval longer
-*/
+function shouldAttemptLiquidations(obligation: Obligation<string>): boolean {
+  if (obligation.deposits.length === 0 && obligation.borrows.length > 0) {
+    return false;
+  }
+  const borrow = new BigNumber(
+    obligation.weightedBorrowedValueUsd.value.toString(),
+  );
+  const threshold = new BigNumber(
+    obligation.unhealthyBorrowValueUsd.value.toString(),
+  );
+  return borrow.gt(threshold);
+}

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  dispatcher:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "yarn install && yarn ts-node ./src/index.ts run-dispatcher"
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+
+  worker:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "yarn install && yarn ts-node ./src/index.ts run-worker"
+    environment:
+      - REDIS_HOST=redis
+      - SECRET_KEY=asdfasdfasdf
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"

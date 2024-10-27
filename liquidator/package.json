@@ -11,14 +11,16 @@
     "lint": "bun eslint && bun prettier && bun tsc"
   },
   "dependencies": {
-    "@cetusprotocol/cetus-sui-clmm-sdk": "^3.17.9",
-    "@mysten/bcs": "0.11.1",
-    "@mysten/sui.js": "0.51.2",
+    "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.6",
+    "@mysten/bcs": "^1.1.0",
+    "@mysten/sui": "1.12.0",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "@suilend/sdk": "1.1.0",
     "bignumber.js": "^9.1.2",
-    "commander": "^11.1.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
     "hot-shots": "^10.0.0",
+    "ioredis": "^5.4.1",
     "module-alias": "^2.2.3",
     "p-limit": "3.1.0",
     "tslog": "^4.9.2"

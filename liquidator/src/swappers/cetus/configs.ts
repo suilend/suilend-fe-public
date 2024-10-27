@@ -1,7 +1,7 @@
 export const MAINNET_POOL_INFO_URL =
   "https://api-sui.cetus.zone/v2/sui/pools_info";
 export const MAINNET_CETUS_SDK_CONFIG = {
-  fullRpcUrl: "https://sui-mainnet-rpc.allthatnode.com",
+  fullRpcUrl: "https://fullnode.mainnet.sui.io/",
   swapCountUrl: "https://api-sui.cetus.zone/v2/sui/swap/count",
   simulationAccount: {
     address: "",
@@ -34,7 +34,7 @@ export const MAINNET_CETUS_SDK_CONFIG = {
     package_id:
       "0x1eabed72c53feb3805120a081dc15963c204dc8d091542592abaf7a35689b2fb",
     published_at:
-      "0xc33c3e937e5aa2009cc0c3fdb3f345a0c3193d4ee663ffc601fe8b894fbc4ba6",
+      "0x70968826ad1b4ba895753f634b0aea68d0672908ca1075a2abdf0fc9e0b2fc6a",
     config: {
       pools_id:
         "0xf699e7f2276f5c9a75944b37a0c5b5d9ddfd2471bf6242483b03ab2887d198d0",
@@ -52,7 +52,7 @@ export const MAINNET_CETUS_SDK_CONFIG = {
     package_id:
       "0x996c4d9480708fb8b92aa7acf819fb0497b5ec8e65ba06601cae2fb6db3312c3",
     published_at:
-      "0xd43348b8879c1457f882b02555ba862f2bc87bcc31b16294ca14a82f608875d2",
+      "0x6f5e582ede61fe5395b50c4a449ec11479a54d7ff8e0158247adfda60d98970b",
   },
   deepbook: {
     package_id:

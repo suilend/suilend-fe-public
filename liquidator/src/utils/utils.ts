@@ -1,15 +1,19 @@
 import { extractStructTagFromType } from "@cetusprotocol/cetus-sui-clmm-sdk";
+import { fromBase64 } from "@mysten/bcs";
 import {
   SuiClient,
   SuiObjectResponse,
   SuiTransactionBlockResponse,
-} from "@mysten/sui.js/client";
-import { Ed25519Keypair } from "@mysten/sui.js/keypairs/ed25519";
-import { Secp256k1Keypair } from "@mysten/sui.js/keypairs/secp256k1";
-import { TransactionBlock } from "@mysten/sui.js/transactions";
-import { fromB64, normalizeStructTag } from "@mysten/sui.js/utils";
+} from "@mysten/sui/client";
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { Transaction } from "@mysten/sui/transactions";
+import { fromB64, normalizeStructTag } from "@mysten/sui/utils";
+import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
+import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
 import { phantom } from "@suilend/sdk/mainnet/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/mainnet/_generated/suilend/lending-market/structs";
+import { Obligation } from "@suilend/sdk/mainnet/_generated/suilend/obligation/structs";
+import * as simulate from "@suilend/sdk/mainnet/utils/simulate";
 import BN from "bn.js";
 
 import { COIN_TYPES } from "./constants";
@@ -39,7 +43,7 @@ export function parseLendingMarket(lendingMarketData: SuiObjectResponse) {
 
 export async function mergeAllCoins(
   client: SuiClient,
-  keypair: Ed25519Keypair | Secp256k1Keypair,
+  keypair: Ed25519Keypair,
   options?: {
     waitForCommitment?: boolean;
   },
@@ -61,7 +65,7 @@ export async function mergeAllCoins(
     }
     coinTypeToHoldings[holding.coinType].push(holding);
   }
-  const txb = new TransactionBlock();
+  const txb = new Transaction();
   let shouldMerge = false;
   for (const coinType of Object.keys(coinTypeToHoldings)) {
     const holdings = coinTypeToHoldings[coinType];
@@ -78,12 +82,12 @@ export async function mergeAllCoins(
     );
   }
   if (shouldMerge) {
-    const txBlock = await client.signAndExecuteTransactionBlock({
-      transactionBlock: txb,
+    const txBlock = await client.signAndExecuteTransaction({
+      transaction: txb,
       signer: keypair,
     });
     if (options?.waitForCommitment) {
-      const result = await client.waitForTransactionBlock({
+      const result = await client.waitForTransaction({
         digest: txBlock.digest,
         timeout: 30,
       });
@@ -98,7 +102,7 @@ export async function mergeAllCoins(
 
 export async function getWalletHoldings(
   client: SuiClient,
-  keypair: Ed25519Keypair | Secp256k1Keypair,
+  keypair: Ed25519Keypair,
   includeZeroBalance?: boolean,
 ): Promise<
   {
@@ -159,4 +163,56 @@ export async function getLendingMarket(
 
 export function isSui(coinType: string): boolean {
   return normalizeStructTag(coinType) == normalizeStructTag(COIN_TYPES.SUI);
+}
+
+export async function fetchRefreshedObligation(
+  obligationId: string,
+  client: SuiClient,
+  pythConnection: SuiPriceServiceConnection,
+) {
+  const rawObligation = await client.getObject({
+    id: obligationId,
+    options: {
+      showType: true,
+      showContent: true,
+      showOwner: true,
+      showBcs: true,
+    },
+  });
+  const obligation = Obligation.fromBcs(
+    phantom(LENDING_MARKET_TYPE),
+    fromBase64((rawObligation.data?.bcs! as any).bcsBytes),
+  );
+  const refreshedReserves = await getRefreshedReserves(client, pythConnection);
+  return simulate.refreshObligation(obligation, refreshedReserves);
+}
+
+export async function getRefreshedReserves(
+  client: SuiClient,
+  pythConnection: SuiPriceServiceConnection,
+) {
+  const now = getNow();
+  const rawLendingMarket = await client.getObject({
+    id: LENDING_MARKET_ID,
+    options: {
+      showType: true,
+      showContent: true,
+      showOwner: true,
+      showBcs: true,
+    },
+  });
+  const lendingMarket = parseLendingMarket(rawLendingMarket);
+  const refreshedReserves = await simulate.refreshReservePrice(
+    lendingMarket.reserves.map((r) => simulate.compoundReserveInterest(r, now)),
+    pythConnection,
+  );
+  return refreshedReserves;
+}
+
+export const shuffle = <T>(array: T[]): T[] => {
+  return array.sort(() => Math.random() - 0.5);
+};
+
+export function getNow() {
+  return Math.round(Date.now() / 1000);
 }
