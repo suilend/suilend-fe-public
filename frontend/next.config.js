@@ -39,7 +39,7 @@ module.exports = withSentryConfig(module.exports, {
 
   org: "sentry",
   project: "suilend-fe",
-  sentryUrl: "https://sentry.save.finance",
+  sentryUrl: "https://sentry.save.finance/",
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
