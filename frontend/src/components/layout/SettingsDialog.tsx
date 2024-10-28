@@ -11,9 +11,11 @@ import Input from "@/components/shared/Input";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useAppContext } from "@/contexts/AppContext";
+import { useSettingsContext } from "@/contexts/SettingsContext";
 import { EXPLORERS, Explorer, RPCS, Rpc } from "@/lib/constants";
 
 export default function SettingsDialog() {
+  const { gasBudget, setGasBudget } = useSettingsContext();
   const { rpc, customRpcUrl, setRpc, explorer, setExplorerId } =
     useAppContext();
 
@@ -92,6 +94,7 @@ export default function SettingsDialog() {
       isDrawerAutoHeight
     >
       <div className="flex w-full flex-col gap-4 overflow-y-auto p-4 pt-0">
+        {/* RPC */}
         <div className="flex w-full flex-col gap-4">
           <div className="flex flex-row items-center gap-4">
             <TLabelSans className="flex-1">RPC</TLabelSans>
@@ -137,12 +140,29 @@ export default function SettingsDialog() {
           )}
         </div>
 
+        {/* Explorer */}
         <div className="flex flex-row items-center gap-4">
           <TLabelSans className="flex-1">Explorer</TLabelSans>
+
           <div className="flex-1">
             <ExplorerSelect
               value={explorer.id}
               onChange={(id) => onExplorerIdChange(id as Explorer)}
+            />
+          </div>
+        </div>
+
+        {/* Gas budget */}
+        <div className="flex flex-row items-center justify-between gap-4">
+          <TLabelSans>Gas budget (leave blank for auto)</TLabelSans>
+
+          <div className="w-[120px]">
+            <Input
+              id="gasBudget"
+              value={gasBudget}
+              onChange={setGasBudget}
+              inputProps={{ className: "h-8 rounded-sm bg-card font-sans" }}
+              endDecorator="SUI"
             />
           </div>
         </div>

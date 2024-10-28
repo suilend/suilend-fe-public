@@ -14,13 +14,16 @@ import {
 
 import { SuiClient, SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import { SUI_DECIMALS } from "@mysten/sui/utils";
 import { IdentifierString, WalletAccount } from "@mysten/wallet-standard";
 import * as Sentry from "@sentry/nextjs";
 import { useWallet } from "@suiet/wallet-kit";
+import BigNumber from "bignumber.js";
 import { useLDClient } from "launchdarkly-react-client-sdk";
 import { executeAuction } from "shio-sdk";
 import { toast } from "sonner";
 
+import { useSettingsContext } from "@/contexts/SettingsContext";
 import { formatAddress } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
 import { useListWallets } from "@/lib/wallets";
@@ -87,6 +90,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
     disconnect: disconnectWallet,
     getAccounts,
   } = useWallet();
+  const { gasBudget } = useSettingsContext();
 
   // Impersonated address
   const impersonatedAddress = queryParams[QueryParams.WALLET];
@@ -204,6 +208,13 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
       transaction: Transaction,
       auction?: boolean,
     ) => {
+      if (gasBudget !== "")
+        transaction.setGasBudget(
+          +new BigNumber(gasBudget)
+            .times(10 ** SUI_DECIMALS)
+            .integerValue(BigNumber.ROUND_DOWN),
+        );
+
       const _address = impersonatedAddress ?? account?.address;
       if (_address) {
         (async () => {
@@ -280,7 +291,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
     },
-    [impersonatedAddress, account, chain, adapter],
+    [gasBudget, impersonatedAddress, account, chain, adapter],
   );
 
   // Context
