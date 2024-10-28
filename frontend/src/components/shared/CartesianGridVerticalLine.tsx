@@ -1,3 +1,5 @@
+import { SVGLineElementAttributes } from "react";
+
 import { GridLineTypeFunctionProps } from "recharts/types/cartesian/CartesianGrid";
 
 export default function CartesianGridVerticalLine({
@@ -21,5 +23,5 @@ export default function CartesianGridVerticalLine({
     verticalFill,
     ...lineProps
   } = props;
-  return <line {...lineProps} />;
+  return <line {...(lineProps as SVGLineElementAttributes<SVGLineElement>)} />;
 }
