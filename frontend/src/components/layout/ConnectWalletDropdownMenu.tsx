@@ -1,11 +1,9 @@
 import Image from "next/image";
-import React, { useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import Button from "@/components/shared/Button";
-import Collapsible from "@/components/shared/Collapsible";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
@@ -13,7 +11,6 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useIsAndroid from "@/hooks/useIsAndroid";
 import useIsiOS from "@/hooks/useIsiOS";
-import { cn } from "@/lib/utils";
 import { Wallet, useListWallets } from "@/lib/wallets";
 
 interface WalletDropdownItemProps {
@@ -80,12 +77,10 @@ export default function ConnectWalletDropdownMenu() {
     useWalletContext();
 
   // Wallets
-  const { mainWallets, otherWallets } = useListWallets();
+  const wallets = useListWallets();
 
   // State
   const Icon = isConnectWalletDropdownOpen ? ChevronUp : ChevronDown;
-
-  const [showOtherWallets, setShowOtherWallets] = useState<boolean>(false);
 
   return (
     <DropdownMenu
@@ -101,30 +96,15 @@ export default function ConnectWalletDropdownMenu() {
       title="Select wallet"
       items={
         <>
-          {mainWallets.map((w) => (
+          {wallets.map((w) => (
             <WalletDropdownItem key={w.name} wallet={w} />
           ))}
 
-          <TLabelSans className="my-2">
+          <TLabelSans className="mt-2">
             {
               "Don't have a Sui wallet? Get started by trying one of the wallets above."
             }
           </TLabelSans>
-
-          <Collapsible
-            open={showOtherWallets}
-            onOpenChange={setShowOtherWallets}
-            title="Other wallets"
-            buttonClassName="w-full justify-between px-0"
-          >
-            <div
-              className={cn("flex flex-col gap-2", showOtherWallets && "mt-4")}
-            >
-              {otherWallets.map((w) => (
-                <WalletDropdownItem key={w.name} wallet={w} />
-              ))}
-            </div>
-          </Collapsible>
         </>
       }
     />

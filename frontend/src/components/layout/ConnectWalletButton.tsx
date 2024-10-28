@@ -17,7 +17,7 @@ export default function ConnectWalletButton() {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState<boolean>(false);
 
   // Wallet details
-  const { wallets } = useListWallets();
+  const wallets = useListWallets();
   const connectedWallet = wallets.find((w) => w.id === adapter?.name);
 
   // Sui Name Service lookup

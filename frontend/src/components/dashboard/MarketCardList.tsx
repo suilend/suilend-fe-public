@@ -1,5 +1,3 @@
-import React from "react";
-
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";

@@ -99,7 +99,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
   const [isConnectWalletDropdownOpen, setIsConnectWalletDropdownOpen] =
     useState<boolean>(false);
 
-  const { wallets } = useListWallets();
+  const wallets = useListWallets();
   const connectedWallet = wallets.find((w) => w.id === adapter?.name);
 
   // Account
