@@ -2,9 +2,6 @@
 module.exports = {
   reactStrictMode: true,
   transpilePackages: ["geist"],
-  experimental: {
-    serverComponentsExternalPackages: ["mysql2"],
-  },
   images: {
     remotePatterns: [
       {
