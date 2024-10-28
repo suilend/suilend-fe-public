@@ -11,7 +11,7 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const PRESETS = ["0.3", "0.5", "1.0"];
+const PRESETS = ["0.3", "1.0", "3.0"];
 export const SLIPPAGE_PERCENT_DP = 2;
 
 interface SwapSlippagePopoverProps {
@@ -76,7 +76,7 @@ export default function SwapSlippagePopover({
                 onClick={() => onPresetClick(preset)}
               >
                 {formatPercent(new BigNumber(preset), {
-                  dp: SLIPPAGE_PERCENT_DP,
+                  dp: 1,
                 })}
               </Button>
             ))}
