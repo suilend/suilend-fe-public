@@ -185,7 +185,7 @@ const getMaxCalculations = (
       },
       {
         reason: "Repay amount exceeds borrowed amount",
-        isDisabled: true,
+        isDisabled: false,
         value: borrowedAmount,
       },
     ];
