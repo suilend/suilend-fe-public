@@ -180,6 +180,10 @@ export const isSendPoints = (coinType: string) =>
   normalizeStructTag(coinType) === NORMALIZED_SEND_POINTS_COINTYPE;
 export const isSui = (coinType: string) =>
   normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
+export const isFud = (coinType: string) =>
+  normalizeStructTag(coinType) === NORMALIZED_FUD_COINTYPE;
+export const isDeep = (coinType: string) =>
+  normalizeStructTag(coinType) === NORMALIZED_DEEP_COINTYPE;
 
 export const isStablecoin = (coinType: string) =>
   NORMALIZED_STABLECOIN_COINTYPES.includes(normalizeStructTag(coinType));

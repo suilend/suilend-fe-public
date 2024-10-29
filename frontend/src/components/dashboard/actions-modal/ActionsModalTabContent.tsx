@@ -30,7 +30,12 @@ import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP, isSui } from "@/lib/coinType";
+import {
+  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  isDeep,
+  isFud,
+  isSui,
+} from "@/lib/coinType";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
   SUI_GAS_MIN,
@@ -254,8 +259,8 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for isolated reserves
-        if (useMaxAmount && !reserve.config.isolated)
+        // TODO: Remove workaround for FUD
+        if (useMaxAmount && !isFud(reserve.coinType))
           submitAmount = maxU64.toString();
         else
           submitAmount = BigNumber.min(
@@ -267,8 +272,8 @@ export default function ActionsModalTabContent({
         break;
       }
       case Action.BORROW: {
-        // TODO: Remove workaround for isolated reserves
-        if (useMaxAmount && !reserve.config.isolated)
+        // TODO: Remove workaround for DEEP
+        if (useMaxAmount && !isDeep(reserve.coinType))
           submitAmount = maxU64.toString();
         break;
       }
