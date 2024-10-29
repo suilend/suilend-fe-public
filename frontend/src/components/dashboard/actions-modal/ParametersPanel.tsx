@@ -33,6 +33,11 @@ import {
 } from "@/lib/tooltips";
 import { cn } from "@/lib/utils";
 
+const ADMIN_CAP_ID =
+  "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927";
+const ADMIN_ADDRESS =
+  "0xb1ffbc2e1915f44b8f271a703becc1bf8aa79bc22431a58900a102892b783c25";
+
 export enum ParametersPanelTab {
   ADVANCED = "advanced",
   RATES = "rates",
@@ -261,7 +266,17 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         isExplorerUrl
         horizontal
       />
-      <LabelWithValue label="Reserve ID" value={reserve.id} isId horizontal />
+      <LabelWithValue
+        label="Reserve"
+        value={reserve.id}
+        isId
+        url={explorer.buildObjectUrl(reserve.id)}
+        isExplorerUrl
+        horizontal
+      />
+
+      <Separator />
+
       {pythOracleUrl && (
         <LabelWithValue
           label="Oracle"
@@ -273,12 +288,31 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         />
       )}
       <LabelWithValue
-        label="Price ID"
+        label="Price identifier"
         value={reserve.priceIdentifier}
-        valueEndDecorator={<PythLogo className="my-0.5" />}
         isId
         horizontal
       />
+
+      <Separator />
+
+      <LabelWithValue
+        label="Admin"
+        value={ADMIN_ADDRESS}
+        isId
+        url={explorer.buildAddressUrl(ADMIN_ADDRESS)}
+        isExplorerUrl
+        horizontal
+      />
+      <LabelWithValue
+        label="Admin cap"
+        value={ADMIN_CAP_ID}
+        isId
+        url={explorer.buildObjectUrl(ADMIN_CAP_ID)}
+        isExplorerUrl
+        horizontal
+      />
+
       {obligation?.id && (
         <LabelWithValue
           label="Obligation"
