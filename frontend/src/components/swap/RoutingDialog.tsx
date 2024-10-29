@@ -395,8 +395,7 @@ interface RoutingDialogProps {
 }
 
 export default function RoutingDialog({ quote }: RoutingDialogProps) {
-  const swapContext = useSwapContext();
-  const tokens = swapContext.tokens as SwapToken[];
+  const { tokens } = useSwapContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -434,8 +433,10 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           [] as AftermathRouterTradePath[],
         )
         .map((path) => {
-          const inToken = tokens.find((t) => t.coinType === path.coinIn.type);
-          const outToken = tokens.find((t) => t.coinType === path.coinOut.type);
+          const inToken = tokens?.find((t) => t.coinType === path.coinIn.type);
+          const outToken = tokens?.find(
+            (t) => t.coinType === path.coinOut.type,
+          );
 
           const inCoinMetadata = coinMetadataMap[path.coinIn.type];
           const outCoinMetadata = coinMetadataMap[path.coinOut.type];

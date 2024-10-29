@@ -83,11 +83,9 @@ function Page() {
   const data = restAppContext.data as AppData;
   const suilendClient = restAppContext.suilendClient as SuilendClient;
 
-  const { setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
+  const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
   const aftermathSdk = restSwapContext.aftermathSdk as Aftermath;
-  const verifiedTokens = restSwapContext.verifiedTokens as SwapToken[];
-  const tokens = restSwapContext.tokens as SwapToken[];
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
   const coinBalancesMap = restSwapContext.coinBalancesMap as Record<
@@ -600,7 +598,7 @@ function Page() {
     coinType: string,
     direction: TokenDirection,
   ) => {
-    const _token = tokens.find((t) => t.coinType === coinType);
+    const _token = tokens?.find((t) => t.coinType === coinType);
     if (!_token) return;
 
     if (
@@ -611,13 +609,10 @@ function Page() {
     else {
       setQuotesMap({});
 
-      const isVerifiedToken = verifiedTokens.find(
-        (t) => t.coinType === coinType,
+      const isReserve = !!data.lendingMarket.reserves.find(
+        (r) => r.coinType === coinType,
       );
-      setTokenSymbol(
-        isVerifiedToken ? _token.symbol : _token.coinType,
-        direction,
-      );
+      setTokenSymbol(isReserve ? _token.symbol : _token.coinType, direction);
 
       fetchQuote(
         direction === TokenDirection.IN ? _token : tokenIn,

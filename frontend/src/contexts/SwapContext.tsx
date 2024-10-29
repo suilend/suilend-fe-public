@@ -55,7 +55,6 @@ export enum TokenDirection {
 
 interface SwapContext {
   aftermathSdk?: Aftermath;
-  verifiedTokens?: SwapToken[];
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   tokenIn?: SwapToken;
@@ -67,7 +66,6 @@ interface SwapContext {
 
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
-  verifiedTokens: undefined,
   tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
@@ -91,7 +89,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const slug = router.query.slug as string[] | undefined;
 
-  const { suiClient, rpc, ...restAppContext } = useAppContext();
+  const { suiClient, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
 
   // Aftermath SDK
@@ -102,37 +100,45 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   }, []);
 
   // Tokens
-  const [verifiedTokens, setVerifiedTokens] = useState<SwapToken[] | undefined>(
-    undefined,
-  );
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
 
-  const isFetchingTokensRef = useRef<boolean>(false);
+  const isFetchingAftermathTokensRef = useRef<boolean>(false);
   useEffect(() => {
     (async () => {
-      if (isFetchingTokensRef.current) return;
+      if (isFetchingAftermathTokensRef.current) return;
 
-      isFetchingTokensRef.current = true;
+      isFetchingAftermathTokensRef.current = true;
       try {
         const verifiedCoinTypes = (
           await aftermathSdk.Coin().getVerifiedCoins()
         ).map(normalizeStructTag);
 
-        const coinsMetadataMap = await getCoinMetadataMap(
+        const coinTypesMissingMetadata = verifiedCoinTypes.filter(
+          (coinType) => !Object.keys(data.coinMetadataMap).includes(coinType),
+        );
+        const coinMetadataMap = await getCoinMetadataMap(
           suiClient,
-          verifiedCoinTypes,
+          coinTypesMissingMetadata,
         );
+        const mergedCoinMetadataMap = {
+          ...coinMetadataMap,
+          ...data.coinMetadataMap,
+        };
 
-        const result = Object.entries(coinsMetadataMap).map(
-          ([coinType, metadata]) => ({
-            coinType,
-            decimals: metadata.decimals,
-            symbol: metadata.symbol,
-            name: metadata.name,
-            iconUrl: metadata.iconUrl,
-          }),
-        );
-        setVerifiedTokens(result);
+        const result = verifiedCoinTypes
+          .filter((coinType) => !!mergedCoinMetadataMap[coinType])
+          .map((coinType) => {
+            const metadata = mergedCoinMetadataMap[coinType];
+
+            return {
+              coinType,
+              decimals: metadata.decimals,
+              symbol: metadata.symbol,
+              name: metadata.name,
+              iconUrl: metadata.iconUrl,
+            };
+          });
+
         setTokens((prev) => [
           ...(prev ?? []),
           ...result.filter(
@@ -143,7 +149,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     })();
-  }, [aftermathSdk, suiClient]);
+  }, [aftermathSdk, data.coinMetadataMap, suiClient]);
 
   const fetchingTokensMetadataRef = useRef<string[]>([]);
   const fetchTokensMetadata = useCallback(
@@ -164,41 +170,61 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       fetchingTokensMetadataRef.current.push(...filteredCoinTypes);
 
       try {
-        const coinsMetadataMap = await getCoinMetadataMap(
-          suiClient,
-          filteredCoinTypes,
+        const coinTypesMissingMetadata = filteredCoinTypes.filter(
+          (coinType) => !Object.keys(data.coinMetadataMap).includes(coinType),
         );
+        const coinMetadataMap = await getCoinMetadataMap(
+          suiClient,
+          coinTypesMissingMetadata,
+        );
+        const mergedCoinMetadataMap = {
+          ...coinMetadataMap,
+          ...data.coinMetadataMap,
+        };
 
-        setTokens((prev) => [
-          ...(prev ?? []),
-          ...Object.entries(coinsMetadataMap)
-            .map(([coinType, metadata]) => ({
+        const result = filteredCoinTypes
+          .filter((coinType) => !!mergedCoinMetadataMap[coinType])
+          .map((coinType) => {
+            const metadata = mergedCoinMetadataMap[coinType];
+
+            return {
               coinType,
               decimals: metadata.decimals,
               symbol: metadata.symbol,
               name: metadata.name,
               iconUrl: metadata.iconUrl,
-            }))
-            .filter(
-              (token) =>
-                !(prev ?? []).find((t) => t.coinType === token.coinType),
-            ),
+            };
+          });
+
+        setTokens((prev) => [
+          ...(prev ?? []),
+          ...result.filter(
+            (token) => !(prev ?? []).find((t) => t.coinType === token.coinType),
+          ),
         ]);
       } catch (err) {
         console.error(err);
       }
     },
-    [tokens, suiClient],
+    [tokens, data.coinMetadataMap, suiClient],
   );
 
   useEffect(() => {
-    fetchTokensMetadata([
-      // ...data.lendingMarket.reserves.map((reserve) => reserve.coinType),
-      ...data.coinBalancesRaw
-        .filter((cb) => +cb.totalBalance > 0)
+    fetchTokensMetadata(
+      data.lendingMarket.reserves.map((reserve) => reserve.coinType),
+    );
+    fetchTokensMetadata(
+      data.coinBalancesRaw
+        .filter(
+          (cb) =>
+            +cb.totalBalance > 0 &&
+            !data.lendingMarket.reserves.find(
+              (r) => r.coinType === cb.coinType,
+            ),
+        )
         .map((cb) => cb.coinType),
-    ]);
-  }, [fetchTokensMetadata, data.coinBalancesRaw]);
+    );
+  }, [fetchTokensMetadata, data.lendingMarket.reserves, data.coinBalancesRaw]);
 
   // Selected tokens
   const [tokenInSymbol, tokenOutSymbol] =
@@ -239,21 +265,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       slug[0].split("-")[0] === slug[0].split("-")[1]
     )
       router.replace({ pathname: getSwapUrl() }, undefined, { shallow: true });
-    else {
-      if (!tokens) return;
-
-      const [t1, t2] = slug[0].split("-");
-      if (
-        !isCoinType(t1) &&
-        !isCoinType(t2) &&
-        (!tokens.find((t) => t.symbol === t1) ||
-          !tokens.find((t) => t.symbol === t2))
-      )
-        router.replace({ pathname: getSwapUrl() }, undefined, {
-          shallow: true,
-        });
-    }
-  }, [slug, router, tokens]);
+  }, [slug, router]);
 
   const setTokenSymbol = useCallback(
     (newTokenSymbol: string, direction: TokenDirection) => {
@@ -313,7 +325,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const contextValue: SwapContext = useMemo(
     () => ({
       aftermathSdk,
-      verifiedTokens,
       tokens,
       fetchTokensMetadata,
       tokenIn,
@@ -324,7 +335,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     }),
     [
       aftermathSdk,
-      verifiedTokens,
       tokens,
       fetchTokensMetadata,
       tokenIn,
@@ -337,11 +347,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SwapContext.Provider value={contextValue}>
-      {aftermathSdk && verifiedTokens && tokens && tokenIn && tokenOut ? (
-        children
-      ) : (
-        <FullPageSpinner />
-      )}
+      {aftermathSdk && tokenIn && tokenOut ? children : <FullPageSpinner />}
     </SwapContext.Provider>
   );
 }

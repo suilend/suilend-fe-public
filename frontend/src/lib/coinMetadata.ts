@@ -10,6 +10,8 @@ export const getCoinMetadataMap = async (
   suiClient: SuiClient,
   uniqueCoinTypes: string[], // Assumed already normalized
 ) => {
+  if (uniqueCoinTypes.length === 0) return {};
+
   try {
     const coinMetadata = await Promise.all(
       uniqueCoinTypes.map((ct) => suiClient.getCoinMetadata({ coinType: ct })),
