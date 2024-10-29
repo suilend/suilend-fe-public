@@ -266,14 +266,7 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         isExplorerUrl
         horizontal
       />
-      <LabelWithValue
-        label="Reserve"
-        value={reserve.id}
-        isId
-        url={explorer.buildObjectUrl(reserve.id)}
-        isExplorerUrl
-        horizontal
-      />
+      <LabelWithValue label="Reserve" value={reserve.id} isId horizontal />
 
       <Separator />
 
