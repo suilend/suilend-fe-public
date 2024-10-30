@@ -25,6 +25,9 @@ const nbETH_COINTYPE =
 const BUCK_COINTYPE =
   "0xce7ff77a83ea0cb6fd39bd8748e2ec89a3f41e8efdc3f4eb123e0ca37b184db2::buck::BUCK";
 
+const SPRING_SUI_COINTYPE =
+  "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI";
+
 export const NORMALIZED_SEND_POINTS_COINTYPE =
   normalizeStructTag(SEND_POINTS_COINTYPE);
 export const NORMALIZED_SUI_COINTYPE = normalizeStructTag(SUI_COINTYPE);
@@ -37,6 +40,8 @@ export const NORMALIZED_FUD_COINTYPE = normalizeStructTag(FUD_COINTYPE);
 export const NORMALIZED_USDC_COINTYPE = normalizeStructTag(USDC_COINTYPE);
 export const NORMALIZED_DEEP_COINTYPE = normalizeStructTag(DEEP_COINTYPE);
 export const NORMALIZED_nbETH_COINTYPE = normalizeStructTag(nbETH_COINTYPE);
+export const NORMALIZED_SPRING_SUI_COINTYPE =
+  normalizeStructTag(SPRING_SUI_COINTYPE);
 
 export const NORMALIZED_BUCK_COINTYPE = normalizeStructTag(BUCK_COINTYPE);
 
@@ -159,11 +164,15 @@ export const COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP: Record<
       "0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace",
     symbol: "Crypto.ETH/USD",
   },
-
   [NORMALIZED_BUCK_COINTYPE]: {
     priceIdentifier:
       "0xfdf28a46570252b25fd31cb257973f865afc5ca2f320439e45d95e0394bc7382",
     symbol: "Crypto.BUCK/USD",
+  },
+  [NORMALIZED_SPRING_SUI_COINTYPE]: {
+    priceIdentifier:
+      "0x23d7315113f5b1d3ba7a83604c44b94d79f4fd69af77f804fc7f920a6dc65744",
+    symbol: "Crypto.SUI/USD",
   },
 };
 export const getPythOracleUrl = (coinType: string) => {
