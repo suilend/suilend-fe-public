@@ -22,8 +22,8 @@ export const parseLendingMarket = (
     .map((reserve) => parseReserve(reserve, coinMetadataMap))
     .sort((a, b) => {
       const customOrder = [
-        "SUI",
         "sSUI",
+        "SUI",
         "USDC",
         "wUSDC",
         "USDT",
