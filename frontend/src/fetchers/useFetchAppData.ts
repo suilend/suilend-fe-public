@@ -3,6 +3,7 @@ import { useRef } from "react";
 import { CoinBalance, SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
+import { getSpringSuiApy } from "@suilend/springsui-sdk";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -207,6 +208,10 @@ export default function useFetchAppData(
 
     const rewardMap = formatRewards(reserveMap, coinMetadataMap, obligations);
 
+    // sSUI - TODO: Generalize
+    const ssuiApr = await getSpringSuiApy(suiClient);
+    const ssuiAprPercent = new BigNumber(ssuiApr ?? 0).times(100);
+
     return {
       lendingMarket,
       lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
@@ -217,6 +222,8 @@ export default function useFetchAppData(
       coinMetadataMap,
       rewardMap,
       coinBalancesRaw,
+
+      ssuiAprPercent,
     } as AppData;
   };
 

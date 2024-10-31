@@ -23,7 +23,11 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
-import { getFilteredRewards, getTotalAprPercent } from "@/lib/liquidityMining";
+import {
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@/lib/liquidityMining";
 import {
   ISOLATED_TOOLTIP,
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,
@@ -180,6 +184,11 @@ export default function MarketTable() {
             Side.DEPOSIT,
             reserve.depositAprPercent,
             getFilteredRewards(data.rewardMap[coinType].deposit),
+            getStakingYieldAprPercent(
+              Side.DEPOSIT,
+              reserve,
+              data.ssuiAprPercent,
+            ),
           );
           const borrowAprPercent = reserve.borrowAprPercent;
           const totalBorrowAprPercent = getTotalAprPercent(
@@ -299,7 +308,7 @@ export default function MarketTable() {
             reserve,
           };
         }),
-    [data.lendingMarket.reserves, data.rewardMap],
+    [data.lendingMarket.reserves, data.rewardMap, data.ssuiAprPercent],
   );
   const mainRows = useMemo(() => rows.filter((row) => !row.isIsolated), [rows]);
   const isolatedRows = useMemo(

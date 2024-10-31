@@ -24,6 +24,7 @@ import {
   getDedupedAprRewards,
   getDedupedPerDayRewards,
   getFilteredRewards,
+  getStakingYieldAprPercent,
   getTotalAprPercent,
 } from "@/lib/liquidityMining";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -111,6 +112,12 @@ export default function AprWithRewardsBreakdown({
   const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
 
+  const stakingYieldAprPercent = getStakingYieldAprPercent(
+    side,
+    reserve,
+    data.ssuiAprPercent,
+  );
+
   const aprPercent =
     side === Side.DEPOSIT
       ? reserve.depositAprPercent
@@ -192,14 +199,24 @@ export default function AprWithRewardsBreakdown({
   })) as AprRewardSummary[];
 
   // Total APR
-  const totalAprPercent = getTotalAprPercent(side, aprPercent, filteredRewards);
+  const totalAprPercent = getTotalAprPercent(
+    side,
+    aprPercent,
+    filteredRewards,
+    stakingYieldAprPercent,
+  );
   const newTotalAprPercent =
     newAprPercent === undefined ||
     newAprRewards.some((reward) => reward.stats.aprPercent === undefined)
       ? undefined
-      : getTotalAprPercent(side, newAprPercent, newAprRewards);
+      : getTotalAprPercent(
+          side,
+          newAprPercent,
+          newAprRewards,
+          stakingYieldAprPercent,
+        );
 
-  if (filteredRewards.length === 0)
+  if (filteredRewards.length === 0 && !stakingYieldAprPercent)
     return (
       <TBody>
         {formatAprPercent(showChange, totalAprPercent, newTotalAprPercent)}
@@ -214,14 +231,16 @@ export default function AprWithRewardsBreakdown({
         }}
         content={
           <>
-            <TLabelSans>
-              {capitalize(side)} {reserve.symbol}
-              {" and earn "}
-              {perDayRewards.length > 0 && (
-                <>points{aprRewards.length > 0 && " & "}</>
-              )}
-              {aprRewards.length > 0 && "rewards"}
-            </TLabelSans>
+            {filteredRewards.length > 0 && (
+              <TLabelSans>
+                {capitalize(side)} {reserve.symbol}
+                {" and earn "}
+                {perDayRewards.length > 0 && (
+                  <>points{aprRewards.length > 0 && " & "}</>
+                )}
+                {aprRewards.length > 0 && "rewards"}
+              </TLabelSans>
+            )}
 
             {perDayRewards.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -272,13 +291,25 @@ export default function AprWithRewardsBreakdown({
                 </TBody>
               </div>
 
+              {/* Interest */}
               <AprRewardsBreakdownRow
-                isLast={aprRewards.length === 0}
+                isLast={aprRewards.length === 0 && !stakingYieldAprPercent}
                 value={formatAprPercent(showChange, aprPercent, newAprPercent)}
               >
                 <TLabelSans>Interest</TLabelSans>
               </AprRewardsBreakdownRow>
 
+              {/* Staking yield */}
+              {stakingYieldAprPercent && (
+                <AprRewardsBreakdownRow
+                  isLast={aprRewards.length === 0}
+                  value={formatAprPercent(false, stakingYieldAprPercent)}
+                >
+                  <TLabelSans>Staking yield</TLabelSans>
+                </AprRewardsBreakdownRow>
+              )}
+
+              {/* Apr rewards */}
               {aprRewards.map((reward, index) => (
                 <AprRewardsBreakdownRow
                   key={index}

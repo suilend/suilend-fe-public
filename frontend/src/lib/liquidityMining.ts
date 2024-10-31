@@ -7,6 +7,7 @@ import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
 
+import { issSui } from "@/lib/coinType";
 import { msPerYear } from "@/lib/constants";
 
 export type RewardMap = {
@@ -270,11 +271,25 @@ const getRewardsAprPercent = (side: Side, filteredRewards: RewardSummary[]) =>
     new BigNumber(0),
   );
 
+export const getStakingYieldAprPercent = (
+  side: Side,
+  reserve: ParsedReserve,
+  ssuiAprPercent: BigNumber,
+) => {
+  if (side === Side.DEPOSIT) {
+    if (issSui(reserve.coinType)) return ssuiAprPercent;
+  }
+};
+
 export const getTotalAprPercent = (
   side: Side,
   aprPercent: BigNumber,
   filteredRewards: RewardSummary[],
-) => aprPercent.plus(getRewardsAprPercent(side, filteredRewards));
+  stakingYieldAprPercent?: BigNumber,
+) =>
+  aprPercent
+    .plus(getRewardsAprPercent(side, filteredRewards))
+    .plus(stakingYieldAprPercent ?? 0);
 
 export const getNetAprPercent = (
   obligation: ParsedObligation,

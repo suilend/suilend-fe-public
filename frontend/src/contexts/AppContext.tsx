@@ -17,6 +17,7 @@ import {
   SuiTransactionBlockResponse,
 } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import BigNumber from "bignumber.js";
 import { isEqual } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -42,6 +43,8 @@ export interface AppData {
   coinMetadataMap: Record<string, CoinMetadata>;
   rewardMap: RewardMap;
   coinBalancesRaw: CoinBalance[];
+
+  ssuiAprPercent: BigNumber; // TODO: Generalize
 }
 
 export interface AppContext {

@@ -54,7 +54,11 @@ import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { NORMALIZED_SUI_COINTYPE, SUI_COINTYPE, isSui } from "@/lib/coinType";
 import { SUI_GAS_MIN, TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import { getFilteredRewards, getTotalAprPercent } from "@/lib/liquidityMining";
+import {
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@/lib/liquidityMining";
 import track from "@/lib/track";
 import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";
@@ -115,6 +119,11 @@ function Page() {
         Side.DEPOSIT,
         tokenOutReserve.depositAprPercent,
         getFilteredRewards(data.rewardMap[tokenOutReserve.coinType].deposit),
+        getStakingYieldAprPercent(
+          Side.DEPOSIT,
+          tokenOutReserve,
+          data.ssuiAprPercent,
+        ),
       )
     : undefined;
 

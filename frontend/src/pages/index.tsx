@@ -17,7 +17,11 @@ import { TBody, TPrimaryTitle, TTitle } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatPercent } from "@/lib/format";
-import { getFilteredRewards, getTotalAprPercent } from "@/lib/liquidityMining";
+import {
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@/lib/liquidityMining";
 import { DASHBOARD_URL, DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
 import suilendLogo from "@/public/assets/suilend.svg";
 
@@ -163,6 +167,11 @@ export default function Home() {
                     reserve.depositAprPercent,
                     getFilteredRewards(
                       data.rewardMap[reserve.coinType].deposit,
+                    ),
+                    getStakingYieldAprPercent(
+                      Side.DEPOSIT,
+                      reserve,
+                      data.ssuiAprPercent,
                     ),
                   );
 
