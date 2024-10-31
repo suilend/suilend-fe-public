@@ -33,10 +33,10 @@ function LinkWrapper({ isLinkRelative, link, children }: LinkWrapperProps) {
 interface BannerProps {
   style?: CSSProperties;
   icon?: keyof typeof IconMap;
-  message?: string;
   isLinkRelative?: boolean;
   link?: string;
   linkTitle?: string;
+  message?: string;
   height: number | null;
   isHidden?: boolean;
 }
@@ -46,12 +46,7 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
     { style, icon, isLinkRelative, link, linkTitle, message, height, isHidden },
     ref,
   ) => {
-    const IconMap: Record<string, LucideIcon> = {
-      info: Info,
-      arrowLeftRight: ArrowLeftRight,
-    };
-
-    const Icon = icon ? IconMap[icon as keyof typeof IconMap] : null;
+    const Icon = icon ? IconMap[icon] : null;
 
     return (
       <>
