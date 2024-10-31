@@ -6,6 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -169,6 +170,9 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       defaultContextValue.reserveSymbol
     );
   }, [queryParams, data.lendingMarket.reserves]);
+  useEffect(() => {
+    if (queryParams[QueryParams.RESERVE_SYMBOL]) setIsOpen(true);
+  }, [queryParams]);
 
   // Tab
   const selectedTab = useMemo(
