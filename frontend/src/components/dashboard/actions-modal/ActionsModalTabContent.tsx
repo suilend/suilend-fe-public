@@ -403,7 +403,7 @@ export default function ActionsModalTabContent({
             value={
               reserve.priceIdentifier !==
               COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
-                .priceIdentifier
+                ?.priceIdentifier
                 ? "--"
                 : formatPrice(reserve.price)
             }

@@ -50,14 +50,12 @@ export default function useFetchAppData(
       new SuiPriceServiceConnection("https://hermes.pyth.network"),
     );
 
-    const fakePriceIdentifierReserves = refreshedRawReserves.filter((r) => {
-      console.log(r);
-      return (
+    const fakePriceIdentifierReserves = refreshedRawReserves.filter(
+      (r) =>
         `0x${toHexString(r.priceIdentifier.bytes)}` !==
         COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[normalizeStructTag(r.coinType.name)]
-          .priceIdentifier
-      );
-    });
+          ?.priceIdentifier,
+    );
     for (const fakePriceIdentifierReserve of fakePriceIdentifierReserves) {
       let price = 0.01;
 

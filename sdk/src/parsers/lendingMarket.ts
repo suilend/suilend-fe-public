@@ -23,6 +23,7 @@ export const parseLendingMarket = (
     .sort((a, b) => {
       const customOrder = [
         "SUI",
+        "sSUI",
         "USDC",
         "wUSDC",
         "USDT",

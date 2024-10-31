@@ -54,7 +54,7 @@ export default function AssetCell({
         </div>
         <TLabel>
           {reserve.priceIdentifier !==
-          COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType].priceIdentifier
+          COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]?.priceIdentifier
             ? "--"
             : formatPrice(price)}
         </TLabel>

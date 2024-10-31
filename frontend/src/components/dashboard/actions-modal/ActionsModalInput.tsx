@@ -92,7 +92,7 @@ const ActionsModalInput = forwardRef<HTMLInputElement, ActionsModalInputProps>(
           >
             {reserve.priceIdentifier !==
             COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
-              .priceIdentifier ? (
+              ?.priceIdentifier ? (
               "--"
             ) : (
               <>
