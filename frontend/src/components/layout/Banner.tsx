@@ -65,7 +65,7 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
         >
           <Container>
             <LinkWrapper isLinkRelative={isLinkRelative} link={link}>
-              <div className="flex min-h-10 w-full flex-row items-center justify-center gap-4 py-2">
+              <div className="flex min-h-10 w-full flex-col items-center justify-center gap-2 py-2 md:flex-row md:gap-4">
                 <div className="flex flex-row gap-2">
                   {Icon && (
                     <Icon className="my-0.5 h-4 w-4 shrink-0 text-secondary-foreground" />
