@@ -1,6 +1,5 @@
 import FooterLinks from "@/components/layout/FooterLinks";
 import NavigationLinks from "@/components/layout/NavigationLinks";
-import { Separator } from "@/components/ui/separator";
 
 export default function HeaderMenu() {
   return (
@@ -10,16 +9,13 @@ export default function HeaderMenu() {
         overscrollBehavior: "auto contain",
       }}
     >
-      <div className="flex w-full flex-1 flex-col gap-8 px-6 py-6 md:pr-10">
-        <div className="flex flex-1 flex-col">
-          <div className="flex flex-col gap-6">
-            <NavigationLinks />
-          </div>
+      <div className="flex w-full flex-1 flex-col gap-6 p-6 md:pr-10">
+        <div className="flex flex-1 flex-col gap-6">
+          <NavigationLinks />
+        </div>
 
-          <Separator className="my-8 md:hidden" />
-          <div className="flex flex-col gap-6 md:hidden">
-            <FooterLinks />
-          </div>
+        <div className="flex w-full flex-row items-center justify-end gap-6 md:hidden">
+          <FooterLinks />
         </div>
       </div>
     </div>

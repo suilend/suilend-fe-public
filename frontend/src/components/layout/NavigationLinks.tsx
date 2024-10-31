@@ -1,3 +1,5 @@
+import { ExternalLink, FileWarning } from "lucide-react";
+
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
 import { useAppContext } from "@/contexts/AppContext";
@@ -34,7 +36,11 @@ export default function NavigationLinks() {
         Swap
       </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>
-      <Link isExternal href={SPRINGSUI_URL}>
+      <Link
+        href={SPRINGSUI_URL}
+        isExternal
+        endIcon={<ExternalLink className="h-3 w-3" />}
+      >
         SpringSui
       </Link>
       {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}

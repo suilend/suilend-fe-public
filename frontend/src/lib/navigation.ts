@@ -3,8 +3,9 @@ export const DASHBOARD_URL = "/dashboard";
 export const POINTS_URL = "/points";
 export const SWAP_URL = "/swap";
 export const BRIDGE_URL = "/bridge";
-export const SPRINGSUI_URL = "https://springsui.com";
 export const ADMIN_URL = "/admin";
+
+export const SPRINGSUI_URL = "https://springsui.com";
 
 export const API_URL = "https://api.suilend.fi";
 export const DOCS_URL = "https://docs.suilend.fi";

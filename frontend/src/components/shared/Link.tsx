@@ -15,7 +15,8 @@ interface LinkProps extends PropsWithChildren, NextLinkProps {
   activeHref?: string;
   className?: ClassValue;
   isExternal?: boolean;
-  icon?: ReactNode;
+  startIcon?: ReactNode;
+  endIcon?: ReactNode;
   label?: string;
 }
 
@@ -24,7 +25,8 @@ export default function Link({
   activeHref,
   className,
   isExternal,
-  icon,
+  startIcon,
+  endIcon,
   label,
   children,
   ...props
@@ -46,8 +48,9 @@ export default function Link({
       )}
       {...props}
     >
-      {icon}
+      {startIcon}
       {children}
+      {endIcon}
       {label && (
         <TLabelSans
           className={cn(

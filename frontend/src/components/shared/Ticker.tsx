@@ -6,12 +6,6 @@ import { cn } from "@/lib/utils";
 
 interface TickerProps {
   className?: ClassValue;
-  /** Must be a CSS readable duration
-   * @default 10s
-   * @example '15s'
-   * @example '1s'
-   * @example '200ms'
-   */
   items: ReactNode[];
 }
 

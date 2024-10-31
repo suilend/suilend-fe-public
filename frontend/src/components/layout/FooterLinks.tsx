@@ -19,18 +19,14 @@ export default function FooterLinks({ className }: FooterLinksProps) {
         href={TWITTER_URL}
         className={className}
         isExternal
-        icon={<XIcon />}
-      >
-        Twitter
-      </Link>
+        startIcon={<XIcon />}
+      />
       <Link
         href={DISCORD_URL}
         className={className}
         isExternal
-        icon={<DiscordIcon />}
-      >
-        Discord
-      </Link>
+        startIcon={<DiscordIcon />}
+      />
     </>
   );
 }
