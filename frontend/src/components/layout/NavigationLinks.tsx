@@ -40,6 +40,7 @@ export default function NavigationLinks() {
         href={SPRINGSUI_URL}
         isExternal
         endIcon={<ExternalLink className="h-3 w-3" />}
+        label="New"
       >
         SpringSui
       </Link>
