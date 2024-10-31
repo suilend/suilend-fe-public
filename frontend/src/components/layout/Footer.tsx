@@ -1,4 +1,4 @@
-import ExternalLinks from "@/components/layout/ExternalLinks";
+import FooterLinks from "@/components/layout/FooterLinks";
 import Container from "@/components/shared/Container";
 
 export default function Footer() {
@@ -11,7 +11,7 @@ export default function Footer() {
 
           {/* End */}
           <div className="flex flex-row gap-8">
-            <ExternalLinks className="text-xs" />
+            <FooterLinks className="text-xs" />
           </div>
         </div>
       </Container>

@@ -8,6 +8,7 @@ import {
   BRIDGE_URL,
   DASHBOARD_URL,
   POINTS_URL,
+  SPRINGSUI_URL,
   SWAP_URL,
 } from "@/lib/navigation";
 
@@ -33,6 +34,9 @@ export default function NavigationLinks() {
         Swap
       </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>
+      <Link isExternal href={SPRINGSUI_URL}>
+        SpringSui
+      </Link>
       {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}
     </>
   );

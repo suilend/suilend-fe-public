@@ -5,11 +5,11 @@ import XIcon from "@/components/assets/XIcon";
 import Link from "@/components/shared/Link";
 import { DISCORD_URL, DOCS_URL, TWITTER_URL } from "@/lib/navigation";
 
-interface ExternalLinksProps {
+interface FooterLinksProps {
   className?: ClassValue;
 }
 
-export default function ExternalLinks({ className }: ExternalLinksProps) {
+export default function FooterLinks({ className }: FooterLinksProps) {
   return (
     <>
       <Link href={DOCS_URL} className={className} isExternal>

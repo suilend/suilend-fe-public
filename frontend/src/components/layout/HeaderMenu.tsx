@@ -1,4 +1,4 @@
-import ExternalLinks from "@/components/layout/ExternalLinks";
+import FooterLinks from "@/components/layout/FooterLinks";
 import NavigationLinks from "@/components/layout/NavigationLinks";
 import { Separator } from "@/components/ui/separator";
 
@@ -18,7 +18,7 @@ export default function HeaderMenu() {
 
           <Separator className="my-8 md:hidden" />
           <div className="flex flex-col gap-6 md:hidden">
-            <ExternalLinks />
+            <FooterLinks />
           </div>
         </div>
       </div>
