@@ -18,6 +18,7 @@ import { PointsContextProvider } from "@/contexts/PointsContext";
 import { SettingsContextProvider } from "@/contexts/SettingsContext";
 import { WalletContextProvider } from "@/contexts/WalletContext";
 import { WormholeConnectContextProvider } from "@/contexts/WormholeConnectContext";
+import { TITLE } from "@/lib/constants";
 import { fontClassNames } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export default function App({
       <SpeedInsights />
       <Analytics />
       <Head>
-        <title>Suilend | Lending and borrowing platform on Sui</title>
+        <title>{TITLE}</title>
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"

@@ -69,7 +69,7 @@ export default function Home() {
                 />
 
                 <TPrimaryTitle className="w-full max-w-[800px] text-[32px] uppercase md:text-[48px]">
-                  Lending and borrowing platform on Sui.
+                  Lend and borrow crypto on Sui
                 </TPrimaryTitle>
 
                 <NextLink href={DASHBOARD_URL} className="w-max max-md:hidden">

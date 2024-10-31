@@ -1,18 +1,16 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
-import { TWITTER } from "@/lib/constants";
+import { DESCRIPTION, TITLE, TWITTER } from "@/lib/constants";
 
 export default function Document() {
-  const description = "Money market built on the best chain for developers.";
-
   return (
     <Html lang="en">
       <Head>
-        <meta name="description" content={description} />
+        <meta name="description" content={DESCRIPTION} />
         <link rel="icon" href="/android-chrome-384x384.png" />
-        <meta property="og:description" content={description} />
+        <meta property="og:description" content={DESCRIPTION} />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="Suilend" />
+        <meta property="og:title" content={TITLE} />
         <meta
           property="og:image"
           content="https://www.suilend.fi/android-chrome-384x384.png"
