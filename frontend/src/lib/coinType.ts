@@ -194,8 +194,6 @@ export const isSui = (coinType: string) =>
   normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
 export const isFud = (coinType: string) =>
   normalizeStructTag(coinType) === NORMALIZED_FUD_COINTYPE;
-export const isDeep = (coinType: string) =>
-  normalizeStructTag(coinType) === NORMALIZED_DEEP_COINTYPE;
 export const issSui = (coinType: string) =>
   normalizeStructTag(coinType) === NORMALIZED_sSUI_COINTYPE;
 

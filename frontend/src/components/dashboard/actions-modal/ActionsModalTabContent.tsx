@@ -32,7 +32,6 @@ import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
-  isDeep,
   isFud,
   isSui,
 } from "@/lib/coinType";
@@ -272,9 +271,7 @@ export default function ActionsModalTabContent({
         break;
       }
       case Action.BORROW: {
-        // TODO: Remove workaround for DEEP
-        if (useMaxAmount && !isDeep(reserve.coinType))
-          submitAmount = maxU64.toString();
+        if (useMaxAmount) submitAmount = maxU64.toString();
         break;
       }
       case Action.REPAY: {
