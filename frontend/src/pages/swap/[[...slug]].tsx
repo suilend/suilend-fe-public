@@ -114,16 +114,20 @@ function Page() {
   const tokenOutReserve = data.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenOut.coinType,
   );
+
+  const tokenOutStakingYieldAprPercent = tokenOutReserve
+    ? getStakingYieldAprPercent(
+        Side.DEPOSIT,
+        tokenOutReserve,
+        data.ssuiAprPercent,
+      )
+    : undefined;
   const tokenOutReserveDepositAprPercent = tokenOutReserve
     ? getTotalAprPercent(
         Side.DEPOSIT,
         tokenOutReserve.depositAprPercent,
         getFilteredRewards(data.rewardMap[tokenOutReserve.coinType].deposit),
-        getStakingYieldAprPercent(
-          Side.DEPOSIT,
-          tokenOutReserve,
-          data.ssuiAprPercent,
-        ),
+        tokenOutStakingYieldAprPercent,
       )
     : undefined;
 
@@ -705,7 +709,7 @@ function Page() {
     if (isSwappingAndDepositing) return { isDisabled: true, isLoading: true };
 
     return {
-      title: `Swap and deposit for ${formatPercent(tokenOutReserveDepositAprPercent)} APR`,
+      title: `Swap and deposit for ${formatPercent(tokenOutReserveDepositAprPercent)}${tokenOutStakingYieldAprPercent ? "*" : ""} APR`,
       isDisabled:
         !!swapAndDepositButtonDisabledTooltip ||
         swapButtonState.isDisabled ||

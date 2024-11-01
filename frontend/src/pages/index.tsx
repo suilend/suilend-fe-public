@@ -162,17 +162,19 @@ export default function Home() {
               items={data.lendingMarket.reserves
                 .filter((reserve) => reserve.config.depositLimit.gt(0))
                 .map((reserve) => {
+                  const stakingYieldAprPercent = getStakingYieldAprPercent(
+                    Side.DEPOSIT,
+                    reserve,
+                    data.ssuiAprPercent,
+                  );
+
                   const totalDepositAprPercent = getTotalAprPercent(
                     Side.DEPOSIT,
                     reserve.depositAprPercent,
                     getFilteredRewards(
                       data.rewardMap[reserve.coinType].deposit,
                     ),
-                    getStakingYieldAprPercent(
-                      Side.DEPOSIT,
-                      reserve,
-                      data.ssuiAprPercent,
-                    ),
+                    stakingYieldAprPercent,
                   );
 
                   return (
@@ -189,7 +191,8 @@ export default function Home() {
                       />
                       <TBody>{reserve.symbol}</TBody>
                       <TBody className="text-muted-foreground">
-                        {formatPercent(totalDepositAprPercent)} APR
+                        {formatPercent(totalDepositAprPercent)}
+                        {stakingYieldAprPercent && "*"} APR
                       </TBody>
                     </div>
                   );
