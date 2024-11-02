@@ -136,33 +136,33 @@ export default function AddRewardsDialog() {
 
     const transaction = new Transaction();
 
-    for (const side of Object.values(Side)) {
-      for (const reserve of data.lendingMarket.reserves) {
-        const reserveArrayIndex = reserve.arrayIndex;
+    try {
+      for (const side of Object.values(Side)) {
+        for (const reserve of data.lendingMarket.reserves) {
+          const reserveArrayIndex = reserve.arrayIndex;
 
-        const rewardValue = new BigNumber(
-          rewardsMap?.[reserve.coinType]?.[side] || 0,
-        )
-          .times(10 ** coin.mintDecimals)
-          .toString();
+          const rewardValue = new BigNumber(
+            rewardsMap?.[reserve.coinType]?.[side] || 0,
+          )
+            .times(10 ** coin.mintDecimals)
+            .toString();
 
-        if (rewardValue !== "0") {
-          await suilendClient.addReward(
-            address,
-            data.lendingMarketOwnerCapId,
-            reserveArrayIndex,
-            side === Side.DEPOSIT,
-            rewardCoinType,
-            rewardValue,
-            BigInt(startTimeMs),
-            BigInt(endTimeMs),
-            transaction,
-          );
+          if (rewardValue !== "0") {
+            await suilendClient.addReward(
+              address,
+              data.lendingMarketOwnerCapId,
+              reserveArrayIndex,
+              side === Side.DEPOSIT,
+              rewardCoinType,
+              rewardValue,
+              BigInt(startTimeMs),
+              BigInt(endTimeMs),
+              transaction,
+            );
+          }
         }
       }
-    }
 
-    try {
       await signExecuteAndWaitForTransaction(transaction);
 
       toast.success("Added rewards");

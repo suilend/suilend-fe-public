@@ -223,6 +223,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
               sender: _address,
               transactionBlock: transaction,
             });
+            console.log(simResult);
 
             if (simResult.error) {
               throw simResult.error;

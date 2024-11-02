@@ -363,7 +363,7 @@ export class SuilendClient {
         lendingMarket: transaction.object(this.lendingMarket.id),
         reserveArrayIndex: transaction.pure.u64(reserveArrayIndex),
         isDepositReward: transaction.pure.bool(isDepositReward),
-        rewardIndex,
+        rewardIndex: transaction.pure.u64(rewardIndex),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
       },
     );
@@ -385,7 +385,7 @@ export class SuilendClient {
         lendingMarket: transaction.object(this.lendingMarket.id),
         reserveArrayIndex: transaction.pure.u64(reserveArrayIndex),
         isDepositReward: transaction.pure.bool(isDepositReward),
-        rewardIndex,
+        rewardIndex: transaction.pure.u64(rewardIndex),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
       },
     );
@@ -407,7 +407,7 @@ export class SuilendClient {
         cap: transaction.object(obligationOwnerCapId),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         reserveId: transaction.pure.u64(reserveArrayIndex),
-        rewardIndex,
+        rewardIndex: transaction.pure.u64(rewardIndex),
         isDepositReward: transaction.pure.bool(side === Side.DEPOSIT),
       },
     );
