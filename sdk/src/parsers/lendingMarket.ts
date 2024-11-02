@@ -27,7 +27,7 @@ export const parseLendingMarket = (
         "USDC",
         "wUSDC",
         "USDT",
-        "nbETH",
+        "suiETH",
         "WETH",
         "SOL",
         "AUSD",
