@@ -1,4 +1,4 @@
-import { ExternalLink, FileWarning } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";

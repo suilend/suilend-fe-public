@@ -1,24 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { ConnectModal, useWallet } from "@suiet/wallet-kit";
-
 import ConnectedWalletDropdownMenu from "@/components/layout/ConnectedWalletDropdownMenu";
 import ConnectWalletDropdownMenu from "@/components/layout/ConnectWalletDropdownMenu";
 import { useAppContext } from "@/contexts/AppContext";
 import { useWalletContext } from "@/contexts/WalletContext";
-import { useListWallets } from "@/lib/wallets";
 
 export default function ConnectWalletButton() {
-  const { adapter } = useWallet();
-  const { accounts, address, isImpersonatingAddress } = useWalletContext();
+  const { isImpersonating, wallet, walletAccounts, address } =
+    useWalletContext();
   const { suiClient } = useAppContext();
-
-  // Connect modal
-  const [isConnectModalOpen, setIsConnectModalOpen] = useState<boolean>(false);
-
-  // Wallet details
-  const wallets = useListWallets();
-  const connectedWallet = wallets.find((w) => w.id === adapter?.name);
 
   // Sui Name Service lookup
   const [addressNameServiceNameMap, setAddressNameServiceNameMap] = useState<
@@ -30,16 +20,17 @@ export default function ConnectWalletButton() {
     () =>
       Array.from(
         new Set(
-          [address, ...accounts.map((_account) => _account.address)].filter(
-            Boolean,
-          ) as string[],
+          [
+            address,
+            ...walletAccounts.map((_account) => _account.address),
+          ].filter(Boolean) as string[],
         ),
       ).filter(
         (_address) =>
           !Object.keys(addressNameServiceNameMap).includes(_address) &&
           !addressesBeingLookedUpRef.current.includes(_address),
       ),
-    [address, accounts, addressNameServiceNameMap],
+    [address, walletAccounts, addressNameServiceNameMap],
   );
 
   useEffect(() => {
@@ -76,26 +67,15 @@ export default function ConnectWalletButton() {
   }, [addressesToLookUp, suiClient]);
 
   const isConnected =
-    address &&
-    (!isImpersonatingAddress ? connectedWallet : true) &&
+    !!address &&
+    (!isImpersonating ? !!wallet : true) &&
     Object.keys(addressNameServiceNameMap).includes(address);
 
-  return (
-    <>
-      <ConnectModal
-        open={isConnectModalOpen}
-        onConnectSuccess={() => setIsConnectModalOpen(false)}
-        onOpenChange={setIsConnectModalOpen}
-      />
-
-      {isConnected ? (
-        <ConnectedWalletDropdownMenu
-          connectedWallet={connectedWallet}
-          addressNameServiceNameMap={addressNameServiceNameMap}
-        />
-      ) : (
-        <ConnectWalletDropdownMenu />
-      )}
-    </>
+  return isConnected ? (
+    <ConnectedWalletDropdownMenu
+      addressNameServiceNameMap={addressNameServiceNameMap}
+    />
+  ) : (
+    <ConnectWalletDropdownMenu />
   );
 }

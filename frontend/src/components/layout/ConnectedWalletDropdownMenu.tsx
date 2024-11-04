@@ -18,23 +18,21 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { formatAddress, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Wallet } from "@/lib/wallets";
 
 interface ConnectedWalletDropdownMenuProps {
-  connectedWallet?: Wallet;
   addressNameServiceNameMap: Record<string, string | undefined>;
 }
 
 export default function ConnectedWalletDropdownMenu({
-  connectedWallet,
   addressNameServiceNameMap,
 }: ConnectedWalletDropdownMenuProps) {
   const {
-    accounts,
-    account,
-    selectAccount,
-    isImpersonatingAddress,
+    isImpersonating,
+    wallet,
     disconnectWallet,
+    walletAccounts,
+    walletAccount,
+    selectWalletAccount,
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
@@ -44,11 +42,10 @@ export default function ConnectedWalletDropdownMenu({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const Icon = isOpen ? ChevronUp : ChevronDown;
 
-  const hasDisconnect = !isImpersonatingAddress;
-
+  const hasDisconnect = !isImpersonating;
   const hasSubaccounts =
     data && data.obligations && data.obligations.length > 1 && obligation;
-  const hasWallets = !isImpersonatingAddress && accounts.length > 1;
+  const hasWallets = !isImpersonating && walletAccounts.length > 1;
 
   const noItems = !hasDisconnect && !hasSubaccounts && !hasWallets;
 
@@ -60,13 +57,13 @@ export default function ConnectedWalletDropdownMenu({
           className="min-w-0"
           labelClassName="uppercase text-ellipsis overflow-hidden"
           startIcon={
-            isImpersonatingAddress ? (
+            isImpersonating ? (
               <VenetianMask />
-            ) : connectedWallet?.logoUrl ? (
+            ) : wallet?.iconUrl ? (
               <Image
                 className="h-4 w-4 min-w-4 shrink-0"
-                src={connectedWallet.logoUrl}
-                alt={`${connectedWallet.name} logo`}
+                src={wallet.iconUrl}
+                alt={`${wallet.name} logo`}
                 width={16}
                 height={16}
               />
@@ -74,13 +71,13 @@ export default function ConnectedWalletDropdownMenu({
           }
           endIcon={<Icon />}
         >
-          {(!isImpersonatingAddress ? account?.label : undefined) ??
+          {(!isImpersonating ? walletAccount?.label : undefined) ??
             addressNameServiceNameMap[address] ??
             formatAddress(address)}
         </Button>
       }
       title={
-        (!isImpersonatingAddress ? account?.label : "Impersonating") ??
+        (!isImpersonating ? walletAccount?.label : "Impersonating") ??
         "Connected"
       }
       description={
@@ -107,8 +104,6 @@ export default function ConnectedWalletDropdownMenu({
               Disconnect
             </DropdownMenuItem>
           )}
-
-          {/* Subaccounts */}
           {hasSubaccounts && (
             <>
               <TLabelSans className={cn(hasDisconnect && "mt-2")}>
@@ -152,8 +147,6 @@ export default function ConnectedWalletDropdownMenu({
               )}
             </>
           )}
-
-          {/* Wallets */}
           {hasWallets && (
             <>
               <TLabelSans
@@ -162,13 +155,13 @@ export default function ConnectedWalletDropdownMenu({
                 Wallets
               </TLabelSans>
 
-              {accounts.map((a) => (
+              {walletAccounts.map((a) => (
                 <DropdownMenuItem
                   key={a.address}
                   className="flex flex-col items-start gap-1"
                   isSelected={a.address === address}
                   onClick={() =>
-                    selectAccount(
+                    selectWalletAccount(
                       a.address,
                       addressNameServiceNameMap[a.address],
                     )

@@ -7,8 +7,8 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
 
 export default function Points() {
-  const { address, isImpersonatingAddress } = useWalletContext();
-  const hasImpersonationModeBanner = address && isImpersonatingAddress;
+  const { isImpersonating, address } = useWalletContext();
+  const hasImpersonationModeBanner = isImpersonating && address;
 
   return (
     <>

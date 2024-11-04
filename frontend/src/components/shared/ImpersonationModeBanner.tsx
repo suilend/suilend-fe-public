@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 export default function ImpersonationModeBanner() {
   const router = useRouter();
-  const { address, isImpersonatingAddress } = useWalletContext();
+  const { isImpersonating, address } = useWalletContext();
 
   const onClick = () => {
     const restQuery = cloneDeep(router.query);
@@ -28,8 +28,8 @@ export default function ImpersonationModeBanner() {
   };
 
   return (
-    address &&
-    isImpersonatingAddress && (
+    isImpersonating &&
+    address && (
       <Alert
         className="mb-6 cursor-pointer transition-colors hover:bg-muted/10"
         onClick={onClick}

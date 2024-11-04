@@ -1,7 +1,7 @@
 import Image from "next/image";
 
+import { WalletType } from "@suiet/wallet-kit";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
 
 import Button from "@/components/shared/Button";
 import DropdownMenu, {
@@ -11,50 +11,45 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useIsAndroid from "@/hooks/useIsAndroid";
 import useIsiOS from "@/hooks/useIsiOS";
-import { Wallet, useListWallets } from "@/lib/wallets";
+import { Wallet } from "@/lib/types";
+import { useListWallets } from "@/lib/wallets";
 
 interface WalletDropdownItemProps {
   wallet: Wallet;
 }
 
 function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
-  const { selectWallet } = useWalletContext();
+  const { connectWallet } = useWalletContext();
 
   const isiOS = useIsiOS();
   const isAndroid = useIsAndroid();
 
-  const platform: keyof Wallet["downloadUrls"] = isiOS
-    ? "iOS"
-    : isAndroid
-      ? "android"
-      : "browserExtension";
-  const downloadUrl = wallet.downloadUrls[platform];
+  const downloadUrl = (() => {
+    if (isiOS) return wallet.downloadUrls.iOS;
+    if (isAndroid) return wallet.downloadUrls.android;
+    if (wallet.type !== WalletType.WEB)
+      return wallet.downloadUrls.browserExtension;
+  })();
 
-  const onClick = async () => {
-    if (!wallet.isInstalled) {
-      window.open(downloadUrl, "_blank");
-      return;
-    }
+  const onClick = () => {
+    if (wallet.type === WalletType.WEB) connectWallet(wallet);
+    else {
+      if (!wallet.isInstalled) {
+        if (downloadUrl) window.open(downloadUrl, "_blank");
+        return;
+      }
 
-    try {
-      await selectWallet(wallet.name);
-      toast.info(`Connected ${wallet.name}`);
-    } catch (err) {
-      toast.error(`Failed to connect ${wallet.name}`, {
-        description: "Please try a different wallet.",
-      });
-      console.error(err);
+      connectWallet(wallet);
     }
   };
 
-  if (!wallet.isInstalled && !downloadUrl) return null;
   return (
     <DropdownMenuItem onClick={onClick}>
       <div className="flex w-full flex-row items-center justify-between gap-2">
         <div className="flex flex-row items-center gap-2">
-          {wallet.logoUrl ? (
+          {wallet.iconUrl ? (
             <Image
-              src={wallet.logoUrl}
+              src={wallet.iconUrl}
               alt={`${wallet.name} logo`}
               width={24}
               height={24}

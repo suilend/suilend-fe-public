@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import { formatAddress } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
+import { Wallet } from "@/lib/types";
 import { useListWallets } from "@/lib/wallets";
 
 export enum QueryParams {
@@ -33,15 +34,22 @@ export enum QueryParams {
 }
 
 interface WalletContext {
+  isImpersonating?: boolean;
   isConnectWalletDropdownOpen: boolean;
   setIsConnectWalletDropdownOpen: Dispatch<SetStateAction<boolean>>;
-  accounts: readonly WalletAccount[];
-  account?: WalletAccount;
-  selectAccount: (address: string, addressNameServiceName?: string) => void;
-  address?: string;
-  isImpersonatingAddress?: boolean;
-  selectWallet: (name: string) => Promise<void>;
+
+  wallet: Wallet | undefined;
+  connectWallet: (wallet: Wallet) => Promise<void>;
   disconnectWallet: () => Promise<void>;
+
+  walletAccounts: readonly WalletAccount[];
+  walletAccount?: WalletAccount;
+  selectWalletAccount: (
+    accountAddress: string,
+    addressNameServiceName?: string,
+  ) => void;
+
+  address?: string;
   signExecuteAndWaitForTransaction: (
     suiClient: SuiClient,
     transaction: Transaction,
@@ -50,23 +58,27 @@ interface WalletContext {
 }
 
 const WalletContext = createContext<WalletContext>({
+  isImpersonating: false,
   isConnectWalletDropdownOpen: false,
   setIsConnectWalletDropdownOpen: () => {
     throw new Error("WalletContextProvider not initialized");
   },
-  accounts: [],
-  account: undefined,
-  selectAccount: () => {
-    throw new Error("WalletContextProvider not initialized");
-  },
-  address: undefined,
-  isImpersonatingAddress: false,
-  selectWallet: async () => {
+
+  wallet: undefined,
+  connectWallet: async () => {
     throw new Error("WalletContextProvider not initialized");
   },
   disconnectWallet: async () => {
     throw new Error("WalletContextProvider not initialized");
   },
+
+  walletAccounts: [],
+  walletAccount: undefined,
+  selectWalletAccount: () => {
+    throw new Error("WalletContextProvider not initialized");
+  },
+
+  address: undefined,
   signExecuteAndWaitForTransaction: async () => {
     throw new Error("WalletContextProvider not initialized");
   },
@@ -82,74 +94,137 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
       | undefined,
   };
 
-  const {
-    chain,
-    adapter,
-    connected,
-    select: selectWallet,
-    disconnect: disconnectWallet,
-    getAccounts,
-  } = useWallet();
-  const { gasBudget } = useSettingsContext();
-
   // Impersonated address
   const impersonatedAddress = queryParams[QueryParams.WALLET];
 
-  // Wallet connect dropdown
+  // Wallet
   const [isConnectWalletDropdownOpen, setIsConnectWalletDropdownOpen] =
     useState<boolean>(false);
 
-  const wallets = useListWallets();
-  const connectedWallet = wallets.find((w) => w.id === adapter?.name);
+  const {
+    chain,
+    adapter,
+    connected: isWalletConnected,
+    select: connectWallet,
+    disconnect: disconnectWallet,
+    getAccounts: getWalletAccounts,
+  } = useWallet();
+  const { gasBudget } = useSettingsContext();
 
-  // Account
-  const [accounts, setAccounts] = useState<readonly WalletAccount[]>([]);
-  const [accountAddress, setAccountAddress] = useState<string | undefined>(
-    undefined,
+  const wallets = useListWallets();
+  const wallet = useMemo(
+    () => wallets.find((w) => w.name === adapter?.name),
+    [wallets, adapter],
   );
+
+  const connectWalletWrapper = useCallback(
+    async (_wallet: Wallet) => {
+      try {
+        await connectWallet(_wallet.name);
+        toast.info(`Connected ${_wallet.name}`);
+
+        // setIsConnectWalletDropdownOpen(false);
+      } catch (err) {
+        toast.error(`Failed to connect ${_wallet.name}`, {
+          description: (err as Error)?.message || "An unknown error occurred",
+        });
+        console.error(err);
+      }
+    },
+    [connectWallet],
+  );
+
+  const disconnectWalletWrapper = useCallback(async () => {
+    await disconnectWallet();
+    toast.info("Disconnected wallet");
+  }, [disconnectWallet]);
+
+  // Wallet account
+  const [walletAccounts, setWalletAccounts] = useState<
+    WalletContext["walletAccounts"]
+  >([]);
+  const [walletAccountAddress, setWalletAccountAddress] = useState<
+    string | undefined
+  >(undefined);
+
   useEffect(() => {
-    setAccountAddress(
+    setWalletAccountAddress(
       window.localStorage.getItem("accountAddress") ?? undefined,
     );
-  }, [connected]);
+  }, [isWalletConnected]);
 
   useEffect(() => {
-    if (connected) {
-      const _accounts = getAccounts();
-      setAccounts(_accounts);
+    if (!isWalletConnected) {
+      setWalletAccounts([]);
+      return;
+    }
 
-      if (_accounts.length === 0) {
-        // NO ACCOUNTS (should not happen) - set to undefined
-        setAccountAddress(undefined);
+    const _walletAccounts = getWalletAccounts();
+    setWalletAccounts(_walletAccounts);
+
+    if (_walletAccounts.length === 0) {
+      // NO ACCOUNTS (should not happen) - set to undefined
+      setWalletAccountAddress(undefined);
+      return;
+    }
+
+    if (!walletAccountAddress) {
+      // NO ADDRESS SET - set to first account's address
+      setWalletAccountAddress(_walletAccounts[0].address);
+    } else {
+      const _walletAccount = _walletAccounts.find(
+        (a) => a.address === walletAccountAddress,
+      );
+      if (_walletAccount) {
+        // ADDRESS SET + ACCOUNT FOUND - do nothing
         return;
       }
 
-      if (accountAddress) {
-        const account = _accounts.find((a) => a.address === accountAddress);
-        if (account) {
-          // ADDRESS SET + ACCOUNT FOUND - do nothing
-          return;
-        }
-
-        // ADDRESS SET + NO ACCOUNT FOUND - set to first account's address
-        setAccountAddress(_accounts[0].address);
-      } else {
-        // NO ADDRESS SET - set to first account's address
-        setAccountAddress(_accounts[0].address);
-      }
-    } else {
-      setAccounts([]);
+      // ADDRESS SET + NO ACCOUNT FOUND - set to first account's address
+      setWalletAccountAddress(_walletAccounts[0].address);
     }
-  }, [connected, getAccounts, accountAddress, setAccountAddress]);
+  }, [
+    isWalletConnected,
+    getWalletAccounts,
+    setWalletAccountAddress,
+    walletAccountAddress,
+  ]);
 
-  const account =
-    accounts?.find((a) => a.address === accountAddress) ?? undefined;
+  const walletAccount = useMemo(
+    () =>
+      walletAccounts?.find((wa) => wa.address === walletAccountAddress) ??
+      undefined,
+    [walletAccounts, walletAccountAddress],
+  );
+
+  const selectWalletAccount = useCallback(
+    (_accountAddress: string, addressNameServiceName?: string) => {
+      const _walletAccount = walletAccounts.find(
+        (a) => a.address === _accountAddress,
+      );
+      if (!_walletAccount) return;
+
+      setWalletAccountAddress(_accountAddress);
+      window.localStorage.setItem("accountAddress", _accountAddress);
+
+      toast.info(
+        `Switched to ${_walletAccount?.label ?? addressNameServiceName ?? formatAddress(_walletAccount.address)}`,
+        {
+          description: _walletAccount?.label
+            ? (addressNameServiceName ?? formatAddress(_walletAccount.address))
+            : undefined,
+          descriptionClassName: "uppercase !font-mono",
+        },
+      );
+    },
+    [walletAccounts],
+  );
 
   // Sentry
   useEffect(() => {
     if (impersonatedAddress) return;
-    Sentry.setUser({ id: account?.address });
-  }, [impersonatedAddress, account?.address]);
+    Sentry.setUser({ id: walletAccount?.address });
+  }, [impersonatedAddress, walletAccount?.address]);
 
   // Wallet connect event
   const loggingWalletConnectEventRef = useRef<
@@ -157,16 +232,19 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
   >(undefined);
   useEffect(() => {
     if (impersonatedAddress) return;
-    if (!account?.address || !connectedWallet) return;
+    if (!walletAccount?.address || !wallet) return;
 
-    const walletName = connectedWallet.name;
+    const walletName = wallet.name;
     if (
-      loggingWalletConnectEventRef.current?.address === account.address &&
+      loggingWalletConnectEventRef.current?.address === walletAccount.address &&
       loggingWalletConnectEventRef.current?.walletName === walletName
     )
       return;
 
-    const loggingWalletConnectEvent = { address: account?.address, walletName };
+    const loggingWalletConnectEvent = {
+      address: walletAccount?.address,
+      walletName,
+    };
     loggingWalletConnectEventRef.current = loggingWalletConnectEvent;
 
     (async () => {
@@ -183,7 +261,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     })();
-  }, [impersonatedAddress, account?.address, connectedWallet]);
+  }, [impersonatedAddress, walletAccount?.address, wallet]);
 
   // LaunchDarkly
   const ldClient = useLDClient();
@@ -191,14 +269,14 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!ldClient) return;
 
-    const key = impersonatedAddress ?? account?.address;
+    const key = impersonatedAddress ?? walletAccount?.address;
     if (ldKeyRef.current === key) return;
 
     (async () => {
       await ldClient.identify(!key ? { anonymous: true } : { key });
       ldKeyRef.current = key;
     })();
-  }, [ldClient, impersonatedAddress, account?.address]);
+  }, [ldClient, impersonatedAddress, walletAccount?.address]);
 
   // Tx
   // Note: Do NOT import and use this function directly. Instead, use signExecuteAndWaitForTransaction from AppContext.
@@ -215,7 +293,7 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
             .integerValue(BigNumber.ROUND_DOWN),
         );
 
-      const _address = impersonatedAddress ?? account?.address;
+      const _address = impersonatedAddress ?? walletAccount?.address;
       if (_address) {
         (async () => {
           try {
@@ -240,13 +318,13 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
 
       if (!chain) throw new Error("Missing chain");
       if (!adapter) throw new Error("Missing adapter");
-      if (!account) throw new Error("Missing account");
+      if (!walletAccount) throw new Error("Missing account");
 
       try {
         // BEGIN legacy code
         const signedTransaction = await adapter.signTransactionBlock({
           transactionBlock: transaction as any, // Expects TransactionBlock, not Transaction
-          account,
+          account: walletAccount,
           chain: chain.id as IdentifierString,
         });
 
@@ -286,50 +364,36 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
     },
-    [gasBudget, impersonatedAddress, account, chain, adapter],
+    [gasBudget, impersonatedAddress, walletAccount, chain, adapter],
   );
 
   // Context
   const contextValue = useMemo(
     () => ({
+      isImpersonating: !!impersonatedAddress,
       isConnectWalletDropdownOpen,
       setIsConnectWalletDropdownOpen,
-      accounts,
-      account,
-      selectAccount: (_address: string, addressNameServiceName?: string) => {
-        const _account = accounts.find((a) => a.address === _address);
-        if (!_account) return;
 
-        setAccountAddress(_address);
-        window.localStorage.setItem("accountAddress", _address);
+      wallet,
+      connectWallet: connectWalletWrapper,
+      disconnectWallet: disconnectWalletWrapper,
 
-        toast.info(
-          `Switched to ${_account?.label ?? addressNameServiceName ?? formatAddress(_address)}`,
-          {
-            description: _account?.label
-              ? (addressNameServiceName ?? formatAddress(_address))
-              : undefined,
-            descriptionClassName: "uppercase !font-mono",
-          },
-        );
-      },
-      address: impersonatedAddress ?? account?.address,
-      isImpersonatingAddress: !!impersonatedAddress,
-      selectWallet,
-      disconnectWallet: async () => {
-        await disconnectWallet();
-        toast.info("Disconnected wallet");
-      },
+      walletAccounts,
+      walletAccount,
+      selectWalletAccount,
+
+      address: impersonatedAddress ?? walletAccount?.address,
       signExecuteAndWaitForTransaction,
     }),
     [
-      isConnectWalletDropdownOpen,
-      accounts,
-      account,
-      setAccountAddress,
       impersonatedAddress,
-      selectWallet,
-      disconnectWallet,
+      isConnectWalletDropdownOpen,
+      wallet,
+      connectWalletWrapper,
+      disconnectWalletWrapper,
+      walletAccounts,
+      walletAccount,
+      selectWalletAccount,
       signExecuteAndWaitForTransaction,
     ],
   );
