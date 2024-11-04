@@ -4,7 +4,6 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { ReactNode, useEffect } from "react";
 
-import { WalletProvider } from "@suiet/wallet-kit";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
@@ -13,6 +12,7 @@ import mixpanel from "mixpanel-browser";
 import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import WalletProvider from "@/components/WalletProvider";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
 import { SettingsContextProvider } from "@/contexts/SettingsContext";
@@ -60,14 +60,14 @@ export default function App({
       </Head>
 
       <main id="__app_main" className={cn("light relative", ...fontClassNames)}>
-        <TooltipProvider>
-          <LDProvider
-            clientSideID={
-              process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
-            }
-          >
-            <WormholeConnectContextProvider>
-              <WalletProvider>
+        <WalletProvider>
+          <TooltipProvider>
+            <LDProvider
+              clientSideID={
+                process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
+              }
+            >
+              <WormholeConnectContextProvider>
                 <SettingsContextProvider>
                   <WalletContextProvider>
                     <AppContextProvider>
@@ -77,11 +77,11 @@ export default function App({
                     </AppContextProvider>
                   </WalletContextProvider>
                 </SettingsContextProvider>
-              </WalletProvider>
-            </WormholeConnectContextProvider>
-          </LDProvider>
-          <Toaster />
-        </TooltipProvider>
+              </WormholeConnectContextProvider>
+            </LDProvider>
+            <Toaster />
+          </TooltipProvider>
+        </WalletProvider>
       </main>
     </>
   );
