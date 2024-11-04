@@ -137,6 +137,7 @@ export default function AddRewardsDialog() {
     const transaction = new Transaction();
 
     try {
+      let isFirstReward = true;
       for (const side of Object.values(Side)) {
         for (const reserve of data.lendingMarket.reserves) {
           const reserveArrayIndex = reserve.arrayIndex;
@@ -158,7 +159,9 @@ export default function AddRewardsDialog() {
               BigInt(startTimeMs),
               BigInt(endTimeMs),
               transaction,
+              isFirstReward,
             );
+            isFirstReward = false;
           }
         }
       }

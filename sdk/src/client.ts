@@ -307,6 +307,7 @@ export class SuilendClient {
     startTimeMs: bigint,
     endTimeMs: bigint,
     transaction: Transaction,
+    mergeCoins: boolean = true,
   ) {
     const isSui =
       normalizeStructTag(rewardCoinType) === normalizeStructTag(SUI_COINTYPE);
@@ -318,16 +319,15 @@ export class SuilendClient {
       })
     ).data;
 
-    const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui) {
+    if (coins.length > 1 && !isSui && mergeCoins) {
       transaction.mergeCoins(
-        transaction.object(mergeCoin.coinObjectId),
+        transaction.object(coins[0].coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
       );
     }
 
     const [rewardCoin] = transaction.splitCoins(
-      isSui ? transaction.gas : transaction.object(mergeCoin.coinObjectId),
+      isSui ? transaction.gas : transaction.object(coins[0].coinObjectId),
       [rewardValue],
     );
 
