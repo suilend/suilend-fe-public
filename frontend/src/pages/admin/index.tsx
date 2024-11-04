@@ -11,6 +11,7 @@ import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";
 import ClaimFeesDialog from "@/components/admin/ClaimFeesDialog";
 import LiquidateDialog from "@/components/admin/LiquidateDialog";
+import MintObligationOwnerCapDialog from "@/components/admin/MintObligationOwnerCapDialog";
 import ObligationsDialog from "@/components/admin/ObligationsDialog";
 import RateLimiterConfigDialog from "@/components/admin/RateLimiterConfigDialog";
 import RateLimiterPropertiesDialog from "@/components/admin/RateLimiterPropertiesDialog";
@@ -201,6 +202,7 @@ export default function Admin() {
                 <TTitle className="uppercase">Obligation</TTitle>
               </CardHeader>
               <CardContent className="flex flex-row flex-wrap gap-2">
+                <MintObligationOwnerCapDialog />
                 <RemintObligationOwnerCapDialog />
               </CardContent>
             </Card>
