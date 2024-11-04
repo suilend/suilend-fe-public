@@ -657,7 +657,7 @@ export default function HistoryTabContent({
         columns={columns}
         data={rows}
         noDataMessage={
-          filteredOutEventTypes.length + filteredOutCoinTypes.length === 0
+          eventTypes.length + coinTypes.length === 0
             ? "No history"
             : "No history for the active filters"
         }
