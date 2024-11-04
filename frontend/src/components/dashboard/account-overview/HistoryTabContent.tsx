@@ -4,7 +4,7 @@ import { ColumnDef, Row } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { cloneDeep } from "lodash";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
@@ -442,14 +442,19 @@ export default function HistoryTabContent({
     );
   };
 
-  const eventTypes = [
-    EventType.DEPOSIT,
-    EventType.BORROW,
-    EventType.WITHDRAW,
-    EventType.REPAY,
-    EventType.LIQUIDATE,
-    EventType.CLAIM_REWARD,
-  ];
+  const eventTypes = useMemo(() => {
+    if (eventsData === undefined) return [];
+
+    const result: EventType[] = [];
+    if (eventsData.deposit.length > 0) result.push(EventType.DEPOSIT);
+    if (eventsData.borrow.length > 0) result.push(EventType.BORROW);
+    if (eventsData.withdraw.length > 0) result.push(EventType.WITHDRAW);
+    if (eventsData.repay.length > 0) result.push(EventType.REPAY);
+    if (eventsData.liquidate.length > 0) result.push(EventType.LIQUIDATE);
+    if (eventsData.claimReward.length > 0) result.push(EventType.CLAIM_REWARD);
+
+    return result;
+  }, [eventsData]);
   const isNotFilteredOutEventType = (eventType: EventType) =>
     !filteredOutEventTypes.includes(eventType);
 
@@ -588,56 +593,65 @@ export default function HistoryTabContent({
 
   return (
     <>
-      <div className="flex flex-row gap-4 p-4">
-        <TLabelSans className="my-1">Filters</TLabelSans>
+      {eventTypes.length > 0 || coinTypes.length > 0 ? (
+        <div className="flex flex-row gap-4 p-4">
+          <TLabelSans className="my-1">Filters</TLabelSans>
 
-        <div className="flex flex-row flex-wrap gap-2">
-          {eventTypes.map((eventType) => (
-            <Button
-              key={eventType}
-              className={cn(
-                "rounded-full border hover:border-transparent",
-                isNotFilteredOutEventType(eventType) &&
-                  "border-transparent bg-muted/15",
-              )}
-              labelClassName="text-xs font-sans"
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleEventTypeFilter(eventType)}
-            >
-              {EventTypeNameMap[eventType]}
-            </Button>
-          ))}
-          {coinTypes.map((coinType) => {
-            const coinMetadata = data.coinMetadataMap[coinType];
+          <div className="flex flex-row flex-wrap gap-2">
+            {eventTypes.map((eventType) => {
+              const isSelected = isNotFilteredOutEventType(eventType);
 
-            return (
-              <Button
-                key={coinType}
-                className={cn(
-                  "h-6 rounded-full border hover:border-transparent",
-                  isNotFilteredOutCoinType(coinType) &&
-                    "border-transparent bg-muted/15",
-                )}
-                icon={
-                  <TokenLogo
-                    token={{
-                      coinType,
-                      symbol: coinMetadata.symbol,
-                      iconUrl: coinMetadata.iconUrl,
-                    }}
-                  />
-                }
-                variant="ghost"
-                size="icon"
-                onClick={() => toggleCoinTypeFilter(coinType)}
-              >
-                {coinMetadata.symbol}
-              </Button>
-            );
-          })}
+              return (
+                <Button
+                  key={eventType}
+                  className={cn(
+                    "rounded-full border hover:border-transparent",
+                    isSelected && "border-transparent !bg-muted/20",
+                  )}
+                  labelClassName="text-xs font-sans"
+                  startIcon={isSelected ? <Check /> : undefined}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleEventTypeFilter(eventType)}
+                >
+                  {EventTypeNameMap[eventType]}
+                </Button>
+              );
+            })}
+            {coinTypes.map((coinType) => {
+              const coinMetadata = data.coinMetadataMap[coinType];
+              const isSelected = isNotFilteredOutCoinType(coinType);
+
+              return (
+                <Button
+                  key={coinType}
+                  className={cn(
+                    "h-6 rounded-full border px-2 hover:border-transparent",
+                    isSelected && "border-transparent !bg-muted/20",
+                  )}
+                  startIcon={isSelected ? <Check /> : undefined}
+                  icon={
+                    <TokenLogo
+                      token={{
+                        coinType,
+                        symbol: coinMetadata.symbol,
+                        iconUrl: coinMetadata.iconUrl,
+                      }}
+                    />
+                  }
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleCoinTypeFilter(coinType)}
+                >
+                  {coinMetadata.symbol}
+                </Button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="h-4 w-full shrink-0" />
+      )}
 
       <DataTable<RowData>
         columns={columns}
