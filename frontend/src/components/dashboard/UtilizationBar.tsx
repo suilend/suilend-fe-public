@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { AlertTriangle } from "lucide-react";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";
 import LiquidationThresholdTitle from "@/components/dashboard/account/LiquidationThresholdTitle";

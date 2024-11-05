@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";

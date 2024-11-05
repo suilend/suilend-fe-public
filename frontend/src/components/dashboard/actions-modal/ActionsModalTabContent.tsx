@@ -6,9 +6,9 @@ import { capitalize } from "lodash";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-import { maxU64 } from "suilend-sdk/constants";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Action, ApiDepositEvent, Side } from "suilend-sdk/types";
+import { maxU64 } from "@suilend/sdk/constants";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Action, ApiDepositEvent, Side } from "@suilend/sdk/types";
 
 import {
   ActionSignature,

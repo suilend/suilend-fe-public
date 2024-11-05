@@ -2,10 +2,10 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 
-import { WAD } from "suilend-sdk/constants";
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
-import { ParsedPoolReward, ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Side } from "suilend-sdk/types";
+import { WAD } from "@suilend/sdk/constants";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Side } from "@suilend/sdk/types";
 
 import { issSui } from "@/lib/coinType";
 import { msPerYear } from "@/lib/constants";

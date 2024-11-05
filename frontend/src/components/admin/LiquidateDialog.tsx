@@ -7,27 +7,27 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { phantom } from "suilend-sdk/_generated/_framework/reified";
-import { LendingMarket } from "suilend-sdk/_generated/suilend/lending-market/structs";
-import { Obligation } from "suilend-sdk/_generated/suilend/obligation/structs";
-import { Reserve } from "suilend-sdk/_generated/suilend/reserve/structs";
+import { phantom } from "@suilend/sdk/_generated/_framework/reified";
+import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
+import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import {
   LENDING_MARKET_ID,
   LENDING_MARKET_TYPE,
   SuilendClient,
-} from "suilend-sdk/client";
+} from "@suilend/sdk/client";
 import {
   ParsedObligation,
   parseObligation,
-} from "suilend-sdk/parsers/obligation";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+} from "@suilend/sdk/parsers/obligation";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   FormattedObligationHistory,
   LiquidationHistoryEvent,
   NonLiquidationHistoryEvent,
   getObligationHistoryPage,
-} from "suilend-sdk/utils/obligation";
-import * as simulate from "suilend-sdk/utils/simulate";
+} from "@suilend/sdk/utils/obligation";
+import * as simulate from "@suilend/sdk/utils/simulate";
 
 import DataTable, {
   decimalSortingFn,

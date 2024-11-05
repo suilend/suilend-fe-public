@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { Action, Side } from "suilend-sdk/types";
+import { Action, Side } from "@suilend/sdk/types";
 
 import ActionsModalContainer from "@/components/dashboard/actions-modal/ActionsModalContainer";
 import {

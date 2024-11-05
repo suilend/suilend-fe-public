@@ -17,7 +17,7 @@ import * as Sentry from "@sentry/nextjs";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { SuilendClient } from "suilend-sdk/client";
+import { SuilendClient } from "@suilend/sdk/client";
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
 import { AppData, useAppContext } from "@/contexts/AppContext";

@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Action, Side } from "suilend-sdk/types";
-import { linearlyInterpolate } from "suilend-sdk/utils";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Action, Side } from "@suilend/sdk/types";
+import { linearlyInterpolate } from "@suilend/sdk/utils";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import TokenLogo from "@/components/shared/TokenLogo";

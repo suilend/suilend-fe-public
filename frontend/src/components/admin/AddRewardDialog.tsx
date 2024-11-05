@@ -7,8 +7,8 @@ import { isEqual } from "lodash";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "suilend-sdk/client";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { SuilendClient } from "@suilend/sdk/client";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";

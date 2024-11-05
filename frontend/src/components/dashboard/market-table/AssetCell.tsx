@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedReserve } from "suilend-sdk/parsers";
+import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";

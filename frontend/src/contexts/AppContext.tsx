@@ -21,11 +21,11 @@ import BigNumber from "bignumber.js";
 import { isEqual } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { ObligationOwnerCap } from "suilend-sdk/_generated/suilend/lending-market/structs";
-import { SuilendClient } from "suilend-sdk/client";
-import { ParsedLendingMarket } from "suilend-sdk/parsers/lendingMarket";
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+import { SuilendClient } from "@suilend/sdk/client";
+import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useWalletContext } from "@/contexts/WalletContext";
 import useFetchAppData from "@/fetchers/useFetchAppData";

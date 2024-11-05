@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import UtilizationBar from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";

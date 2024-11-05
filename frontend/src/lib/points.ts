@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import { isSendPoints } from "@/lib/coinType";
 import {

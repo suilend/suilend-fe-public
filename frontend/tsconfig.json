@@ -18,7 +18,7 @@
     "paths": {
       "@/public/*": ["./public/*"],
       "@/*": ["./src/*"],
-      "suilend-sdk/*": ["../sdk/src/*"]
+      "@suilend/sdk/*": ["../sdk/src/*"]
     },
     "plugins": [{ "name": "next" }]
   },

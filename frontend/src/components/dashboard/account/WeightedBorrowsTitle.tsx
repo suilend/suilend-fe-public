@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { getWeightedBorrowsColor } from "@/components/dashboard/UtilizationBar";

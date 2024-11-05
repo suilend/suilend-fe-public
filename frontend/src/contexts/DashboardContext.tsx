@@ -13,7 +13,7 @@ import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
 
-import { SuilendClient } from "suilend-sdk/client";
+import { SuilendClient } from "@suilend/sdk/client";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { AppData, useAppContext } from "@/contexts/AppContext";

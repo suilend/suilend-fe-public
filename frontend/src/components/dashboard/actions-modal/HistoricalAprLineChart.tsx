@@ -6,9 +6,9 @@ import { capitalize } from "lodash";
 import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
-import { ParsedDownsampledApiReserveAssetDataEvent } from "suilend-sdk/parsers/apiReserveAssetDataEvent";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Side } from "suilend-sdk/types";
+import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Side } from "@suilend/sdk/types";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import Button from "@/components/shared/Button";

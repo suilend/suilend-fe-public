@@ -6,7 +6,7 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
-import { WAD } from "suilend-sdk/constants";
+import { WAD } from "@suilend/sdk/constants";
 import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,
@@ -16,7 +16,7 @@ import {
   ApiRepayEvent,
   ApiReserveAssetDataEvent,
   ApiWithdrawEvent,
-} from "suilend-sdk/types";
+} from "@suilend/sdk/types";
 
 import EarningsTabContent from "@/components/dashboard/account-overview/EarningsTabContent";
 import HistoryTabContent from "@/components/dashboard/account-overview/HistoryTabContent";

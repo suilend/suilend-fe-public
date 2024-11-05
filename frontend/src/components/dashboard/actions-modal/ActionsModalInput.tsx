@@ -3,8 +3,8 @@ import { forwardRef, useEffect, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Action } from "suilend-sdk/types";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Action } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
 import { TBody, TLabel } from "@/components/shared/Typography";

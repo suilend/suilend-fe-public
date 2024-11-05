@@ -5,8 +5,8 @@ import { formatISO } from "date-fns";
 import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "suilend-sdk/client";
-import { ParsedPoolReward, ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { SuilendClient } from "@suilend/sdk/client";
+import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import AddRewardDialog from "@/components/admin/AddRewardDialog";
 import Dialog from "@/components/admin/Dialog";

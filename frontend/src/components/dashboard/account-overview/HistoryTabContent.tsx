@@ -14,8 +14,8 @@ import {
   ApiLiquidateEvent,
   ApiRepayEvent,
   ApiWithdrawEvent,
-} from "suilend-sdk/types";
-import { reserveSort } from "suilend-sdk/utils";
+} from "@suilend/sdk/types";
+import { reserveSort } from "@suilend/sdk/utils";
 
 import {
   EventsData,

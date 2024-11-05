@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedObligation } from "suilend-sdk/parsers/obligation";
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
-import { Action } from "suilend-sdk/types";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Action } from "@suilend/sdk/types";
 
 import { SubmitButtonState } from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import { AppData } from "@/contexts/AppContext";

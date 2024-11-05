@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";

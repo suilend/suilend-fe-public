@@ -7,8 +7,8 @@ import { isEqual } from "lodash";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "suilend-sdk/client";
-import { Side } from "suilend-sdk/types";
+import { SuilendClient } from "@suilend/sdk/client";
+import { Side } from "@suilend/sdk/types";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";

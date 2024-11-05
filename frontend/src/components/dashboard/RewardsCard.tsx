@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { ParsedReserve } from "suilend-sdk/parsers";
+import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import Card from "@/components/dashboard/Card";
 import PointsCount from "@/components/points/PointsCount";

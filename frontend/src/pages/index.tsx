@@ -3,7 +3,7 @@ import NextLink from "next/link";
 
 import { Droplet, Server } from "lucide-react";
 
-import { Side } from "suilend-sdk/types";
+import { Side } from "@suilend/sdk/types";
 
 import DiscordIcon from "@/components/assets/DiscordIcon";
 import XIcon from "@/components/assets/XIcon";
