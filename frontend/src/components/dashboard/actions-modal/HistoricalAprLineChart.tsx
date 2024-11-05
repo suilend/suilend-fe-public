@@ -24,14 +24,7 @@ import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
-import {
-  ViewBox,
-  axis,
-  axisLabel,
-  getTooltipStyle,
-  line,
-  tooltip,
-} from "@/lib/chart";
+import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
 import { COINTYPE_COLOR_MAP } from "@/lib/coinType";
 import {
   DAYS,
@@ -44,10 +37,10 @@ import { formatPercent } from "@/lib/format";
 import { getDedupedAprRewards } from "@/lib/liquidityMining";
 import { cn } from "@/lib/utils";
 
-const isBase = (field: string) => field.endsWith("_base");
+const isBase = (field: string) => field.endsWith("__base");
 const isReward = (field: string) => !isBase(field);
 
-const getFieldCoinType = (field: string) => field.split("_")[1];
+const getFieldCoinType = (field: string) => field.split("__")[1];
 const getFieldColor = (field: string) => {
   if (isBase(field)) return "hsl(var(--success))";
   if (isReward(field)) return COINTYPE_COLOR_MAP[getFieldCoinType(field)];
@@ -184,8 +177,8 @@ function Chart({ side, data }: ChartProps) {
       (d) =>
         d[
           side === Side.DEPOSIT
-            ? "depositInterestAprPercent_base"
-            : "borrowInterestAprPercent_base"
+            ? "depositInterestAprPercent__base"
+            : "borrowInterestAprPercent__base"
         ] ?? 0,
     ),
     ...data.map((d) =>
@@ -200,8 +193,8 @@ function Chart({ side, data }: ChartProps) {
       (d) =>
         d[
           side === Side.DEPOSIT
-            ? "depositInterestAprPercent_base"
-            : "borrowInterestAprPercent_base"
+            ? "depositInterestAprPercent__base"
+            : "borrowInterestAprPercent__base"
         ] ?? 0,
     ),
     ...data.map((d) =>
@@ -455,13 +448,13 @@ export default function HistoricalAprLineChart({
 
           return {
             ...acc,
-            [`${side}InterestAprPercent_${rewardReserve.coinType}`]:
+            [`${side}InterestAprPercent__${rewardReserve.coinType}`]:
               rewardAprPercent,
           };
         },
         {
           timestampS,
-          [`${side}InterestAprPercent_base`]: event
+          [`${side}InterestAprPercent__base`]: event
             ? side === Side.DEPOSIT
               ? +event.depositAprPercent
               : +event.borrowAprPercent
