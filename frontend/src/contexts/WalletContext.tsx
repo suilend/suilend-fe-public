@@ -40,25 +40,19 @@ import { useSettingsContext } from "@/contexts/SettingsContext";
 import { formatAddress } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
 
-export enum QueryParams {
-  WALLET = "wallet",
-}
-
 export enum WalletType {
   EXTENSION = "extension",
   WEB = "web",
 }
+
+type WalletPlatform = "iOS" | "android" | "extension";
 
 export type Wallet = {
   name: string;
   isInstalled?: boolean; // Only if type is extension
   iconUrl?: WalletIcon;
   type: WalletType;
-  downloadUrls?: {
-    iOS?: string;
-    android?: string;
-    browserExtension?: string;
-  };
+  downloadUrls?: Record<WalletPlatform, string | undefined>;
   raw?: WalletWithRequiredFeatures;
 };
 
@@ -85,7 +79,7 @@ export const DEFAULT_EXTENSION_WALLET_NAMES = [
 ];
 const WEB_WALLET_NAMES = [WalletName.STASHED];
 
-const WALLET_LOGO_MAP: Record<string, WalletIcon> = {
+const WALLET_LOGO_MAP: Record<string, Wallet["iconUrl"]> = {
   [WalletName.SUI_WALLET]:
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjgiIGhlaWdodD0iMjgiIHZpZXdCb3g9IjAgMCAyOCAyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxyZWN0IHdpZHRoPSIyOCIgaGVpZ2h0PSIyOCIgZmlsbD0iIzRDQTNGRiIvPgogICAgPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xOC44MzI3IDEyLjM0MTNWMTIuMzQyMkMxOS42NDgyIDEzLjM2NTMgMjAuMTM2IDE0LjY2MTMgMjAuMTM2IDE2LjA3MDVDMjAuMTM2IDE3LjQ3OTggMTkuNjMzNyAxOC44MTQzIDE4Ljc5NTcgMTkuODQ0M0wxOC43MjM1IDE5LjkzM0wxOC43MDQ1IDE5LjgyMDNDMTguNjg4MiAxOS43MjQ1IDE4LjY2OSAxOS42Mjc1IDE4LjY0NyAxOS41M0MxOC4yMjc3IDE3LjY4NzUgMTYuODYxMiAxNi4xMDc1IDE0LjYxMjUgMTQuODI4MkMxMy4wOTQgMTMuOTY2OCAxMi4yMjQ3IDEyLjkyOTIgMTEuOTk2NSAxMS43NTA4QzExLjg0OSAxMC45ODg1IDExLjk1ODcgMTAuMjIzIDEyLjE3MDUgOS41NjcyNUMxMi4zODIyIDguOTExNzUgMTIuNjk3MiA4LjM2MjUgMTIuOTY0NyA4LjAzMkwxMy44Mzk1IDYuOTYyMjVDMTMuOTkzIDYuNzc0NzUgMTQuMjggNi43NzQ3NSAxNC40MzM1IDYuOTYyMjVMMTguODMzIDEyLjM0MTVMMTguODMyNyAxMi4zNDEzWk0yMC4yMTY1IDExLjI3MjVWMTEuMjcyTDE0LjM1MyA0LjEwMjc1QzE0LjI0MSAzLjk2NTc1IDE0LjAzMTUgMy45NjU3NSAxMy45MTk1IDQuMTAyNzVMOC4wNTYgMTEuMjcyM1YxMS4yNzI4TDguMDM3IDExLjI5NjVDNi45NTgyNSAxMi42MzUzIDYuMzEyNSAxNC4zMzY4IDYuMzEyNSAxNi4xODlDNi4zMTI1IDIwLjUwMjggOS44MTUyNSAyNCAxNC4xMzYzIDI0QzE4LjQ1NzIgMjQgMjEuOTYgMjAuNTAyOCAyMS45NiAxNi4xODlDMjEuOTYgMTQuMzM2OCAyMS4zMTQyIDEyLjYzNTMgMjAuMjM1MiAxMS4yOTYzTDIwLjIxNiAxMS4yNzI1SDIwLjIxNjVaTTkuNDU5MjUgMTIuMzE4TDkuOTgzNzUgMTEuNjc2NUw5Ljk5OTUgMTEuNzk1QzEwLjAxMiAxMS44ODg3IDEwLjAyNzIgMTEuOTgzIDEwLjA0NTIgMTIuMDc3OEMxMC4zODQ1IDEzLjg1ODIgMTEuNTk2NyAxNS4zNDI4IDEzLjYyMzUgMTYuNDkyNUMxNS4zODUyIDE3LjQ5NSAxNi40MTEgMTguNjQ4IDE2LjcwNjUgMTkuOTEyNUMxNi44Mjk4IDIwLjQ0MDMgMTYuODUxNyAyMC45NTk1IDE2Ljc5ODUgMjEuNDEzNUwxNi43OTUyIDIxLjQ0MTVMMTYuNzY5NyAyMS40NTRDMTUuOTc0NyAyMS44NDI1IDE1LjA4MDcgMjIuMDYwNSAxNC4xMzYgMjIuMDYwNUMxMC44MjI1IDIyLjA2MDUgOC4xMzYyNSAxOS4zNzg4IDguMTM2MjUgMTYuMDcwNUM4LjEzNjI1IDE0LjY1MDMgOC42MzE1IDEzLjM0NSA5LjQ1OSAxMi4zMTgzTDkuNDU5MjUgMTIuMzE4WiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==",
   [WalletName.NIGHTLY]:
@@ -94,30 +88,36 @@ const WALLET_LOGO_MAP: Record<string, WalletIcon> = {
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMjQiIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF8zMDVfMTI1MTYpIi8+PHBhdGggZD0iTTUxLjUgNDMuNmMtMy45IDAtNy42LTMuOS05LjUtNi40LTEuOSAyLjUtNS42IDYuNC05LjUgNi40LTQgMC03LjctMy45LTkuNS02LjQtMS44IDIuNS01LjUgNi40LTkuNSA2LjQtLjggMC0xLjUtLjYtMS41LTEuNSAwLS44LjctMS41IDEuNS0xLjUgMy4yIDAgNy4xLTUuMSA4LjItNi45LjMtLjQuOC0uNyAxLjMtLjdzMSAuMiAxLjMuN2MxLjEgMS44IDUgNi45IDguMiA2LjkgMy4xIDAgNy4xLTUuMSA4LjItNi45LjMtLjQuOC0uNyAxLjMtLjdzMSAuMiAxLjIuN2MxLjEgMS44IDUgNi45IDguMiA2LjkuOSAwIDEuNi43IDEuNiAxLjUgMCAuOS0uNiAxLjUtMS41IDEuNXoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNNTEuNSA1Mi4zYy0zLjkgMC03LjYtMy45LTkuNS02LjQtMS45IDIuNS01LjYgNi40LTkuNSA2LjQtNCAwLTcuNy0zLjktOS41LTYuNC0xLjggMi41LTUuNSA2LjQtOS41IDYuNC0uOCAwLTEuNS0uNi0xLjUtMS41IDAtLjguNy0xLjUgMS41LTEuNSAzLjIgMCA3LjEtNS4xIDguMi02LjkuMy0uNC44LS43IDEuMy0uN3MxIC4zIDEuMy43YzEuMSAxLjggNSA2LjkgOC4yIDYuOSAzLjEgMCA3LjEtNS4xIDguMi02LjkuMy0uNC44LS43IDEuMy0uN3MxIC4zIDEuMi43YzEuMSAxLjggNSA2LjkgOC4yIDYuOS45IDAgMS42LjcgMS42IDEuNSAwIC45LS42IDEuNS0xLjUgMS41ek0xNC42IDM2LjdjLS44IDAtMS40LS41LTEuNi0xLjNsLS4zLTMuNmMwLTEwLjkgOC45LTE5LjggMTkuOC0xOS44IDExIDAgMTkuOCA4LjkgMTkuOCAxOS44bC0uMyAzLjZjLS4xLjgtLjkgMS40LTEuNyAxLjItLjktLjEtMS41LS45LTEuMy0xLjhsLjMtM2MwLTkuMi03LjUtMTYuOC0xNi44LTE2LjgtOS4yIDAtMTYuNyA3LjUtMTYuNyAxNi44bC4yIDMuMWMuMi44LS4zIDEuNi0xLjEgMS44aC0uM3oiIGZpbGw9IiNmZmYiLz48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMzA1XzEyNTE2IiBjeD0iMCIgY3k9IjAiIHI9IjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KDUyLjc1ODAzIDUxLjM1OCAtNTEuNDM5NDcgNTIuODQxNzIgMCA3LjQwNykiPjxzdG9wIHN0b3AtY29sb3I9IiMwMDU4REQiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2N0M4RkYiLz48L3JhZGlhbEdyYWRpZW50PjwvZGVmcz48L3N2Zz4=",
 };
 
-const WALLET_DOWNLOAD_URLS_MAP: Record<
-  string,
-  Record<"iOS" | "android" | "browserExtension", string | undefined>
-> = {
+const WALLET_DOWNLOAD_URLS_MAP: Record<string, Wallet["downloadUrls"]> = {
   [WalletName.SUI_WALLET]: {
     iOS: "https://apps.apple.com/us/app/sui-wallet-mobile/id6476572140",
     android:
       "https://play.google.com/store/apps/details?id=com.mystenlabs.suiwallet",
-    browserExtension:
+    extension:
       "https://chromewebstore.google.com/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil",
   },
   [WalletName.NIGHTLY]: {
     iOS: "https://apps.apple.com/pl/app/nightly-multichain-wallet/id6444768157",
     android: "https://play.google.com/store/apps/details?id=com.nightlymobile",
-    browserExtension:
+    extension:
       "https://chromewebstore.google.com/detail/nightly/fiikommddbeccaoicoejoniammnalkfa",
   },
   [WalletName.SUIET]: {
     iOS: undefined,
     android: undefined,
-    browserExtension:
+    extension:
       "https://chromewebstore.google.com/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd",
   },
+  [WalletName.MSAFE_WALLET]: {
+    iOS: undefined,
+    android: undefined,
+    extension: "https://sui.m-safe.io",
+  },
 };
+
+export enum QueryParams {
+  WALLET = "wallet",
+}
 
 interface WalletContext {
   isImpersonating?: boolean;
@@ -193,15 +193,14 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
   );
 
   const wallets__extension_default: Wallet[] = useMemo(() => {
-    if (isInMsafeApp())
-      return [
-        {
-          name: WalletName.MSAFE_WALLET,
-          iconUrl: getInstalledWallet(WalletName.MSAFE_WALLET)?.icon,
-          type: WalletType.EXTENSION,
-        },
-      ];
+    const msafeWallet = {
+      name: WalletName.MSAFE_WALLET,
+      iconUrl: getInstalledWallet(WalletName.MSAFE_WALLET)?.icon,
+      type: WalletType.EXTENSION,
+      downloadUrls: WALLET_DOWNLOAD_URLS_MAP[WalletName.MSAFE_WALLET],
+    };
 
+    if (isInMsafeApp()) return [msafeWallet];
     return [
       {
         name: WalletName.SUI_WALLET,
@@ -227,13 +226,18 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
         type: WalletType.EXTENSION,
         downloadUrls: WALLET_DOWNLOAD_URLS_MAP[WalletName.SUIET],
       },
+      msafeWallet,
     ];
   }, [getInstalledWallet]);
 
   const wallets__extension_installed_default: Wallet[] = useMemo(
     () =>
       wallets__extension_default
-        .filter((w) => !!getInstalledWallet(w.name))
+        .filter((w) =>
+          w.name === WalletName.MSAFE_WALLET
+            ? isInMsafeApp()
+            : !!getInstalledWallet(w.name),
+        )
         .map((w) => ({
           ...w,
           isInstalled: true,
@@ -262,7 +266,11 @@ export function WalletContextProvider({ children }: PropsWithChildren) {
   const wallets__extension_notInstalled_default: Wallet[] = useMemo(
     () =>
       wallets__extension_default
-        .filter((w) => !getInstalledWallet(w.name))
+        .filter((w) =>
+          w.name === WalletName.MSAFE_WALLET
+            ? !isInMsafeApp()
+            : !getInstalledWallet(w.name),
+        )
         .map((w) => ({ ...w, isInstalled: false })),
     [wallets__extension_default, getInstalledWallet],
   );

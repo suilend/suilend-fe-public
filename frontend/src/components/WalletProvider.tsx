@@ -23,7 +23,7 @@ export default function WalletProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (didRegisterMsafeWalletRef.current) return;
 
-    registerWallet(new MSafeWallet("Suilend", RPCS[0].url, "mainnet"));
+    registerWallet(new MSafeWallet("Suilend", RPCS[0].url, "sui:mainnet"));
     didRegisterMsafeWalletRef.current = true;
   }, []);
 

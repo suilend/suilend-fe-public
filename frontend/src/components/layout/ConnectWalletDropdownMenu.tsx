@@ -30,7 +30,7 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
     ? wallet.downloadUrls?.iOS
     : isAndroid
       ? wallet.downloadUrls?.android
-      : wallet.downloadUrls?.browserExtension;
+      : wallet.downloadUrls?.extension;
 
   const onClick = () => {
     if (wallet.type === WalletType.WEB || wallet.isInstalled) {
@@ -49,6 +49,7 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
         <div className="flex flex-row items-center gap-2">
           {wallet.iconUrl ? (
             <Image
+              className="h-6 w-6"
               src={wallet.iconUrl}
               alt={`${wallet.name} logo`}
               width={24}
