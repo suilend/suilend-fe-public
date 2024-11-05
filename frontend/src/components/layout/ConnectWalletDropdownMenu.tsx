@@ -1,6 +1,5 @@
 import Image from "next/image";
 
-import { WalletType } from "@suiet/wallet-kit";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import Button from "@/components/shared/Button";
@@ -8,11 +7,14 @@ import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
 import { TLabelSans } from "@/components/shared/Typography";
-import { useWalletContext } from "@/contexts/WalletContext";
+import {
+  Wallet,
+  WalletType,
+  isInMsafeApp,
+  useWalletContext,
+} from "@/contexts/WalletContext";
 import useIsAndroid from "@/hooks/useIsAndroid";
 import useIsiOS from "@/hooks/useIsiOS";
-import { Wallet } from "@/lib/types";
-import { useListWallets } from "@/lib/wallets";
 
 interface WalletDropdownItemProps {
   wallet: Wallet;
@@ -24,25 +26,23 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
   const isiOS = useIsiOS();
   const isAndroid = useIsAndroid();
 
-  const downloadUrl = (() => {
-    if (isiOS) return wallet.downloadUrls.iOS;
-    if (isAndroid) return wallet.downloadUrls.android;
-    if (wallet.type !== WalletType.WEB)
-      return wallet.downloadUrls.browserExtension;
-  })();
+  const downloadUrl = isiOS
+    ? wallet.downloadUrls?.iOS
+    : isAndroid
+      ? wallet.downloadUrls?.android
+      : wallet.downloadUrls?.browserExtension;
 
   const onClick = () => {
-    if (wallet.type === WalletType.WEB) connectWallet(wallet);
-    else {
-      if (!wallet.isInstalled) {
-        if (downloadUrl) window.open(downloadUrl, "_blank");
-        return;
-      }
-
+    if (wallet.type === WalletType.WEB || wallet.isInstalled) {
       connectWallet(wallet);
+      return;
     }
+
+    if (downloadUrl) window.open(downloadUrl, "_blank");
   };
 
+  if (!(wallet.type === WalletType.WEB || wallet.isInstalled) && !downloadUrl)
+    return null;
   return (
     <DropdownMenuItem onClick={onClick}>
       <div className="flex w-full flex-row items-center justify-between gap-2">
@@ -68,11 +68,11 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
 }
 
 export default function ConnectWalletDropdownMenu() {
-  const { isConnectWalletDropdownOpen, setIsConnectWalletDropdownOpen } =
-    useWalletContext();
-
-  // Wallets
-  const wallets = useListWallets();
+  const {
+    isConnectWalletDropdownOpen,
+    setIsConnectWalletDropdownOpen,
+    wallets,
+  } = useWalletContext();
 
   // State
   const Icon = isConnectWalletDropdownOpen ? ChevronUp : ChevronDown;
@@ -95,11 +95,13 @@ export default function ConnectWalletDropdownMenu() {
             <WalletDropdownItem key={w.name} wallet={w} />
           ))}
 
-          <TLabelSans className="mt-2">
-            {
-              "Don't have a Sui wallet? Get started by trying one of the wallets above."
-            }
-          </TLabelSans>
+          {!isInMsafeApp() && (
+            <TLabelSans className="mt-2">
+              {
+                "Don't have a Sui wallet? Get started by trying one of the wallets above."
+              }
+            </TLabelSans>
+          )}
         </>
       }
     />

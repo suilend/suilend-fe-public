@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "private": true,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -27,7 +27,7 @@
   "homepage": "https://github.com/solendprotocol/suilend-public/tree/HEAD/sdk#readme",
   "dependencies": {
     "@mysten/bcs": "1.1.0",
-    "@mysten/sui": "^1.12.0",
+    "@mysten/sui": "1.14.1",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "bignumber.js": "^9.1.2",
     "p-limit": "3.1.0",

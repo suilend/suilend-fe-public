@@ -1,53 +1,43 @@
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useEffect, useRef } from "react";
 
 import { MSafeWallet } from "@msafe/sui-wallet";
-import { registerWallet } from "@mysten/wallet-standard";
 import {
-  AllDefaultWallets,
-  IDefaultWallet,
-  WalletProvider as SuietWalletProvider,
-  WalletType,
-  defineStashedWallet,
-  defineWallet,
-} from "@suiet/wallet-kit";
+  WalletProvider as MystenWalletProvider,
+  SuiClientProvider,
+  createNetworkConfig,
+} from "@mysten/dapp-kit";
+import { registerWallet } from "@mysten/wallet-standard";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { DEFAULT_EXTENSION_WALLET_NAMES } from "@/contexts/WalletContext";
 import { RPCS } from "@/lib/constants";
 
 export default function WalletProvider({ children }: PropsWithChildren) {
-  // MSafe Wallet
-  // const [msafeWallet, setMsafeWallet] = useState<IDefaultWallet | undefined>(
-  //   undefined,
-  // );
-  // useEffect(() => {
-  //   const msafeWalletInstance = new MSafeWallet(
-  //     "suilend",
-  //     RPCS[0].url, // TODO: Use selected RPC
-  //     "mainnet",
-  //   );
+  const { networkConfig } = createNetworkConfig({
+    mainnet: { url: RPCS[0].url },
+  });
+  const queryClient = new QueryClient();
 
-  //   const _msafeWallet = defineWallet({
-  //     name: msafeWalletInstance.name,
-  //     label: msafeWalletInstance.name,
-  //     type: WalletType.WEB,
-  //     iconUrl: msafeWalletInstance.icon,
-  //     downloadUrl: {
-  //       registerWebWallet: () => () => registerWallet(msafeWalletInstance),
-  //     },
-  //   });
-  //   setMsafeWallet(_msafeWallet);
-  // }, []);
+  // MSafe Wallet
+  const didRegisterMsafeWalletRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (didRegisterMsafeWalletRef.current) return;
+
+    registerWallet(new MSafeWallet("Suilend", RPCS[0].url, "mainnet"));
+    didRegisterMsafeWalletRef.current = true;
+  }, []);
 
   return (
-    <SuietWalletProvider
-      defaultWallets={[
-        ...AllDefaultWallets,
-        defineStashedWallet({
-          appName: "Suilend",
-        }),
-        // ...(msafeWallet ? [msafeWallet] : []),
-      ]}
-    >
-      {children}
-    </SuietWalletProvider>
+    <QueryClientProvider client={queryClient}>
+      <SuiClientProvider networks={networkConfig} defaultNetwork="mainnet">
+        <MystenWalletProvider
+          preferredWallets={DEFAULT_EXTENSION_WALLET_NAMES}
+          autoConnect
+          stashedWallet={{ name: "Suilend" }}
+        >
+          {children}
+        </MystenWalletProvider>
+      </SuiClientProvider>
+    </QueryClientProvider>
   );
 }

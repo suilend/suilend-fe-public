@@ -22,7 +22,6 @@ import { TITLE } from "@/lib/constants";
 import { fontClassNames } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
-import "@suiet/wallet-kit/style.css";
 import "@/styles/globals.scss";
 
 export default function App({

@@ -6,8 +6,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 
 export default function ConnectWalletButton() {
-  const { isImpersonating, wallet, walletAccounts, address } =
-    useWalletContext();
+  const { isImpersonating, wallet, accounts, address } = useWalletContext();
   const { suiClient } = useAppContext();
 
   // Sui Name Service lookup
@@ -20,17 +19,16 @@ export default function ConnectWalletButton() {
     () =>
       Array.from(
         new Set(
-          [
-            address,
-            ...walletAccounts.map((_account) => _account.address),
-          ].filter(Boolean) as string[],
+          [address, ...accounts.map((_account) => _account.address)].filter(
+            Boolean,
+          ) as string[],
         ),
       ).filter(
         (_address) =>
           !Object.keys(addressNameServiceNameMap).includes(_address) &&
           !addressesBeingLookedUpRef.current.includes(_address),
       ),
-    [address, walletAccounts, addressNameServiceNameMap],
+    [address, accounts, addressNameServiceNameMap],
   );
 
   useEffect(() => {

@@ -30,9 +30,9 @@ export default function ConnectedWalletDropdownMenu({
     isImpersonating,
     wallet,
     disconnectWallet,
-    walletAccounts,
-    walletAccount,
-    selectWalletAccount,
+    accounts,
+    account,
+    switchAccount,
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
@@ -45,7 +45,7 @@ export default function ConnectedWalletDropdownMenu({
   const hasDisconnect = !isImpersonating;
   const hasSubaccounts =
     data && data.obligations && data.obligations.length > 1 && obligation;
-  const hasWallets = !isImpersonating && walletAccounts.length > 1;
+  const hasWallets = !isImpersonating && accounts.length > 1;
 
   const noItems = !hasDisconnect && !hasSubaccounts && !hasWallets;
 
@@ -71,14 +71,13 @@ export default function ConnectedWalletDropdownMenu({
           }
           endIcon={<Icon />}
         >
-          {(!isImpersonating ? walletAccount?.label : undefined) ??
+          {(!isImpersonating ? account?.label : undefined) ??
             addressNameServiceNameMap[address] ??
             formatAddress(address)}
         </Button>
       }
       title={
-        (!isImpersonating ? walletAccount?.label : "Impersonating") ??
-        "Connected"
+        (!isImpersonating ? account?.label : "Impersonating") ?? "Connected"
       }
       description={
         <div className="flex flex-row items-center gap-1">
@@ -155,16 +154,13 @@ export default function ConnectedWalletDropdownMenu({
                 Wallets
               </TLabelSans>
 
-              {walletAccounts.map((a) => (
+              {accounts.map((a) => (
                 <DropdownMenuItem
                   key={a.address}
                   className="flex flex-col items-start gap-1"
                   isSelected={a.address === address}
                   onClick={() =>
-                    selectWalletAccount(
-                      a.address,
-                      addressNameServiceNameMap[a.address],
-                    )
+                    switchAccount(a, addressNameServiceNameMap[a.address])
                   }
                 >
                   <div className="flex w-full flex-row items-center justify-between gap-2">
