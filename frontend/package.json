@@ -16,7 +16,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.2",
     "@launchdarkly/node-server-sdk": "^9.2.0",
-    "@msafe/sui-wallet": "^0.0.76",
+    "@msafe/sui-wallet": "^0.0.77",
     "@mysten/dapp-kit": "0.14.29",
     "@mysten/sui": "1.14.1",
     "@mysten/sui.js": "^0.54.1",
