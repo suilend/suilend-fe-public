@@ -3,9 +3,9 @@ import { Fragment, PropsWithChildren } from "react";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
-import { SuilendClient } from "@suilend/sdk/client";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Side } from "@suilend/sdk/types";
+import { SuilendClient } from "suilend-sdk/client";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { Side } from "suilend-sdk/types";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";

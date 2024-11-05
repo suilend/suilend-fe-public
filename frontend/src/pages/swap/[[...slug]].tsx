@@ -21,8 +21,8 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
-import { SuilendClient } from "@suilend/sdk/client";
-import { Action, Side } from "@suilend/sdk/types";
+import { SuilendClient } from "suilend-sdk/client";
+import { Action, Side } from "suilend-sdk/types";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";

@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { reserveSort } from "@suilend/sdk/utils";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { reserveSort } from "suilend-sdk/utils";
 
 import styles from "@/components/dashboard/AccountAssetTable.module.scss";
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";

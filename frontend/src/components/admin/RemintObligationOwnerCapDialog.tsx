@@ -4,7 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Eraser, Replace } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { SuilendClient } from "suilend-sdk/client";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";

@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-import { CreateReserveConfigArgs } from "@suilend/sdk/_generated/suilend/reserve-config/functions";
+import { CreateReserveConfigArgs } from "suilend-sdk/_generated/suilend/reserve-config/functions";
 
 import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";

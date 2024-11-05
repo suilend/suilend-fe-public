@@ -7,7 +7,7 @@ import {
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
 
 export type ParsedCoinBalance = {
   coinType: string;

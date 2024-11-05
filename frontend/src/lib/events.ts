@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Side } from "@suilend/sdk/types";
+import { ParsedDownsampledApiReserveAssetDataEvent } from "suilend-sdk/parsers/apiReserveAssetDataEvent";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { Side } from "suilend-sdk/types";
 
 import { msPerYear } from "@/lib/constants";
 

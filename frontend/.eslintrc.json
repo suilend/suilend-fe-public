@@ -21,7 +21,7 @@
             "position": "before"
           },
           {
-            "pattern": "@suilend/sdk/*/**",
+            "pattern": "suilend-sdk/*/**",
             "patternOptions": { "partial": true },
             "group": "internal",
             "position": "before"

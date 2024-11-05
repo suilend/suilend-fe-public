@@ -5,8 +5,8 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
-import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
+import { SuilendClient } from "suilend-sdk/client";
+import { ParsedRateLimiter } from "suilend-sdk/parsers/rateLimiter";
 
 import Dialog from "@/components/admin/Dialog";
 import DiffLine from "@/components/admin/DiffLine";

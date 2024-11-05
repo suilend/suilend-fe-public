@@ -1,4 +1,4 @@
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
 
 import { ReservesRowData } from "@/components/dashboard/MarketTable";
 import Tooltip from "@/components/shared/Tooltip";

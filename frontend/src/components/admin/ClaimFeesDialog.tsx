@@ -5,8 +5,8 @@ import BigNumber from "bignumber.js";
 import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { SuilendClient } from "suilend-sdk/client";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";

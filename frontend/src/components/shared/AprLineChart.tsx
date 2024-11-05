@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import * as Recharts from "recharts";
 
-import { linearlyInterpolate } from "@suilend/sdk/utils";
+import { linearlyInterpolate } from "suilend-sdk/utils";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";

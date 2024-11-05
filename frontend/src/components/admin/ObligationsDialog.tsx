@@ -3,17 +3,17 @@ import { useState } from "react";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
-import { phantom } from "@suilend/sdk/_generated/_framework/reified";
-import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
-import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
-import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk/client";
+import { phantom } from "suilend-sdk/_generated/_framework/reified";
+import { LendingMarket } from "suilend-sdk/_generated/suilend/lending-market/structs";
+import { Obligation } from "suilend-sdk/_generated/suilend/obligation/structs";
+import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "suilend-sdk/client";
 import {
   ParsedObligation,
   parseObligation,
-} from "@suilend/sdk/parsers/obligation";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obligation";
-import * as simulate from "@suilend/sdk/utils/simulate";
+} from "suilend-sdk/parsers/obligation";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { fetchAllObligationsForMarketWithHandler } from "suilend-sdk/utils/obligation";
+import * as simulate from "suilend-sdk/utils/simulate";
 
 import Dialog from "@/components/admin/Dialog";
 import LiquidateDialog from "@/components/admin/LiquidateDialog";

@@ -3,7 +3,7 @@ import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
-import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
+import { ParsedPoolReward } from "suilend-sdk/parsers/reserve";
 
 import DataTable, {
   decimalSortingFn,

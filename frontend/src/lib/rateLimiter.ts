@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { maxU64 } from "@suilend/sdk/constants";
-import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
+import { maxU64 } from "suilend-sdk/constants";
+import { ParsedRateLimiter } from "suilend-sdk/parsers/rateLimiter";
 
 import { formatDuration, formatUsd } from "@/lib/format";
 

@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedObligation } from "@suilend/sdk/parsers";
+import { ParsedObligation } from "suilend-sdk/parsers";
 
 import { AppData } from "@/contexts/AppContext";
 import {

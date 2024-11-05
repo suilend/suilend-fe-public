@@ -5,7 +5,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { SuilendClient } from "suilend-sdk/client";
 
 import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";

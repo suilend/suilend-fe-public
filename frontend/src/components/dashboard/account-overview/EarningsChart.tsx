@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import * as Recharts from "recharts";
 
-import { Side } from "@suilend/sdk/types";
+import { Side } from "suilend-sdk/types";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";

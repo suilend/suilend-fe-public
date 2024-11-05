@@ -8,19 +8,19 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { phantom } from "@suilend/sdk/_generated/_framework/reified";
-import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+import { phantom } from "suilend-sdk/_generated/_framework/reified";
+import { LendingMarket } from "suilend-sdk/_generated/suilend/lending-market/structs";
 import {
   LENDING_MARKET_ID,
   LENDING_MARKET_TYPE,
   SuilendClient,
-} from "@suilend/sdk/client";
-import { WAD } from "@suilend/sdk/constants";
-import { parseLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
-import { parseObligation } from "@suilend/sdk/parsers/obligation";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { toHexString } from "@suilend/sdk/utils";
-import * as simulate from "@suilend/sdk/utils/simulate";
+} from "suilend-sdk/client";
+import { WAD } from "suilend-sdk/constants";
+import { parseLendingMarket } from "suilend-sdk/parsers/lendingMarket";
+import { parseObligation } from "suilend-sdk/parsers/obligation";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
+import { toHexString } from "suilend-sdk/utils";
+import * as simulate from "suilend-sdk/utils/simulate";
 
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";

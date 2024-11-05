@@ -7,12 +7,12 @@ import {
   useState,
 } from "react";
 
-import { fetchDownsampledApiReserveAssetDataEvents } from "@suilend/sdk/api/events";
+import { fetchDownsampledApiReserveAssetDataEvents } from "suilend-sdk/api/events";
 import {
   ParsedDownsampledApiReserveAssetDataEvent,
   parseDownsampledApiReserveAssetDataEvent,
-} from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "suilend-sdk/parsers/apiReserveAssetDataEvent";
+import { ParsedReserve } from "suilend-sdk/parsers/reserve";
 
 import { Days, RESERVE_EVENT_SAMPLE_INTERVAL_S_MAP } from "@/lib/events";
 

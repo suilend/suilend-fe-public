@@ -7,7 +7,7 @@ import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { SuilendClient } from "@suilend/sdk";
+import { SuilendClient } from "suilend-sdk";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";

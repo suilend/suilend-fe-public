@@ -1,4 +1,4 @@
-import { Side } from "@suilend/sdk/types";
+import { Side } from "suilend-sdk/types";
 
 import AprWithRewardsBreakdown from "@/components/dashboard/AprWithRewardsBreakdown";
 import { ReservesRowData } from "@/components/dashboard/MarketTable";
