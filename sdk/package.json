@@ -11,11 +11,11 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "build": "rm -rf ./dist && yarn tsc",
+    "build": "rm -rf ./dist && bun tsc",
     "eslint": "eslint --fix \"./src/**/*.ts\"",
     "prettier": "prettier --write \"./src/**/*\"",
-    "lint": "yarn eslint && yarn prettier && yarn tsc",
-    "release": "yarn run build && yarn ts-node ./prepublish.ts && cd ./dist && npm publish --access public"
+    "lint": "bun eslint && bun prettier && bun tsc",
+    "release": "bun run build && bun ts-node ./prepublish.ts && cd ./dist && npm publish --access public"
   },
   "repository": {
     "type": "git",

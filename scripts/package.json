@@ -6,7 +6,7 @@
   "license": "MIT",
   "dependencies": {
     "@cetusprotocol/cetus-sui-clmm-sdk": "^3.17.9",
-    "@mysten/sui": "1.14.1",
+    "@mysten/sui": "1.12.0",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "@types/node": "^20.11.10",
     "bignumber.js": "^9.1.2",
