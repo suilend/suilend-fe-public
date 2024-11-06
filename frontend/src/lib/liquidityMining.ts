@@ -166,7 +166,7 @@ export const formatRewards = (
             }
             return [ob.id, claim];
           })
-          .filter(Boolean) as Array<[string, ObligationClaim]>) ?? [],
+          .filter(Boolean) as [string, ObligationClaim][]) ?? [],
       ),
     };
   };

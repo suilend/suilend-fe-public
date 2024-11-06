@@ -439,13 +439,13 @@ export class SuilendClient {
 
   async claimRewardsToObligation(
     ownerId: string,
-    rewards: Array<{
+    rewards: {
       obligationOwnerCapId: string;
       reserveArrayIndex: bigint;
       rewardIndex: bigint;
       rewardType: string;
       side: Side;
-    }>,
+    }[],
     transaction: Transaction,
   ) {
     const mergeCoinsMap: Record<string, any[]> = {};
