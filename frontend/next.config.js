@@ -25,7 +25,18 @@ module.exports = {
             value: "swap.suilend.fi",
           },
         ],
-        destination: "https://www.suilend.fi/swap/:path*",
+        destination: "https://suilend.fi/swap/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "suil.ag",
+          },
+        ],
+        destination: "https://suilend.fi/swap/:path*",
         permanent: true,
       },
     ];
