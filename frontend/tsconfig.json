@@ -10,5 +10,12 @@
       "@suilend/sdk": ["../sdk/src"],
       "@suilend/sdk/*": ["../sdk/src/*"]
     }
-  }
+  },
+  "include": [
+    "next-env.d.ts",
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
 }
