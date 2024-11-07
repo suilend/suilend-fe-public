@@ -1,14 +1,15 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
 import { program } from "commander";
-import { LiquidationDispatcher, LiquidationWorker } from "./liquidator";
+import dotenv from "dotenv";
 import { StatsD } from "hot-shots";
+
+import { LiquidationDispatcher, LiquidationWorker } from "./liquidator";
 import {
   CetusSwapper,
   MAINNET_CETUS_SDK_CONFIG,
   MAINNET_POOL_INFO_URL,
 } from "./swappers/cetus";
-import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
-import dotenv from "dotenv";
 
 dotenv.config();
 

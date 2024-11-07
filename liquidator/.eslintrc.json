@@ -13,7 +13,7 @@
     "import/order": [
       "error",
       {
-        "pathGroupsExcludedImportTypes": [],
+        "pathGroups": [],
         "groups": [
           "builtin",
           "external",

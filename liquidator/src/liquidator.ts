@@ -6,11 +6,11 @@ import { SuilendClient } from "@suilend/sdk";
 import {
   Borrow,
   Obligation,
-} from "@suilend/sdk/mainnet/_generated/suilend/obligation/structs";
-import { Reserve } from "@suilend/sdk/mainnet/_generated/suilend/reserve/structs";
-import { getRedeemEvent } from "@suilend/sdk/mainnet/utils/events";
-import { fetchAllObligationsForMarket } from "@suilend/sdk/mainnet/utils/obligation";
-import * as simulate from "@suilend/sdk/mainnet/utils/simulate";
+} from "@suilend/sdk/_generated/suilend/obligation/structs";
+import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
+import { getRedeemEvent } from "@suilend/sdk/utils/events";
+import { fetchAllObligationsForMarket } from "@suilend/sdk/utils/obligation";
+import * as simulate from "@suilend/sdk/utils/simulate";
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 import { StatsD } from "hot-shots";
@@ -145,7 +145,7 @@ export class LiquidationWorker {
   swapper: Swapper;
   suiClient: SuiClient;
   pythConnection: SuiPriceServiceConnection;
-  suilend?: SuilendClient<string>;
+  suilend?: SuilendClient;
 
   constructor(config: LiquidationWorkerConfig) {
     this.config = config;

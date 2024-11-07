@@ -10,10 +10,10 @@ import { Transaction } from "@mysten/sui/transactions";
 import { fromB64, normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
-import { phantom } from "@suilend/sdk/mainnet/_generated/_framework/reified";
-import { LendingMarket } from "@suilend/sdk/mainnet/_generated/suilend/lending-market/structs";
-import { Obligation } from "@suilend/sdk/mainnet/_generated/suilend/obligation/structs";
-import * as simulate from "@suilend/sdk/mainnet/utils/simulate";
+import { phantom } from "@suilend/sdk/_generated/_framework/reified";
+import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
+import * as simulate from "@suilend/sdk/utils/simulate";
 import BN from "bn.js";
 
 import { COIN_TYPES } from "./constants";
@@ -181,7 +181,7 @@ export async function fetchRefreshedObligation(
   });
   const obligation = Obligation.fromBcs(
     phantom(LENDING_MARKET_TYPE),
-    fromBase64((rawObligation.data?.bcs! as any).bcsBytes),
+    fromBase64((rawObligation.data?.bcs as any).bcsBytes),
   );
   const refreshedReserves = await getRefreshedReserves(client, pythConnection);
   return simulate.refreshObligation(obligation, refreshedReserves);
