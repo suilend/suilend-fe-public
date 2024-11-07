@@ -9,14 +9,14 @@
     "build": "rm -rf ./dist && bun tsc",
     "eslint": "eslint --fix \"./src/**/*.ts\"",
     "prettier": "prettier --write \"./src/**/*\"",
-    "lint": "bun eslint && bun prettier && bun tsc"
+    "lint": "bun eslint && bun prettier && bun tsc --noEmit"
   },
   "dependencies": {
     "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.6",
     "@mysten/bcs": "1.1.0",
     "@mysten/sui": "1.14.1",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
-    "@suilend/sdk": "1.1.11",
+    "@suilend/sdk": "^1.1.11",
     "bignumber.js": "^9.1.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",

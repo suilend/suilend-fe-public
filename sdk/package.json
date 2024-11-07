@@ -14,7 +14,7 @@
     "build": "rm -rf ./dist && bun tsc",
     "eslint": "eslint --fix \"./src/**/*.ts\"",
     "prettier": "prettier --write \"./src/**/*\"",
-    "lint": "bun eslint && bun prettier && bun tsc",
+    "lint": "bun eslint && bun prettier && bun tsc --noEmit",
     "release": "bun run build && bun ts-node ./release.ts && cd ./dist && npm publish --access public"
   },
   "repository": {

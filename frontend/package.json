@@ -11,7 +11,7 @@
     "start": "next start",
     "eslint": "eslint --fix \"./src/**/*.{ts,tsx}\"",
     "prettier": "prettier --write \"./src/**/*\"",
-    "lint": "bun eslint && bun prettier && bun tsc"
+    "lint": "bun eslint && bun prettier && bun tsc --noEmit"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.2",
