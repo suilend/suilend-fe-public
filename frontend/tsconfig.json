@@ -1,14 +1,14 @@
 {
-  "extends": "@tsconfig/next/tsconfig.json",
+  "extends": [
+    "@tsconfig/recommended/tsconfig.json",
+    "@tsconfig/next/tsconfig.json"
+  ],
   "compilerOptions": {
-    "target": "ES2016",
-    "forceConsistentCasingInFileNames": true,
     "paths": {
       "@/public/*": ["./public/*"],
       "@/*": ["./src/*"],
       "@suilend/sdk": ["../sdk/src"],
       "@suilend/sdk/*": ["../sdk/src/*"]
     }
-  },
-  "exclude": ["node_modules"]
+  }
 }
