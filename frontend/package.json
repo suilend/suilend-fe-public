@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "An open-source Suilend client powered by and developed alongside the Suilend SDK",
+  "description": "A TypeScript frontend for interacting with the Suilend program",
   "author": "Suilend",
   "license": "MIT",
   "scripts": {

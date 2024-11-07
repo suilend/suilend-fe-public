@@ -1,6 +1,6 @@
 # suilend-public/frontend
 
-An open-source Suilend client powered by and developed alongside the Suilend SDK.
+A TypeScript frontend for interacting with the Suilend program.
 
 ## How to run
 
