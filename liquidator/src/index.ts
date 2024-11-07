@@ -1,8 +1,9 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
 import { program } from "commander";
 import dotenv from "dotenv";
 import { StatsD } from "hot-shots";
+
+import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
 
 import { LiquidationDispatcher, LiquidationWorker } from "./liquidator";
 import {

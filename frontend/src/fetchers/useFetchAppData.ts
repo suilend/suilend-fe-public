@@ -3,7 +3,6 @@ import { useRef } from "react";
 import { CoinBalance, SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
-import { getSpringSuiApy } from "@suilend/springsui-sdk";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
@@ -21,6 +20,7 @@ import { parseObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { toHexString } from "@suilend/sdk/utils";
 import * as simulate from "@suilend/sdk/utils/simulate";
+import { getSpringSuiApy } from "@suilend/springsui-sdk";
 
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";

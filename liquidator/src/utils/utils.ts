@@ -9,12 +9,13 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { fromB64, normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
+import BN from "bn.js";
+
 import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import BN from "bn.js";
 
 import { COIN_TYPES } from "./constants";
 

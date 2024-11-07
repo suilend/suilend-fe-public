@@ -16,7 +16,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^1.1.2",
     "@launchdarkly/node-server-sdk": "^9.2.0",
-    "@msafe/sui-app-store": "^0.0.154",
+    "@msafe/sui-app-store": "^0.0.155",
     "@msafe/sui-wallet": "^0.0.77",
     "@msafe/sui3-utils": "^5.0.2",
     "@mysten/dapp-kit": "0.14.30",
@@ -80,7 +80,6 @@
     "@types/mixpanel-browser": "^2.49.0",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
-    "@types/uuid": "^9.0.8",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.33",
     "prettier-plugin-tailwindcss": "^0.5.11",

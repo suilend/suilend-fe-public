@@ -1,10 +1,12 @@
 import fs from "fs";
 
+const NAME = "@suilend/sdk";
+
 // 1. Update package.json
 import packageJson from "./package.json";
 const newPackageJson = Object.assign({}, packageJson);
 
-newPackageJson["name"] = "@suilend/sdk";
+newPackageJson["name"] = NAME;
 newPackageJson["private"] = false;
 newPackageJson["main"] = "./index.js";
 

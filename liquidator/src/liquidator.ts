@@ -2,6 +2,11 @@ import { SuiClient } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
+import BigNumber from "bignumber.js";
+import BN from "bn.js";
+import { StatsD } from "hot-shots";
+import { Logger } from "tslog";
+
 import { SuilendClient } from "@suilend/sdk";
 import {
   Borrow,
@@ -11,15 +16,12 @@ import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { getRedeemEvent } from "@suilend/sdk/utils/events";
 import { fetchAllObligationsForMarket } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import BigNumber from "bignumber.js";
-import BN from "bn.js";
-import { StatsD } from "hot-shots";
-import { Logger } from "tslog";
 
 import { Swapper } from "./swappers/interface";
 import { COIN_TYPES } from "./utils/constants";
 import { RedisClient } from "./utils/redis";
 import {
+  fetchRefreshedObligation,
   getLendingMarket,
   getNow,
   getRefreshedReserves,
@@ -28,7 +30,6 @@ import {
   shuffle,
   sleep,
 } from "./utils/utils";
-import { fetchRefreshedObligation } from "./utils/utils";
 
 const logger = new Logger({ name: "Suilend Liquidator" });
 const LIQUIDATION_CLOSE_FACTOR = 0.2;
@@ -111,7 +112,7 @@ export class LiquidationDispatcher {
         refreshedReserves,
       );
       if (shouldAttemptLiquidations(refreshedObligation)) {
-        this.statsd && this.statsd.increment("enqueue_liquidation", 1);
+        if (this.statsd) this.statsd.increment("enqueue_liquidation", 1);
         logger.info(`Enqueueing ${obligation.id} for liquidation`);
         obligationsToLiquidate.push(obligation.id);
       }
@@ -237,7 +238,7 @@ export class LiquidationWorker {
           repayCoin = swapResult?.toCoin;
         }
         if (!repayCoin) {
-          this.statsd &&
+          if (this.statsd)
             this.statsd.increment("liquidate_error", {
               type: "no_repay_found",
             });
@@ -266,7 +267,7 @@ export class LiquidationWorker {
         });
         liquidationDigest = liquidateResult.digest;
         logger.info("Liquidated", obligation.id, liquidateResult.digest);
-        this.statsd &&
+        if (this.statsd)
           this.statsd.increment("liquidate_success", 1, {
             repayAsset: repayCoinType,
             withdrawAsset: withdrawCoinType,
@@ -274,7 +275,7 @@ export class LiquidationWorker {
         break;
       } catch (e: any) {
         logger.error(`Error liquidating ${obligation.id} ${e}`);
-        this.statsd &&
+        if (this.statsd)
           this.statsd.increment("liquidate_error", 1, {
             type: "error_liquidating",
           });
@@ -283,7 +284,7 @@ export class LiquidationWorker {
           this.config.liquidationAttemptDurationSeconds
         ) {
           logger.info(`Unable to liquidate ${obligation.id}. Giving up.`);
-          this.statsd && this.statsd.increment("liquidate_giveup", 1);
+          if (this.statsd) this.statsd.increment("liquidate_giveup", 1);
           break;
         }
       }
@@ -298,7 +299,7 @@ export class LiquidationWorker {
         logger.error(
           `Could not find redeem event in liquidation ${liquidationDigest}`,
         );
-        this.statsd &&
+        if (this.statsd)
           this.statsd.increment("liquidate_error", 1, { type: "no_redeem" });
         return;
       }
@@ -322,8 +323,7 @@ export class LiquidationWorker {
         this.config.keypair,
       );
       for (const holding of holdings) {
-        this.statsd &&
-          holding.symbol &&
+        if (this.statsd && holding.symbol)
           this.statsd.gauge(
             "wallet_balance",
             holding.balance.div(new BN(10 ** holding.decimals)).toNumber(),

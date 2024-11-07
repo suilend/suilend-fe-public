@@ -24,7 +24,6 @@
   "bugs": {
     "url": "https://github.com/solendprotocol/suilend-public/issues"
   },
-  "homepage": "https://github.com/solendprotocol/suilend-public/tree/HEAD/sdk#readme",
   "dependencies": {
     "@mysten/bcs": "1.1.0",
     "@mysten/sui": "1.14.2",
