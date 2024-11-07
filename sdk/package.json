@@ -26,7 +26,12 @@
   },
   "homepage": "https://github.com/solendprotocol/suilend-public/tree/HEAD/sdk#readme",
   "dependencies": {
-    "@mysten/bcs": "1.1.0"
+    "@mysten/bcs": "1.1.0",
+    "@mysten/sui": "1.14.2",
+    "@pythnetwork/pyth-sui-js": "^2.1.0",
+    "bignumber.js": "^9.1.2",
+    "p-limit": "^3.1.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "ts-node": "^10.9.2"
