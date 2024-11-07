@@ -1,33 +1,14 @@
 {
+  "extends": "@tsconfig/next/tsconfig.json",
   "compilerOptions": {
     "target": "ES2016",
-    "lib": ["dom", "dom.iterable", "ESNext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
     "paths": {
       "@/public/*": ["./public/*"],
       "@/*": ["./src/*"],
       "@suilend/sdk": ["../sdk/src"],
       "@suilend/sdk/*": ["../sdk/src/*"]
-    },
-    "plugins": [{ "name": "next" }]
+    }
   },
-  "include": [
-    "next-env.d.ts",
-    "./src/**/*.ts",
-    "./src/**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
   "exclude": ["node_modules"]
 }
