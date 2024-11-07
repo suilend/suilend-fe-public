@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Transaction,
@@ -29,7 +29,7 @@ import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
 import RoutingDialog from "@/components/swap/RoutingDialog";
 import SwapInput from "@/components/swap/SwapInput";
 import SwapSlippagePopover, {
@@ -64,16 +64,22 @@ import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const PRICE_IMPACT_TIMESTAMP_S = -1;
-
 type SubmitButtonState = {
   isLoading?: boolean;
   isDisabled?: boolean;
   title?: string;
 };
 
-const PRICE_IMPACT_PERCENT_WARNING_THRESHOLD = 2;
-const PRICE_IMPACT_PERCENT_DESTRUCTIVE_THRESHOLD = 25;
+const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 1;
+const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 10;
+
+const HISTORICAL_USD_PRICES_INTERVAL = "5m";
+const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
+
+type HistoricalUsdPriceData = {
+  timestampS: number;
+  value: number;
+};
 
 function Page() {
   const { address } = useWalletContext();
@@ -202,8 +208,7 @@ function Page() {
   const quotes = (() => {
     const timestampsS = Object.entries(quotesMap)
       .filter(([, quotes]) => quotes !== undefined)
-      .map(([timestampS]) => +timestampS)
-      .filter((timestampS) => timestampS !== PRICE_IMPACT_TIMESTAMP_S);
+      .map(([timestampS]) => +timestampS);
     if (timestampsS.length === 0) return undefined;
 
     const maxTimestampS = Math.max(...timestampsS);
@@ -218,9 +223,7 @@ function Page() {
   const quote = quotes?.[0];
 
   const isFetchingQuote = (() => {
-    const timestampsS = Object.keys(quotesMap)
-      .map((timestampS) => +timestampS)
-      .filter((timestampS) => timestampS !== PRICE_IMPACT_TIMESTAMP_S);
+    const timestampsS = Object.keys(quotesMap).map((timestampS) => +timestampS);
     if (timestampsS.length === 0) return false;
 
     const maxTimestampS = Math.max(...timestampsS);
@@ -367,15 +370,7 @@ function Page() {
     formatAndSetValue(_value, tokenIn);
 
     if (new BigNumber(_value || 0).gt(0)) fetchQuote(tokenIn, tokenOut, _value);
-    else
-      setQuotesMap((o) => {
-        const timestampsS = Object.keys(o)
-          .map((timestampS) => +timestampS)
-          .filter((timestampS) => timestampS !== PRICE_IMPACT_TIMESTAMP_S);
-        for (const timestampS of timestampsS) delete o[timestampS];
-
-        return o;
-      });
+    else setQuotesMap({});
   };
 
   const useMaxValueWrapper = () => {
@@ -383,38 +378,36 @@ function Page() {
 
     if (new BigNumber(tokenInMaxAmount).gt(0))
       fetchQuote(tokenIn, tokenOut, tokenInMaxAmount);
-    else
-      setQuotesMap((o) => {
-        const timestampsS = Object.keys(o)
-          .map((timestampS) => +timestampS)
-          .filter((timestampS) => timestampS !== PRICE_IMPACT_TIMESTAMP_S);
-        for (const timestampS of timestampsS) delete o[timestampS];
-
-        return o;
-      });
+    else setQuotesMap({});
 
     inputRef.current?.focus();
   };
 
   // USD prices - historical
-  const HISTORICAL_USD_PRICES_INTERVAL = "5m";
-  const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
-
-  type HistoricalPriceData = {
-    timestampS: number;
-    value: number;
-  };
-
   const [historicalUsdPricesMap, setHistoricalUsdPriceMap] = useState<
-    Record<string, HistoricalPriceData[]>
+    Record<string, HistoricalUsdPriceData[]>
   >({});
-  const tokenInHistoricalUsdPrices = historicalUsdPricesMap[tokenIn.coinType];
-  const tokenOutHistoricalUsdPrices = historicalUsdPricesMap[tokenOut.coinType];
+  const tokenInHistoricalUsdPrices = useMemo(
+    () => historicalUsdPricesMap[tokenIn.coinType],
+    [historicalUsdPricesMap, tokenIn.coinType],
+  );
+  const tokenOutHistoricalUsdPrices = useMemo(
+    () => historicalUsdPricesMap[tokenOut.coinType],
+    [historicalUsdPricesMap, tokenOut.coinType],
+  );
 
   const fetchTokenHistoricalUsdPrices = useCallback(
     async (token: SwapToken) => {
       try {
-        const url = `https://public-api.birdeye.so/defi/history_price?address=${isSui(token.coinType) ? SUI_COINTYPE : token.coinType}&address_type=token&type=${HISTORICAL_USD_PRICES_INTERVAL}&time_from=${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}&time_to=${Math.floor(new Date().getTime() / 1000)}`;
+        const url = `https://public-api.birdeye.so/defi/history_price?${new URLSearchParams(
+          {
+            address: isSui(token.coinType) ? SUI_COINTYPE : token.coinType,
+            address_type: "token",
+            type: HISTORICAL_USD_PRICES_INTERVAL,
+            time_from: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
+            time_to: `${Math.floor(new Date().getTime() / 1000)}`,
+          },
+        )}`;
         const res = await fetch(url, {
           headers: {
             "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
@@ -430,7 +423,7 @@ function Page() {
                 ({
                   timestampS: item.unixTime,
                   value: item.value,
-                }) as HistoricalPriceData,
+                }) as HistoricalUsdPriceData,
             ),
           }));
       } catch (err) {
@@ -450,40 +443,59 @@ function Page() {
   }, [fetchTokenHistoricalUsdPrices, tokenIn, tokenOut]);
 
   // USD prices - current
-  const tokenInUsdPrice =
-    tokenInHistoricalUsdPrices !== undefined
-      ? tokenInHistoricalUsdPrices[tokenInHistoricalUsdPrices.length - 1]?.value
-      : undefined;
-  const tokenOutUsdPrice =
-    tokenOutHistoricalUsdPrices !== undefined
-      ? tokenOutHistoricalUsdPrices[tokenOutHistoricalUsdPrices.length - 1]
-          ?.value
-      : undefined;
+  const tokenInUsdPrice = useMemo(
+    () =>
+      tokenInHistoricalUsdPrices !== undefined
+        ? tokenInHistoricalUsdPrices[tokenInHistoricalUsdPrices.length - 1]
+            ?.value
+        : undefined,
+    [tokenInHistoricalUsdPrices],
+  );
+  const tokenOutUsdPrice = useMemo(
+    () =>
+      tokenOutHistoricalUsdPrices !== undefined
+        ? tokenOutHistoricalUsdPrices[tokenOutHistoricalUsdPrices.length - 1]
+            ?.value
+        : undefined,
+    [tokenOutHistoricalUsdPrices],
+  );
 
-  const tokenInUsdValue =
-    quoteAmountIn !== undefined && tokenInUsdPrice !== undefined
-      ? quoteAmountIn.times(tokenInUsdPrice)
-      : undefined;
-  const tokenOutUsdValue =
-    quoteAmountOut !== undefined && tokenOutUsdPrice !== undefined
-      ? quoteAmountOut.times(tokenOutUsdPrice)
-      : undefined;
+  const tokenInUsdValue = useMemo(
+    () =>
+      quoteAmountIn !== undefined && tokenInUsdPrice !== undefined
+        ? quoteAmountIn.times(tokenInUsdPrice)
+        : undefined,
+    [quoteAmountIn, tokenInUsdPrice],
+  );
+  const tokenOutUsdValue = useMemo(
+    () =>
+      quoteAmountOut !== undefined && tokenOutUsdPrice !== undefined
+        ? quoteAmountOut.times(tokenOutUsdPrice)
+        : undefined,
+    [quoteAmountOut, tokenOutUsdPrice],
+  );
 
   // Ratios
   const [isInverted, setIsInverted] = useState<boolean>(false);
 
-  const currentTokenRatio =
-    tokenInUsdPrice !== undefined && tokenOutUsdPrice !== undefined
-      ? new BigNumber(!isInverted ? tokenInUsdPrice : tokenOutUsdPrice).div(
-          !isInverted ? tokenOutUsdPrice : tokenInUsdPrice,
-        )
-      : undefined;
-  const currentTokenRatioDp =
-    currentTokenRatio !== undefined
-      ? Math.max(0, -Math.floor(Math.log10(+currentTokenRatio)) - 1) + 4
-      : undefined;
+  const currentTokenRatio = useMemo(
+    () =>
+      tokenInUsdPrice !== undefined && tokenOutUsdPrice !== undefined
+        ? new BigNumber(!isInverted ? tokenInUsdPrice : tokenOutUsdPrice).div(
+            !isInverted ? tokenOutUsdPrice : tokenInUsdPrice,
+          )
+        : undefined,
+    [tokenInUsdPrice, tokenOutUsdPrice, isInverted],
+  );
+  const currentTokenRatioDp = useMemo(
+    () =>
+      currentTokenRatio !== undefined
+        ? Math.max(0, -Math.floor(Math.log10(+currentTokenRatio)) - 1) + 4
+        : undefined,
+    [currentTokenRatio],
+  );
 
-  const historicalTokenRatios = (() => {
+  const historicalTokenRatios = useMemo(() => {
     if (
       tokenInHistoricalUsdPrices === undefined ||
       tokenOutHistoricalUsdPrices === undefined
@@ -506,93 +518,64 @@ function Page() {
       );
     }
 
-    return timestampsS
-      .filter((_, index) => index % 2 === 0) // Every second value
-      .map((timestampS) => ({
-        timestampS,
-        ratio: +new BigNumber(
-          (!isInverted
-            ? tokenInHistoricalUsdPrices
-            : tokenOutHistoricalUsdPrices
-          ).find((item) => item.timestampS === timestampS)?.value ?? 0,
-        ).div(
-          (!isInverted
-            ? tokenOutHistoricalUsdPrices
-            : tokenInHistoricalUsdPrices
-          ).find((item) => item.timestampS === timestampS)?.value ?? 1,
-        ),
-      }));
-  })();
+    return timestampsS.map((timestampS) => ({
+      timestampS,
+      ratio: +new BigNumber(
+        (!isInverted
+          ? tokenInHistoricalUsdPrices
+          : tokenOutHistoricalUsdPrices
+        ).find((item) => item.timestampS === timestampS)?.value ?? 0,
+      ).div(
+        (!isInverted
+          ? tokenOutHistoricalUsdPrices
+          : tokenInHistoricalUsdPrices
+        ).find((item) => item.timestampS === timestampS)?.value ?? 1,
+      ),
+    }));
+  }, [tokenInHistoricalUsdPrices, tokenOutHistoricalUsdPrices, isInverted]);
 
-  const tokenRatio24hAgo =
-    historicalTokenRatios !== undefined
-      ? historicalTokenRatios[0].ratio
-      : undefined;
-  const tokenRatio24hChangePercent =
-    currentTokenRatio !== undefined && tokenRatio24hAgo !== undefined
-      ? new BigNumber(currentTokenRatio.minus(tokenRatio24hAgo))
-          .div(tokenRatio24hAgo)
-          .times(100)
-      : undefined;
+  const tokenRatio24hAgo = useMemo(
+    () =>
+      historicalTokenRatios !== undefined
+        ? historicalTokenRatios[0].ratio
+        : undefined,
+    [historicalTokenRatios],
+  );
+  const tokenRatio24hChangePercent = useMemo(
+    () =>
+      currentTokenRatio !== undefined && tokenRatio24hAgo !== undefined
+        ? new BigNumber(currentTokenRatio.minus(tokenRatio24hAgo))
+            .div(tokenRatio24hAgo)
+            .times(100)
+        : undefined,
+    [currentTokenRatio, tokenRatio24hAgo],
+  );
 
   // Ratios - quote
-  const quoteRatio =
-    quoteAmountOut !== undefined && quoteAmountIn !== undefined
-      ? (!isInverted ? quoteAmountOut : quoteAmountIn).div(
-          !isInverted ? quoteAmountIn : quoteAmountOut,
-        )
-      : undefined;
+  const quoteRatio = useMemo(
+    () =>
+      quoteAmountOut !== undefined && quoteAmountIn !== undefined
+        ? (!isInverted ? quoteAmountOut : quoteAmountIn).div(
+            !isInverted ? quoteAmountIn : quoteAmountOut,
+          )
+        : undefined,
+    [quoteAmountOut, quoteAmountIn, isInverted],
+  );
 
-  // Price impact
-  const priceImpactQuote = (() => {
-    const quotes = quotesMap[PRICE_IMPACT_TIMESTAMP_S];
-    if (quotes === undefined) return undefined;
-
-    const sortedQuotes = quotes
-      .slice()
-      .sort((a, b) => +b.amount_out.minus(a.amount_out));
-    return sortedQuotes[0];
-  })();
-
-  useEffect(() => {
-    if (tokenInUsdPrice === undefined) return;
-
-    const _value = new BigNumber(10) // 10 USD worth of tokenIn
-      .div(tokenInUsdPrice)
-      .toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
-    fetchQuote(tokenIn, tokenOut, _value, PRICE_IMPACT_TIMESTAMP_S);
-  }, [tokenInUsdPrice, tokenIn, fetchQuote, tokenOut]);
-
-  const priceImpactQuoteAmountIn = priceImpactQuote
-    ? BigNumber(priceImpactQuote.amount_in.toString())
-    : undefined;
-  const priceImpactQuoteAmountOut = priceImpactQuote
-    ? BigNumber(priceImpactQuote.amount_out.toString())
-    : undefined;
-
-  const priceImpactQuoteRatio =
-    priceImpactQuoteAmountOut !== undefined &&
-    priceImpactQuoteAmountIn !== undefined
-      ? (!isInverted
-          ? priceImpactQuoteAmountOut
-          : priceImpactQuoteAmountIn
-        ).div(
-          !isInverted ? priceImpactQuoteAmountIn : priceImpactQuoteAmountOut,
-        )
-      : undefined;
-
-  const priceImpactPercent =
-    quoteRatio !== undefined && priceImpactQuoteRatio !== undefined
-      ? BigNumber.max(
-          0,
-          new BigNumber(100).minus(
+  // Price difference
+  const priceDifferencePercent = useMemo(
+    () =>
+      quoteRatio !== undefined && currentTokenRatio !== undefined
+        ? BigNumber.max(
+            0,
             (!isInverted
-              ? quoteRatio.div(priceImpactQuoteRatio)
-              : priceImpactQuoteRatio.div(quoteRatio)
+              ? currentTokenRatio.minus(quoteRatio).div(currentTokenRatio)
+              : quoteRatio.minus(currentTokenRatio).div(quoteRatio)
             ).times(100),
-          ),
-        )
-      : undefined;
+          )
+        : undefined,
+    [quoteRatio, currentTokenRatio, isInverted],
+  );
 
   // Reverse tokens
   const reverseTokens = () => {
@@ -890,146 +873,109 @@ function Page() {
       </Head>
 
       <div className="flex w-full max-w-[28rem] flex-col items-center gap-8">
-        <div className="relative flex w-full flex-col">
-          {/* Settings */}
-          <div className="mb-4 flex flex-row items-center justify-between gap-2">
-            <Button
-              className="h-7 w-7 rounded-full bg-muted/15 px-0"
-              tooltip="Refresh"
-              icon={<RotateCw className="h-3 w-3" />}
-              variant="ghost"
-              onClick={() => fetchQuote(tokenIn, tokenOut, value)}
-            >
-              Refresh
-            </Button>
+        <div className="flex w-full flex-col gap-6">
+          <div className="relative flex w-full flex-col gap-4">
+            {/* Settings */}
+            <div className="flex flex-row items-center justify-between gap-2">
+              <Button
+                className="h-7 w-7 rounded-full bg-muted/15 px-0"
+                tooltip="Refresh"
+                icon={<RotateCw className="h-3 w-3" />}
+                variant="ghost"
+                onClick={() => fetchQuote(tokenIn, tokenOut, value)}
+              >
+                Refresh
+              </Button>
 
-            <SwapSlippagePopover
-              slippagePercent={slippagePercent}
-              onSlippagePercentChange={formatAndSetSlippagePercent}
-            />
-          </div>
-
-          {/* In */}
-          <div className="relative z-[1]">
-            <SwapInput
-              ref={inputRef}
-              title="You're paying"
-              autoFocus
-              value={value}
-              onChange={onValueChange}
-              usdValue={tokenInUsdValue}
-              token={tokenIn}
-              onSelectToken={(t: SwapToken) =>
-                onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
-              }
-              onBalanceClick={useMaxValueWrapper}
-            />
-          </div>
-
-          {/* Reverse */}
-          <div className="relative z-[2] -my-3 w-max self-center rounded-full bg-background">
-            <Button
-              className="rounded-full px-0"
-              icon={<ArrowUpDown />}
-              variant="secondary"
-              size="icon"
-              onClick={reverseTokens}
-            >
-              Reverse
-            </Button>
-          </div>
-
-          {/* Out */}
-          <div className="relative z-[1] mb-4">
-            <div className="relative z-[2] w-full">
-              <SwapInput
-                title="To receive"
-                value={
-                  new BigNumber(value || 0).gt(0) &&
-                  quoteAmountOut !== undefined
-                    ? quoteAmountOut.toFixed(
-                        tokenOut.decimals,
-                        BigNumber.ROUND_DOWN,
-                      )
-                    : ""
-                }
-                isValueLoading={isFetchingQuote}
-                usdValue={tokenOutUsdValue}
-                token={tokenOut}
-                onSelectToken={(t: SwapToken) =>
-                  onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
-                }
+              <SwapSlippagePopover
+                slippagePercent={slippagePercent}
+                onSlippagePercentChange={formatAndSetSlippagePercent}
               />
             </div>
 
-            {hasTokenOutReserve && (
-              <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-border px-3 pb-2 pt-4">
-                <div className="flex flex-row items-center gap-2">
-                  <TLabelSans>Deposited</TLabelSans>
-                  <TBody className="text-xs">
-                    {formatToken(tokenOutDepositPositionAmount, {
-                      exact: false,
-                    })}{" "}
-                    {tokenOut.symbol}
-                  </TBody>
-                </div>
-              </div>
-            )}
-          </div>
+            {/* In */}
+            <div className="relative z-[1]">
+              <SwapInput
+                ref={inputRef}
+                title="You're paying"
+                autoFocus
+                value={value}
+                onChange={onValueChange}
+                usdValue={tokenInUsdValue}
+                token={tokenIn}
+                onSelectToken={(t: SwapToken) =>
+                  onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
+                }
+                onBalanceClick={useMaxValueWrapper}
+              />
+            </div>
 
-          {/* Parameters */}
-          {new BigNumber(value || 0).gt(0) && (
-            <div className="mb-4 flex w-full flex-col gap-2">
-              {/* Price impact */}
-              {priceImpactPercent !== undefined ? (
-                <div className="w-max">
-                  <TLabelSans
-                    className={cn(
-                      priceImpactPercent.gte(
-                        PRICE_IMPACT_PERCENT_WARNING_THRESHOLD,
-                      ) &&
-                        cn(
-                          "font-medium",
-                          priceImpactPercent.lt(
-                            PRICE_IMPACT_PERCENT_DESTRUCTIVE_THRESHOLD,
-                          )
-                            ? "text-warning"
-                            : "text-destructive",
-                        ),
-                    )}
-                  >
-                    {priceImpactPercent.gte(
-                      PRICE_IMPACT_PERCENT_WARNING_THRESHOLD,
-                    ) && (
-                      <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                    )}
-                    {formatPercent(BigNumber.max(0, priceImpactPercent))} Price
-                    impact
-                  </TLabelSans>
+            {/* Reverse */}
+            <div className="relative z-[2] -my-7 w-max self-center rounded-full bg-background">
+              <Button
+                className="rounded-full px-0"
+                icon={<ArrowUpDown />}
+                variant="secondary"
+                size="icon"
+                onClick={reverseTokens}
+              >
+                Reverse
+              </Button>
+            </div>
+
+            {/* Out */}
+            <div className="relative z-[1]">
+              <div className="relative z-[2] w-full">
+                <SwapInput
+                  title="To receive"
+                  value={
+                    new BigNumber(value || 0).gt(0) &&
+                    quoteAmountOut !== undefined
+                      ? quoteAmountOut.toFixed(
+                          tokenOut.decimals,
+                          BigNumber.ROUND_DOWN,
+                        )
+                      : ""
+                  }
+                  isValueLoading={isFetchingQuote}
+                  usdValue={tokenOutUsdValue}
+                  token={tokenOut}
+                  onSelectToken={(t: SwapToken) =>
+                    onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
+                  }
+                />
+              </div>
+
+              {hasTokenOutReserve && (
+                <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-border px-3 pb-2 pt-4">
+                  <div className="flex flex-row items-center gap-2">
+                    <TLabelSans>Deposited</TLabelSans>
+                    <TBody className="text-xs">
+                      {formatToken(tokenOutDepositPositionAmount, {
+                        exact: false,
+                      })}{" "}
+                      {tokenOut.symbol}
+                    </TBody>
+                  </div>
                 </div>
-              ) : (
-                <Skeleton className="h-4 w-40" />
               )}
+            </div>
 
-              {/* Routing */}
-              <div className="w-full">
-                {quote ? (
-                  <ReactFlowProvider>
-                    <RoutingDialog quote={quote} />
-                  </ReactFlowProvider>
-                ) : (
-                  <Skeleton className="h-4 w-40" />
-                )}
-              </div>
-
-              {/* Quote */}
-              <div className="w-full">
-                {quoteRatio !== undefined ? (
-                  <div
-                    className="group flex w-max cursor-pointer flex-row items-center gap-2"
-                    onClick={() => setIsInverted((is) => !is)}
-                  >
-                    <TLabel className="transition-colors group-hover:text-foreground">
+            {/* Parameters */}
+            {new BigNumber(value || 0).gt(0) && (
+              <div className="flex w-full flex-col gap-2">
+                {/* Quote and routing */}
+                <div className="flex w-full flex-row justify-between">
+                  {/* Quote */}
+                  {quoteRatio !== undefined ? (
+                    <Button
+                      className="h-4 gap-2 p-0 text-muted-foreground hover:bg-transparent"
+                      labelClassName="text-xs"
+                      endIcon={<ArrowRightLeft />}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsInverted((is) => !is)}
+                    >
                       {"1 "}
                       {(!isInverted ? tokenIn : tokenOut).symbol}{" "}
                       <span className="font-sans">≈</span>{" "}
@@ -1037,66 +983,100 @@ function Page() {
                         dp: (!isInverted ? tokenOut : tokenIn).decimals,
                       })}{" "}
                       {(!isInverted ? tokenOut : tokenIn).symbol}
-                    </TLabel>
-                    <ArrowRightLeft className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-foreground" />
-                  </div>
-                ) : (
-                  <Skeleton className="h-4 w-40" />
-                )}
+                    </Button>
+                  ) : (
+                    <Skeleton className="h-4 w-40" />
+                  )}
+
+                  {/* Routing */}
+                  {quote ? (
+                    <ReactFlowProvider>
+                      <RoutingDialog quote={quote} />
+                    </ReactFlowProvider>
+                  ) : (
+                    <Skeleton className="h-4 w-20" />
+                  )}
+                </div>
+
+                {/* Price difference */}
+                {priceDifferencePercent !== undefined &&
+                  priceDifferencePercent.gte(
+                    PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+                  ) && (
+                    <div className="w-max">
+                      <TLabelSans
+                        className={cn(
+                          cn(
+                            "font-medium",
+                            priceDifferencePercent.gte(
+                              PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD,
+                            )
+                              ? "text-destructive"
+                              : "text-warning",
+                          ),
+                        )}
+                      >
+                        <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                        {formatPercent(
+                          BigNumber.max(0, priceDifferencePercent),
+                        )}{" "}
+                        Price difference (Birdeye)
+                      </TLabelSans>
+                    </div>
+                  )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex w-full flex-col gap-[1px] rounded-sm">
-              {/* Swap */}
-              <Button
-                className={cn(
-                  "h-auto min-h-14 w-full py-2",
-                  hasTokenOutReserve && "rounded-b-none",
-                )}
-                labelClassName="text-wrap uppercase"
-                style={{ overflowWrap: "anywhere" }}
-                disabled={swapButtonState.isDisabled}
-                onClick={() => onSwapClick()}
-              >
-                {swapButtonState.isLoading ? (
-                  <Spinner size="md" />
-                ) : (
-                  swapButtonState.title
-                )}
-              </Button>
-
-              {/* Swap and deposit */}
-              {hasTokenOutReserve && (
-                <Tooltip title={swapAndDepositButtonDisabledTooltip}>
-                  <Button
-                    className={cn(
-                      "rounded-t-none",
-                      swapAndDepositButtonState.isDisabled &&
-                        "!cursor-default !bg-secondary opacity-50",
-                    )}
-                    labelClassName="uppercase text-xs"
-                    variant="secondary"
-                    onClick={
-                      swapAndDepositButtonState.isDisabled
-                        ? undefined
-                        : () => onSwapClick(true)
-                    }
-                  >
-                    {swapAndDepositButtonState.isLoading ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      swapAndDepositButtonState.title
-                    )}
-                  </Button>
-                </Tooltip>
+          {/* Submit */}
+          <div className="flex w-full flex-col gap-[1px]">
+            {/* Swap */}
+            <Button
+              className={cn(
+                "h-auto min-h-14 w-full py-2",
+                hasTokenOutReserve && "rounded-b-none",
               )}
-            </div>
+              labelClassName="text-wrap uppercase"
+              style={{ overflowWrap: "anywhere" }}
+              disabled={swapButtonState.isDisabled}
+              onClick={() => onSwapClick()}
+            >
+              {swapButtonState.isLoading ? (
+                <Spinner size="md" />
+              ) : (
+                swapButtonState.title
+              )}
+            </Button>
+
+            {/* Swap and deposit */}
+            {hasTokenOutReserve && (
+              <Tooltip title={swapAndDepositButtonDisabledTooltip}>
+                <Button
+                  className={cn(
+                    "rounded-t-none",
+                    swapAndDepositButtonState.isDisabled &&
+                      "!cursor-default !bg-secondary opacity-50",
+                  )}
+                  labelClassName="uppercase text-xs"
+                  variant="secondary"
+                  onClick={
+                    swapAndDepositButtonState.isDisabled
+                      ? undefined
+                      : () => onSwapClick(true)
+                  }
+                >
+                  {swapAndDepositButtonState.isLoading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    swapAndDepositButtonState.title
+                  )}
+                </Button>
+              </Tooltip>
+            )}
           </div>
 
           {/* Tokens */}
-          <div className="mt-6 flex w-full flex-row flex-wrap items-center justify-between gap-x-6 gap-y-4">
+          <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-6 gap-y-4">
             <div className="flex flex-col gap-1.5">
               <div
                 className="group flex cursor-pointer flex-row items-center gap-2"

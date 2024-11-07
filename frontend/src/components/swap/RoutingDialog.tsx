@@ -11,6 +11,7 @@ import { Route } from "lucide-react";
 import ReactFlow, { Edge, Handle, Node, Position } from "reactflow";
 
 import Dialog from "@/components/dashboard/Dialog";
+import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -24,9 +25,10 @@ import {
   useSwapContext,
 } from "@/contexts/SwapContext";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
-import { formatId, formatList, formatToken } from "@/lib/format";
+import { formatId, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
 import "reactflow/dist/style.css";
 
 const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
@@ -481,9 +483,14 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
     <Dialog
       rootProps={{ open: isOpen, onOpenChange }}
       trigger={
-        <TLabelSans className="max-w-max cursor-pointer overflow-hidden text-ellipsis text-nowrap transition-colors hover:text-foreground">
+        <Button
+          className="h-4 p-0 text-muted-foreground hover:bg-transparent"
+          labelClassName="font-sans text-xs"
+          variant="ghost"
+          size="sm"
+        >
           {hopsCount} hop{hopsCount !== 1 && "s"}
-        </TLabelSans>
+        </Button>
       }
       dialogContentProps={{ className: "h-[600px]" }}
       headerProps={{
