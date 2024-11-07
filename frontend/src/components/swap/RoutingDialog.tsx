@@ -483,20 +483,6 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
       trigger={
         <TLabelSans className="max-w-max cursor-pointer overflow-hidden text-ellipsis text-nowrap transition-colors hover:text-foreground">
           {hopsCount} hop{hopsCount !== 1 && "s"}
-          {" via "}
-          {formatList(
-            Array.from(
-              new Set(
-                // Aftermath
-                quote.quote.routes
-                  .reduce(
-                    (acc, route) => [...acc, ...route.paths],
-                    [] as AftermathRouterTradePath[],
-                  )
-                  .map((path) => path.protocolName),
-              ),
-            ),
-          )}
         </TLabelSans>
       }
       dialogContentProps={{ className: "h-[600px]" }}

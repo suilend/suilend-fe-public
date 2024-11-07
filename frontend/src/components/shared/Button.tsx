@@ -47,25 +47,39 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         >
           {startIcon &&
             cloneElement(startIcon, {
-              className: cn("w-3 h-3 shrink-0", startIcon.props.className),
+              className: cn(
+                "w-3 h-3 shrink-0 transition-colors",
+                startIcon.props.className,
+              ),
             })}
 
           {icon ? (
             <>
               {cloneElement(icon, {
-                className: cn("w-4 h-4 shrink-0", icon.props.className),
+                className: cn(
+                  "w-4 h-4 shrink-0 transition-colors",
+                  icon.props.className,
+                ),
               })}
               <span className="sr-only">{children}</span>
             </>
           ) : (
-            <TLabel className={cn("text-sm text-inherit", labelClassName)}>
+            <TLabel
+              className={cn(
+                "text-sm text-inherit transition-colors",
+                labelClassName,
+              )}
+            >
               {children}
             </TLabel>
           )}
 
           {endIcon &&
             cloneElement(endIcon, {
-              className: cn("w-3 h-3 shrink-0", endIcon.props.className),
+              className: cn(
+                "w-3 h-3 shrink-0 transition-colors",
+                endIcon.props.className,
+              ),
             })}
         </ButtonComponent>
       </Tooltip>
