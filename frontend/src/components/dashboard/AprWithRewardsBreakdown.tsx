@@ -303,9 +303,9 @@ export default function AprWithRewardsBreakdown({
               {stakingYieldAprPercent && (
                 <AprRewardsBreakdownRow
                   isLast={aprRewards.length === 0}
-                  value={`${formatAprPercent(false, stakingYieldAprPercent)}*`}
+                  value={formatAprPercent(false, stakingYieldAprPercent)}
                 >
-                  <TLabelSans>Staking yield</TLabelSans>
+                  <TLabelSans>Staking yield*</TLabelSans>
                 </AprRewardsBreakdownRow>
               )}
 
