@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
+import { isSendPoints } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import Card from "@/components/dashboard/Card";
@@ -21,7 +22,6 @@ import { useDashboardContext } from "@/contexts/DashboardContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import { isSendPoints } from "@/lib/coinType";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { RewardSummary } from "@/lib/liquidityMining";

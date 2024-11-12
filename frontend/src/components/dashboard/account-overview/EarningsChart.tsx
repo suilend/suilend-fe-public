@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import * as Recharts from "recharts";
 
+import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
@@ -18,7 +19,6 @@ import {
   line,
   tooltip,
 } from "@/lib/chart";
-import { COINTYPE_COLOR_MAP } from "@/lib/coinType";
 import { DAY_S } from "@/lib/events";
 import { formatToken } from "@/lib/format";
 

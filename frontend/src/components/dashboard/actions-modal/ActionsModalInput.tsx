@@ -3,13 +3,13 @@ import { forwardRef, useEffect, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
+import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { Input as InputComponent } from "@/components/ui/input";
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@/lib/coinType";
 import { formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

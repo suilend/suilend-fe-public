@@ -3,6 +3,7 @@ import NextLink from "next/link";
 
 import { Droplet, Server } from "lucide-react";
 
+import { NORMALIZED_mSUI_COINTYPE } from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
 import DiscordIcon from "@/components/assets/DiscordIcon";
@@ -160,7 +161,11 @@ export default function Home() {
             <Ticker
               className="h-16"
               items={data.lendingMarket.reserves
-                .filter((reserve) => reserve.config.depositLimit.gt(0))
+                .filter((reserve) =>
+                  reserve.coinType === NORMALIZED_mSUI_COINTYPE
+                    ? Date.now() >= 1731499200000 // 2024-11-13 21:00:00 JST
+                    : reserve.config.depositLimit.gt(0),
+                )
                 .map((reserve) => {
                   const stakingYieldAprPercent = getStakingYieldAprPercent(
                     Side.DEPOSIT,

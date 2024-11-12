@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
+import { NORMALIZED_mSUI_COINTYPE } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
 
@@ -64,8 +65,8 @@ interface HeaderRowData {
 type RowData = ReservesRowData | HeaderRowData;
 
 export default function MarketTable() {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { obligation, ...restAppContext } = useAppContext();
+  const data = restAppContext.data as AppData;
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -164,7 +165,27 @@ export default function MarketTable() {
   const rows: ReservesRowData[] = useMemo(
     () =>
       data.lendingMarket.reserves
-        .filter((reserve) => reserve.config.depositLimit.gt(0))
+        .filter((reserve) => {
+          const depositPosition = obligation?.deposits?.find(
+            (d) => d.coinType === reserve.coinType,
+          );
+          const borrowPosition = obligation?.borrows?.find(
+            (b) => b.coinType === reserve.coinType,
+          );
+
+          const depositedAmount =
+            depositPosition?.depositedAmount ?? new BigNumber(0);
+          const borrowedAmount =
+            borrowPosition?.borrowedAmount ?? new BigNumber(0);
+
+          return (
+            (reserve.coinType === NORMALIZED_mSUI_COINTYPE
+              ? Date.now() >= 1731499200000 // 2024-11-13 21:00:00 JST
+              : reserve.config.depositLimit.gt(0)) ||
+            depositedAmount.gt(0) ||
+            borrowedAmount.gt(0)
+          );
+        })
         .map((reserve) => {
           const coinType = reserve.coinType;
           const price = reserve.price;
@@ -308,7 +329,13 @@ export default function MarketTable() {
             reserve,
           };
         }),
-    [data.lendingMarket.reserves, data.rewardMap, data.ssuiAprPercent],
+    [
+      data.lendingMarket.reserves,
+      obligation?.deposits,
+      obligation?.borrows,
+      data.rewardMap,
+      data.ssuiAprPercent,
+    ],
   );
   const mainRows = useMemo(() => rows.filter((row) => !row.isIsolated), [rows]);
   const isolatedRows = useMemo(

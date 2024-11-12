@@ -4,6 +4,8 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { ChevronDown, Search, Wallet } from "lucide-react";
 
+import { SUI_COINTYPE, isCoinType, isSui } from "@suilend/frontend-sui";
+
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
@@ -14,7 +16,6 @@ import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useSwapContext } from "@/contexts/SwapContext";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
-import { SUI_COINTYPE, isCoinType, isSui } from "@/lib/coinType";
 import { formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";

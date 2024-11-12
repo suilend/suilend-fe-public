@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 
+import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import TextLink from "@/components/shared/TextLink";
@@ -7,7 +8,6 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@/lib/coinType";
 import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

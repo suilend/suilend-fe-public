@@ -3,15 +3,16 @@ import { CSSProperties } from "react";
 
 import { ClassValue } from "clsx";
 
-import TextLink from "@/components/shared/TextLink";
-import Tooltip from "@/components/shared/Tooltip";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import {
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_USDT_COINTYPE,
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
-} from "@/lib/coinType";
+} from "@suilend/frontend-sui";
+
+import TextLink from "@/components/shared/TextLink";
+import Tooltip from "@/components/shared/Tooltip";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { DOCS_BRIDGE_LEARN_MORE_URL } from "@/lib/navigation";
 import { Token } from "@/lib/types";
 import { cn } from "@/lib/utils";

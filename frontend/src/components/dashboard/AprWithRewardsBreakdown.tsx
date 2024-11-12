@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
+import { isSendPoints } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action, Side } from "@suilend/sdk/types";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
@@ -16,7 +17,6 @@ import {
   TLabelSans,
 } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { isSendPoints } from "@/lib/coinType";
 import { formatPercent, formatPoints, formatToken } from "@/lib/format";
 import {
   AprRewardSummary,

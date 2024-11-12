@@ -2,7 +2,7 @@ import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { isSui } from "@/lib/coinType";
+import { isSui } from "@suilend/frontend-sui";
 
 export const getTotalGasFee = (res: SuiTransactionBlockResponse) =>
   res.effects

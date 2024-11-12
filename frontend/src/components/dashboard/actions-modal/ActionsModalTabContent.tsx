@@ -6,6 +6,11 @@ import { capitalize } from "lodash";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  isFud,
+  isSui,
+} from "@suilend/frontend-sui";
 import { maxU64 } from "@suilend/sdk/constants";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action, ApiDepositEvent, Side } from "@suilend/sdk/types";
@@ -30,11 +35,6 @@ import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
-import {
-  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
-  isFud,
-  isSui,
-} from "@/lib/coinType";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
   SUI_GAS_MIN,

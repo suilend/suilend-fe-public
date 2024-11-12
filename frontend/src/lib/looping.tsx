@@ -1,14 +1,14 @@
 import BigNumber from "bignumber.js";
 
-import { ParsedObligation } from "@suilend/sdk/parsers";
-
-import { AppData } from "@/contexts/AppContext";
 import {
   NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
   isEth,
   isStablecoin,
-} from "@/lib/coinType";
+} from "@suilend/frontend-sui";
+import { ParsedObligation } from "@suilend/sdk/parsers";
+
+import { AppData } from "@/contexts/AppContext";
 
 const LOOPING_DEFINITION =
   "depositing and borrowing the same asset, different stablecoin assets, or different ETH assets";

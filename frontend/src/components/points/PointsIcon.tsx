@@ -1,10 +1,11 @@
 import { ClassValue } from "clsx";
 
-import TokenLogo from "@/components/shared/TokenLogo";
 import {
   COINTYPE_LOGO_MAP,
   NORMALIZED_SEND_POINTS_COINTYPE,
-} from "@/lib/coinType";
+} from "@suilend/frontend-sui";
+
+import TokenLogo from "@/components/shared/TokenLogo";
 import { cn } from "@/lib/utils";
 
 interface PointsIconProps {

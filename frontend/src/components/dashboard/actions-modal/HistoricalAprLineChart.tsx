@@ -6,6 +6,7 @@ import { capitalize } from "lodash";
 import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
+import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -25,7 +26,6 @@ import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEve
 import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
-import { COINTYPE_COLOR_MAP } from "@/lib/coinType";
 import {
   DAYS,
   DAY_S,

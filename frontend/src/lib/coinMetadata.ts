@@ -4,7 +4,7 @@ import {
   COINTYPE_LOGO_MAP,
   COINTYPE_SYMBOL_MAP,
   extractSymbolFromCoinType,
-} from "@/lib/coinType";
+} from "@suilend/frontend-sui";
 
 export const getCoinMetadataMap = async (
   suiClient: SuiClient,

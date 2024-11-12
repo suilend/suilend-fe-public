@@ -3,6 +3,10 @@ import { Fragment, PropsWithChildren } from "react";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
+import {
+  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  getPythOracleUrl,
+} from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -15,10 +19,6 @@ import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { Separator } from "@/components/ui/separator";
 import { useAppContext } from "@/contexts/AppContext";
-import {
-  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
-  getPythOracleUrl,
-} from "@/lib/coinType";
 import {
   formatBorrowWeight,
   formatLtvPercent,

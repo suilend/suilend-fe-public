@@ -21,6 +21,11 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
+import {
+  NORMALIZED_SUI_COINTYPE,
+  SUI_COINTYPE,
+  isSui,
+} from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { Action, Side } from "@suilend/sdk/types";
 
@@ -51,7 +56,6 @@ import {
   getSubmitButtonState,
 } from "@/lib/actions";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
-import { NORMALIZED_SUI_COINTYPE, SUI_COINTYPE, isSui } from "@/lib/coinType";
 import { SUI_GAS_MIN, TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
 import {

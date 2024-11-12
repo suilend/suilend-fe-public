@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 
+import { isSendPoints } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
-import { isSendPoints } from "@/lib/coinType";
 import {
   RewardMap,
   getBorrowShare,

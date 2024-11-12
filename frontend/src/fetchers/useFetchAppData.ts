@@ -7,6 +7,7 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
 
+import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import {
@@ -25,7 +26,6 @@ import { getSpringSuiApy } from "@suilend/springsui-sdk";
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@/lib/coinType";
 import { formatRewards } from "@/lib/liquidityMining";
 
 export default function useFetchAppData(

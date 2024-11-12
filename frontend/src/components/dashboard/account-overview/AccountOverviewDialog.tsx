@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
+import { isSendPoints } from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/constants";
 import {
   ApiBorrowEvent,
@@ -28,7 +29,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
-import { isSendPoints } from "@/lib/coinType";
 import { EventType, eventSortAsc } from "@/lib/events";
 import { formatPoints, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";

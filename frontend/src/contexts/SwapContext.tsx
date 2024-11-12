@@ -18,11 +18,12 @@ import {
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
+import { isCoinType } from "@suilend/frontend-sui";
+
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
-import { isCoinType } from "@/lib/coinType";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
