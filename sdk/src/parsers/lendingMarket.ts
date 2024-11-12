@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 
 import { LendingMarket } from "../_generated/suilend/lending-market/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
+import { RESERVES_CUSTOM_ORDER } from "../constants";
 
 import { parseRateLimiter } from "./rateLimiter";
 import { parseReserve } from "./reserve";
@@ -21,22 +22,8 @@ export const parseLendingMarket = (
   const parsedReserves = reserves
     .map((reserve) => parseReserve(reserve, coinMetadataMap))
     .sort((a, b) => {
-      const customOrder = [
-        "sSUI",
-        "SUI",
-        "USDC",
-        "wUSDC",
-        "USDT",
-        "suiETH",
-        "WETH",
-        "SOL",
-        "AUSD",
-        "DEEP",
-        "FUD",
-      ];
-
-      const aCustomOrderIndex = customOrder.indexOf(a.symbol);
-      const bCustomOrderIndex = customOrder.indexOf(b.symbol);
+      const aCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(a.symbol);
+      const bCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(b.symbol);
 
       if (aCustomOrderIndex > -1 && bCustomOrderIndex > -1)
         return aCustomOrderIndex - bCustomOrderIndex;
