@@ -44,7 +44,7 @@ export interface AppData {
   rewardMap: RewardMap;
   coinBalancesRaw: CoinBalance[];
 
-  ssuiAprPercent: BigNumber; // TODO: Generalize
+  lstAprPercentMap: Record<string, BigNumber>;
 }
 
 export interface AppContext {

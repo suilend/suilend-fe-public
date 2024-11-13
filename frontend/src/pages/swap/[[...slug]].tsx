@@ -129,7 +129,7 @@ function Page() {
     ? getStakingYieldAprPercent(
         Side.DEPOSIT,
         tokenOutReserve,
-        data.ssuiAprPercent,
+        data.lstAprPercentMap,
       )
     : undefined;
   const tokenOutReserveDepositAprPercent = tokenOutReserve

@@ -274,12 +274,8 @@ const getRewardsAprPercent = (side: Side, filteredRewards: RewardSummary[]) =>
 export const getStakingYieldAprPercent = (
   side: Side,
   reserve: ParsedReserve,
-  ssuiAprPercent: BigNumber,
-) => {
-  if (side === Side.DEPOSIT) {
-    if (issSui(reserve.coinType)) return ssuiAprPercent;
-  }
-};
+  lstAprPercentMap: Record<string, BigNumber>,
+) => (side === Side.DEPOSIT ? lstAprPercentMap[reserve.coinType] : undefined);
 
 export const getTotalAprPercent = (
   side: Side,

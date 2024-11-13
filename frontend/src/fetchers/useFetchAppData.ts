@@ -7,7 +7,11 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
+import {
+  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  NORMALIZED_mSUI_COINTYPE,
+  NORMALIZED_sSUI_COINTYPE,
+} from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import {
@@ -21,7 +25,10 @@ import { parseObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { toHexString } from "@suilend/sdk/utils";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import { getSpringSuiApy } from "@suilend/springsui-sdk";
+import {
+  SUILEND_VALIDATOR_ADDRESS,
+  getSpringSuiApy,
+} from "@suilend/springsui-sdk";
 
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
@@ -209,8 +216,20 @@ export default function useFetchAppData(
     const rewardMap = formatRewards(reserveMap, coinMetadataMap, obligations);
 
     // sSUI - TODO: Generalize
-    const ssuiApr = await getSpringSuiApy(suiClient);
-    const ssuiAprPercent = new BigNumber(ssuiApr ?? 0).times(100);
+    const lstAprPercentMap: Record<string, BigNumber> = {};
+
+    const ssuiApr = await getSpringSuiApy(suiClient, SUILEND_VALIDATOR_ADDRESS);
+    lstAprPercentMap[NORMALIZED_sSUI_COINTYPE] = new BigNumber(
+      ssuiApr ?? 0,
+    ).times(100);
+
+    const msuiApr = await getSpringSuiApy(
+      suiClient,
+      "0x56f4ec3046f1055a9d75d202d167f49a3748b259801315c74895cb0f330b4b7d",
+    );
+    lstAprPercentMap[NORMALIZED_mSUI_COINTYPE] = new BigNumber(
+      msuiApr ?? 0,
+    ).times(100);
 
     return {
       lendingMarket,
@@ -223,7 +242,7 @@ export default function useFetchAppData(
       rewardMap,
       coinBalancesRaw,
 
-      ssuiAprPercent,
+      lstAprPercentMap,
     } as AppData;
   };
 

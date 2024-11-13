@@ -208,7 +208,7 @@ export default function MarketTable() {
             getStakingYieldAprPercent(
               Side.DEPOSIT,
               reserve,
-              data.ssuiAprPercent,
+              data.lstAprPercentMap,
             ),
           );
           const borrowAprPercent = reserve.borrowAprPercent;
@@ -334,7 +334,7 @@ export default function MarketTable() {
       obligation?.deposits,
       obligation?.borrows,
       data.rewardMap,
-      data.ssuiAprPercent,
+      data.lstAprPercentMap,
     ],
   );
   const mainRows = useMemo(() => rows.filter((row) => !row.isIsolated), [rows]);

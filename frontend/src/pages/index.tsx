@@ -170,7 +170,7 @@ export default function Home() {
                   const stakingYieldAprPercent = getStakingYieldAprPercent(
                     Side.DEPOSIT,
                     reserve,
-                    data.ssuiAprPercent,
+                    data.lstAprPercentMap,
                   );
 
                   const totalDepositAprPercent = getTotalAprPercent(
