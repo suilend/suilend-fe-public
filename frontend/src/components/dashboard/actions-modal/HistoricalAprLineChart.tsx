@@ -346,9 +346,9 @@ export default function HistoricalAprLineChart({
     const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
     const aprRewards = getDedupedAprRewards(rewards);
 
-    return aprRewards.map(
-      (aprReward) => data.reserveMap[aprReward.stats.rewardCoinType],
-    );
+    return aprRewards
+      .map((aprReward) => data.reserveMap[aprReward.stats.rewardCoinType])
+      .filter(Boolean);
   }, [data.rewardMap, reserve.coinType, side, data.reserveMap]);
 
   const didFetchInitialReserveAssetDataEventsRef = useRef<boolean>(false);
