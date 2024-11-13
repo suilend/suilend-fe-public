@@ -144,8 +144,7 @@ export default function ReserveConfigDialog({
           pythPriceId,
           transaction,
         );
-      await suilendClient.updateReserveConfig(
-        address,
+      suilendClient.updateReserveConfig(
         data.lendingMarketOwnerCapId,
         transaction,
         reserve.coinType,

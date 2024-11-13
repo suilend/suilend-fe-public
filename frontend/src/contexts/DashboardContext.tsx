@@ -68,7 +68,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
       const transaction = new Transaction();
       try {
-        await suilendClient.claimRewardsToObligation(
+        suilendClient.claimRewardsAndSendToUser(
           address,
           Object.values(rewardsMap)
             .flat()
