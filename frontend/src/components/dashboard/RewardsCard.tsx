@@ -5,7 +5,6 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
 import { isSendPoints } from "@suilend/frontend-sui";
-import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import Card from "@/components/dashboard/Card";
 import PointsCount from "@/components/points/PointsCount";
@@ -31,28 +30,35 @@ import { getPointsStats } from "@/lib/points";
 import { cn } from "@/lib/utils";
 
 interface ClaimableRewardProps {
-  reserve: ParsedReserve;
+  coinType: string;
   claimableRewards: BigNumber;
 }
 
-function ClaimableReward({ reserve, claimableRewards }: ClaimableRewardProps) {
+function ClaimableReward({ coinType, claimableRewards }: ClaimableRewardProps) {
+  const appContext = useAppContext();
+  const data = appContext.data as AppData;
+
+  const coinMetadata = data.coinMetadataMap[coinType];
+
+  if (!coinMetadata) return null;
   return (
     <div className="flex flex-row items-center gap-1.5">
       <TokenLogo
         className="h-4 w-4"
         token={{
-          coinType: reserve.coinType,
-          symbol: reserve.symbol,
-          iconUrl: reserve.iconUrl,
+          coinType,
+          symbol: coinMetadata.symbol,
+          iconUrl: coinMetadata.iconUrl,
         }}
       />
       <Tooltip
         title={`${formatToken(claimableRewards, {
-          dp: reserve.mintDecimals,
-        })} ${reserve.symbol}`}
+          dp: coinMetadata.decimals,
+        })} ${coinMetadata.symbol}`}
       >
         <TBody>
-          {formatToken(claimableRewards, { exact: false })} {reserve.symbol}
+          {formatToken(claimableRewards, { exact: false })}{" "}
+          {coinMetadata.symbol}
         </TBody>
       </Tooltip>
     </div>
@@ -68,9 +74,6 @@ function ClaimableRewards({
   claimableRewardsMap,
   isCentered,
 }: ClaimableRewardsProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
-
   return (
     <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
       <TLabelSans className={cn(isCentered && "text-center")}>
@@ -79,20 +82,13 @@ function ClaimableRewards({
 
       <div className="flex flex-col gap-1">
         {Object.entries(claimableRewardsMap).map(
-          ([coinType, claimableRewards]) => {
-            const reserve = data.lendingMarket.reserves.find(
-              (r) => r.coinType === coinType,
-            );
-
-            if (!reserve) return null;
-            return (
-              <ClaimableReward
-                key={coinType}
-                reserve={reserve}
-                claimableRewards={claimableRewards}
-              />
-            );
-          },
+          ([coinType, claimableRewards]) => (
+            <ClaimableReward
+              key={coinType}
+              coinType={coinType}
+              claimableRewards={claimableRewards}
+            />
+          ),
         )}
       </div>
     </div>

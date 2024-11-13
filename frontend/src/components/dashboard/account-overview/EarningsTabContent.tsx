@@ -35,6 +35,7 @@ import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEve
 import { msPerYear } from "@/lib/constants";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { formatToken, formatUsd } from "@/lib/format";
+import { AprRewardSummary } from "@/lib/liquidityMining";
 import { cn } from "@/lib/utils";
 
 interface RowData {
@@ -664,21 +665,23 @@ export default function EarningsTabContent({
     if (rewardsMap === undefined) return undefined;
 
     let result = new BigNumber(0);
-    Object.values(rewardsMap).forEach((sideRewards) => {
+    Object.entries(rewardsMap).forEach(([side, sideRewards]) => {
       Object.values(sideRewards).forEach((reserveRewards) => {
         Object.keys(reserveRewards).forEach((rewardCoinType) => {
-          const reserve = data.reserveMap[rewardCoinType];
-          if (!reserve) return;
+          const reward = data.rewardMap[rewardCoinType]?.[side as Side]?.find(
+            (r) => r.stats.rewardCoinType === rewardCoinType,
+          ) as AprRewardSummary | undefined;
+          if (!reward) return;
 
           result = result.plus(
-            reserveRewards[rewardCoinType][nowS].times(reserve.price),
+            reserveRewards[rewardCoinType][nowS].times(reward.stats.price),
           );
         });
       });
     });
 
     return result;
-  }, [rewardsMap, data.reserveMap, nowS]);
+  }, [rewardsMap, data.rewardMap, nowS]);
 
   const totalEarningsUsd = useMemo(() => {
     if (

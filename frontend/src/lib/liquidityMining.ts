@@ -2,7 +2,6 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 
-import { issSui } from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/constants";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -68,6 +67,7 @@ const getBorrowShareUsd = (reserve: ParsedReserve, share: BigNumber) =>
 export const formatRewards = (
   parsedReserveMap: Record<string, ParsedReserve>,
   coinMetadataMap: Record<string, CoinMetadata>,
+  birdeyePriceMap: Record<string, BigNumber | undefined>,
   obligations?: ParsedObligation[],
 ) => {
   const currentTime = new Date().getTime();
@@ -80,14 +80,17 @@ export const formatRewards = (
   ) => {
     const rewardReserve = parsedReserveMap[poolReward.coinType];
     const rewardCoinMetadata = coinMetadataMap[poolReward.coinType];
+    const rewardBirdeyePrice = birdeyePriceMap[poolReward.coinType];
+
+    const rewardPrice = rewardReserve?.price ?? rewardBirdeyePrice;
 
     const isActive =
       currentTime >= poolReward.startTimeMs &&
       currentTime < poolReward.endTimeMs;
 
-    const aprPercent = rewardReserve
+    const aprPercent = rewardPrice
       ? poolReward.totalRewards
-          .times(rewardReserve.price)
+          .times(rewardPrice)
           .times(
             new BigNumber(msPerYear).div(
               poolReward.endTimeMs - poolReward.startTimeMs,
@@ -110,7 +113,7 @@ export const formatRewards = (
           )
           .times(100)
       : undefined;
-    const perDay = rewardReserve
+    const perDay = rewardPrice
       ? undefined
       : poolReward.totalRewards
           .times(
@@ -143,7 +146,7 @@ export const formatRewards = (
         reserve,
         rewardCoinType: poolReward.coinType,
         mintDecimals: poolReward.mintDecimals,
-        price: rewardReserve?.price,
+        price: rewardPrice,
         symbol: rewardCoinMetadata.symbol,
         iconUrl: rewardCoinMetadata.iconUrl,
         aprPercent,
