@@ -44,7 +44,11 @@ function AccountPositionCardContent() {
   const wasLooping = getWasLooping(data, obligation);
 
   // APR
-  const netAprPercent = getNetAprPercent(obligation, data.rewardMap);
+  const netAprPercent = getNetAprPercent(
+    obligation,
+    data.rewardMap,
+    data.lstAprPercentMap,
+  );
 
   return (
     <div className="flex flex-col gap-4">
