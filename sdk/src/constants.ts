@@ -16,4 +16,5 @@ export const RESERVES_CUSTOM_ORDER = [
   "AUSD",
   "DEEP",
   "FUD",
+  "HIPPO",
 ];
