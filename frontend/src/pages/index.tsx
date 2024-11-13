@@ -163,7 +163,7 @@ export default function Home() {
               items={data.lendingMarket.reserves
                 .filter((reserve) =>
                   reserve.coinType === NORMALIZED_mSUI_COINTYPE
-                    ? Date.now() >= 1731499200000 // 2024-11-13 21:00:00 JST
+                    ? Date.now() >= 1731492000000 // 2024-11-13 19:00:00 JST
                     : reserve.config.depositLimit.gt(0),
                 )
                 .map((reserve) => {
