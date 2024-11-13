@@ -69,7 +69,7 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
     },
   });
 
-  return (object.data?.content as unknown as any).fields.package;
+  return (object.data?.content as any).fields.package;
 }
 
 const SUI_COINTYPE = "0x2::sui::SUI";
@@ -98,6 +98,7 @@ export class SuilendClient {
     );
   }
 
+  // Initialize
   static async initialize(
     lendingMarketId: string,
     lendingMarketType: string,
@@ -133,6 +134,7 @@ export class SuilendClient {
     return new SuilendClient(lendingMarket, client);
   }
 
+  // Lending market
   static createNewLendingMarket(
     registryId: string,
     lendingMarketType: string,
@@ -150,6 +152,68 @@ export class SuilendClient {
     });
 
     return ownerCap;
+  }
+
+  static async getLendingMarketOwnerCapId(
+    ownerId: string,
+    lendingMarketTypeArgs: string[],
+    client: SuiClient,
+  ) {
+    const objs = await client.getOwnedObjects({
+      owner: ownerId,
+      filter: {
+        StructType: `${PACKAGE_ID}::lending_market::LendingMarketOwnerCap<${lendingMarketTypeArgs[0]}>`,
+      },
+    });
+
+    if (objs.data.length > 0) return objs.data[0].data?.objectId as string;
+    else return null;
+  }
+  async getLendingMarketOwnerCapId(ownerId: string) {
+    return SuilendClient.getLendingMarketOwnerCapId(
+      ownerId,
+      this.lendingMarket.$typeArgs,
+      this.client,
+    );
+  }
+
+  migrate(transaction: Transaction, lendingMarketOwnerCapId: string) {
+    return migrate(transaction, this.lendingMarket.$typeArgs[0], {
+      lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+      lendingMarket: transaction.object(this.lendingMarket.id),
+    });
+  }
+
+  claimFees(transaction: Transaction, coinType: string) {
+    return claimFees(transaction, [this.lendingMarket.$typeArgs[0], coinType], {
+      lendingMarket: transaction.object(this.lendingMarket.id),
+      reserveArrayIndex: transaction.pure.u64(
+        this.findReserveArrayIndex(coinType),
+      ),
+    });
+  }
+
+  // Obligations
+  newObligationOwnerCap(
+    transaction: Transaction,
+    lendingMarketOwnerCapId: string,
+    destinationAddress: string,
+    obligationId: string,
+  ) {
+    const [obligationOwnerCap] = newObligationOwnerCap(
+      transaction,
+      this.lendingMarket.$typeArgs[0],
+      {
+        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        obligationId: transaction.pure.id(obligationId),
+      },
+    );
+
+    transaction.transferObjects(
+      [obligationOwnerCap],
+      transaction.pure.address(destinationAddress),
+    );
   }
 
   static async getObligationOwnerCaps(
@@ -193,6 +257,14 @@ export class SuilendClient {
     }
   }
 
+  createObligation(transaction: Transaction) {
+    return transaction.moveCall({
+      target: `${PUBLISHED_AT}::lending_market::create_obligation`,
+      arguments: [transaction.object(this.lendingMarket.id)],
+      typeArguments: this.lendingMarket.$typeArgs,
+    });
+  }
+
   static async getObligation(
     obligationId: string,
     lendingMarketTypeArgs: string[],
@@ -214,7 +286,6 @@ export class SuilendClient {
 
     return obligation;
   }
-
   async getObligation(obligationId: string) {
     return SuilendClient.getObligation(
       obligationId,
@@ -223,28 +294,14 @@ export class SuilendClient {
     );
   }
 
-  static async getLendingMarketOwnerCapId(
-    ownerId: string,
-    lendingMarketTypeArgs: string[],
-    client: SuiClient,
-  ) {
-    const objs = await client.getOwnedObjects({
-      owner: ownerId,
-      filter: {
-        StructType: `${PACKAGE_ID}::lending_market::LendingMarketOwnerCap<${lendingMarketTypeArgs[0]}>`,
-      },
-    });
-
-    if (objs.data.length > 0) return objs.data[0].data?.objectId as string;
-    else return null;
-  }
-
-  async getLendingMarketOwnerCapId(ownerId: string) {
-    return SuilendClient.getLendingMarketOwnerCapId(
-      ownerId,
-      this.lendingMarket.$typeArgs,
-      this.client,
+  // Reserves
+  findReserveArrayIndex(coinType: string): bigint {
+    const arrayIndex = this.lendingMarket.reserves.findIndex(
+      (r) =>
+        normalizeStructTag(r.coinType.name) === normalizeStructTag(coinType),
     );
+
+    return BigInt(arrayIndex);
   }
 
   async createReserve(
@@ -260,7 +317,7 @@ export class SuilendClient {
       pythPriceId,
     ]);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       [pythPriceId],
     );
@@ -286,6 +343,82 @@ export class SuilendClient {
     );
   }
 
+  updateReserveConfig(
+    lendingMarketOwnerCapId: string,
+    transaction: Transaction,
+    coinType: string,
+    createReserveConfigArgs: CreateReserveConfigArgs,
+  ) {
+    const [config] = createReserveConfig(transaction, createReserveConfigArgs);
+
+    return updateReserveConfig(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        config: transaction.object(config),
+      },
+    );
+  }
+
+  async changeReservePriceFeed(
+    lendingMarketOwnerCapId: string,
+    coinType: string,
+    pythPriceId: string,
+    transaction: Transaction,
+  ) {
+    const priceUpdateData = await this.pythConnection.getPriceFeedsUpdateData([
+      pythPriceId,
+    ]);
+    const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
+      transaction,
+      priceUpdateData,
+      [pythPriceId],
+    );
+
+    return changeReservePriceFeed(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        priceInfoObj: transaction.object(priceInfoObjectIds[0]),
+        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
+      },
+    );
+  }
+
+  // Rate limiter
+  updateRateLimiterConfig(
+    lendingMarketOwnerCapId: string,
+    transaction: Transaction,
+    newRateLimiterConfigArgs: CreateRateLimiterConfigArgs,
+  ) {
+    const [config] = createRateLimiterConfig(
+      transaction,
+      newRateLimiterConfigArgs,
+    );
+
+    return updateRateLimiterConfig(
+      transaction,
+      this.lendingMarket.$typeArgs[0],
+      {
+        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
+        config: transaction.object(config),
+      },
+    );
+  }
+
+  // Rewards
   async addReward(
     ownerId: string,
     lendingMarketOwnerCapId: string,
@@ -466,119 +599,6 @@ export class SuilendClient {
     }
   }
 
-  findReserveArrayIndex(coinType: string): bigint {
-    const arrayIndex = this.lendingMarket.reserves.findIndex(
-      (r) =>
-        normalizeStructTag(r.coinType.name) === normalizeStructTag(coinType),
-    );
-
-    return BigInt(arrayIndex);
-  }
-
-  updateReserveConfig(
-    lendingMarketOwnerCapId: string,
-    transaction: Transaction,
-    coinType: string,
-    createReserveConfigArgs: CreateReserveConfigArgs,
-  ) {
-    const [config] = createReserveConfig(transaction, createReserveConfigArgs);
-
-    return updateReserveConfig(
-      transaction,
-      [this.lendingMarket.$typeArgs[0], coinType],
-      {
-        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
-        lendingMarket: transaction.object(this.lendingMarket.id),
-        reserveArrayIndex: transaction.pure.u64(
-          this.findReserveArrayIndex(coinType),
-        ),
-        config: transaction.object(config),
-      },
-    );
-  }
-
-  newObligationOwnerCap(
-    transaction: Transaction,
-    lendingMarketOwnerCapId: string,
-    destinationAddress: string,
-    obligationId: string,
-  ) {
-    const [obligationOwnerCap] = newObligationOwnerCap(
-      transaction,
-      this.lendingMarket.$typeArgs[0],
-      {
-        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
-        lendingMarket: transaction.object(this.lendingMarket.id),
-        obligationId: transaction.pure.id(obligationId),
-      },
-    );
-
-    transaction.transferObjects(
-      [obligationOwnerCap],
-      transaction.pure.address(destinationAddress),
-    );
-  }
-
-  updateRateLimiterConfig(
-    lendingMarketOwnerCapId: string,
-    transaction: Transaction,
-    newRateLimiterConfigArgs: CreateRateLimiterConfigArgs,
-  ) {
-    const [config] = createRateLimiterConfig(
-      transaction,
-      newRateLimiterConfigArgs,
-    );
-
-    return updateRateLimiterConfig(
-      transaction,
-      this.lendingMarket.$typeArgs[0],
-      {
-        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
-        lendingMarket: transaction.object(this.lendingMarket.id),
-        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
-        config: transaction.object(config),
-      },
-    );
-  }
-
-  async changeReservePriceFeed(
-    lendingMarketOwnerCapId: string,
-    coinType: string,
-    pythPriceId: string,
-    transaction: Transaction,
-  ) {
-    const priceUpdateData = await this.pythConnection.getPriceFeedsUpdateData([
-      pythPriceId,
-    ]);
-    const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
-      priceUpdateData,
-      [pythPriceId],
-    );
-
-    return changeReservePriceFeed(
-      transaction,
-      [this.lendingMarket.$typeArgs[0], coinType],
-      {
-        lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
-        lendingMarket: transaction.object(this.lendingMarket.id),
-        reserveArrayIndex: transaction.pure.u64(
-          this.findReserveArrayIndex(coinType),
-        ),
-        priceInfoObj: transaction.object(priceInfoObjectIds[0]),
-        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
-      },
-    );
-  }
-
-  createObligation(transaction: Transaction) {
-    return transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::create_obligation`,
-      arguments: [transaction.object(this.lendingMarket.id)],
-      typeArguments: this.lendingMarket.$typeArgs,
-    });
-  }
-
   async refreshAll(
     transaction: Transaction,
     obligation: Obligation<string>,
@@ -622,7 +642,7 @@ export class SuilendClient {
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIds);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       priceIds,
     );
@@ -653,6 +673,7 @@ export class SuilendClient {
     });
   }
 
+  // Deposit
   async deposit(
     sendCoin: TransactionObjectInput,
     coinType: string,
@@ -799,6 +820,7 @@ export class SuilendClient {
     transaction.transferObjects([ctokens], transaction.pure.address(ownerId));
   }
 
+  // Withdraw
   async withdraw(
     obligationOwnerCapId: string,
     obligationId: string,
@@ -867,6 +889,7 @@ export class SuilendClient {
     );
   }
 
+  // Borrow
   async borrow(
     obligationOwnerCapId: string,
     obligationId: string,
@@ -921,6 +944,7 @@ export class SuilendClient {
     );
   }
 
+  // Repay
   repay(
     obligationId: string,
     coinType: string,
@@ -973,6 +997,33 @@ export class SuilendClient {
     return result;
   }
 
+  // Liquidate
+  async liquidate(
+    transaction: Transaction,
+    obligation: Obligation<string>,
+    repayCoinType: string,
+    withdrawCoinType: string,
+    repayCoinId: TransactionObjectInput,
+  ) {
+    await this.refreshAll(transaction, obligation);
+    return liquidate(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], repayCoinType, withdrawCoinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        obligationId: obligation.id,
+        repayReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(repayCoinType),
+        ),
+        withdrawReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(withdrawCoinType),
+        ),
+        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
+        repayCoins: repayCoinId,
+      },
+    );
+  }
+
   async liquidateAndRedeem(
     transaction: Transaction,
     obligation: Obligation<string>,
@@ -1009,48 +1060,7 @@ export class SuilendClient {
     });
   }
 
-  async liquidate(
-    transaction: Transaction,
-    obligation: Obligation<string>,
-    repayCoinType: string,
-    withdrawCoinType: string,
-    repayCoinId: TransactionObjectInput,
-  ) {
-    await this.refreshAll(transaction, obligation);
-    return liquidate(
-      transaction,
-      [this.lendingMarket.$typeArgs[0], repayCoinType, withdrawCoinType],
-      {
-        lendingMarket: transaction.object(this.lendingMarket.id),
-        obligationId: obligation.id,
-        repayReserveArrayIndex: transaction.pure.u64(
-          this.findReserveArrayIndex(repayCoinType),
-        ),
-        withdrawReserveArrayIndex: transaction.pure.u64(
-          this.findReserveArrayIndex(withdrawCoinType),
-        ),
-        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
-        repayCoins: repayCoinId,
-      },
-    );
-  }
-
-  migrate(transaction: Transaction, lendingMarketOwnerCapId: string) {
-    return migrate(transaction, this.lendingMarket.$typeArgs[0], {
-      lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
-      lendingMarket: transaction.object(this.lendingMarket.id),
-    });
-  }
-
-  claimFees(transaction: Transaction, coinType: string) {
-    return claimFees(transaction, [this.lendingMarket.$typeArgs[0], coinType], {
-      lendingMarket: transaction.object(this.lendingMarket.id),
-      reserveArrayIndex: transaction.pure.u64(
-        this.findReserveArrayIndex(coinType),
-      ),
-    });
-  }
-
+  // Ctokens
   async redeemCtokensAndWithdrawLiquidity(
     ownerId: string,
     ctokenCoinTypes: string[],
