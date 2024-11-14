@@ -77,7 +77,7 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
     // Subset of TooltipContent className
     <div
       className="absolute rounded-md border bg-popover px-3 py-1.5 shadow-md"
-      style={getTooltipStyle(fields.length > 1 ? 240 : 200, viewBox, x)}
+      style={getTooltipStyle(fields.length > 1 ? 260 : 200, viewBox, x)}
     >
       <div className="flex w-full flex-col gap-2">
         <TLabelSans>
