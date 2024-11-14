@@ -69,7 +69,7 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
     },
   });
 
-  return (object.data?.content as unknown as any).fields.package;
+  return (object.data?.content as any).fields.package;
 }
 
 const SUI_COINTYPE = "0x2::sui::SUI";
@@ -260,7 +260,7 @@ export class SuilendClient {
       pythPriceId,
     ]);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       [pythPriceId],
     );
@@ -551,7 +551,7 @@ export class SuilendClient {
       pythPriceId,
     ]);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       [pythPriceId],
     );
@@ -622,7 +622,7 @@ export class SuilendClient {
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIds);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       priceIds,
     );
