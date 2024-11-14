@@ -259,6 +259,9 @@ export class SuilendClient {
     const priceUpdateData = await this.pythConnection.getPriceFeedsUpdateData([
       pythPriceId,
     ]);
+
+    // await this.pythClient.createPriceFeed(transaction, priceUpdateData);
+
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
       transaction,
       priceUpdateData,
@@ -642,22 +645,22 @@ export class SuilendClient {
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      new Transaction(),
+      transaction, // new Transaction(),
       priceUpdateData,
       priceIdentifiers,
     );
 
-    if (stale_priceIdentifiers.length > 0) {
-      const stale_priceUpdateData =
-        await this.pythConnection.getPriceFeedsUpdateData(
-          stale_priceIdentifiers,
-        );
-      await this.pythClient.updatePriceFeeds(
-        transaction,
-        stale_priceUpdateData,
-        stale_priceIdentifiers,
-      );
-    }
+    // if (stale_priceIdentifiers.length > 0) {
+    //   const stale_priceUpdateData =
+    //     await this.pythConnection.getPriceFeedsUpdateData(
+    //       stale_priceIdentifiers,
+    //     );
+    //   await this.pythClient.updatePriceFeeds(
+    //     transaction,
+    //     stale_priceUpdateData,
+    //     stale_priceIdentifiers,
+    //   );
+    // }
 
     for (let i = 0; i < reserveArrayIndexes.length; i++) {
       this.refreshReservePrices(
