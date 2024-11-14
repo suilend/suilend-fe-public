@@ -620,27 +620,27 @@ export class SuilendClient {
     }
 
     const tuples = Array.from(reserveArrayIndexToPriceId.entries()).sort();
-    const reserveArrayIndexes = Array.from(tuples.map((tuple) => tuple[0]));
-    const priceIdentifiers = Array.from(tuples.map((tuple) => tuple[1]));
+    const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
+    const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    const stale_priceIdentifiers = [];
-    const priceFeeds =
-      await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
+    // const stale_priceIdentifiers = [];
+    // const priceFeeds =
+    //   await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
 
-    if (priceFeeds === undefined)
-      stale_priceIdentifiers.push(...priceIdentifiers);
-    else {
-      for (let i = 0; i < priceFeeds.length; i++) {
-        if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
-        else {
-          const price = priceFeeds[i].getPriceNoOlderThan(30);
-          const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(30);
+    // if (priceFeeds === undefined)
+    //   stale_priceIdentifiers.push(...priceIdentifiers);
+    // else {
+    //   for (let i = 0; i < priceFeeds.length; i++) {
+    //     if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
+    //     else {
+    //       const price = priceFeeds[i].getPriceNoOlderThan(30);
+    //       const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(30);
 
-          if (price === undefined || emaPrice === undefined)
-            stale_priceIdentifiers.push(priceIdentifiers[i]);
-        }
-      }
-    }
+    //       if (price === undefined || emaPrice === undefined)
+    //         stale_priceIdentifiers.push(priceIdentifiers[i]);
+    //     }
+    //   }
+    // }
 
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
