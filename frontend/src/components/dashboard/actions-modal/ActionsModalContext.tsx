@@ -263,7 +263,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
       const transaction = new Transaction();
       try {
-        await suilendClient.borrowFromObligation(
+        await suilendClient.borrowAndSendToUser(
           address,
           obligationOwnerCap.id,
           obligation.id,
@@ -297,7 +297,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
       const transaction = new Transaction();
       try {
-        await suilendClient.withdrawFromObligation(
+        await suilendClient.withdrawAndSendToUser(
           address,
           obligationOwnerCap.id,
           obligation.id,

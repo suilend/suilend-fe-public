@@ -75,7 +75,7 @@ export default function RateLimiterConfigDialog() {
     const newConfig = parseConfigState(configState);
 
     try {
-      await suilendClient.updateRateLimiterConfig(
+      suilendClient.updateRateLimiterConfig(
         data.lendingMarketOwnerCapId,
         transaction,
         newConfig,

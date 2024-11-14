@@ -44,7 +44,7 @@ export default function RemintObligationOwnerCapDialog() {
     const transaction = new Transaction();
 
     try {
-      await suilendClient.newObligationOwnerCap(
+      suilendClient.newObligationOwnerCap(
         transaction,
         data.lendingMarketOwnerCapId,
         address,
