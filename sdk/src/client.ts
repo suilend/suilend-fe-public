@@ -617,21 +617,53 @@ export class SuilendClient {
     }
 
     const tuples = Array.from(reserveArrayIndexToPriceId.entries()).sort();
-    const priceIds = Array.from(tuples.map((tuple) => tuple[1]));
+    const reserveArrayIndexes = Array.from(tuples.map((tuple) => tuple[0]));
+    const priceIdentifiers = Array.from(tuples.map((tuple) => tuple[1]));
+
+    const stale_priceIdentifiers = [];
+    const priceFeeds =
+      await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
+
+    if (priceFeeds === undefined)
+      stale_priceIdentifiers.push(...priceIdentifiers);
+    else {
+      for (let i = 0; i < priceFeeds.length; i++) {
+        if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
+        else {
+          const price = priceFeeds[i].getPriceNoOlderThan(30);
+          const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(30);
+
+          if (price === undefined || emaPrice === undefined)
+            stale_priceIdentifiers.push(priceIdentifiers[i]);
+        }
+      }
+    }
 
     const priceUpdateData =
-      await this.pythConnection.getPriceFeedsUpdateData(priceIds);
+      await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction,
+      new Transaction(),
       priceUpdateData,
-      priceIds,
+      priceIdentifiers,
     );
 
-    for (let i = 0; i < tuples.length; i++) {
+    if (stale_priceIdentifiers.length > 0) {
+      const stale_priceUpdateData =
+        await this.pythConnection.getPriceFeedsUpdateData(
+          stale_priceIdentifiers,
+        );
+      await this.pythClient.updatePriceFeeds(
+        transaction,
+        stale_priceUpdateData,
+        stale_priceIdentifiers,
+      );
+    }
+
+    for (let i = 0; i < reserveArrayIndexes.length; i++) {
       this.refreshReservePrices(
         transaction,
         priceInfoObjectIds[i],
-        tuples[i][0],
+        reserveArrayIndexes[i],
       );
     }
   }
