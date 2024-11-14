@@ -100,7 +100,7 @@ async function crankRewards(
     for (let j = 0; j < BATCH_SIZE && i < refreshedObligations.length; j++) {
       const obligation = refreshedObligations[i];
 
-      suilendClient.claimRewardsAndDeposit(
+      suilendClient.claimRewardAndDeposit(
         obligation.id,
         BigInt(rewardReserveIndex),
         BigInt(rewardIndex),
