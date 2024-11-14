@@ -9,8 +9,8 @@ import useSWR from "swr";
 
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
-  NORMALIZED_mSUI_COINTYPE,
-  NORMALIZED_sSUI_COINTYPE,
+  LIQUID_STAKING_INFO_MAP,
+  NORMALIZED_LST_COINTYPES,
   isSendPoints,
 } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
@@ -26,10 +26,7 @@ import { parseObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { toHexString } from "@suilend/sdk/utils";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import {
-  SUILEND_VALIDATOR_ADDRESS,
-  getSpringSuiApy,
-} from "@suilend/springsui-sdk";
+import { LstClient } from "@suilend/springsui-sdk";
 
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
@@ -254,21 +251,26 @@ export default function useFetchAppData(
       obligations,
     );
 
-    // sSUI - TODO: Generalize
+    // LSTs
     const lstAprPercentMap: Record<string, BigNumber> = {};
+    for (const lstCoinType of NORMALIZED_LST_COINTYPES) {
+      const reserve = reserveMap[lstCoinType];
+      if (!reserve) continue;
 
-    const ssuiApr = await getSpringSuiApy(suiClient, SUILEND_VALIDATOR_ADDRESS);
-    lstAprPercentMap[NORMALIZED_sSUI_COINTYPE] = new BigNumber(
-      ssuiApr ?? 0,
-    ).times(100);
+      const LIQUID_STAKING_INFO = Object.values(LIQUID_STAKING_INFO_MAP).find(
+        (info) => info.type === lstCoinType,
+      );
+      if (!LIQUID_STAKING_INFO) continue;
 
-    const msuiApr = await getSpringSuiApy(
-      suiClient,
-      "0x56f4ec3046f1055a9d75d202d167f49a3748b259801315c74895cb0f330b4b7d",
-    );
-    lstAprPercentMap[NORMALIZED_mSUI_COINTYPE] = new BigNumber(
-      msuiApr ?? 0,
-    ).times(100);
+      const lstClient = await LstClient.initialize(
+        suiClient,
+        LIQUID_STAKING_INFO,
+      );
+      const apr = await lstClient.getSpringSuiApy(); // TODO: Use APR
+      const aprPercent = new BigNumber(apr).times(100);
+
+      lstAprPercentMap[lstCoinType] = aprPercent;
+    }
 
     return {
       lendingMarket,
