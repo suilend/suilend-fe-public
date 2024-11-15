@@ -8,8 +8,9 @@ import { toast } from "sonner";
 
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  NORMALIZED_FUD_COINTYPE,
+  NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
-  isFud,
   isSui,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
@@ -258,8 +259,12 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for FUD
-        if (useMaxAmount && !isFud(reserve.coinType))
+        // TODO: Remove workaround for FUD and HIPPO
+        if (
+          useMaxAmount &&
+          reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
+          reserve.coinType !== NORMALIZED_HIPPO_COINTYPE
+        )
           submitAmount = maxU64.toString();
         else
           submitAmount = BigNumber.min(
