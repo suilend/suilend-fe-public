@@ -1,17 +1,13 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { Transaction } from "@mysten/sui/transactions";
-import { Package } from "lucide-react";
-import { toast } from "sonner";
-
-import { SuilendClient } from "@suilend/sdk/client";
-
 import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";
 import ClaimFeesDialog from "@/components/admin/ClaimFeesDialog";
+import LendingMarketTab from "@/components/admin/lendingMarket/LendingMarketTab";
 import LiquidateDialog from "@/components/admin/LiquidateDialog";
 import MintObligationOwnerCapDialog from "@/components/admin/MintObligationOwnerCapDialog";
+import NftTab from "@/components/admin/nft/NftTab";
 import ObligationsDialog from "@/components/admin/ObligationsDialog";
 import RateLimiterConfigDialog from "@/components/admin/RateLimiterConfigDialog";
 import RateLimiterPropertiesDialog from "@/components/admin/RateLimiterPropertiesDialog";
@@ -20,7 +16,6 @@ import RemintObligationOwnerCapDialog from "@/components/admin/RemintObligationO
 import ReserveConfigDialog from "@/components/admin/ReserveConfigDialog";
 import ReservePropertiesDialog from "@/components/admin/ReservePropertiesDialog";
 import ReserveRewardsDialog from "@/components/admin/ReserveRewardsDialog";
-import Button from "@/components/shared/Button";
 import Tabs from "@/components/shared/Tabs";
 import { TTitle } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
@@ -43,16 +38,8 @@ export default function Admin() {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
-  const {
-    refreshData,
-    explorer,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
+  const { explorer, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
-
-  const isEditable = !!data.lendingMarketOwnerCapId;
 
   // Tabs
   enum Tab {
@@ -61,6 +48,7 @@ export default function Admin() {
     LENDING_MARKET = "lendingMarket",
     OBLIGATION = "obligation",
     CTOKENS = "ctokens",
+    NFT = "nft",
     LIQUIDATE = "liquidate",
     OBLIGATIONS = "obligations",
   }
@@ -74,6 +62,7 @@ export default function Admin() {
     [
       { id: Tab.OBLIGATION, title: "Obligation" },
       { id: Tab.CTOKENS, title: "CTokens" },
+      { id: Tab.NFT, title: "NFT" },
     ],
     [
       { id: Tab.LIQUIDATE, title: "Liquidate" },
@@ -88,28 +77,6 @@ export default function Admin() {
       : Object.values(Tab)[0];
   const onSelectedTabChange = (tab: Tab) => {
     shallowPushQuery(router, { ...router.query, [QueryParams.TAB]: tab });
-  };
-
-  // Lending market
-  const onMigrate = async () => {
-    if (!data.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
-
-    const transaction = new Transaction();
-
-    try {
-      suilendClient.migrate(transaction, data.lendingMarketOwnerCapId);
-
-      await signExecuteAndWaitForTransaction(transaction);
-
-      toast.success("Migrated");
-    } catch (err) {
-      toast.error("Failed to migrate", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
-    } finally {
-      await refreshData();
-    }
   };
 
   return (
@@ -177,24 +144,7 @@ export default function Admin() {
               </CardContent>
             </Card>
           )}
-          {selectedTab === Tab.LENDING_MARKET && (
-            <Card>
-              <CardHeader>
-                <TTitle className="uppercase">Lending market</TTitle>
-              </CardHeader>
-              <CardContent className="flex flex-row flex-wrap gap-2">
-                <Button
-                  labelClassName="uppercase text-xs"
-                  startIcon={<Package />}
-                  variant="secondaryOutline"
-                  onClick={onMigrate}
-                  disabled={!isEditable}
-                >
-                  Migrate
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+          {selectedTab === Tab.LENDING_MARKET && <LendingMarketTab />}
 
           {selectedTab === Tab.OBLIGATION && (
             <Card>
@@ -217,6 +167,7 @@ export default function Admin() {
               </CardContent>
             </Card>
           )}
+          {selectedTab === Tab.NFT && <NftTab />}
 
           {selectedTab === Tab.LIQUIDATE && (
             <Card>
