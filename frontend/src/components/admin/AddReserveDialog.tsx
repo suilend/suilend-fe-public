@@ -145,7 +145,7 @@ export default function AddReserveDialog() {
           pythPriceId,
         ]);
       await suilendClient.pythClient.createPriceFeed(
-        transaction,
+        transaction as any,
         priceUpdateData,
       );
 
