@@ -11,6 +11,7 @@ import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   LIQUID_STAKING_INFO_MAP,
   NORMALIZED_LST_COINTYPES,
+  RESERVES_CUSTOM_ORDER,
   isSendPoints,
 } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
@@ -125,6 +126,15 @@ export default function useFetchAppData(
       coinMetadataMap,
       now,
     );
+    lendingMarket.reserves = lendingMarket.reserves.slice().sort((a, b) => {
+      const aCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(a.coinType);
+      const bCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(b.coinType);
+
+      if (aCustomOrderIndex > -1 && bCustomOrderIndex > -1)
+        return aCustomOrderIndex - bCustomOrderIndex;
+      else if (aCustomOrderIndex === -1 && bCustomOrderIndex === -1) return 0;
+      else return aCustomOrderIndex > -1 ? -1 : 1;
+    });
 
     const reserveMap = lendingMarket.reserves.reduce(
       (acc, reserve) => ({ ...acc, [reserve.coinType]: reserve }),
