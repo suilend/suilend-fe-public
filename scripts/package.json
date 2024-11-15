@@ -11,16 +11,10 @@
     "lint": "bun eslint && bun prettier && bun tsc --noEmit"
   },
   "dependencies": {
-    "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.8",
     "@mysten/sui": "1.14.3",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "@suilend/sdk": "^1.1.17",
-    "bignumber.js": "^9.1.2",
-    "commander": "^12.1.0",
-    "hot-shots": "^10.2.1",
-    "module-alias": "^2.2.3",
-    "p-limit": "^6.1.0",
-    "tslog": "^4.9.3"
+    "bignumber.js": "^9.1.2"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.8",
