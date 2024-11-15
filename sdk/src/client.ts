@@ -632,8 +632,8 @@ export class SuilendClient {
       for (let i = 0; i < priceFeeds.length; i++) {
         if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
         else {
-          const price = priceFeeds[i].getPriceNoOlderThan(30);
-          const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(30);
+          const price = priceFeeds[i].getPriceNoOlderThan(10);
+          const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(10);
 
           if (price === undefined || emaPrice === undefined)
             stale_priceIdentifiers.push(priceIdentifiers[i]);
