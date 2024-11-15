@@ -21,6 +21,15 @@ import BigNumber from "bignumber.js";
 import { isEqual } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
+import {
+  EXPLORERS,
+  Explorer,
+  ExplorerId,
+  RPCS,
+  RewardMap,
+  Rpc,
+  RpcId,
+} from "@suilend/frontend-sui";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -30,8 +39,6 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
-import { EXPLORERS, Explorer, RPCS, Rpc } from "@/lib/constants";
-import { RewardMap } from "@/lib/liquidityMining";
 
 export interface AppData {
   lendingMarket: ParsedLendingMarket;
@@ -52,11 +59,11 @@ export interface AppContext {
   suilendClient: SuilendClient | null;
   data: AppData | null;
   refreshData: () => Promise<void>;
-  rpc: (typeof RPCS)[number];
+  rpc: Rpc;
   customRpcUrl: string;
-  setRpc: (id: Rpc, customUrl: string) => void;
-  explorer: (typeof EXPLORERS)[number];
-  setExplorerId: (id: Explorer) => void;
+  setRpc: (id: RpcId, customUrl: string) => void;
+  explorer: Explorer;
+  setExplorerId: (id: ExplorerId) => void;
   obligation: ParsedObligation | null;
   setObligationId: Dispatch<SetStateAction<string | null>>;
   signExecuteAndWaitForTransaction: (
@@ -109,8 +116,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
   const rpc = useMemo(
     () =>
-      rpcId === Rpc.CUSTOM
-        ? { id: Rpc.CUSTOM, name: "Custom", url: customRpcUrl }
+      rpcId === RpcId.CUSTOM
+        ? { id: RpcId.CUSTOM, name: "Custom", url: customRpcUrl }
         : (RPCS.find((rpc) => rpc.id === rpcId) ?? RPCS[0]),
     [rpcId, customRpcUrl],
   );
@@ -204,14 +211,14 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       refreshData,
       rpc,
       customRpcUrl,
-      setRpc: (id: Rpc, customUrl: string) => {
+      setRpc: (id: RpcId, customUrl: string) => {
         setRpcId(id);
-        if (id === Rpc.CUSTOM) setCustomRpcUrl(customUrl);
+        if (id === RpcId.CUSTOM) setCustomRpcUrl(customUrl);
 
         setTimeout(() => refreshData(), 100); // Wait for suiClient to update
       },
       explorer,
-      setExplorerId: (id: Explorer) => setExplorerId(id),
+      setExplorerId: (id: ExplorerId) => setExplorerId(id),
       obligation:
         data?.obligations?.find(
           (obligation) => obligation.id === obligationId,

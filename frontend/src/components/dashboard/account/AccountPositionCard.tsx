@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
+import { getNetAprPercent } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";
@@ -25,7 +26,6 @@ import { Separator } from "@/components/ui/separator";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import { formatPercent, formatUsd } from "@/lib/format";
-import { getNetAprPercent } from "@/lib/liquidityMining";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { shallowPushQuery } from "@/lib/router";
 import {

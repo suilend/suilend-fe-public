@@ -1,7 +1,8 @@
 import { ClassValue } from "clsx";
 
+import { EXPLORERS } from "@suilend/frontend-sui";
+
 import StandardSelect from "@/components/shared/StandardSelect";
-import { EXPLORERS } from "@/lib/constants";
 
 interface ExplorerSelectProps {
   className?: ClassValue;

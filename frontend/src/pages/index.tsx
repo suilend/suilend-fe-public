@@ -3,7 +3,12 @@ import NextLink from "next/link";
 
 import { Droplet, Server } from "lucide-react";
 
-import { NORMALIZED_mSUI_COINTYPE } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_mSUI_COINTYPE,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
 import DiscordIcon from "@/components/assets/DiscordIcon";
@@ -18,11 +23,6 @@ import { TBody, TPrimaryTitle, TTitle } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatPercent } from "@/lib/format";
-import {
-  getFilteredRewards,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
-} from "@/lib/liquidityMining";
 import { DASHBOARD_URL, DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
 import suilendLogo from "@/public/assets/suilend.svg";
 

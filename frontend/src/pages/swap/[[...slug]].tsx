@@ -24,6 +24,10 @@ import { v4 as uuidv4 } from "uuid";
 import {
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
+  SUI_GAS_MIN,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
   isSui,
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -56,13 +60,8 @@ import {
   getSubmitButtonState,
 } from "@/lib/actions";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
-import { SUI_GAS_MIN, TX_TOAST_DURATION } from "@/lib/constants";
+import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import {
-  getFilteredRewards,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
-} from "@/lib/liquidityMining";
 import track from "@/lib/track";
 import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";

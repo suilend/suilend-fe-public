@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import { RewardSummary, isSendPoints } from "@suilend/frontend-sui";
 
 import Card from "@/components/dashboard/Card";
 import PointsCount from "@/components/points/PointsCount";
@@ -23,7 +23,6 @@ import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
-import { RewardSummary } from "@/lib/liquidityMining";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";

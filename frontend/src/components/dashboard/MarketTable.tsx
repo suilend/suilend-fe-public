@@ -3,7 +3,12 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import { NORMALIZED_mSUI_COINTYPE } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_mSUI_COINTYPE,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
 
@@ -24,11 +29,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
-import {
-  getFilteredRewards,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
-} from "@/lib/liquidityMining";
 import {
   ISOLATED_TOOLTIP,
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,

@@ -4,6 +4,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
+import { AprRewardSummary, msPerYear } from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/constants";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import {
@@ -32,10 +33,8 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
-import { msPerYear } from "@/lib/constants";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { formatToken, formatUsd } from "@/lib/format";
-import { AprRewardSummary } from "@/lib/liquidityMining";
 import { cn } from "@/lib/utils";
 
 interface RowData {

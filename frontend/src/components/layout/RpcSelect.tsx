@@ -1,7 +1,8 @@
 import { ClassValue } from "clsx";
 
+import { RPCS } from "@suilend/frontend-sui";
+
 import StandardSelect from "@/components/shared/StandardSelect";
-import { RPCS } from "@/lib/constants";
 
 interface RpcSelectProps {
   className?: ClassValue;

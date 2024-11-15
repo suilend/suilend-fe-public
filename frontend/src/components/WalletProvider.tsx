@@ -9,8 +9,9 @@ import {
 import { registerWallet } from "@mysten/wallet-standard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { RPCS } from "@suilend/frontend-sui";
+
 import { DEFAULT_EXTENSION_WALLET_NAMES } from "@/contexts/WalletContext";
-import { RPCS } from "@/lib/constants";
 
 export default function WalletProvider({ children }: PropsWithChildren) {
   const { networkConfig } = createNetworkConfig({

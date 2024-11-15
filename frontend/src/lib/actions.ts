@@ -3,9 +3,11 @@ import BigNumber from "bignumber.js";
 import {
   NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
+  SUI_GAS_MIN,
   isEth,
   isStablecoin,
   isSui,
+  msPerYear,
 } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -13,7 +15,6 @@ import { Action } from "@suilend/sdk/types";
 
 import { SubmitButtonState } from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import { AppData } from "@/contexts/AppContext";
-import { SUI_GAS_MIN, msPerYear } from "@/lib/constants";
 import { formatList } from "@/lib/format";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 

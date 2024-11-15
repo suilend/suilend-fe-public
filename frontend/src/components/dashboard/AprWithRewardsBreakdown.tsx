@@ -1,7 +1,16 @@
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import {
+  AprRewardSummary,
+  PerDayRewardSummary,
+  getDedupedAprRewards,
+  getDedupedPerDayRewards,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+  isSendPoints,
+} from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action, Side } from "@suilend/sdk/types";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
@@ -18,15 +27,6 @@ import {
 } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatPoints, formatToken } from "@/lib/format";
-import {
-  AprRewardSummary,
-  PerDayRewardSummary,
-  getDedupedAprRewards,
-  getDedupedPerDayRewards,
-  getFilteredRewards,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
-} from "@/lib/liquidityMining";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 const calculateUtilizationPercent = (reserve: ParsedReserve) =>

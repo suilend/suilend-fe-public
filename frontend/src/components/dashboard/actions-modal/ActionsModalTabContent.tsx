@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  SUI_GAS_MIN,
   isFud,
   isSui,
 } from "@suilend/frontend-sui";
@@ -37,7 +38,6 @@ import useBreakpoint from "@/hooks/useBreakpoint";
 import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
-  SUI_GAS_MIN,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";

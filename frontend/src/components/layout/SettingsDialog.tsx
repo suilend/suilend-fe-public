@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import { toast } from "sonner";
 
+import { EXPLORERS, ExplorerId, RPCS, RpcId } from "@suilend/frontend-sui";
+
 import Dialog from "@/components/dashboard/Dialog";
 import ExplorerSelect from "@/components/layout/ExplorerSelect";
 import RpcSelect from "@/components/layout/RpcSelect";
@@ -12,7 +14,6 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useAppContext } from "@/contexts/AppContext";
 import { useSettingsContext } from "@/contexts/SettingsContext";
-import { EXPLORERS, Explorer, RPCS, Rpc } from "@/lib/constants";
 
 export default function SettingsDialog() {
   const { gasBudget, setGasBudget } = useSettingsContext();
@@ -27,7 +28,7 @@ export default function SettingsDialog() {
 
   // Rpc
   type RpcState = {
-    id: Rpc;
+    id: RpcId;
     customUrl: string;
   };
 
@@ -45,13 +46,13 @@ export default function SettingsDialog() {
     initialRpcStateRef.current = newRpcState;
   }, [isOpen, rpc, customRpcUrl]);
 
-  const onRpcIdChange = (id: Rpc) => {
+  const onRpcIdChange = (id: RpcId) => {
     const newRpc = RPCS.find((r) => r.id === id);
     if (!newRpc) return;
 
-    setRpcState((s) => ({ ...s, id: newRpc.id as Rpc }));
+    setRpcState((s) => ({ ...s, id: newRpc.id }));
 
-    if (newRpc.id !== Rpc.CUSTOM) {
+    if (newRpc.id !== RpcId.CUSTOM) {
       setRpc(newRpc.id, "");
       toast.info(`Switched to ${newRpc.name}`);
     }
@@ -62,7 +63,7 @@ export default function SettingsDialog() {
   };
 
   const saveCustomRpc = () => {
-    setRpc(Rpc.CUSTOM, rpcState.customUrl);
+    setRpc(RpcId.CUSTOM, rpcState.customUrl);
 
     toast.info("Switched to custom RPC", {
       description: rpcState.customUrl,
@@ -70,11 +71,11 @@ export default function SettingsDialog() {
   };
 
   // Explorer
-  const onExplorerIdChange = (id: Explorer) => {
+  const onExplorerIdChange = (id: ExplorerId) => {
     const newExplorer = EXPLORERS.find((e) => e.id === id);
     if (!newExplorer) return;
 
-    setExplorerId(newExplorer.id as Explorer);
+    setExplorerId(newExplorer.id);
     toast.info(`Switched to ${newExplorer.name}`);
   };
 
@@ -102,12 +103,12 @@ export default function SettingsDialog() {
             <div className="flex-1">
               <RpcSelect
                 value={rpcState.id}
-                onChange={(id) => onRpcIdChange(id as Rpc)}
+                onChange={(id) => onRpcIdChange(id as RpcId)}
               />
             </div>
           </div>
 
-          {rpcState.id === Rpc.CUSTOM && (
+          {rpcState.id === RpcId.CUSTOM && (
             <>
               <div className="flex flex-row items-center gap-4">
                 <TLabelSans>Custom RPC</TLabelSans>
@@ -147,7 +148,7 @@ export default function SettingsDialog() {
           <div className="flex-1">
             <ExplorerSelect
               value={explorer.id}
-              onChange={(id) => onExplorerIdChange(id as Explorer)}
+              onChange={(id) => onExplorerIdChange(id as ExplorerId)}
             />
           </div>
         </div>

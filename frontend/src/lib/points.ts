@@ -1,13 +1,12 @@
 import BigNumber from "bignumber.js";
 
-import { isSendPoints } from "@suilend/frontend-sui";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
-
 import {
   RewardMap,
   getBorrowShare,
   getDepositShare,
-} from "@/lib/liquidityMining";
+  isSendPoints,
+} from "@suilend/frontend-sui";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 export const roundPoints = (value: BigNumber) =>
   value.decimalPlaces(0, BigNumber.ROUND_HALF_UP);

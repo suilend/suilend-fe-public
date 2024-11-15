@@ -6,7 +6,10 @@ import { capitalize } from "lodash";
 import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
-import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
+import {
+  COINTYPE_COLOR_MAP,
+  getDedupedAprRewards,
+} from "@suilend/frontend-sui";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -34,7 +37,6 @@ import {
   calculateRewardAprPercent,
 } from "@/lib/events";
 import { formatPercent } from "@/lib/format";
-import { getDedupedAprRewards } from "@/lib/liquidityMining";
 import { cn } from "@/lib/utils";
 
 const isBase = (field: string) => field.endsWith("__base");

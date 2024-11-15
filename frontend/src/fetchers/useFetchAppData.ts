@@ -12,6 +12,7 @@ import {
   LIQUID_STAKING_INFO_MAP,
   NORMALIZED_LST_COINTYPES,
   RESERVES_CUSTOM_ORDER,
+  formatRewards,
   isSendPoints,
 } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
@@ -32,7 +33,6 @@ import { LstClient } from "@suilend/springsui-sdk";
 import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
-import { formatRewards } from "@/lib/liquidityMining";
 
 export default function useFetchAppData(
   suiClient: SuiClient,
