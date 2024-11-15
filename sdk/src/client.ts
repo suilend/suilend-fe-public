@@ -622,44 +622,44 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    const stale_priceIdentifiers = [];
-    const priceFeeds =
-      await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
+    // const stale_priceIdentifiers = [];
+    // const priceFeeds =
+    //   await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
 
-    if (priceFeeds === undefined)
-      stale_priceIdentifiers.push(...priceIdentifiers);
-    else {
-      for (let i = 0; i < priceFeeds.length; i++) {
-        if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
-        else {
-          const price = priceFeeds[i].getPriceNoOlderThan(10);
-          const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(10);
+    // if (priceFeeds === undefined)
+    //   stale_priceIdentifiers.push(...priceIdentifiers);
+    // else {
+    //   for (let i = 0; i < priceFeeds.length; i++) {
+    //     if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
+    //     else {
+    //       const price = priceFeeds[i].getPriceNoOlderThan(10);
+    //       const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(10);
 
-          if (price === undefined || emaPrice === undefined)
-            stale_priceIdentifiers.push(priceIdentifiers[i]);
-        }
-      }
-    }
+    //       if (price === undefined || emaPrice === undefined)
+    //         stale_priceIdentifiers.push(priceIdentifiers[i]);
+    //     }
+    //   }
+    // }
 
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      new Transaction(),
+      transaction, // new Transaction(),
       priceUpdateData,
       priceIdentifiers,
     );
 
-    if (stale_priceIdentifiers.length > 0) {
-      const stale_priceUpdateData =
-        await this.pythConnection.getPriceFeedsUpdateData(
-          stale_priceIdentifiers,
-        );
-      await this.pythClient.updatePriceFeeds(
-        transaction,
-        stale_priceUpdateData,
-        stale_priceIdentifiers,
-      );
-    }
+    // if (stale_priceIdentifiers.length > 0) {
+    //   const stale_priceUpdateData =
+    //     await this.pythConnection.getPriceFeedsUpdateData(
+    //       stale_priceIdentifiers,
+    //     );
+    //   await this.pythClient.updatePriceFeeds(
+    //     transaction,
+    //     stale_priceUpdateData,
+    //     stale_priceIdentifiers,
+    //   );
+    // }
 
     for (let i = 0; i < reserveArrayIndexes.length; i++) {
       this.refreshReservePrices(
