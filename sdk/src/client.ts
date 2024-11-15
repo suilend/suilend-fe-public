@@ -256,11 +256,10 @@ export class SuilendClient {
   ) {
     const [config] = createReserveConfig(transaction, createReserveConfigArgs);
 
+    // Assumes the pyth price feed exists
     const priceUpdateData = await this.pythConnection.getPriceFeedsUpdateData([
       pythPriceId,
     ]);
-
-    // await this.pythClient.createPriceFeed(transaction, priceUpdateData);
 
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
       transaction,
