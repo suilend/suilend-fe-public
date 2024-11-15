@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CoinMetadata } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { isEqual } from "lodash";
-import { Eraser, Plus } from "lucide-react";
+import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
@@ -126,7 +126,39 @@ export default function AddReserveDialog() {
     resetConfigState();
   };
 
-  // Save
+  // Submit
+  const createPriceFeed = async () => {
+    if (!address) throw new Error("Wallet not connected");
+    if (!data.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
+
+    if (pythPriceId === "") {
+      toast.error("Enter a pyth price id");
+      return;
+    }
+
+    const transaction = new Transaction();
+
+    try {
+      const priceUpdateData =
+        await suilendClient.pythConnection.getPriceFeedsUpdateData([
+          pythPriceId,
+        ]);
+      await suilendClient.pythClient.createPriceFeed(
+        transaction,
+        priceUpdateData,
+      );
+
+      await signExecuteAndWaitForTransaction(transaction);
+
+      toast.success("Pyth price feed created");
+    } catch (err) {
+      toast.error("Failed to create Pyth price feed", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  };
+
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
     if (!data.lendingMarketOwnerCapId)
@@ -235,12 +267,26 @@ export default function AddReserveDialog() {
           index={coinIndex}
           onIndexChange={setCoinIndex}
         />
-        <Input
-          label="pythPriceId"
-          id="pythPriceId"
-          value={pythPriceId}
-          onChange={setPythPriceId}
-        />
+        <div className="flex w-full flex-row items-end gap-2">
+          <Input
+            className="flex-1"
+            label="pythPriceId"
+            id="pythPriceId"
+            value={pythPriceId}
+            onChange={setPythPriceId}
+          />
+
+          <Button
+            className="my-1"
+            tooltip="Create price feed"
+            icon={<Rss />}
+            variant="secondary"
+            size="icon"
+            onClick={createPriceFeed}
+          >
+            Remove row
+          </Button>
+        </div>
 
         <ReserveConfig
           symbol={coin ? coin.symbol : undefined}

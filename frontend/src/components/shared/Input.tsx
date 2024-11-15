@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useRef } from "react";
 
+import { ClassValue } from "clsx";
 import { mergeRefs } from "react-merge-refs";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 export const getInputId = (id: string) => `input.${id}`;
 
 interface InputProps {
+  className?: ClassValue;
   label?: string;
   labelRight?: string;
   id: string;
@@ -28,6 +30,7 @@ interface InputProps {
 const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
+      className,
       label,
       labelRight,
       id,
@@ -42,19 +45,23 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const { className, autoFocus, ...restInputProps } = inputProps || {};
+    const {
+      className: inputClassName,
+      autoFocus: inputAutoFocus,
+      ...restInputProps
+    } = inputProps || {};
 
     const inputId = getInputId(id);
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
-      if (!autoFocus) return;
+      if (!inputAutoFocus) return;
       setTimeout(() => localRef.current?.focus());
-    }, [autoFocus]);
+    }, [inputAutoFocus]);
 
     return (
-      <div className="flex flex-col gap-2">
+      <div className={cn("flex flex-col gap-2", className)}>
         {label && (
           <div className="flex flex-row justify-between">
             <label htmlFor={inputId}>
@@ -78,7 +85,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               "border-divider relative z-[1] focus:border-primary",
               startDecorator && "pl-10",
               endDecorator && "pr-10",
-              className,
+              inputClassName,
             )}
             type={type}
             placeholder={placeholder}
