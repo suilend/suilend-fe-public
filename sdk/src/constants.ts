@@ -15,6 +15,7 @@ export const RESERVES_CUSTOM_ORDER = [
   "SOL",
   "AUSD",
   "DEEP",
+  "NS",
   "FUD",
   "HIPPO",
 ];
