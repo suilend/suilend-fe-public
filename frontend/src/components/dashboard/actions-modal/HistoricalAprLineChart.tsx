@@ -10,6 +10,7 @@ import {
   COINTYPE_COLOR_MAP,
   getDedupedAprRewards,
 } from "@suilend/frontend-sui";
+import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -27,7 +28,6 @@ import {
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
 import {
   DAYS,

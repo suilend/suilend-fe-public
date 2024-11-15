@@ -6,7 +6,7 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import { isSendPoints, shallowPushQuery } from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/constants";
 import {
   ApiBorrowEvent,
@@ -32,7 +32,6 @@ import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEve
 import { EventType, eventSortAsc } from "@/lib/events";
 import { formatPoints, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
-import { shallowPushQuery } from "@/lib/router";
 import { Token } from "@/lib/types";
 
 export enum QueryParams {

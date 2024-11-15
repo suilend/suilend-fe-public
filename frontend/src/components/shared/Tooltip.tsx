@@ -20,13 +20,14 @@ import {
 } from "@radix-ui/react-tooltip";
 import { merge } from "lodash";
 
+import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+
 import { TBodySans } from "@/components/shared/Typography";
 import {
   TooltipContent,
   Tooltip as TooltipRoot,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { cn } from "@/lib/utils";
 
 interface TooltipTriggerContext {

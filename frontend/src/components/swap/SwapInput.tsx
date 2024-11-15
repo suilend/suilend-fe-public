@@ -4,12 +4,13 @@ import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
+import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useSwapContext } from "@/contexts/SwapContext";
-import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";

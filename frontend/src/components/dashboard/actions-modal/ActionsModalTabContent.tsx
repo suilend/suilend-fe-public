@@ -12,6 +12,7 @@ import {
   isFud,
   isSui,
 } from "@suilend/frontend-sui";
+import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { maxU64 } from "@suilend/sdk/constants";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action, ApiDepositEvent, Side } from "@suilend/sdk/types";
@@ -35,7 +36,6 @@ import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import useIsTouchscreen from "@/hooks/useIsTouchscreen";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
   TX_TOAST_DURATION,

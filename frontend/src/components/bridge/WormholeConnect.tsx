@@ -1,10 +1,11 @@
 import { MouseEvent, useEffect, useState } from "react";
 
+import track from "@suilend/frontend-sui/lib/track";
+
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import Container from "@/components/shared/Container";
 import { useAppContext } from "@/contexts/AppContext";
 import { DASHBOARD_URL } from "@/lib/navigation";
-import track from "@/lib/track";
 import { cn } from "@/lib/utils";
 
 interface WormholeConnectProps {

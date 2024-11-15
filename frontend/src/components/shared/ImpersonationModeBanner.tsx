@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
+import { shallowPushQuery } from "@suilend/frontend-sui";
+
 import Tooltip from "@/components/shared/Tooltip";
 import {
   bodyClassNames,
@@ -14,7 +16,6 @@ import {
   useWalletContext,
 } from "@/contexts/WalletContext";
 import { formatAddress } from "@/lib/format";
-import { shallowPushQuery } from "@/lib/router";
 import { cn } from "@/lib/utils";
 
 export default function ImpersonationModeBanner() {

@@ -1,6 +1,8 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
+import { shallowPushQuery } from "@suilend/frontend-sui";
+
 import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";
 import ClaimFeesDialog from "@/components/admin/ClaimFeesDialog";
@@ -26,7 +28,6 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { shallowPushQuery } from "@/lib/router";
 
 enum QueryParams {
   TAB = "tab",

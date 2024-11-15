@@ -2,6 +2,9 @@ import Image from "next/image";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import useIsAndroid from "@suilend/frontend-sui/hooks/useIsAndroid";
+import useIsiOS from "@suilend/frontend-sui/hooks/useIsiOS";
+
 import Button from "@/components/shared/Button";
 import DropdownMenu, {
   DropdownMenuItem,
@@ -13,8 +16,6 @@ import {
   isInMsafeApp,
   useWalletContext,
 } from "@/contexts/WalletContext";
-import useIsAndroid from "@/hooks/useIsAndroid";
-import useIsiOS from "@/hooks/useIsiOS";
 
 interface WalletDropdownItemProps {
   wallet: Wallet;

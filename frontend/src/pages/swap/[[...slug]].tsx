@@ -30,6 +30,7 @@ import {
   getTotalAprPercent,
   isSui,
 } from "@suilend/frontend-sui";
+import track from "@suilend/frontend-sui/lib/track";
 import { SuilendClient } from "@suilend/sdk/client";
 import { Action, Side } from "@suilend/sdk/types";
 
@@ -62,7 +63,6 @@ import {
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import track from "@/lib/track";
 import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";

@@ -5,6 +5,7 @@ import { formatISO } from "date-fns";
 import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
+import { shallowPushQuery } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -19,7 +20,6 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useWalletContext } from "@/contexts/WalletContext";
-import { shallowPushQuery } from "@/lib/router";
 
 enum QueryParams {
   TAB = "rewardsTab",
