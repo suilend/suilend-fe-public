@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.16",
+  "version": "1.1.17",
   "private": true,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -26,11 +26,11 @@
   },
   "dependencies": {
     "@mysten/bcs": "1.1.0",
-    "@mysten/sui": "1.14.2",
+    "@mysten/sui": "1.14.3",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "bignumber.js": "^9.1.2",
-    "p-limit": "^3.1.0",
-    "uuid": "^9.0.1"
+    "p-limit": "^6.1.0",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "ts-node": "^10.9.2"

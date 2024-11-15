@@ -89,7 +89,7 @@ export class SuilendClient {
     this.lendingMarket = lendingMarket;
     this.client = client;
     this.pythClient = new SuiPythClient(
-      client,
+      client as any,
       PYTH_STATE_ID,
       WORMHOLE_STATE_ID,
     );
@@ -262,7 +262,7 @@ export class SuilendClient {
     ]);
 
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction,
+      transaction as any,
       priceUpdateData,
       [pythPriceId],
     );
@@ -553,7 +553,7 @@ export class SuilendClient {
       pythPriceId,
     ]);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction,
+      transaction as any,
       priceUpdateData,
       [pythPriceId],
     );
@@ -644,7 +644,7 @@ export class SuilendClient {
     const priceUpdateData =
       await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction, // new Transaction(),
+      transaction as any, // new Transaction(),
       priceUpdateData,
       priceIdentifiers,
     );
@@ -655,7 +655,7 @@ export class SuilendClient {
     //       stale_priceIdentifiers,
     //     );
     //   await this.pythClient.updatePriceFeeds(
-    //     transaction,
+    //     transaction as any,
     //     stale_priceUpdateData,
     //     stale_priceIdentifiers,
     //   );
