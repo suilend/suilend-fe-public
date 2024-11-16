@@ -34,6 +34,13 @@ export function borrow(
   });
 }
 
+export function init(tx: Transaction, otw: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::init`,
+    arguments: [obj(tx, otw)],
+  });
+}
+
 export interface MigrateArgs {
   lendingMarketOwnerCap: TransactionObjectInput;
   lendingMarket: TransactionObjectInput;
@@ -50,10 +57,23 @@ export function migrate(tx: Transaction, typeArg: string, args: MigrateArgs) {
   });
 }
 
-export function init(tx: Transaction, otw: TransactionObjectInput) {
+export interface ClaimFeesArgs {
+  lendingMarket: TransactionObjectInput;
+  reserveArrayIndex: bigint | TransactionArgument;
+}
+
+export function claimFees(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: ClaimFeesArgs,
+) {
   return tx.moveCall({
-    target: `${PUBLISHED_AT}::lending_market::init`,
-    arguments: [obj(tx, otw)],
+    target: `${PUBLISHED_AT}::lending_market::claim_fees`,
+    typeArguments: typeArgs,
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.reserveArrayIndex, `u64`),
+    ],
   });
 }
 
@@ -185,26 +205,6 @@ export function reserve(
   });
 }
 
-export interface ClaimFeesArgs {
-  lendingMarket: TransactionObjectInput;
-  reserveArrayIndex: bigint | TransactionArgument;
-}
-
-export function claimFees(
-  tx: Transaction,
-  typeArgs: [string, string],
-  args: ClaimFeesArgs,
-) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::lending_market::claim_fees`,
-    typeArguments: typeArgs,
-    arguments: [
-      obj(tx, args.lendingMarket),
-      pure(tx, args.reserveArrayIndex, `u64`),
-    ],
-  });
-}
-
 export interface DepositLiquidityAndMintCtokensArgs {
   lendingMarket: TransactionObjectInput;
   reserveArrayIndex: bigint | TransactionArgument;
@@ -229,6 +229,52 @@ export function depositLiquidityAndMintCtokens(
   });
 }
 
+export interface FulfillLiquidityRequestArgs {
+  lendingMarket: TransactionObjectInput;
+  reserveArrayIndex: bigint | TransactionArgument;
+  liquidityRequest: TransactionObjectInput;
+}
+
+export function fulfillLiquidityRequest(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: FulfillLiquidityRequestArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::fulfill_liquidity_request`,
+    typeArguments: typeArgs,
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.reserveArrayIndex, `u64`),
+      obj(tx, args.liquidityRequest),
+    ],
+  });
+}
+
+export interface InitStakerArgs {
+  lendingMarket: TransactionObjectInput;
+  lendingMarketOwnerCap: TransactionObjectInput;
+  suiReserveArrayIndex: bigint | TransactionArgument;
+  treasuryCap: TransactionObjectInput;
+}
+
+export function initStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: InitStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::init_staker`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.lendingMarket),
+      obj(tx, args.lendingMarketOwnerCap),
+      pure(tx, args.suiReserveArrayIndex, `u64`),
+      obj(tx, args.treasuryCap),
+    ],
+  });
+}
+
 export interface MaxBorrowAmountArgs {
   rateLimiter: TransactionObjectInput;
   obligation: TransactionObjectInput;
@@ -249,6 +295,52 @@ export function maxBorrowAmount(
       obj(tx, args.obligation),
       obj(tx, args.reserve),
       obj(tx, args.clock),
+    ],
+  });
+}
+
+export interface RebalanceStakerArgs {
+  lendingMarket: TransactionObjectInput;
+  suiReserveArrayIndex: bigint | TransactionArgument;
+  systemState: TransactionObjectInput;
+}
+
+export function rebalanceStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: RebalanceStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::rebalance_staker`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.suiReserveArrayIndex, `u64`),
+      obj(tx, args.systemState),
+    ],
+  });
+}
+
+export interface UnstakeSuiFromStakerArgs {
+  lendingMarket: TransactionObjectInput;
+  suiReserveArrayIndex: bigint | TransactionArgument;
+  liquidityRequest: TransactionObjectInput;
+  systemState: TransactionObjectInput;
+}
+
+export function unstakeSuiFromStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: UnstakeSuiFromStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::unstake_sui_from_staker`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.suiReserveArrayIndex, `u64`),
+      obj(tx, args.liquidityRequest),
+      obj(tx, args.systemState),
     ],
   });
 }
@@ -493,6 +585,32 @@ export function addReserve(
   });
 }
 
+export interface BorrowRequestArgs {
+  lendingMarket: TransactionObjectInput;
+  reserveArrayIndex: bigint | TransactionArgument;
+  obligationOwnerCap: TransactionObjectInput;
+  clock: TransactionObjectInput;
+  amount: bigint | TransactionArgument;
+}
+
+export function borrowRequest(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: BorrowRequestArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::borrow_request`,
+    typeArguments: typeArgs,
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.reserveArrayIndex, `u64`),
+      obj(tx, args.obligationOwnerCap),
+      obj(tx, args.clock),
+      pure(tx, args.amount, `u64`),
+    ],
+  });
+}
+
 export interface ChangeReservePriceFeedArgs {
   lendingMarketOwnerCap: TransactionObjectInput;
   lendingMarket: TransactionObjectInput;
@@ -639,6 +757,18 @@ export function depositCtokensIntoObligationById(
   });
 }
 
+export function feeReceiver(
+  tx: Transaction,
+  typeArg: string,
+  lendingMarket: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::fee_receiver`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, lendingMarket)],
+  });
+}
+
 export interface NewObligationOwnerCapArgs {
   lendingMarketOwnerCap: TransactionObjectInput;
   lendingMarket: TransactionObjectInput;
@@ -661,6 +791,18 @@ export function newObligationOwnerCap(
   });
 }
 
+export function rateLimiterExemptionAmount(
+  tx: Transaction,
+  typeArgs: [string, string],
+  exemption: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::rate_limiter_exemption_amount`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, exemption)],
+  });
+}
+
 export interface RedeemCtokensAndWithdrawLiquidityArgs {
   lendingMarket: TransactionObjectInput;
   reserveArrayIndex: bigint | TransactionArgument;
@@ -676,6 +818,36 @@ export function redeemCtokensAndWithdrawLiquidity(
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
+    typeArguments: typeArgs,
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.reserveArrayIndex, `u64`),
+      obj(tx, args.clock),
+      obj(tx, args.ctokens),
+      option(
+        tx,
+        `${RateLimiterExemption.$typeName}<${typeArgs[0]}, ${typeArgs[1]}>`,
+        args.rateLimiterExemption,
+      ),
+    ],
+  });
+}
+
+export interface RedeemCtokensAndWithdrawLiquidityRequestArgs {
+  lendingMarket: TransactionObjectInput;
+  reserveArrayIndex: bigint | TransactionArgument;
+  clock: TransactionObjectInput;
+  ctokens: TransactionObjectInput;
+  rateLimiterExemption: TransactionObjectInput | TransactionArgument | null;
+}
+
+export function redeemCtokensAndWithdrawLiquidityRequest(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: RedeemCtokensAndWithdrawLiquidityRequestArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity_request`,
     typeArguments: typeArgs,
     arguments: [
       obj(tx, args.lendingMarket),

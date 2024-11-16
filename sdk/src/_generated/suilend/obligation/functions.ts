@@ -28,6 +28,24 @@ export function borrow(tx: Transaction, typeArg: string, args: BorrowArgs) {
   });
 }
 
+export interface RefreshArgs {
+  obligation: TransactionObjectInput;
+  reserves: Array<TransactionObjectInput> | TransactionArgument;
+  clock: TransactionObjectInput;
+}
+
+export function refresh(tx: Transaction, typeArg: string, args: RefreshArgs) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::refresh`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.obligation),
+      vector(tx, `${Reserve.$typeName}<${typeArg}>`, args.reserves),
+      obj(tx, args.clock),
+    ],
+  });
+}
+
 export interface WithdrawArgs {
   obligation: TransactionObjectInput;
   reserve: TransactionObjectInput;
@@ -121,6 +139,102 @@ export function maxBorrowAmount(
   });
 }
 
+export function allowedBorrowValueUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::allowed_borrow_value_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function borrowBorrowedAmount(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_borrowed_amount`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowCoinType(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_coin_type`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowCumulativeBorrowRate(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_cumulative_borrow_rate`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowMarketValue(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_market_value`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowReserveArrayIndex(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_reserve_array_index`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowUserRewardManagerIndex(
+  tx: Transaction,
+  borrow: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrow_user_reward_manager_index`,
+    arguments: [obj(tx, borrow)],
+  });
+}
+
+export function borrowingIsolatedAsset(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrowing_isolated_asset`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function borrows(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::borrows`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
 export interface CompoundDebtArgs {
   borrow: TransactionObjectInput;
   reserve: TransactionObjectInput;
@@ -150,6 +264,56 @@ export function createObligation(
   });
 }
 
+export function depositCoinType(
+  tx: Transaction,
+  deposit: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposit_coin_type`,
+    arguments: [obj(tx, deposit)],
+  });
+}
+
+export function depositDepositedCtokenAmount(
+  tx: Transaction,
+  deposit: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposit_deposited_ctoken_amount`,
+    arguments: [obj(tx, deposit)],
+  });
+}
+
+export function depositMarketValue(
+  tx: Transaction,
+  deposit: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposit_market_value`,
+    arguments: [obj(tx, deposit)],
+  });
+}
+
+export function depositReserveArrayIndex(
+  tx: Transaction,
+  deposit: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposit_reserve_array_index`,
+    arguments: [obj(tx, deposit)],
+  });
+}
+
+export function depositUserRewardManagerIndex(
+  tx: Transaction,
+  deposit: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposit_user_reward_manager_index`,
+    arguments: [obj(tx, deposit)],
+  });
+}
+
 export function depositedCtokenAmount(
   tx: Transaction,
   typeArgs: [string, string],
@@ -158,6 +322,30 @@ export function depositedCtokenAmount(
   return tx.moveCall({
     target: `${PUBLISHED_AT}::obligation::deposited_ctoken_amount`,
     typeArguments: typeArgs,
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function depositedValueUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposited_value_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function deposits(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::deposits`,
+    typeArguments: [typeArg],
     arguments: [obj(tx, obligation)],
   });
 }
@@ -468,24 +656,6 @@ export function maxWithdrawAmount(
   });
 }
 
-export interface RefreshArgs {
-  obligation: TransactionObjectInput;
-  reserves: Array<TransactionObjectInput> | TransactionArgument;
-  clock: TransactionObjectInput;
-}
-
-export function refresh(tx: Transaction, typeArg: string, args: RefreshArgs) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::obligation::refresh`,
-    typeArguments: [typeArg],
-    arguments: [
-      obj(tx, args.obligation),
-      vector(tx, `${Reserve.$typeName}<${typeArg}>`, args.reserves),
-      obj(tx, args.clock),
-    ],
-  });
-}
-
 export interface RepayArgs {
   obligation: TransactionObjectInput;
   reserve: TransactionObjectInput;
@@ -503,6 +673,66 @@ export function repay(tx: Transaction, typeArg: string, args: RepayArgs) {
       obj(tx, args.clock),
       obj(tx, args.maxRepayAmount),
     ],
+  });
+}
+
+export function unhealthyBorrowValueUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::unhealthy_borrow_value_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function unweightedBorrowedValueUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::unweighted_borrowed_value_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function userRewardManagers(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::user_reward_managers`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function weightedBorrowedValueUpperBoundUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::weighted_borrowed_value_upper_bound_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
+  });
+}
+
+export function weightedBorrowedValueUsd(
+  tx: Transaction,
+  typeArg: string,
+  obligation: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::weighted_borrowed_value_usd`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, obligation)],
   });
 }
 

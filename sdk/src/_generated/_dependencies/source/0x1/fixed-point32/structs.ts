@@ -14,7 +14,7 @@ import {
   composeSuiType,
   compressSuiType,
 } from "../../../../_framework/util";
-import { PKG_V10 } from "../index";
+import { PKG_V11 } from "../index";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
 import { fromB64 } from "@mysten/sui/utils";
@@ -23,7 +23,7 @@ import { fromB64 } from "@mysten/sui/utils";
 
 export function isFixedPoint32(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V10}::fixed_point32::FixedPoint32`;
+  return type === `${PKG_V11}::fixed_point32::FixedPoint32`;
 }
 
 export interface FixedPoint32Fields {
@@ -35,12 +35,12 @@ export type FixedPoint32Reified = Reified<FixedPoint32, FixedPoint32Fields>;
 export class FixedPoint32 implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V10}::fixed_point32::FixedPoint32`;
+  static readonly $typeName = `${PKG_V11}::fixed_point32::FixedPoint32`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = FixedPoint32.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V10}::fixed_point32::FixedPoint32`;
+  readonly $fullTypeName: `${typeof PKG_V11}::fixed_point32::FixedPoint32`;
   readonly $typeArgs: [];
   readonly $isPhantom = FixedPoint32.$isPhantom;
 
@@ -50,7 +50,7 @@ export class FixedPoint32 implements StructClass {
     this.$fullTypeName = composeSuiType(
       FixedPoint32.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V10}::fixed_point32::FixedPoint32`;
+    ) as `${typeof PKG_V11}::fixed_point32::FixedPoint32`;
     this.$typeArgs = typeArgs;
 
     this.value = fields.value;
@@ -62,7 +62,7 @@ export class FixedPoint32 implements StructClass {
       fullTypeName: composeSuiType(
         FixedPoint32.$typeName,
         ...[],
-      ) as `${typeof PKG_V10}::fixed_point32::FixedPoint32`,
+      ) as `${typeof PKG_V11}::fixed_point32::FixedPoint32`,
       typeArgs: [] as [],
       isPhantom: FixedPoint32.$isPhantom,
       reifiedTypeArgs: [],

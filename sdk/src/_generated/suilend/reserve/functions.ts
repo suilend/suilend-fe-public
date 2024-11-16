@@ -55,6 +55,30 @@ export function priceIdentifier(
   });
 }
 
+export function staker(
+  tx: Transaction,
+  typeArg: string,
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::staker`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, reserve)],
+  });
+}
+
+export function claimFees(
+  tx: Transaction,
+  typeArgs: [string, string],
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::claim_fees`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, reserve)],
+  });
+}
+
 export function coinType(
   tx: Transaction,
   typeArg: string,
@@ -105,6 +129,66 @@ export function availableAmount(
     target: `${PUBLISHED_AT}::reserve::available_amount`,
     typeArguments: [typeArg],
     arguments: [obj(tx, reserve)],
+  });
+}
+
+export function balances(
+  tx: Transaction,
+  typeArgs: [string, string],
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::balances`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, reserve)],
+  });
+}
+
+export function balancesAvailableAmount(
+  tx: Transaction,
+  typeArgs: [string, string],
+  balances: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::balances_available_amount`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, balances)],
+  });
+}
+
+export function balancesCtokenFees(
+  tx: Transaction,
+  typeArgs: [string, string],
+  balances: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::balances_ctoken_fees`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, balances)],
+  });
+}
+
+export function balancesCtokenSupply(
+  tx: Transaction,
+  typeArgs: [string, string],
+  balances: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::balances_ctoken_supply`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, balances)],
+  });
+}
+
+export function balancesFees(
+  tx: Transaction,
+  typeArgs: [string, string],
+  balances: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::balances_fees`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, balances)],
   });
 }
 
@@ -212,18 +296,6 @@ export function changePriceFeed(
   });
 }
 
-export function claimFees(
-  tx: Transaction,
-  typeArgs: [string, string],
-  reserve: TransactionObjectInput,
-) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve::claim_fees`,
-    typeArguments: typeArgs,
-    arguments: [obj(tx, reserve)],
-  });
-}
-
 export interface CompoundInterestArgs {
   reserve: TransactionObjectInput;
   clock: TransactionObjectInput;
@@ -245,7 +317,7 @@ export interface CreateReserveArgs {
   lendingMarketId: string | TransactionArgument;
   config: TransactionObjectInput;
   arrayIndex: bigint | TransactionArgument;
-  coinMetadata: TransactionObjectInput;
+  mintDecimals: number | TransactionArgument;
   priceInfoObj: TransactionObjectInput;
   clock: TransactionObjectInput;
 }
@@ -262,7 +334,7 @@ export function createReserve(
       pure(tx, args.lendingMarketId, `${ID.$typeName}`),
       obj(tx, args.config),
       pure(tx, args.arrayIndex, `u64`),
-      obj(tx, args.coinMetadata),
+      pure(tx, args.mintDecimals, `u8`),
       obj(tx, args.priceInfoObj),
       obj(tx, args.clock),
     ],
@@ -327,6 +399,18 @@ export function ctokenRatio(
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve::ctoken_ratio`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, reserve)],
+  });
+}
+
+export function ctokenSupply(
+  tx: Transaction,
+  typeArg: string,
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::ctoken_supply`,
     typeArguments: [typeArg],
     arguments: [obj(tx, reserve)],
   });
@@ -433,6 +517,64 @@ export function forgiveDebt(
     target: `${PUBLISHED_AT}::reserve::forgive_debt`,
     typeArguments: [typeArg],
     arguments: [obj(tx, args.reserve), obj(tx, args.forgiveAmount)],
+  });
+}
+
+export interface FulfillLiquidityRequestArgs {
+  reserve: TransactionObjectInput;
+  request: TransactionObjectInput;
+}
+
+export function fulfillLiquidityRequest(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: FulfillLiquidityRequestArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::fulfill_liquidity_request`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, args.reserve), obj(tx, args.request)],
+  });
+}
+
+export interface InitStakerArgs {
+  reserve: TransactionObjectInput;
+  treasuryCap: TransactionObjectInput;
+}
+
+export function initStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: InitStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::init_staker`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, args.reserve), obj(tx, args.treasuryCap)],
+  });
+}
+
+export function liquidityRequestAmount(
+  tx: Transaction,
+  typeArgs: [string, string],
+  request: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::liquidity_request_amount`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, request)],
+  });
+}
+
+export function liquidityRequestFee(
+  tx: Transaction,
+  typeArgs: [string, string],
+  request: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::liquidity_request_fee`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, request)],
   });
 }
 
@@ -547,6 +689,23 @@ export function priceUpperBound(
   });
 }
 
+export interface RebalanceStakerArgs {
+  reserve: TransactionObjectInput;
+  systemState: TransactionObjectInput;
+}
+
+export function rebalanceStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: RebalanceStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::rebalance_staker`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, args.reserve), obj(tx, args.systemState)],
+  });
+}
+
 export interface RedeemCtokensArgs {
   reserve: TransactionObjectInput;
   ctokens: TransactionObjectInput;
@@ -582,6 +741,40 @@ export function repayLiquidity(
       obj(tx, args.reserve),
       obj(tx, args.liquidity),
       obj(tx, args.settleAmount),
+    ],
+  });
+}
+
+export function unclaimedSpreadFees(
+  tx: Transaction,
+  typeArg: string,
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::unclaimed_spread_fees`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, reserve)],
+  });
+}
+
+export interface UnstakeSuiFromStakerArgs {
+  reserve: TransactionObjectInput;
+  liquidityRequest: TransactionObjectInput;
+  systemState: TransactionObjectInput;
+}
+
+export function unstakeSuiFromStaker(
+  tx: Transaction,
+  typeArg: string,
+  args: UnstakeSuiFromStakerArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::unstake_sui_from_staker`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.reserve),
+      obj(tx, args.liquidityRequest),
+      obj(tx, args.systemState),
     ],
   });
 }

@@ -1,5 +1,5 @@
 [packages]
-suilend = { local = "../../../../../suilend/contracts" }
+suilend = { local = "../../../../suilend/contracts/suilend" }
 
 [config]
 rpc = "https://solendf-suishar-0c55.mainnet.sui.rpcpool.com:443/8b2c7c54-2397-4f98-9052-6fd9fe3a818e"
