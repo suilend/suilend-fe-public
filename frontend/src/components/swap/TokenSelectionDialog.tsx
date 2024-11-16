@@ -39,10 +39,10 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   return (
     <div
       className={cn(
-        "relative z-[1] flex w-full cursor-pointer px-4 py-3 transition-colors hover:bg-muted/10",
+        "relative z-[1] flex w-full cursor-pointer px-4 py-3",
         isSelected
-          ? "border-transparent bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
-          : "hover:border-transparent",
+          ? "bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
+          : "transition-colors hover:bg-muted/10",
       )}
       onClick={onClick}
     >

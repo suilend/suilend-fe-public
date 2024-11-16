@@ -32,14 +32,16 @@ export const parseCoinBalances = (
     if (uniqueCoinTypes.includes(coinType) && (reserve || coinMetadata)) {
       const mintDecimals = (reserve?.mintDecimals ??
         coinMetadata?.decimals) as number;
+      const symbol = (reserve?.symbol ?? coinMetadata?.symbol) as string;
 
+      if (symbol.includes("rwsui.com")) return acc; // Filter out spam tokens
       return {
         ...acc,
         [coinType]: {
           coinType,
           mintDecimals,
           price: reserve?.price,
-          symbol: reserve?.symbol ?? coinMetadata?.symbol,
+          symbol,
           iconUrl: reserve?.iconUrl ?? coinMetadata?.iconUrl,
           balance: new BigNumber(coinBalance.totalBalance).div(
             10 ** mintDecimals,

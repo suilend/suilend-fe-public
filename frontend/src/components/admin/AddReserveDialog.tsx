@@ -82,9 +82,11 @@ export default function AddReserveDialog() {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinIndex, setCoinIndex] = useState<number | null>(null);
-  const coin =
-    coinIndex !== null ? Object.values(coinBalancesMap)[coinIndex] : undefined;
+  const [coinType, setCoinType] = useState<string | undefined>(undefined);
+  const coin = useMemo(
+    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
+    [coinType, coinBalancesMap],
+  );
 
   const [pythPriceId, setPythPriceId] = useState<string>("");
 
@@ -120,7 +122,7 @@ export default function AddReserveDialog() {
   const { configState, resetConfigState } = reserveConfigState;
 
   const reset = () => {
-    setCoinIndex(null);
+    setCoinType(undefined);
     setPythPriceId("");
 
     resetConfigState();
@@ -164,7 +166,7 @@ export default function AddReserveDialog() {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
-    if (coinIndex === null) {
+    if (coinType === undefined) {
       toast.error("Select a coin");
       return;
     }
@@ -205,7 +207,7 @@ export default function AddReserveDialog() {
         data.lendingMarketOwnerCapId,
         transaction,
         pythPriceId,
-        coin.coinType,
+        coinType,
         newConfig,
       );
 
@@ -264,8 +266,8 @@ export default function AddReserveDialog() {
       <Grid>
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
-          index={coinIndex}
-          onIndexChange={setCoinIndex}
+          value={coinType}
+          onChange={setCoinType}
         />
         <div className="flex w-full flex-row items-end gap-2">
           <Input
@@ -288,10 +290,7 @@ export default function AddReserveDialog() {
           </Button>
         </div>
 
-        <ReserveConfig
-          symbol={coin ? coin.symbol : undefined}
-          {...reserveConfigState}
-        />
+        <ReserveConfig symbol={coin?.symbol} {...reserveConfigState} />
       </Grid>
     </Dialog>
   );

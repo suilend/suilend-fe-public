@@ -82,16 +82,18 @@ export default function AddRewardDialog({
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinIndex, setCoinIndex] = useState<number | null>(null);
-  const coin =
-    coinIndex !== null ? Object.values(coinBalancesMap)[coinIndex] : undefined;
+  const [coinType, setCoinType] = useState<string | undefined>(undefined);
+  const coin = useMemo(
+    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
+    [coinType, coinBalancesMap],
+  );
 
   const [amount, setAmount] = useState<string>("");
   const [startTimeMs, setStartTimeMs] = useState<string>("");
   const [endTimeMs, setEndTimeMs] = useState<string>("");
 
   const reset = () => {
-    setCoinIndex(null);
+    setCoinType(undefined);
     setAmount("");
     setStartTimeMs("");
     setEndTimeMs("");
@@ -103,7 +105,7 @@ export default function AddRewardDialog({
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
-    if (coinIndex === null) {
+    if (coinType === undefined) {
       toast.error("Select a coin");
       return;
     }
@@ -134,8 +136,6 @@ export default function AddRewardDialog({
 
     const transaction = new Transaction();
 
-    const reserveArrayIndex = reserve.arrayIndex;
-    const rewardCoinType = coin.coinType;
     const rewardValue = new BigNumber(amount)
       .times(10 ** coin.mintDecimals)
       .toString();
@@ -144,9 +144,9 @@ export default function AddRewardDialog({
       await suilendClient.addReward(
         address,
         data.lendingMarketOwnerCapId,
-        reserveArrayIndex,
+        reserve.arrayIndex,
         isDepositReward,
-        rewardCoinType,
+        coinType,
         rewardValue,
         BigInt(startTimeMs),
         BigInt(endTimeMs),
@@ -209,8 +209,8 @@ export default function AddRewardDialog({
       <Grid>
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
-          index={coinIndex}
-          onIndexChange={setCoinIndex}
+          value={coinType}
+          onChange={setCoinType}
         />
         <Input
           label="amount"
@@ -223,8 +223,8 @@ export default function AddRewardDialog({
           type="number"
           value={amount}
           onChange={setAmount}
-          inputProps={{ disabled: coinIndex === null }}
-          endDecorator={coin ? coin.symbol : undefined}
+          inputProps={{ disabled: coinType === undefined }}
+          endDecorator={coin?.symbol}
         />
         <Input
           label="startTimeMs"
