@@ -2,6 +2,7 @@ import { CoinStruct, SuiClient } from "@mysten/sui/client";
 import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
+  SUI_SYSTEM_STATE_OBJECT_ID,
   fromBase64,
   normalizeStructTag,
   toHex,
@@ -26,12 +27,14 @@ import {
   closePoolReward,
   depositCtokensIntoObligation,
   depositLiquidityAndMintCtokens,
+  fulfillLiquidityRequest,
   liquidate,
   migrate,
   newObligationOwnerCap,
   redeemCtokensAndWithdrawLiquidity,
   refreshReservePrice,
   repay,
+  unstakeSuiFromStaker,
   updateRateLimiterConfig,
   updateReserveConfig,
   withdrawCtokens,
@@ -59,7 +62,7 @@ const PYTH_STATE_ID =
   "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8";
 
 const SUILEND_UPGRADE_CAP_ID =
-  "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
+  "0x67f2c0de74484b7ab98f8b43395fa4da6705a7f8505c788c9fec6ba6dc0789c6";
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({
@@ -74,10 +77,14 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
 
 const SUI_COINTYPE = "0x2::sui::SUI";
 
+// export const LENDING_MARKET_ID =
+//   "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
+// export const LENDING_MARKET_TYPE =
+//   "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
+
 export const LENDING_MARKET_ID =
-  "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
-export const LENDING_MARKET_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
+  "0xcd9b73b6d2f2f335906e3fa1724cc46c4a8f8d8f5a016a740887e63130567e38";
+export const LENDING_MARKET_TYPE = "0x2::sui::SUI";
 
 export class SuilendClient {
   lendingMarket: LendingMarket<string>;
@@ -866,7 +873,7 @@ export class SuilendClient {
       arguments: [],
     });
 
-    return transaction.moveCall({
+    const [liquidityRequest] = transaction.moveCall({
       target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
       typeArguments: [this.lendingMarket.$typeArgs[0], coinType],
       arguments: [
@@ -877,6 +884,27 @@ export class SuilendClient {
         exemption,
       ],
     });
+
+    unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+      lendingMarket: transaction.object(this.lendingMarket.id),
+      suiReserveArrayIndex: transaction.pure.u64(
+        this.findReserveArrayIndex(coinType),
+      ),
+      liquidityRequest,
+      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+    });
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async withdrawAndSendToUser(
@@ -916,7 +944,7 @@ export class SuilendClient {
       obligation,
       this.findReserveArrayIndex(coinType),
     );
-    const result = borrow(
+    const [liquidityRequest] = borrow(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
       {
@@ -930,7 +958,26 @@ export class SuilendClient {
       },
     );
 
-    return result;
+    unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+      lendingMarket: transaction.object(this.lendingMarket.id),
+      suiReserveArrayIndex: transaction.pure.u64(
+        this.findReserveArrayIndex(coinType),
+      ),
+      liquidityRequest,
+      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+    });
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async borrowAndSendToUser(
