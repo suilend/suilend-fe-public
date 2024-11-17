@@ -19,6 +19,7 @@ import {
   addPoolReward,
   addReserve,
   borrow,
+  borrowRequest,
   cancelPoolReward,
   changeReservePriceFeed,
   claimFees,
@@ -62,7 +63,7 @@ const PYTH_STATE_ID =
   "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8";
 
 const SUILEND_UPGRADE_CAP_ID =
-  "0x67f2c0de74484b7ab98f8b43395fa4da6705a7f8505c788c9fec6ba6dc0789c6";
+  "0x05da14368a42a351e106806c09727968ae26be77a6741a018239ef0f99d5185e";
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({
@@ -83,7 +84,7 @@ const SUI_COINTYPE = "0x2::sui::SUI";
 //   "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
 export const LENDING_MARKET_ID =
-  "0xcd9b73b6d2f2f335906e3fa1724cc46c4a8f8d8f5a016a740887e63130567e38";
+  "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8";
 export const LENDING_MARKET_TYPE = "0x2::sui::SUI";
 
 export class SuilendClient {
@@ -874,7 +875,7 @@ export class SuilendClient {
     });
 
     const [liquidityRequest] = transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
+      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity_request`,
       typeArguments: [this.lendingMarket.$typeArgs[0], coinType],
       arguments: [
         transaction.object(this.lendingMarket.id),
@@ -944,7 +945,7 @@ export class SuilendClient {
       obligation,
       this.findReserveArrayIndex(coinType),
     );
-    const [liquidityRequest] = borrow(
+    const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
       {
@@ -958,14 +959,16 @@ export class SuilendClient {
       },
     );
 
-    unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
-      lendingMarket: transaction.object(this.lendingMarket.id),
-      suiReserveArrayIndex: transaction.pure.u64(
-        this.findReserveArrayIndex(coinType),
-      ),
-      liquidityRequest,
-      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
-    });
+    if (coinType === "0x2::sui::SUI") {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
 
     return fulfillLiquidityRequest(
       transaction,
