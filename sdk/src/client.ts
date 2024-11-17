@@ -886,14 +886,16 @@ export class SuilendClient {
       ],
     });
 
-    unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
-      lendingMarket: transaction.object(this.lendingMarket.id),
-      suiReserveArrayIndex: transaction.pure.u64(
-        this.findReserveArrayIndex(coinType),
-      ),
-      liquidityRequest,
-      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
-    });
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
 
     return fulfillLiquidityRequest(
       transaction,
@@ -959,7 +961,7 @@ export class SuilendClient {
       },
     );
 
-    if (coinType === "0x2::sui::SUI") {
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
       unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
         lendingMarket: transaction.object(this.lendingMarket.id),
         suiReserveArrayIndex: transaction.pure.u64(
