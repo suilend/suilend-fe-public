@@ -1,5 +1,7 @@
 import { ExternalLink } from "lucide-react";
 
+import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
+
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
 import { useAppContext } from "@/contexts/AppContext";
@@ -32,19 +34,25 @@ export default function NavigationLinks() {
           </div>
         )}
       </div>
-      <Link href={getSwapUrl()} activeHref={SWAP_URL}>
-        Swap
-      </Link>
-      <Link href={BRIDGE_URL}>Bridge</Link>
+      {!isInMsafeApp() && (
+        <>
+          <Link href={getSwapUrl()} activeHref={SWAP_URL}>
+            Swap
+          </Link>
+          <Link href={BRIDGE_URL}>Bridge</Link>
+          {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}
+        </>
+      )}
       <Link
-        href={SPRINGSUI_URL}
+        href={
+          !isInMsafeApp() ? SPRINGSUI_URL : getMsafeAppStoreUrl("SpringSui")
+        }
         isExternal
         endIcon={<ExternalLink className="h-3 w-3" />}
         label="New"
       >
         SpringSui
       </Link>
-      {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}
     </>
   );
 }

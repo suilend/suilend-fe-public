@@ -36,6 +36,8 @@ import { useLDClient } from "launchdarkly-react-client-sdk";
 import { executeAuction } from "shio-sdk";
 import { toast } from "sonner";
 
+import { isInMsafeApp } from "@suilend/frontend-sui";
+
 import { useSettingsContext } from "@/contexts/SettingsContext";
 import { formatAddress } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
@@ -55,13 +57,6 @@ export type Wallet = {
   downloadUrls?: Record<WalletPlatform, string | undefined>;
   raw?: WalletWithRequiredFeatures;
 };
-
-export const isInMsafeApp = () =>
-  typeof window !== "undefined" &&
-  (window.location.host.includes("m-safe.io") ||
-    Array.from(window.location.ancestorOrigins).some((origin) =>
-      origin.includes("m-safe.io"),
-    ));
 
 enum WalletName {
   SUI_WALLET = "Sui Wallet",
