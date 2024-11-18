@@ -213,7 +213,7 @@ export default function AddRewardsDialog() {
         </div>
       }
     >
-      <div className="grid w-full grid-cols-1 grid-cols-3 gap-x-4 gap-y-6">
+      <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
           value={coinType}
