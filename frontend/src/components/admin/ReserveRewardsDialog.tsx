@@ -36,13 +36,8 @@ export default function ReserveRewardsDialog({
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
-  const { address } = useWalletContext();
-  const {
-    refreshData,
-    explorer,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData, explorer, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

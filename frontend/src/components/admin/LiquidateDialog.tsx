@@ -58,9 +58,8 @@ interface LiquidateDialogProps {
 export default function LiquidateDialog({
   fixedObligation,
 }: LiquidateDialogProps) {
-  const { address } = useWalletContext();
-  const { suiClient, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suiClient, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

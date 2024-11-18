@@ -2,6 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
 
 import Button from "@/components/shared/Button";
@@ -10,8 +11,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 
 export default function LendingMarketTab() {
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

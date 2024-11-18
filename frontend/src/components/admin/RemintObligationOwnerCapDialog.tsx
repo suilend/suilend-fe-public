@@ -13,9 +13,8 @@ import Input from "@/components/shared/Input";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 
 export default function RemintObligationOwnerCapDialog() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

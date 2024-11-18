@@ -10,13 +10,7 @@ import {
   useRef,
 } from "react";
 
-import {
-  CoinBalance,
-  CoinMetadata,
-  SuiClient,
-  SuiTransactionBlockResponse,
-} from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { CoinBalance, CoinMetadata, SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { isEqual } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
@@ -66,10 +60,6 @@ export interface AppContext {
   setExplorerId: (id: ExplorerId) => void;
   obligation: ParsedObligation | null;
   setObligationId: Dispatch<SetStateAction<string | null>>;
-  signExecuteAndWaitForTransaction: (
-    transaction: Transaction,
-    options?: { auction?: boolean },
-  ) => Promise<SuiTransactionBlockResponse>;
 }
 
 const defaultContextValue: AppContext = {
@@ -92,9 +82,6 @@ const defaultContextValue: AppContext = {
   setObligationId: () => {
     throw Error("AppContextProvider not initialized");
   },
-  signExecuteAndWaitForTransaction: () => {
-    throw Error("AppContextProvider not initialized");
-  },
 };
 
 const AppContext = createContext<AppContext>(defaultContextValue);
@@ -102,7 +89,7 @@ const AppContext = createContext<AppContext>(defaultContextValue);
 export const useAppContext = () => useContext(AppContext);
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { address } = useWalletContext();
 
   // RPC
   const [rpcId, setRpcId] = useLocalStorage<string>(
@@ -226,10 +213,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
         data?.obligations?.[0] ??
         null,
       setObligationId,
-      signExecuteAndWaitForTransaction: (
-        transaction: Transaction,
-        options?: { auction?: boolean },
-      ) => signExecuteAndWaitForTransaction(transaction, options),
     }),
     [
       suiClient,
@@ -244,7 +227,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       setExplorerId,
       obligationId,
       setObligationId,
-      signExecuteAndWaitForTransaction,
     ],
   );
 

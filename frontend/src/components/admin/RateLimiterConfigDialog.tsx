@@ -5,6 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
@@ -44,8 +45,8 @@ function Diff({ initialState, currentState }: DiffProps) {
 }
 
 export default function RateLimiterConfigDialog() {
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

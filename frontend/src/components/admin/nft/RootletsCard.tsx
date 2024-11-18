@@ -20,8 +20,8 @@ const ROOTLET_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
 
 export default function RootletsCard() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction } = useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData } = useAppContext();
 
   const isEditable = address === CAP_OWNER;
 

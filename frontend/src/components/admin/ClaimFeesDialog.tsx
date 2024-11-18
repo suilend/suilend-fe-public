@@ -24,13 +24,8 @@ interface ClaimFeesDialogProps {
 }
 
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suiClient, refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

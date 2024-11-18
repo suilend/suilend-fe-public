@@ -12,9 +12,8 @@ import Button from "@/components/shared/Button";
 import { useAppContext } from "@/contexts/AppContext";
 
 export default function MintObligationOwnerCapDialog() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
 
   // State

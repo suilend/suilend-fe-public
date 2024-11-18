@@ -44,9 +44,8 @@ const DashboardContext = createContext<DashboardContext>(defaultContextValue);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
-  const { address } = useWalletContext();
-  const { obligation, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { obligation, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

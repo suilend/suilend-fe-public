@@ -30,13 +30,8 @@ export default function AddRewardDialog({
   reserve,
   isDepositReward,
 }: AddRewardDialogProps) {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suiClient, refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 
