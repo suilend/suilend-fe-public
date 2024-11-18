@@ -10,7 +10,6 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import AddRewardDialog from "@/components/admin/AddRewardDialog";
@@ -22,7 +21,7 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tabs from "@/components/shared/Tabs";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   TAB = "rewardsTab",
@@ -42,9 +41,7 @@ export default function ReserveRewardsDialog({
 
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   // Tabs
   enum Tab {
@@ -103,7 +100,7 @@ export default function ReserveRewardsDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 
@@ -138,7 +135,7 @@ export default function ReserveRewardsDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

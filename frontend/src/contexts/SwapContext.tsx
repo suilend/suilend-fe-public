@@ -21,7 +21,7 @@ import BigNumber from "bignumber.js";
 import { isCoinType, useSettingsContext } from "@suilend/frontend-sui";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { SWAP_URL } from "@/lib/navigation";
@@ -91,8 +91,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {

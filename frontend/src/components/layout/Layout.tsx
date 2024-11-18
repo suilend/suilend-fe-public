@@ -75,7 +75,6 @@ export default function Layout({ children }: PropsWithChildren) {
             {!isPageLoading && (
               <ReserveAssetDataEventsContextProvider>
                 {children}
-
                 <AccountOverviewDialog />
               </ReserveAssetDataEventsContextProvider>
             )}

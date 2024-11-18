@@ -44,7 +44,7 @@ import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getAllCoins } from "@/lib/coinBalance";
 import { formatToken, formatUsd } from "@/lib/format";
 
@@ -64,9 +64,7 @@ export default function LiquidateDialog({
 }: LiquidateDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const appContext = useAppContext();
-  const suilendClient = appContext.suilendClient as SuilendClient;
-  const data = appContext.data as AppData;
+  const { suilendClient, data } = useLoadedAppContext();
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);

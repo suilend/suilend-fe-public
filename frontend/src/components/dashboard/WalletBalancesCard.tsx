@@ -6,13 +6,12 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatUsd } from "@/lib/format";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   if (!address) return null;
   return (

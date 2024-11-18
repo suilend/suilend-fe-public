@@ -1,10 +1,10 @@
 import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ObligationDepositsCard() {
-  const { obligation } = useAppContext();
+  const { obligation } = useLoadedAppContext();
 
   if (!obligation) return null;
   return (

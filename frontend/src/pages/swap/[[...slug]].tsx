@@ -33,7 +33,6 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
-import { SuilendClient } from "@suilend/sdk/client";
 import { Action, Side } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
@@ -49,7 +48,7 @@ import SwapSlippagePopover, {
 } from "@/components/swap/SwapSlippagePopover";
 import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   StandardizedQuote,
   StandardizedQuoteType,
@@ -88,9 +87,8 @@ type HistoricalUsdPriceData = {
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
+  const { suilendClient, data, refresh, obligation, obligationOwnerCap } =
+    useLoadedAppContext();
 
   const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
@@ -753,10 +751,6 @@ function Page() {
       if (isDepositing) {
         if (!outputCoin) throw new Error("Missing coin to deposit");
 
-        const obligationOwnerCap = data.obligationOwnerCaps?.find(
-          (o) => o.obligationId === obligation?.id,
-        );
-
         await suilendClient.depositCoin(
           address,
           outputCoin,
@@ -863,7 +857,7 @@ function Page() {
     } finally {
       (deposit ? setIsSwappingAndDepositing : setIsSwapping)(false);
       inputRef.current?.focus();
-      await refreshData();
+      await refresh();
     }
   };
 

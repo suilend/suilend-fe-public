@@ -25,7 +25,7 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
@@ -63,8 +63,7 @@ interface TooltipContentProps {
 }
 
 function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
@@ -333,8 +332,7 @@ export default function HistoricalAprLineChart({
   reserve,
   side,
 }: HistoricalAprLineChartProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
   const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
     useReserveAssetDataEventsContext();
 

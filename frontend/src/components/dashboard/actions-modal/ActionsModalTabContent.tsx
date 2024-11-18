@@ -35,7 +35,7 @@ import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
@@ -91,8 +91,7 @@ export default function ActionsModalTabContent({
 }: ActionsModalTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { refreshData, obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, refresh, obligation } = useLoadedAppContext();
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =
     useActionsModalContext();
@@ -334,7 +333,7 @@ export default function ActionsModalTabContent({
     } finally {
       setIsSubmitting(false);
       inputRef.current?.focus();
-      await refreshData();
+      await refresh();
     }
   };
 

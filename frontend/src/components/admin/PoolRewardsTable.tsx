@@ -12,7 +12,7 @@ import DataTable, {
 import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -40,8 +40,7 @@ export default function PoolRewardsTable({
   onCancelReward,
   onCloseReward,
 }: PoolRewardsTableProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 

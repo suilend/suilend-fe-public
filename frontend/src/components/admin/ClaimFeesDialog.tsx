@@ -6,7 +6,6 @@ import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";
@@ -15,7 +14,7 @@ import Spinner from "@/components/shared/Spinner";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +25,7 @@ interface ClaimFeesDialogProps {
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -103,7 +100,7 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

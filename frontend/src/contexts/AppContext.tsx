@@ -1,25 +1,17 @@
 import {
-  Dispatch,
   PropsWithChildren,
-  SetStateAction,
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
 } from "react";
 
 import { CoinBalance, CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
-import { isEqual } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import {
-  RewardMap,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui";
+import { RewardMap, useWalletContext } from "@suilend/frontend-sui";
+import useRefreshOnBalancesChange from "@suilend/frontend-sui/hooks/useRefreshOnBalancesChange";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -30,6 +22,8 @@ import useFetchAppData from "@/fetchers/useFetchAppData";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 
 export interface AppData {
+  suilendClient: SuilendClient;
+
   lendingMarket: ParsedLendingMarket;
   lendingMarketOwnerCapId: string | undefined;
   reserveMap: Record<string, ParsedReserve>;
@@ -43,117 +37,82 @@ export interface AppData {
   lstAprPercentMap: Record<string, BigNumber>;
 }
 
-export interface AppContext {
-  suilendClient: SuilendClient | null;
-  data: AppData | null;
-  refreshData: () => Promise<void>;
+interface AppContext {
+  suilendClient: SuilendClient | undefined;
+  data: AppData | undefined;
+  refresh: () => Promise<void>;
 
   obligation: ParsedObligation | null;
-  setObligationId: Dispatch<SetStateAction<string | null>>;
+  obligationOwnerCap: ObligationOwnerCap<string> | undefined;
+  setObligationId: (obligationId: string) => void;
 }
+type LoadedAppContext = AppContext & {
+  suilendClient: SuilendClient;
+  data: AppData;
+};
 
-const defaultContextValue: AppContext = {
-  suilendClient: null,
-  data: null,
-  refreshData: async () => {
+const AppContext = createContext<AppContext>({
+  suilendClient: undefined,
+  data: undefined,
+  refresh: async () => {
     throw Error("AppContextProvider not initialized");
   },
 
   obligation: null,
+  obligationOwnerCap: undefined,
   setObligationId: () => {
     throw Error("AppContextProvider not initialized");
   },
-};
-
-const AppContext = createContext<AppContext>(defaultContextValue);
+});
 
 export const useAppContext = () => useContext(AppContext);
+export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
-  // Suilend client & app data
-  const { data, mutate: mutateData, suilendClient } = useFetchAppData(address);
+  // App data
+  const { data: appData, mutateData: mutateAppData } = useFetchAppData(address);
 
-  const refreshData = useCallback(async () => {
-    await mutateData();
-  }, [mutateData]);
+  // Refresh
+  const refresh = useCallback(async () => {
+    await mutateAppData();
+  }, [mutateAppData]);
+
+  useRefreshOnBalancesChange(refresh);
 
   // Obligation
-  const [obligationId, setObligationId] = useLocalStorage<string | null>(
+  const [obligationId, setObligationId] = useLocalStorage<string>(
     "obligationId",
-    null,
+    "",
   );
 
-  // Poll for balance changes
-  // const unsubscribeRef = useRef<(() => void) | undefined>(undefined);
-  const previousBalancesRef = useRef<CoinBalance[] | undefined>(undefined);
-  useEffect(() => {
-    // if (unsubscribeRef.current !== undefined) {
-    //   unsubscribeRef.current();
-    //   unsubscribeRef.current = undefined;
-    // }
-    previousBalancesRef.current = undefined;
-
-    if (!address) return;
-    if (!suiClient) return;
-
-    // suiClient
-    //   .subscribeTransaction({
-    //     filter: {
-    //       FromAddress: address,
-    //     },
-    //     onMessage: async (event: TransactionEffects) => {
-    //       await refreshData();
-    //     },
-    //   })
-    //   .then((unsubscribe) => {
-    //     unsubscribeRef.current = unsubscribe;
-    //   });
-
-    const interval = setInterval(async () => {
-      try {
-        const balances = await suiClient.getAllBalances({
-          owner: address,
-        });
-
-        if (
-          previousBalancesRef.current !== undefined &&
-          !isEqual(balances, previousBalancesRef.current)
-        )
-          await refreshData();
-        previousBalancesRef.current = balances;
-      } catch (err) {
-        console.error(err);
-      }
-    }, 1000 * 5);
-
-    return () => {
-      // if (unsubscribeRef.current !== undefined) {
-      //   unsubscribeRef.current();
-      //   unsubscribeRef.current = undefined;
-      // }
-      if (interval !== undefined) clearInterval(interval);
-    };
-  }, [address, suiClient, refreshData]);
+  const obligation = useMemo(
+    () =>
+      appData?.obligations?.find((o) => o.id === obligationId) ??
+      appData?.obligations?.[0],
+    [appData?.obligations, obligationId],
+  );
+  const obligationOwnerCap = useMemo(
+    () =>
+      appData?.obligationOwnerCaps?.find(
+        (o) => o.obligationId === obligation?.id,
+      ),
+    [appData?.obligationOwnerCaps, obligation?.id],
+  );
 
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
-      suilendClient,
-      data: data ?? null,
-      refreshData,
+      suilendClient: appData?.suilendClient,
+      data: appData,
+      refresh,
 
-      obligation:
-        data?.obligations?.find(
-          (obligation) => obligation.id === obligationId,
-        ) ??
-        data?.obligations?.[0] ??
-        null,
+      obligation: obligation ?? null,
+      obligationOwnerCap,
       setObligationId,
     }),
-    [suilendClient, data, refreshData, obligationId, setObligationId],
+    [appData, refresh, obligation, obligationOwnerCap, setObligationId],
   );
 
   return (

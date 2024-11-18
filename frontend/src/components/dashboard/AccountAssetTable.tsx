@@ -14,7 +14,7 @@ import DataTable, {
 } from "@/components/dashboard/DataTable";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
 import { TBody, TLabel } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -41,8 +41,7 @@ export default function AccountAssetTable({
   assets,
   noAssetsMessage,
 }: AccountAssetTableProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns

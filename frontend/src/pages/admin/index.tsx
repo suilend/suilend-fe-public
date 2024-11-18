@@ -27,7 +27,7 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   TAB = "tab",
@@ -40,8 +40,7 @@ export default function Admin() {
   };
 
   const { explorer } = useSettingsContext();
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   // Tabs
   enum Tab {

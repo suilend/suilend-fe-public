@@ -21,7 +21,7 @@ export default function AppHeader() {
   const router = useRouter();
 
   const { address } = useWalletContext();
-  const { refreshData } = useAppContext();
+  const { refresh } = useAppContext();
 
   // Menu
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -66,7 +66,7 @@ export default function AppHeader() {
           icon={<RotateCw />}
           variant="ghost"
           size="icon"
-          onClick={refreshData}
+          onClick={refresh}
         >
           Refresh
         </Button>

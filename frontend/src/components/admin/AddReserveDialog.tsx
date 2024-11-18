@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";
@@ -20,16 +19,14 @@ import ReserveConfig, {
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
 export default function AddReserveDialog() {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -217,7 +214,7 @@ export default function AddReserveDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

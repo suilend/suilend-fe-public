@@ -26,12 +26,11 @@ import Input from "@/components/shared/Input";
 import Switch from "@/components/shared/Switch";
 import { TBody } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =

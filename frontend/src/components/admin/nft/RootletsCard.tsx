@@ -8,7 +8,7 @@ import { useWalletContext } from "@suilend/frontend-sui";
 import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 const TRANSFER_POLICY =
   "0x43517be5e9399224075d11855e89ef46ad3c3e45276949b2d679f8f79d735f0e";
@@ -21,7 +21,7 @@ const ROOTLET_TYPE =
 
 export default function RootletsCard() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData } = useAppContext();
+  const { refresh } = useLoadedAppContext();
 
   const isEditable = address === CAP_OWNER;
 
@@ -53,7 +53,7 @@ export default function RootletsCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

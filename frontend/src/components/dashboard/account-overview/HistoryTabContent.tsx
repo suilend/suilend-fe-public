@@ -28,7 +28,7 @@ import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   EventType,
   EventTypeNameMap,
@@ -67,8 +67,7 @@ export default function HistoryTabContent({
   eventsData,
 }: HistoryTabContentProps) {
   const { explorer } = useSettingsContext();
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(

@@ -9,7 +9,7 @@ import { Side } from "@suilend/sdk/types";
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   ViewBox,
@@ -42,8 +42,7 @@ function TooltipContent({
   viewBox,
   x,
 }: TooltipContentProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   if (viewBox === undefined || x === undefined) return null;
   return (

@@ -8,7 +8,6 @@ import {
   getPythOracleUrl,
   useSettingsContext,
 } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
 
@@ -19,7 +18,7 @@ import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { Separator } from "@/components/ui/separator";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   formatBorrowWeight,
   formatLtvPercent,
@@ -245,8 +244,7 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
 
 function ObjectsTabContent({ side, reserve }: TabContentProps) {
   const { explorer } = useSettingsContext();
-  const { obligation, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
+  const { suilendClient, obligation } = useLoadedAppContext();
 
   const pythOracleUrl = getPythOracleUrl(reserve.coinType);
 

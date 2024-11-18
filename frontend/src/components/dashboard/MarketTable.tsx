@@ -29,7 +29,7 @@ import MarketCardList from "@/components/dashboard/MarketCardList";
 import styles from "@/components/dashboard/MarketTable.module.scss";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import {
   ISOLATED_TOOLTIP,
@@ -67,8 +67,7 @@ interface HeaderRowData {
 type RowData = ReservesRowData | HeaderRowData;
 
 export default function MarketTable() {
-  const { obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, obligation } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns

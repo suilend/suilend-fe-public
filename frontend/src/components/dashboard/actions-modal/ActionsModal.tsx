@@ -12,7 +12,7 @@ import {
 import ActionsModalTabContent from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import ParametersPanel from "@/components/dashboard/actions-modal/ParametersPanel";
 import Tabs from "@/components/shared/Tabs";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   getMaxValue,
@@ -22,8 +22,7 @@ import {
 } from "@/lib/actions";
 
 export default function ActionsModal() {
-  const { obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, obligation } = useLoadedAppContext();
   const {
     reserveSymbol,
     selectedTab,

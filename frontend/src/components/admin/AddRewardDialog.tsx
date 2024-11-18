@@ -8,7 +8,6 @@ import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -16,7 +15,7 @@ import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { formatToken } from "@/lib/format";
@@ -32,9 +31,7 @@ export default function AddRewardDialog({
 }: AddRewardDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -159,7 +156,7 @@ export default function AddRewardDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

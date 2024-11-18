@@ -27,7 +27,7 @@ import Tabs from "@/components/shared/Tabs";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { EventType, eventSortAsc } from "@/lib/events";
 import { formatPoints, formatToken } from "@/lib/format";
@@ -98,8 +98,7 @@ export default function AccountOverviewDialog() {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
-  const { refreshData, obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, refresh, obligation } = useLoadedAppContext();
   const { fetchReserveAssetDataEvents } = useReserveAssetDataEventsContext();
 
   // Open
@@ -237,11 +236,11 @@ export default function AccountOverviewDialog() {
   const getNowS = () => Math.floor(new Date().getTime() / 1000);
   const [nowS, setNowS] = useState<number>(getNowS);
 
-  const refresh = () => {
+  const refreshDialog = () => {
     if (!obligation?.id) return;
 
     if (selectedTab === Tab.EARNINGS) {
-      refreshData();
+      refresh();
       fetchDownsampledEvents();
     }
     fetchEventsData(obligation.id);
@@ -263,7 +262,7 @@ export default function AccountOverviewDialog() {
             icon={<RotateCw />}
             variant="ghost"
             size="icon"
-            onClick={refresh}
+            onClick={refreshDialog}
           >
             Refresh
           </Button>

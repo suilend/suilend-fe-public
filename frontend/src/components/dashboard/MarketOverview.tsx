@@ -2,12 +2,11 @@ import Card from "@/components/dashboard/Card";
 import MarketOverviewPopover from "@/components/dashboard/MarketOverviewPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatUsd } from "@/lib/format";
 
 export default function MarketOverview() {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   return (
     <Card

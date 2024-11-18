@@ -1,10 +1,7 @@
-import { useRef } from "react";
-
 import { CoinBalance } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
-import { toast } from "sonner";
 import useSWR from "swr";
 
 import {
@@ -14,6 +11,7 @@ import {
   RESERVES_CUSTOM_ORDER,
   formatRewards,
   isSendPoints,
+  showErrorToast,
   useSettingsContext,
 } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
@@ -31,15 +29,12 @@ import { toHexString } from "@suilend/sdk/utils";
 import * as simulate from "@suilend/sdk/utils/simulate";
 import { LstClient } from "@suilend/springsui-sdk";
 
-import { AppContext, AppData } from "@/contexts/AppContext";
+import { AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
 export default function useFetchAppData(address: string | undefined) {
   const { suiClient } = useSettingsContext();
-
-  // Suilend client
-  const suilendClientRef = useRef<AppContext["suilendClient"]>(null);
 
   // Data
   const dataFetcher = async () => {
@@ -50,13 +45,10 @@ export default function useFetchAppData(address: string | undefined) {
       LENDING_MARKET_ID,
     );
 
-    if (!suilendClientRef.current) {
-      suilendClientRef.current =
-        await SuilendClient.initializeWithLendingMarket(
-          rawLendingMarket,
-          suiClient,
-        );
-    } else suilendClientRef.current.lendingMarket = rawLendingMarket;
+    const suilendClient = await SuilendClient.initializeWithLendingMarket(
+      rawLendingMarket,
+      suiClient,
+    );
 
     const refreshedRawReserves = await simulate.refreshReservePrice(
       rawLendingMarket.reserves.map((r) =>
@@ -177,13 +169,21 @@ export default function useFetchAppData(address: string | undefined) {
               : 0,
           );
 
+          const obligationOwnerCapTimestampsMsMap = obligationOwnerCaps.reduce(
+            (acc, obligationOwnerCap, index) => ({
+              ...acc,
+              [obligationOwnerCap.id]: obligationOwnerCapTimestampsMs[index],
+            }),
+            {} as Record<string, number>,
+          );
+
           obligationOwnerCaps = obligationOwnerCaps
-            .map((ownerCap, index) => ({
-              ...ownerCap,
-              timestampMs: obligationOwnerCapTimestampsMs[index],
-            }))
             .slice()
-            .sort((a, b) => a.timestampMs - b.timestampMs);
+            .sort(
+              (a, b) =>
+                obligationOwnerCapTimestampsMsMap[a.id] -
+                obligationOwnerCapTimestampsMsMap[b.id],
+            );
         }
 
         const rawObligations = await Promise.all(
@@ -283,6 +283,8 @@ export default function useFetchAppData(address: string | undefined) {
     }
 
     return {
+      suilendClient,
+
       lendingMarket,
       lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
       reserveMap,
@@ -294,32 +296,22 @@ export default function useFetchAppData(address: string | undefined) {
       coinBalancesRaw,
 
       lstAprPercentMap,
-    } as AppData;
+    };
   };
 
-  const { data, mutate } = useSWR<AppContext["data"]>(
-    `appData-${address}`,
-    dataFetcher,
-    {
-      refreshInterval: 30 * 1000,
-      onSuccess: (data) => {
-        console.log("Refreshed app data", data);
-      },
-      onError: (err) => {
-        toast.error(
-          "Failed to refresh app data. Please check your internet connection or change RPC providers in Settings.",
-          {
-            description: (err as Error)?.message || "An unknown error occured",
-          },
-        );
-        console.error(err);
-      },
+  const { data, mutate } = useSWR<AppData>(`appData-${address}`, dataFetcher, {
+    refreshInterval: 30 * 1000,
+    onSuccess: (data) => {
+      console.log("Refreshed app data", data);
     },
-  );
+    onError: (err) => {
+      showErrorToast(
+        "Failed to refresh app data. Please check your internet connection or change RPC providers in Settings.",
+        err,
+      );
+      console.error(err);
+    },
+  });
 
-  return {
-    data,
-    mutate,
-    suilendClient: suilendClientRef.current,
-  };
+  return { data, mutateData: mutate };
 }
