@@ -62,7 +62,6 @@ export const parseLendingMarket = (
     borrowedAmountUsd,
     tvlUsd,
 
-    // Deprecated
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.
      */

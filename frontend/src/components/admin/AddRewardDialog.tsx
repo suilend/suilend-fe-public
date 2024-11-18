@@ -7,7 +7,11 @@ import { isEqual } from "lodash";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+import {
+  getCoinMetadataMap,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -17,7 +21,6 @@ import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { formatToken } from "@/lib/format";
 
 interface AddRewardDialogProps {

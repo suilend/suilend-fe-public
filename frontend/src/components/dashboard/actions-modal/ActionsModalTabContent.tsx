@@ -11,6 +11,7 @@ import {
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
+  getBalanceChange,
   isSui,
   useSettingsContext,
   useWalletContext,
@@ -51,7 +52,6 @@ import {
   formatUsd,
 } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
-import { getBalanceChange } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 export type SubmitButtonState = {
@@ -300,8 +300,7 @@ export default function ActionsModalTabContent({
       const balanceChange = getBalanceChange(
         res,
         address!,
-        reserve.coinType,
-        reserve.mintDecimals,
+        reserve.token,
         [Action.DEPOSIT, Action.REPAY].includes(action) ? -1 : 1,
       );
       const balanceChangeFormatted = formatToken(

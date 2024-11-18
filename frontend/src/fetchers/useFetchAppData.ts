@@ -10,6 +10,7 @@ import {
   NORMALIZED_LST_COINTYPES,
   RESERVES_CUSTOM_ORDER,
   formatRewards,
+  getCoinMetadataMap,
   isSendPoints,
   showErrorToast,
   useSettingsContext,
@@ -31,7 +32,6 @@ import { LstClient } from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
 export default function useFetchAppData(address: string | undefined) {
   const { suiClient } = useSettingsContext();

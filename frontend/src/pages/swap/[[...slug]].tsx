@@ -25,6 +25,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
   SUI_GAS_MIN,
+  getBalanceChange,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
@@ -63,7 +64,6 @@ import {
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -788,8 +788,7 @@ function Page() {
       const balanceChangeIn = getBalanceChange(
         res,
         address!,
-        tokenIn.coinType,
-        tokenIn.decimals,
+        { ...tokenIn, description: "" },
         -1,
       );
       const balanceChangeInFormatted = formatToken(
@@ -797,12 +796,10 @@ function Page() {
         { dp: tokenIn.decimals, trimTrailingZeros: true },
       );
 
-      const balanceChangeOut = getBalanceChange(
-        res,
-        address!,
-        tokenOut.coinType,
-        tokenOut.decimals,
-      );
+      const balanceChangeOut = getBalanceChange(res, address!, {
+        ...tokenOut,
+        description: "",
+      });
       const balanceChangeOutFormatted = formatToken(
         !deposit && balanceChangeOut !== undefined
           ? balanceChangeOut

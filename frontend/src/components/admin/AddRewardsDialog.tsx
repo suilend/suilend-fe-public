@@ -7,7 +7,11 @@ import { isEqual } from "lodash";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+import {
+  getCoinMetadataMap,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -18,7 +22,6 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
