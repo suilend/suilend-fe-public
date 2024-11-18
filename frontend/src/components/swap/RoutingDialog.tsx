@@ -10,6 +10,8 @@ import BigNumber from "bignumber.js";
 import { Route } from "lucide-react";
 import ReactFlow, { Edge, Handle, Node, Position } from "reactflow";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
+
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
@@ -18,7 +20,6 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { useAppContext } from "@/contexts/AppContext";
 import {
   StandardizedQuote,
   StandardizedQuoteType,
@@ -55,7 +56,7 @@ const getLayoutedElements = (nodes: any[], edges: any[], options: any) => {
 };
 
 const useGetCoinMetadataMap = (coinTypes: string[]) => {
-  const { suiClient } = useAppContext();
+  const { suiClient } = useSettingsContext();
 
   const fetchingCoinTypesRef = useRef<string[]>([]);
   const [coinMetadataMap, setCoinMetadataMap] = useState<
@@ -147,7 +148,7 @@ interface ExchangeNodeProps {
 }
 
 function ExchangeNode({ data }: ExchangeNodeProps) {
-  const { explorer } = useAppContext();
+  const { explorer } = useSettingsContext();
 
   const amountIn = BigNumber(data.amount_in.amount.toString()).div(
     10 ** data.amount_in.decimals,

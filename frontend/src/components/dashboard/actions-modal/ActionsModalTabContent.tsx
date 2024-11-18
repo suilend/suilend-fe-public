@@ -12,6 +12,7 @@ import {
   NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
   isSui,
+  useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
@@ -88,9 +89,9 @@ export default function ActionsModalTabContent({
   getSubmitWarningMessages,
   submit,
 }: ActionsModalTabContentProps) {
+  const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { refreshData, explorer, obligation, ...restAppContext } =
-    useAppContext();
+  const { refreshData, obligation, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =

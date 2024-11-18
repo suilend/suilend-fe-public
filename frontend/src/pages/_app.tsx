@@ -9,14 +9,16 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
 import mixpanel from "mixpanel-browser";
 
-import { WalletContextProvider } from "@suilend/frontend-sui";
+import {
+  SettingsContextProvider,
+  WalletContextProvider,
+} from "@suilend/frontend-sui";
 
 import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
-import { SettingsContextProvider } from "@/contexts/SettingsContext";
 import { WormholeConnectContextProvider } from "@/contexts/WormholeConnectContext";
 import { TITLE } from "@/lib/constants";
 import { fontClassNames } from "@/lib/fonts";

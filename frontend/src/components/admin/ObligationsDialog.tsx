@@ -3,6 +3,7 @@ import { useState } from "react";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -28,8 +29,10 @@ import Value from "@/components/shared/Value";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 
 export default function ObligationsDialog() {
-  const { suiClient, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const appContext = useAppContext();
+  const data = appContext.data as AppData;
+
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =
     useState<number>(0);

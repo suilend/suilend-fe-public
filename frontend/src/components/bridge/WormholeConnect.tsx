@@ -1,10 +1,10 @@
 import { MouseEvent, useEffect, useState } from "react";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import Container from "@/components/shared/Container";
-import { useAppContext } from "@/contexts/AppContext";
 import { DASHBOARD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ interface WormholeConnectProps {
 }
 
 export default function WormholeConnect({ isHidden }: WormholeConnectProps) {
-  const { rpc } = useAppContext();
+  const { rpc } = useSettingsContext();
 
   // Analytics
   const [didSubmit, setDidSubmit] = useState<boolean>(false);

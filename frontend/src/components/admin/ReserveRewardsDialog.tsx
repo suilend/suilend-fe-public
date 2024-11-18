@@ -5,7 +5,11 @@ import { formatISO } from "date-fns";
 import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui";
+import {
+  shallowPushQuery,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -36,8 +40,9 @@ export default function ReserveRewardsDialog({
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
+  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, explorer, ...restAppContext } = useAppContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

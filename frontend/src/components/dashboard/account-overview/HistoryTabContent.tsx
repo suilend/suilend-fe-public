@@ -7,6 +7,7 @@ import { cloneDeep } from "lodash";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "usehooks-ts";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
 import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,
@@ -65,8 +66,9 @@ interface HistoryTabContentProps {
 export default function HistoryTabContent({
   eventsData,
 }: HistoryTabContentProps) {
-  const { explorer, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { explorer } = useSettingsContext();
+  const appContext = useAppContext();
+  const data = appContext.data as AppData;
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(

@@ -29,6 +29,7 @@ import {
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
+  useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
@@ -85,9 +86,9 @@ type HistoricalUsdPriceData = {
 };
 
 function Page() {
+  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, explorer, obligation, ...restAppContext } =
-    useAppContext();
+  const { refreshData, obligation, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
   const suilendClient = restAppContext.suilendClient as SuilendClient;
 

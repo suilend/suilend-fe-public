@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 
 import ConnectedWalletDropdownMenu from "@/components/layout/ConnectedWalletDropdownMenu";
 import ConnectWalletDropdownMenu from "@/components/layout/ConnectWalletDropdownMenu";
-import { useAppContext } from "@/contexts/AppContext";
 
 export default function ConnectWalletButton() {
+  const { suiClient } = useSettingsContext();
   const { isImpersonating, wallet, accounts, address } = useWalletContext();
-  const { suiClient } = useAppContext();
 
   // Sui Name Service lookup
   const [addressNameServiceNameMap, setAddressNameServiceNameMap] = useState<

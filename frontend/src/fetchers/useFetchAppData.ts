@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { CoinBalance, SuiClient } from "@mysten/sui/client";
+import { CoinBalance } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
@@ -14,6 +14,7 @@ import {
   RESERVES_CUSTOM_ORDER,
   formatRewards,
   isSendPoints,
+  useSettingsContext,
 } from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
@@ -34,10 +35,9 @@ import { AppContext, AppData } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
-export default function useFetchAppData(
-  suiClient: SuiClient,
-  address: string | undefined,
-) {
+export default function useFetchAppData(address: string | undefined) {
+  const { suiClient } = useSettingsContext();
+
   // Suilend client
   const suilendClientRef = useRef<AppContext["suilendClient"]>(null);
 

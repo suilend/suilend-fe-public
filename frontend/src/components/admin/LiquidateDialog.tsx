@@ -7,7 +7,11 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { isSui, useWalletContext } from "@suilend/frontend-sui";
+import {
+  isSui,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -58,10 +62,11 @@ interface LiquidateDialogProps {
 export default function LiquidateDialog({
   fixedObligation,
 }: LiquidateDialogProps) {
+  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suiClient, ...restAppContext } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const appContext = useAppContext();
+  const suilendClient = appContext.suilendClient as SuilendClient;
+  const data = appContext.data as AppData;
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);

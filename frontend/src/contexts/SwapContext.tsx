@@ -18,7 +18,7 @@ import {
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
-import { isCoinType } from "@suilend/frontend-sui";
+import { isCoinType, useSettingsContext } from "@suilend/frontend-sui";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { AppData, useAppContext } from "@/contexts/AppContext";
@@ -90,8 +90,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const slug = router.query.slug as string[] | undefined;
 
-  const { suiClient, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const appContext = useAppContext();
+  const data = appContext.data as AppData;
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {

@@ -7,7 +7,7 @@ import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -25,8 +25,9 @@ import { parseCoinBalances } from "@/lib/coinBalance";
 import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
 export default function AddReserveDialog() {
+  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suiClient, refreshData, ...restAppContext } = useAppContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

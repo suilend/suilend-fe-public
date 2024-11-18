@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -24,8 +24,9 @@ interface ClaimFeesDialogProps {
 }
 
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
+  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suiClient, refreshData, ...restAppContext } = useAppContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

@@ -6,6 +6,7 @@ import { capitalize } from "lodash";
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   getPythOracleUrl,
+  useSettingsContext,
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -243,7 +244,8 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
 }
 
 function ObjectsTabContent({ side, reserve }: TabContentProps) {
-  const { explorer, obligation, ...restAppContext } = useAppContext();
+  const { explorer } = useSettingsContext();
+  const { obligation, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
 
   const pythOracleUrl = getPythOracleUrl(reserve.coinType);

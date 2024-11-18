@@ -5,7 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -68,8 +68,9 @@ interface ReserveConfigDialogProps {
 export default function ReserveConfigDialog({
   reserve,
 }: ReserveConfigDialogProps) {
+  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refreshData, explorer, ...restAppContext } = useAppContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

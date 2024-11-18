@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import UtilizationBar from "@/components/dashboard/UtilizationBar";
@@ -26,6 +26,7 @@ interface ConnectedWalletDropdownMenuProps {
 export default function ConnectedWalletDropdownMenu({
   addressNameServiceNameMap,
 }: ConnectedWalletDropdownMenuProps) {
+  const { explorer } = useSettingsContext();
   const {
     isImpersonating,
     wallet,
@@ -36,7 +37,7 @@ export default function ConnectedWalletDropdownMenu({
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
-  const { data, explorer, obligation, setObligationId } = useAppContext();
+  const { data, obligation, setObligationId } = useAppContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);

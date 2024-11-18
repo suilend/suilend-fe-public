@@ -7,7 +7,7 @@ import { isEqual } from "lodash";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { Side } from "@suilend/sdk/types";
 
@@ -23,8 +23,9 @@ import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
+  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suiClient, refreshData, ...restAppContext } = useAppContext();
+  const { refreshData, ...restAppContext } = useAppContext();
   const suilendClient = restAppContext.suilendClient as SuilendClient;
   const data = restAppContext.data as AppData;
 

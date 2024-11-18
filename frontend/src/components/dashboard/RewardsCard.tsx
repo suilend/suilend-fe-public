@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import {
   RewardSummary,
   isSendPoints,
+  useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui";
 
@@ -153,9 +154,9 @@ function RankStat({ rank, isCentered }: RankStatProps) {
 }
 
 export default function RewardsCard() {
+  const { explorer } = useSettingsContext();
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
-  const { refreshData, explorer, obligation, ...restAppContext } =
-    useAppContext();
+  const { refreshData, obligation, ...restAppContext } = useAppContext();
   const data = restAppContext.data as AppData;
   const { rank } = usePointsContext();
   const { claimRewards } = useDashboardContext();
