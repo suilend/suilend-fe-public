@@ -8,6 +8,7 @@ import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   LIQUID_STAKING_INFO_MAP,
   NORMALIZED_LST_COINTYPES,
+  NORMALIZED_SEND_COINTYPE,
   RESERVES_CUSTOM_ORDER,
   formatRewards,
   getCoinMetadataMap,
@@ -88,7 +89,7 @@ export default function useFetchAppData(address: string | undefined) {
       );
     }
 
-    const coinTypes: string[] = [];
+    const coinTypes: string[] = [NORMALIZED_SEND_COINTYPE];
     const rewardCoinTypes: string[] = [];
     refreshedRawReserves.forEach((r) => {
       coinTypes.push(normalizeStructTag(r.coinType.name));

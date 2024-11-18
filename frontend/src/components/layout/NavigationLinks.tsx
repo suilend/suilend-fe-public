@@ -15,6 +15,7 @@ import {
   BRIDGE_URL,
   DASHBOARD_URL,
   POINTS_URL,
+  SEND_URL,
   SPRINGSUI_URL,
   SWAP_URL,
 } from "@/lib/navigation";
@@ -26,6 +27,7 @@ export default function NavigationLinks() {
   return (
     <>
       <Link href={DASHBOARD_URL}>Dashboard</Link>
+      <Link href={SEND_URL}>SEND</Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
         <Link href={POINTS_URL} className="flex-1">
           Points

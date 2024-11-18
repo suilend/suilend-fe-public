@@ -1,23 +1,25 @@
-  .live, .dead {
-    perspective: 1000px;
-  }
+.live,
+.dead {
+  perspective: 1000px;
+}
 
-  .flipCardInner {
-    transition: transform 0.5s 0s;
-    transform-style: preserve-3d;
-  }
+.flipCardInner {
+  transition: transform 0.5s 0s;
+  transform-style: preserve-3d;
+}
 
-  /* Position the front and back side */
-  .front, .back {
-    -webkit-backface-visibility: hidden; /* Safari */
-    backface-visibility: hidden;
-  }
-  
-  .back {
-    transform: rotateY(180deg);
-  }
-  
-  /* Do an horizontal flip when you move the mouse over the flip box container */
-  .dead .flipCardInner {
-    transform: rotateY(180deg);
-  }
+/* Position the front and back side */
+.front,
+.back {
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
+}
+
+/* Do an horizontal flip when you move the mouse over the flip box container */
+.dead .flipCardInner {
+  transform: rotateY(180deg);
+}
