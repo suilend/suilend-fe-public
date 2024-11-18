@@ -4,7 +4,7 @@ const NAME = "@suilend/sdk";
 
 // 1. Update package.json
 import packageJson from "./package.json";
-const newPackageJson = Object.assign({}, packageJson);
+const newPackageJson = Object.assign({}, packageJson) as any;
 
 newPackageJson["name"] = NAME;
 newPackageJson["private"] = false;
@@ -25,7 +25,7 @@ for (const file of files) {
   );
   exportsMap[`./${fileName}`] = `./${file}`;
 }
-newPackageJson["exports"] = exportsMap as any;
+newPackageJson["exports"] = exportsMap;
 
 newPackageJson["types"] = "./index.js";
 
