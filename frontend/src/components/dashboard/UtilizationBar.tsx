@@ -87,7 +87,7 @@ function Threshold({ className, leftPercent }: ThresholdProps) {
 
 interface UtilizationBarProps {
   className?: ClassValue;
-  obligation?: ParsedObligation | null;
+  obligation?: ParsedObligation;
   noTooltip?: boolean;
 }
 

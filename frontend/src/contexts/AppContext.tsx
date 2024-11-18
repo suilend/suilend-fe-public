@@ -42,7 +42,7 @@ interface AppContext {
   data: AppData | undefined;
   refresh: () => Promise<void>;
 
-  obligation: ParsedObligation | null;
+  obligation: ParsedObligation | undefined;
   obligationOwnerCap: ObligationOwnerCap<string> | undefined;
   setObligationId: (obligationId: string) => void;
 }
@@ -58,7 +58,7 @@ const AppContext = createContext<AppContext>({
     throw Error("AppContextProvider not initialized");
   },
 
-  obligation: null,
+  obligation: undefined,
   obligationOwnerCap: undefined,
   setObligationId: () => {
     throw Error("AppContextProvider not initialized");
@@ -108,7 +108,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       data: appData,
       refresh,
 
-      obligation: obligation ?? null,
+      obligation,
       obligationOwnerCap,
       setObligationId,
     }),
