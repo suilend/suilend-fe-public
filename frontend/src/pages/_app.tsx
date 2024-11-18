@@ -63,7 +63,7 @@ export default function App({ Component, pageProps }: AppProps) {
                   <PointsContextProvider>
                     <TooltipProvider>
                       <Layout>
-                        <Component {...pageProps} />)
+                        <Component {...pageProps} />
                       </Layout>
                       <Toaster />
                     </TooltipProvider>
