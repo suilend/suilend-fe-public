@@ -2,7 +2,12 @@ import Image from "next/image";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-import { isInMsafeApp } from "@suilend/frontend-sui";
+import {
+  Wallet,
+  WalletType,
+  isInMsafeApp,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import useIsAndroid from "@suilend/frontend-sui/hooks/useIsAndroid";
 import useIsiOS from "@suilend/frontend-sui/hooks/useIsiOS";
 
@@ -11,7 +16,6 @@ import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
 import { TLabelSans } from "@/components/shared/Typography";
-import { Wallet, WalletType, useWalletContext } from "@/contexts/WalletContext";
 
 interface WalletDropdownItemProps {
   wallet: Wallet;

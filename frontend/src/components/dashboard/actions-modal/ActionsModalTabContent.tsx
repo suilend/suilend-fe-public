@@ -12,6 +12,7 @@ import {
   NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
   isSui,
+  useWalletContext,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { maxU64 } from "@suilend/sdk/constants";
@@ -35,7 +36,6 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { AppData, useAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,

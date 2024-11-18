@@ -4,13 +4,13 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Eraser, Replace } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 
 export default function RemintObligationOwnerCapDialog() {
   const { address } = useWalletContext();

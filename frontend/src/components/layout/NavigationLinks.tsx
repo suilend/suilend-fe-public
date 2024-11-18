@@ -1,12 +1,15 @@
 import { ExternalLink } from "lucide-react";
 
-import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
+import {
+  getMsafeAppStoreUrl,
+  isInMsafeApp,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
 import { useAppContext } from "@/contexts/AppContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import {
   ADMIN_URL,
   BRIDGE_URL,

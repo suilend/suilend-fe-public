@@ -4,6 +4,8 @@ import BigNumber from "bignumber.js";
 import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
 import LoopedPosition from "@/components/layout/LoopedPosition";
@@ -12,7 +14,6 @@ import Spinner from "@/components/shared/Spinner";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatList } from "@/lib/format";
 import {
   IS_LOOPING_MESSAGE,

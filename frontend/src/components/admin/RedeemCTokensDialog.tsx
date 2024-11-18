@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 import { extractCTokenCoinType, isCTokenCoinType } from "@suilend/sdk/utils";
 
@@ -13,7 +14,6 @@ import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatToken } from "@/lib/format";
 
 export default function RedeemCTokensDialog() {

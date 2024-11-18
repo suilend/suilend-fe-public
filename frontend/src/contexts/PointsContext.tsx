@@ -10,8 +10,9 @@ import {
 
 import BigNumber from "bignumber.js";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { API_URL } from "@/lib/navigation";
 
 export interface LeaderboardRowData {

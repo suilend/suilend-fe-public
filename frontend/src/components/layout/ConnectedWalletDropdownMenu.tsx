@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import UtilizationBar from "@/components/dashboard/UtilizationBar";
@@ -15,7 +16,6 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatAddress, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

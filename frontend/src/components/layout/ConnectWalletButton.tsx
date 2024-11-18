@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import ConnectedWalletDropdownMenu from "@/components/layout/ConnectedWalletDropdownMenu";
 import ConnectWalletDropdownMenu from "@/components/layout/ConnectWalletDropdownMenu";
 import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 
 export default function ConnectWalletButton() {
   const { isImpersonating, wallet, accounts, address } = useWalletContext();

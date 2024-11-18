@@ -2,7 +2,11 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { getNetAprPercent, shallowPushQuery } from "@suilend/frontend-sui";
+import {
+  getNetAprPercent,
+  shallowPushQuery,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";
@@ -24,7 +28,6 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatPercent, formatUsd } from "@/lib/format";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
@@ -167,6 +170,7 @@ function AccountPositionCardContent() {
 
 export default function AccountPositionCard() {
   const router = useRouter();
+
   const { address } = useWalletContext();
   const { obligation } = useAppContext();
 

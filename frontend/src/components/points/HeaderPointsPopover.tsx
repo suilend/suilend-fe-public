@@ -18,6 +18,7 @@ import { getPointsStats } from "@/lib/points";
 
 export default function PointsCountPopover() {
   const router = useRouter();
+
   const { data } = useAppContext();
   const { rank } = usePointsContext();
 

@@ -3,7 +3,11 @@ import { useRouter } from "next/router";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
-import { shallowPushQuery } from "@suilend/frontend-sui";
+import {
+  WalletContextQueryParams,
+  shallowPushQuery,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 
 import Tooltip from "@/components/shared/Tooltip";
 import {
@@ -11,15 +15,12 @@ import {
   labelSansClassNames,
 } from "@/components/shared/Typography";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  QueryParams as WalletContextQueryParams,
-  useWalletContext,
-} from "@/contexts/WalletContext";
 import { formatAddress } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export default function ImpersonationModeBanner() {
   const router = useRouter();
+
   const { isImpersonating, address } = useWalletContext();
 
   const onClick = () => {

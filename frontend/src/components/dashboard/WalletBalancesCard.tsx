@@ -1,12 +1,12 @@
 import BigNumber from "bignumber.js";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatUsd } from "@/lib/format";
 
 export default function WalletBalancesCard() {

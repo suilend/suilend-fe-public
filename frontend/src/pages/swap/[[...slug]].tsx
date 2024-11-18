@@ -29,6 +29,7 @@ import {
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
+  useWalletContext,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -55,7 +56,6 @@ import {
   TokenDirection,
   useSwapContext,
 } from "@/contexts/SwapContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import {
   getSubmitButtonNoValueState,
   getSubmitButtonState,
@@ -775,7 +775,9 @@ function Page() {
       throw err;
     }
 
-    const res = await signExecuteAndWaitForTransaction(transaction, true);
+    const res = await signExecuteAndWaitForTransaction(transaction, {
+      auction: true,
+    });
     return res;
   };
 

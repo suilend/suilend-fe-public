@@ -29,6 +29,7 @@ import {
   RewardMap,
   Rpc,
   RpcId,
+  useWalletContext,
 } from "@suilend/frontend-sui";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -36,7 +37,6 @@ import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import { useWalletContext } from "@/contexts/WalletContext";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 
@@ -68,7 +68,7 @@ export interface AppContext {
   setObligationId: Dispatch<SetStateAction<string | null>>;
   signExecuteAndWaitForTransaction: (
     transaction: Transaction,
-    auction?: boolean,
+    options?: { auction?: boolean },
   ) => Promise<SuiTransactionBlockResponse>;
 }
 
@@ -228,8 +228,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       setObligationId,
       signExecuteAndWaitForTransaction: (
         transaction: Transaction,
-        auction?: boolean,
-      ) => signExecuteAndWaitForTransaction(suiClient, transaction, auction),
+        options?: { auction?: boolean },
+      ) => signExecuteAndWaitForTransaction(transaction, options),
     }),
     [
       suiClient,

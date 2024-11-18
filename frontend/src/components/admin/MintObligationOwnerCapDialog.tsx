@@ -4,12 +4,12 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk/client";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 
 export default function MintObligationOwnerCapDialog() {
   const { address } = useWalletContext();
