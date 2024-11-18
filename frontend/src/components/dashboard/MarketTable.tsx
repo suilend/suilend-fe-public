@@ -4,10 +4,12 @@ import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
 import {
+  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_mSUI_COINTYPE,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isInMsafeApp,
 } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -165,6 +167,13 @@ export default function MarketTable() {
   const rows: ReservesRowData[] = useMemo(
     () =>
       data.lendingMarket.reserves
+        .filter((reserve) =>
+          !isInMsafeApp()
+            ? true
+            : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
+                reserve.coinType,
+              ),
+        )
         .filter((reserve) => {
           const depositPosition = obligation?.deposits?.find(
             (d) => d.coinType === reserve.coinType,
