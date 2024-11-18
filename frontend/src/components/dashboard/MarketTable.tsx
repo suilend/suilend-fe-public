@@ -351,15 +351,22 @@ export default function MarketTable() {
     [rows],
   );
 
-  const finalRows = useMemo(
-    () => [
-      { isHeader: true, isIsolated: false, count: mainRows.length },
-      ...mainRows,
-      { isHeader: true, isIsolated: true, count: isolatedRows.length },
-      ...isolatedRows,
-    ],
-    [mainRows, isolatedRows],
-  );
+  const finalRows = useMemo(() => {
+    const result = [];
+
+    if (mainRows.length > 0)
+      result.push(
+        { isHeader: true, isIsolated: false, count: mainRows.length },
+        ...mainRows,
+      );
+    if (isolatedRows.length > 0)
+      result.push(
+        { isHeader: true, isIsolated: true, count: isolatedRows.length },
+        ...isolatedRows,
+      );
+
+    return result;
+  }, [mainRows, isolatedRows]);
 
   return (
     <div className="w-full">
@@ -403,7 +410,7 @@ export default function MarketTable() {
         />
       </div>
       <div className="w-full md:hidden">
-        <MarketCardList data={rows} />
+        <MarketCardList rows={rows} />
       </div>
     </div>
   );

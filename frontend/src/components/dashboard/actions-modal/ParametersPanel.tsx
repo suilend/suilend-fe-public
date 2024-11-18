@@ -33,6 +33,7 @@ import {
 } from "@/lib/tooltips";
 import { cn } from "@/lib/utils";
 
+// TODO: Update beta market values
 const ADMIN_CAP_ID =
   "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927";
 const ADMIN_ADDRESS =
