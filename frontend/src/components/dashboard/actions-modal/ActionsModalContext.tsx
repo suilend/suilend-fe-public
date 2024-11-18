@@ -17,12 +17,10 @@ import * as Sentry from "@sentry/nextjs";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { shallowPushQuery } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
+import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui";
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   RESERVE_INDEX = "assetIndex", // Being phased out
@@ -122,11 +120,9 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     [router.query],
   );
 
-  const { address } = useWalletContext();
-  const { obligation, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, obligation, obligationOwnerCap } =
+    useLoadedAppContext();
 
   // Open
   const [isOpen, setIsOpen] = useState<boolean>(
@@ -219,12 +215,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   // Actions
-  const obligationOwnerCap = useMemo(
-    () =>
-      data.obligationOwnerCaps?.find((o) => o.obligationId === obligation?.id),
-    [data.obligationOwnerCaps, obligation?.id],
-  );
-
   const deposit = useCallback(
     async (coinType: string, value: string) => {
       if (!address) throw Error("Wallet not connected");

@@ -15,7 +15,7 @@ import Collapsible from "@/components/shared/Collapsible";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   formatBorrowWeight,
   formatLtvPercent,
@@ -142,9 +142,8 @@ function BreakdownTable({
 }
 
 export default function AccountBreakdown() {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
-  const obligation = appContext.obligation as ParsedObligation;
+  const { data, ...restAppContext } = useLoadedAppContext();
+  const obligation = restAppContext.obligation as ParsedObligation;
 
   const sortedDeposits = obligation.deposits
     .slice()

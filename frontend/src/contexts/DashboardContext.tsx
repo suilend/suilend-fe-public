@@ -13,12 +13,10 @@ import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
 
-import { RewardSummary } from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk/client";
+import { RewardSummary, useWalletContext } from "@suilend/frontend-sui";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -45,21 +43,15 @@ const DashboardContext = createContext<DashboardContext>(defaultContextValue);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
-  const { address } = useWalletContext();
-  const { obligation, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, obligation, obligationOwnerCap } =
+    useLoadedAppContext();
 
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
 
   // Actions
-  const obligationOwnerCap = data.obligationOwnerCaps?.find(
-    (o) => o.obligationId === obligation?.id,
-  );
-
   const claimRewards = useCallback(
     async (rewardsMap: Record<string, RewardSummary[]>) => {
       if (!address) throw Error("Wallet not connected");

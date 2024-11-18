@@ -1,6 +1,7 @@
 import { formatISO } from "date-fns";
 import { TableProperties } from "lucide-react";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";
@@ -9,7 +10,6 @@ import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
-import { useAppContext } from "@/contexts/AppContext";
 
 interface ReservePropertiesDialogProps {
   reserve: ParsedReserve;
@@ -18,7 +18,7 @@ interface ReservePropertiesDialogProps {
 export default function ReservePropertiesDialog({
   reserve,
 }: ReservePropertiesDialogProps) {
-  const { explorer } = useAppContext();
+  const { explorer } = useSettingsContext();
 
   return (
     <Dialog

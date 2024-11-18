@@ -5,7 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { useWalletContext } from "@suilend/frontend-sui";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
 import Dialog from "@/components/admin/Dialog";
@@ -17,7 +17,7 @@ import RateLimiterConfig, {
 } from "@/components/admin/RateLimiterConfig";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface DiffProps {
   initialState: ConfigState;
@@ -44,10 +44,8 @@ function Diff({ initialState, currentState }: DiffProps) {
 }
 
 export default function RateLimiterConfigDialog() {
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -90,7 +88,7 @@ export default function RateLimiterConfigDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

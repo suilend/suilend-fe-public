@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";
@@ -14,8 +14,7 @@ import Spinner from "@/components/shared/Spinner";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -24,15 +23,9 @@ interface ClaimFeesDialogProps {
 }
 
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -107,7 +100,7 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

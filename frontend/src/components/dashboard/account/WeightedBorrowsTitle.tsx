@@ -4,7 +4,7 @@ import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { getWeightedBorrowsColor } from "@/components/dashboard/UtilizationBar";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { WEIGHTED_BORROWS_TOOLTIP } from "@/lib/tooltips";
 
 interface WeightedBorrowsTitleProps {
@@ -16,7 +16,7 @@ export default function WeightedBorrowsTitle({
   labelClassName,
   noTooltip,
 }: WeightedBorrowsTitleProps) {
-  const appContext = useAppContext();
+  const appContext = useLoadedAppContext();
   const obligation = appContext.obligation as ParsedObligation;
 
   return (

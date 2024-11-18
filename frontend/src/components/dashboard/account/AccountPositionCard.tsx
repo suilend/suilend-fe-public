@@ -2,7 +2,11 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { getNetAprPercent, shallowPushQuery } from "@suilend/frontend-sui";
+import {
+  getNetAprPercent,
+  shallowPushQuery,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";
@@ -23,8 +27,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatUsd } from "@/lib/format";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
@@ -35,9 +38,8 @@ import {
 import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
-  const obligation = appContext.obligation as ParsedObligation;
+  const { data, ...restAppContext } = useLoadedAppContext();
+  const obligation = restAppContext.obligation as ParsedObligation;
 
   const isLooping = getIsLooping(data, obligation);
   const wasLooping = getWasLooping(data, obligation);
@@ -167,8 +169,9 @@ function AccountPositionCardContent() {
 
 export default function AccountPositionCard() {
   const router = useRouter();
+
   const { address } = useWalletContext();
-  const { obligation } = useAppContext();
+  const { obligation } = useLoadedAppContext();
 
   const openAccountOverviewTab = (tab: AccountOverviewTab) => {
     shallowPushQuery(router, {

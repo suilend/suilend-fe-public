@@ -7,7 +7,11 @@ import { isEqual } from "lodash";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import {
+  getCoinMetadataMap,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -15,10 +19,8 @@ import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { formatToken } from "@/lib/format";
 
 interface AddRewardDialogProps {
@@ -30,15 +32,9 @@ export default function AddRewardDialog({
   reserve,
   isDepositReward,
 }: AddRewardDialogProps) {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -82,16 +78,18 @@ export default function AddRewardDialog({
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinIndex, setCoinIndex] = useState<number | null>(null);
-  const coin =
-    coinIndex !== null ? Object.values(coinBalancesMap)[coinIndex] : undefined;
+  const [coinType, setCoinType] = useState<string | undefined>(undefined);
+  const coin = useMemo(
+    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
+    [coinType, coinBalancesMap],
+  );
 
   const [amount, setAmount] = useState<string>("");
   const [startTimeMs, setStartTimeMs] = useState<string>("");
   const [endTimeMs, setEndTimeMs] = useState<string>("");
 
   const reset = () => {
-    setCoinIndex(null);
+    setCoinType(undefined);
     setAmount("");
     setStartTimeMs("");
     setEndTimeMs("");
@@ -103,7 +101,7 @@ export default function AddRewardDialog({
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
-    if (coinIndex === null) {
+    if (coinType === undefined) {
       toast.error("Select a coin");
       return;
     }
@@ -134,8 +132,6 @@ export default function AddRewardDialog({
 
     const transaction = new Transaction();
 
-    const reserveArrayIndex = reserve.arrayIndex;
-    const rewardCoinType = coin.coinType;
     const rewardValue = new BigNumber(amount)
       .times(10 ** coin.mintDecimals)
       .toString();
@@ -144,9 +140,9 @@ export default function AddRewardDialog({
       await suilendClient.addReward(
         address,
         data.lendingMarketOwnerCapId,
-        reserveArrayIndex,
+        reserve.arrayIndex,
         isDepositReward,
-        rewardCoinType,
+        coinType,
         rewardValue,
         BigInt(startTimeMs),
         BigInt(endTimeMs),
@@ -163,7 +159,7 @@ export default function AddRewardDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 
@@ -209,8 +205,8 @@ export default function AddRewardDialog({
       <Grid>
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
-          index={coinIndex}
-          onIndexChange={setCoinIndex}
+          value={coinType}
+          onChange={setCoinType}
         />
         <Input
           label="amount"
@@ -223,8 +219,8 @@ export default function AddRewardDialog({
           type="number"
           value={amount}
           onChange={setAmount}
-          inputProps={{ disabled: coinIndex === null }}
-          endDecorator={coin ? coin.symbol : undefined}
+          inputProps={{ disabled: coinType === undefined }}
+          endDecorator={coin?.symbol}
         />
         <Input
           label="startTimeMs"

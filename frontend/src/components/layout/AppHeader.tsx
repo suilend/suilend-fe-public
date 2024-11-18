@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Menu, RotateCw, X } from "lucide-react";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import ConnectWalletButton from "@/components/layout/ConnectWalletButton";
 import HeaderBase from "@/components/layout/HeaderBase";
 import HeaderMenu from "@/components/layout/HeaderMenu";
@@ -13,13 +15,13 @@ import SettingsDialog from "@/components/layout/SettingsDialog";
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Button from "@/components/shared/Button";
 import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { ROOT_URL } from "@/lib/navigation";
 
 export default function AppHeader() {
   const router = useRouter();
+
   const { address } = useWalletContext();
-  const { refreshData } = useAppContext();
+  const { refresh } = useAppContext();
 
   // Menu
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
@@ -64,7 +66,7 @@ export default function AppHeader() {
           icon={<RotateCw />}
           variant="ghost"
           size="icon"
-          onClick={refreshData}
+          onClick={refresh}
         >
           Refresh
         </Button>

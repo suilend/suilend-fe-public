@@ -7,7 +7,11 @@ import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { SuilendClient } from "@suilend/sdk";
+import {
+  getCoinMetadataMap,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";
@@ -19,21 +23,13 @@ import ReserveConfig, {
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 
 export default function AddReserveDialog() {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -82,9 +78,11 @@ export default function AddReserveDialog() {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinIndex, setCoinIndex] = useState<number | null>(null);
-  const coin =
-    coinIndex !== null ? Object.values(coinBalancesMap)[coinIndex] : undefined;
+  const [coinType, setCoinType] = useState<string | undefined>(undefined);
+  const coin = useMemo(
+    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
+    [coinType, coinBalancesMap],
+  );
 
   const [pythPriceId, setPythPriceId] = useState<string>("");
 
@@ -120,7 +118,7 @@ export default function AddReserveDialog() {
   const { configState, resetConfigState } = reserveConfigState;
 
   const reset = () => {
-    setCoinIndex(null);
+    setCoinType(undefined);
     setPythPriceId("");
 
     resetConfigState();
@@ -164,7 +162,7 @@ export default function AddReserveDialog() {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
-    if (coinIndex === null) {
+    if (coinType === undefined) {
       toast.error("Select a coin");
       return;
     }
@@ -205,7 +203,7 @@ export default function AddReserveDialog() {
         data.lendingMarketOwnerCapId,
         transaction,
         pythPriceId,
-        coin.coinType,
+        coinType,
         newConfig,
       );
 
@@ -219,7 +217,7 @@ export default function AddReserveDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 
@@ -264,8 +262,8 @@ export default function AddReserveDialog() {
       <Grid>
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
-          index={coinIndex}
-          onIndexChange={setCoinIndex}
+          value={coinType}
+          onChange={setCoinType}
         />
         <div className="flex w-full flex-row items-end gap-2">
           <Input
@@ -288,10 +286,7 @@ export default function AddReserveDialog() {
           </Button>
         </div>
 
-        <ReserveConfig
-          symbol={coin ? coin.symbol : undefined}
-          {...reserveConfigState}
-        />
+        <ReserveConfig symbol={coin?.symbol} {...reserveConfigState} />
       </Grid>
     </Dialog>
   );

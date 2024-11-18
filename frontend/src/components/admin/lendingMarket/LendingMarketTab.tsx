@@ -2,18 +2,16 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk";
+import { useWalletContext } from "@suilend/frontend-sui";
 
 import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function LendingMarketTab() {
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -34,7 +32,7 @@ export default function LendingMarketTab() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

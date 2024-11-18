@@ -4,10 +4,12 @@ import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
 import {
+  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_mSUI_COINTYPE,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isInMsafeApp,
 } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
@@ -27,7 +29,7 @@ import MarketCardList from "@/components/dashboard/MarketCardList";
 import styles from "@/components/dashboard/MarketTable.module.scss";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import {
   ISOLATED_TOOLTIP,
@@ -65,8 +67,7 @@ interface HeaderRowData {
 type RowData = ReservesRowData | HeaderRowData;
 
 export default function MarketTable() {
-  const { obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, obligation } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -165,6 +166,13 @@ export default function MarketTable() {
   const rows: ReservesRowData[] = useMemo(
     () =>
       data.lendingMarket.reserves
+        .filter((reserve) =>
+          !isInMsafeApp()
+            ? true
+            : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
+                reserve.coinType,
+              ),
+        )
         .filter((reserve) => {
           const depositPosition = obligation?.deposits?.find(
             (d) => d.coinType === reserve.coinType,

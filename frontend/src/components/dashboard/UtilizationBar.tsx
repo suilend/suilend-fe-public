@@ -11,7 +11,7 @@ import LiquidationThresholdTitle from "@/components/dashboard/account/Liquidatio
 import WeightedBorrowsTitle from "@/components/dashboard/account/WeightedBorrowsTitle";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans } from "@/components/shared/Typography";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +87,7 @@ function Threshold({ className, leftPercent }: ThresholdProps) {
 
 interface UtilizationBarProps {
   className?: ClassValue;
-  obligation?: ParsedObligation | null;
+  obligation?: ParsedObligation;
   noTooltip?: boolean;
 }
 
@@ -96,7 +96,7 @@ export default function UtilizationBar({
   obligation,
   noTooltip,
 }: UtilizationBarProps) {
-  const appContext = useAppContext();
+  const appContext = useLoadedAppContext();
 
   if (!obligation) obligation = appContext.obligation;
   if (!obligation) return null;

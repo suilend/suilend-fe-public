@@ -7,7 +7,11 @@ import { isEqual } from "lodash";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import {
+  getCoinMetadataMap,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -16,22 +20,14 @@ import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
-  const { address } = useWalletContext();
-  const {
-    suiClient,
-    refreshData,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -75,9 +71,11 @@ export default function AddRewardsDialog() {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinIndex, setCoinIndex] = useState<number | null>(null);
-  const coin =
-    coinIndex !== null ? Object.values(coinBalancesMap)[coinIndex] : undefined;
+  const [coinType, setCoinType] = useState<string | undefined>(undefined);
+  const coin = useMemo(
+    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
+    [coinType, coinBalancesMap],
+  );
 
   const [startTimeMs, setStartTimeMs] = useState<string>("");
   const [endTimeMs, setEndTimeMs] = useState<string>("");
@@ -93,8 +91,7 @@ export default function AddRewardsDialog() {
       }));
 
   const reset = () => {
-    setCoinIndex(null);
-
+    setCoinType(undefined);
     setStartTimeMs("");
     setEndTimeMs("");
 
@@ -107,7 +104,7 @@ export default function AddRewardsDialog() {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
-    if (coinIndex === null) {
+    if (coinType === undefined) {
       toast.error("Select a coin");
       return;
     }
@@ -132,8 +129,6 @@ export default function AddRewardsDialog() {
       return;
     }
 
-    const rewardCoinType = coin.coinType;
-
     const transaction = new Transaction();
 
     try {
@@ -154,7 +149,7 @@ export default function AddRewardsDialog() {
               data.lendingMarketOwnerCapId,
               reserveArrayIndex,
               side === Side.DEPOSIT,
-              rewardCoinType,
+              coinType,
               rewardValue,
               BigInt(startTimeMs),
               BigInt(endTimeMs),
@@ -176,7 +171,7 @@ export default function AddRewardsDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 
@@ -218,11 +213,11 @@ export default function AddRewardsDialog() {
         </div>
       }
     >
-      <div className="grid w-full grid-cols-1 grid-cols-3 gap-x-4 gap-y-6">
+      <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
         <CoinPopover
           coinBalancesMap={coinBalancesMap}
-          index={coinIndex}
-          onIndexChange={setCoinIndex}
+          value={coinType}
+          onChange={setCoinType}
         />
         <Input
           label="startTimeMs"
@@ -266,7 +261,7 @@ export default function AddRewardsDialog() {
               type="number"
               value={rewardsMap?.[reserve.coinType]?.deposit || ""}
               onChange={setRewardsValue(reserve.coinType, Side.DEPOSIT)}
-              endDecorator={coin ? coin.symbol : undefined}
+              endDecorator={coin?.symbol}
             />
             <Input
               label={index === 0 ? "borrowRewards" : undefined}
@@ -274,7 +269,7 @@ export default function AddRewardsDialog() {
               type="number"
               value={rewardsMap?.[reserve.coinType]?.borrow || ""}
               onChange={setRewardsValue(reserve.coinType, Side.BORROW)}
-              endDecorator={coin ? coin.symbol : undefined}
+              endDecorator={coin?.symbol}
             />
           </Fragment>
         ))}

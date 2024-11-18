@@ -158,7 +158,6 @@ export const parseObligation = (
     weightedConservativeBorrowUtilizationPercent,
     original: obligation,
 
-    // Deprecated
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.
      */

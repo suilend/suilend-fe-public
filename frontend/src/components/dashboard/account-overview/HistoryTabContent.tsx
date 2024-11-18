@@ -7,6 +7,7 @@ import { cloneDeep } from "lodash";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "usehooks-ts";
 
+import { useSettingsContext } from "@suilend/frontend-sui";
 import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,
@@ -27,7 +28,7 @@ import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   EventType,
   EventTypeNameMap,
@@ -65,8 +66,8 @@ interface HistoryTabContentProps {
 export default function HistoryTabContent({
   eventsData,
 }: HistoryTabContentProps) {
-  const { explorer, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { explorer } = useSettingsContext();
+  const { data } = useLoadedAppContext();
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(

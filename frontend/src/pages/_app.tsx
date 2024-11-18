@@ -2,21 +2,23 @@ import "@/lib/abortSignalPolyfill";
 
 import type { AppProps } from "next/app";
 import Head from "next/head";
-import { ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
 import mixpanel from "mixpanel-browser";
 
+import {
+  SettingsContextProvider,
+  WalletContextProvider,
+} from "@suilend/frontend-sui";
+
 import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import WalletProvider from "@/components/WalletProvider";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
-import { SettingsContextProvider } from "@/contexts/SettingsContext";
-import { WalletContextProvider } from "@/contexts/WalletContext";
 import { WormholeConnectContextProvider } from "@/contexts/WormholeConnectContext";
 import { TITLE } from "@/lib/constants";
 import { fontClassNames } from "@/lib/fonts";
@@ -24,17 +26,7 @@ import { cn } from "@/lib/utils";
 
 import "@/styles/globals.scss";
 
-export default function App({
-  Component,
-  pageProps,
-}: AppProps & {
-  Component: AppProps["Component"] & {
-    getLayout?: (page: ReactNode) => ReactNode;
-  };
-}) {
-  // Use the layout defined at the page level, if available
-  const getLayout = Component.getLayout ?? ((page) => <Layout>{page}</Layout>);
-
+export default function App({ Component, pageProps }: AppProps) {
   // Mixpanel
   useEffect(() => {
     const projectToken = process.env.NEXT_PUBLIC_MIXPANEL_PROJECT_TOKEN;
@@ -58,29 +50,29 @@ export default function App({
         />
       </Head>
 
-      <main id="__app_main" className={cn("light relative", ...fontClassNames)}>
-        <WalletProvider>
-          <TooltipProvider>
-            <LDProvider
-              clientSideID={
-                process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
-              }
-            >
-              <WormholeConnectContextProvider>
-                <SettingsContextProvider>
-                  <WalletContextProvider>
-                    <AppContextProvider>
-                      <PointsContextProvider>
-                        {getLayout(<Component {...pageProps} />)}
-                      </PointsContextProvider>
-                    </AppContextProvider>
-                  </WalletContextProvider>
-                </SettingsContextProvider>
-              </WormholeConnectContextProvider>
-            </LDProvider>
-            <Toaster />
-          </TooltipProvider>
-        </WalletProvider>
+      <main id="__app_main" className={cn("relative", ...fontClassNames)}>
+        <LDProvider
+          clientSideID={
+            process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
+          }
+        >
+          <SettingsContextProvider>
+            <WalletContextProvider appName="Suilend">
+              <AppContextProvider>
+                <WormholeConnectContextProvider>
+                  <PointsContextProvider>
+                    <TooltipProvider>
+                      <Layout>
+                        <Component {...pageProps} />
+                      </Layout>
+                      <Toaster />
+                    </TooltipProvider>
+                  </PointsContextProvider>
+                </WormholeConnectContextProvider>
+              </AppContextProvider>
+            </WalletContextProvider>
+          </SettingsContextProvider>
+        </LDProvider>
       </main>
     </>
   );

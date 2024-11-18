@@ -5,11 +5,10 @@ import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function RateLimiterPropertiesDialog() {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const rateLimiter = data.lendingMarket.rateLimiter;
 

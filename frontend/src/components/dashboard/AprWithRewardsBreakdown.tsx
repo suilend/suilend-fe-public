@@ -25,7 +25,7 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatPoints, formatToken } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
@@ -106,8 +106,7 @@ export default function AprWithRewardsBreakdown({
   action,
   changeAmount,
 }: AprWithRewardsBreakdownProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);

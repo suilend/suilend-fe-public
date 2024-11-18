@@ -1,13 +1,15 @@
 import Head from "next/head";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import PointsHeader from "@/components/points/PointsHeader";
 import PointsLeaderboardTable from "@/components/points/PointsLeaderboardTable";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { cn } from "@/lib/utils";
 
 export default function Points() {
   const { isImpersonating, address } = useWalletContext();
+
   const hasImpersonationModeBanner = isImpersonating && address;
 
   return (

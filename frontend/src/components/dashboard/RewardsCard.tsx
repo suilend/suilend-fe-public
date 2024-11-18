@@ -4,7 +4,12 @@ import React, { useState } from "react";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { RewardSummary, isSendPoints } from "@suilend/frontend-sui";
+import {
+  RewardSummary,
+  isSendPoints,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 
 import Card from "@/components/dashboard/Card";
 import PointsCount from "@/components/points/PointsCount";
@@ -16,10 +21,9 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { usePointsContext } from "@/contexts/PointsContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
@@ -34,8 +38,7 @@ interface ClaimableRewardProps {
 }
 
 function ClaimableReward({ coinType, claimableRewards }: ClaimableRewardProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const coinMetadata = data.coinMetadataMap[coinType];
 
@@ -116,8 +119,7 @@ interface PointsPerDayStatProps {
 }
 
 function PointsPerDayStat({ pointsPerDay, isCentered }: PointsPerDayStatProps) {
-  const { obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, obligation } = useLoadedAppContext();
 
   const isLooping = getIsLooping(data, obligation);
   const wasLooping = getWasLooping(data, obligation);
@@ -150,10 +152,9 @@ function RankStat({ rank, isCentered }: RankStatProps) {
 }
 
 export default function RewardsCard() {
+  const { explorer } = useSettingsContext();
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
-  const { refreshData, explorer, obligation, ...restAppContext } =
-    useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, refresh, obligation } = useLoadedAppContext();
   const { rank } = usePointsContext();
   const { claimRewards } = useDashboardContext();
 
@@ -224,7 +225,7 @@ export default function RewardsCard() {
       });
     } finally {
       setIsClaiming(false);
-      await refreshData();
+      await refresh();
     }
   };
 

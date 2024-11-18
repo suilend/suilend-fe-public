@@ -1,14 +1,13 @@
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface LoopedPositionProps {
   coinTypes: string[];
 }
 
 export default function LoopedPosition({ coinTypes }: LoopedPositionProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   return (
     <div className="flex flex-row flex-wrap items-center gap-x-1.5 gap-y-1">

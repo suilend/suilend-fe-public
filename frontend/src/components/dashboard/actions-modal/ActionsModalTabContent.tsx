@@ -8,9 +8,13 @@ import { toast } from "sonner";
 
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  NORMALIZED_FUD_COINTYPE,
+  NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
-  isFud,
+  getBalanceChange,
   isSui,
+  useSettingsContext,
+  useWalletContext,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { maxU64 } from "@suilend/sdk/constants";
@@ -32,9 +36,8 @@ import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
@@ -49,7 +52,6 @@ import {
   formatUsd,
 } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
-import { getBalanceChange } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 export type SubmitButtonState = {
@@ -87,10 +89,9 @@ export default function ActionsModalTabContent({
   getSubmitWarningMessages,
   submit,
 }: ActionsModalTabContentProps) {
+  const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { refreshData, explorer, obligation, ...restAppContext } =
-    useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, refresh, obligation } = useLoadedAppContext();
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =
     useActionsModalContext();
@@ -258,8 +259,12 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for FUD
-        if (useMaxAmount && !isFud(reserve.coinType))
+        // TODO: Remove workaround for FUD and HIPPO
+        if (
+          useMaxAmount &&
+          reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
+          reserve.coinType !== NORMALIZED_HIPPO_COINTYPE
+        )
           submitAmount = maxU64.toString();
         else
           submitAmount = BigNumber.min(
@@ -295,8 +300,7 @@ export default function ActionsModalTabContent({
       const balanceChange = getBalanceChange(
         res,
         address!,
-        reserve.coinType,
-        reserve.mintDecimals,
+        reserve.token,
         [Action.DEPOSIT, Action.REPAY].includes(action) ? -1 : 1,
       );
       const balanceChangeFormatted = formatToken(
@@ -328,7 +332,7 @@ export default function ActionsModalTabContent({
     } finally {
       setIsSubmitting(false);
       inputRef.current?.focus();
-      await refreshData();
+      await refresh();
     }
   };
 

@@ -31,7 +31,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { formatToken, formatUsd } from "@/lib/format";
@@ -56,9 +56,8 @@ export default function EarningsTabContent({
   eventsData,
   nowS,
 }: EarningsTabContentProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
-  const obligation = appContext.obligation as ParsedObligation;
+  const { data, ...restAppContext } = useLoadedAppContext();
+  const obligation = restAppContext.obligation as ParsedObligation;
   const { reserveAssetDataEventsMap } = useReserveAssetDataEventsContext();
 
   type CumInterestMap = {

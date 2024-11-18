@@ -18,12 +18,15 @@ import {
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
-import { isCoinType } from "@suilend/frontend-sui";
+import {
+  getCoinMetadataMap,
+  isCoinType,
+  useSettingsContext,
+} from "@suilend/frontend-sui";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
-import { getCoinMetadataMap } from "@/lib/coinMetadata";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
@@ -90,8 +93,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const slug = router.query.slug as string[] | undefined;
 
-  const { suiClient, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { data } = useLoadedAppContext();
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {

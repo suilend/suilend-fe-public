@@ -3,6 +3,8 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+
 import DataTable, {
   decimalSortingFn,
   tableHeader,
@@ -13,14 +15,12 @@ import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { useAppContext } from "@/contexts/AppContext";
 import { LeaderboardRowData, usePointsContext } from "@/contexts/PointsContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import { formatAddress } from "@/lib/format";
 import { DASHBOARD_URL } from "@/lib/navigation";
 
 export default function PointsLeaderboardTable() {
-  const { explorer } = useAppContext();
+  const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
   const { leaderboardRows } = usePointsContext();
 

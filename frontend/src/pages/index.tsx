@@ -4,10 +4,12 @@ import NextLink from "next/link";
 import { Droplet, Server } from "lucide-react";
 
 import {
+  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_mSUI_COINTYPE,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isInMsafeApp,
 } from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
@@ -161,6 +163,13 @@ export default function Home() {
             <Ticker
               className="h-16"
               items={data.lendingMarket.reserves
+                .filter((reserve) =>
+                  !isInMsafeApp()
+                    ? true
+                    : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
+                        reserve.coinType,
+                      ),
+                )
                 .filter((reserve) =>
                   reserve.coinType === NORMALIZED_mSUI_COINTYPE
                     ? Date.now() >= 1731492000000 // 2024-11-13 19:00:00 JST

@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { shallowPushQuery } from "@suilend/frontend-sui";
+import { shallowPushQuery, useSettingsContext } from "@suilend/frontend-sui";
 
 import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";
@@ -27,7 +27,7 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   TAB = "tab",
@@ -39,8 +39,8 @@ export default function Admin() {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
-  const { explorer, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { explorer } = useSettingsContext();
+  const { data } = useLoadedAppContext();
 
   // Tabs
   enum Tab {

@@ -7,7 +7,11 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { isSui } from "@suilend/frontend-sui";
+import {
+  isSui,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -40,8 +44,7 @@ import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getAllCoins } from "@/lib/coinBalance";
 import { formatToken, formatUsd } from "@/lib/format";
 
@@ -59,11 +62,9 @@ interface LiquidateDialogProps {
 export default function LiquidateDialog({
   fixedObligation,
 }: LiquidateDialogProps) {
-  const { address } = useWalletContext();
-  const { suiClient, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data } = useLoadedAppContext();
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);

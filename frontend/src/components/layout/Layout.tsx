@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: PropsWithChildren) {
   const router = useRouter();
+
   const { suilendClient, data } = useAppContext();
   const { isLoading: isWormholeConnectLoading } = useWormholeConnectContext();
 
@@ -74,7 +75,6 @@ export default function Layout({ children }: PropsWithChildren) {
             {!isPageLoading && (
               <ReserveAssetDataEventsContextProvider>
                 {children}
-
                 <AccountOverviewDialog />
               </ReserveAssetDataEventsContextProvider>
             )}

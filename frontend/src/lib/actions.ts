@@ -23,7 +23,7 @@ const getMaxCalculations = (
   reserve: ParsedReserve,
   balance: BigNumber,
   data: AppData,
-  obligation: ParsedObligation | null,
+  obligation?: ParsedObligation,
 ) => {
   const MIN_AVAILABLE_AMOUNT = new BigNumber(100).div(
     10 ** reserve.mintDecimals,
@@ -209,7 +209,7 @@ export const getMaxValue =
     reserve: ParsedReserve,
     balance: BigNumber,
     data: AppData,
-    obligation: ParsedObligation | null,
+    obligation?: ParsedObligation,
   ) =>
   () => {
     const maxCalculations = getMaxCalculations(
@@ -230,13 +230,13 @@ export const getMaxValue =
 
 const getObligationDepositedAmount = (
   coinType: string,
-  obligation: ParsedObligation | null,
+  obligation?: ParsedObligation,
 ) =>
   obligation?.deposits.find((d) => d.coinType === coinType)?.depositedAmount ??
   new BigNumber(0);
 const getObligationBorrowedAmount = (
   coinType: string,
-  obligation: ParsedObligation | null,
+  obligation?: ParsedObligation,
 ) =>
   obligation?.borrows.find((b) => b.coinType === coinType)?.borrowedAmount ??
   new BigNumber(0);
@@ -246,7 +246,7 @@ export const getSubmitButtonNoValueState =
     action: Action,
     reserves: ParsedReserve[],
     reserve: ParsedReserve,
-    obligation: ParsedObligation | null,
+    obligation?: ParsedObligation,
   ) =>
   (): SubmitButtonState | undefined => {
     if (action === Action.DEPOSIT) {
@@ -330,7 +330,7 @@ export const getSubmitButtonState =
     reserve: ParsedReserve,
     balance: BigNumber,
     data: AppData,
-    obligation: ParsedObligation | null,
+    obligation?: ParsedObligation,
   ) =>
   (value: string): SubmitButtonState | undefined => {
     const maxCalculations = getMaxCalculations(
@@ -350,7 +350,7 @@ export const getSubmitButtonState =
 
 const hasReserveBorrows = (
   reserve: ParsedReserve,
-  obligation: ParsedObligation | null,
+  obligation?: ParsedObligation,
 ) =>
   (
     obligation?.borrows.find((b) => b.coinType === reserve.coinType)
@@ -362,7 +362,7 @@ export const getSubmitWarningMessages =
     action: Action,
     reserves: ParsedReserve[],
     reserve: ParsedReserve,
-    obligation: ParsedObligation | null,
+    obligation?: ParsedObligation,
   ) =>
   () => {
     const result = [];

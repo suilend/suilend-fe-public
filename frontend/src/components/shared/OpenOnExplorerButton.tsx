@@ -1,5 +1,6 @@
+import { useSettingsContext } from "@suilend/frontend-sui";
+
 import OpenURLButton from "@/components/shared/OpenURLButton";
-import { useAppContext } from "@/contexts/AppContext";
 
 interface OpenOnExplorerButtonProps {
   url: string;
@@ -8,7 +9,7 @@ interface OpenOnExplorerButtonProps {
 export default function OpenOnExplorerButton({
   url,
 }: OpenOnExplorerButtonProps) {
-  const { explorer } = useAppContext();
+  const { explorer } = useSettingsContext();
 
   return <OpenURLButton url={url}>Open on {explorer.name}</OpenURLButton>;
 }

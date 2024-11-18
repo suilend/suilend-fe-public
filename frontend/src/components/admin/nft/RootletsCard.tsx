@@ -3,11 +3,12 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 const TRANSFER_POLICY =
   "0x43517be5e9399224075d11855e89ef46ad3c3e45276949b2d679f8f79d735f0e";
@@ -19,8 +20,8 @@ const ROOTLET_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
 
 export default function RootletsCard() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction } = useAppContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refresh } = useLoadedAppContext();
 
   const isEditable = address === CAP_OWNER;
 
@@ -52,7 +53,7 @@ export default function RootletsCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

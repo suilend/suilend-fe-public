@@ -5,23 +5,19 @@ import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { useWalletContext } from "@suilend/frontend-sui";
 import { extractCTokenCoinType, isCTokenCoinType } from "@suilend/sdk/utils";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken } from "@/lib/format";
 
 export default function RedeemCTokensDialog() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const ctokenCoinBalances = data.coinBalancesRaw.filter(
     (cb) => isCTokenCoinType(cb.coinType) && +cb.totalBalance > 0,
@@ -59,7 +55,7 @@ export default function RedeemCTokensDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

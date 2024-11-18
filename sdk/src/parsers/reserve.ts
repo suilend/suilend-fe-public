@@ -123,12 +123,28 @@ export const parseReserve = (
     depositAprPercent,
     utilizationPercent,
 
+    token: {
+      coinType,
+      ...coinMetadata,
+    },
+
+    /**
+     * @deprecated since version 1.1.9. Use `token.symbol` instead.
+     */
     symbol,
+    /**
+     * @deprecated since version 1.1.9. Use `token.name` instead.
+     */
     name,
+    /**
+     * @deprecated since version 1.1.9. Use `token.iconUrl` instead.
+     */
     iconUrl,
+    /**
+     * @deprecated since version 1.1.9. Use `token.description` instead.
+     */
     description,
 
-    // Deprecated
     /**
      * @deprecated since version 1.0.3. Use `depositedAmount` instead.
      */

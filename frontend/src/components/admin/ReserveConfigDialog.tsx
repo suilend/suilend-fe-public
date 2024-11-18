@@ -5,7 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";
@@ -22,8 +22,7 @@ import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface DiffProps {
   initialState: { pythPriceId: string } & ConfigState;
@@ -68,15 +67,9 @@ interface ReserveConfigDialogProps {
 export default function ReserveConfigDialog({
   reserve,
 }: ReserveConfigDialogProps) {
-  const { address } = useWalletContext();
-  const {
-    refreshData,
-    explorer,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
-  const data = restAppContext.data as AppData;
+  const { explorer } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -160,7 +153,7 @@ export default function ReserveConfigDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

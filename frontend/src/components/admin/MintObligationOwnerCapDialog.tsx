@@ -4,18 +4,15 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { SuilendClient } from "@suilend/sdk/client";
+import { useWalletContext } from "@suilend/frontend-sui";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
-import { useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function MintObligationOwnerCapDialog() {
-  const { address } = useWalletContext();
-  const { refreshData, signExecuteAndWaitForTransaction, ...restAppContext } =
-    useAppContext();
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, refresh } = useLoadedAppContext();
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -43,7 +40,7 @@ export default function MintObligationOwnerCapDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshData();
+      await refresh();
     }
   };
 

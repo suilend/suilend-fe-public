@@ -13,7 +13,7 @@ import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useSwapContext } from "@/contexts/SwapContext";
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { formatToken } from "@/lib/format";
@@ -39,10 +39,10 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   return (
     <div
       className={cn(
-        "relative z-[1] flex w-full cursor-pointer px-4 py-3 transition-colors hover:bg-muted/10",
+        "relative z-[1] flex w-full cursor-pointer px-4 py-3",
         isSelected
-          ? "border-transparent bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
-          : "hover:border-transparent",
+          ? "bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
+          : "transition-colors hover:bg-muted/10",
       )}
       onClick={onClick}
     >
@@ -107,8 +107,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const appContext = useAppContext();
-  const data = appContext.data as AppData;
+  const { data } = useLoadedAppContext();
 
   const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];

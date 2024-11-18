@@ -4,6 +4,8 @@ import BigNumber from "bignumber.js";
 import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
 import LoopedPosition from "@/components/layout/LoopedPosition";
@@ -11,8 +13,7 @@ import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { AppData, useAppContext } from "@/contexts/AppContext";
-import { useWalletContext } from "@/contexts/WalletContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatList } from "@/lib/format";
 import {
   IS_LOOPING_MESSAGE,
@@ -25,8 +26,8 @@ import {
 
 export default function LoopingCard() {
   const { address } = useWalletContext();
-  const { refreshData, obligation, ...restAppContext } = useAppContext();
-  const data = restAppContext.data as AppData;
+  const { data, refresh, obligation, obligationOwnerCap } =
+    useLoadedAppContext();
   const { withdraw, borrow } = useActionsModalContext();
 
   const loopedAssetCoinTypes = getLoopedAssetCoinTypes(data, obligation);
@@ -35,12 +36,6 @@ export default function LoopingCard() {
   const { deposits: zeroShareDeposits, borrows: zeroShareBorrows } =
     getZeroSharePositions(obligation);
   const wasLooping = getWasLooping(data, obligation);
-
-  const obligationOwnerCap = useMemo(
-    () =>
-      data.obligationOwnerCaps?.find((o) => o.obligationId === obligation?.id),
-    [data.obligationOwnerCaps, obligation?.id],
-  );
 
   // Restore eligibility
   const [isRestoringEligibility, setIsRestoringEligibility] =
@@ -64,7 +59,7 @@ export default function LoopingCard() {
       });
     } finally {
       setIsRestoringEligibility(false);
-      await refreshData();
+      await refresh();
     }
   };
 

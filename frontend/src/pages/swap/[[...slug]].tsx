@@ -25,13 +25,15 @@ import {
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
   SUI_GAS_MIN,
+  getBalanceChange,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
+  useSettingsContext,
+  useWalletContext,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
-import { SuilendClient } from "@suilend/sdk/client";
 import { Action, Side } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
@@ -47,7 +49,7 @@ import SwapSlippagePopover, {
 } from "@/components/swap/SwapSlippagePopover";
 import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AppData, useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   StandardizedQuote,
   StandardizedQuoteType,
@@ -55,7 +57,6 @@ import {
   TokenDirection,
   useSwapContext,
 } from "@/contexts/SwapContext";
-import { useWalletContext } from "@/contexts/WalletContext";
 import {
   getSubmitButtonNoValueState,
   getSubmitButtonState,
@@ -63,7 +64,6 @@ import {
 import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import { getBalanceChange } from "@/lib/transactions";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -85,16 +85,10 @@ type HistoricalUsdPriceData = {
 };
 
 function Page() {
-  const { address } = useWalletContext();
-  const {
-    refreshData,
-    explorer,
-    obligation,
-    signExecuteAndWaitForTransaction,
-    ...restAppContext
-  } = useAppContext();
-  const data = restAppContext.data as AppData;
-  const suilendClient = restAppContext.suilendClient as SuilendClient;
+  const { explorer } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, refresh, obligation, obligationOwnerCap } =
+    useLoadedAppContext();
 
   const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
@@ -757,10 +751,6 @@ function Page() {
       if (isDepositing) {
         if (!outputCoin) throw new Error("Missing coin to deposit");
 
-        const obligationOwnerCap = data.obligationOwnerCaps?.find(
-          (o) => o.obligationId === obligation?.id,
-        );
-
         await suilendClient.depositCoin(
           address,
           outputCoin,
@@ -775,7 +765,9 @@ function Page() {
       throw err;
     }
 
-    const res = await signExecuteAndWaitForTransaction(transaction, true);
+    const res = await signExecuteAndWaitForTransaction(transaction, {
+      auction: true,
+    });
     return res;
   };
 
@@ -796,8 +788,7 @@ function Page() {
       const balanceChangeIn = getBalanceChange(
         res,
         address!,
-        tokenIn.coinType,
-        tokenIn.decimals,
+        { ...tokenIn, description: "" },
         -1,
       );
       const balanceChangeInFormatted = formatToken(
@@ -805,12 +796,10 @@ function Page() {
         { dp: tokenIn.decimals, trimTrailingZeros: true },
       );
 
-      const balanceChangeOut = getBalanceChange(
-        res,
-        address!,
-        tokenOut.coinType,
-        tokenOut.decimals,
-      );
+      const balanceChangeOut = getBalanceChange(res, address!, {
+        ...tokenOut,
+        description: "",
+      });
       const balanceChangeOutFormatted = formatToken(
         !deposit && balanceChangeOut !== undefined
           ? balanceChangeOut
@@ -865,7 +854,7 @@ function Page() {
     } finally {
       (deposit ? setIsSwappingAndDepositing : setIsSwapping)(false);
       inputRef.current?.focus();
-      await refreshData();
+      await refresh();
     }
   };
 
