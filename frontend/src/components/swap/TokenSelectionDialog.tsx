@@ -1,10 +1,17 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
-import BigNumber from "bignumber.js";
 import { ChevronDown, Search, Wallet } from "lucide-react";
 
-import { SUI_COINTYPE, isCoinType, isSui } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
+  NORMALIZED_USDT_COINTYPE,
+  NORMALIZED_sSUI_COINTYPE,
+  SUI_COINTYPE,
+  isCoinType,
+  isSui,
+} from "@suilend/frontend-sui";
 
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
@@ -15,7 +22,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useSwapContext } from "@/contexts/SwapContext";
-import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,14 +33,9 @@ interface TokenRowProps {
 }
 
 function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
-  const swapContext = useSwapContext();
-  const coinBalancesMap = swapContext.coinBalancesMap as Record<
-    string,
-    ParsedCoinBalance
-  >;
+  const { getBalance } = useLoadedAppContext();
 
-  const tokenBalance =
-    coinBalancesMap[token.coinType]?.balance ?? new BigNumber(0);
+  const tokenBalance = getBalance(token.coinType);
 
   return (
     <div
@@ -107,14 +108,10 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { data } = useLoadedAppContext();
+  const { data, getBalance } = useLoadedAppContext();
 
   const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];
-  const coinBalancesMap = restSwapContext.coinBalancesMap as Record<
-    string,
-    ParsedCoinBalance
-  >;
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -123,12 +120,22 @@ export default function TokenSelectionDialog({
   };
 
   // Tokens
-  const tokensWithBalances = useMemo(
+  const topTokens = useMemo(
     () =>
-      tokens.filter((t) =>
-        (coinBalancesMap[t.coinType]?.balance ?? new BigNumber(0)).gt(0),
-      ),
-    [tokens, coinBalancesMap],
+      [
+        NORMALIZED_sSUI_COINTYPE,
+        NORMALIZED_SUI_COINTYPE,
+        NORMALIZED_USDC_COINTYPE,
+        NORMALIZED_USDT_COINTYPE,
+      ]
+        .map((coinType) => tokens.find((t) => t.coinType === coinType))
+        .filter(Boolean) as SwapToken[],
+    [tokens],
+  );
+
+  const tokensWithBalances = useMemo(
+    () => tokens.filter((t) => getBalance(t.coinType).gt(0)),
+    [tokens, getBalance],
   );
   const reserveTokens = useMemo(
     () =>
@@ -237,7 +244,7 @@ export default function TokenSelectionDialog({
       </div>
 
       <div className="flex flex-row flex-wrap gap-2 px-4 pb-4">
-        {reserveTokens.map((t) => (
+        {topTokens.map((t) => (
           <Button
             key={t.coinType}
             className="gap-1.5 rounded-full border hover:border-transparent"

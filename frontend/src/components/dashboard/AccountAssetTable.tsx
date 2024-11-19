@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
+import { Token } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { reserveSort } from "@suilend/sdk/utils";
 
@@ -20,14 +21,11 @@ import { cn } from "@/lib/utils";
 
 interface RowData {
   isBalance?: boolean;
-  coinType: string;
-  mintDecimals: number;
-  price: BigNumber;
-  symbol: string;
-  iconUrl?: string | null;
+  reserve?: ParsedReserve;
+  token: Token;
+  price?: BigNumber;
   amount: BigNumber;
-  amountUsd: BigNumber;
-  reserve: ParsedReserve;
+  amountUsd?: BigNumber;
 }
 
 interface AccountAssetTableProps {
@@ -51,21 +49,7 @@ export default function AccountAssetTable({
         accessorKey: "symbol",
         sortingFn: "text",
         header: ({ column }) => tableHeader(column, "Asset name"),
-        cell: ({ row }) => {
-          const { isBalance, coinType, price, symbol, iconUrl, reserve } =
-            row.original;
-
-          return (
-            <AssetCell
-              isBalance={isBalance}
-              coinType={coinType}
-              price={price}
-              symbol={symbol}
-              iconUrl={iconUrl}
-              reserve={reserve}
-            />
-          );
-        },
+        cell: ({ row }) => <AssetCell {...row.original} />,
       },
       {
         accessorKey: "amount",
@@ -73,14 +57,16 @@ export default function AccountAssetTable({
         header: ({ column }) =>
           tableHeader(column, amountTitle, { isNumerical: true }),
         cell: ({ row }) => {
-          const { mintDecimals, amount, amountUsd } = row.original;
+          const { token, amount, amountUsd } = row.original;
 
           return (
             <div className="flex flex-col items-end gap-1">
               <TBody className="text-right">
-                {formatToken(amount, { dp: mintDecimals })}
+                {formatToken(amount, { dp: token.decimals })}
               </TBody>
-              <TLabel className="text-right">{formatUsd(amountUsd)}</TLabel>
+              <TLabel className="text-right">
+                {amountUsd !== undefined ? formatUsd(amountUsd) : "--"}
+              </TLabel>
             </div>
           );
         },
@@ -90,15 +76,19 @@ export default function AccountAssetTable({
   );
 
   // Sort
-  const sortedAssets = assets
-    .slice()
-    .sort((a, b) =>
-      reserveSort(
-        data.lendingMarket.reserves,
-        a.reserve.coinType,
-        b.reserve.coinType,
-      ),
-    );
+  const sortedAssets = useMemo(
+    () =>
+      assets
+        .slice()
+        .sort((a, b) =>
+          reserveSort(
+            data.lendingMarket.reserves,
+            a.token.coinType,
+            b.token.coinType,
+          ),
+        ),
+    [assets, data.lendingMarket.reserves],
+  );
 
   return (
     <div className="w-full">
@@ -106,15 +96,19 @@ export default function AccountAssetTable({
         columns={columns}
         data={sortedAssets}
         noDataMessage={noAssetsMessage}
-        tableRowClassName={() => cn(styles.tableRow)}
+        tableRowClassName={(row) =>
+          cn(styles.tableRow, !row?.original.reserve && "cursor-default")
+        }
         tableCellClassName={(cell) =>
           cn(
             cell && cell.column.getIsFirstColumn() && "pr-0",
             cell && cell.column.getIsLastColumn() && "pl-0",
           )
         }
-        onRowClick={(row) => () =>
-          openActionsModal(row.original.reserve.symbol)
+        onRowClick={(row) =>
+          row.original.reserve
+            ? () => openActionsModal(row.original.token.symbol)
+            : undefined
         }
       />
     </div>

@@ -38,9 +38,6 @@ export const TDisplay = forwardRef<
 });
 TDisplay.displayName = "TDisplay";
 
-// TODO : TTitle should accept an "as" attribute to define the component type
-// A quick poc is to create a new TPrimaryTitle component
-
 // Primary Title (h1)
 export const TPrimaryTitle = forwardRef<
   HTMLHeadingElement,

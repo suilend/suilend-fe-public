@@ -1,10 +1,4 @@
-import {
-  MouseEvent,
-  PropsWithChildren,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { MouseEvent, PropsWithChildren, useRef } from "react";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -41,25 +35,6 @@ export default function ActionsModalContainer({ children }: PropsWithChildren) {
     e.stopPropagation();
     didDialogContentMouseDownRef.current = false;
   };
-
-  // Drawer
-  const [visualViewportHeight, setVisualViewportHeight] = useState<number>(0);
-  useEffect(() => {
-    if (!visualViewport) return;
-    setVisualViewportHeight(visualViewport.height);
-
-    const onResize = () => {
-      if (!visualViewport) return;
-      setVisualViewportHeight(visualViewport.height);
-    };
-
-    visualViewport.addEventListener("resize", onResize);
-
-    return () => {
-      if (!visualViewport) return;
-      visualViewport.removeEventListener("resize", onResize);
-    };
-  }, []);
 
   if (md)
     return (

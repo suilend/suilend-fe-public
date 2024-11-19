@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
@@ -70,51 +72,57 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
   );
 }
 interface MarketCardListProps {
-  data: ReservesRowData[];
+  rows: ReservesRowData[];
 }
-export default function MarketCardList({ data }: MarketCardListProps) {
+export default function MarketCardList({ rows }: MarketCardListProps) {
   const { open: openActionsModal } = useActionsModalContext();
+
+  const mainRows = useMemo(() => rows.filter((row) => !row.isIsolated), [rows]);
+  const isolatedRows = useMemo(
+    () => rows.filter((row) => row.isIsolated),
+    [rows],
+  );
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <TTitle className="uppercase">Main assets</TTitle>
-        <div className="flex w-full flex-col gap-2">
-          {data
-            .filter((rowData) => !rowData.isIsolated)
-            .map((rowData) => (
+      {mainRows.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <TTitle className="uppercase">Main assets</TTitle>
+          <div className="flex w-full flex-col gap-2">
+            {mainRows.map((rowData) => (
               <MarketCard
-                key={rowData.coinType}
+                key={rowData.token.coinType}
                 rowData={rowData}
-                onClick={() => openActionsModal(rowData.reserve.symbol)}
+                onClick={() => openActionsModal(rowData.token.symbol)}
               />
             ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex flex-col gap-4">
-        <Tooltip title={ISOLATED_TOOLTIP}>
-          <TTitle
-            className={cn(
-              "w-max uppercase decoration-primary/50",
-              hoverUnderlineClassName,
-            )}
-          >
-            Isolated assets
-          </TTitle>
-        </Tooltip>
-        <div className="flex w-full flex-col gap-2">
-          {data
-            .filter((rowData) => rowData.isIsolated)
-            .map((rowData) => (
+      {isolatedRows.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <Tooltip title={ISOLATED_TOOLTIP}>
+            <TTitle
+              className={cn(
+                "w-max uppercase decoration-primary/50",
+                hoverUnderlineClassName,
+              )}
+            >
+              Isolated assets
+            </TTitle>
+          </Tooltip>
+          <div className="flex w-full flex-col gap-2">
+            {isolatedRows.map((rowData) => (
               <MarketCard
-                key={rowData.coinType}
+                key={rowData.token.coinType}
                 rowData={rowData}
-                onClick={() => openActionsModal(rowData.reserve.symbol)}
+                onClick={() => openActionsModal(rowData.token.symbol)}
               />
             ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

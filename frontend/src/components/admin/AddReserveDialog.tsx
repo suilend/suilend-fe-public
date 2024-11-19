@@ -1,17 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
-import { CoinMetadata } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { isEqual } from "lodash";
 import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  getCoinMetadataMap,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui";
 
 import CoinPopover from "@/components/admin/CoinPopover";
 import Dialog from "@/components/admin/Dialog";
@@ -24,64 +18,22 @@ import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { parseCoinBalances } from "@/lib/coinBalance";
 
 export default function AddReserveDialog() {
-  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient, data, balancesCoinMetadataMap, refresh } =
+    useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
-
-  // Coin metadata
-  const uniqueCoinTypes = useMemo(() => {
-    const existingReserveCoinTypes = data.lendingMarket.reserves.map(
-      (r) => r.coinType,
-    );
-    const coinTypes = data.coinBalancesRaw
-      .map((cb) => cb.coinType)
-      .filter((coinType) => !existingReserveCoinTypes.includes(coinType));
-
-    return Array.from(new Set(coinTypes));
-  }, [data.lendingMarket.reserves, data.coinBalancesRaw]);
-
-  const fetchingCoinTypesRef = useRef<string[] | undefined>(undefined);
-  const [coinMetadataMap, setCoinMetadataMap] = useState<
-    Record<string, CoinMetadata>
-  >({});
-  useEffect(() => {
-    (async () => {
-      const filteredCoinTypes = uniqueCoinTypes.filter(
-        (coinType) => !coinMetadataMap[coinType],
-      );
-      if (filteredCoinTypes.length === 0) return;
-
-      if (
-        fetchingCoinTypesRef.current !== undefined &&
-        !isEqual(filteredCoinTypes, fetchingCoinTypesRef.current)
-      )
-        return;
-
-      fetchingCoinTypesRef.current = filteredCoinTypes;
-      const result = await getCoinMetadataMap(suiClient, filteredCoinTypes);
-      setCoinMetadataMap(result);
-    })();
-  }, [uniqueCoinTypes, coinMetadataMap, suiClient]);
-
-  const coinBalancesMap = parseCoinBalances(
-    data.coinBalancesRaw,
-    uniqueCoinTypes,
-    undefined,
-    coinMetadataMap,
-  );
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const [coinType, setCoinType] = useState<string | undefined>(undefined);
-  const coin = useMemo(
-    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
-    [coinType, coinBalancesMap],
+  const coinMetadata = useMemo(
+    () =>
+      coinType !== undefined ? balancesCoinMetadataMap?.[coinType] : undefined,
+    [coinType, balancesCoinMetadataMap],
   );
 
   const [pythPriceId, setPythPriceId] = useState<string>("");
@@ -166,10 +118,11 @@ export default function AddReserveDialog() {
       toast.error("Select a coin");
       return;
     }
-    if (!coin) {
+    if (!coinMetadata) {
       toast.error("Invalid coin selected");
       return;
     }
+
     if (pythPriceId === "") {
       toast.error("Enter a pyth price id");
       return;
@@ -196,7 +149,7 @@ export default function AddReserveDialog() {
     }
 
     const transaction = new Transaction();
-    const newConfig = parseConfigState(configState, coin.mintDecimals);
+    const newConfig = parseConfigState(configState, coinMetadata.decimals);
 
     try {
       await suilendClient.createReserve(
@@ -261,7 +214,7 @@ export default function AddReserveDialog() {
     >
       <Grid>
         <CoinPopover
-          coinBalancesMap={coinBalancesMap}
+          coinMetadataMap={balancesCoinMetadataMap}
           value={coinType}
           onChange={setCoinType}
         />
@@ -286,7 +239,7 @@ export default function AddReserveDialog() {
           </Button>
         </div>
 
-        <ReserveConfig symbol={coin?.symbol} {...reserveConfigState} />
+        <ReserveConfig symbol={coinMetadata?.symbol} {...reserveConfigState} />
       </Grid>
     </Dialog>
   );

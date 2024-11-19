@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { CoinStruct, SuiClient } from "@mysten/sui/client";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
@@ -45,8 +46,23 @@ import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { getAllCoins } from "@/lib/coinBalance";
 import { formatToken, formatUsd } from "@/lib/format";
+
+const getAllCoins = async (
+  client: SuiClient,
+  owner: string,
+): Promise<CoinStruct[]> => {
+  let cursor = null;
+  const allCoins = [];
+  while (true) {
+    const coins = await client.getAllCoins({ owner, cursor });
+    cursor = coins.nextCursor;
+    allCoins.push(...coins.data);
+    if (!coins.hasNextPage) {
+      return allCoins;
+    }
+  }
+};
 
 interface RowData {
   symbol: string;
@@ -78,10 +94,6 @@ export default function LiquidateDialog({
   const [obligationHistory, setObligationHistory] = useState<
     FormattedObligationHistory[]
   >([]);
-  const reserveMap = data.lendingMarket.reserves.reduce(
-    (acc, reserve) => ({ ...acc, [reserve.coinType]: reserve }),
-    {},
-  ) as Record<string, ParsedReserve>;
 
   const fetchObligationOwner = async (obligationId: string) => {
     if (obligationId === "") {
@@ -205,7 +217,7 @@ export default function LiquidateDialog({
     fetchObligationHistory(parsedObligation.id);
   } else {
     parsedObligation = refreshedObligation
-      ? parseObligation(refreshedObligation, reserveMap)
+      ? parseObligation(refreshedObligation, data.reserveMap)
       : null;
   }
   return (

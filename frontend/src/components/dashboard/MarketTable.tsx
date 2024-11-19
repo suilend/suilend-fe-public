@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_mSUI_COINTYPE,
+  Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
@@ -38,24 +39,23 @@ import {
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 export interface ReservesRowData {
-  coinType: string;
+  reserve: ParsedReserve;
+  token: Token;
   price: BigNumber;
-  symbol: string;
-  iconUrl?: string | null;
   isIsolated: boolean;
+
   openLtvPercent: BigNumber;
   borrowWeight: BigNumber;
   depositedAmount: BigNumber;
   depositedAmountUsd: BigNumber;
-  depositedAmountTooltip?: string;
+  depositedAmountTooltip: string | undefined;
   borrowedAmount: BigNumber;
   borrowedAmountUsd: BigNumber;
-  borrowedAmountTooltip?: string;
+  borrowedAmountTooltip: string | undefined;
   depositAprPercent: BigNumber;
   totalDepositAprPercent: BigNumber;
   borrowAprPercent: BigNumber;
   totalBorrowAprPercent: BigNumber;
-  reserve: ParsedReserve;
 }
 
 interface HeaderRowData {
@@ -195,11 +195,10 @@ export default function MarketTable() {
           );
         })
         .map((reserve) => {
-          const coinType = reserve.coinType;
+          const token = reserve.token;
           const price = reserve.price;
-          const symbol = reserve.symbol;
-          const iconUrl = reserve.iconUrl;
           const isIsolated = reserve.config.isolated;
+
           const openLtvPercent = new BigNumber(reserve.config.openLtvPct);
           const borrowWeight = new BigNumber(
             reserve.config.borrowWeightBps,
@@ -212,7 +211,7 @@ export default function MarketTable() {
           const totalDepositAprPercent = getTotalAprPercent(
             Side.DEPOSIT,
             reserve.depositAprPercent,
-            getFilteredRewards(data.rewardMap[coinType].deposit),
+            getFilteredRewards(data.rewardMap[token.coinType].deposit),
             getStakingYieldAprPercent(
               Side.DEPOSIT,
               reserve,
@@ -223,7 +222,7 @@ export default function MarketTable() {
           const totalBorrowAprPercent = getTotalAprPercent(
             Side.BORROW,
             reserve.borrowAprPercent,
-            getFilteredRewards(data.rewardMap[coinType].borrow),
+            getFilteredRewards(data.rewardMap[token.coinType].borrow),
           );
 
           const getAlmostExceedsLimit = (limit: BigNumber, total: BigNumber) =>
@@ -290,7 +289,7 @@ export default function MarketTable() {
                 ? getAlmostExceedsLimitTooltip(
                     Side.DEPOSIT,
                     reserve.config.depositLimit.minus(depositedAmount),
-                    symbol,
+                    token.symbol,
                   )
                 : almostExceedsDepositLimitUsd
                   ? getAlmostExceedsLimitUsd(
@@ -307,7 +306,7 @@ export default function MarketTable() {
                 ? getAlmostExceedsLimitTooltip(
                     Side.BORROW,
                     reserve.config.borrowLimit.minus(borrowedAmount),
-                    symbol,
+                    token.symbol,
                   )
                 : almostExceedsBorrowLimitUsd
                   ? getAlmostExceedsLimitUsd(
@@ -317,11 +316,11 @@ export default function MarketTable() {
                   : undefined;
 
           return {
-            coinType,
+            reserve,
+            token,
             price,
-            symbol,
-            iconUrl,
             isIsolated,
+
             openLtvPercent,
             borrowWeight,
             depositedAmount,
@@ -334,7 +333,6 @@ export default function MarketTable() {
             totalDepositAprPercent,
             borrowAprPercent,
             totalBorrowAprPercent,
-            reserve,
           };
         }),
     [
@@ -351,15 +349,22 @@ export default function MarketTable() {
     [rows],
   );
 
-  const finalRows = useMemo(
-    () => [
-      { isHeader: true, isIsolated: false, count: mainRows.length },
-      ...mainRows,
-      { isHeader: true, isIsolated: true, count: isolatedRows.length },
-      ...isolatedRows,
-    ],
-    [mainRows, isolatedRows],
-  );
+  const finalRows = useMemo(() => {
+    const result = [];
+
+    if (mainRows.length > 0)
+      result.push(
+        { isHeader: true, isIsolated: false, count: mainRows.length },
+        ...mainRows,
+      );
+    if (isolatedRows.length > 0)
+      result.push(
+        { isHeader: true, isIsolated: true, count: isolatedRows.length },
+        ...isolatedRows,
+      );
+
+    return result;
+  }, [mainRows, isolatedRows]);
 
   return (
     <div className="w-full">
@@ -397,13 +402,13 @@ export default function MarketTable() {
               ? undefined
               : () =>
                   openActionsModal(
-                    (row.original as ReservesRowData).reserve.symbol,
+                    (row.original as ReservesRowData).token.symbol,
                   )
           }
         />
       </div>
       <div className="w-full md:hidden">
-        <MarketCardList data={rows} />
+        <MarketCardList rows={rows} />
       </div>
     </div>
   );

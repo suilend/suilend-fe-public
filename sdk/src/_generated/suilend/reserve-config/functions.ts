@@ -6,6 +6,13 @@ import {
   TransactionObjectInput,
 } from "@mysten/sui/transactions";
 
+export function destroy(tx: Transaction, config: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve_config::destroy`,
+    arguments: [obj(tx, config)],
+  });
+}
+
 export interface SetArgs {
   builder: TransactionObjectInput;
   field: GenericArg;
@@ -28,9 +35,21 @@ export function set(
   });
 }
 
-export function destroy(tx: Transaction, config: TransactionObjectInput) {
+export interface SetSpreadFeeBpsArgs {
+  builder: TransactionObjectInput;
+  spreadFeeBps: bigint | TransactionArgument;
+}
+
+export function setSpreadFeeBps(tx: Transaction, args: SetSpreadFeeBpsArgs) {
   return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve_config::destroy`,
+    target: `${PUBLISHED_AT}::reserve_config::set_spread_fee_bps`,
+    arguments: [obj(tx, args.builder), pure(tx, args.spreadFeeBps, `u64`)],
+  });
+}
+
+export function spreadFee(tx: Transaction, config: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve_config::spread_fee`,
     arguments: [obj(tx, config)],
   });
 }
@@ -475,25 +494,6 @@ export function setProtocolLiquidationFeeBps(
       obj(tx, args.builder),
       pure(tx, args.protocolLiquidationFeeBps, `u64`),
     ],
-  });
-}
-
-export interface SetSpreadFeeBpsArgs {
-  builder: TransactionObjectInput;
-  spreadFeeBps: bigint | TransactionArgument;
-}
-
-export function setSpreadFeeBps(tx: Transaction, args: SetSpreadFeeBpsArgs) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve_config::set_spread_fee_bps`,
-    arguments: [obj(tx, args.builder), pure(tx, args.spreadFeeBps, `u64`)],
-  });
-}
-
-export function spreadFee(tx: Transaction, config: TransactionObjectInput) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve_config::spread_fee`,
-    arguments: [obj(tx, config)],
   });
 }
 

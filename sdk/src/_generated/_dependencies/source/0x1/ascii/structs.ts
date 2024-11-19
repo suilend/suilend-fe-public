@@ -17,7 +17,7 @@ import {
   compressSuiType,
 } from "../../../../_framework/util";
 import { Vector } from "../../../../_framework/vector";
-import { PKG_V10 } from "../index";
+import { PKG_V11 } from "../index";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
 import { fromB64 } from "@mysten/sui/utils";
@@ -26,7 +26,7 @@ import { fromB64 } from "@mysten/sui/utils";
 
 export function isChar(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V10}::ascii::Char`;
+  return type === `${PKG_V11}::ascii::Char`;
 }
 
 export interface CharFields {
@@ -38,12 +38,12 @@ export type CharReified = Reified<Char, CharFields>;
 export class Char implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V10}::ascii::Char`;
+  static readonly $typeName = `${PKG_V11}::ascii::Char`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = Char.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V10}::ascii::Char`;
+  readonly $fullTypeName: `${typeof PKG_V11}::ascii::Char`;
   readonly $typeArgs: [];
   readonly $isPhantom = Char.$isPhantom;
 
@@ -53,7 +53,7 @@ export class Char implements StructClass {
     this.$fullTypeName = composeSuiType(
       Char.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V10}::ascii::Char`;
+    ) as `${typeof PKG_V11}::ascii::Char`;
     this.$typeArgs = typeArgs;
 
     this.byte = fields.byte;
@@ -65,7 +65,7 @@ export class Char implements StructClass {
       fullTypeName: composeSuiType(
         Char.$typeName,
         ...[],
-      ) as `${typeof PKG_V10}::ascii::Char`,
+      ) as `${typeof PKG_V11}::ascii::Char`,
       typeArgs: [] as [],
       isPhantom: Char.$isPhantom,
       reifiedTypeArgs: [],
@@ -199,7 +199,7 @@ export class Char implements StructClass {
 
 export function isString(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V10}::ascii::String`;
+  return type === `${PKG_V11}::ascii::String`;
 }
 
 export interface StringFields {
@@ -211,12 +211,12 @@ export type StringReified = Reified<String, StringFields>;
 export class String implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V10}::ascii::String`;
+  static readonly $typeName = `${PKG_V11}::ascii::String`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = String.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V10}::ascii::String`;
+  readonly $fullTypeName: `${typeof PKG_V11}::ascii::String`;
   readonly $typeArgs: [];
   readonly $isPhantom = String.$isPhantom;
 
@@ -226,7 +226,7 @@ export class String implements StructClass {
     this.$fullTypeName = composeSuiType(
       String.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V10}::ascii::String`;
+    ) as `${typeof PKG_V11}::ascii::String`;
     this.$typeArgs = typeArgs;
 
     this.bytes = fields.bytes;
@@ -238,7 +238,7 @@ export class String implements StructClass {
       fullTypeName: composeSuiType(
         String.$typeName,
         ...[],
-      ) as `${typeof PKG_V10}::ascii::String`,
+      ) as `${typeof PKG_V11}::ascii::String`,
       typeArgs: [] as [],
       isPhantom: String.$isPhantom,
       reifiedTypeArgs: [],

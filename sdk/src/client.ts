@@ -2,6 +2,7 @@ import { CoinStruct, SuiClient } from "@mysten/sui/client";
 import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
+  SUI_SYSTEM_STATE_OBJECT_ID,
   fromBase64,
   normalizeStructTag,
   toHex,
@@ -18,6 +19,7 @@ import {
   addPoolReward,
   addReserve,
   borrow,
+  borrowRequest,
   cancelPoolReward,
   changeReservePriceFeed,
   claimFees,
@@ -26,12 +28,15 @@ import {
   closePoolReward,
   depositCtokensIntoObligation,
   depositLiquidityAndMintCtokens,
+  fulfillLiquidityRequest,
   liquidate,
   migrate,
   newObligationOwnerCap,
   redeemCtokensAndWithdrawLiquidity,
+  redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
   repay,
+  unstakeSuiFromStaker,
   updateRateLimiterConfig,
   updateReserveConfig,
   withdrawCtokens,
@@ -53,13 +58,23 @@ import {
 import { Side } from "./types";
 import { extractCTokenCoinType } from "./utils";
 
+const SUI_COINTYPE = "0x2::sui::SUI";
+const NORMALIZED_SUI_COINTYPE = normalizeStructTag(SUI_COINTYPE);
+
 const WORMHOLE_STATE_ID =
   "0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c";
 const PYTH_STATE_ID =
   "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8";
 
-const SUILEND_UPGRADE_CAP_ID =
-  "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
+const SUILEND_UPGRADE_CAP_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0x05da14368a42a351e106806c09727968ae26be77a6741a018239ef0f99d5185e"
+  : "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
+export const LENDING_MARKET_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8"
+  : "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
+export const LENDING_MARKET_TYPE = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0x2::sui::SUI"
+  : "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({
@@ -71,13 +86,6 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
 
   return (object.data?.content as any).fields.package;
 }
-
-const SUI_COINTYPE = "0x2::sui::SUI";
-
-export const LENDING_MARKET_ID =
-  "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
-export const LENDING_MARKET_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
 export class SuilendClient {
   lendingMarket: LendingMarket<string>;
@@ -301,7 +309,7 @@ export class SuilendClient {
     mergeCoins: boolean = true,
   ) {
     const isSui =
-      normalizeStructTag(rewardCoinType) === normalizeStructTag(SUI_COINTYPE);
+      normalizeStructTag(rewardCoinType) === NORMALIZED_SUI_COINTYPE;
 
     const coins = (
       await this.client.getCoins({
@@ -756,8 +764,7 @@ export class SuilendClient {
     transaction: Transaction,
     obligationOwnerCapId?: string,
   ) {
-    const isSui =
-      normalizeStructTag(coinType) === normalizeStructTag(SUI_COINTYPE);
+    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
 
     const coins = (
       await this.client.getCoins({
@@ -794,8 +801,7 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const isSui =
-      normalizeStructTag(coinType) === normalizeStructTag(SUI_COINTYPE);
+    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
 
     const coins = (
       await this.client.getCoins({
@@ -866,17 +872,55 @@ export class SuilendClient {
       arguments: [],
     });
 
-    return transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
-      typeArguments: [this.lendingMarket.$typeArgs[0], coinType],
-      arguments: [
-        transaction.object(this.lendingMarket.id),
-        transaction.pure.u64(this.findReserveArrayIndex(coinType)),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
+    return this.redeem(
+      ctokens,
+      coinType,
+      exemption,
+      transaction
+    );
+
+  }
+
+  redeem(
+    ctokens: TransactionObjectInput,
+    coinType: string,
+    exemption: TransactionObjectInput,
+    transaction: Transaction
+  ) {
+    const [liquidityRequest] = redeemCtokensAndWithdrawLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      { 
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(this.findReserveArrayIndex(coinType)),
+        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         ctokens,
-        exemption,
-      ],
-    });
+        rateLimiterExemption: exemption,
+      }
+    );
+
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async withdrawAndSendToUser(
@@ -916,7 +960,7 @@ export class SuilendClient {
       obligation,
       this.findReserveArrayIndex(coinType),
     );
-    const result = borrow(
+    const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
       {
@@ -930,7 +974,28 @@ export class SuilendClient {
       },
     );
 
-    return result;
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async borrowAndSendToUser(
@@ -979,8 +1044,7 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const isSui =
-      normalizeStructTag(coinType) === normalizeStructTag(SUI_COINTYPE);
+    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
 
     const coins = (
       await this.client.getCoins({
@@ -1030,17 +1094,7 @@ export class SuilendClient {
       arguments: [exemption],
     });
 
-    return transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
-      typeArguments: [this.lendingMarket.$typeArgs[0], withdrawCoinType],
-      arguments: [
-        transaction.object(this.lendingMarket.id),
-        transaction.pure.u64(this.findReserveArrayIndex(withdrawCoinType)),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
-        ctokens,
-        optionalExemption,
-      ],
-    });
+    return this.redeem(ctokens, withdrawCoinType, optionalExemption, transaction);
   }
 
   async liquidate(

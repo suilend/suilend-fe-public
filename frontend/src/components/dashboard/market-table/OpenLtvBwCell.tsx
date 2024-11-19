@@ -4,10 +4,10 @@ import { ReservesRowData } from "@/components/dashboard/MarketTable";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { formatBorrowWeight, formatLtvPercent } from "@/lib/format";
 
-type OpenLtvBwCellProps = Pick<
-  ReservesRowData,
-  "openLtvPercent" | "borrowWeight"
->;
+interface OpenLtvBwCellProps {
+  openLtvPercent: ReservesRowData["openLtvPercent"];
+  borrowWeight: ReservesRowData["borrowWeight"];
+}
 
 export default function OpenLtvBwCell({
   openLtvPercent,

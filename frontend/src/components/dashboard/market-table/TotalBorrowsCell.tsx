@@ -1,32 +1,27 @@
 import TotalCell from "@/components/dashboard/market-table/TotalCell";
 import { ReservesRowData } from "@/components/dashboard/MarketTable";
 
-type TotalBorrowsCellProps = Pick<
-  ReservesRowData,
-  | "symbol"
-  | "borrowedAmount"
-  | "borrowedAmountUsd"
-  | "borrowedAmountTooltip"
-  | "reserve"
-> & {
+interface TotalBorrowsCellProps {
+  token: ReservesRowData["token"];
+  borrowedAmount: ReservesRowData["borrowedAmount"];
+  borrowedAmountUsd: ReservesRowData["borrowedAmountUsd"];
+  borrowedAmountTooltip: ReservesRowData["borrowedAmountTooltip"];
   horizontal?: boolean;
-};
+}
 
 export default function TotalBorrowsCell({
-  symbol,
+  token,
   borrowedAmount,
   borrowedAmountUsd,
   borrowedAmountTooltip,
-  reserve,
   horizontal,
 }: TotalBorrowsCellProps) {
   return (
     <TotalCell
-      symbol={symbol}
+      token={token}
       total={borrowedAmount}
       totalUsd={borrowedAmountUsd}
       tooltip={borrowedAmountTooltip}
-      reserve={reserve}
       horizontal={horizontal}
     />
   );

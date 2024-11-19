@@ -12,7 +12,6 @@ import {
   ParsedObligation,
   parseObligation,
 } from "@suilend/sdk/parsers/obligation";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
@@ -75,10 +74,6 @@ export default function ObligationsDialog() {
       chunkHandler,
     );
   };
-  const reserveMap = data.lendingMarket.reserves.reduce(
-    (acc, reserve) => ({ ...acc, [reserve.coinType]: reserve }),
-    {},
-  ) as Record<string, ParsedReserve>;
 
   return (
     <Grid>
@@ -192,7 +187,7 @@ export default function ObligationsDialog() {
                 ).length > 0
               );
             })
-            .map((obligation) => parseObligation(obligation, reserveMap))}
+            .map((obligation) => parseObligation(obligation, data.reserveMap))}
           noDataMessage="No Obligations"
         />
       </div>
