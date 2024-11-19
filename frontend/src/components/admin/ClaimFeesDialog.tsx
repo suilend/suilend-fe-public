@@ -53,9 +53,12 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
         const res1 = await suiClient.getDynamicFields({
           parentId: _reserve.id,
         });
+        const name = res1.data.find((d) =>
+          d.name.type.includes("BalanceKey"),
+        )!.name;
         const res2 = await suiClient.getDynamicFieldObject({
           parentId: _reserve.id,
-          name: res1.data[0].name,
+          name,
         });
         const fields = (res2?.data?.content as any)?.fields.value.fields;
 
