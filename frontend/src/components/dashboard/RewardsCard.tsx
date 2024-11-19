@@ -154,6 +154,7 @@ export default function RewardsCard() {
   const { explorer } = useSettingsContext();
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { data, refresh, obligation } = useLoadedAppContext();
+
   const { rank } = usePointsContext();
   const { claimRewards } = useDashboardContext();
 

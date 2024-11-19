@@ -93,7 +93,7 @@ export default function useFetchAppData(address: string | undefined) {
       (reserve.smoothedPrice.value as bigint) = parsedPrice;
     }
 
-    const reserveCoinTypes: string[] = [];
+    const reserveCoinTypes: string[] = [NORMALIZED_SEND_COINTYPE];
     const rewardCoinTypes: string[] = [];
     refreshedRawReserves.forEach((r) => {
       reserveCoinTypes.push(normalizeStructTag(r.coinType.name));

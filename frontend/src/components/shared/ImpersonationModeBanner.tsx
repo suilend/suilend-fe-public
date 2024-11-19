@@ -33,7 +33,7 @@ export default function ImpersonationModeBanner() {
     isImpersonating &&
     address && (
       <Alert
-        className="mb-6 cursor-pointer transition-colors hover:bg-muted/10"
+        className="w-full max-w-[960px] cursor-pointer rounded-sm transition-colors hover:bg-muted/10"
         onClick={onClick}
       >
         <div className="flex flex-row items-center gap-4">

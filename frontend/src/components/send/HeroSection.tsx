@@ -1,18 +1,42 @@
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import SectionHeading from "@/components/send/SectionHeading";
-import SendAmount from "@/components/send/SendAmount";
-import { TBodySans } from "@/components/shared/Typography";
+import SendTokenAmount from "@/components/send/SendTokenAmount";
+
+import Button from "../shared/Button";
 
 export default function HeroSection() {
+  const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
+
+  const allocation = 400;
+
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div className="flex w-full flex-col items-center gap-6">
       <SectionHeading>
-        Connect your wallet and claim
-        <SendAmount amount={500} /> tokens!
+        {!address ? (
+          <>
+            {"Connect your wallet to check your "}
+            <SendTokenAmount />
+            {" allocation"}
+          </>
+        ) : (
+          <>
+            {"Your allocation is "}
+            <SendTokenAmount amount={allocation} />
+          </>
+        )}
       </SectionHeading>
 
-      <TBodySans className="text-md">
-        Connect your wallet to check eligibility and claim your SEND tokens.
-      </TBodySans>
+      {!address && (
+        <Button
+          labelClassName="uppercase"
+          variant="outline"
+          size="lg"
+          onClick={() => setIsConnectWalletDropdownOpen(true)}
+        >
+          Connect wallet
+        </Button>
+      )}
     </div>
   );
 }

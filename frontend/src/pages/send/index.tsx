@@ -1,20 +1,25 @@
 import Head from "next/head";
 
-import ClaimSection from "@/components/send/ClaimSection";
-import DropSourceSection from "@/components/send/DropSourceSection";
+import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
+import SendHeader from "@/components/send/SendHeader";
+import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 
 export default function Send() {
   return (
     <>
       <Head>
-        <title>Suilend | Send</title>
+        <title>Suilend | SEND</title>
       </Head>
 
-      <div className="flex w-full flex-col gap-12">
+      <div className="flex w-full flex-col items-center gap-12">
+        <div className="flex w-full flex-col items-center gap-6">
+          <SendHeader />
+          <ImpersonationModeBanner />
+        </div>
+
         <HeroSection />
-        <DropSourceSection />
-        <ClaimSection />
+        <AllocationCardsSection />
       </div>
     </>
   );
