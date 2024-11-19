@@ -33,6 +33,7 @@ import {
   migrate,
   newObligationOwnerCap,
   redeemCtokensAndWithdrawLiquidity,
+  redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
   repay,
   unstakeSuiFromStaker,
@@ -871,17 +872,32 @@ export class SuilendClient {
       arguments: [],
     });
 
-    const [liquidityRequest] = transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity_request`,
-      typeArguments: [this.lendingMarket.$typeArgs[0], coinType],
-      arguments: [
-        transaction.object(this.lendingMarket.id),
-        transaction.pure.u64(this.findReserveArrayIndex(coinType)),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
+    return this.redeem(
+      ctokens,
+      coinType,
+      exemption,
+      transaction
+    );
+
+  }
+
+  redeem(
+    ctokens: TransactionObjectInput,
+    coinType: string,
+    exemption: TransactionObjectInput,
+    transaction: Transaction
+  ) {
+    const [liquidityRequest] = redeemCtokensAndWithdrawLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      { 
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(this.findReserveArrayIndex(coinType)),
+        clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         ctokens,
-        exemption,
-      ],
-    });
+        rateLimiterExemption: exemption,
+      }
+    );
 
     if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
       unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
@@ -1078,17 +1094,7 @@ export class SuilendClient {
       arguments: [exemption],
     });
 
-    return transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
-      typeArguments: [this.lendingMarket.$typeArgs[0], withdrawCoinType],
-      arguments: [
-        transaction.object(this.lendingMarket.id),
-        transaction.pure.u64(this.findReserveArrayIndex(withdrawCoinType)),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
-        ctokens,
-        optionalExemption,
-      ],
-    });
+    return this.redeem(ctokens, withdrawCoinType, optionalExemption, transaction);
   }
 
   async liquidate(
