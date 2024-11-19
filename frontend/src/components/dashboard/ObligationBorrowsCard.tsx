@@ -18,14 +18,11 @@ export default function ObligationBorrowsCard() {
       <CardContent className="p-0">
         <AccountAssetTable
           assets={obligation.borrows.map((b) => ({
-            coinType: b.coinType,
-            mintDecimals: b.reserve.mintDecimals,
+            reserve: b.reserve,
+            token: b.reserve.token,
             price: b.reserve.price,
-            symbol: b.reserve.symbol,
-            iconUrl: b.reserve.iconUrl,
             amount: b.borrowedAmount,
             amountUsd: b.borrowedAmountUsd,
-            reserve: b.reserve,
           }))}
           noAssetsMessage="No borrows"
         />

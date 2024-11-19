@@ -91,9 +91,9 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
           <div className="flex w-full flex-col gap-2">
             {mainRows.map((rowData) => (
               <MarketCard
-                key={rowData.coinType}
+                key={rowData.token.coinType}
                 rowData={rowData}
-                onClick={() => openActionsModal(rowData.reserve.symbol)}
+                onClick={() => openActionsModal(rowData.token.symbol)}
               />
             ))}
           </div>
@@ -115,9 +115,9 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
           <div className="flex w-full flex-col gap-2">
             {isolatedRows.map((rowData) => (
               <MarketCard
-                key={rowData.coinType}
+                key={rowData.token.coinType}
                 rowData={rowData}
-                onClick={() => openActionsModal(rowData.reserve.symbol)}
+                onClick={() => openActionsModal(rowData.token.symbol)}
               />
             ))}
           </div>

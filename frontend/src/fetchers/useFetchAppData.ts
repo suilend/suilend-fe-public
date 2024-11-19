@@ -1,4 +1,3 @@
-import { CoinBalance } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
@@ -31,7 +30,22 @@ import * as simulate from "@suilend/sdk/utils/simulate";
 import { LstClient } from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
-import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
+
+const fetchBirdeyePrice = async (coinType: string) => {
+  try {
+    const url = `https://public-api.birdeye.so/defi/price?address=${coinType}`;
+    const res = await fetch(url, {
+      headers: {
+        "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
+        "x-chain": "sui",
+      },
+    });
+    const json = await res.json();
+    return new BigNumber(json.data.value);
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 export default function useFetchAppData(address: string | undefined) {
   const { suiClient } = useSettingsContext();
@@ -57,41 +71,31 @@ export default function useFetchAppData(address: string | undefined) {
       new SuiPriceServiceConnection("https://hermes.pyth.network"),
     );
 
-    const fakePriceIdentifierReserves = refreshedRawReserves.filter(
+    const reservesWithTemporaryPriceIdentifiers = refreshedRawReserves.filter(
       (r) =>
         `0x${toHexString(r.priceIdentifier.bytes)}` !==
         COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[normalizeStructTag(r.coinType.name)]
           ?.priceIdentifier,
     );
-    for (const fakePriceIdentifierReserve of fakePriceIdentifierReserves) {
-      let price = 0.01;
+    for (const reserve of reservesWithTemporaryPriceIdentifiers) {
+      let price = new BigNumber(0.01);
 
-      try {
-        const url = `https://public-api.birdeye.so/defi/price?address=${normalizeStructTag(fakePriceIdentifierReserve.coinType.name)}`;
-        const res = await fetch(url, {
-          headers: {
-            "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
-            "x-chain": "sui",
-          },
-        });
-        const json = await res.json();
-        price = json.data.value;
-      } catch (err) {
-        console.error(err);
-      }
+      const birdeyePrice = await fetchBirdeyePrice(
+        normalizeStructTag(reserve.coinType.name),
+      );
+      if (birdeyePrice !== undefined) price = birdeyePrice;
 
-      (fakePriceIdentifierReserve.price.value as bigint) = BigInt(
+      const parsedPrice = BigInt(
         +new BigNumber(price).times(WAD).integerValue(BigNumber.ROUND_DOWN),
       );
-      (fakePriceIdentifierReserve.smoothedPrice.value as bigint) = BigInt(
-        +new BigNumber(price).times(WAD).integerValue(BigNumber.ROUND_DOWN),
-      );
+      (reserve.price.value as bigint) = parsedPrice;
+      (reserve.smoothedPrice.value as bigint) = parsedPrice;
     }
 
-    const coinTypes: string[] = [];
+    const reserveCoinTypes: string[] = [];
     const rewardCoinTypes: string[] = [];
     refreshedRawReserves.forEach((r) => {
-      coinTypes.push(normalizeStructTag(r.coinType.name));
+      reserveCoinTypes.push(normalizeStructTag(r.coinType.name));
 
       [
         ...r.depositsPoolRewardManager.poolRewards,
@@ -99,18 +103,24 @@ export default function useFetchAppData(address: string | undefined) {
       ].forEach((pr) => {
         if (!pr) return;
 
-        const coinType = normalizeStructTag(pr.coinType.name);
-        coinTypes.push(coinType);
-        rewardCoinTypes.push(coinType);
+        rewardCoinTypes.push(normalizeStructTag(pr.coinType.name));
       });
     });
-    const uniqueCoinTypes = Array.from(new Set(coinTypes));
-    const uniqueRewardCoinTypes = Array.from(new Set(rewardCoinTypes));
+    const uniqueReservesCoinTypes = Array.from(new Set(reserveCoinTypes));
+    const uniqueRewardsCoinTypes = Array.from(new Set(rewardCoinTypes));
 
-    const coinMetadataMap = await getCoinMetadataMap(
+    const reserveCoinMetadataMap = await getCoinMetadataMap(
       suiClient,
-      uniqueCoinTypes,
+      uniqueReservesCoinTypes,
     );
+    const rewardCoinMetadataMap = await getCoinMetadataMap(
+      suiClient,
+      uniqueRewardsCoinTypes,
+    );
+    const coinMetadataMap = {
+      ...reserveCoinMetadataMap,
+      ...rewardCoinMetadataMap,
+    };
 
     const lendingMarket = parseLendingMarket(
       rawLendingMarket,
@@ -134,9 +144,6 @@ export default function useFetchAppData(address: string | undefined) {
     ) as Record<string, ParsedReserve>;
 
     let lendingMarketOwnerCapId, obligationOwnerCaps, obligations;
-    let coinBalancesRaw: CoinBalance[] = [];
-    let coinBalancesMap: Record<string, ParsedCoinBalance> = {};
-
     if (address) {
       lendingMarketOwnerCapId = await SuilendClient.getLendingMarketOwnerCapId(
         address,
@@ -204,60 +211,30 @@ export default function useFetchAppData(address: string | undefined) {
             parseObligation(refreshedObligation, reserveMap),
           );
       }
-
-      // Wallet assets
-      coinBalancesRaw = (
-        await suiClient.getAllBalances({
-          owner: address,
-        })
-      )
-        .map((cb) => ({ ...cb, coinType: normalizeStructTag(cb.coinType) }))
-        .sort((a, b) => (a.coinType < b.coinType ? -1 : 1));
-
-      const reserveCoinTypes = lendingMarket.reserves.map(
-        (reserve) => reserve.coinType,
-      );
-      const uniqueReserveCoinTypes = Array.from(new Set(reserveCoinTypes));
-
-      coinBalancesMap = parseCoinBalances(
-        coinBalancesRaw,
-        uniqueReserveCoinTypes,
-        reserveMap,
-      );
     }
 
     // Rewards
-    const rewardsBirdeyePriceMap: Record<string, BigNumber | undefined> = {};
+    const rewardPriceMap: Record<string, BigNumber | undefined> =
+      Object.entries(reserveMap).reduce(
+        (acc, [coinType, reserve]) => ({ ...acc, [coinType]: reserve.price }),
+        {},
+      );
 
-    const rewardsWithoutReserves = uniqueRewardCoinTypes.filter(
+    const reservelessRewardsCoinTypes = uniqueRewardsCoinTypes.filter(
       (coinType) => !isSendPoints(coinType) && !reserveMap[coinType],
     );
-    const rewardsBirdeyePrices = await Promise.all(
-      rewardsWithoutReserves.map(async (coinType) => {
-        try {
-          const url = `https://public-api.birdeye.so/defi/price?address=${coinType}`;
-          const res = await fetch(url, {
-            headers: {
-              "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
-              "x-chain": "sui",
-            },
-          });
-          const json = await res.json();
-          return new BigNumber(json.data.value);
-        } catch (err) {
-          console.error(err);
-        }
-      }),
+    const reservelessRewardsBirdeyePrices = await Promise.all(
+      reservelessRewardsCoinTypes.map(fetchBirdeyePrice),
     );
-    for (let i = 0; i < rewardsWithoutReserves.length; i++) {
-      rewardsBirdeyePriceMap[rewardsWithoutReserves[i]] =
-        rewardsBirdeyePrices[i];
+    for (let i = 0; i < reservelessRewardsCoinTypes.length; i++) {
+      rewardPriceMap[reservelessRewardsCoinTypes[i]] =
+        reservelessRewardsBirdeyePrices[i];
     }
 
     const rewardMap = formatRewards(
       reserveMap,
-      coinMetadataMap,
-      rewardsBirdeyePriceMap,
+      rewardCoinMetadataMap,
+      rewardPriceMap,
       obligations,
     );
 
@@ -288,12 +265,16 @@ export default function useFetchAppData(address: string | undefined) {
       lendingMarket,
       lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
       reserveMap,
+      rewardMap,
+
       obligationOwnerCaps,
       obligations,
-      coinBalancesMap,
+
+      reserveCoinTypes: uniqueReservesCoinTypes,
+      rewardCoinTypes: uniqueRewardsCoinTypes,
+
       coinMetadataMap,
-      rewardMap,
-      coinBalancesRaw,
+      rewardPriceMap,
 
       lstAprPercentMap,
     };

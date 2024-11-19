@@ -42,7 +42,6 @@ function ClaimableReward({ coinType, claimableRewards }: ClaimableRewardProps) {
 
   const coinMetadata = data.coinMetadataMap[coinType];
 
-  if (!coinMetadata) return null;
   return (
     <div className="flex flex-row items-center gap-1.5">
       <TokenLogo

@@ -1,7 +1,8 @@
+import { useMemo } from "react";
+
 import BigNumber from "bignumber.js";
 
-import { useWalletContext } from "@suilend/frontend-sui";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { getToken, useWalletContext } from "@suilend/frontend-sui";
 
 import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
@@ -11,7 +12,23 @@ import { formatUsd } from "@/lib/format";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const { data } = useLoadedAppContext();
+  const { data, balancesCoinMetadataMap, getBalance } = useLoadedAppContext();
+
+  const coinTypes = useMemo(
+    () =>
+      Object.keys(balancesCoinMetadataMap ?? {}).filter(
+        (coinType) =>
+          getBalance(coinType).gt(0) &&
+          (data.reserveCoinTypes.includes(coinType) ||
+            data.rewardCoinTypes.includes(coinType)),
+      ),
+    [
+      balancesCoinMetadataMap,
+      getBalance,
+      data.reserveCoinTypes,
+      data.rewardCoinTypes,
+    ],
+  );
 
   if (!address) return null;
   return (
@@ -23,11 +40,13 @@ export default function WalletBalancesCard() {
             Wallet balances
             <span className="text-xs text-muted-foreground">
               {formatUsd(
-                Object.values(data.coinBalancesMap).reduce(
-                  (acc, cb) =>
-                    acc.plus(cb.balance.times(cb.price as BigNumber)),
-                  new BigNumber(0),
-                ),
+                coinTypes.reduce((acc, coinType) => {
+                  const reserve = data.reserveMap[coinType];
+                  const price = reserve?.price ?? data.rewardPriceMap[coinType];
+
+                  if (price === undefined) return acc;
+                  return acc.plus(getBalance(coinType).times(price));
+                }, new BigNumber(0)),
               )}
             </span>
           </>
@@ -38,21 +57,24 @@ export default function WalletBalancesCard() {
       <CardContent className="p-0">
         <AccountAssetTable
           amountTitle="Balance"
-          assets={Object.values(data.coinBalancesMap)
-            .filter((cb) => !cb.balance.eq(0))
-            .map((cb) => ({
-              isBalance: true,
-              coinType: cb.coinType,
-              mintDecimals: cb.mintDecimals,
-              price: cb.price as BigNumber,
-              symbol: cb.symbol,
-              iconUrl: cb.iconUrl,
-              amount: cb.balance,
-              amountUsd: cb.balance.times(cb.price as BigNumber),
-              reserve: data.lendingMarket.reserves.find(
-                (r) => r.coinType === cb.coinType,
-              ) as ParsedReserve,
-            }))}
+          assets={Object.entries(balancesCoinMetadataMap ?? {})
+            .filter(([coinType]) => coinTypes.includes(coinType))
+            .map(([coinType, coinMetadata]) => {
+              const reserve = data.reserveMap[coinType];
+              const price = reserve?.price ?? data.rewardPriceMap[coinType];
+
+              return {
+                isBalance: true,
+                reserve,
+                token: getToken(coinType, coinMetadata),
+                price,
+                amount: getBalance(coinType),
+                amountUsd:
+                  price !== undefined
+                    ? getBalance(coinType).times(price)
+                    : undefined,
+              };
+            })}
           noAssetsMessage="No assets"
         />
       </CardContent>

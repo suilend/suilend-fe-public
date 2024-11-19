@@ -1,17 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { CoinMetadata } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-import { isEqual } from "lodash";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  getCoinMetadataMap,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinPopover from "@/components/admin/CoinPopover";
@@ -20,7 +14,6 @@ import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { parseCoinBalances } from "@/lib/coinBalance";
 import { formatToken } from "@/lib/format";
 
 interface AddRewardDialogProps {
@@ -32,56 +25,20 @@ export default function AddRewardDialog({
   reserve,
   isDepositReward,
 }: AddRewardDialogProps) {
-  const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient, data, balancesCoinMetadataMap, getBalance, refresh } =
+    useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
-
-  // Coin metadata
-  const uniqueCoinTypes = useMemo(() => {
-    const coinTypes = data.coinBalancesRaw.map((cb) => cb.coinType);
-
-    return Array.from(new Set(coinTypes));
-  }, [data.coinBalancesRaw]);
-
-  const fetchingCoinTypesRef = useRef<string[] | undefined>(undefined);
-  const [coinMetadataMap, setCoinMetadataMap] = useState<
-    Record<string, CoinMetadata>
-  >({});
-  useEffect(() => {
-    (async () => {
-      const filteredCoinTypes = uniqueCoinTypes.filter(
-        (coinType) => !coinMetadataMap[coinType],
-      );
-      if (filteredCoinTypes.length === 0) return;
-
-      if (
-        fetchingCoinTypesRef.current !== undefined &&
-        !isEqual(filteredCoinTypes, fetchingCoinTypesRef.current)
-      )
-        return;
-
-      fetchingCoinTypesRef.current = filteredCoinTypes;
-      const result = await getCoinMetadataMap(suiClient, filteredCoinTypes);
-      setCoinMetadataMap(result);
-    })();
-  }, [uniqueCoinTypes, coinMetadataMap, suiClient]);
-
-  const coinBalancesMap = parseCoinBalances(
-    data.coinBalancesRaw,
-    uniqueCoinTypes,
-    undefined,
-    coinMetadataMap,
-  );
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const [coinType, setCoinType] = useState<string | undefined>(undefined);
-  const coin = useMemo(
-    () => (coinType !== undefined ? coinBalancesMap[coinType] : undefined),
-    [coinType, coinBalancesMap],
+  const coinMetadata = useMemo(
+    () =>
+      coinType !== undefined ? balancesCoinMetadataMap?.[coinType] : undefined,
+    [coinType, balancesCoinMetadataMap],
   );
 
   const [amount, setAmount] = useState<string>("");
@@ -105,10 +62,11 @@ export default function AddRewardDialog({
       toast.error("Select a coin");
       return;
     }
-    if (!coin) {
+    if (!coinMetadata) {
       toast.error("Invalid coin selected");
       return;
     }
+
     if (amount === "") {
       toast.error("Enter an amount");
       return;
@@ -133,7 +91,7 @@ export default function AddRewardDialog({
     const transaction = new Transaction();
 
     const rewardValue = new BigNumber(amount)
-      .times(10 ** coin.mintDecimals)
+      .times(10 ** coinMetadata.decimals)
       .toString();
 
     try {
@@ -204,15 +162,15 @@ export default function AddRewardDialog({
     >
       <Grid>
         <CoinPopover
-          coinBalancesMap={coinBalancesMap}
+          coinMetadataMap={balancesCoinMetadataMap}
           value={coinType}
           onChange={setCoinType}
         />
         <Input
           label="amount"
           labelRight={
-            coin
-              ? `Max: ${formatToken(coin.balance, { dp: coin.mintDecimals })}`
+            coinType && coinMetadata
+              ? `Max: ${formatToken(getBalance(coinType), { dp: coinMetadata.decimals })}`
               : undefined
           }
           id="amount"
@@ -220,7 +178,7 @@ export default function AddRewardDialog({
           value={amount}
           onChange={setAmount}
           inputProps={{ disabled: coinType === undefined }}
-          endDecorator={coin?.symbol}
+          endDecorator={coinMetadata?.symbol}
         />
         <Input
           label="startTimeMs"

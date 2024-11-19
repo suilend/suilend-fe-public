@@ -1,6 +1,9 @@
 import BigNumber from "bignumber.js";
 
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
+import {
+  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  Token,
+} from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
@@ -13,30 +16,26 @@ import { cn } from "@/lib/utils";
 
 interface AssetCellProps {
   isBalance?: boolean;
-  coinType: string;
-  price: BigNumber;
-  symbol: string;
-  iconUrl?: string | null;
-  reserve: ParsedReserve;
+  reserve?: ParsedReserve;
+  token: Token;
+  price?: BigNumber;
 }
 
 export default function AssetCell({
   isBalance,
-  coinType,
-  price,
-  symbol,
-  iconUrl,
   reserve,
+  token,
+  price,
 }: AssetCellProps) {
   const isTouchscreen = useIsTouchscreen();
 
   return (
     <div className="flex flex-row items-center gap-3">
-      <TokenLogo showTooltip token={{ coinType, symbol, iconUrl }} />
+      <TokenLogo showTooltip token={token} />
 
       <div className="flex flex-col gap-1">
         <div className="flex flex-row items-baseline gap-2">
-          <TBody>{symbol}</TBody>
+          <TBody>{token.symbol}</TBody>
 
           {isBalance && (
             <TextLink
@@ -44,7 +43,10 @@ export default function AssetCell({
                 "swapLink block shrink-0 text-xs uppercase text-muted-foreground no-underline opacity-0 hover:text-foreground focus:text-foreground focus:opacity-100",
                 isTouchscreen && "opacity-100",
               )}
-              href={getSwapUrl(symbol, symbol !== "USDC" ? "USDC" : "SUI")}
+              href={getSwapUrl(
+                reserve ? token.symbol : token.coinType,
+                token.symbol !== "USDC" ? "USDC" : "SUI",
+              )}
               isRelative
               noIcon
             >
@@ -53,10 +55,15 @@ export default function AssetCell({
           )}
         </div>
         <TLabel>
-          {reserve.priceIdentifier !==
-          COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]?.priceIdentifier
-            ? "--"
-            : formatPrice(price)}
+          {reserve
+            ? reserve.priceIdentifier !==
+              COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
+                ?.priceIdentifier
+              ? "--"
+              : formatPrice(reserve.price)
+            : price === undefined
+              ? "--"
+              : formatPrice(price)}
         </TLabel>
       </div>
     </div>

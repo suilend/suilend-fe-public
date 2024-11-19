@@ -22,7 +22,7 @@ import {
 } from "@/lib/actions";
 
 export default function ActionsModal() {
-  const { data, obligation } = useLoadedAppContext();
+  const { data, getBalance, obligation } = useLoadedAppContext();
   const {
     reserveSymbol,
     selectedTab,
@@ -58,8 +58,7 @@ export default function ActionsModal() {
   const tabConfig = useMemo(() => {
     if (reserve === undefined) return undefined;
 
-    const coinBalanceForReserve =
-      data.coinBalancesMap[reserve.coinType]?.balance ?? new BigNumber(0);
+    const coinBalanceForReserve = getBalance(reserve.coinType);
 
     if (selectedTab === Tab.DEPOSIT) {
       const getNewCalculations = (value: string) => {
@@ -300,8 +299,9 @@ export default function ActionsModal() {
       };
     }
   }, [
-    selectedTab,
     reserve,
+    getBalance,
+    selectedTab,
     data,
     obligation,
     deposit,

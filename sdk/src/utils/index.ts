@@ -16,9 +16,15 @@ export const reserveSort = (
   reserves: ParsedReserve[],
   aCoinType: string,
   bCoinType: string,
-) =>
-  reserves.findIndex((r) => r.coinType === aCoinType) -
-  reserves.findIndex((r) => r.coinType === bCoinType);
+) => {
+  const aReserveIndex = reserves.findIndex((r) => r.coinType === aCoinType);
+  const bReserveIndex = reserves.findIndex((r) => r.coinType === bCoinType);
+
+  if (aReserveIndex > -1 && bReserveIndex > -1)
+    return aReserveIndex - bReserveIndex;
+  else if (aReserveIndex === -1 && bReserveIndex === -1) return 0;
+  else return aReserveIndex > -1 ? -1 : 1;
+};
 
 export const linearlyInterpolate = (
   array: any[],

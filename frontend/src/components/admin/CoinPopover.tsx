@@ -1,26 +1,29 @@
 import { useState } from "react";
 
+import { CoinMetadata } from "@mysten/sui/client";
 import { ChevronsUpDown } from "lucide-react";
 
 import Button from "@/components/shared/Button";
 import Popover from "@/components/shared/Popover";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
-import { ParsedCoinBalance } from "@/lib/coinBalance";
-import { formatToken } from "@/lib/format";
+import { useLoadedAppContext } from "@/contexts/AppContext";
+import { formatToken, formatType } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface CoinPopoverProps {
-  coinBalancesMap: Record<string, ParsedCoinBalance>;
+  coinMetadataMap?: Record<string, CoinMetadata>;
   value: string | undefined;
   onChange: (coinType: string) => void;
 }
 
 export default function CoinPopover({
-  coinBalancesMap,
+  coinMetadataMap,
   value,
   onChange,
 }: CoinPopoverProps) {
+  const { getBalance } = useLoadedAppContext();
+
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
@@ -31,7 +34,7 @@ export default function CoinPopover({
 
   return (
     <Popover
-      label="coin"
+      label={value ? `coin (${formatType(value)})` : "coin"}
       id="coin"
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
@@ -40,18 +43,18 @@ export default function CoinPopover({
           endIcon={<ChevronsUpDown className="h-4 w-4" />}
           variant="secondary"
         >
-          {value !== undefined && coinBalancesMap[value] ? (
-            <div className="flex flex-row items-center gap-2">
+          {value !== undefined && coinMetadataMap?.[value] ? (
+            <div className="flex min-w-0 flex-row items-center gap-2">
               <TokenLogo
-                className="h-4 w-4"
+                className="h-4 w-4 shrink-0"
                 token={{
                   coinType: value,
-                  symbol: coinBalancesMap[value].symbol,
-                  iconUrl: coinBalancesMap[value].iconUrl,
+                  symbol: coinMetadataMap[value].symbol,
+                  iconUrl: coinMetadataMap[value].iconUrl,
                 }}
               />
-              <TBody className="text-inherit">
-                {coinBalancesMap[value].symbol}
+              <TBody className="overflow-hidden text-ellipsis text-nowrap text-inherit">
+                {coinMetadataMap[value].symbol}
               </TBody>
             </div>
           ) : value !== undefined ? (
@@ -71,34 +74,37 @@ export default function CoinPopover({
         },
       }}
     >
-      {Object.values(coinBalancesMap).map((cb) => {
-        const isSelected = value === cb.coinType;
+      {Object.entries(coinMetadataMap ?? {}).map(([coinType, coinMetadata]) => {
+        const isSelected = value === coinType;
 
         return (
           <button
-            key={cb.coinType}
+            key={coinType}
             className={cn(
               "flex w-full flex-row items-center justify-between px-3 py-2",
               isSelected
                 ? "bg-muted/10"
                 : "transition-colors hover:bg-muted/10",
             )}
-            onClick={() => onChangeWrapper(cb.coinType)}
+            onClick={() => onChangeWrapper(coinType)}
           >
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex min-w-0 flex-row items-center gap-2">
               <TokenLogo
-                className="h-4 w-4"
+                className="h-4 w-4 shrink-0"
                 token={{
-                  coinType: cb.coinType,
-                  symbol: cb.symbol,
-                  iconUrl: cb.iconUrl,
+                  coinType: coinType,
+                  symbol: coinMetadata.symbol,
+                  iconUrl: coinMetadata.iconUrl,
                 }}
               />
-              <TBody>{cb.symbol}</TBody>
+              <TBody className="overflow-hidden text-ellipsis text-nowrap">
+                {coinMetadata.symbol}
+              </TBody>
             </div>
 
-            <TBody className="text-xs">
-              {formatToken(cb.balance, { exact: false })} {cb.symbol}
+            <TBody className="overflow-hidden text-ellipsis text-nowrap text-xs">
+              {formatToken(getBalance(coinType), { exact: false })}{" "}
+              {coinMetadata.symbol}
             </TBody>
           </button>
         );

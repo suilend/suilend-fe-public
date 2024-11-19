@@ -91,7 +91,7 @@ export default function ActionsModalTabContent({
 }: ActionsModalTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { data, refresh, obligation } = useLoadedAppContext();
+  const { getBalance, refresh, obligation } = useLoadedAppContext();
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =
     useActionsModalContext();
@@ -139,8 +139,7 @@ export default function ActionsModalTabContent({
   }, [justDeposited, obligation, setIsFirstDepositDialogOpen]);
 
   // Balance
-  const balance =
-    data.coinBalancesMap[reserve.coinType]?.balance ?? new BigNumber(0);
+  const balance = getBalance(reserve.coinType);
 
   // Position
   const depositPosition = obligation?.deposits?.find(

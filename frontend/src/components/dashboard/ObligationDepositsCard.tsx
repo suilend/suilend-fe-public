@@ -18,14 +18,11 @@ export default function ObligationDepositsCard() {
       <CardContent className="p-0">
         <AccountAssetTable
           assets={obligation.deposits.map((d) => ({
-            coinType: d.coinType,
-            mintDecimals: d.reserve.mintDecimals,
+            reserve: d.reserve,
+            token: d.reserve.token,
             price: d.reserve.price,
-            symbol: d.reserve.symbol,
-            iconUrl: d.reserve.iconUrl,
             amount: d.depositedAmount,
             amountUsd: d.depositedAmountUsd,
-            reserve: d.reserve,
           }))}
           noAssetsMessage="No deposits"
         />

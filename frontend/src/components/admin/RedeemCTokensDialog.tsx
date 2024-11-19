@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
@@ -17,10 +17,15 @@ import { formatToken } from "@/lib/format";
 
 export default function RedeemCTokensDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient, data, balancesCoinMetadataMap, getBalance, refresh } =
+    useLoadedAppContext();
 
-  const ctokenCoinBalances = data.coinBalancesRaw.filter(
-    (cb) => isCTokenCoinType(cb.coinType) && +cb.totalBalance > 0,
+  const coinTypes = useMemo(
+    () =>
+      Object.keys(balancesCoinMetadataMap ?? {}).filter(
+        (coinType) => getBalance(coinType).gt(0) && isCTokenCoinType(coinType),
+      ),
+    [balancesCoinMetadataMap, getBalance],
   );
 
   // State
@@ -43,7 +48,7 @@ export default function RedeemCTokensDialog() {
     try {
       await suilendClient.redeemCtokensAndWithdrawLiquidity(
         address,
-        ctokenCoinBalances.map((cb) => cb.coinType),
+        coinTypes,
         transaction,
       );
 
@@ -82,7 +87,7 @@ export default function RedeemCTokensDialog() {
             labelClassName="uppercase"
             size="lg"
             onClick={submit}
-            disabled={ctokenCoinBalances.length === 0}
+            disabled={coinTypes.length === 0}
           >
             Redeem
           </Button>
@@ -90,34 +95,26 @@ export default function RedeemCTokensDialog() {
       }
     >
       <div className="flex w-full flex-col gap-2">
-        {ctokenCoinBalances.length > 0 ? (
-          ctokenCoinBalances.map((cb) => {
-            const coinType = extractCTokenCoinType(cb.coinType);
+        {coinTypes.length > 0 ? (
+          coinTypes.map((ctokenCoinType) => {
             const reserve = data.lendingMarket.reserves.find(
-              (r) => r.coinType === coinType,
+              (r) => r.coinType === extractCTokenCoinType(ctokenCoinType),
             );
             if (!reserve) return null;
 
             return (
               <div
-                key={cb.coinType}
+                key={ctokenCoinType}
                 className="flex flex-row items-center justify-between gap-2"
               >
                 <div className="flex flex-row items-center gap-2">
-                  <TokenLogo
-                    className="h-4 w-4"
-                    token={{
-                      coinType: reserve.coinType,
-                      symbol: reserve.symbol,
-                      iconUrl: reserve.iconUrl,
-                    }}
-                  />
-                  <TBody>{reserve.symbol}</TBody>
+                  <TokenLogo className="h-4 w-4" token={reserve.token} />
+                  <TBody>{reserve.token.symbol}</TBody>
                 </div>
 
                 <TBody>
                   {formatToken(
-                    new BigNumber(cb.totalBalance).div(
+                    new BigNumber(getBalance(ctokenCoinType)).div(
                       10 ** reserve.mintDecimals,
                     ),
                     { dp: reserve.mintDecimals },

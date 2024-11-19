@@ -1,5 +1,3 @@
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-
 import { ReservesRowData } from "@/components/dashboard/MarketTable";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
@@ -7,7 +5,7 @@ import { formatToken, formatUsd } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface TotalCellProps {
-  symbol: ReservesRowData["symbol"];
+  token: ReservesRowData["token"];
   total: ReservesRowData["depositedAmount"] | ReservesRowData["borrowedAmount"];
   totalUsd:
     | ReservesRowData["depositedAmountUsd"]
@@ -15,15 +13,13 @@ interface TotalCellProps {
   tooltip?:
     | ReservesRowData["depositedAmountTooltip"]
     | ReservesRowData["borrowedAmountTooltip"];
-  reserve: ParsedReserve;
   horizontal?: boolean;
 }
 export default function TotalCell({
-  symbol,
+  token,
   total,
   totalUsd,
   tooltip,
-  reserve,
   horizontal,
 }: TotalCellProps) {
   return (
@@ -36,7 +32,7 @@ export default function TotalCell({
       <Tooltip
         title={
           tooltip ??
-          `${formatToken(total, { dp: reserve.mintDecimals })} ${symbol}`
+          `${formatToken(total, { dp: token.decimals })} ${token.symbol}`
         }
       >
         <TBody
@@ -49,7 +45,7 @@ export default function TotalCell({
               ),
           )}
         >
-          {formatToken(total, { exact: false })} {symbol}
+          {formatToken(total, { exact: false })} {token.symbol}
         </TBody>
       </Tooltip>
       <Tooltip title={formatUsd(totalUsd, { exact: true })}>

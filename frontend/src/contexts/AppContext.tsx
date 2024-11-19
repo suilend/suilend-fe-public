@@ -6,11 +6,13 @@ import {
   useMemo,
 } from "react";
 
-import { CoinBalance, CoinMetadata } from "@mysten/sui/client";
+import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
 import { RewardMap, useWalletContext } from "@suilend/frontend-sui";
+import useFetchBalances from "@suilend/frontend-sui/fetchers/useFetchBalances";
+import useCoinMetadataMap from "@suilend/frontend-sui/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/frontend-sui/hooks/useRefreshOnBalancesChange";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -19,7 +21,6 @@ import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
-import { ParsedCoinBalance } from "@/lib/coinBalance";
 
 export interface AppData {
   suilendClient: SuilendClient;
@@ -27,12 +28,16 @@ export interface AppData {
   lendingMarket: ParsedLendingMarket;
   lendingMarketOwnerCapId: string | undefined;
   reserveMap: Record<string, ParsedReserve>;
+  rewardMap: RewardMap;
+
   obligationOwnerCaps: ObligationOwnerCap<string>[] | undefined;
   obligations: ParsedObligation[] | undefined;
-  coinBalancesMap: Record<string, ParsedCoinBalance>;
+
+  reserveCoinTypes: string[];
+  rewardCoinTypes: string[];
+
   coinMetadataMap: Record<string, CoinMetadata>;
-  rewardMap: RewardMap;
-  coinBalancesRaw: CoinBalance[];
+  rewardPriceMap: Record<string, BigNumber | undefined>;
 
   lstAprPercentMap: Record<string, BigNumber>;
 }
@@ -40,6 +45,8 @@ export interface AppData {
 interface AppContext {
   suilendClient: SuilendClient | undefined;
   data: AppData | undefined;
+  balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
+  getBalance: (coinType: string) => BigNumber;
   refresh: () => Promise<void>;
 
   obligation: ParsedObligation | undefined;
@@ -54,6 +61,10 @@ type LoadedAppContext = AppContext & {
 const AppContext = createContext<AppContext>({
   suilendClient: undefined,
   data: undefined,
+  balancesCoinMetadataMap: undefined,
+  getBalance: () => {
+    throw Error("AppContextProvider not initialized");
+  },
   refresh: async () => {
     throw Error("AppContextProvider not initialized");
   },
@@ -74,10 +85,35 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // App data
   const { data: appData, mutateData: mutateAppData } = useFetchAppData(address);
 
+  // Balances
+  const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
+    useFetchBalances();
+
+  const balancesCoinTypes = useMemo(
+    () => Object.keys(rawBalancesMap ?? {}),
+    [rawBalancesMap],
+  );
+  const balancesCoinMetadataMap = useCoinMetadataMap(balancesCoinTypes);
+
+  const getBalance = useCallback(
+    (coinType: string) => {
+      if (rawBalancesMap?.[coinType] === undefined) return new BigNumber(0);
+
+      const coinMetadata = balancesCoinMetadataMap?.[coinType];
+      if (!coinMetadata) return new BigNumber(0);
+
+      return new BigNumber(rawBalancesMap[coinType]).div(
+        10 ** coinMetadata.decimals,
+      );
+    },
+    [rawBalancesMap, balancesCoinMetadataMap],
+  );
+
   // Refresh
   const refresh = useCallback(async () => {
     await mutateAppData();
-  }, [mutateAppData]);
+    await mutateRawBalancesMap();
+  }, [mutateAppData, mutateRawBalancesMap]);
 
   useRefreshOnBalancesChange(refresh);
 
@@ -106,13 +142,23 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     () => ({
       suilendClient: appData?.suilendClient,
       data: appData,
+      balancesCoinMetadataMap,
+      getBalance,
       refresh,
 
       obligation,
       obligationOwnerCap,
       setObligationId,
     }),
-    [appData, refresh, obligation, obligationOwnerCap, setObligationId],
+    [
+      appData,
+      balancesCoinMetadataMap,
+      getBalance,
+      refresh,
+      obligation,
+      obligationOwnerCap,
+      setObligationId,
+    ],
   );
 
   return (

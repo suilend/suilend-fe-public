@@ -61,7 +61,6 @@ import {
   getSubmitButtonNoValueState,
   getSubmitButtonState,
 } from "@/lib/actions";
-import { ParsedCoinBalance } from "@/lib/coinBalance";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
@@ -87,24 +86,24 @@ type HistoricalUsdPriceData = {
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh, obligation, obligationOwnerCap } =
-    useLoadedAppContext();
+  const {
+    suilendClient,
+    data,
+    getBalance,
+    refresh,
+    obligation,
+    obligationOwnerCap,
+  } = useLoadedAppContext();
 
   const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
   const aftermathSdk = restSwapContext.aftermathSdk as Aftermath;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
-  const coinBalancesMap = restSwapContext.coinBalancesMap as Record<
-    string,
-    ParsedCoinBalance
-  >;
 
   // Balances
-  const suiBalance =
-    coinBalancesMap[NORMALIZED_SUI_COINTYPE]?.balance ?? new BigNumber(0);
-  const tokenInBalance =
-    coinBalancesMap[tokenIn.coinType]?.balance ?? new BigNumber(0);
+  const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
+  const tokenInBalance = getBalance(tokenIn.coinType);
 
   // Positions
   const tokenOutDepositPosition = obligation?.deposits?.find(

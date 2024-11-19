@@ -10,7 +10,6 @@ import {
   useState,
 } from "react";
 
-import { CoinMetadata } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import {
   Aftermath,
@@ -26,7 +25,6 @@ import {
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { ParsedCoinBalance, parseCoinBalances } from "@/lib/coinBalance";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
@@ -65,7 +63,6 @@ interface SwapContext {
   tokenOut?: SwapToken;
   setTokenSymbol: (newTokenSymbol: string, direction: TokenDirection) => void;
   reverseTokenSymbols: () => void;
-  coinBalancesMap?: Record<string, ParsedCoinBalance>;
 }
 
 const defaultContextValue: SwapContext = {
@@ -82,7 +79,6 @@ const defaultContextValue: SwapContext = {
   reverseTokenSymbols: () => {
     throw Error("SwapContextProvider not initialized");
   },
-  coinBalancesMap: undefined,
 };
 
 const SwapContext = createContext<SwapContext>(defaultContextValue);
@@ -94,7 +90,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const { data } = useLoadedAppContext();
+  const { data, balancesCoinMetadataMap } = useLoadedAppContext();
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {
@@ -118,15 +114,20 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         ).map(normalizeStructTag);
 
         const coinTypesMissingMetadata = verifiedCoinTypes.filter(
-          (coinType) => !Object.keys(data.coinMetadataMap).includes(coinType),
+          (coinType) =>
+            !Object.keys({
+              ...data.coinMetadataMap,
+              ...(balancesCoinMetadataMap ?? {}),
+            }).includes(coinType),
         );
         const coinMetadataMap = await getCoinMetadataMap(
           suiClient,
           coinTypesMissingMetadata,
         );
         const mergedCoinMetadataMap = {
-          ...coinMetadataMap,
           ...data.coinMetadataMap,
+          ...(balancesCoinMetadataMap ?? {}),
+          ...coinMetadataMap,
         };
 
         const result = verifiedCoinTypes
@@ -153,7 +154,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     })();
-  }, [aftermathSdk, data.coinMetadataMap, suiClient]);
+  }, [aftermathSdk, data.coinMetadataMap, balancesCoinMetadataMap, suiClient]);
 
   const fetchingTokensMetadataRef = useRef<string[]>([]);
   const fetchTokensMetadata = useCallback(
@@ -175,15 +176,20 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       try {
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
-          (coinType) => !Object.keys(data.coinMetadataMap).includes(coinType),
+          (coinType) =>
+            !Object.keys({
+              ...data.coinMetadataMap,
+              ...(balancesCoinMetadataMap ?? {}),
+            }).includes(coinType),
         );
         const coinMetadataMap = await getCoinMetadataMap(
           suiClient,
           coinTypesMissingMetadata,
         );
         const mergedCoinMetadataMap = {
-          ...coinMetadataMap,
           ...data.coinMetadataMap,
+          ...(balancesCoinMetadataMap ?? {}),
+          ...coinMetadataMap,
         };
 
         const result = filteredCoinTypes
@@ -210,25 +216,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, data.coinMetadataMap, suiClient],
+    [tokens, data.coinMetadataMap, balancesCoinMetadataMap, suiClient],
   );
-
-  useEffect(() => {
-    fetchTokensMetadata(
-      data.lendingMarket.reserves.map((reserve) => reserve.coinType),
-    );
-    fetchTokensMetadata(
-      data.coinBalancesRaw
-        .filter(
-          (cb) =>
-            +cb.totalBalance > 0 &&
-            !data.lendingMarket.reserves.find(
-              (r) => r.coinType === cb.coinType,
-            ),
-        )
-        .map((cb) => cb.coinType),
-    );
-  }, [fetchTokensMetadata, data.lendingMarket.reserves, data.coinBalancesRaw]);
 
   // Selected tokens
   const [tokenInSymbol, tokenOutSymbol] =
@@ -299,32 +288,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     );
   }, [tokenInSymbol, tokenOutSymbol, router]);
 
-  // Balances
-  const coinBalancesMap = useMemo(() => {
-    if (!tokens) return undefined;
-    const coinMetadataMap = tokens.reduce(
-      (acc, t) => ({
-        ...acc,
-        [t.coinType]: {
-          decimals: t.decimals,
-          description: "",
-          iconUrl: t.iconUrl,
-          id: "",
-          name: t.name,
-          symbol: t.symbol,
-        } as CoinMetadata,
-      }),
-      {},
-    ) as Record<string, CoinMetadata>;
-
-    return parseCoinBalances(
-      data.coinBalancesRaw,
-      Object.keys(coinMetadataMap),
-      undefined,
-      coinMetadataMap,
-    );
-  }, [tokens, data.coinBalancesRaw]);
-
   // Context
   const contextValue: SwapContext = useMemo(
     () => ({
@@ -335,7 +298,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       tokenOut,
       setTokenSymbol,
       reverseTokenSymbols,
-      coinBalancesMap,
     }),
     [
       aftermathSdk,
@@ -345,7 +307,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       tokenOut,
       setTokenSymbol,
       reverseTokenSymbols,
-      coinBalancesMap,
     ],
   );
 

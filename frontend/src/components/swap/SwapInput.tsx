@@ -10,8 +10,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
-import { useSwapContext } from "@/contexts/SwapContext";
-import { ParsedCoinBalance } from "@/lib/coinBalance";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -47,16 +46,11 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     },
     ref,
   ) => {
+    const { getBalance } = useLoadedAppContext();
+
     const isTouchscreen = useIsTouchscreen();
 
-    const swapContext = useSwapContext();
-    const coinBalancesMap = swapContext.coinBalancesMap as Record<
-      string,
-      ParsedCoinBalance
-    >;
-
-    const tokenBalance =
-      coinBalancesMap[token.coinType]?.balance ?? new BigNumber(0);
+    const tokenBalance = getBalance(token.coinType);
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);

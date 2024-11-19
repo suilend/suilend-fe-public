@@ -1,32 +1,27 @@
 import TotalCell from "@/components/dashboard/market-table/TotalCell";
 import { ReservesRowData } from "@/components/dashboard/MarketTable";
 
-type TotalDepositsCellProps = Pick<
-  ReservesRowData,
-  | "symbol"
-  | "depositedAmount"
-  | "depositedAmountUsd"
-  | "depositedAmountTooltip"
-  | "reserve"
-> & {
+interface TotalDepositsCellProps {
+  token: ReservesRowData["token"];
+  depositedAmount: ReservesRowData["depositedAmount"];
+  depositedAmountUsd: ReservesRowData["depositedAmountUsd"];
+  depositedAmountTooltip: ReservesRowData["depositedAmountTooltip"];
   horizontal?: boolean;
-};
+}
 
 export default function TotalDepositsCell({
-  symbol,
+  token,
   depositedAmount,
   depositedAmountUsd,
   depositedAmountTooltip,
-  reserve,
   horizontal,
 }: TotalDepositsCellProps) {
   return (
     <TotalCell
-      symbol={symbol}
+      token={token}
       total={depositedAmount}
       totalUsd={depositedAmountUsd}
       tooltip={depositedAmountTooltip}
-      reserve={reserve}
       horizontal={horizontal}
     />
   );
