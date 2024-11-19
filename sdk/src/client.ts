@@ -2,6 +2,7 @@ import { CoinStruct, SuiClient } from "@mysten/sui/client";
 import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
+  SUI_SYSTEM_STATE_OBJECT_ID,
   fromBase64,
   normalizeStructTag,
   toHex,
@@ -18,6 +19,7 @@ import {
   addPoolReward,
   addReserve,
   borrow,
+  borrowRequest,
   cancelPoolReward,
   changeReservePriceFeed,
   claimFees,
@@ -26,12 +28,14 @@ import {
   closePoolReward,
   depositCtokensIntoObligation,
   depositLiquidityAndMintCtokens,
+  fulfillLiquidityRequest,
   liquidate,
   migrate,
   newObligationOwnerCap,
   redeemCtokensAndWithdrawLiquidity,
   refreshReservePrice,
   repay,
+  unstakeSuiFromStaker,
   updateRateLimiterConfig,
   updateReserveConfig,
   withdrawCtokens,
@@ -866,8 +870,8 @@ export class SuilendClient {
       arguments: [],
     });
 
-    return transaction.moveCall({
-      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity`,
+    const [liquidityRequest] = transaction.moveCall({
+      target: `${PUBLISHED_AT}::lending_market::redeem_ctokens_and_withdraw_liquidity_request`,
       typeArguments: [this.lendingMarket.$typeArgs[0], coinType],
       arguments: [
         transaction.object(this.lendingMarket.id),
@@ -877,6 +881,29 @@ export class SuilendClient {
         exemption,
       ],
     });
+
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async withdrawAndSendToUser(
@@ -916,7 +943,7 @@ export class SuilendClient {
       obligation,
       this.findReserveArrayIndex(coinType),
     );
-    const result = borrow(
+    const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
       {
@@ -930,7 +957,28 @@ export class SuilendClient {
       },
     );
 
-    return result;
+    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+      unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
+
+    return fulfillLiquidityRequest(
+      transaction,
+      [this.lendingMarket.$typeArgs[0], coinType],
+      {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        liquidityRequest,
+      },
+    );
   }
 
   async borrowAndSendToUser(

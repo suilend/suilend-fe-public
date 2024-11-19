@@ -7,12 +7,15 @@ import * as obligation from "./obligation/structs";
 import * as rateLimiter from "./rate-limiter/structs";
 import * as reserveConfig from "./reserve-config/structs";
 import * as reserve from "./reserve/structs";
+import * as staker from "./staker/structs";
 import * as suilend from "./suilend/structs";
 import { StructClassLoader } from "../_framework/loader";
 
 export function registerClasses(loader: StructClassLoader) {
   loader.register(suilend.MAIN_POOL);
   loader.register(cell.Cell);
+  loader.register(staker.STAKER);
+  loader.register(staker.Staker);
   loader.register(decimal.Decimal);
   loader.register(reserveConfig.ReserveConfig);
   loader.register(reserveConfig.ReserveConfigBuilder);
@@ -24,9 +27,12 @@ export function registerClasses(loader: StructClassLoader) {
   loader.register(reserve.BalanceKey);
   loader.register(reserve.Balances);
   loader.register(reserve.CToken);
+  loader.register(reserve.ClaimStakingRewardsEvent);
   loader.register(reserve.InterestUpdateEvent);
+  loader.register(reserve.LiquidityRequest);
   loader.register(reserve.Reserve);
   loader.register(reserve.ReserveAssetDataEvent);
+  loader.register(reserve.StakerKey);
   loader.register(rateLimiter.RateLimiter);
   loader.register(rateLimiter.RateLimiterConfig);
   loader.register(obligation.Borrow);
@@ -35,6 +41,8 @@ export function registerClasses(loader: StructClassLoader) {
   loader.register(obligation.DepositRecord);
   loader.register(obligation.Obligation);
   loader.register(obligation.ObligationDataEvent);
+  loader.register(lendingMarket.MintEvent);
+  loader.register(lendingMarket.RedeemEvent);
   loader.register(lendingMarket.BorrowEvent);
   loader.register(lendingMarket.ClaimRewardEvent);
   loader.register(lendingMarket.DepositEvent);
@@ -43,10 +51,8 @@ export function registerClasses(loader: StructClassLoader) {
   loader.register(lendingMarket.LendingMarket);
   loader.register(lendingMarket.LendingMarketOwnerCap);
   loader.register(lendingMarket.LiquidateEvent);
-  loader.register(lendingMarket.MintEvent);
   loader.register(lendingMarket.ObligationOwnerCap);
   loader.register(lendingMarket.RateLimiterExemption);
-  loader.register(lendingMarket.RedeemEvent);
   loader.register(lendingMarket.RepayEvent);
   loader.register(lendingMarket.WithdrawEvent);
   loader.register(lendingMarketRegistry.LENDING_MARKET_2);
