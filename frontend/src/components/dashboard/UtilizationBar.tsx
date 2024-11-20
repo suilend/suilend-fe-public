@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react";
+import { CSSProperties } from "react";
 
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";

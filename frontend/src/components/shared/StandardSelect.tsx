@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { ClassValue } from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";

@@ -750,7 +750,7 @@ function Page() {
       if (isDepositing) {
         if (!outputCoin) throw new Error("Missing coin to deposit");
 
-        await suilendClient.depositCoin(
+        suilendClient.depositCoin(
           address,
           outputCoin,
           tokenOutReserve.coinType,
