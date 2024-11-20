@@ -477,22 +477,11 @@ export class SuilendClient {
         this.findReserveArrayIndex(rewardCoinType);
 
       if (!isDepositing || Number(depositReserveArrayIndex) === -1) {
-        console.log(
-          "XXX transferring:",
-          rewardCoinType,
-          depositReserveArrayIndex,
-        );
         transaction.transferObjects(
           [mergeCoin],
           transaction.pure.address(ownerId),
         );
       } else {
-        console.log(
-          "XXX depositing:",
-          rewardCoinType,
-          depositReserveArrayIndex,
-        );
-
         this.depositCoin(
           ownerId,
           mergeCoin,
