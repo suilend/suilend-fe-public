@@ -79,7 +79,7 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
           ) : undefined
         }
       >
-        <TBody className="uppercase">
+        <TBody>
           {amount === undefined
             ? "N/A"
             : isSendPoints(token.coinType)

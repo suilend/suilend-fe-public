@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
-import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
-import { extractCTokenCoinType, isCTokenCoinType } from "@suilend/sdk/utils";
+import { getToken, useWalletContext } from "@suilend/frontend-sui";
+import { isCTokenCoinType } from "@suilend/sdk/utils";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
@@ -17,7 +16,7 @@ import { formatToken } from "@/lib/format";
 
 export default function RedeemCTokensDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, balancesCoinMetadataMap, getBalance, refresh } =
+  const { suilendClient, balancesCoinMetadataMap, getBalance, refresh } =
     useLoadedAppContext();
 
   const coinTypes = useMemo(
@@ -96,29 +95,27 @@ export default function RedeemCTokensDialog() {
     >
       <div className="flex w-full flex-col gap-2">
         {coinTypes.length > 0 ? (
-          coinTypes.map((ctokenCoinType) => {
-            const reserve = data.lendingMarket.reserves.find(
-              (r) => r.coinType === extractCTokenCoinType(ctokenCoinType),
-            );
-            if (!reserve) return null;
+          coinTypes.map((coinType) => {
+            const coinMetadata = balancesCoinMetadataMap?.[coinType];
 
+            if (!coinMetadata) return null;
             return (
               <div
-                key={ctokenCoinType}
+                key={coinType}
                 className="flex flex-row items-center justify-between gap-2"
               >
                 <div className="flex flex-row items-center gap-2">
-                  <TokenLogo className="h-4 w-4" token={reserve.token} />
-                  <TBody>{reserve.token.symbol}</TBody>
+                  <TokenLogo
+                    className="h-4 w-4"
+                    token={getToken(coinType, coinMetadata)}
+                  />
+                  <TBody>{coinMetadata.symbol}</TBody>
                 </div>
 
                 <TBody>
-                  {formatToken(
-                    new BigNumber(getBalance(ctokenCoinType)).div(
-                      10 ** reserve.mintDecimals,
-                    ),
-                    { dp: reserve.mintDecimals },
-                  )}
+                  {formatToken(getBalance(coinType), {
+                    dp: coinMetadata.decimals,
+                  })}
                 </TBody>
               </div>
             );

@@ -70,7 +70,6 @@ export default function CoinPopover({
           "border-secondary/25 p-0 overflow-y-auto flex flex-col gap-px",
         style: {
           width: "var(--radix-popover-trigger-width)",
-          maxHeight: "var(--radix-popover-content-available-height)",
         },
       }}
     >

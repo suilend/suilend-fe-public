@@ -1,31 +1,25 @@
 import NextLink from "next/link";
-import React, { useState } from "react";
 
 import BigNumber from "bignumber.js";
-import { toast } from "sonner";
 
 import {
   RewardSummary,
   isSendPoints,
-  useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui";
 
 import Card from "@/components/dashboard/Card";
+import ClaimRewardsPopover from "@/components/dashboard/ClaimRewardsPopover";
 import PointsCount from "@/components/points/PointsCount";
 import PointsRank from "@/components/points/PointsRank";
 import Button from "@/components/shared/Button";
-import Spinner from "@/components/shared/Spinner";
-import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useDashboardContext } from "@/contexts/DashboardContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { POINTS_URL } from "@/lib/navigation";
@@ -34,10 +28,10 @@ import { cn } from "@/lib/utils";
 
 interface ClaimableRewardProps {
   coinType: string;
-  claimableRewards: BigNumber;
+  amount: BigNumber;
 }
 
-function ClaimableReward({ coinType, claimableRewards }: ClaimableRewardProps) {
+function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
   const { data } = useLoadedAppContext();
 
   const coinMetadata = data.coinMetadataMap[coinType];
@@ -53,13 +47,12 @@ function ClaimableReward({ coinType, claimableRewards }: ClaimableRewardProps) {
         }}
       />
       <Tooltip
-        title={`${formatToken(claimableRewards, {
+        title={`${formatToken(amount, {
           dp: coinMetadata.decimals,
         })} ${coinMetadata.symbol}`}
       >
         <TBody>
-          {formatToken(claimableRewards, { exact: false })}{" "}
-          {coinMetadata.symbol}
+          {formatToken(amount, { exact: false })} {coinMetadata.symbol}
         </TBody>
       </Tooltip>
     </div>
@@ -82,15 +75,9 @@ function ClaimableRewards({
       </TLabelSans>
 
       <div className="flex flex-col gap-1">
-        {Object.entries(claimableRewardsMap).map(
-          ([coinType, claimableRewards]) => (
-            <ClaimableReward
-              key={coinType}
-              coinType={coinType}
-              claimableRewards={claimableRewards}
-            />
-          ),
-        )}
+        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
+        ))}
       </div>
     </div>
   );
@@ -151,12 +138,10 @@ function RankStat({ rank, isCentered }: RankStatProps) {
 }
 
 export default function RewardsCard() {
-  const { explorer } = useSettingsContext();
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
-  const { data, refresh, obligation } = useLoadedAppContext();
-
+  const { data, obligation } = useLoadedAppContext();
+  
   const { rank } = usePointsContext();
-  const { claimRewards } = useDashboardContext();
 
   const { md } = useBreakpoint();
 
@@ -168,15 +153,11 @@ export default function RewardsCard() {
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
         if (isSendPoints(r.stats.rewardCoinType)) return;
         if (!r.obligationClaims[obligation.id]) return;
-
-        const claimableRewards = Object.values(r.obligationClaims).reduce(
-          (acc, claim) => acc.plus(claim.claimableAmount),
-          new BigNumber(0),
-        );
-        if (claimableRewards.eq(0)) return;
+        if (r.obligationClaims[obligation.id].claimableAmount.eq(0)) return;
 
         const minAmount = 10 ** (-1 * r.stats.mintDecimals);
-        if (claimableRewards.lt(minAmount)) return;
+        if (r.obligationClaims[obligation.id].claimableAmount.lt(minAmount))
+          return;
 
         if (!rewardsMap[r.stats.rewardCoinType])
           rewardsMap[r.stats.rewardCoinType] = [];
@@ -193,41 +174,9 @@ export default function RewardsCard() {
     });
   }
 
-  const hasClaimableRewards =
-    Object.values(claimableRewardsMap).length > 0 &&
-    Object.values(claimableRewardsMap).some((claimableRewards) =>
-      claimableRewards.gt(0),
-    );
-
-  const [isClaiming, setIsClaiming] = useState<boolean>(false);
-
-  const onClaimRewardsClick = async () => {
-    if (isClaiming) return;
-
-    setIsClaiming(true);
-
-    try {
-      const res = await claimRewards(rewardsMap);
-      const txUrl = explorer.buildTxUrl(res.digest);
-
-      toast.success("Claimed rewards", {
-        action: (
-          <TextLink className="block" href={txUrl}>
-            View tx on {explorer.name}
-          </TextLink>
-        ),
-        duration: TX_TOAST_DURATION,
-      });
-    } catch (err) {
-      toast.error("Failed to claim rewards", {
-        description: (err as Error)?.message || "An unknown error occurred",
-        duration: TX_TOAST_DURATION,
-      });
-    } finally {
-      setIsClaiming(false);
-      await refresh();
-    }
-  };
+  const hasClaimableRewards = Object.values(claimableRewardsMap).some(
+    (amount) => amount.gt(0),
+  );
 
   // Points
   const pointsStats = getPointsStats(data.rewardMap, data.obligations);
@@ -291,13 +240,7 @@ export default function RewardsCard() {
 
               {hasClaimableRewards && (
                 <div className="flex-1 sm:flex-initial">
-                  <Button
-                    className="w-full sm:w-[134px]"
-                    labelClassName="uppercase"
-                    onClick={onClaimRewardsClick}
-                  >
-                    {isClaiming ? <Spinner size="sm" /> : "Claim rewards"}
-                  </Button>
+                  <ClaimRewardsPopover rewardsMap={rewardsMap} />
                 </div>
               )}
             </div>

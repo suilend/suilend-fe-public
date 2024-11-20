@@ -60,7 +60,7 @@ export const isCTokenCoinType = (coinType: string) =>
   coinType.includes("::reserve::CToken<") && coinType.endsWith(">");
 
 export const extractCTokenCoinType = (coinType: string) => {
-  if (!isCTokenCoinType(coinType)) throw new Error("Not a CToken ");
+  if (!isCTokenCoinType(coinType)) throw new Error("Not a CToken");
 
   return normalizeStructTag(
     coinType.split("::reserve::CToken")[1].split(",")[1].slice(0, -1),

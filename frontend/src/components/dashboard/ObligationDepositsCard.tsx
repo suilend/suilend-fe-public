@@ -17,6 +17,7 @@ export default function ObligationDepositsCard() {
     >
       <CardContent className="p-0">
         <AccountAssetTable
+          amountTitle="Deposits"
           assets={obligation.deposits.map((d) => ({
             reserve: d.reserve,
             token: d.reserve.token,

@@ -14,6 +14,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
 
 import { RewardSummary, useWalletContext } from "@suilend/frontend-sui";
+import { ClaimRewardsReward } from "@suilend/sdk";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -24,6 +25,7 @@ interface DashboardContext {
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
+    isDepositing: boolean,
   ) => Promise<SuiTransactionBlockResponse>;
 }
 
@@ -53,30 +55,40 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
   // Actions
   const claimRewards = useCallback(
-    async (rewardsMap: Record<string, RewardSummary[]>) => {
+    async (
+      rewardsMap: Record<string, RewardSummary[]>,
+      isDepositing: boolean,
+    ) => {
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
 
       const transaction = new Transaction();
       try {
-        suilendClient.claimRewardsAndSendToUser(
-          address,
-          Object.values(rewardsMap)
-            .flat()
-            .map((r) => {
-              const obligationClaim = r.obligationClaims[obligation.id];
+        const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
+          .flat()
+          .map((r) => ({
+            reserveArrayIndex:
+              r.obligationClaims[obligation.id].reserveArrayIndex,
+            rewardIndex: BigInt(r.stats.rewardIndex),
+            rewardCoinType: r.stats.rewardCoinType,
+            side: r.stats.side,
+          }));
 
-              return {
-                obligationOwnerCapId: obligationOwnerCap.id,
-                reserveArrayIndex: obligationClaim.reserveArrayIndex,
-                rewardIndex: BigInt(r.stats.rewardIndex),
-                rewardType: r.stats.rewardCoinType,
-                side: r.stats.side,
-              };
-            }),
-          transaction,
-        );
+        if (isDepositing)
+          suilendClient.claimRewardsAndDeposit(
+            address,
+            obligationOwnerCap.id,
+            rewards,
+            transaction,
+          );
+        else
+          suilendClient.claimRewardsAndSendToUser(
+            address,
+            obligationOwnerCap.id,
+            rewards,
+            transaction,
+          );
       } catch (err) {
         Sentry.captureException(err);
         console.error(err);

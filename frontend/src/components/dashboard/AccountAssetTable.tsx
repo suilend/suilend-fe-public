@@ -29,13 +29,13 @@ interface RowData {
 }
 
 interface AccountAssetTableProps {
-  amountTitle?: string;
+  amountTitle: string;
   assets: RowData[];
   noAssetsMessage: string;
 }
 
 export default function AccountAssetTable({
-  amountTitle = "Amount",
+  amountTitle,
   assets,
   noAssetsMessage,
 }: AccountAssetTableProps) {
@@ -53,7 +53,7 @@ export default function AccountAssetTable({
       },
       {
         accessorKey: "amount",
-        sortingFn: decimalSortingFn("amount"),
+        sortingFn: decimalSortingFn("amountUsd"),
         header: ({ column }) =>
           tableHeader(column, amountTitle, { isNumerical: true }),
         cell: ({ row }) => {
