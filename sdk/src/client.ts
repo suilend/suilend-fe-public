@@ -653,8 +653,6 @@ export class SuilendClient {
       if (stalenessSeconds > 20) {
         const reserve =
           this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
-        console.log("price info reserve name", reserve.coinType.name);
-        console.log("price info time diff seconds", stalenessSeconds);
 
         stalePriceIdentifiers.push(priceIdentifiers[i]);
       }
