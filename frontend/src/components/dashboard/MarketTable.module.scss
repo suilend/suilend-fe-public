@@ -3,5 +3,9 @@
 
   &:hover {
     --bg-color: #0f1729; // background + 10% muted
+
+    a[class*="hoverLink"] {
+      opacity: 100;
+    }
   }
 }
