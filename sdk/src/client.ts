@@ -19,7 +19,6 @@ import { PACKAGE_ID, PUBLISHED_AT } from "./_generated/suilend";
 import {
   addPoolReward,
   addReserve,
-  borrow,
   borrowRequest,
   cancelPoolReward,
   changeReservePriceFeed,
@@ -61,6 +60,8 @@ import { extractCTokenCoinType } from "./utils";
 
 const SUI_COINTYPE = "0x2::sui::SUI";
 const NORMALIZED_SUI_COINTYPE = normalizeStructTag(SUI_COINTYPE);
+const isSui = (coinType: string) =>
+  normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
 
 const WORMHOLE_STATE_ID =
   "0xaeab97f96cf9877fee2883315d459552b2b921edc16d7ceac6eab944dd88919c";
@@ -87,6 +88,13 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
 
   return (object.data?.content as any).fields.package;
 }
+
+export type ClaimRewardsReward = {
+  reserveArrayIndex: bigint;
+  rewardIndex: bigint;
+  rewardCoinType: string;
+  side: Side;
+};
 
 export class SuilendClient {
   lendingMarket: LendingMarket<string>;
@@ -309,9 +317,6 @@ export class SuilendClient {
     transaction: Transaction,
     mergeCoins: boolean = true,
   ) {
-    const isSui =
-      normalizeStructTag(rewardCoinType) === NORMALIZED_SUI_COINTYPE;
-
     const coins = (
       await this.client.getCoins({
         owner: ownerId,
@@ -327,7 +332,9 @@ export class SuilendClient {
     }
 
     const [rewardCoin] = transaction.splitCoins(
-      isSui ? transaction.gas : transaction.object(coins[0].coinObjectId),
+      isSui(rewardCoinType)
+        ? transaction.gas
+        : transaction.object(coins[0].coinObjectId),
       [rewardValue],
     );
 
@@ -437,44 +444,83 @@ export class SuilendClient {
     );
   }
 
-  claimRewardsAndSendToUser(
+  claimRewards(
     ownerId: string,
-    rewards: {
-      obligationOwnerCapId: string;
-      reserveArrayIndex: bigint;
-      rewardIndex: bigint;
-      rewardType: string;
-      side: Side;
-    }[],
+    obligationOwnerCapId: string,
+    rewards: ClaimRewardsReward[],
     transaction: Transaction,
+    isDepositing: boolean,
   ) {
     const mergeCoinsMap: Record<string, any[]> = {};
     for (const reward of rewards) {
       const [claimedCoin] = this.claimReward(
-        reward.obligationOwnerCapId,
+        obligationOwnerCapId,
         reward.reserveArrayIndex,
         reward.rewardIndex,
-        reward.rewardType,
+        reward.rewardCoinType,
         reward.side,
         transaction,
       );
 
-      if (mergeCoinsMap[reward.rewardType] === undefined)
-        mergeCoinsMap[reward.rewardType] = [];
-      mergeCoinsMap[reward.rewardType].push(claimedCoin);
+      if (mergeCoinsMap[reward.rewardCoinType] === undefined)
+        mergeCoinsMap[reward.rewardCoinType] = [];
+      mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
     }
 
-    for (const mergeCoins of Object.values(mergeCoinsMap)) {
-      const mergeCoin = mergeCoins[0];
-      if (mergeCoins.length > 1) {
-        transaction.mergeCoins(mergeCoin, mergeCoins.slice(1));
+    for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+      const mergeCoin = coins[0];
+      if (coins.length > 1) {
+        transaction.mergeCoins(mergeCoin, coins.slice(1));
       }
 
-      transaction.transferObjects(
-        [mergeCoin],
-        transaction.pure.address(ownerId),
-      );
+      const depositReserveArrayIndex =
+        this.findReserveArrayIndex(rewardCoinType);
+
+      if (!isDepositing || Number(depositReserveArrayIndex) === -1) {
+        transaction.transferObjects(
+          [mergeCoin],
+          transaction.pure.address(ownerId),
+        );
+      } else {
+        this.depositCoin(
+          ownerId,
+          mergeCoin,
+          rewardCoinType,
+          transaction,
+          obligationOwnerCapId,
+        );
+      }
     }
+  }
+
+  claimRewardsAndSendToUser(
+    ownerId: string,
+    obligationOwnerCapId: string,
+    rewards: ClaimRewardsReward[],
+    transaction: Transaction,
+  ) {
+    this.claimRewards(
+      ownerId,
+      obligationOwnerCapId,
+      rewards,
+      transaction,
+      false,
+    );
+  }
+
+  claimRewardsAndDeposit(
+    ownerId: string,
+    obligationOwnerCapId: string,
+    rewards: ClaimRewardsReward[],
+    transaction: Transaction,
+  ) {
+    this.claimRewards(
+      ownerId,
+      obligationOwnerCapId,
+      rewards,
+      transaction,
+      true,
+    );
   }
 
   findReserveArrayIndex(coinType: string): bigint {
@@ -696,7 +742,7 @@ export class SuilendClient {
     });
   }
 
-  async deposit(
+  deposit(
     sendCoin: TransactionObjectInput,
     coinType: string,
     obligationOwnerCap: TransactionObjectInput,
@@ -730,7 +776,7 @@ export class SuilendClient {
     );
   }
 
-  async depositCoin(
+  depositCoin(
     ownerId: string,
     sendCoin: TransactionObjectInput,
     coinType: string,
@@ -765,8 +811,6 @@ export class SuilendClient {
     transaction: Transaction,
     obligationOwnerCapId?: string,
   ) {
-    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
-
     const coins = (
       await this.client.getCoins({
         owner: ownerId,
@@ -775,7 +819,7 @@ export class SuilendClient {
     ).data;
 
     const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui) {
+    if (coins.length > 1 && !isSui(coinType)) {
       transaction.mergeCoins(
         transaction.object(mergeCoin.coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
@@ -783,7 +827,9 @@ export class SuilendClient {
     }
 
     const [sendCoin] = transaction.splitCoins(
-      isSui ? transaction.gas : transaction.object(mergeCoin.coinObjectId),
+      isSui(coinType)
+        ? transaction.gas
+        : transaction.object(mergeCoin.coinObjectId),
       [value],
     );
 
@@ -802,8 +848,6 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
-
     const coins = (
       await this.client.getCoins({
         owner: ownerId,
@@ -812,7 +856,7 @@ export class SuilendClient {
     ).data;
 
     const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui) {
+    if (coins.length > 1 && !isSui(coinType)) {
       transaction.mergeCoins(
         transaction.object(mergeCoin.coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
@@ -820,7 +864,9 @@ export class SuilendClient {
     }
 
     const [sendCoin] = transaction.splitCoins(
-      isSui ? transaction.gas : transaction.object(mergeCoin.coinObjectId),
+      isSui(coinType)
+        ? transaction.gas
+        : transaction.object(mergeCoin.coinObjectId),
       [value],
     );
 
@@ -896,7 +942,7 @@ export class SuilendClient {
       },
     );
 
-    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+    if (isSui(coinType)) {
       unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
         lendingMarket: transaction.object(this.lendingMarket.id),
         suiReserveArrayIndex: transaction.pure.u64(
@@ -971,7 +1017,7 @@ export class SuilendClient {
       },
     );
 
-    if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
+    if (isSui(coinType)) {
       unstakeSuiFromStaker(transaction, this.lendingMarket.$typeArgs[0], {
         lendingMarket: transaction.object(this.lendingMarket.id),
         suiReserveArrayIndex: transaction.pure.u64(
@@ -1041,8 +1087,6 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const isSui = normalizeStructTag(coinType) === NORMALIZED_SUI_COINTYPE;
-
     const coins = (
       await this.client.getCoins({
         owner: ownerId,
@@ -1051,7 +1095,7 @@ export class SuilendClient {
     ).data;
 
     const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui) {
+    if (coins.length > 1 && !isSui(coinType)) {
       transaction.mergeCoins(
         transaction.object(mergeCoin.coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
@@ -1059,7 +1103,9 @@ export class SuilendClient {
     }
 
     const [sendCoin] = transaction.splitCoins(
-      isSui ? transaction.gas : transaction.object(mergeCoin.coinObjectId),
+      isSui(coinType)
+        ? transaction.gas
+        : transaction.object(mergeCoin.coinObjectId),
       [value],
     );
 

@@ -4,6 +4,7 @@ import {
   PopoverContentProps,
   PopoverProps as PopoverRootProps,
 } from "@radix-ui/react-popover";
+import { merge } from "lodash";
 
 import { TLabelSans } from "@/components/shared/Typography";
 import {
@@ -32,8 +33,11 @@ export default function Popover({
   contentProps,
   children,
 }: PopoverProps) {
-  const { className: contentClassName, ...restContentProps } =
-    contentProps || {};
+  const {
+    className: contentClassName,
+    style: contentStyle,
+    ...restContentProps
+  } = contentProps || {};
 
   const popoverId = getPopoverId(id);
 
@@ -51,9 +55,13 @@ export default function Popover({
           id={popoverId}
           className={cn("rounded-md", fontClassNames, contentClassName)}
           collisionPadding={4}
-          style={{
-            maxWidth: "var(--radix-popover-content-available-width)",
-          }}
+          style={merge(
+            {
+              maxWidth: "var(--radix-popover-content-available-width)",
+              maxHeight: "var(--radix-popover-content-available-height)",
+            },
+            contentStyle,
+          )}
           {...restContentProps}
         >
           {children}
