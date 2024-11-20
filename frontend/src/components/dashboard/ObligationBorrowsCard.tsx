@@ -17,6 +17,7 @@ export default function ObligationBorrowsCard() {
     >
       <CardContent className="p-0">
         <AccountAssetTable
+          amountTitle="Borrows"
           assets={obligation.borrows.map((b) => ({
             reserve: b.reserve,
             token: b.reserve.token,

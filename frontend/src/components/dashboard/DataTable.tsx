@@ -47,11 +47,11 @@ import { cn } from "@/lib/utils";
 
 export function decimalSortingFn<T>(key: string) {
   return (rowA: Row<T>, rowB: Row<T>) => {
-    const a = rowA.original as { [key: string]: BigNumber };
-    const b = rowB.original as { [key: string]: BigNumber };
+    const a = rowA.original as { [key: string]: BigNumber | undefined };
+    const b = rowB.original as { [key: string]: BigNumber | undefined };
 
     if (a[key] === undefined) return 0;
-    return a[key].lt(b[key]) ? -1 : 1;
+    return new BigNumber(a[key] ?? 0).lt(b[key] ?? 0) ? -1 : 1;
   };
 }
 
