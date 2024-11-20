@@ -15,6 +15,7 @@ import {
 import { phantom } from "./_generated/_framework/reified";
 import { setPublishedAt } from "./_generated/suilend";
 import { PACKAGE_ID, PUBLISHED_AT } from "./_generated/suilend";
+import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import {
   addPoolReward,
   addReserve,
@@ -630,44 +631,42 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    // const stale_priceIdentifiers = [];
-    // const priceFeeds =
-    //   await this.pythConnection.getLatestPriceFeeds(priceIdentifiers);
+    let priceInfoObjectIds = [];
+    for (let i = 0; i < priceIdentifiers.length; i++) {
+      const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
+        priceIdentifiers[i],
+      );
+      priceInfoObjectIds.push(priceInfoObjectId!);
+    }
 
-    // if (priceFeeds === undefined)
-    //   stale_priceIdentifiers.push(...priceIdentifiers);
-    // else {
-    //   for (let i = 0; i < priceFeeds.length; i++) {
-    //     if (!priceFeeds[i]) stale_priceIdentifiers.push(priceIdentifiers[i]);
-    //     else {
-    //       const price = priceFeeds[i].getPriceNoOlderThan(10);
-    //       const emaPrice = priceFeeds[i].getEmaPriceNoOlderThan(10);
+    let stalePriceIdentifiers = [];
 
-    //       if (price === undefined || emaPrice === undefined)
-    //         stale_priceIdentifiers.push(priceIdentifiers[i]);
-    //     }
-    //   }
-    // }
+    for (let i = 0; i < priceInfoObjectIds.length; i++) {
+      let priceInfoObject = await PriceInfoObject.fetch(this.client, priceInfoObjectIds[i]);
 
-    const priceUpdateData =
-      await this.pythConnection.getPriceFeedsUpdateData(priceIdentifiers);
-    const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any, // new Transaction(),
-      priceUpdateData,
-      priceIdentifiers,
-    );
+      let publishTime = priceInfoObject.priceInfo.priceFeed.price.timestamp;
+      let stalenessSeconds = (Date.now() / 1000) - Number(publishTime);
 
-    // if (stale_priceIdentifiers.length > 0) {
-    //   const stale_priceUpdateData =
-    //     await this.pythConnection.getPriceFeedsUpdateData(
-    //       stale_priceIdentifiers,
-    //     );
-    //   await this.pythClient.updatePriceFeeds(
-    //     transaction as any,
-    //     stale_priceUpdateData,
-    //     stale_priceIdentifiers,
-    //   );
-    // }
+      if (stalenessSeconds > 20) {
+        let reserve = this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
+        console.log("price info reserve name", reserve.coinType.name);
+        console.log("price info time diff seconds", stalenessSeconds);
+
+        stalePriceIdentifiers.push(priceIdentifiers[i]);
+      }
+    }
+
+    if (stalePriceIdentifiers.length > 0) {
+      const stalePriceUpdateData =
+        await this.pythConnection.getPriceFeedsUpdateData(
+          stalePriceIdentifiers,
+        );
+      await this.pythClient.updatePriceFeeds(
+        transaction as any,
+        stalePriceUpdateData,
+        stalePriceIdentifiers,
+      );
+    }
 
     for (let i = 0; i < reserveArrayIndexes.length; i++) {
       this.refreshReservePrices(
