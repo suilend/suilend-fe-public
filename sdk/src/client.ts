@@ -12,10 +12,10 @@ import {
   SuiPythClient,
 } from "@pythnetwork/pyth-sui-js";
 
+import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import { phantom } from "./_generated/_framework/reified";
 import { setPublishedAt } from "./_generated/suilend";
 import { PACKAGE_ID, PUBLISHED_AT } from "./_generated/suilend";
-import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import {
   addPoolReward,
   addReserve,
@@ -631,7 +631,7 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    let priceInfoObjectIds = [];
+    const priceInfoObjectIds = [];
     for (let i = 0; i < priceIdentifiers.length; i++) {
       const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
         priceIdentifiers[i],
@@ -639,16 +639,20 @@ export class SuilendClient {
       priceInfoObjectIds.push(priceInfoObjectId!);
     }
 
-    let stalePriceIdentifiers = [];
+    const stalePriceIdentifiers = [];
 
     for (let i = 0; i < priceInfoObjectIds.length; i++) {
-      let priceInfoObject = await PriceInfoObject.fetch(this.client, priceInfoObjectIds[i]);
+      const priceInfoObject = await PriceInfoObject.fetch(
+        this.client,
+        priceInfoObjectIds[i],
+      );
 
-      let publishTime = priceInfoObject.priceInfo.priceFeed.price.timestamp;
-      let stalenessSeconds = (Date.now() / 1000) - Number(publishTime);
+      const publishTime = priceInfoObject.priceInfo.priceFeed.price.timestamp;
+      const stalenessSeconds = Date.now() / 1000 - Number(publishTime);
 
       if (stalenessSeconds > 20) {
-        let reserve = this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
+        const reserve =
+          this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
         console.log("price info reserve name", reserve.coinType.name);
         console.log("price info time diff seconds", stalenessSeconds);
 
@@ -871,31 +875,27 @@ export class SuilendClient {
       arguments: [],
     });
 
-    return this.redeem(
-      ctokens,
-      coinType,
-      exemption,
-      transaction
-    );
-
+    return this.redeem(ctokens, coinType, exemption, transaction);
   }
 
   redeem(
     ctokens: TransactionObjectInput,
     coinType: string,
     exemption: TransactionObjectInput,
-    transaction: Transaction
+    transaction: Transaction,
   ) {
     const [liquidityRequest] = redeemCtokensAndWithdrawLiquidityRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
-      { 
+      {
         lendingMarket: transaction.object(this.lendingMarket.id),
-        reserveArrayIndex: transaction.pure.u64(this.findReserveArrayIndex(coinType)),
+        reserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         ctokens,
         rateLimiterExemption: exemption,
-      }
+      },
     );
 
     if (normalizeStructTag(coinType) == normalizeStructTag("0x2::sui::SUI")) {
@@ -1093,7 +1093,12 @@ export class SuilendClient {
       arguments: [exemption],
     });
 
-    return this.redeem(ctokens, withdrawCoinType, optionalExemption, transaction);
+    return this.redeem(
+      ctokens,
+      withdrawCoinType,
+      optionalExemption,
+      transaction,
+    );
   }
 
   async liquidate(
