@@ -251,7 +251,7 @@ export default function AccountOverviewDialog() {
   return (
     <Dialog
       rootProps={{ open: isOpen, onOpenChange }}
-      dialogContentProps={{ className: "max-w-6xl" }}
+      dialogContentProps={{ className: "max-w-4xl" }}
       headerProps={{
         className: "border-b-0",
         titleIcon: <FileClock />,
