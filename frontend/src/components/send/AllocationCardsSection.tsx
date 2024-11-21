@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import AllocationCard from "@/components/send/AllocationCard";
 import { Allocation } from "@/pages/send";
 
@@ -10,6 +12,8 @@ interface AllocationCardsSectionProps {
 export default function AllocationCardsSection({
   allocations,
 }: AllocationCardsSectionProps) {
+  const { address } = useWalletContext();
+
   const eligibleAllocations = useMemo(
     () =>
       allocations.filter(
@@ -52,7 +56,7 @@ export default function AllocationCardsSection({
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-      {sortedAllocations.map((allocation) => (
+      {(address ? sortedAllocations : allocations).map((allocation) => (
         <AllocationCard key={allocation.title} allocation={allocation} />
       ))}
     </div>

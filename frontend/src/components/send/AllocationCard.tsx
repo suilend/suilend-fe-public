@@ -5,6 +5,8 @@ import { PropsWithChildren, useState } from "react";
 import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
@@ -58,6 +60,8 @@ interface AllocationCardProps {
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
+  const { address } = useWalletContext();
+
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -90,59 +94,59 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
           >
             <div className="flex h-full w-full flex-col">
               {/* Status */}
-              <div
-                className={cn(
-                  "-mb-2 flex h-12 w-full flex-row items-center rounded-t-[5px] bg-secondary/15 px-4 pb-2",
-                  allocation.snapshotTaken &&
-                    allocation.allocationPercent?.gt(0) &&
-                    "justify-between bg-[#5DF886]",
-                )}
-              >
-                {!(
-                  allocation.snapshotTaken &&
-                  allocation.allocationPercent?.gt(0)
-                ) ? (
-                  <TBody className="text-secondary">
-                    {!allocation.snapshotTaken
-                      ? "Snapshot not taken"
-                      : allocation.allocationPercent === undefined
-                        ? "TBC"
-                        : "Not eligible"}
-                  </TBody>
-                ) : (
-                  <>
-                    <TBody className="text-background">Eligible</TBody>
-                    <div className="flex flex-row items-center gap-2">
-                      <SendTokenLogo />
-                      <TBody className="text-background">
-                        {formatToken(
-                          new BigNumber(SEND_TOTAL_SUPPLY).times(
-                            allocation.allocationPercent.div(100),
-                          ),
-                          { exact: false },
-                        )}
-                      </TBody>
-                    </div>
-                  </>
-                )}
-              </div>
+              {address && (
+                <div
+                  className={cn(
+                    "-mb-2 flex h-12 w-full flex-row items-center rounded-t-[5px] bg-secondary/15 px-4 pb-2",
+                    allocation.snapshotTaken &&
+                      allocation.allocationPercent?.gt(0) &&
+                      "justify-between bg-[#5DF886]",
+                  )}
+                >
+                  {!(
+                    allocation.snapshotTaken &&
+                    allocation.allocationPercent?.gt(0)
+                  ) ? (
+                    <TBody className="text-secondary">
+                      {!allocation.snapshotTaken
+                        ? "Snapshot not taken"
+                        : allocation.allocationPercent === undefined
+                          ? "TBC"
+                          : "Not eligible"}
+                    </TBody>
+                  ) : (
+                    <>
+                      <TBody className="text-background">Eligible</TBody>
+                      <div className="flex flex-row items-center gap-2">
+                        <SendTokenLogo />
+                        <TBody className="text-background">
+                          {formatToken(
+                            new BigNumber(SEND_TOTAL_SUPPLY).times(
+                              allocation.allocationPercent.div(100),
+                            ),
+                            { exact: false },
+                          )}
+                        </TBody>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Top */}
               <div className="relative flex flex-1 flex-row items-center justify-center overflow-hidden rounded-t-md bg-background">
                 {/* Total allocation */}
-                {allocation.totalAllocationPercent !== undefined && (
-                  <div className="absolute left-4 top-4 z-[2] flex flex-row items-center gap-2">
-                    <SendTokenLogo />
-                    <TBody>
-                      {formatToken(
-                        new BigNumber(SEND_TOTAL_SUPPLY).times(
-                          allocation.totalAllocationPercent.div(100),
-                        ),
-                        { exact: false },
-                      )}
-                    </TBody>
-                  </div>
-                )}
+                <div className="absolute left-4 top-4 z-[2] flex flex-row items-center gap-2">
+                  <SendTokenLogo />
+                  <TBody>
+                    {formatToken(
+                      new BigNumber(SEND_TOTAL_SUPPLY).times(
+                        allocation.totalAllocationPercent.div(100),
+                      ),
+                      { exact: false },
+                    )}
+                  </TBody>
+                </div>
 
                 {/* Icon */}
                 <Image
