@@ -1,5 +1,5 @@
+import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 import TotalCell from "@/components/dashboard/market-table/TotalCell";
-import { ReservesRowData } from "@/components/dashboard/MarketTable";
 
 interface TotalBorrowsCellProps {
   token: ReservesRowData["token"];

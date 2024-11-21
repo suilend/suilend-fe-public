@@ -1,4 +1,6 @@
-import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
+import AccountAssetTable, {
+  AccountAssetTableType,
+} from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -17,7 +19,7 @@ export default function ObligationBorrowsCard() {
     >
       <CardContent className="p-0">
         <AccountAssetTable
-          amountTitle="Borrows"
+          type={AccountAssetTableType.BORROWS}
           assets={obligation.borrows.map((b) => ({
             reserve: b.reserve,
             token: b.reserve.token,

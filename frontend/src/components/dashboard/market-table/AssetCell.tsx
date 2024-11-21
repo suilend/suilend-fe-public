@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import {
   COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   NORMALIZED_LST_COINTYPES,
+  NORMALIZED_SUI_COINTYPE,
   Token,
   getMsafeAppStoreUrl,
   isInMsafeApp,
@@ -12,6 +13,8 @@ import {
 import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
+import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
+import { MarketTableType } from "@/components/dashboard/market-table/MarketTable";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
@@ -21,14 +24,14 @@ import { SPRINGSUI_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface AssetCellProps {
-  isBalance?: boolean;
+  tableType: AccountAssetTableType | MarketTableType;
   reserve?: ParsedReserve;
   token: Token;
   price?: BigNumber;
 }
 
 export default function AssetCell({
-  isBalance,
+  tableType,
   reserve,
   token,
   price,
@@ -39,7 +42,7 @@ export default function AssetCell({
     useMemo(() => {
       const result = [];
 
-      if (isBalance && !isInMsafeApp()) {
+      if (tableType === AccountAssetTableType.BALANCES && !isInMsafeApp()) {
         result.push({
           title: "Swap",
           href: getSwapUrl(
@@ -49,7 +52,11 @@ export default function AssetCell({
           isRelative: true,
         });
       }
-      if (NORMALIZED_LST_COINTYPES.includes(token.coinType)) {
+      if (
+        (tableType === AccountAssetTableType.BALANCES ||
+          tableType === MarketTableType.MARKET) &&
+        NORMALIZED_LST_COINTYPES.includes(token.coinType)
+      ) {
         result.push({
           title: "Mint",
           href: !isInMsafeApp()
@@ -59,9 +66,21 @@ export default function AssetCell({
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
+      if (
+        (tableType === AccountAssetTableType.BALANCES ||
+          tableType === MarketTableType.MARKET) &&
+        token.coinType === NORMALIZED_SUI_COINTYPE
+      ) {
+        result.push({
+          title: "Stake",
+          href: !isInMsafeApp()
+            ? SPRINGSUI_URL
+            : getMsafeAppStoreUrl("SpringSui"),
+        });
+      }
 
       return result;
-    }, [token, isBalance, reserve]);
+    }, [tableType, reserve, token]);
 
   return (
     <div className="flex flex-row items-center gap-3">
