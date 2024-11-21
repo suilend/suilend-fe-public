@@ -1217,19 +1217,19 @@ export class SuilendClient {
       }
 
       const coinType = extractCTokenCoinType(ctokenCoinType);
+      const [exemption] = transaction.moveCall({
+        target: `0x1::option::none`,
+        typeArguments: [
+          `${PACKAGE_ID}::lending_market::RateLimiterExemption<${this.lendingMarket.$typeArgs[0]}, ${coinType}>`,
+        ],
+        arguments: [],
+      });
 
-      const [redeemCoin] = redeemCtokensAndWithdrawLiquidity(
+      const [redeemCoin] = this.redeem(
+        transaction.object(mergeCoin.coinObjectId),
+        coinType,
+        exemption,
         transaction,
-        [this.lendingMarket.$typeArgs[0], coinType],
-        {
-          lendingMarket: transaction.object(this.lendingMarket.id),
-          reserveArrayIndex: transaction.pure.u64(
-            this.findReserveArrayIndex(coinType),
-          ),
-          clock: transaction.object(SUI_CLOCK_OBJECT_ID),
-          ctokens: transaction.object(mergeCoin.coinObjectId),
-          rateLimiterExemption: null,
-        },
       );
 
       transaction.transferObjects(
