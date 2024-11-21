@@ -1,18 +1,30 @@
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import BigNumber from "bignumber.js";
+import { ArrowUpRight, ChevronDown, ChevronUp } from "lucide-react";
 
 import { useWalletContext } from "@suilend/frontend-sui";
 
 import styles from "@/components/send/AllocationCard.module.scss";
+import {
+  Allocation,
+  SEND_TOTAL_SUPPLY,
+} from "@/components/send/AllocationCardsSection";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
+import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { formatToken } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export default function AllocationCard() {
+interface AllocationCardProps {
+  allocation: Allocation;
+}
+
+export default function AllocationCard({ allocation }: AllocationCardProps) {
   const { address } = useWalletContext();
 
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
@@ -29,7 +41,7 @@ export default function AllocationCard() {
           <div
             className={cn(
               styles.front,
-              "absolute inset-0 flex flex-col overflow-hidden rounded-sm border bg-card p-4",
+              "absolute inset-0 flex flex-col overflow-hidden rounded-lg border bg-card p-4",
             )}
           >
             {/* Header */}
@@ -51,11 +63,33 @@ export default function AllocationCard() {
               <Image
                 className="h-20 w-20 md:h-24 md:w-24"
                 src="https://pbs.twimg.com/profile_images/1814512450823507968/3tdxrI4o_400x400.jpg"
-                alt="Rootlets"
+                alt={allocation.title}
                 width={80}
                 height={80}
               />
-              <TBodySans>Rootlets 3</TBodySans>
+              <div className="flex flex-row items-center gap-2">
+                <TBodySans>{allocation.title}</TBodySans>
+                {allocation.cta && (
+                  <Link
+                    className="flex"
+                    target="_blank"
+                    href={allocation.cta.href}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                  >
+                    <Button
+                      className="px-1.5"
+                      labelClassName="text-xs font-sans"
+                      endIcon={<ArrowUpRight />}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      {allocation.cta.title}
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
 
@@ -63,7 +97,7 @@ export default function AllocationCard() {
           <div
             className={cn(
               styles.back,
-              "absolute inset-0 flex flex-col justify-between overflow-hidden rounded-sm border bg-card p-4",
+              "absolute inset-0 flex flex-col justify-between overflow-hidden rounded-lg border bg-card p-4",
             )}
           >
             <div className="flex w-full flex-col gap-3">
@@ -72,26 +106,39 @@ export default function AllocationCard() {
                 <div className="flex flex-row items-center gap-2">
                   <Image
                     src="https://pbs.twimg.com/profile_images/1814512450823507968/3tdxrI4o_400x400.jpg"
-                    alt="Rootlets"
+                    alt={allocation.title}
                     width={20}
                     height={20}
                   />
-                  <TBodySans>Rootlets 3</TBodySans>
+                  <TBodySans>{allocation.title}</TBodySans>
                 </div>
 
                 <ChevronUp className="h-5 w-5 text-muted-foreground" />
               </div>
 
               {/* Description */}
-              <TLabelSans>
-                Rootlets are unique, living NFTs that evolve with your
-                collection, offering rare bonuses and dynamic visual changes.
-              </TLabelSans>
+              <TLabelSans>{allocation.description}</TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2">
-              <LabelWithValue label="Expires" value="6 months" horizontal />
-              <LabelWithValue label="Allocation" value="50 SEND" horizontal />
+            <div className="flex w-full flex-col gap-3">
+              <LabelWithValue
+                label="Total allocation"
+                valueClassName="gap-2"
+                value={formatToken(
+                  new BigNumber(SEND_TOTAL_SUPPLY)
+                    .times(allocation.totalAllocationPercent)
+                    .div(100),
+                  { exact: false },
+                )}
+                valueEndDecorator={<SendTokenLogo />}
+                horizontal
+              />
+              <LabelWithValue
+                label="Eligible wallets"
+                valueClassName="uppercase"
+                value={allocation.eligibleWallets}
+                horizontal
+              />
             </div>
           </div>
         </div>
