@@ -23,11 +23,11 @@ import DataTable, {
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
 import BorrowAprCell from "@/components/dashboard/market-table/BorrowAprCell";
 import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
+import MarketCardList from "@/components/dashboard/market-table/MarketCardList";
+import styles from "@/components/dashboard/market-table/MarketTable.module.scss";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
-import MarketCardList from "@/components/dashboard/MarketCardList";
-import styles from "@/components/dashboard/MarketTable.module.scss";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -37,6 +37,10 @@ import {
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,
 } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
+
+export enum MarketTableType {
+  MARKET = "market",
+}
 
 export interface ReservesRowData {
   reserve: ParsedReserve;
@@ -98,7 +102,12 @@ export default function MarketTable() {
               </div>
             );
           }
-          return <AssetCell {...(row.original as ReservesRowData)} />;
+          return (
+            <AssetCell
+              tableType={MarketTableType.MARKET}
+              {...(row.original as ReservesRowData)}
+            />
+          );
         },
       },
       {

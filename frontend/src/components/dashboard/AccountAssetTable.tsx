@@ -19,8 +19,13 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+export enum AccountAssetTableType {
+  DEPOSITS = "deposits",
+  BORROWS = "borrows",
+  BALANCES = "balances",
+}
+
 interface RowData {
-  isBalance?: boolean;
   reserve?: ParsedReserve;
   token: Token;
   price?: BigNumber;
@@ -29,13 +34,13 @@ interface RowData {
 }
 
 interface AccountAssetTableProps {
-  amountTitle: string;
+  type: AccountAssetTableType;
   assets: RowData[];
   noAssetsMessage: string;
 }
 
 export default function AccountAssetTable({
-  amountTitle,
+  type,
   assets,
   noAssetsMessage,
 }: AccountAssetTableProps) {
@@ -43,19 +48,28 @@ export default function AccountAssetTable({
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
+  const amountTitleMap: Record<AccountAssetTableType, string> = useMemo(
+    () => ({
+      [AccountAssetTableType.DEPOSITS]: "Deposits",
+      [AccountAssetTableType.BORROWS]: "Borrows",
+      [AccountAssetTableType.BALANCES]: "Balance",
+    }),
+    [],
+  );
+
   const columns: ColumnDef<RowData>[] = useMemo(
     () => [
       {
         accessorKey: "symbol",
         sortingFn: "text",
         header: ({ column }) => tableHeader(column, "Asset name"),
-        cell: ({ row }) => <AssetCell {...row.original} />,
+        cell: ({ row }) => <AssetCell tableType={type} {...row.original} />,
       },
       {
         accessorKey: "amount",
         sortingFn: decimalSortingFn("amountUsd"),
         header: ({ column }) =>
-          tableHeader(column, amountTitle, { isNumerical: true }),
+          tableHeader(column, amountTitleMap[type], { isNumerical: true }),
         cell: ({ row }) => {
           const { token, amount, amountUsd } = row.original;
 
@@ -72,7 +86,7 @@ export default function AccountAssetTable({
         },
       },
     ],
-    [amountTitle],
+    [amountTitleMap, type],
   );
 
   // Sort

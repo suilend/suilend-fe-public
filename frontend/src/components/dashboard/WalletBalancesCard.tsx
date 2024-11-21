@@ -4,7 +4,9 @@ import BigNumber from "bignumber.js";
 
 import { getToken, useWalletContext } from "@suilend/frontend-sui";
 
-import AccountAssetTable from "@/components/dashboard/AccountAssetTable";
+import AccountAssetTable, {
+  AccountAssetTableType,
+} from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -56,7 +58,7 @@ export default function WalletBalancesCard() {
     >
       <CardContent className="p-0">
         <AccountAssetTable
-          amountTitle="Balance"
+          type={AccountAssetTableType.BALANCES}
           assets={Object.entries(balancesCoinMetadataMap ?? {})
             .filter(([coinType]) => coinTypes.includes(coinType))
             .map(([coinType, coinMetadata]) => {
@@ -64,7 +66,6 @@ export default function WalletBalancesCard() {
               const price = reserve?.price ?? data.rewardPriceMap[coinType];
 
               return {
-                isBalance: true,
                 reserve,
                 token: getToken(coinType, coinMetadata),
                 price,

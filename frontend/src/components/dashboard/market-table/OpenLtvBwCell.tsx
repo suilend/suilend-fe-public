@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { ReservesRowData } from "@/components/dashboard/MarketTable";
+import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { formatBorrowWeight, formatLtvPercent } from "@/lib/format";
 

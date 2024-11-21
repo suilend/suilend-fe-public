@@ -1,7 +1,7 @@
 import { Side } from "@suilend/sdk/types";
 
 import AprWithRewardsBreakdown from "@/components/dashboard/AprWithRewardsBreakdown";
-import { ReservesRowData } from "@/components/dashboard/MarketTable";
+import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 
 interface DepositAprCellProps {
   reserve: ReservesRowData["reserve"];

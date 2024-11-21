@@ -5,11 +5,14 @@ import Card from "@/components/dashboard/Card";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
 import BorrowAprCell from "@/components/dashboard/market-table/BorrowAprCell";
 import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
+import styles from "@/components/dashboard/market-table/MarketCardList.module.scss";
+import {
+  MarketTableType,
+  ReservesRowData,
+} from "@/components/dashboard/market-table/MarketTable";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
-import styles from "@/components/dashboard/MarketCardList.module.scss";
-import { ReservesRowData } from "@/components/dashboard/MarketTable";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabelSans, TTitle } from "@/components/shared/Typography";
@@ -35,7 +38,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
     >
       <div className="flex w-full flex-col gap-4 p-4">
         <div className="flex w-full flex-row justify-between">
-          <AssetCell {...rowData} />
+          <AssetCell tableType={MarketTableType.MARKET} {...rowData} />
 
           <div className="flex flex-row justify-end gap-6">
             <div className="flex w-fit flex-col items-end gap-1">

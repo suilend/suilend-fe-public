@@ -4,8 +4,8 @@ import AccountPositionCard from "@/components/dashboard/account/AccountPositionC
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
+import MarketTable from "@/components/dashboard/market-table/MarketTable";
 import MarketOverview from "@/components/dashboard/MarketOverview";
-import MarketTable from "@/components/dashboard/MarketTable";
 import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
 import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCard";
 import RewardsCard from "@/components/dashboard/RewardsCard";
