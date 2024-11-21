@@ -17,7 +17,7 @@ export default function SendTokenLogo({ className }: SendTokenLogoProps) {
 
   return (
     <TokenLogo
-      className={cn("h-5 w-5", className)}
+      className={cn("h-4 w-4", className)}
       token={{
         coinType: NORMALIZED_SEND_COINTYPE,
         symbol: coinMetadata.symbol,

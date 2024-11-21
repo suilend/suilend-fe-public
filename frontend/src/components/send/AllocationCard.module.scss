@@ -6,6 +6,24 @@
   transform-style: preserve-3d;
 }
 
+.flipped {
+  .front {
+    z-index: 1;
+  }
+  .back {
+    z-index: 2;
+  }
+}
+
+:not(.flipped) {
+  .front {
+    z-index: 2;
+  }
+  .back {
+    z-index: 1;
+  }
+}
+
 .front,
 .back {
   -webkit-backface-visibility: hidden; /* Safari */

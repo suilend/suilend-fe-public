@@ -140,7 +140,7 @@ function RankStat({ rank, isCentered }: RankStatProps) {
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { data, obligation } = useLoadedAppContext();
-  
+
   const { rank } = usePointsContext();
 
   const { md } = useBreakpoint();
