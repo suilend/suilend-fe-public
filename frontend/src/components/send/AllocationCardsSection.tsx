@@ -21,9 +21,15 @@ export type Allocation = {
 export default function AllocationCardsSection() {
   const allocations: Allocation[] = [
     {
+      title: "Early users",
+      description: "TEMP",
+      totalAllocationPercent: 1,
+      eligibleWallets: formatInteger(6778),
+    },
+    {
       title: "SEND Points",
       description: "TEMP",
-      totalAllocationPercent: 20,
+      totalAllocationPercent: 19,
       eligibleWallets: formatInteger(1000),
     },
     {
