@@ -5,7 +5,7 @@ import { Droplet, Server } from "lucide-react";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_mSUI_COINTYPE,
+  NORMALIZED_fudSUI_COINTYPE,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
@@ -171,8 +171,8 @@ export default function Home() {
                       ),
                 )
                 .filter((reserve) =>
-                  reserve.coinType === NORMALIZED_mSUI_COINTYPE
-                    ? Date.now() >= 1731492000000 // 2024-11-13 19:00:00 JST
+                  reserve.coinType === NORMALIZED_fudSUI_COINTYPE
+                    ? Date.now() >= 1732269600000 // 2024-11-22 19:00:00 JST
                     : reserve.config.depositLimit.gt(0),
                 )
                 .map((reserve) => {

@@ -174,16 +174,26 @@ export class SuilendClient {
     lendingMarketTypeArgs: string[],
     client: SuiClient,
   ) {
-    const objs = await client.getOwnedObjects({
-      owner: ownerId,
-      filter: {
-        StructType: `${PACKAGE_ID}::lending_market::ObligationOwnerCap<${lendingMarketTypeArgs[0]}>`,
-      },
-    });
+    const allObjs = [];
+    let cursor = null;
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const objs = await client.getOwnedObjects({
+        owner: ownerId,
+        cursor,
+        filter: {
+          StructType: `${PACKAGE_ID}::lending_market::ObligationOwnerCap<${lendingMarketTypeArgs[0]}>`,
+        },
+      });
 
-    if (objs.data.length > 0) {
+      allObjs.push(...objs.data);
+      cursor = objs.nextCursor;
+      hasNextPage = objs.hasNextPage;
+    }
+
+    if (allObjs.length > 0) {
       const obligationOwnerCapObjs = await Promise.all(
-        objs.data.map((objData) =>
+        allObjs.map((objData) =>
           client.getObject({
             id: objData.data?.objectId as string,
             options: { showBcs: true },

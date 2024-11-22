@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_mSUI_COINTYPE,
+  NORMALIZED_fudSUI_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
@@ -196,8 +196,8 @@ export default function MarketTable() {
             borrowPosition?.borrowedAmount ?? new BigNumber(0);
 
           return (
-            (reserve.coinType === NORMALIZED_mSUI_COINTYPE
-              ? Date.now() >= 1731492000000 // 2024-11-13 19:00:00 JST
+            (reserve.coinType === NORMALIZED_fudSUI_COINTYPE
+              ? Date.now() >= 1732269600000 // 2024-11-22 19:00:00 JST
               : reserve.config.depositLimit.gt(0)) ||
             depositedAmount.gt(0) ||
             borrowedAmount.gt(0)
