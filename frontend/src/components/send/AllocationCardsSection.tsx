@@ -18,40 +18,38 @@ export default function AllocationCardsSection({
     () =>
       allocations.filter(
         (allocation) =>
-          allocation.snapshotTaken &&
           allocation.allocationPercent !== undefined &&
           allocation.allocationPercent.gt(0),
       ),
     [allocations],
   );
-  const pendingAllocations = useMemo(
+  const ineligibleAllocations = useMemo(
     () =>
       allocations.filter(
         (allocation) =>
-          !allocation.snapshotTaken ||
-          (allocation.snapshotTaken &&
-            allocation.allocationPercent === undefined),
-      ),
-    [allocations],
-  );
-  const notEligibleAllocations = useMemo(
-    () =>
-      allocations.filter(
-        (allocation) =>
-          allocation.snapshotTaken &&
           allocation.allocationPercent !== undefined &&
           allocation.allocationPercent.eq(0),
       ),
     [allocations],
   );
 
+  const pendingAllocations = useMemo(
+    () =>
+      allocations.filter(
+        (allocation) =>
+          !eligibleAllocations.find((a) => a.id === allocation.id) &&
+          !ineligibleAllocations.find((a) => a.id === allocation.id),
+      ),
+    [allocations, eligibleAllocations, ineligibleAllocations],
+  );
+
   const sortedAllocations = useMemo(
     () => [
       ...eligibleAllocations,
       ...pendingAllocations,
-      ...notEligibleAllocations,
+      ...ineligibleAllocations,
     ],
-    [eligibleAllocations, pendingAllocations, notEligibleAllocations],
+    [eligibleAllocations, pendingAllocations, ineligibleAllocations],
   );
 
   return (

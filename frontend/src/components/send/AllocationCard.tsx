@@ -1,11 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 import { PropsWithChildren, useState } from "react";
 
 import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
-
-import { useWalletContext } from "@suilend/frontend-sui";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -19,29 +16,85 @@ import { formatToken } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Allocation, AssetType, SEND_TOTAL_SUPPLY } from "@/pages/send";
 
-interface AllocationCardCtaButtonProps {
+interface StatusProps {
   allocation: Allocation;
 }
 
-function AllocationCardCtaButton({ allocation }: AllocationCardCtaButtonProps) {
+function Status({ allocation }: StatusProps) {
+  const isEligible =
+    allocation.allocationPercent !== undefined &&
+    allocation.allocationPercent.gt(0);
+  const isIneligible =
+    allocation.allocationPercent !== undefined &&
+    allocation.allocationPercent.eq(0);
+
+  const isSnapshotTaken = allocation.snapshotTaken === true;
+  const isSnapshotNotTaken = allocation.snapshotTaken === false;
+
   return (
-    <Link
-      className="flex"
-      target="_blank"
-      href={allocation.cta!.href}
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      <Button
-        className="w-full border-secondary text-primary-foreground"
-        labelClassName="uppercase"
-        endIcon={<ArrowUpRight />}
-        variant="secondaryOutline"
+    (isEligible || isIneligible || isSnapshotTaken || isSnapshotNotTaken) && (
+      <div
+        className={cn(
+          "relative z-[1] -mb-2 flex h-11 w-full flex-row items-center rounded-t-md px-4 pb-2",
+          isEligible
+            ? "justify-between bg-[#5DF886]"
+            : "justify-center bg-[#192A3A]",
+        )}
       >
-        {allocation.cta!.title}
-      </Button>
-    </Link>
+        {isEligible ? (
+          <>
+            <TBody className="text-[#030917]">Eligible</TBody>
+            <div className="flex flex-row items-center gap-1.5">
+              <SendTokenLogo />
+              <TBody className="text-[16px] text-[#030917]">
+                {formatToken(
+                  new BigNumber(SEND_TOTAL_SUPPLY).times(
+                    allocation.allocationPercent!.div(100),
+                  ),
+                  { exact: false },
+                )}
+              </TBody>
+            </div>
+          </>
+        ) : (
+          <TBody className="text-[#8FDCF4]">
+            {isIneligible
+              ? "Not eligible"
+              : isSnapshotTaken
+                ? "Snapshot taken"
+                : "Snapshot not taken"}
+          </TBody>
+        )}
+      </div>
+    )
+  );
+}
+
+interface CtaButtonProps {
+  allocation: Allocation;
+}
+
+function CtaButton({ allocation }: CtaButtonProps) {
+  return (
+    allocation.cta && (
+      <Link
+        className="flex"
+        target="_blank"
+        href={allocation.cta!.href}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        <Button
+          className="h-10 w-full border-secondary text-primary-foreground"
+          labelClassName="uppercase text-[16px]"
+          endIcon={<ArrowUpRight className="h-4 w-4" />}
+          variant="secondaryOutline"
+        >
+          {allocation.cta!.title}
+        </Button>
+      </Link>
+    )
   );
 }
 
@@ -49,7 +102,7 @@ function Wrapper({ children }: PropsWithChildren) {
   const { sm } = useBreakpoint();
 
   return sm ? (
-    <AspectRatio ratio={sm ? 3 / 4 : 1}>{children}</AspectRatio>
+    <AspectRatio ratio={sm ? 280 / 396 : 1}>{children}</AspectRatio>
   ) : (
     <div className="h-[320px] w-full">{children}</div>
   );
@@ -60,8 +113,6 @@ interface AllocationCardProps {
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
-  const { address } = useWalletContext();
-
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -70,6 +121,10 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
     [AssetType.TOKEN]: "Token",
     [AssetType.POINTS]: "Points",
   };
+
+  const isIneligible =
+    allocation.allocationPercent !== undefined &&
+    allocation.allocationPercent.eq(0);
 
   return (
     <Wrapper>
@@ -86,59 +141,20 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
           <div
             className={cn(
               styles.front,
-              "absolute inset-0 rounded-md border border-secondary/15 bg-secondary/5",
-              allocation.snapshotTaken &&
-                allocation.allocationPercent?.eq(0) &&
+              "absolute inset-0 flex flex-col",
+              isIneligible &&
                 "opacity-50 transition-opacity group-hover:opacity-100",
             )}
           >
-            <div className="flex h-full w-full flex-col">
-              {/* Status */}
-              {address && (
-                <div
-                  className={cn(
-                    "-mb-2 flex h-12 w-full flex-row items-center rounded-t-[5px] bg-secondary/15 px-4 pb-2",
-                    allocation.snapshotTaken &&
-                      allocation.allocationPercent?.gt(0) &&
-                      "justify-between bg-[#5DF886]",
-                  )}
-                >
-                  {!(
-                    allocation.snapshotTaken &&
-                    allocation.allocationPercent?.gt(0)
-                  ) ? (
-                    <TBody className="text-secondary">
-                      {!allocation.snapshotTaken
-                        ? "Snapshot not taken"
-                        : allocation.allocationPercent === undefined
-                          ? "TBC"
-                          : "Not eligible"}
-                    </TBody>
-                  ) : (
-                    <>
-                      <TBody className="text-background">Eligible</TBody>
-                      <div className="flex flex-row items-center gap-2">
-                        <SendTokenLogo />
-                        <TBody className="text-background">
-                          {formatToken(
-                            new BigNumber(SEND_TOTAL_SUPPLY).times(
-                              allocation.allocationPercent.div(100),
-                            ),
-                            { exact: false },
-                          )}
-                        </TBody>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+            <Status allocation={allocation} />
 
+            <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-[#4F677E]">
               {/* Top */}
-              <div className="relative flex flex-1 flex-row items-center justify-center overflow-hidden rounded-t-md bg-background">
+              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-[#030917]">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex flex-row items-center gap-2">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-1.5">
                   <SendTokenLogo />
-                  <TBody>
+                  <TBody className="text-[16px]">
                     {formatToken(
                       new BigNumber(SEND_TOTAL_SUPPLY).times(
                         allocation.totalAllocationPercent.div(100),
@@ -149,14 +165,18 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                 </div>
 
                 {/* Icon */}
-                <Image
-                  className="absolute left-[50%] top-[50%] z-[1] -ml-14 -mt-14 h-28 w-28"
-                  src="https://pbs.twimg.com/profile_images/1814512450823507968/3tdxrI4o_400x400.jpg"
-                  alt={allocation.title}
-                  width={112}
-                  height={112}
+                <div
+                  className="absolute inset-y-4 left-1/2 z-[1] w-full max-w-28 -translate-x-1/2"
+                  style={{
+                    backgroundImage: `url('${allocation.src}')`,
+                    backgroundPosition: "center",
+                    backgroundSize: "contain",
+                    backgroundRepeat: "no-repeat",
+                  }}
                 />
               </div>
+
+              <Separator className="bg-[#192A3A]" />
 
               {/* Bottom */}
               <div className="flex w-full flex-col gap-4 p-4">
@@ -173,9 +193,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   )}
                 </div>
 
-                {allocation.cta && (
-                  <AllocationCardCtaButton allocation={allocation} />
-                )}
+                <CtaButton allocation={allocation} />
               </div>
             </div>
           </div>
@@ -184,9 +202,11 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
           <div
             className={cn(
               styles.back,
-              "absolute inset-0 rounded-md border border-secondary/15 bg-secondary/5",
+              "absolute inset-0 rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-[#4F677E]",
             )}
           >
+            {/* TODO: Add Status */}
+
             <div className="flex h-full w-full flex-col justify-between gap-6 overflow-y-auto p-4">
               {/* Top */}
               <div className="flex w-full flex-col gap-3">
@@ -195,20 +215,17 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
                 {/* Description */}
                 <TBodySans className="text-muted-foreground">
-                  Rootlets are unique, living NFTs that evolve with your
-                  collection, offering rare bonuses and dynamic visual changes.
+                  {allocation.description}
                 </TBodySans>
               </div>
 
               {/* Bottom */}
               <div className="flex w-full flex-col gap-4">
-                <Separator className="bg-secondary/15" />
-
-                <div className="flex w-full flex-col gap-3">
+                <div className="flex w-full flex-col gap-2.5">
                   <LabelWithValue
                     labelClassName="text-sm"
                     label="Total allocation"
-                    valueClassName="gap-2 items-center"
+                    valueClassName="gap-1.5 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
                       new BigNumber(SEND_TOTAL_SUPPLY).times(
@@ -219,24 +236,32 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     horizontal
                   />
 
-                  <LabelWithValue
-                    labelClassName="text-sm"
-                    label="Eligible wallets"
-                    value={allocation.eligibleWallets}
-                    horizontal
-                  />
+                  {allocation.eligibleWallets !== undefined && (
+                    <>
+                      <Separator className="bg-[#192A3A]" />
+                      <LabelWithValue
+                        labelClassName="text-sm"
+                        label="Eligible wallets"
+                        value={allocation.eligibleWallets}
+                        horizontal
+                      />
+                    </>
+                  )}
 
-                  <LabelWithValue
-                    labelClassName="text-sm"
-                    label="Snapshot"
-                    value={allocation.snapshotTaken ? "Taken" : "Not taken"}
-                    horizontal
-                  />
+                  {allocation.snapshotTaken !== undefined && (
+                    <>
+                      <Separator className="bg-[#192A3A]" />
+                      <LabelWithValue
+                        labelClassName="text-sm"
+                        label="Snapshot"
+                        value={allocation.snapshotTaken ? "Taken" : "Not taken"}
+                        horizontal
+                      />
+                    </>
+                  )}
                 </div>
 
-                {allocation.cta && (
-                  <AllocationCardCtaButton allocation={allocation} />
-                )}
+                <CtaButton allocation={allocation} />
               </div>
             </div>
           </div>

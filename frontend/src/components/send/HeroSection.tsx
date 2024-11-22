@@ -5,10 +5,9 @@ import { useWalletContext } from "@suilend/frontend-sui";
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
+import { TDisplay } from "@/components/shared/Typography";
 import { formatToken } from "@/lib/format";
 import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
-
-import { TBody, TBodySans, TDisplay } from "../shared/Typography";
 
 interface HeroSectionProps {
   allocations: Allocation[];
@@ -17,19 +16,9 @@ interface HeroSectionProps {
 export default function HeroSection({ allocations }: HeroSectionProps) {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
 
-  // Snapshots
-  const allocationsWithSnapshotsTaken = allocations.filter(
-    (allocation) => allocation.snapshotTaken,
-  );
-
   // User
   const userAllocationPercent = allocations.reduce(
-    (acc, allocation) =>
-      acc.plus(
-        allocation.snapshotTaken && allocation.allocationPercent !== undefined
-          ? allocation.allocationPercent
-          : 0,
-      ),
+    (acc, allocation) => acc.plus(allocation.allocationPercent ?? 0),
     new BigNumber(0),
   );
 
@@ -43,11 +32,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             {"SEND allocation"}
           </>
         ) : (
-          <>
-            {allocationsWithSnapshotsTaken.length === allocations.length
-              ? "Your allocation is"
-              : "Your current allocation is"}
-          </>
+          "Your current allocation is"
         )}
       </SectionHeading>
 
@@ -62,9 +47,9 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             Connect wallet
           </Button>
         ) : (
-          <div className="flex h-16 min-w-[240px] flex-row items-center justify-center gap-4 rounded-md border border-primary bg-primary/10 px-8">
-            <SendTokenLogo className="h-8 w-8" />
-            <TDisplay className="text-lg">
+          <div className="flex h-[72px] min-w-[300px] flex-row items-center justify-center gap-5 rounded-md border border-primary bg-[#0E1932] px-8">
+            <SendTokenLogo className="h-10 w-10" />
+            <TDisplay className="text-3xl">
               {formatToken(
                 new BigNumber(SEND_TOTAL_SUPPLY).times(
                   userAllocationPercent.div(100),
@@ -75,11 +60,6 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             </TDisplay>
           </div>
         )}
-
-        <TBodySans className="text-muted-foreground">
-          Snapshots taken: {allocationsWithSnapshotsTaken.length} /{" "}
-          {allocations.length}
-        </TBodySans>
       </div>
     </div>
   );

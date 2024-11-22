@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import BigNumber from "bignumber.js";
 
+import { useWalletContext } from "@suilend/frontend-sui";
+
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
@@ -15,7 +17,6 @@ import { formatInteger } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
-export const TOTAL_DISTRIBUTED_POINTS = 100_000_000_000;
 
 enum AllocationId {
   EARLY_USERS = "earlyUsers",
@@ -30,6 +31,7 @@ enum AllocationId {
   EGG = "egg",
   DOUBLEUP_CITIZEN = "doubleUpCitizen",
   KUMO = "kumo",
+  ANIMA = "anima",
 
   FUD = "fud",
   OCTO = "octo",
@@ -50,42 +52,49 @@ export enum AssetType {
 
 export type Allocation = {
   id: AllocationId;
+  src: string;
   title: string;
   description: string;
   allocationType: AllocationType;
   assetType?: AssetType;
   cta?: {
+    // Undefined for Early Users
     title: string;
     href: string;
   };
-  snapshotTaken: boolean;
-  eligibleWallets: string;
+  snapshotTaken?: boolean; // Undefined for Suilend Capsules, SEND Points, and SAVE
+  eligibleWallets?: string; // Undefined for Suilend Capsules, SEND Points, SAVE, and Rootlets
   totalAllocationPercent: BigNumber;
-  allocationPercent?: BigNumber; // Only optional for SAVE
+  allocationPercent?: BigNumber; // Undefined for SAVE
 };
 
 export default function Send() {
+  const { address } = useWalletContext();
   const { data } = useLoadedAppContext();
+
   const pointsStats = getPointsStats(data.rewardMap, data.obligations);
 
+  const TOTAL_DISTRIBUTED_POINTS = 2_352_796_979.793415052; // TODO
+
   // User
-  const isEarlyUser = true;
-  const numberOfCommonCapsulesHeld = 2;
-  const numberOfUncommonCapsulesHeld = 1;
-  const numberOfRareCapsulesHeld = 1;
-  const numberOfRootletsHeld = 9;
+  const isEarlyUser = address ? true : undefined; // TODO
+  const totalPoints = address ? pointsStats.totalPoints.total : undefined;
+  const numberOfCommonCapsulesHeld = address ? 2 : undefined; // TODO
+  const numberOfUncommonCapsulesHeld = address ? 1 : undefined; // TODO
+  const numberOfRareCapsulesHeld = address ? 1 : undefined; // TODO
+  const numberOfRootletsHeld = address ? 9 : undefined; // TODO
 
-  const isBluefinLeaderboardTop1000User = true;
+  const isBluefinLeaderboardTop1000User = true; // TODO
 
-  const isPrimeMachinHolder = true;
-  const isAftermathEggHolder = true;
-  const isDoubleUpCitizenHolder = true;
-  const isKumoHolder = true;
+  const isPrimeMachinHolder = true; // TODO
+  const isEggHolder = true; // TODO
+  const isDoubleUpCitizenHolder = true; // TODO
+  const isKumoHolder = true; // TODO
 
-  const isFudTop10000Holder = true;
-  const isOctoTop300Holder = true;
-  const isAaaTop1000Holder = true;
-  const isTismTop300Holder = true;
+  const isFudTop10000Holder = true; // TODO
+  const isOctoTop300Holder = true; // TODO
+  const isAaaTop1000Holder = true; // TODO
+  const isTismTop300Holder = true; // TODO
 
   // Allocations
   const earlyUsers = {
@@ -94,71 +103,82 @@ export default function Send() {
     allocationPerWalletPercent: 1 / 6778, // Flat
   };
   const sendPoints = {
-    eligibleWallets: 50000, // Number of Suilend users with SEND Points
     totalAllocationPercent: 19,
     allocationPerPointPercent: 19 / TOTAL_DISTRIBUTED_POINTS, // Linear
   };
   const capsules = {
-    eligibleWallets: 300, // Number of Suilend Capsules holders
     totalAllocationPercent: 0.3,
     allocationPerCommonCapsulePercent: 0.1 / 500, // Linear
     allocationPerUncommonCapsulePercent: 0.1 / 100, // Linear
     allocationPerRareCapsulePercent: 0.1 / 50, // Linear
   };
   const save = {
-    eligibleWallets: 1000, // Number of SLND holders
     totalAllocationPercent: 15,
     allocationPerSlndPercent: 0.15 / SEND_TOTAL_SUPPLY, // Linear
   };
   const rootlets = {
-    eligibleWallets: 500, // Number of Rootlets holders
     totalAllocationPercent: 1.111,
     allocationPerRootletPercent: 1.111 / 3333, // Linear
   };
 
   const bluefinLeaderboard = {
+    snapshotTaken: false,
     eligibleWallets: 1000, // Top 1,000 users
     totalAllocationPercent: 0.05,
     allocationPerWalletPercent: 0.05 / 1000, // Flat
   };
 
   const primeMachin = {
+    snapshotTaken: false,
     eligibleWallets: 100, // Number of Prime Machin holders
     totalAllocationPercent: 0.1,
     allocationPerWalletPercent: 0.1 / 100, // Flat
   };
   const egg = {
+    snapshotTaken: false,
     eligibleWallets: 2000, // Number of Egg holders
     totalAllocationPercent: 0.1,
     allocationPerWalletPercent: 0.1 / 2000, // Flat
   };
   const doubleUpCitizen = {
+    snapshotTaken: false,
     eligibleWallets: 3000, // Number of DoubleUp Citizen holders
     totalAllocationPercent: 0.05,
     allocationPerWalletPercent: 0.05 / 3000, // Flat
   };
   const kumo = {
+    snapshotTaken: false,
     eligibleWallets: 500, // Number of Kumo holders
     totalAllocationPercent: 0.1,
     allocationPerWalletPercent: 0.1 / 500, // Flat
   };
+  const anima = {
+    snapshotTaken: false,
+    eligibleWallets: 1, // TODO
+    totalAllocationPercent: 0.05,
+    allocationPerWalletPercent: 0.05 / 1, // TODO
+  };
 
   const fud = {
+    snapshotTaken: false,
     eligibleWallets: 10000, // Top 10,000 FUD holders
     totalAllocationPercent: 0.1,
     allocationPerWalletPercent: 0.1 / 10000, // Flat
   };
   const octo = {
+    snapshotTaken: false,
     eligibleWallets: 300, // Top 300 OCTO holders
     totalAllocationPercent: 0.017,
     allocationPerWalletPercent: 0.017 / 300, // Flat
   };
   const aaa = {
+    snapshotTaken: false,
     eligibleWallets: 1000, // Top 1,000 AAA holders
     totalAllocationPercent: 0.1,
     allocationPerWalletPercent: 0.1 / 1000, // Flat
   };
   const tism = {
+    snapshotTaken: false,
     eligibleWallets: 300, // Top 300 TISM holders
     totalAllocationPercent: 0.01,
     allocationPerWalletPercent: 0.01 / 300, // Flat
@@ -167,74 +187,79 @@ export default function Send() {
   const allocations: Allocation[] = [
     {
       id: AllocationId.EARLY_USERS,
-      title: "Early users",
-      description: "TEMP",
+      src: "/assets/send/early-users.png",
+      title: "Early Users",
+      description: "TEMP", // TODO
       allocationType: AllocationType.FLAT,
       snapshotTaken: true,
       eligibleWallets: formatInteger(earlyUsers.eligibleWallets),
       totalAllocationPercent: new BigNumber(earlyUsers.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isEarlyUser ? earlyUsers.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent:
+        isEarlyUser !== undefined
+          ? new BigNumber(earlyUsers.allocationPerWalletPercent)
+          : undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
+      src: "/assets/send/send-points.png",
       title: "SEND Points",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
       cta: {
         title: "Earn points",
         href: "/dashboard",
       },
-      snapshotTaken: false,
-      eligibleWallets: formatInteger(sendPoints.eligibleWallets),
       totalAllocationPercent: new BigNumber(sendPoints.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        pointsStats.totalPoints.total.times(
-          sendPoints.allocationPerPointPercent,
-        ),
-      ),
+      allocationPercent:
+        totalPoints !== undefined
+          ? totalPoints.times(sendPoints.allocationPerPointPercent)
+          : undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
+      src: "",
       title: "Suilend Capsules",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy NFT",
         href: "https://www.tradeport.xyz/sui/collection/suilend-capsule?bottomTab=trades&tab=items",
       },
-      snapshotTaken: false,
-      eligibleWallets: formatInteger(capsules.eligibleWallets),
       totalAllocationPercent: new BigNumber(capsules.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        numberOfCommonCapsulesHeld *
-          capsules.allocationPerCommonCapsulePercent +
-          numberOfUncommonCapsulesHeld *
-            capsules.allocationPerUncommonCapsulePercent +
-          numberOfRareCapsulesHeld * capsules.allocationPerRareCapsulePercent,
-      ),
+      allocationPercent:
+        numberOfCommonCapsulesHeld !== undefined &&
+        numberOfUncommonCapsulesHeld !== undefined &&
+        numberOfRareCapsulesHeld !== undefined
+          ? new BigNumber(
+              numberOfCommonCapsulesHeld *
+                capsules.allocationPerCommonCapsulePercent +
+                numberOfUncommonCapsulesHeld *
+                  capsules.allocationPerUncommonCapsulePercent +
+                numberOfRareCapsulesHeld *
+                  capsules.allocationPerRareCapsulePercent,
+            )
+          : undefined,
     },
     {
       id: AllocationId.SAVE,
+      src: "/assets/send/save.png",
       title: "SAVE",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.TOKEN,
       cta: {
         title: "View allocation",
         href: "https://save.finance/save",
       },
-      snapshotTaken: false,
-      eligibleWallets: formatInteger(1000),
       totalAllocationPercent: new BigNumber(save.totalAllocationPercent),
     },
     {
       id: AllocationId.ROOTLETS,
+      src: "",
       title: "Rootlets",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
@@ -242,175 +267,218 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/rootlets?bottomTab=trades&tab=items",
       },
       snapshotTaken: false,
-      eligibleWallets: formatInteger(rootlets.eligibleWallets),
       totalAllocationPercent: new BigNumber(rootlets.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        numberOfRootletsHeld * rootlets.allocationPerRootletPercent,
-      ),
+      allocationPercent:
+        numberOfRootletsHeld !== undefined
+          ? new BigNumber(
+              numberOfRootletsHeld * rootlets.allocationPerRootletPercent,
+            )
+          : undefined,
     },
 
     {
       id: AllocationId.BLUEFIN_LEADERBOARD,
+      src: "/assets/send/bluefin.png",
       title: "Bluefin Leaderboard",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.FLAT,
       assetType: AssetType.POINTS,
       cta: {
         title: "View leaderboard",
-        href: "",
+        href: "", // TODO
       },
-      snapshotTaken: false,
+      snapshotTaken: bluefinLeaderboard.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(bluefinLeaderboard.eligibleWallets)}`,
       totalAllocationPercent: new BigNumber(
         bluefinLeaderboard.totalAllocationPercent,
       ),
-      allocationPercent: new BigNumber(
-        isBluefinLeaderboardTop1000User
-          ? bluefinLeaderboard.allocationPerWalletPercent
-          : 0,
-      ),
+      allocationPercent: bluefinLeaderboard.snapshotTaken
+        ? new BigNumber(
+            isBluefinLeaderboardTop1000User
+              ? bluefinLeaderboard.allocationPerWalletPercent
+              : 0,
+          )
+        : undefined,
     },
 
     {
       id: AllocationId.PRIME_MACHIN,
+      src: "/assets/send/prime-machin.png",
       title: "Prime Machin",
-      description: "TEMP",
+      description:
+        "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy NFT",
         href: "https://www.tradeport.xyz/sui/collection/prime-machin?bottomTab=trades&tab=items",
       },
-      snapshotTaken: false,
+      snapshotTaken: primeMachin.snapshotTaken,
       eligibleWallets: formatInteger(primeMachin.eligibleWallets),
       totalAllocationPercent: new BigNumber(primeMachin.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isPrimeMachinHolder ? primeMachin.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: primeMachin.snapshotTaken
+        ? new BigNumber(
+            isPrimeMachinHolder ? primeMachin.allocationPerWalletPercent : 0,
+          )
+        : undefined,
     },
     {
       id: AllocationId.EGG,
+      src: "/assets/send/egg.png",
       title: "Egg",
-      description: "TEMP",
+      description:
+        "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy NFT",
         href: "https://www.tradeport.xyz/sui/collection/egg?bottomTab=trades&tab=items",
       },
-      snapshotTaken: false,
+      snapshotTaken: egg.snapshotTaken,
       eligibleWallets: formatInteger(egg.eligibleWallets),
       totalAllocationPercent: new BigNumber(egg.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isAftermathEggHolder ? egg.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: egg.snapshotTaken
+        ? new BigNumber(isEggHolder ? egg.allocationPerWalletPercent : 0)
+        : undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
+      src: "/assets/send/doubleup-citizen.png",
       title: "DoubleUp Citizen",
-      description: "TEMP",
+      description:
+        "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy NFT",
         href: "https://www.tradeport.xyz/sui/collection/doubleup-citizen?bottomTab=trades&tab=items",
       },
-      snapshotTaken: false,
+      snapshotTaken: doubleUpCitizen.snapshotTaken,
       eligibleWallets: formatInteger(doubleUpCitizen.eligibleWallets),
       totalAllocationPercent: new BigNumber(
         doubleUpCitizen.totalAllocationPercent,
       ),
-      allocationPercent: new BigNumber(
-        isDoubleUpCitizenHolder
-          ? doubleUpCitizen.allocationPerWalletPercent
-          : 0,
-      ),
+      allocationPercent: doubleUpCitizen.snapshotTaken
+        ? new BigNumber(
+            isDoubleUpCitizenHolder
+              ? doubleUpCitizen.allocationPerWalletPercent
+              : 0,
+          )
+        : undefined,
     },
     {
       id: AllocationId.KUMO,
+      src: "/assets/send/kumo.png",
       title: "Kumo",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy NFT",
         href: "https://www.tradeport.xyz/sui/collection/kumo?bottomTab=trades&tab=items",
       },
-      snapshotTaken: false,
+      snapshotTaken: kumo.snapshotTaken,
       eligibleWallets: formatInteger(kumo.eligibleWallets),
       totalAllocationPercent: new BigNumber(kumo.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isKumoHolder ? kumo.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: kumo.snapshotTaken
+        ? new BigNumber(isKumoHolder ? kumo.allocationPerWalletPercent : 0)
+        : undefined,
+    },
+    {
+      id: AllocationId.ANIMA,
+      src: "/assets/send/anima.png",
+      title: "Anima",
+      description: "TEMP", // TODO
+      allocationType: AllocationType.FLAT,
+      assetType: AssetType.NFT,
+      cta: {
+        title: "Mint NFT",
+        href: "", // TODO
+      },
+      snapshotTaken: anima.snapshotTaken,
+      eligibleWallets: "", // TODO
+      totalAllocationPercent: new BigNumber(anima.totalAllocationPercent),
+      allocationPercent: anima.snapshotTaken ? new BigNumber(0) : undefined, // TODO
     },
 
     {
       id: AllocationId.FUD,
+      src: "/assets/send/fud.png",
       title: "FUD",
-      description: "TEMP",
+      description: "FUD is the OG culture coin on Sui.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
         title: "Get FUD",
         href: "/swap/SUI-FUD",
       },
-      snapshotTaken: false,
+      snapshotTaken: fud.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: new BigNumber(fud.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isFudTop10000Holder ? fud.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: fud.snapshotTaken
+        ? new BigNumber(
+            isFudTop10000Holder ? fud.allocationPerWalletPercent : 0,
+          )
+        : undefined,
     },
     {
       id: AllocationId.OCTO,
+      src: "/assets/send/octo.png",
       title: "OCTO",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
         title: "Get OCTO",
         href: `/swap/SUI-${NORMALIZED_OCTO_COINTYPE}`,
       },
-      snapshotTaken: false,
+      snapshotTaken: octo.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: new BigNumber(octo.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isOctoTop300Holder ? octo.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: octo.snapshotTaken
+        ? new BigNumber(
+            isOctoTop300Holder ? octo.allocationPerWalletPercent : 0,
+          )
+        : undefined,
     },
     {
       id: AllocationId.AAA,
+      src: "/assets/send/aaa.png",
       title: "AAA",
-      description: "TEMP",
+      description:
+        "AAA Cat is Sui's fastest-growing, top cat meme coin. Built by the community for the community. Can't Stop, Won't Stop!",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
         title: "Get AAA",
         href: "/swap/SUI-AAA",
       },
-      snapshotTaken: false,
+      snapshotTaken: aaa.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: new BigNumber(aaa.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isAaaTop1000Holder ? aaa.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: aaa.snapshotTaken
+        ? new BigNumber(isAaaTop1000Holder ? aaa.allocationPerWalletPercent : 0)
+        : undefined,
     },
     {
       id: AllocationId.TISM,
+      src: "/assets/send/tism.png",
       title: "TISM",
-      description: "TEMP",
+      description: "TEMP", // TODO
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
         title: "Get TISM",
         href: `/swap/SUI-${NORMALIZED_TISM_COINTYPE}`,
       },
-      snapshotTaken: false,
+      snapshotTaken: tism.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: new BigNumber(tism.totalAllocationPercent),
-      allocationPercent: new BigNumber(
-        isTismTop300Holder ? tism.allocationPerWalletPercent : 0,
-      ),
+      allocationPercent: tism.snapshotTaken
+        ? new BigNumber(
+            isTismTop300Holder ? tism.allocationPerWalletPercent : 0,
+          )
+        : undefined,
     },
   ];
 
