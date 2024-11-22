@@ -157,43 +157,8 @@ export default function useFetchAppData(address: string | undefined) {
         suiClient,
       );
 
-      if (obligationOwnerCaps.length > 0) {
-        if (obligationOwnerCaps.length > 1) {
-          const obligationOwnerCapTimestampsMs = (
-            await Promise.all(
-              obligationOwnerCaps.map((ownerCap) =>
-                suiClient.queryTransactionBlocks({
-                  limit: 1,
-                  order: "ascending",
-                  filter: { ChangedObject: ownerCap.id },
-                  options: { showRawInput: true },
-                }),
-              ),
-            )
-          ).map((res) =>
-            res?.data?.[0]?.timestampMs
-              ? +(res.data[0].timestampMs as string)
-              : 0,
-          );
-
-          const obligationOwnerCapTimestampsMsMap = obligationOwnerCaps.reduce(
-            (acc, obligationOwnerCap, index) => ({
-              ...acc,
-              [obligationOwnerCap.id]: obligationOwnerCapTimestampsMs[index],
-            }),
-            {} as Record<string, number>,
-          );
-
-          obligationOwnerCaps = obligationOwnerCaps
-            .slice()
-            .sort(
-              (a, b) =>
-                obligationOwnerCapTimestampsMsMap[a.id] -
-                obligationOwnerCapTimestampsMsMap[b.id],
-            );
-        }
-
-        const rawObligations = await Promise.all(
+      obligations = (
+        await Promise.all(
           obligationOwnerCaps.map((ownerCap) =>
             SuilendClient.getObligation(
               ownerCap.obligationId,
@@ -201,16 +166,15 @@ export default function useFetchAppData(address: string | undefined) {
               suiClient,
             ),
           ),
-        );
-
-        obligations = rawObligations
-          .map((rawObligation) =>
-            simulate.refreshObligation(rawObligation, refreshedRawReserves),
-          )
-          .map((refreshedObligation) =>
-            parseObligation(refreshedObligation, reserveMap),
-          );
-      }
+        )
+      )
+        .map((rawObligation) =>
+          simulate.refreshObligation(rawObligation, refreshedRawReserves),
+        )
+        .map((refreshedObligation) =>
+          parseObligation(refreshedObligation, reserveMap),
+        )
+        .sort((a, b) => +b.netValueUsd.minus(a.netValueUsd));
     }
 
     // Rewards
