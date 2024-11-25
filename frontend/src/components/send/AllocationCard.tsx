@@ -38,7 +38,10 @@ function Status({ allocation }: StatusProps) {
           "relative z-[1] -mb-2 flex h-11 w-full flex-row items-center rounded-t-md px-4 pb-2",
           isEligible
             ? "justify-between bg-[#5DF886]"
-            : "justify-center bg-[#192A3A]",
+            : cn(
+                "justify-center",
+                isSnapshotNotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
+              ),
         )}
       >
         {isEligible ? (
@@ -57,7 +60,11 @@ function Status({ allocation }: StatusProps) {
             </div>
           </>
         ) : (
-          <TBody className="text-[#8FDCF4]">
+          <TBody
+            className={cn(
+              isSnapshotNotTaken ? "text-[#030917]" : "text-[#8FDCF4]",
+            )}
+          >
             {isIneligible
               ? "Not eligible"
               : isSnapshotTaken
