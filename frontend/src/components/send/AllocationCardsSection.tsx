@@ -18,8 +18,8 @@ export default function AllocationCardsSection({
     () =>
       allocations.filter(
         (allocation) =>
-          allocation.allocationPercent !== undefined &&
-          allocation.allocationPercent.gt(0),
+          allocation.userAllocationPercent !== undefined &&
+          allocation.userAllocationPercent.gt(0),
       ),
     [allocations],
   );
@@ -27,8 +27,8 @@ export default function AllocationCardsSection({
     () =>
       allocations.filter(
         (allocation) =>
-          allocation.allocationPercent !== undefined &&
-          allocation.allocationPercent.eq(0),
+          allocation.userAllocationPercent !== undefined &&
+          allocation.userAllocationPercent.eq(0),
       ),
     [allocations],
   );

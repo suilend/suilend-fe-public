@@ -22,11 +22,11 @@ interface StatusProps {
 
 function Status({ allocation }: StatusProps) {
   const isEligible =
-    allocation.allocationPercent !== undefined &&
-    allocation.allocationPercent.gt(0);
+    allocation.userAllocationPercent !== undefined &&
+    allocation.userAllocationPercent.gt(0);
   const isIneligible =
-    allocation.allocationPercent !== undefined &&
-    allocation.allocationPercent.eq(0);
+    allocation.userAllocationPercent !== undefined &&
+    allocation.userAllocationPercent.eq(0);
 
   const isSnapshotTaken = allocation.snapshotTaken === true;
   const isSnapshotNotTaken = allocation.snapshotTaken === false;
@@ -49,7 +49,7 @@ function Status({ allocation }: StatusProps) {
               <TBody className="text-[16px] text-[#030917]">
                 {formatToken(
                   new BigNumber(SEND_TOTAL_SUPPLY).times(
-                    allocation.allocationPercent!.div(100),
+                    allocation.userAllocationPercent!.div(100),
                   ),
                   { exact: false },
                 )}
@@ -120,12 +120,13 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   const assetTypeTitleMap: Record<AssetType, string> = {
     [AssetType.NFT]: "NFT",
     [AssetType.TOKEN]: "Token",
+    [AssetType.TRADING]: "Trading",
     [AssetType.POINTS]: "Points",
   };
 
   const isIneligible =
-    allocation.allocationPercent !== undefined &&
-    allocation.allocationPercent.eq(0);
+    allocation.userAllocationPercent !== undefined &&
+    allocation.userAllocationPercent.eq(0);
 
   return (
     <Wrapper>
@@ -223,19 +224,37 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               {/* Bottom */}
               <div className="flex w-full flex-col gap-4">
                 <div className="flex w-full flex-col gap-2.5">
-                  <LabelWithValue
-                    labelClassName="text-sm"
-                    label="Total allocation"
-                    valueClassName="gap-1.5 items-center"
-                    valueStartDecorator={<SendTokenLogo />}
-                    value={formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
-                      { exact: false },
-                    )}
-                    horizontal
-                  />
+                  <div className="flex w-full flex-col gap-1.5">
+                    <LabelWithValue
+                      labelClassName="text-sm"
+                      label="Total allocation"
+                      valueClassName="gap-1.5 items-center"
+                      valueStartDecorator={<SendTokenLogo />}
+                      value={formatToken(
+                        new BigNumber(SEND_TOTAL_SUPPLY).times(
+                          allocation.totalAllocationPercent.div(100),
+                        ),
+                        { exact: false },
+                      )}
+                      horizontal
+                    />
+                    {allocation.totalAllocationBreakdown.map((breakdown) => (
+                      <LabelWithValue
+                        key={breakdown.title}
+                        labelClassName="text-sm pl-1"
+                        label={breakdown.title}
+                        valueClassName="gap-1.5 items-center"
+                        valueStartDecorator={<SendTokenLogo />}
+                        value={formatToken(
+                          new BigNumber(SEND_TOTAL_SUPPLY).times(
+                            breakdown.percent.div(100),
+                          ),
+                          { exact: false },
+                        )}
+                        horizontal
+                      />
+                    ))}
+                  </div>
 
                   {allocation.eligibleWallets !== undefined && (
                     <>

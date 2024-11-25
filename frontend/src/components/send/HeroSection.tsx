@@ -18,7 +18,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
 
   // User
   const userAllocationPercent = allocations.reduce(
-    (acc, allocation) => acc.plus(allocation.allocationPercent ?? 0),
+    (acc, allocation) => acc.plus(allocation.userAllocationPercent ?? 0),
     new BigNumber(0),
   );
 
