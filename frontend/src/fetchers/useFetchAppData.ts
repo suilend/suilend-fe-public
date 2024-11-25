@@ -28,12 +28,19 @@ export default function useFetchAppData(address?: string) {
       reserveCoinTypes,
       rewardCoinTypes,
 
+      reserveCoinMetadataMap,
       rewardCoinMetadataMap,
       coinMetadataMap,
 
       obligationOwnerCaps,
       obligations,
     } = await initializeSuilendSdk(suiClient, address);
+    console.log(
+      "XXX",
+      reserveCoinMetadataMap,
+      rewardCoinMetadataMap,
+      coinMetadataMap,
+    );
     const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
       reserveMap,
       rewardCoinTypes,
