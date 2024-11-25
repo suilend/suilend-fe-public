@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 
 import {
-  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   NORMALIZED_LST_COINTYPES,
   NORMALIZED_SUI_COINTYPE,
+  TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   Token,
   getMsafeAppStoreUrl,
   isInMsafeApp,
@@ -108,14 +108,12 @@ export default function AssetCell({
 
         <TLabel>
           {reserve
-            ? reserve.priceIdentifier !==
-              COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
-                ?.priceIdentifier
-              ? "--"
-              : formatPrice(reserve.price)
-            : price === undefined
-              ? "--"
-              : formatPrice(price)}
+            ? !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+              ? formatPrice(reserve.price)
+              : "--"
+            : price !== undefined
+              ? formatPrice(price)
+              : "--"}
         </TLabel>
       </div>
     </div>

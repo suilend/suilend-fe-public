@@ -3,7 +3,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
-import { COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP } from "@suilend/frontend-sui";
+import { TEMPORARY_PYTH_PRICE_FEED_COINTYPES } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action } from "@suilend/sdk/types";
 
@@ -90,15 +90,13 @@ const ActionsModalInput = forwardRef<HTMLInputElement, ActionsModalInputProps>(
             className="text-right"
             style={{ height: `${USD_LABEL_HEIGHT}px` }}
           >
-            {reserve.priceIdentifier !==
-            COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
-              ?.priceIdentifier ? (
-              "--"
-            ) : (
+            {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType) ? (
               <>
                 {!usdValue.eq(0) && "≈"}
                 {formatUsd(usdValue)}
               </>
+            ) : (
+              "--"
             )}
           </TLabel>
         </div>

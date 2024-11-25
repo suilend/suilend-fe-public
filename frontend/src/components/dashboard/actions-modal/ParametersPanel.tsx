@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
 import {
-  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
+  COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP,
   getPythOracleUrl,
   useSettingsContext,
 } from "@suilend/frontend-sui";
@@ -274,7 +274,7 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
       {pythOracleUrl && (
         <LabelWithValue
           label="Oracle"
-          value={COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType].symbol}
+          value={COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP[reserve.coinType]}
           valueEndDecorator={<PythLogo className="my-0.5" />}
           url={pythOracleUrl}
           urlTooltip="View price feed"
