@@ -7,10 +7,10 @@ import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
+  TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   getBalanceChange,
   isSui,
   useSettingsContext,
@@ -401,11 +401,9 @@ export default function ActionsModalTabContent({
           <LabelWithValue
             label="Price"
             value={
-              reserve.priceIdentifier !==
-              COINTYPE_PYTH_PRICE_ID_SYMBOL_MAP[reserve.coinType]
-                ?.priceIdentifier
-                ? "--"
-                : formatPrice(reserve.price)
+              !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+                ? formatPrice(reserve.price)
+                : "--"
             }
             horizontal
           />

@@ -26,18 +26,18 @@ export interface AppData {
   suilendClient: SuilendClient;
 
   lendingMarket: ParsedLendingMarket;
-  lendingMarketOwnerCapId: string | undefined;
   reserveMap: Record<string, ParsedReserve>;
   rewardMap: RewardMap;
-
-  obligationOwnerCaps: ObligationOwnerCap<string>[] | undefined;
-  obligations: ParsedObligation[] | undefined;
 
   reserveCoinTypes: string[];
   rewardCoinTypes: string[];
 
   coinMetadataMap: Record<string, CoinMetadata>;
   rewardPriceMap: Record<string, BigNumber | undefined>;
+
+  obligationOwnerCaps: ObligationOwnerCap<string>[] | undefined;
+  obligations: ParsedObligation[] | undefined;
+  lendingMarketOwnerCapId: string | undefined;
 
   lstAprPercentMap: Record<string, BigNumber>;
 }
