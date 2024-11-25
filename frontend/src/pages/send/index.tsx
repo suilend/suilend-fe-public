@@ -1,8 +1,9 @@
 import Head from "next/head";
+import { useEffect } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
 
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
@@ -69,6 +70,7 @@ export type Allocation = {
 };
 
 export default function Send() {
+  const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { data } = useLoadedAppContext();
 
@@ -95,6 +97,17 @@ export default function Send() {
   const isOctoTop300Holder = true; // TODO
   const isAaaTop1000Holder = true; // TODO
   const isTismTop300Holder = true; // TODO
+
+  useEffect(() => {
+    if (!address) return;
+    console.log("XXX here");
+    (async () => {
+      const x = await suiClient.getOwnedObjects({
+        owner: address,
+      });
+      console.log("XXXXX", x);
+    })();
+  }, [suiClient, address]);
 
   // Allocations
   const earlyUsers = {
@@ -220,7 +233,8 @@ export default function Send() {
       id: AllocationId.SUILEND_CAPSULES,
       src: "",
       title: "Suilend Capsules",
-      description: "TEMP", // TODO
+      description:
+        "A token of appreciation awarded for outstanding community contributions.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
@@ -259,7 +273,8 @@ export default function Send() {
       id: AllocationId.ROOTLETS,
       src: "",
       title: "Rootlets",
-      description: "TEMP", // TODO
+      description:
+        "Rootlets are the legendary companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
@@ -370,7 +385,8 @@ export default function Send() {
       id: AllocationId.KUMO,
       src: "/assets/send/kumo.png",
       title: "Kumo",
-      description: "TEMP", // TODO
+      description:
+        "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
@@ -388,12 +404,13 @@ export default function Send() {
       id: AllocationId.ANIMA,
       src: "/assets/send/anima.png",
       title: "Anima",
-      description: "TEMP", // TODO
+      description:
+        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
         title: "Mint NFT",
-        href: "", // TODO
+        href: "https://anima.nexus/drop/genesis",
       },
       snapshotTaken: anima.snapshotTaken,
       eligibleWallets: "", // TODO
@@ -464,7 +481,7 @@ export default function Send() {
       id: AllocationId.TISM,
       src: "/assets/send/tism.png",
       title: "TISM",
-      description: "TEMP", // TODO
+      description: "got tism?",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {

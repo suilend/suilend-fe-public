@@ -76,7 +76,8 @@ interface CtaButtonProps {
 
 function CtaButton({ allocation }: CtaButtonProps) {
   return (
-    allocation.cta && (
+    allocation.cta &&
+    !allocation.snapshotTaken && (
       <Link
         className="flex"
         target="_blank"
