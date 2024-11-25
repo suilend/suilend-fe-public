@@ -4,6 +4,7 @@ import useSWR from "swr";
 import {
   LIQUID_STAKING_INFO_MAP,
   NORMALIZED_LST_COINTYPES,
+  initializeSuilendRewards,
   initializeSuilendSdk,
   showErrorToast,
   useSettingsContext,
@@ -23,17 +24,22 @@ export default function useFetchAppData(address?: string) {
 
       lendingMarket,
       reserveMap,
-      rewardMap,
 
       reserveCoinTypes,
       rewardCoinTypes,
 
+      rewardCoinMetadataMap,
       coinMetadataMap,
-      rewardPriceMap,
 
       obligationOwnerCaps,
       obligations,
     } = await initializeSuilendSdk(suiClient, address);
+    const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
+      reserveMap,
+      rewardCoinTypes,
+      rewardCoinMetadataMap,
+      obligations ?? [],
+    );
 
     let lendingMarketOwnerCapId: string | null = null;
     if (address) {
