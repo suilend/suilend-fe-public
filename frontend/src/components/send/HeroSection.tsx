@@ -13,6 +13,7 @@ import {
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAddress, formatToken } from "@/lib/format";
@@ -57,11 +58,7 @@ export default function HeroSection({
         ) : userAllocationPercent.eq(0) ? (
           "Sorry, you're not eligible"
         ) : (
-          <>
-            {"Congrats!"}
-            <br />
-            {"Your allocation is"}
-          </>
+          "Your allocation is"
         )}
       </SectionHeading>
 
@@ -76,22 +73,24 @@ export default function HeroSection({
             Connect wallet
           </Button>
         ) : (
-          <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
-            <SendTokenLogo className="h-8 w-8" />
-            {isLoading ? (
-              <Skeleton className="h-10 w-40" />
-            ) : (
-              <TDisplay className="text-4xl">
-                {formatToken(
-                  new BigNumber(SEND_TOTAL_SUPPLY).times(
-                    userAllocationPercent.div(100),
-                  ),
-                  { exact: false },
-                )}{" "}
-                SEND
-              </TDisplay>
-            )}
-          </div>
+          <Tooltip title="Allocation is an estimate since some snapshots haven't been taken yet">
+            <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
+              <SendTokenLogo className="h-8 w-8" />
+              {isLoading ? (
+                <Skeleton className="h-10 w-40" />
+              ) : (
+                <TDisplay className="text-4xl">
+                  {formatToken(
+                    new BigNumber(SEND_TOTAL_SUPPLY).times(
+                      userAllocationPercent.div(100),
+                    ),
+                    { exact: false },
+                  )}
+                  <span className="font-sans">*</span> SEND
+                </TDisplay>
+              )}
+            </div>
+          </Tooltip>
         )}
 
         {isImpersonating && address && (

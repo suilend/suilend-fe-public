@@ -8,6 +8,7 @@ import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
@@ -70,14 +71,25 @@ function Status({ allocation }: StatusProps) {
             <TBody className="text-[#030917]">Eligible</TBody>
             <div className="flex flex-row items-center gap-1.5">
               <SendTokenLogo />
-              <TBody className="text-[16px] text-[#030917]">
-                {formatToken(
-                  new BigNumber(SEND_TOTAL_SUPPLY).times(
-                    allocation.userAllocationPercent!.div(100),
-                  ),
-                  { exact: false },
-                )}
-              </TBody>
+              <Tooltip
+                title={
+                  allocation.id === AllocationId.SEND_POINTS
+                    ? "Allocation is an estimate since SEND Points are still ongoing."
+                    : undefined
+                }
+              >
+                <TBody className="text-[16px] text-[#030917]">
+                  {formatToken(
+                    new BigNumber(SEND_TOTAL_SUPPLY).times(
+                      allocation.userAllocationPercent!.div(100),
+                    ),
+                    { exact: false },
+                  )}
+                  {allocation.id === AllocationId.SEND_POINTS && (
+                    <span className="font-sans">*</span>
+                  )}
+                </TBody>
+              </Tooltip>
             </div>
           </>
         ) : (
@@ -256,7 +268,10 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     {allocation.totalAllocationBreakdown.map((breakdown) => (
                       <LabelWithValue
                         key={breakdown.title}
-                        labelClassName="text-sm pl-1"
+                        labelClassName="text-sm pl-1 items-center gap-2"
+                        labelStartDecorator={
+                          <div className="h-px w-2 bg-muted" />
+                        }
                         label={breakdown.title}
                         valueClassName="gap-1.5 items-center"
                         valueStartDecorator={<SendTokenLogo />}
