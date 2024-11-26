@@ -19,7 +19,10 @@ export default function HeaderBase({ className, children }: HeaderBaseProps) {
         style={{ height: `${HEADER_HEIGHT}px` }}
       />
       <div
-        className={cn("fixed left-0 z-[2] border-b bg-background", className)}
+        className={cn(
+          "fixed left-0 z-[2] border-b bg-background/60 backdrop-blur-lg",
+          className,
+        )}
         style={{
           top: "var(--header-top)",
           right: "var(--removed-body-scroll-bar-size, 0)",

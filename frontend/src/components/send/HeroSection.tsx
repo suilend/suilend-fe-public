@@ -1,12 +1,20 @@
-import BigNumber from "bignumber.js";
+import { useRouter } from "next/router";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import BigNumber from "bignumber.js";
+import { cloneDeep } from "lodash";
+import { VenetianMask } from "lucide-react";
+
+import {
+  WalletContextQueryParams,
+  shallowPushQuery,
+  useWalletContext,
+} from "@suilend/frontend-sui";
 
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
-import { TDisplay } from "@/components/shared/Typography";
-import { formatToken } from "@/lib/format";
+import { TBodySans, TDisplay } from "@/components/shared/Typography";
+import { formatAddress, formatToken } from "@/lib/format";
 import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
 
 interface HeroSectionProps {
@@ -14,7 +22,17 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ allocations }: HeroSectionProps) {
-  const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
+  const router = useRouter();
+
+  const { isImpersonating, setIsConnectWalletDropdownOpen, address } =
+    useWalletContext();
+
+  // Impersonation mode
+  const onImpersonationModeBannerClick = () => {
+    const restQuery = cloneDeep(router.query);
+    delete restQuery[WalletContextQueryParams.WALLET];
+    shallowPushQuery(router, restQuery);
+  };
 
   // User
   const userAllocationPercent = allocations.reduce(
@@ -31,15 +49,21 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             <SendTokenLogo className="mr-3 inline-block h-8 w-8 md:mr-4 md:h-10 md:w-10" />
             {"SEND allocation"}
           </>
+        ) : userAllocationPercent.eq(0) ? (
+          "Sorry, you're not eligible"
         ) : (
-          "Your allocation is"
+          <>
+            {"Congrats!"}
+            <br />
+            {"Your allocation is"}
+          </>
         )}
       </SectionHeading>
 
       <div className="flex w-full flex-col items-center gap-4">
         {!address ? (
           <Button
-            className="h-16 w-[240px] px-10"
+            className="h-16 w-[240px] px-10 md:w-[320px]"
             labelClassName="uppercase text-[16px]"
             size="lg"
             onClick={() => setIsConnectWalletDropdownOpen(true)}
@@ -47,9 +71,9 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             Connect wallet
           </Button>
         ) : (
-          <div className="flex h-[72px] min-w-[300px] flex-row items-center justify-center gap-5 rounded-md border border-primary bg-[#0E1932] px-8">
-            <SendTokenLogo className="h-10 w-10" />
-            <TDisplay className="text-3xl">
+          <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
+            <SendTokenLogo className="h-8 w-8" />
+            <TDisplay className="text-4xl">
               {formatToken(
                 new BigNumber(SEND_TOTAL_SUPPLY).times(
                   userAllocationPercent.div(100),
@@ -59,6 +83,18 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
               SEND
             </TDisplay>
           </div>
+        )}
+
+        {isImpersonating && address && (
+          <button
+            className="group flex flex-row items-center gap-2"
+            onClick={onImpersonationModeBannerClick}
+          >
+            <VenetianMask className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+            <TBodySans className="text-muted-foreground transition-colors group-hover:text-foreground">
+              Impersonating {formatAddress(address)}
+            </TBodySans>
+          </button>
         )}
       </div>
     </div>

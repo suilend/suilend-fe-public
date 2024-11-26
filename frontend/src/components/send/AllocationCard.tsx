@@ -23,13 +23,29 @@ import {
 
 interface StatusProps {
   allocation: Allocation;
-  isIneligible: boolean;
 }
 
-function Status({ allocation, isIneligible }: StatusProps) {
+function Status({ allocation }: StatusProps) {
   const isEligible =
     allocation.userAllocationPercent !== undefined &&
     allocation.userAllocationPercent.gt(0);
+
+  const isIneligible = useMemo(() => {
+    // Return false for SEND Points, Suilend Capsules, and SAVE
+    if (
+      [
+        AllocationId.SEND_POINTS,
+        AllocationId.SUILEND_CAPSULES,
+        AllocationId.SAVE,
+      ].includes(allocation.id)
+    )
+      return false;
+
+    return (
+      allocation.userAllocationPercent !== undefined &&
+      allocation.userAllocationPercent.eq(0)
+    );
+  }, [allocation.id, allocation.userAllocationPercent]);
 
   const isSnapshotTaken = allocation.snapshotTaken === true;
   const isSnapshotNotTaken = allocation.snapshotTaken === false;
@@ -139,17 +155,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
     [AssetType.POINTS]: "Points",
   };
 
-  const isIneligible = useMemo(() => {
-    // Return false for Suilend Capsules and SAVE
-    if (allocation.id === AllocationId.SUILEND_CAPSULES) return false;
-    if (allocation.id === AllocationId.SAVE) return false;
-
-    return (
-      allocation.userAllocationPercent !== undefined &&
-      allocation.userAllocationPercent.eq(0)
-    );
-  }, [allocation.id, allocation.userAllocationPercent]);
-
   return (
     <Wrapper>
       <button
@@ -162,15 +167,8 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
       >
         <div className={cn("relative h-full w-full", styles.cardInner)}>
           {/* Front */}
-          <div
-            className={cn(
-              styles.front,
-              "absolute inset-0 flex flex-col",
-              isIneligible &&
-                "opacity-50 transition-opacity group-hover:opacity-100",
-            )}
-          >
-            <Status allocation={allocation} isIneligible={isIneligible} />
+          <div className={cn(styles.front, "absolute inset-0 flex flex-col")}>
+            <Status allocation={allocation} />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-[#4F677E]">
               {/* Top */}

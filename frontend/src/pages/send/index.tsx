@@ -12,7 +12,6 @@ import {
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
-import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   NORMALIZED_OCTO_COINTYPE,
@@ -87,8 +86,8 @@ export type Allocation = {
     title: string;
     href: string;
   };
-  snapshotTaken?: boolean; // Undefined for Suilend Capsules, SEND Points, and SAVE
-  eligibleWallets?: string; // Undefined for Suilend Capsules, SEND Points, and SAVE
+  snapshotTaken?: boolean; // Undefined for SEND Points, Suilend Capsules, and SAVE
+  eligibleWallets?: string; // Undefined for SEND Points, Suilend Capsules, and SAVE
   totalAllocationPercent: BigNumber;
   totalAllocationBreakdown: {
     title: string;
@@ -273,34 +272,23 @@ export default function Send() {
       : undefined;
 
   // Allocations
-  const earlyUsersTotalAllocationPercent = new BigNumber(
-    earlyUsersJson.length * 500,
-  )
-    .div(2 * SEND_TOTAL_SUPPLY)
-    .times(100);
-  const sendPointsTotalAllocationPercent = new BigNumber(20).minus(
-    earlyUsersTotalAllocationPercent,
-  );
-
   const earlyUsers = {
     snapshotTaken: true,
     eligibleWallets: earlyUsersJson.length,
-    totalAllocationPercent: earlyUsersTotalAllocationPercent,
+    totalAllocationPercent: new BigNumber(0.75),
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: earlyUsersTotalAllocationPercent.div(earlyUsersJson.length), // Flat
+        percent: new BigNumber(0.75).div(earlyUsersJson.length), // Flat
       },
     },
   };
   const sendPoints = {
-    totalAllocationPercent: sendPointsTotalAllocationPercent,
+    totalAllocationPercent: new BigNumber(19.25),
     totalAllocationBreakdown: {
       thousandPoints: {
         title: "Per 1K Points",
-        percent: sendPointsTotalAllocationPercent.div(
-          totalAllocatedPoints.div(1000),
-        ), // Linear
+        percent: new BigNumber(19.25).div(totalAllocatedPoints.div(1000)), // Linear
       },
     },
   };
@@ -900,14 +888,13 @@ export default function Send() {
         <title>Suilend | SEND</title>
       </Head>
 
-      <div className="flex w-full flex-col items-center gap-16">
-        <div className="flex w-full flex-col items-center gap-6">
-          <SendHeader />
-          <ImpersonationModeBanner />
-        </div>
+      <div className="relative flex w-full flex-col items-center">
+        <SendHeader />
 
-        <HeroSection allocations={allocations} />
-        <AllocationCardsSection allocations={allocations} />
+        <div className="relative z-[2] flex w-full flex-col items-center gap-12 pt-36 md:gap-16 md:pt-32">
+          <HeroSection allocations={allocations} />
+          <AllocationCardsSection allocations={allocations} />
+        </div>
       </div>
     </>
   );
