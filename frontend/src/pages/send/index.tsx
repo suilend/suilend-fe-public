@@ -401,20 +401,20 @@ export default function Send() {
   const earlyUsers = {
     snapshotTaken: true,
     eligibleWallets: earlyUsersJson.length,
-    totalAllocationPercent: new BigNumber(1),
+    totalAllocationPercent: new BigNumber(2),
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(1).div(earlyUsersJson.length), // Flat
+        percent: new BigNumber(2).div(earlyUsersJson.length), // Flat
       },
     },
   };
   const sendPoints = {
-    totalAllocationPercent: new BigNumber(19),
+    totalAllocationPercent: new BigNumber(18),
     totalAllocationBreakdown: {
       thousand: {
         title: "Per 1K Points",
-        percent: new BigNumber(19).div(totalAllocatedPoints.div(1000)), // Linear
+        percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
       },
     },
   };
