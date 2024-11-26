@@ -74,7 +74,7 @@ function Status({ allocation }: StatusProps) {
               <Tooltip
                 title={
                   allocation.id === AllocationId.SEND_POINTS
-                    ? "Allocation is an estimate since SEND Points are still ongoing."
+                    ? "Allocation is an estimate since SEND Points are still ongoing"
                     : undefined
                 }
               >
