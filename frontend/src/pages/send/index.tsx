@@ -333,15 +333,11 @@ export default function Send() {
     if (!address) return undefined;
 
     const result: Record<
-      | AllocationId.PRIME_MACHIN
-      | AllocationId.EGG
-      | AllocationId.DOUBLEUP_CITIZEN
-      | AllocationId.KUMO,
+      AllocationId.PRIME_MACHIN | AllocationId.EGG | AllocationId.KUMO,
       BigNumber | undefined
     > = {
       [AllocationId.PRIME_MACHIN]: undefined,
       [AllocationId.EGG]: undefined,
-      [AllocationId.DOUBLEUP_CITIZEN]: undefined,
       [AllocationId.KUMO]: undefined,
     };
 
@@ -355,12 +351,6 @@ export default function Send() {
       Object.keys(eggJson).length > 0
         ? new BigNumber((eggJson as Record<string, number>)[address] ?? 0)
         : getOwnedKioskItemsOfType(EGG_TYPE);
-    result[AllocationId.DOUBLEUP_CITIZEN] =
-      Object.keys(doubleUpCitizenJson).length > 0
-        ? new BigNumber(
-            (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-          )
-        : getOwnedKioskItemsOfType(DOUBLEUP_CITIZEN_TYPE);
     result[AllocationId.KUMO] =
       Object.keys(kumoJson).length > 0
         ? new BigNumber((kumoJson as Record<string, number>)[address] ?? 0)
@@ -368,6 +358,33 @@ export default function Send() {
 
     return result;
   }, [address, getOwnedKioskItemsOfType]);
+
+  const [ownedDoubleUpCitizen, setOwnedDoubleUpCitizen] = useState<
+    BigNumber | undefined
+  >(undefined);
+
+  const getOwnedDoubleUpCitizen = useCallback(async () => {
+    if (!address) {
+      setOwnedDoubleUpCitizen(undefined);
+      return;
+    }
+
+    if (Object.keys(doubleUpCitizenJson).length > 0) {
+      setOwnedDoubleUpCitizen(
+        new BigNumber(
+          (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
+        ),
+      );
+      return;
+    }
+
+    const objs = await getOwnedObjectsOfType(DOUBLEUP_CITIZEN_TYPE);
+    setOwnedDoubleUpCitizen(new BigNumber(objs.length));
+  }, [address, getOwnedObjectsOfType]);
+
+  useEffect(() => {
+    getOwnedDoubleUpCitizen();
+  }, [getOwnedDoubleUpCitizen]);
 
   // User - Anima
   const isInAnimaSnapshot =
@@ -840,8 +857,8 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        ownedNfts?.[AllocationId.DOUBLEUP_CITIZEN] !== undefined
-          ? ownedNfts[AllocationId.DOUBLEUP_CITIZEN].times(
+        ownedDoubleUpCitizen !== undefined
+          ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
