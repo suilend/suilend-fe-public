@@ -692,7 +692,8 @@ export default function Send() {
       id: AllocationId.SAVE,
       src: "/assets/send/save.png",
       title: "SAVE",
-      description: "A token gesture to our roots on Solana with SLND holders.",
+      description:
+        "Suilend thrives thanks to the unwavering support of SLND holders. We honor our roots on Solana with this token of appreciation.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.TOKEN,
       cta: {
