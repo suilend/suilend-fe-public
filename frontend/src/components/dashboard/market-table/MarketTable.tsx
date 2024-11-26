@@ -205,7 +205,6 @@ export default function MarketTable() {
         })
         .map((reserve) => {
           const token = reserve.token;
-          console.log("XXX", reserve, reserve.token);
           const price = reserve.price;
           const isIsolated = reserve.config.isolated;
 

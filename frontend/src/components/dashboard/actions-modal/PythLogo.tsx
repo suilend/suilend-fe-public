@@ -19,6 +19,7 @@ export default function PythLogo({ className }: PythLogoProps) {
         alt="Pyth logo"
         width={16}
         height={16}
+        quality={100}
       />
     </Tooltip>
   );

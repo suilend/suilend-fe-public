@@ -35,11 +35,11 @@ export default function Dashboard() {
         <title>Suilend | Dashboard</title>
       </Head>
 
-      <ImpersonationModeBanner />
-
       {!lg ? (
         // Vertical layout
         <div className="flex w-full flex-col gap-6">
+          <ImpersonationModeBanner />
+
           <div className="flex flex-col gap-2">
             <MarketOverview />
             <Cards />
@@ -54,6 +54,8 @@ export default function Dashboard() {
             className="flex w-full min-w-0 flex-col gap-6"
             style={{ paddingRight: 360 + 10 * 4 }}
           >
+            <ImpersonationModeBanner />
+
             <MarketOverview />
             <MarketTable />
             <RewardsCard />

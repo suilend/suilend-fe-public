@@ -1,0 +1,34 @@
+.flipped .cardInner {
+  transform: rotateY(180deg);
+}
+.cardInner {
+  transition: transform 0.5s 0s;
+  transform-style: preserve-3d;
+}
+
+.flipped {
+  .front {
+    z-index: 1;
+  }
+  .back {
+    z-index: 2;
+  }
+}
+
+:not(.flipped) {
+  .front {
+    z-index: 2;
+  }
+  .back {
+    z-index: 1;
+  }
+}
+
+.front,
+.back {
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+}
+.back {
+  transform: rotateY(180deg);
+}

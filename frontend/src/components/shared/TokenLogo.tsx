@@ -70,6 +70,7 @@ export default function TokenLogo({
               src={token.iconUrl}
               alt={`${token.symbol} logo`}
               fill
+              quality={100}
               {...restImageProps}
             />
           ) : (
@@ -84,6 +85,7 @@ export default function TokenLogo({
               alt="Wormhole logo"
               width={wormholeLogoSize}
               height={wormholeLogoSize}
+              quality={100}
             />
           </div>
         )}

@@ -73,6 +73,7 @@ export default function Home() {
                   alt="Suilend logo"
                   width={64}
                   height={64}
+                  quality={100}
                 />
 
                 <TPrimaryTitle className="w-full max-w-[800px] text-[32px] uppercase md:text-[48px]">

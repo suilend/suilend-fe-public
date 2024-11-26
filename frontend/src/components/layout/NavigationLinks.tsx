@@ -15,6 +15,7 @@ import {
   BRIDGE_URL,
   DASHBOARD_URL,
   POINTS_URL,
+  SEND_URL,
   SPRINGSUI_URL,
   SWAP_URL,
 } from "@/lib/navigation";
@@ -26,6 +27,9 @@ export default function NavigationLinks() {
   return (
     <>
       <Link href={DASHBOARD_URL}>Dashboard</Link>
+      <Link href={SEND_URL} label="New">
+        SEND
+      </Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
         <Link href={POINTS_URL} className="flex-1">
           Points
@@ -52,7 +56,6 @@ export default function NavigationLinks() {
         }
         isExternal
         endIcon={<ExternalLink className="h-3 w-3" />}
-        label="New"
       >
         SpringSui
       </Link>

@@ -20,6 +20,7 @@
     "@msafe/sui-wallet": "^0.0.77",
     "@msafe/sui3-utils": "^5.0.2",
     "@mysten/dapp-kit": "0.14.33",
+    "@mysten/kiosk": "0.9.26",
     "@mysten/sui": "1.14.3",
     "@mysten/sui.js": "0.54.1",
     "@mysten/wallet-standard": "0.13.12",
