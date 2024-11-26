@@ -32,7 +32,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             {"SEND allocation"}
           </>
         ) : (
-          "Your current allocation is"
+          "Your allocation is"
         )}
       </SectionHeading>
 

@@ -125,6 +125,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
   const assetTypeTitleMap: Record<AssetType, string> = {
+    [AssetType.LENDING]: "Lending",
     [AssetType.NFT]: "NFT",
     [AssetType.TOKEN]: "Token",
     [AssetType.TRADING]: "Trading",
@@ -161,7 +162,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               {/* Top */}
               <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-[#030917]">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-1.5">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-2">
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
@@ -171,6 +172,11 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                       { exact: false },
                     )}
                   </TBody>
+                </div>
+
+                {/* Info */}
+                <div className="absolute right-4 top-4 z-[2] flex h-7 flex-col justify-center">
+                  <Info className="h-4 w-4 text-muted-foreground" />
                 </div>
 
                 {/* Icon */}
@@ -188,21 +194,14 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               <Separator className="bg-[#192A3A]" />
 
               {/* Bottom */}
-              <div className="flex w-full flex-col gap-4 p-4">
-                <div className="flex w-full flex-col gap-1">
-                  <div className="flex w-full flex-row items-center justify-between gap-2">
-                    <TDisplay className="flex-1">{allocation.title}</TDisplay>
-                    <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </div>
+              <div className="flex w-full flex-col gap-1 p-4">
+                <TDisplay>{allocation.title}</TDisplay>
 
-                  {allocation.assetType && (
-                    <TBodySans className="text-muted-foreground">
-                      {assetTypeTitleMap[allocation.assetType]}
-                    </TBodySans>
-                  )}
-                </div>
-
-                <CtaButton allocation={allocation} />
+                {allocation.assetType && (
+                  <TBodySans className="text-muted-foreground">
+                    {assetTypeTitleMap[allocation.assetType]}
+                  </TBodySans>
+                )}
               </div>
             </div>
           </div>

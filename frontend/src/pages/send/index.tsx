@@ -21,6 +21,8 @@ import {
 import { formatInteger } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
+import earlyUsersJson from "./early-users.json";
+
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
 enum AllocationId {
@@ -51,6 +53,7 @@ export enum AllocationType {
 }
 
 export enum AssetType {
+  LENDING = "lending",
   NFT = "nft",
   TOKEN = "token",
   TRADING = "trading",
@@ -207,22 +210,33 @@ export default function Send() {
   const isTismTop300Holder = true; // TODO (check if in snapshot)
 
   // Allocations
+  const earlyUsersTotalAllocationPercent = new BigNumber(
+    earlyUsersJson.length * 500,
+  )
+    .div(2 * SEND_TOTAL_SUPPLY)
+    .times(100);
+  const sendPointsTotalAllocationPercent = new BigNumber(20).minus(
+    earlyUsersTotalAllocationPercent,
+  );
+
   const earlyUsers = {
-    eligibleWallets: 6778, // TODO, Number of Early Suilend (before Points programme started on 8 May 2024)
-    totalAllocationPercent: new BigNumber(1), // TODO
+    eligibleWallets: earlyUsersJson.length,
+    totalAllocationPercent: earlyUsersTotalAllocationPercent,
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(1 / 6778), // TODO, Flat
+        percent: earlyUsersTotalAllocationPercent.div(earlyUsersJson.length), // Flat
       },
     },
   };
   const sendPoints = {
-    totalAllocationPercent: new BigNumber(19), // TODO
+    totalAllocationPercent: sendPointsTotalAllocationPercent,
     totalAllocationBreakdown: {
       thousandPoints: {
         title: "Per 1K Points",
-        percent: new BigNumber(19).div(totalAllocatedPoints).times(1000), // TODO, Linear
+        percent: sendPointsTotalAllocationPercent.div(
+          totalAllocatedPoints.div(1000),
+        ), // Linear
       },
     },
   };
@@ -231,15 +245,15 @@ export default function Send() {
     totalAllocationBreakdown: {
       [SuilendCapsuleRarity.COMMON]: {
         title: "Per Common",
-        percent: new BigNumber(0.1 / (1240 - 807)), // TODO, Linear
+        percent: new BigNumber(0.1).div(1240 - 807), // TODO, Linear
       },
       [SuilendCapsuleRarity.UNCOMMON]: {
         title: "Per Uncommon",
-        percent: new BigNumber(0.1 / (309 - 196)), // TODO, Linear
+        percent: new BigNumber(0.1).div(309 - 196), // TODO, Linear
       },
       [SuilendCapsuleRarity.RARE]: {
         title: "Per Rare",
-        percent: new BigNumber(0.1 / (101 - 76)), // TODO, Linear
+        percent: new BigNumber(0.1).div(101 - 76), // TODO, Linear
       },
     },
   };
@@ -248,7 +262,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       slnd: {
         title: "Per SLND",
-        percent: new BigNumber(0.15 / SEND_TOTAL_SUPPLY).times(100), // Linear
+        percent: new BigNumber(0.15).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
@@ -257,7 +271,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       rootlet: {
         title: "Per Rootlet",
-        percent: new BigNumber(1.111 / 3333), // Linear
+        percent: new BigNumber(1.111).div(3333), // Linear
       },
     },
   };
@@ -269,19 +283,19 @@ export default function Send() {
     totalAllocationBreakdown: {
       [BluefinLeagues.GOLD]: {
         title: "Gold",
-        percent: new BigNumber(0.015 / 5956),
+        percent: new BigNumber(0.015).div(5956),
       },
       [BluefinLeagues.PLATINUM]: {
         title: "Platinum",
-        percent: new BigNumber(0.01 / 187),
+        percent: new BigNumber(0.01).div(187),
       },
       [BluefinLeagues.BLACK]: {
         title: "Black",
-        percent: new BigNumber(0.01 / 25),
+        percent: new BigNumber(0.01).div(25),
       },
       [BluefinLeagues.SAPPHIRE]: {
         title: "Sapphire",
-        percent: new BigNumber(0.015 / 37),
+        percent: new BigNumber(0.015).div(37),
       },
     },
   };
@@ -293,7 +307,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.1 / 3193), // Flat
+        percent: new BigNumber(0.1).div(3193), // Flat
       },
     },
   };
@@ -304,7 +318,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.1 / 8434), // Flat
+        percent: new BigNumber(0.1).div(8434), // Flat
       },
     },
   };
@@ -315,7 +329,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.05 / 781), // Flat
+        percent: new BigNumber(0.05).div(781), // Flat
       },
     },
   };
@@ -326,7 +340,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.1 / 1923), // Flat
+        percent: new BigNumber(0.1).div(1923), // Flat
       },
     },
   };
@@ -337,7 +351,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.05 / 100), // Flat
+        percent: new BigNumber(0.05).div(100), // Flat
       },
     },
   };
@@ -349,7 +363,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.1 / 10000), // Flat
+        percent: new BigNumber(0.1).div(10000), // Flat
       },
     },
   };
@@ -360,7 +374,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.017 / 300), // Flat
+        percent: new BigNumber(0.017).div(300), // Flat
       },
     },
   };
@@ -371,7 +385,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.1 / 1000), // Flat
+        percent: new BigNumber(0.1).div(1000), // Flat
       },
     },
   };
@@ -382,7 +396,7 @@ export default function Send() {
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.01 / 300), // Flat
+        percent: new BigNumber(0.01).div(300), // Flat
       },
     },
   };
@@ -395,6 +409,7 @@ export default function Send() {
       description:
         "Early users are those who used Suilend prior to the launch of SEND points.",
       allocationType: AllocationType.FLAT,
+      assetType: AssetType.LENDING,
       snapshotTaken: true,
       eligibleWallets: formatInteger(earlyUsers.eligibleWallets),
       totalAllocationPercent: earlyUsers.totalAllocationPercent,
@@ -434,7 +449,7 @@ export default function Send() {
       src: "",
       title: "Suilend Capsules",
       description:
-        "A token of appreciation awarded for outstanding community contributions.",
+        "A token of appreciation awarded for outstanding community contributions to Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
