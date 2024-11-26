@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PropsWithChildren, useMemo, useState } from "react";
 
 import BigNumber from "bignumber.js";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Info } from "lucide-react";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -215,7 +215,10 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               {/* Bottom */}
               <div className="flex w-full flex-col gap-4 p-4">
                 <div className="flex w-full flex-col gap-1">
-                  <TDisplay>{allocation.title}</TDisplay>
+                  <div className="flex w-full flex-row items-center gap-2">
+                    <TDisplay className="flex-1">{allocation.title}</TDisplay>
+                    <Info className="h-5 w-5 text-muted-foreground" />
+                  </div>
 
                   {allocation.assetType && (
                     <TBodySans className="text-muted-foreground">
