@@ -53,12 +53,13 @@ export enum AllocationId {
   EGG = "egg",
   DOUBLEUP_CITIZEN = "doubleUpCitizen",
   KUMO = "kumo",
-  ANIMA = "anima",
 
   FUD = "fud",
   OCTO = "octo",
   AAA = "aaa",
   TISM = "tism",
+
+  ANIMA = "anima",
 }
 
 export enum AllocationType {
@@ -232,25 +233,23 @@ export default function Send() {
       : undefined;
 
   // User - NFTs
-  const isInPrimeMachinSnapshot =
-    address && primeMachinJson.length > 0
-      ? (primeMachinJson as string[]).includes(address)
+  const primeMachinOwned =
+    address && Object.keys(primeMachinJson).length > 0
+      ? new BigNumber((primeMachinJson as Record<string, number>)[address] ?? 0)
       : undefined;
-  const isInEggSnapshot =
-    address && eggJson.length > 0
-      ? (eggJson as string[]).includes(address)
+  const eggOwned =
+    address && Object.keys(eggJson).length > 0
+      ? new BigNumber((eggJson as Record<string, number>)[address] ?? 0)
       : undefined;
-  const isInDoubleUpCitizenSnapshot =
-    address && doubleUpCitizenJson.length > 0
-      ? (doubleUpCitizenJson as string[]).includes(address)
+  const doubleUpCitizenOwned =
+    address && Object.keys(doubleUpCitizenJson).length > 0
+      ? new BigNumber(
+          (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
+        )
       : undefined;
-  const isInKumoSnapshot =
-    address && kumoJson.length > 0
-      ? (kumoJson as string[]).includes(address)
-      : undefined;
-  const isInAnimaSnapshot =
-    address && animaJson.length > 0
-      ? (animaJson as string[]).includes(address)
+  const kumoOwned =
+    address && Object.keys(kumoJson).length > 0
+      ? new BigNumber((kumoJson as Record<string, number>)[address] ?? 0)
       : undefined;
 
   // User - Tokens
@@ -271,6 +270,12 @@ export default function Send() {
       ? (tismJson as string[]).includes(address)
       : undefined;
 
+  // User - Anima
+  const isInAnimaSnapshot =
+    address && animaJson.length > 0
+      ? (animaJson as string[]).includes(address)
+      : undefined;
+
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
@@ -286,7 +291,7 @@ export default function Send() {
   const sendPoints = {
     totalAllocationPercent: new BigNumber(19.25),
     totalAllocationBreakdown: {
-      thousandPoints: {
+      thousand: {
         title: "Per 1K Points",
         percent: new BigNumber(19.25).div(totalAllocatedPoints.div(1000)), // Linear
       },
@@ -312,7 +317,7 @@ export default function Send() {
   const save = {
     totalAllocationPercent: new BigNumber(15),
     totalAllocationBreakdown: {
-      slnd: {
+      one: {
         title: "Per SLND",
         percent: new BigNumber(0.15).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
@@ -323,10 +328,10 @@ export default function Send() {
     eligibleWallets:
       Object.keys(rootletsJson).length > 0
         ? Object.keys(rootletsJson).length
-        : 2980,
+        : 948,
     totalAllocationPercent: new BigNumber(1.111),
     totalAllocationBreakdown: {
-      rootlet: {
+      one: {
         title: "Per Rootlet",
         percent: new BigNumber(1.111).div(3333), // Linear
       },
@@ -367,82 +372,68 @@ export default function Send() {
         ? Object.keys(bluefinSendTradersJson).length
         : 400, // TODO (update once we have an initial snapshot)
     totalAllocationPercent: new BigNumber(0.125),
-    totalAllocationBreakdown: {
-      thousandUsdVolume: {
-        title: "Per $1K Volume",
-        percent: new BigNumber(0.125).div(
-          bluefinSendTradersTotalVolumeUsd.div(1000),
-        ), // Linear
-      },
-    },
+    totalAllocationBreakdown: {},
+    // totalAllocationBreakdown: {
+    //   thousandUsdVolume: {
+    //     title: "Per $1K Volume",
+    //     percent: new BigNumber(0.125).div(
+    //       bluefinSendTradersTotalVolumeUsd.div(1000),
+    //     ), // Linear
+    //   },
+    // },
   };
 
   const primeMachin = {
-    snapshotTaken: primeMachinJson.length > 0,
-    eligibleWallets: primeMachinJson.length > 0 ? primeMachinJson.length : 3193,
+    snapshotTaken: Object.keys(primeMachinJson).length > 0,
+    eligibleWallets:
+      Object.keys(primeMachinJson).length > 0
+        ? Object.keys(primeMachinJson).length
+        : 918,
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.1).div(
-          primeMachinJson.length > 0 ? primeMachinJson.length : 3193,
-        ), // Flat
+      one: {
+        title: "Per Prime Machin",
+        percent: new BigNumber(0.1).div(3333), // Linear
       },
     },
   };
   const egg = {
-    snapshotTaken: eggJson.length > 0,
-    eligibleWallets: eggJson.length > 0 ? eggJson.length : 8434,
+    snapshotTaken: Object.keys(eggJson).length > 0,
+    eligibleWallets:
+      Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2109,
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.1).div(
-          eggJson.length > 0 ? eggJson.length : 8434,
-        ), // Flat
+      one: {
+        title: "Per Egg",
+        percent: new BigNumber(0.1).div(9546), // Linear
       },
     },
   };
   const doubleUpCitizen = {
-    snapshotTaken: doubleUpCitizenJson.length > 0,
+    snapshotTaken: Object.keys(doubleUpCitizenJson).length > 0,
     eligibleWallets:
-      doubleUpCitizenJson.length > 0 ? doubleUpCitizenJson.length : 781,
+      Object.keys(doubleUpCitizenJson).length > 0
+        ? Object.keys(doubleUpCitizenJson).length
+        : 713,
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdown: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.05).div(
-          doubleUpCitizenJson.length > 0 ? doubleUpCitizenJson.length : 781,
-        ), // Flat
+      one: {
+        title: "Per DoubleUp Citizen",
+        percent: new BigNumber(0.05).div(2878), // Linear
       },
     },
   };
   const kumo = {
-    snapshotTaken: kumoJson.length > 0,
-    eligibleWallets: kumoJson.length > 0 ? kumoJson.length : 1923,
+    snapshotTaken: Object.keys(kumoJson).length > 0,
+    eligibleWallets:
+      Object.keys(kumoJson).length > 0 ? Object.keys(kumoJson).length : 479,
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.1).div(
-          kumoJson.length > 0 ? kumoJson.length : 1923,
-        ), // Flat
+      one: {
+        title: "Per Kumo",
+        percent: new BigNumber(0.1).div(2222), // Linear
       },
     },
-  };
-  const anima = {
-    snapshotTaken: animaJson.length > 0,
-    eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
-    totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown:
-      animaJson.length > 0
-        ? {
-            wallet: {
-              title: "Per wallet",
-              percent: new BigNumber(0.05).div(animaJson.length), // Flat
-            },
-          }
-        : {},
   };
 
   const fud = {
@@ -459,11 +450,11 @@ export default function Send() {
   const octo = {
     snapshotTaken: octoJson.length > 0,
     eligibleWallets: 300, // Top 300 OCTO holders
-    totalAllocationPercent: new BigNumber(0.017),
+    totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdown: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(0.017).div(300), // Flat
+        percent: new BigNumber(0.01).div(300), // Flat
       },
     },
   };
@@ -488,6 +479,21 @@ export default function Send() {
         percent: new BigNumber(0.01).div(300), // Flat
       },
     },
+  };
+
+  const anima = {
+    snapshotTaken: animaJson.length > 0,
+    eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
+    totalAllocationPercent: new BigNumber(0.05),
+    totalAllocationBreakdown:
+      animaJson.length > 0
+        ? {
+            wallet: {
+              title: "Per wallet",
+              percent: new BigNumber(0.05).div(animaJson.length), // Flat
+            },
+          }
+        : {},
   };
 
   const allocations: Allocation[] = [
@@ -532,7 +538,7 @@ export default function Send() {
         totalSendPoints !== undefined
           ? totalSendPoints
               .div(1000)
-              .times(sendPoints.totalAllocationBreakdown.thousandPoints.percent)
+              .times(sendPoints.totalAllocationBreakdown.thousand.percent)
           : undefined,
     },
     {
@@ -611,7 +617,7 @@ export default function Send() {
       userAllocationPercent:
         rootletsSnapshotOwnedCount !== undefined
           ? (rootletsSnapshotOwnedCount as BigNumber).times(
-              rootlets.totalAllocationBreakdown.rootlet.percent,
+              rootlets.totalAllocationBreakdown.one.percent,
             )
           : undefined,
     },
@@ -640,7 +646,7 @@ export default function Send() {
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
-      src: "", // TODO (update once we have an image)
+      src: "/assets/send/bluefin-leagues.png", // TODO (update once we have an image)
       title: "Bluefin SEND Traders",
       description:
         "For users who traded the SEND pre-launch market on Bluefin.",
@@ -651,20 +657,20 @@ export default function Send() {
         href: "https://trade.bluefin.io/SEND-PERP",
       },
       snapshotTaken: bluefinSendTraders.snapshotTaken,
-      eligibleWallets: formatInteger(bluefinSendTraders.eligibleWallets),
+      eligibleWallets: "TBC", //formatInteger(bluefinSendTraders.eligibleWallets),
       totalAllocationPercent: bluefinSendTraders.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         bluefinSendTraders.totalAllocationBreakdown,
       ),
-      userAllocationPercent:
-        bluefinSendTradersVolumeUsd !== undefined
-          ? (bluefinSendTradersVolumeUsd as BigNumber)
-              .div(1000)
-              .times(
-                bluefinSendTraders.totalAllocationBreakdown.thousandUsdVolume
-                  .percent,
-              )
-          : undefined,
+      userAllocationPercent: undefined,
+      // bluefinSendTradersVolumeUsd !== undefined
+      //   ? (bluefinSendTradersVolumeUsd as BigNumber)
+      //       .div(1000)
+      //       .times(
+      //         bluefinSendTraders.totalAllocationBreakdown.thousandUsdVolume
+      //           .percent,
+      //       )
+      //   : undefined,
     },
 
     {
@@ -673,7 +679,7 @@ export default function Send() {
       title: "Prime Machin",
       description:
         "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
-      allocationType: AllocationType.FLAT,
+      allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy",
@@ -686,10 +692,10 @@ export default function Send() {
         primeMachin.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        isInPrimeMachinSnapshot !== undefined
-          ? isInPrimeMachinSnapshot
-            ? primeMachin.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+        primeMachinOwned !== undefined
+          ? primeMachinOwned.times(
+              primeMachin.totalAllocationBreakdown.one.percent,
+            )
           : undefined,
     },
     {
@@ -698,7 +704,7 @@ export default function Send() {
       title: "Egg",
       description:
         "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
-      allocationType: AllocationType.FLAT,
+      allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy",
@@ -709,10 +715,8 @@ export default function Send() {
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
       userAllocationPercent:
-        isInEggSnapshot !== undefined
-          ? isInEggSnapshot
-            ? egg.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+        eggOwned !== undefined
+          ? eggOwned.times(egg.totalAllocationBreakdown.one.percent)
           : undefined,
     },
     {
@@ -721,7 +725,7 @@ export default function Send() {
       title: "DoubleUp Citizen",
       description:
         "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
-      allocationType: AllocationType.FLAT,
+      allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy",
@@ -734,10 +738,10 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        isInDoubleUpCitizenSnapshot !== undefined
-          ? isInDoubleUpCitizenSnapshot
-            ? doubleUpCitizen.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+        doubleUpCitizenOwned !== undefined
+          ? doubleUpCitizenOwned.times(
+              doubleUpCitizen.totalAllocationBreakdown.one.percent,
+            )
           : undefined,
     },
     {
@@ -746,7 +750,7 @@ export default function Send() {
       title: "Kumo",
       description:
         "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2,222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
-      allocationType: AllocationType.FLAT,
+      allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
       cta: {
         title: "Buy",
@@ -757,36 +761,8 @@ export default function Send() {
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
       userAllocationPercent:
-        isInKumoSnapshot !== undefined
-          ? isInKumoSnapshot
-            ? kumo.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
-          : undefined,
-    },
-    {
-      id: AllocationId.ANIMA,
-      src: "/assets/send/anima.png",
-      title: "Anima",
-      description:
-        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
-      allocationType: AllocationType.FLAT,
-      assetType: AssetType.NFT,
-      cta: {
-        title: "Mint",
-        href: "https://anima.nexus/drop/genesis",
-      },
-      snapshotTaken: anima.snapshotTaken,
-      eligibleWallets:
-        anima.eligibleWallets !== undefined
-          ? formatInteger(anima.eligibleWallets)
-          : undefined,
-      totalAllocationPercent: anima.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
-      userAllocationPercent:
-        isInAnimaSnapshot !== undefined
-          ? isInAnimaSnapshot
-            ? anima.totalAllocationBreakdown.wallet!.percent
-            : new BigNumber(0)
+        kumoOwned !== undefined
+          ? kumoOwned.times(kumo.totalAllocationBreakdown.one.percent)
           : undefined,
     },
 
@@ -877,6 +853,33 @@ export default function Send() {
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
+            : new BigNumber(0)
+          : undefined,
+    },
+
+    {
+      id: AllocationId.ANIMA,
+      src: "/assets/send/anima.png",
+      title: "Anima",
+      description:
+        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
+      allocationType: AllocationType.FLAT,
+      assetType: AssetType.NFT,
+      cta: {
+        title: "Mint",
+        href: "https://anima.nexus/drop/genesis",
+      },
+      snapshotTaken: anima.snapshotTaken,
+      eligibleWallets:
+        anima.eligibleWallets !== undefined
+          ? formatInteger(anima.eligibleWallets)
+          : undefined,
+      totalAllocationPercent: anima.totalAllocationPercent,
+      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+      userAllocationPercent:
+        isInAnimaSnapshot !== undefined
+          ? isInAnimaSnapshot
+            ? anima.totalAllocationBreakdown.wallet!.percent
             : new BigNumber(0)
           : undefined,
     },
