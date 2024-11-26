@@ -58,11 +58,11 @@ export default function AssetCell({
         NORMALIZED_LST_COINTYPES.includes(token.coinType)
       ) {
         result.push({
-          title: "Mint",
+          title: "Unstake",
           href: !isInMsafeApp()
             ? `${SPRINGSUI_URL}?${new URLSearchParams({
                 lst: token.symbol,
-              })}`
+              })}&tab=unstake`
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
