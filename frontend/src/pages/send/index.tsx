@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
@@ -13,6 +14,7 @@ import {
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   NORMALIZED_OCTO_COINTYPE,
@@ -1007,6 +1009,32 @@ export default function Send() {
             }
           />
           <AllocationCardsSection allocations={allocations} />
+
+          <div className="flex w-full flex-col items-center justify-center md:flex-row">
+            <div className="max-md:w-full md:flex-1">
+              <AspectRatio ratio={960 / 640}>
+                <Image
+                  className="object-cover"
+                  src="/assets/send/tokenomics-pie.png"
+                  alt="SEND pie chart"
+                  fill
+                  quality={100}
+                />
+              </AspectRatio>
+            </div>
+
+            <div className="max-md:w-full md:flex-1">
+              <AspectRatio ratio={960 / 838}>
+                <Image
+                  className="object-cover"
+                  src="/assets/send/tokenomics-vesting.png"
+                  alt="SEND vesting chart"
+                  fill
+                  quality={100}
+                />
+              </AspectRatio>
+            </div>
+          </div>
         </div>
       </div>
     </>
