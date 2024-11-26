@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useMemo, useState } from "react";
 
 import BigNumber from "bignumber.js";
-import { ArrowUpRight, Info } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -14,19 +14,22 @@ import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Allocation, AssetType, SEND_TOTAL_SUPPLY } from "@/pages/send";
+import {
+  Allocation,
+  AllocationId,
+  AssetType,
+  SEND_TOTAL_SUPPLY,
+} from "@/pages/send";
 
 interface StatusProps {
   allocation: Allocation;
+  isIneligible: boolean;
 }
 
-function Status({ allocation }: StatusProps) {
+function Status({ allocation, isIneligible }: StatusProps) {
   const isEligible =
     allocation.userAllocationPercent !== undefined &&
     allocation.userAllocationPercent.gt(0);
-  const isIneligible =
-    allocation.userAllocationPercent !== undefined &&
-    allocation.userAllocationPercent.eq(0);
 
   const isSnapshotTaken = allocation.snapshotTaken === true;
   const isSnapshotNotTaken = allocation.snapshotTaken === false;
@@ -40,7 +43,9 @@ function Status({ allocation }: StatusProps) {
             ? "justify-between bg-[#5DF886]"
             : cn(
                 "justify-center",
-                isSnapshotNotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
+                isIneligible || isSnapshotTaken
+                  ? "bg-[#192A3A]"
+                  : "bg-[#8FDCF4]",
               ),
         )}
       >
@@ -62,7 +67,9 @@ function Status({ allocation }: StatusProps) {
         ) : (
           <TBody
             className={cn(
-              isSnapshotNotTaken ? "text-[#030917]" : "text-[#8FDCF4]",
+              isIneligible || isSnapshotTaken
+                ? "text-[#8FDCF4]"
+                : "text-[#030917]",
             )}
           >
             {isIneligible
@@ -132,9 +139,16 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
     [AssetType.POINTS]: "Points",
   };
 
-  const isIneligible =
-    allocation.userAllocationPercent !== undefined &&
-    allocation.userAllocationPercent.eq(0);
+  const isIneligible = useMemo(() => {
+    // Return false for Suilend Capsules and SAVE
+    if (allocation.id === AllocationId.SUILEND_CAPSULES) return false;
+    if (allocation.id === AllocationId.SAVE) return false;
+
+    return (
+      allocation.userAllocationPercent !== undefined &&
+      allocation.userAllocationPercent.eq(0)
+    );
+  }, [allocation.id, allocation.userAllocationPercent]);
 
   return (
     <Wrapper>
@@ -156,7 +170,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                 "opacity-50 transition-opacity group-hover:opacity-100",
             )}
           >
-            <Status allocation={allocation} />
+            <Status allocation={allocation} isIneligible={isIneligible} />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-[#4F677E]">
               {/* Top */}
@@ -174,11 +188,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   </TBody>
                 </div>
 
-                {/* Info */}
-                <div className="absolute right-4 top-4 z-[2] flex h-7 flex-col justify-center">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </div>
-
                 {/* Icon */}
                 <div
                   className="absolute inset-y-4 left-1/2 z-[1] w-full max-w-28 -translate-x-1/2"
@@ -194,14 +203,18 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               <Separator className="bg-[#192A3A]" />
 
               {/* Bottom */}
-              <div className="flex w-full flex-col gap-1 p-4">
-                <TDisplay>{allocation.title}</TDisplay>
+              <div className="flex w-full flex-col gap-4 p-4">
+                <div className="flex w-full flex-col gap-1">
+                  <TDisplay>{allocation.title}</TDisplay>
 
-                {allocation.assetType && (
-                  <TBodySans className="text-muted-foreground">
-                    {assetTypeTitleMap[allocation.assetType]}
-                  </TBodySans>
-                )}
+                  {allocation.assetType && (
+                    <TBodySans className="text-muted-foreground">
+                      {assetTypeTitleMap[allocation.assetType]}
+                    </TBodySans>
+                  )}
+                </div>
+
+                <CtaButton allocation={allocation} />
               </div>
             </div>
           </div>
@@ -213,8 +226,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               "absolute inset-0 rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-[#4F677E]",
             )}
           >
-            {/* TODO: Add Status */}
-
             <div className="flex h-full w-full flex-col justify-between gap-6 overflow-y-auto p-4">
               {/* Top */}
               <div className="flex w-full flex-col gap-3">
@@ -286,8 +297,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     </>
                   )}
                 </div>
-
-                <CtaButton allocation={allocation} />
               </div>
             </div>
           </div>
