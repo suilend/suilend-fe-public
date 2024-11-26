@@ -55,12 +55,12 @@ export enum AllocationId {
   DOUBLEUP_CITIZEN = "doubleUpCitizen",
   KUMO = "kumo",
 
+  ANIMA = "anima",
+
   FUD = "fud",
   AAA = "aaa",
   OCTO = "octo",
   TISM = "tism",
-
-  ANIMA = "anima",
 }
 
 export enum AllocationType {
@@ -371,6 +371,12 @@ export default function Send() {
     return result;
   }, [address, getOwnedKioskItemsOfType]);
 
+  // User - Anima
+  const isInAnimaSnapshot =
+    address && animaJson.length > 0
+      ? (animaJson as string[]).includes(address)
+      : undefined;
+
   // User - Tokens
   const isInFudSnapshot =
     address && fudJson.length > 0
@@ -387,12 +393,6 @@ export default function Send() {
   const isInTismSnapshot =
     address && tismJson.length > 0
       ? (tismJson as string[]).includes(address)
-      : undefined;
-
-  // User - Anima
-  const isInAnimaSnapshot =
-    address && animaJson.length > 0
-      ? (animaJson as string[]).includes(address)
       : undefined;
 
   // Allocations
@@ -548,6 +548,13 @@ export default function Send() {
     },
   };
 
+  const anima = {
+    snapshotTaken: animaJson.length > 0,
+    eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
+    totalAllocationPercent: new BigNumber(0.05),
+    totalAllocationBreakdown: {},
+  };
+
   const fud = {
     snapshotTaken: fudJson.length > 0,
     eligibleWallets: 5000, // Top 5,000 FUD holders
@@ -591,13 +598,6 @@ export default function Send() {
         percent: new BigNumber(0.01).div(1000), // Flat
       },
     },
-  };
-
-  const anima = {
-    snapshotTaken: animaJson.length > 0,
-    eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
-    totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {},
   };
 
   const allocations: Allocation[] = [
@@ -872,6 +872,33 @@ export default function Send() {
     },
 
     {
+      id: AllocationId.ANIMA,
+      src: "/assets/send/anima.png",
+      title: "Anima",
+      description:
+        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
+      allocationType: AllocationType.FLAT,
+      assetType: AssetType.NFT,
+      cta: {
+        title: "Mint",
+        href: "https://anima.nexus/drop/genesis",
+      },
+      snapshotTaken: anima.snapshotTaken,
+      eligibleWallets:
+        anima.eligibleWallets !== undefined
+          ? formatInteger(anima.eligibleWallets)
+          : undefined,
+      totalAllocationPercent: anima.totalAllocationPercent,
+      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+      userAllocationPercent: undefined,
+      // isInAnimaSnapshot !== undefined
+      //   ? isInAnimaSnapshot
+      //     ? anima.totalAllocationBreakdown!.percent
+      //     : new BigNumber(0)
+      //   : undefined,
+    },
+
+    {
       id: AllocationId.FUD,
       src: "/assets/send/fud.png",
       title: "FUD",
@@ -960,33 +987,6 @@ export default function Send() {
             ? tism.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-    },
-
-    {
-      id: AllocationId.ANIMA,
-      src: "/assets/send/anima.png",
-      title: "Anima",
-      description:
-        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
-      allocationType: AllocationType.FLAT,
-      assetType: AssetType.NFT,
-      cta: {
-        title: "Mint",
-        href: "https://anima.nexus/drop/genesis",
-      },
-      snapshotTaken: anima.snapshotTaken,
-      eligibleWallets:
-        anima.eligibleWallets !== undefined
-          ? formatInteger(anima.eligibleWallets)
-          : undefined,
-      totalAllocationPercent: anima.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
-      userAllocationPercent: undefined,
-      // isInAnimaSnapshot !== undefined
-      //   ? isInAnimaSnapshot
-      //     ? anima.totalAllocationBreakdown!.percent
-      //     : new BigNumber(0)
-      //   : undefined,
     },
   ];
 
