@@ -352,22 +352,18 @@ export default function Send() {
           )
         : getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
     result[AllocationId.EGG] =
-      Object.keys(primeMachinJson).length > 0
-        ? new BigNumber(
-            (primeMachinJson as Record<string, number>)[address] ?? 0,
-          )
+      Object.keys(eggJson).length > 0
+        ? new BigNumber((eggJson as Record<string, number>)[address] ?? 0)
         : getOwnedKioskItemsOfType(EGG_TYPE);
     result[AllocationId.DOUBLEUP_CITIZEN] =
-      Object.keys(primeMachinJson).length > 0
+      Object.keys(doubleUpCitizenJson).length > 0
         ? new BigNumber(
-            (primeMachinJson as Record<string, number>)[address] ?? 0,
+            (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
           )
         : getOwnedKioskItemsOfType(DOUBLEUP_CITIZEN_TYPE);
     result[AllocationId.KUMO] =
-      Object.keys(primeMachinJson).length > 0
-        ? new BigNumber(
-            (primeMachinJson as Record<string, number>)[address] ?? 0,
-          )
+      Object.keys(kumoJson).length > 0
+        ? new BigNumber((kumoJson as Record<string, number>)[address] ?? 0)
         : getOwnedKioskItemsOfType(KUMO_TYPE);
 
     return result;
