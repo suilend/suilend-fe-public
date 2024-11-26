@@ -14,14 +14,19 @@ import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import { TBodySans, TDisplay } from "@/components/shared/Typography";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatAddress, formatToken } from "@/lib/format";
 import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
 
 interface HeroSectionProps {
   allocations: Allocation[];
+  isLoading: boolean;
 }
 
-export default function HeroSection({ allocations }: HeroSectionProps) {
+export default function HeroSection({
+  allocations,
+  isLoading,
+}: HeroSectionProps) {
   const router = useRouter();
 
   const { isImpersonating, setIsConnectWalletDropdownOpen, address } =
@@ -73,15 +78,19 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
         ) : (
           <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
             <SendTokenLogo className="h-8 w-8" />
-            <TDisplay className="text-4xl">
-              {formatToken(
-                new BigNumber(SEND_TOTAL_SUPPLY).times(
-                  userAllocationPercent.div(100),
-                ),
-                { exact: false },
-              )}{" "}
-              SEND
-            </TDisplay>
+            {isLoading ? (
+              <Skeleton className="h-10 w-40" />
+            ) : (
+              <TDisplay className="text-4xl">
+                {formatToken(
+                  new BigNumber(SEND_TOTAL_SUPPLY).times(
+                    userAllocationPercent.div(100),
+                  ),
+                  { exact: false },
+                )}{" "}
+                SEND
+              </TDisplay>
+            )}
           </div>
         )}
 

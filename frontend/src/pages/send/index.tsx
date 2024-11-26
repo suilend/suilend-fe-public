@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { KioskClient, KioskData, Network } from "@mysten/kiosk";
 import BigNumber from "bignumber.js";
 
 import {
@@ -103,9 +104,6 @@ enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
-const SUILEND_CAPSULE_TYPE =
-  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
-
 enum BluefinLeagues {
   GOLD = "gold",
   PLATINUM = "platinum",
@@ -113,11 +111,27 @@ enum BluefinLeagues {
   SAPPHIRE = "sapphire",
 }
 
+const SUILEND_CAPSULE_TYPE =
+  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
+
+const ROOTLETS_TYPE =
+  "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
+
+const PRIME_MACHIN_TYPE =
+  "0x034c162f6b594cb5a1805264dd01ca5d80ce3eca6522e6ee37fd9ebfb9d3ddca::factory::PrimeMachin";
+const EGG_TYPE =
+  "0x484932c474bf09f002b82e4a57206a6658a0ca6dbdb15896808dcd1929c77820::egg::AfEgg";
+const DOUBLEUP_CITIZEN_TYPE =
+  "0x862810efecf0296db2e9df3e075a7af8034ba374e73ff1098e88cc4bb7c15437::doubleup_citizens::DoubleUpCitizen";
+const KUMO_TYPE =
+  "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
+
 export default function Send() {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { data } = useLoadedAppContext();
 
+  // Setup - total allocated SEND Points
   const totalAllocatedPoints = useMemo(() => {
     let result = new BigNumber(0);
     for (const reserve of data.lendingMarket.reserves) {
@@ -133,6 +147,7 @@ export default function Send() {
     return result;
   }, [data.lendingMarket.reserves]);
 
+  // Setup - Bluefin SEND Traders total volume
   const bluefinSendTradersTotalVolumeUsd = useMemo(
     () =>
       Object.values(bluefinSendTradersJson as number[]).reduce(
@@ -140,6 +155,92 @@ export default function Send() {
         new BigNumber(0),
       ),
     [],
+  );
+
+  // Setup - owned objects
+  const getOwnedObjectsOfType = useCallback(
+    async (type: string) => {
+      if (!address) return [];
+
+      const allObjs = [];
+      let cursor = null;
+      let hasNextPage = true;
+      while (hasNextPage) {
+        const objs = await suiClient.getOwnedObjects({
+          owner: address,
+          cursor,
+          filter: {
+            StructType: type,
+          },
+          options: { showContent: true },
+        });
+
+        allObjs.push(...objs.data);
+        cursor = objs.nextCursor;
+        hasNextPage = objs.hasNextPage;
+      }
+
+      return allObjs;
+    },
+    [suiClient, address],
+  );
+
+  // Setup - owned kiosks
+  const kioskClient = useMemo(
+    () => new KioskClient({ client: suiClient, network: Network.MAINNET }),
+    [suiClient],
+  );
+
+  const [ownedKiosks, setOwnedKiosks] = useState<KioskData[] | undefined>(
+    undefined,
+  );
+
+  const getOwnedKiosks = useCallback(async () => {
+    if (!address) {
+      setOwnedKiosks(undefined);
+      return;
+    }
+
+    const allKioskIds = [];
+    let cursor = undefined;
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const kiosks = await kioskClient.getOwnedKiosks({
+        address: address,
+        pagination: {
+          cursor,
+        },
+      });
+
+      allKioskIds.push(...kiosks.kioskIds);
+      cursor = kiosks.nextCursor ?? undefined;
+      hasNextPage = kiosks.hasNextPage;
+    }
+
+    const allKiosks = await Promise.all(
+      allKioskIds.map((kioskId) => kioskClient.getKiosk({ id: kioskId })),
+    );
+
+    setOwnedKiosks(allKiosks);
+  }, [address, kioskClient]);
+
+  useEffect(() => {
+    getOwnedKiosks();
+  }, [getOwnedKiosks]);
+
+  const getOwnedKioskItemsOfType = useCallback(
+    (type: string) => {
+      if (ownedKiosks === undefined) return undefined;
+
+      const count = ownedKiosks.reduce(
+        (acc, kiosk) =>
+          acc.plus(kiosk.items.filter((item) => item.type === type).length),
+        new BigNumber(0),
+      );
+
+      return count.gt(0) ? count : undefined;
+    },
+    [ownedKiosks],
   );
 
   // User - Early Users
@@ -156,35 +257,24 @@ export default function Send() {
   >(undefined);
 
   const getOwnedSuilendCapsules = useCallback(async () => {
-    const allObjs = [];
-    let cursor = null;
-    let hasNextPage = true;
-    while (hasNextPage) {
-      const objs = await suiClient.getOwnedObjects({
-        owner: address!,
-        cursor,
-        filter: {
-          StructType: SUILEND_CAPSULE_TYPE,
-        },
-        options: { showContent: true },
-      });
-
-      allObjs.push(...objs.data);
-      cursor = objs.nextCursor;
-      hasNextPage = objs.hasNextPage;
+    if (!address) {
+      setOwnedSuilendCapsulesMap(undefined);
+      return;
     }
 
-    const commonCapsuleObjs = allObjs.filter(
+    const objs = await getOwnedObjectsOfType(SUILEND_CAPSULE_TYPE);
+
+    const commonCapsuleObjs = objs.filter(
       (obj) =>
         (obj.data?.content as any).fields.rarity ===
         SuilendCapsuleRarity.COMMON,
     );
-    const uncommonCapsuleObjs = allObjs.filter(
+    const uncommonCapsuleObjs = objs.filter(
       (obj) =>
         (obj.data?.content as any).fields.rarity ===
         SuilendCapsuleRarity.UNCOMMON,
     );
-    const rareCapsuleObjs = allObjs.filter(
+    const rareCapsuleObjs = objs.filter(
       (obj) =>
         (obj.data?.content as any).fields.rarity === SuilendCapsuleRarity.RARE,
     );
@@ -196,20 +286,24 @@ export default function Send() {
       ),
       [SuilendCapsuleRarity.RARE]: new BigNumber(rareCapsuleObjs.length),
     });
-  }, [suiClient, address]);
+  }, [address, getOwnedObjectsOfType]);
 
   useEffect(() => {
-    if (!address) setOwnedSuilendCapsulesMap(undefined);
-    else getOwnedSuilendCapsules();
-  }, [address, getOwnedSuilendCapsules]);
+    getOwnedSuilendCapsules();
+  }, [getOwnedSuilendCapsules]);
 
   // User - Save
 
   // User - Rootlets
-  const rootletsSnapshotOwnedCount =
-    address && Object.keys(rootletsJson).length > 0
-      ? new BigNumber((rootletsJson as Record<string, number>)[address] ?? 0)
-      : undefined;
+  const ownedRootlets = useMemo(() => {
+    if (!address) return undefined;
+
+    if (Object.keys(rootletsJson).length > 0)
+      return new BigNumber(
+        (rootletsJson as Record<string, number>)[address] ?? 0,
+      );
+    return getOwnedKioskItemsOfType(ROOTLETS_TYPE);
+  }, [address, getOwnedKioskItemsOfType]);
 
   // User - Bluefin Leagues
   const bluefinLeaguesLeague = useMemo(() => {
@@ -233,24 +327,49 @@ export default function Send() {
       : undefined;
 
   // User - NFTs
-  const primeMachinOwned =
-    address && Object.keys(primeMachinJson).length > 0
-      ? new BigNumber((primeMachinJson as Record<string, number>)[address] ?? 0)
-      : undefined;
-  const eggOwned =
-    address && Object.keys(eggJson).length > 0
-      ? new BigNumber((eggJson as Record<string, number>)[address] ?? 0)
-      : undefined;
-  const doubleUpCitizenOwned =
-    address && Object.keys(doubleUpCitizenJson).length > 0
-      ? new BigNumber(
-          (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-        )
-      : undefined;
-  const kumoOwned =
-    address && Object.keys(kumoJson).length > 0
-      ? new BigNumber((kumoJson as Record<string, number>)[address] ?? 0)
-      : undefined;
+  const ownedNfts = useMemo(() => {
+    if (!address) return undefined;
+
+    const result: Record<
+      | AllocationId.PRIME_MACHIN
+      | AllocationId.EGG
+      | AllocationId.DOUBLEUP_CITIZEN
+      | AllocationId.KUMO,
+      BigNumber | undefined
+    > = {
+      [AllocationId.PRIME_MACHIN]: undefined,
+      [AllocationId.EGG]: undefined,
+      [AllocationId.DOUBLEUP_CITIZEN]: undefined,
+      [AllocationId.KUMO]: undefined,
+    };
+
+    result[AllocationId.PRIME_MACHIN] =
+      Object.keys(primeMachinJson).length > 0
+        ? new BigNumber(
+            (primeMachinJson as Record<string, number>)[address] ?? 0,
+          )
+        : getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
+    result[AllocationId.EGG] =
+      Object.keys(primeMachinJson).length > 0
+        ? new BigNumber(
+            (primeMachinJson as Record<string, number>)[address] ?? 0,
+          )
+        : getOwnedKioskItemsOfType(EGG_TYPE);
+    result[AllocationId.DOUBLEUP_CITIZEN] =
+      Object.keys(primeMachinJson).length > 0
+        ? new BigNumber(
+            (primeMachinJson as Record<string, number>)[address] ?? 0,
+          )
+        : getOwnedKioskItemsOfType(DOUBLEUP_CITIZEN_TYPE);
+    result[AllocationId.KUMO] =
+      Object.keys(primeMachinJson).length > 0
+        ? new BigNumber(
+            (primeMachinJson as Record<string, number>)[address] ?? 0,
+          )
+        : getOwnedKioskItemsOfType(KUMO_TYPE);
+
+    return result;
+  }, [address, getOwnedKioskItemsOfType]);
 
   // User - Tokens
   const isInFudSnapshot =
@@ -485,15 +604,7 @@ export default function Send() {
     snapshotTaken: animaJson.length > 0,
     eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown:
-      animaJson.length > 0
-        ? {
-            wallet: {
-              title: "Per wallet",
-              percent: new BigNumber(0.05).div(animaJson.length), // Flat
-            },
-          }
-        : {},
+    totalAllocationBreakdown: {},
   };
 
   const allocations: Allocation[] = [
@@ -615,10 +726,8 @@ export default function Send() {
         rootlets.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        rootletsSnapshotOwnedCount !== undefined
-          ? (rootletsSnapshotOwnedCount as BigNumber).times(
-              rootlets.totalAllocationBreakdown.one.percent,
-            )
+        ownedRootlets !== undefined
+          ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
           : undefined,
     },
 
@@ -692,8 +801,8 @@ export default function Send() {
         primeMachin.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        primeMachinOwned !== undefined
-          ? primeMachinOwned.times(
+        ownedNfts?.[AllocationId.PRIME_MACHIN] !== undefined
+          ? ownedNfts[AllocationId.PRIME_MACHIN].times(
               primeMachin.totalAllocationBreakdown.one.percent,
             )
           : undefined,
@@ -715,8 +824,10 @@ export default function Send() {
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
       userAllocationPercent:
-        eggOwned !== undefined
-          ? eggOwned.times(egg.totalAllocationBreakdown.one.percent)
+        ownedNfts?.[AllocationId.EGG] !== undefined
+          ? ownedNfts[AllocationId.EGG].times(
+              egg.totalAllocationBreakdown.one.percent,
+            )
           : undefined,
     },
     {
@@ -738,8 +849,8 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        doubleUpCitizenOwned !== undefined
-          ? doubleUpCitizenOwned.times(
+        ownedNfts?.[AllocationId.DOUBLEUP_CITIZEN] !== undefined
+          ? ownedNfts[AllocationId.DOUBLEUP_CITIZEN].times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
@@ -761,8 +872,10 @@ export default function Send() {
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
       userAllocationPercent:
-        kumoOwned !== undefined
-          ? kumoOwned.times(kumo.totalAllocationBreakdown.one.percent)
+        ownedNfts?.[AllocationId.KUMO] !== undefined
+          ? ownedNfts[AllocationId.KUMO].times(
+              kumo.totalAllocationBreakdown.one.percent,
+            )
           : undefined,
     },
 
@@ -876,12 +989,12 @@ export default function Send() {
           : undefined,
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
-      userAllocationPercent:
-        isInAnimaSnapshot !== undefined
-          ? isInAnimaSnapshot
-            ? anima.totalAllocationBreakdown.wallet!.percent
-            : new BigNumber(0)
-          : undefined,
+      userAllocationPercent: undefined,
+      // isInAnimaSnapshot !== undefined
+      //   ? isInAnimaSnapshot
+      //     ? anima.totalAllocationBreakdown!.percent
+      //     : new BigNumber(0)
+      //   : undefined,
     },
   ];
 
@@ -895,7 +1008,12 @@ export default function Send() {
         <SendHeader />
 
         <div className="relative z-[2] flex w-full flex-col items-center gap-12 pt-36 md:gap-16 md:pt-32">
-          <HeroSection allocations={allocations} />
+          <HeroSection
+            allocations={allocations}
+            isLoading={
+              ownedKiosks === undefined || ownedSuilendCapsulesMap === undefined
+            }
+          />
           <AllocationCardsSection allocations={allocations} />
         </div>
       </div>
