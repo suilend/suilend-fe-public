@@ -3,7 +3,7 @@ import { useState } from "react";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
-import { useSettingsContext } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";

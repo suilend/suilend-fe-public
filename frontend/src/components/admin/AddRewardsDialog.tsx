@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 import { Side } from "@suilend/sdk/types";
 
 import CoinPopover from "@/components/admin/CoinPopover";

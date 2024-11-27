@@ -4,7 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";

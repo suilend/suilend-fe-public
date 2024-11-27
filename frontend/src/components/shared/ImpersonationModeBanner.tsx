@@ -7,7 +7,7 @@ import {
   WalletContextQueryParams,
   shallowPushQuery,
   useWalletContext,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 
 import Tooltip from "@/components/shared/Tooltip";
 import {

@@ -1,7 +1,7 @@
 import { formatISO } from "date-fns";
 import { TableProperties } from "lucide-react";
 
-import { useSettingsContext } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Dialog from "@/components/admin/Dialog";

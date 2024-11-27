@@ -13,10 +13,12 @@ import {
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   getBalanceChange,
   isSui,
+} from "@suilend/frontend-sui";
+import {
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+} from "@suilend/frontend-sui-next";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { maxU64 } from "@suilend/sdk/constants";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Action, ApiDepositEvent, Side } from "@suilend/sdk/types";

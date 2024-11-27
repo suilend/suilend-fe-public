@@ -10,7 +10,7 @@ import {
   getMsafeAppStoreUrl,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";

@@ -3,7 +3,10 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
-import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 
 import DataTable, {
   decimalSortingFn,

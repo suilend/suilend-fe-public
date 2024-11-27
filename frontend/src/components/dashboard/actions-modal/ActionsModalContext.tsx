@@ -17,7 +17,7 @@ import * as Sentry from "@sentry/nextjs";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui";
+import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
 import { useLoadedAppContext } from "@/contexts/AppContext";

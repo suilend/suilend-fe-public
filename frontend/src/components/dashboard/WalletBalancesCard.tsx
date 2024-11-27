@@ -2,7 +2,8 @@ import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { getToken, useWalletContext } from "@suilend/frontend-sui";
+import { getToken } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import AccountAssetTable, {
   AccountAssetTableType,

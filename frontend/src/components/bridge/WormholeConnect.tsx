@@ -1,7 +1,7 @@
 import { MouseEvent, useEffect, useState } from "react";
 
-import { useSettingsContext } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import Container from "@/components/shared/Container";

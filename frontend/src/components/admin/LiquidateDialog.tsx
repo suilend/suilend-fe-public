@@ -8,11 +8,11 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { isSui } from "@suilend/frontend-sui";
 import {
-  isSui,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";

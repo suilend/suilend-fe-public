@@ -10,10 +10,11 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { RewardMap, useWalletContext } from "@suilend/frontend-sui";
-import useFetchBalances from "@suilend/frontend-sui/fetchers/useFetchBalances";
-import useCoinMetadataMap from "@suilend/frontend-sui/hooks/useCoinMetadataMap";
-import useRefreshOnBalancesChange from "@suilend/frontend-sui/hooks/useRefreshOnBalancesChange";
+import { RewardMap } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
+import useFetchBalances from "@suilend/frontend-sui-next/fetchers/useFetchBalances";
+import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
+import useRefreshOnBalancesChange from "@suilend/frontend-sui-next/hooks/useRefreshOnBalancesChange";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";

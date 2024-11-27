@@ -6,9 +6,8 @@ import {
   NORMALIZED_LST_COINTYPES,
   initializeSuilendRewards,
   initializeSuilendSdk,
-  showErrorToast,
-  useSettingsContext,
 } from "@suilend/frontend-sui";
+import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
 import { SuilendClient } from "@suilend/sdk/client";
 import { LstClient } from "@suilend/springsui-sdk";
 

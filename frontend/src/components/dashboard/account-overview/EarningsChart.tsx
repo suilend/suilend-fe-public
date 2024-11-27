@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import * as Recharts from "recharts";
 
 import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { Side } from "@suilend/sdk/types";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";

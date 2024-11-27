@@ -6,8 +6,8 @@ import { capitalize } from "lodash";
 import {
   COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP,
   getPythOracleUrl,
-  useSettingsContext,
 } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";
 

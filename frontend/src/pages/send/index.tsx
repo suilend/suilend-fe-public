@@ -1,21 +1,19 @@
 import Head from "next/head";
-import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
 import BigNumber from "bignumber.js";
 
+import { isSendPoints } from "@suilend/frontend-sui";
 import {
-  isSendPoints,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   NORMALIZED_OCTO_COINTYPE,

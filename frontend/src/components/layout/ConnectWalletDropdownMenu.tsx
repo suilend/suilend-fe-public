@@ -2,14 +2,14 @@ import Image from "next/image";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { isInMsafeApp } from "@suilend/frontend-sui";
 import {
   Wallet,
   WalletType,
-  isInMsafeApp,
   useWalletContext,
-} from "@suilend/frontend-sui";
-import useIsAndroid from "@suilend/frontend-sui/hooks/useIsAndroid";
-import useIsiOS from "@suilend/frontend-sui/hooks/useIsiOS";
+} from "@suilend/frontend-sui-next";
+import useIsAndroid from "@suilend/frontend-sui-next/hooks/useIsAndroid";
+import useIsiOS from "@suilend/frontend-sui-next/hooks/useIsiOS";
 
 import Button from "@/components/shared/Button";
 import DropdownMenu, {

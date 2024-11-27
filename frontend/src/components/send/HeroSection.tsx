@@ -8,7 +8,7 @@ import {
   WalletContextQueryParams,
   shallowPushQuery,
   useWalletContext,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Menu, RotateCw, X } from "lucide-react";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import ConnectWalletButton from "@/components/layout/ConnectWalletButton";
 import HeaderBase from "@/components/layout/HeaderBase";

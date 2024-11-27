@@ -1,7 +1,10 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { shallowPushQuery, useSettingsContext } from "@suilend/frontend-sui";
+import {
+  shallowPushQuery,
+  useSettingsContext,
+} from "@suilend/frontend-sui-next";
 
 import AddReserveDialog from "@/components/admin/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/AddRewardsDialog";

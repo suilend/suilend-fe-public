@@ -10,7 +10,7 @@ import {
   COINTYPE_COLOR_MAP,
   getDedupedAprRewards,
 } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { Side } from "@suilend/sdk/types";

@@ -1,4 +1,4 @@
-import { useSettingsContext } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import OpenURLButton from "@/components/shared/OpenURLButton";
 

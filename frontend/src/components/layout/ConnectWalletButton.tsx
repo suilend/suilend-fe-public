@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 
 import ConnectedWalletDropdownMenu from "@/components/layout/ConnectedWalletDropdownMenu";
 import ConnectWalletDropdownMenu from "@/components/layout/ConnectWalletDropdownMenu";

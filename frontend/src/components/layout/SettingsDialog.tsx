@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import { Settings } from "lucide-react";
 
-import { ExplorerId, RpcId, useSettingsContext } from "@suilend/frontend-sui";
+import { ExplorerId, RpcId } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Dialog from "@/components/dashboard/Dialog";
 import ExplorerSelect from "@/components/layout/ExplorerSelect";

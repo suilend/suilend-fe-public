@@ -3,7 +3,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-import { RewardSummary, useSettingsContext } from "@suilend/frontend-sui";
+import { RewardSummary } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
 import Popover from "@/components/shared/Popover";

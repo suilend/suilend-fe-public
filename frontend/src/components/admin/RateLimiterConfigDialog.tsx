@@ -5,7 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
 import Dialog from "@/components/admin/Dialog";

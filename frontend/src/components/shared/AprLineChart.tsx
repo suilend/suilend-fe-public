@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import * as Recharts from "recharts";
 
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";

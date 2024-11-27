@@ -17,11 +17,8 @@ import {
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
-import {
-  getCoinMetadataMap,
-  isCoinType,
-  useSettingsContext,
-} from "@suilend/frontend-sui";
+import { getCoinMetadataMap, isCoinType } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";

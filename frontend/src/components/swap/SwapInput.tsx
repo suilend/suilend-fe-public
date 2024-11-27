@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
-import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";

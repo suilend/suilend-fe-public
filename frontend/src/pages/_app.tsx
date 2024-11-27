@@ -12,7 +12,7 @@ import mixpanel from "mixpanel-browser";
 import {
   SettingsContextProvider,
   WalletContextProvider,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 
 import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";

@@ -3,7 +3,10 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
-import { useSettingsContext, useWalletContext } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import UtilizationBar from "@/components/dashboard/UtilizationBar";

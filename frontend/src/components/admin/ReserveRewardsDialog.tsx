@@ -9,7 +9,7 @@ import {
   shallowPushQuery,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui";
+} from "@suilend/frontend-sui-next";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import AddRewardDialog from "@/components/admin/AddRewardDialog";

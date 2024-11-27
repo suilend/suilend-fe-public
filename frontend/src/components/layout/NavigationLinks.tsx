@@ -1,10 +1,7 @@
 import { ExternalLink } from "lucide-react";
 
-import {
-  getMsafeAppStoreUrl,
-  isInMsafeApp,
-  useWalletContext,
-} from "@suilend/frontend-sui";
+import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";

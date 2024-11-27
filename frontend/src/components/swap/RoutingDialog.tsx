@@ -10,7 +10,8 @@ import BigNumber from "bignumber.js";
 import { Route } from "lucide-react";
 import ReactFlow, { Edge, Handle, Node, Position } from "reactflow";
 
-import { getCoinMetadataMap, useSettingsContext } from "@suilend/frontend-sui";
+import { getCoinMetadataMap } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";

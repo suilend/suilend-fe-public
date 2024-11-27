@@ -6,7 +6,8 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
-import { isSendPoints, shallowPushQuery } from "@suilend/frontend-sui";
+import { isSendPoints } from "@suilend/frontend-sui";
+import { shallowPushQuery } from "@suilend/frontend-sui-next";
 import { WAD } from "@suilend/sdk/constants";
 import {
   ApiBorrowEvent,

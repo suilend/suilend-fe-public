@@ -3,7 +3,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";

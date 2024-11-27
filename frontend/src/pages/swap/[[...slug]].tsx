@@ -30,10 +30,12 @@ import {
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
-  useSettingsContext,
-  useWalletContext,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 import { Action, Side } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
