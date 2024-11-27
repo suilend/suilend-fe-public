@@ -47,7 +47,9 @@ export default function NavigationLinks() {
             Swap
           </Link>
           <Link href={BRIDGE_URL}>Bridge</Link>
-          {data?.lendingMarketOwnerCapId && <Link href={ADMIN_URL}>Admin</Link>}
+          {!!data?.lendingMarketOwnerCapId && (
+            <Link href={ADMIN_URL}>Admin</Link>
+          )}
         </>
       )}
       <Link

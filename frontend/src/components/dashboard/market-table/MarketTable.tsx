@@ -5,7 +5,7 @@ import BigNumber from "bignumber.js";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_fudSUI_COINTYPE,
+  NORMALIZED_kSUI_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
@@ -196,11 +196,12 @@ export default function MarketTable() {
             borrowPosition?.borrowedAmount ?? new BigNumber(0);
 
           return (
-            (reserve.coinType === NORMALIZED_fudSUI_COINTYPE
-              ? Date.now() >= 1732269600000 // 2024-11-22 19:00:00 JST
+            (reserve.coinType === NORMALIZED_kSUI_COINTYPE
+              ? Date.now() >= 1732708800000 // 2024-11-27 12:00:00 UTC
               : reserve.config.depositLimit.gt(0)) ||
             depositedAmount.gt(0) ||
-            borrowedAmount.gt(0)
+            borrowedAmount.gt(0) ||
+            !!data.lendingMarketOwnerCapId
           );
         })
         .map((reserve) => {
@@ -348,6 +349,7 @@ export default function MarketTable() {
       data.lendingMarket.reserves,
       obligation?.deposits,
       obligation?.borrows,
+      data.lendingMarketOwnerCapId,
       data.rewardMap,
       data.lstAprPercentMap,
     ],
