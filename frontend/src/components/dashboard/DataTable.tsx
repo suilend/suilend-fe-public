@@ -178,12 +178,13 @@ interface DataTableProps<T> {
   columnFilters?: ColumnFiltersState;
   skeletonRows?: number;
   maxRows?: number;
+  initialExpandedState?: ExpandedState;
   pageSize?: number;
   container?: TableContainerProps;
   tableClassName?: ClassValue;
   tableHeaderRowClassName?: ClassValue;
   tableHeadClassName?: (header: Header<T, unknown>) => ClassValue;
-  tableRowClassName?: (row?: Row<T>, isSorting?: boolean) => ClassValue;
+  tableRowClassName?: (row?: Row<T>) => ClassValue;
   tableCellClassName?: (cell?: Cell<T, unknown>) => ClassValue;
   tableCellColSpan?: (cell: Cell<T, unknown>) => number | undefined;
   RowModal?: FunctionComponent<{
@@ -200,6 +201,7 @@ export default function DataTable<T>({
   columnFilters,
   skeletonRows,
   maxRows,
+  initialExpandedState,
   pageSize,
   container,
   tableClassName,
@@ -212,7 +214,9 @@ export default function DataTable<T>({
   onRowClick,
 }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [expanded, setExpanded] = useState<ExpandedState>(
+    initialExpandedState ?? {},
+  );
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: pageSize ?? 0,
@@ -318,8 +322,7 @@ export default function DataTable<T>({
                   key={index}
                   className={cn(
                     "hover:bg-transparent",
-                    tableRowClassName &&
-                      tableRowClassName(undefined, sorting.length > 0),
+                    tableRowClassName && tableRowClassName(undefined),
                   )}
                 >
                   <TableCell
@@ -340,7 +343,21 @@ export default function DataTable<T>({
                 table
                   .getRowModel()
                   .rows.slice(0, maxRows)
+                  .map((row) => {
+                    const result: Row<T>[] = [row];
+                    for (const subRow of row.subRows) {
+                      result.push(subRow);
+
+                      for (const subSubRow of subRow.subRows)
+                        result.push(subSubRow);
+                    }
+
+                    return result;
+                  })
+                  .flat()
                   .map((row, index) => {
+                    if (!row.getIsAllParentsExpanded()) return null;
+
                     const children = (
                       <TableRow
                         className={cn(
@@ -349,8 +366,7 @@ export default function DataTable<T>({
                             (onRowClick &&
                               onRowClick(row, index) !== undefined)) &&
                             "cursor-pointer hover:bg-muted/10",
-                          tableRowClassName &&
-                            tableRowClassName(row, sorting.length > 0),
+                          tableRowClassName && tableRowClassName(row),
                         )}
                         style={{ appearance: "inherit" }}
                         onClick={
@@ -391,8 +407,7 @@ export default function DataTable<T>({
                 <TableRow
                   className={cn(
                     "hover:bg-transparent",
-                    tableRowClassName &&
-                      tableRowClassName(undefined, sorting.length > 0),
+                    tableRowClassName && tableRowClassName(undefined),
                   )}
                 >
                   <TableCell

@@ -14,6 +14,7 @@ import useIsTouchscreen from "@suilend/frontend-sui/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
+import { MarketCardListType } from "@/components/dashboard/market-table/MarketCardList";
 import { MarketTableType } from "@/components/dashboard/market-table/MarketTable";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -24,7 +25,7 @@ import { SPRINGSUI_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface AssetCellProps {
-  tableType: AccountAssetTableType | MarketTableType;
+  tableType: AccountAssetTableType | MarketTableType | MarketCardListType;
   reserve?: ParsedReserve;
   token: Token;
   price?: BigNumber;

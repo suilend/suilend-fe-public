@@ -7,7 +7,8 @@ import BorrowAprCell from "@/components/dashboard/market-table/BorrowAprCell";
 import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
 import styles from "@/components/dashboard/market-table/MarketCardList.module.scss";
 import {
-  MarketTableType,
+  EcosystemLstsRowData,
+  HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
@@ -22,6 +23,10 @@ import {
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,
 } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
+
+export enum MarketCardListType {
+  MARKET_CARD_LIST = "marketCardList",
+}
 
 interface MarketCardProps {
   rowData: ReservesRowData;
@@ -38,7 +43,10 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
     >
       <div className="flex w-full flex-col gap-4 p-4">
         <div className="flex w-full flex-row justify-between">
-          <AssetCell tableType={MarketTableType.MARKET} {...rowData} />
+          <AssetCell
+            tableType={MarketCardListType.MARKET_CARD_LIST}
+            {...rowData}
+          />
 
           <div className="flex flex-row justify-end gap-6">
             <div className="flex w-fit flex-col items-end gap-1">
@@ -75,14 +83,23 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
   );
 }
 interface MarketCardListProps {
-  rows: ReservesRowData[];
+  rows: HeaderRowData[];
 }
 export default function MarketCardList({ rows }: MarketCardListProps) {
   const { open: openActionsModal } = useActionsModalContext();
 
-  const mainRows = useMemo(() => rows.filter((row) => !row.isIsolated), [rows]);
+  const mainRows = useMemo(() => {
+    const result: ReservesRowData[] = [];
+    for (const subRow of rows[0].subRows) {
+      if ((subRow as EcosystemLstsRowData).isEcosystemLstsRow)
+        result.push(...(subRow as EcosystemLstsRowData).subRows);
+      else result.push(subRow as ReservesRowData);
+    }
+
+    return result;
+  }, [rows]);
   const isolatedRows = useMemo(
-    () => rows.filter((row) => row.isIsolated),
+    () => rows[1].subRows as ReservesRowData[],
     [rows],
   );
 
