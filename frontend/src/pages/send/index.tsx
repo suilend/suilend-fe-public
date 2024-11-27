@@ -378,7 +378,9 @@ export default function Send() {
     }
 
     const objs = await getOwnedObjectsOfType(DOUBLEUP_CITIZEN_TYPE);
-    setOwnedDoubleUpCitizen(new BigNumber(objs.length));
+    setOwnedDoubleUpCitizen(
+      objs.length > 0 ? new BigNumber(objs.length) : undefined,
+    );
   }, [address, getOwnedObjectsOfType]);
 
   useEffect(() => {
