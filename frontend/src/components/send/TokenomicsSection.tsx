@@ -8,9 +8,9 @@ export default function TokenomicsSection() {
     <div className="flex w-full flex-col items-center gap-8">
       <SectionHeading>Token distribution & unlocks schedule</SectionHeading>
 
-      <div className="flex w-full flex-col items-center justify-center md:flex-row">
-        <div className="max-md:w-full md:flex-1">
-          <AspectRatio ratio={960 / 640}>
+      <div className="flex w-full flex-col items-center justify-center lg:flex-row">
+        <div className="max-w-[450px] max-lg:w-full lg:flex-1">
+          <AspectRatio ratio={1031 / 828}>
             <Image
               className="object-cover"
               src="/assets/send/tokenomics-pie.png"
@@ -21,7 +21,7 @@ export default function TokenomicsSection() {
           </AspectRatio>
         </div>
 
-        <div className="max-md:w-full md:flex-1">
+        <div className="max-w-[600px] max-lg:w-full lg:flex-1">
           <AspectRatio ratio={960 / 838}>
             <Image
               className="object-cover"
