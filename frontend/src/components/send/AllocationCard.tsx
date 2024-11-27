@@ -85,7 +85,10 @@ function Status({ allocation }: StatusProps) {
                     ),
                     { exact: false },
                   )}
-                  {allocation.id === AllocationId.SEND_POINTS && (
+                  {[
+                    AllocationId.EARLY_USERS,
+                    AllocationId.SEND_POINTS,
+                  ].includes(allocation.id) && (
                     <span className="font-sans">*</span>
                   )}
                 </TBody>
