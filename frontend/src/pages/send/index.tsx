@@ -359,7 +359,7 @@ export default function Send() {
   }, [address, getOwnedKioskItemsOfType]);
 
   const [ownedDoubleUpCitizen, setOwnedDoubleUpCitizen] = useState<
-    BigNumber | undefined
+    BigNumber | undefined | null
   >(undefined);
 
   const getOwnedDoubleUpCitizen = useCallback(async () => {
@@ -379,7 +379,7 @@ export default function Send() {
 
     const objs = await getOwnedObjectsOfType(DOUBLEUP_CITIZEN_TYPE);
     setOwnedDoubleUpCitizen(
-      objs.length > 0 ? new BigNumber(objs.length) : undefined,
+      objs.length > 0 ? new BigNumber(objs.length) : null,
     );
   }, [address, getOwnedObjectsOfType]);
 
@@ -858,7 +858,7 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        ownedDoubleUpCitizen !== undefined
+        ownedDoubleUpCitizen !== undefined && ownedDoubleUpCitizen !== null
           ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
@@ -1022,7 +1022,9 @@ export default function Send() {
               allocations={allocations}
               isLoading={
                 ownedKiosks === undefined ||
-                ownedSuilendCapsulesMap === undefined
+                ownedSuilendCapsulesMap === undefined ||
+                ownedNfts === undefined ||
+                ownedDoubleUpCitizen === undefined
               }
             />
             <AllocationCardsSection allocations={allocations} />

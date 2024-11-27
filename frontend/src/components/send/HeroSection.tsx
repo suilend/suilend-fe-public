@@ -55,7 +55,7 @@ export default function HeroSection({
             <SendTokenLogo className="mr-3 inline-block h-8 w-8 md:mr-4 md:h-10 md:w-10" />
             {"SEND allocation"}
           </>
-        ) : userAllocationPercent.eq(0) ? (
+        ) : userAllocationPercent.eq(0) && !isLoading ? (
           "Sorry, you're not eligible"
         ) : (
           "Your allocation is"
@@ -86,7 +86,7 @@ export default function HeroSection({
                     ),
                     { exact: false },
                   )}
-                  <span className="font-sans">*</span> SEND
+                  <span className="font-sans leading-none">*</span> SEND
                 </TDisplay>
               )}
             </div>
