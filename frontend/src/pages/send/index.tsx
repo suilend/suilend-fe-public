@@ -14,6 +14,7 @@ import {
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
+import TokenomicsSection from "@/components/send/TokenomicsSection";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
@@ -23,22 +24,22 @@ import {
 import { formatInteger } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
-import aaaJson from "./aaa.json";
-import animaJson from "./anima.json";
-import bluefinLeaguesBlackJson from "./bluefin-leagues-black.json";
-import bluefinLeaguesGoldJson from "./bluefin-leagues-gold.json";
-import bluefinLeaguesPlatinumJson from "./bluefin-leagues-platinum.json";
-import bluefinLeaguesSapphireJson from "./bluefin-leagues-sapphire.json";
-import bluefinSendTradersJson from "./bluefin-send-traders.json";
-import doubleUpCitizenJson from "./doubleup-citizen.json";
-import earlyUsersJson from "./early-users.json";
-import eggJson from "./egg.json";
-import fudJson from "./fud.json";
-import kumoJson from "./kumo.json";
-import octoJson from "./octo.json";
-import primeMachinJson from "./prime-machin.json";
-import rootletsJson from "./rootlets.json";
-import tismJson from "./tism.json";
+import earlyUsersJson from "./lending/early-users.json";
+import animaJson from "./nft/anima.json";
+import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
+import eggJson from "./nft/egg.json";
+import kumoJson from "./nft/kumo.json";
+import primeMachinJson from "./nft/prime-machin.json";
+import rootletsJson from "./nft/rootlets.json";
+import aaaJson from "./token/aaa.json";
+import fudJson from "./token/fud.json";
+import octoJson from "./token/octo.json";
+import tismJson from "./token/tism.json";
+import bluefinLeaguesBlackJson from "./trading/bluefin-leagues-black.json";
+import bluefinLeaguesGoldJson from "./trading/bluefin-leagues-gold.json";
+import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json";
+import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json";
+import bluefinSendTradersJson from "./trading/bluefin-send-traders.json";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
@@ -618,7 +619,7 @@ export default function Send() {
   const allocations: Allocation[] = [
     {
       id: AllocationId.EARLY_USERS,
-      src: "/assets/send/early-users.png",
+      src: "/assets/send/lending/early-users.png",
       title: "Early Users",
       description:
         "Early users are those who used Suilend prior to the launch of SEND points.",
@@ -639,7 +640,7 @@ export default function Send() {
     },
     {
       id: AllocationId.SEND_POINTS,
-      src: "/assets/send/send-points.png",
+      src: "/assets/send/points/send-points.png",
       title: "SEND Points",
       description:
         "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
@@ -662,7 +663,7 @@ export default function Send() {
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
-      src: "/assets/send/suilend-capsules.gif",
+      src: "/assets/send/nft/suilend-capsules.gif",
       title: "Suilend Capsules",
       description:
         "A token of appreciation awarded for outstanding community contributions to Suilend.",
@@ -703,7 +704,7 @@ export default function Send() {
     },
     {
       id: AllocationId.SAVE,
-      src: "/assets/send/save.png",
+      src: "/assets/send/token/save.png",
       title: "SAVE",
       description:
         "Suilend thrives thanks to the unwavering support of SLND holders. We honor our roots on Solana with this token of appreciation.",
@@ -718,7 +719,7 @@ export default function Send() {
     },
     {
       id: AllocationId.ROOTLETS,
-      src: "/assets/send/rootlets.gif",
+      src: "/assets/send/nft/rootlets.png",
       title: "Rootlets",
       description:
         "Rootlets are the companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
@@ -742,7 +743,7 @@ export default function Send() {
 
     {
       id: AllocationId.BLUEFIN_LEAGUES,
-      src: "/assets/send/bluefin-leagues.png",
+      src: "/assets/send/trading/bluefin-leagues.png",
       title: "Bluefin Leagues",
       description:
         "Bluefin Leagues offer a structured recognition system to reward users for their engagement and trading activities on the Bluefin platform.",
@@ -763,7 +764,7 @@ export default function Send() {
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
-      src: "/assets/send/bluefin-leagues.png", // TODO (update once we have an image)
+      src: "/assets/send/trading/bluefin-send-traders.png",
       title: "Bluefin SEND Traders",
       description:
         "For users who traded the SEND pre-launch market on Bluefin.",
@@ -792,7 +793,7 @@ export default function Send() {
 
     {
       id: AllocationId.PRIME_MACHIN,
-      src: "/assets/send/prime-machin.png",
+      src: "/assets/send/nft/prime-machin.png",
       title: "Prime Machin",
       description:
         "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
@@ -817,7 +818,7 @@ export default function Send() {
     },
     {
       id: AllocationId.EGG,
-      src: "/assets/send/egg.png",
+      src: "/assets/send/nft/egg.png",
       title: "Egg",
       description:
         "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
@@ -840,7 +841,7 @@ export default function Send() {
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
-      src: "/assets/send/doubleup-citizen.png",
+      src: "/assets/send/nft/doubleup-citizen.png",
       title: "DoubleUp Citizen",
       description:
         "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
@@ -865,7 +866,7 @@ export default function Send() {
     },
     {
       id: AllocationId.KUMO,
-      src: "/assets/send/kumo.png",
+      src: "/assets/send/nft/kumo.png",
       title: "Kumo",
       description:
         "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2,222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
@@ -889,7 +890,7 @@ export default function Send() {
 
     {
       id: AllocationId.ANIMA,
-      src: "/assets/send/anima.png",
+      src: "/assets/send/nft/anima.png",
       title: "Anima",
       description:
         "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
@@ -916,7 +917,7 @@ export default function Send() {
 
     {
       id: AllocationId.FUD,
-      src: "/assets/send/fud.png",
+      src: "/assets/send/token/fud.png",
       title: "FUD",
       description: "FUD is the OG culture coin on Sui.",
       allocationType: AllocationType.FLAT,
@@ -938,7 +939,7 @@ export default function Send() {
     },
     {
       id: AllocationId.AAA,
-      src: "/assets/send/aaa.png",
+      src: "/assets/send/token/aaa.png",
       title: "AAA",
       description:
         "AAA Cat is Sui's fastest-growing, top cat meme coin. Built by the community for the community. Can't Stop, Won't Stop!",
@@ -961,7 +962,7 @@ export default function Send() {
     },
     {
       id: AllocationId.OCTO,
-      src: "/assets/send/octo.png",
+      src: "/assets/send/token/octo.png",
       title: "OCTO",
       description:
         "$OCTO brings fun and community together while crafting a unique Lofi-inspired IP for all to enjoy!",
@@ -984,7 +985,7 @@ export default function Send() {
     },
     {
       id: AllocationId.TISM,
-      src: "/assets/send/tism.png",
+      src: "/assets/send/token/tism.png",
       title: "TISM",
       description: "got tism?",
       allocationType: AllocationType.FLAT,
@@ -1015,40 +1016,19 @@ export default function Send() {
       <div className="relative flex w-full flex-col items-center">
         <SendHeader />
 
-        <div className="relative z-[2] flex w-full flex-col items-center gap-12 pt-36 md:gap-16 md:pt-32">
-          <HeroSection
-            allocations={allocations}
-            isLoading={
-              ownedKiosks === undefined || ownedSuilendCapsulesMap === undefined
-            }
-          />
-          <AllocationCardsSection allocations={allocations} />
-
-          <div className="flex w-full flex-col items-center justify-center md:flex-row">
-            <div className="max-md:w-full md:flex-1">
-              <AspectRatio ratio={960 / 640}>
-                <Image
-                  className="object-cover"
-                  src="/assets/send/tokenomics-pie.png"
-                  alt="SEND pie chart"
-                  fill
-                  quality={100}
-                />
-              </AspectRatio>
-            </div>
-
-            <div className="max-md:w-full md:flex-1">
-              <AspectRatio ratio={960 / 838}>
-                <Image
-                  className="object-cover"
-                  src="/assets/send/tokenomics-vesting.png"
-                  alt="SEND vesting chart"
-                  fill
-                  quality={100}
-                />
-              </AspectRatio>
-            </div>
+        <div className="relative z-[2] flex w-full flex-col items-center gap-16 pt-36 md:gap-24 md:pt-32">
+          <div className="flex w-full flex-col items-center gap-12 md:gap-16">
+            <HeroSection
+              allocations={allocations}
+              isLoading={
+                ownedKiosks === undefined ||
+                ownedSuilendCapsulesMap === undefined
+              }
+            />
+            <AllocationCardsSection allocations={allocations} />
           </div>
+
+          <TokenomicsSection />
         </div>
       </div>
     </>
