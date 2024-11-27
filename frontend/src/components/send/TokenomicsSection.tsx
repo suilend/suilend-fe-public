@@ -5,11 +5,11 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 export default function TokenomicsSection() {
   return (
-    <div className="flex w-full flex-col items-center gap-8">
+    <div className="flex w-full flex-col items-center gap-16">
       <SectionHeading>Token distribution & unlocks schedule</SectionHeading>
 
-      <div className="flex w-full flex-col items-center justify-center lg:flex-row">
-        <div className="max-w-[450px] max-lg:w-full lg:flex-1">
+      <div className="flex w-full flex-col items-center justify-center gap-16 md:flex-row">
+        <div className="max-w-96 max-md:w-full md:flex-1">
           <AspectRatio ratio={1031 / 828}>
             <Image
               className="object-cover"
@@ -21,12 +21,12 @@ export default function TokenomicsSection() {
           </AspectRatio>
         </div>
 
-        <div className="max-w-[600px] max-lg:w-full lg:flex-1">
-          <AspectRatio ratio={960 / 838}>
+        <div className="max-w-96 max-md:w-full md:flex-1">
+          <AspectRatio ratio={1029 / 830}>
             <Image
               className="object-cover"
-              src="/assets/send/tokenomics-vesting.png"
-              alt="SEND vesting chart"
+              src="/assets/send/tokenomics-unlocks.png"
+              alt="SEND unlocks chart"
               fill
               quality={100}
             />

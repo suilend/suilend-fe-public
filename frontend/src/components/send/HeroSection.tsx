@@ -55,10 +55,10 @@ export default function HeroSection({
             <SendTokenLogo className="mr-3 inline-block h-8 w-8 md:mr-4 md:h-10 md:w-10" />
             {"SEND allocation"}
           </>
-        ) : userAllocationPercent.eq(0) && !isLoading ? (
-          "Sorry, you're not eligible"
-        ) : (
+        ) : userAllocationPercent.gt(0) || isLoading ? (
           "Your allocation is"
+        ) : (
+          "Sorry, you're not eligible"
         )}
       </SectionHeading>
 
