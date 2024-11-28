@@ -129,7 +129,7 @@ function CtaButton({ allocation }: CtaButtonProps) {
       </Button>
     </Link>
   ) : (
-    <div className="h-10 w-full" />
+    <div className="h-10 w-full max-sm:hidden" />
   );
 }
 
@@ -137,7 +137,7 @@ function Wrapper({ children }: PropsWithChildren) {
   const { sm } = useBreakpoint();
 
   return sm ? (
-    <AspectRatio ratio={sm ? 280 / 396 : 1}>{children}</AspectRatio>
+    <AspectRatio ratio={280 / 396}>{children}</AspectRatio>
   ) : (
     <div className="h-[320px] w-full">{children}</div>
   );
