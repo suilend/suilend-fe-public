@@ -148,8 +148,6 @@ interface AllocationCardProps {
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
-  const { md } = useBreakpoint();
-
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -186,6 +184,8 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
         onClick={() => setIsFlipped((is) => !is)}
         onMouseEnter={onCardMouseEnter}
         onMouseLeave={onCardMouseLeave}
+        onTouchStart={onCardMouseEnter}
+        onTouchEnd={onCardMouseLeave}
         style={{ perspective: "1000px" }}
       >
         <div className={cn("relative h-full w-full", styles.cardInner)}>
