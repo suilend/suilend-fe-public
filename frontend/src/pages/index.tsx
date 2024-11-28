@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatPercent } from "@/lib/format";
 import { DASHBOARD_URL, DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
-import suilendLogo from "@/public/assets/suilend.svg";
+import suilendLogo from "@/public/assets/send.svg";
 
 export default function Home() {
   const { data } = useAppContext();

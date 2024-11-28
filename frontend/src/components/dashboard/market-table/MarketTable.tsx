@@ -134,7 +134,7 @@ export default function MarketTable() {
                 </div>
 
                 <div className="flex min-w-max flex-col gap-1">
-                  <TBody className="uppercase">{title}</TBody>
+                  <TBody>{title}</TBody>
                   <TokenLogos
                     className="h-4 w-4"
                     tokens={subRows.map((subRow) => subRow.token)}
@@ -432,7 +432,7 @@ export default function MarketTable() {
 
       const ecosystemLstsRow: CollapsibleRowData = {
         isCollapsibleRow: true,
-        title: "Ecosystem LSTs",
+        title: "ECOSYSTEM LSTs",
 
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
@@ -487,7 +487,7 @@ export default function MarketTable() {
 
       const memecoinsRow: CollapsibleRowData = {
         isCollapsibleRow: true,
-        title: "Memecoins",
+        title: "MEMECOINS",
 
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
