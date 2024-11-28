@@ -224,7 +224,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     backgroundRepeat: "no-repeat",
                   }}
                 >
-                  {md && allocation.hoverSrc && (
+                  {allocation.hoverSrc && (
                     <video
                       ref={videoRef}
                       className="h-full w-full"
