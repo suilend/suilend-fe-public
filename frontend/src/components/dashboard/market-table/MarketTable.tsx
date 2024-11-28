@@ -57,6 +57,8 @@ export interface HeaderRowData {
 export interface EcosystemLstsRowData {
   isEcosystemLstsRow: boolean;
 
+  openLtvPercent: BigNumber;
+  borrowWeight: BigNumber;
   depositedAmount: BigNumber;
   depositedAmountUsd: BigNumber;
   borrowedAmount: BigNumber;
@@ -160,11 +162,12 @@ export default function MarketTable() {
             const { depositedAmountUsd } = row.original as EcosystemLstsRowData;
 
             return (
-              <div className="flex flex-col items-end">
+              <div className="flex flex-col items-end gap-1">
+                <TBody>--</TBody>
                 <Tooltip title={formatUsd(depositedAmountUsd, { exact: true })}>
-                  <TBody className="min-w-max text-right">
+                  <TLabel className="min-w-max text-right">
                     {formatUsd(depositedAmountUsd)}
-                  </TBody>
+                  </TLabel>
                 </Tooltip>
               </div>
             );
@@ -180,19 +183,8 @@ export default function MarketTable() {
           tableHeader(column, "Borrows", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow) {
-            const { borrowedAmountUsd } = row.original as EcosystemLstsRowData;
-
-            return (
-              <div className="flex flex-col items-end">
-                <Tooltip title={formatUsd(borrowedAmountUsd, { exact: true })}>
-                  <TBody className="min-w-max text-right">
-                    {formatUsd(borrowedAmountUsd)}
-                  </TBody>
-                </Tooltip>
-              </div>
-            );
-          }
+          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+            return null;
 
           return <TotalBorrowsCell {...(row.original as ReservesRowData)} />;
         },
@@ -208,7 +200,7 @@ export default function MarketTable() {
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
           if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
-            return null;
+            return <OpenLtvBwCell {...(row.original as ReservesRowData)} />;
 
           return <OpenLtvBwCell {...(row.original as ReservesRowData)} />;
         },
@@ -440,6 +432,12 @@ export default function MarketTable() {
       const ecosystemLstsRow: EcosystemLstsRowData = {
         isEcosystemLstsRow: true,
 
+        openLtvPercent:
+          mainReserveRows.find((r) => issSui(r.token.coinType))
+            ?.openLtvPercent ?? new BigNumber(0),
+        borrowWeight:
+          mainReserveRows.find((r) => issSui(r.token.coinType))?.borrowWeight ??
+          new BigNumber(0),
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
         borrowedAmount: new BigNumber(0),
