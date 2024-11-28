@@ -432,12 +432,8 @@ export default function MarketTable() {
       const ecosystemLstsRow: EcosystemLstsRowData = {
         isEcosystemLstsRow: true,
 
-        openLtvPercent:
-          mainReserveRows.find((r) => issSui(r.token.coinType))
-            ?.openLtvPercent ?? new BigNumber(0),
-        borrowWeight:
-          mainReserveRows.find((r) => issSui(r.token.coinType))?.borrowWeight ??
-          new BigNumber(0),
+        openLtvPercent: new BigNumber(0),
+        borrowWeight: new BigNumber(0),
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
         borrowedAmount: new BigNumber(0),
@@ -451,6 +447,8 @@ export default function MarketTable() {
           !issSui(reserveRow.token.coinType) &&
           NORMALIZED_LST_COINTYPES.includes(reserveRow.token.coinType)
         ) {
+          ecosystemLstsRow.openLtvPercent = reserveRow.openLtvPercent;
+          ecosystemLstsRow.borrowWeight = reserveRow.borrowWeight;
           ecosystemLstsRow.depositedAmount =
             ecosystemLstsRow.depositedAmount.plus(reserveRow.depositedAmount);
           ecosystemLstsRow.depositedAmountUsd =
