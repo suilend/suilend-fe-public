@@ -129,19 +129,19 @@ export const parseReserve = (
     },
 
     /**
-     * @deprecated since version 1.1.9. Use `token.symbol` instead.
+     * @deprecated since version 1.1.19. Use `token.symbol` instead.
      */
     symbol,
     /**
-     * @deprecated since version 1.1.9. Use `token.name` instead.
+     * @deprecated since version 1.1.19. Use `token.name` instead.
      */
     name,
     /**
-     * @deprecated since version 1.1.9. Use `token.iconUrl` instead.
+     * @deprecated since version 1.1.19. Use `token.iconUrl` instead.
      */
     iconUrl,
     /**
-     * @deprecated since version 1.1.9. Use `token.description` instead.
+     * @deprecated since version 1.1.19. Use `token.description` instead.
      */
     description,
 
