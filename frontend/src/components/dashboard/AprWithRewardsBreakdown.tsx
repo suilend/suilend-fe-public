@@ -232,7 +232,8 @@ export default function AprWithRewardsBreakdown({
           <>
             {filteredRewards.length > 0 && (
               <TLabelSans>
-                {capitalize(side)} {reserve.symbol}
+                {capitalize(side)}{" "}
+                <span className="font-mono">{reserve.symbol}</span>
                 {" and earn "}
                 {perDayRewards.length > 0 && (
                   <>points{aprRewards.length > 0 && " & "}</>
@@ -259,7 +260,9 @@ export default function AprWithRewardsBreakdown({
                         )}
                         <br />
                         <span className="font-sans text-muted-foreground">
-                          Per {reserve.symbol} per day
+                          {"Per "}
+                          <span className="font-mono">{reserve.symbol}</span>
+                          {" per day"}
                         </span>
                       </>
                     }
@@ -272,7 +275,7 @@ export default function AprWithRewardsBreakdown({
                         iconUrl: reward.stats.iconUrl,
                       }}
                     />
-                    <TLabelSans>{reward.stats.symbol}</TLabelSans>
+                    <TLabel>{reward.stats.symbol}</TLabel>
                   </AprRewardsBreakdownRow>
                 ))}
               </div>

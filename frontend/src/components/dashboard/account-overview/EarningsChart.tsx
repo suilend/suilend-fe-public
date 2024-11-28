@@ -8,7 +8,12 @@ import { Side } from "@suilend/sdk/types";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";
-import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
@@ -81,10 +86,15 @@ function TooltipContent({
                         iconUrl: coinMetadata.iconUrl,
                       }}
                     />
-                    <TLabelSans>{coinMetadata.symbol}</TLabelSans>
+                    <TLabel>{coinMetadata.symbol}</TLabel>
                   </div>
 
-                  <TBody style={{ color: COINTYPE_COLOR_MAP[coinType] }}>
+                  <TBody
+                    style={{
+                      color:
+                        COINTYPE_COLOR_MAP[coinType] ?? "hsl(var(--muted))",
+                    }}
+                  >
                     {formatToken(new BigNumber(d[coinType] as number), {
                       exact: false,
                     })}
@@ -223,7 +233,7 @@ export default function EarningsChart({
                 type="monotone"
                 dataKey={coinType}
                 isAnimationActive={false}
-                stroke={COINTYPE_COLOR_MAP[coinType]}
+                stroke={COINTYPE_COLOR_MAP[coinType] ?? "hsl(var(--muted))"}
                 dot={line.dot}
                 strokeWidth={line.strokeWidth}
               />

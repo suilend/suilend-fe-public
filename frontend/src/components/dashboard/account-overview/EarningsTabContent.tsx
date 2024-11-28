@@ -951,7 +951,7 @@ export default function EarningsTabContent({
   ]);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden pt-4">
+    <div className="relative flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden pt-4">
       <div className="flex flex-col gap-3 px-4">
         <div className="relative w-full">
           <div className="absolute bottom-0 left-0 right-3/4 top-0 z-[1] rounded-l-sm bg-gradient-to-r from-primary/20 to-transparent" />
@@ -1079,7 +1079,11 @@ export default function EarningsTabContent({
             : interpolatedCumInterestPaidData;
 
         return (
-          <div key={table.title} className="flex flex-col gap-4">
+          <div
+            key={table.title}
+            className="relative flex flex-col gap-4"
+            style={{ zIndex: array.length - index }}
+          >
             <TitleWithIcon className="px-4">{table.title}</TitleWithIcon>
 
             <div key={table.title} className="flex flex-col gap-4">

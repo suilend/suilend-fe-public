@@ -45,7 +45,8 @@ const isReward = (field: string) => !isBase(field);
 const getFieldCoinType = (field: string) => field.split("__")[1];
 const getFieldColor = (field: string) => {
   if (isBase(field)) return "hsl(var(--success))";
-  if (isReward(field)) return COINTYPE_COLOR_MAP[getFieldCoinType(field)];
+  if (isReward(field))
+    return COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))";
   return "";
 };
 
