@@ -1,8 +1,9 @@
 import Head from "next/head";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
 import BigNumber from "bignumber.js";
+import useSWR from "swr";
 
 import { isSendPoints } from "@suilend/frontend-sui";
 import {
@@ -80,36 +81,29 @@ export enum AssetType {
 export type Allocation = {
   id: AllocationId;
   src: string;
+  hoverSrc?: string;
   title: string;
   description: string;
   allocationType: AllocationType;
   assetType?: AssetType;
   cta?: {
-    // Undefined for Early Users, Bluefin Leagues
     title: string;
     href: string;
   };
-  snapshotTaken?: boolean; // Undefined for SEND Points, Suilend Capsules, and SAVE
-  eligibleWallets?: string; // Undefined for SEND Points, Suilend Capsules, and SAVE
+  snapshotTaken: boolean;
+  eligibleWallets?: string;
   totalAllocationPercent: BigNumber;
   totalAllocationBreakdown: {
     title: string;
     percent: BigNumber;
   }[];
-  userAllocationPercent?: BigNumber; // Undefined for SAVE
+  userAllocationPercent?: BigNumber;
 };
 
 enum SuilendCapsuleRarity {
   COMMON = "common",
   UNCOMMON = "uncommon",
   RARE = "rare",
-}
-
-enum BluefinLeagues {
-  GOLD = "gold",
-  PLATINUM = "platinum",
-  BLACK = "black",
-  SAPPHIRE = "sapphire",
 }
 
 const SUILEND_CAPSULE_TYPE =
@@ -161,7 +155,7 @@ export default function Send() {
   // Setup - owned objects
   const getOwnedObjectsOfType = useCallback(
     async (type: string) => {
-      if (!address) return [];
+      if (!address) return undefined;
 
       const allObjs = [];
       let cursor = null;
@@ -192,15 +186,8 @@ export default function Send() {
     [suiClient],
   );
 
-  const [ownedKiosks, setOwnedKiosks] = useState<KioskData[] | undefined>(
-    undefined,
-  );
-
-  const getOwnedKiosks = useCallback(async () => {
-    if (!address) {
-      setOwnedKiosks(undefined);
-      return;
-    }
+  const ownedKiosksFetcher = useCallback(async () => {
+    if (!address) return undefined;
 
     const allKioskIds = [];
     let cursor = undefined;
@@ -222,12 +209,22 @@ export default function Send() {
       allKioskIds.map((kioskId) => kioskClient.getKiosk({ id: kioskId })),
     );
 
-    setOwnedKiosks(allKiosks);
+    return allKiosks;
   }, [address, kioskClient]);
 
+  const { data: ownedKiosks, mutate: mutateOwnedKiosks } = useSWR<
+    KioskData[] | undefined
+  >(`ownedKiosks-${address}`, ownedKiosksFetcher, {
+    onSuccess: (data) => {
+      console.log("Refreshed owned kiosks", data);
+    },
+    onError: (err) => {
+      console.error("Failed to refresh owned kiosks", err);
+    },
+  });
   useEffect(() => {
-    getOwnedKiosks();
-  }, [getOwnedKiosks]);
+    setTimeout(mutateOwnedKiosks);
+  }, [mutateOwnedKiosks, address, kioskClient]);
 
   const getOwnedKioskItemsOfType = useCallback(
     (type: string) => {
@@ -239,31 +236,31 @@ export default function Send() {
         new BigNumber(0),
       );
 
-      return count.gt(0) ? count : undefined;
+      return count;
     },
     [ownedKiosks],
   );
 
   // User - Early Users
-  const isEarlyUser = address ? earlyUsersJson.includes(address) : undefined;
+  const isInEarlyUsersSnapshot = useMemo(() => {
+    if (!address) return undefined;
+
+    return earlyUsersJson.includes(address);
+  }, [address]);
 
   // User - SEND Points
-  const totalSendPoints = address
-    ? getPointsStats(data.rewardMap, data.obligations).totalPoints.total
-    : undefined;
+  const totalSendPoints = useMemo(() => {
+    if (!address) return undefined;
+
+    return getPointsStats(data.rewardMap, data.obligations).totalPoints.total;
+  }, [address, data.rewardMap, data.obligations]);
 
   // User - Suilend Capsules
-  const [ownedSuilendCapsulesMap, setOwnedSuilendCapsulesMap] = useState<
-    Record<SuilendCapsuleRarity, BigNumber> | undefined
-  >(undefined);
-
-  const getOwnedSuilendCapsules = useCallback(async () => {
-    if (!address) {
-      setOwnedSuilendCapsulesMap(undefined);
-      return;
-    }
+  const ownedSuilendCapsulesMapFetcher = useCallback(async () => {
+    if (!address) return undefined;
 
     const objs = await getOwnedObjectsOfType(SUILEND_CAPSULE_TYPE);
+    if (objs === undefined) return undefined;
 
     const commonCapsuleObjs = objs.filter(
       (obj) =>
@@ -280,23 +277,38 @@ export default function Send() {
         (obj.data?.content as any).fields.rarity === SuilendCapsuleRarity.RARE,
     );
 
-    setOwnedSuilendCapsulesMap({
+    return {
       [SuilendCapsuleRarity.COMMON]: new BigNumber(commonCapsuleObjs.length),
       [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
         uncommonCapsuleObjs.length,
       ),
       [SuilendCapsuleRarity.RARE]: new BigNumber(rareCapsuleObjs.length),
-    });
+    };
   }, [address, getOwnedObjectsOfType]);
 
+  const {
+    data: ownedSuilendCapsulesMap,
+    mutate: mutateOwnedSuilendCapsulesMap,
+  } = useSWR<Record<SuilendCapsuleRarity, BigNumber> | undefined>(
+    `ownedSuilendCapsulesMap-${address}`,
+    ownedSuilendCapsulesMapFetcher,
+    {
+      onSuccess: (data) => {
+        console.log("Refreshed owned Suilend Capsules", data);
+      },
+      onError: (err) => {
+        console.error("Failed to refresh owned Suilend Capsules", err);
+      },
+    },
+  );
   useEffect(() => {
-    getOwnedSuilendCapsules();
-  }, [getOwnedSuilendCapsules]);
+    setTimeout(mutateOwnedSuilendCapsulesMap);
+  }, [mutateOwnedSuilendCapsulesMap, address, getOwnedObjectsOfType]);
 
   // User - Save
 
   // User - Rootlets
-  const ownedRootlets = useMemo(() => {
+  const ownedRootlets: BigNumber | undefined = useMemo(() => {
     if (!address) return undefined;
 
     if (Object.keys(rootletsJson).length > 0)
@@ -307,114 +319,139 @@ export default function Send() {
   }, [address, getOwnedKioskItemsOfType]);
 
   // User - Bluefin Leagues
-  const bluefinLeaguesLeague = useMemo(() => {
+  const isInBluefinLeaguesSnapshot = useMemo(() => {
     if (!address) return undefined;
 
-    if (bluefinLeaguesGoldJson.includes(address)) return BluefinLeagues.GOLD;
-    if (bluefinLeaguesPlatinumJson.includes(address))
-      return BluefinLeagues.PLATINUM;
-    if (bluefinLeaguesBlackJson.includes(address)) return BluefinLeagues.BLACK;
-    if (bluefinLeaguesSapphireJson.includes(address))
-      return BluefinLeagues.SAPPHIRE;
-    return null;
+    return (
+      bluefinLeaguesGoldJson.includes(address) ||
+      bluefinLeaguesPlatinumJson.includes(address) ||
+      bluefinLeaguesBlackJson.includes(address) ||
+      bluefinLeaguesSapphireJson.includes(address)
+    );
   }, [address]);
 
   // User - Bluefin SEND Traders
-  const bluefinSendTradersVolumeUsd =
-    address && Object.keys(bluefinSendTradersJson).length > 0
-      ? new BigNumber(
-          (bluefinSendTradersJson as Record<string, number>)[address] ?? 0,
-        )
-      : undefined;
-
-  // User - NFTs
-  const ownedNfts = useMemo(() => {
+  const bluefinSendTradersVolumeUsd = useMemo(() => {
     if (!address) return undefined;
 
-    const result: Record<
-      AllocationId.PRIME_MACHIN | AllocationId.EGG | AllocationId.KUMO,
-      BigNumber | undefined
-    > = {
-      [AllocationId.PRIME_MACHIN]: undefined,
-      [AllocationId.EGG]: undefined,
-      [AllocationId.KUMO]: undefined,
-    };
+    if (Object.keys(bluefinSendTradersJson).length > 0)
+      return new BigNumber(
+        (bluefinSendTradersJson as Record<string, number>)[address] ?? 0,
+      );
+    return undefined;
+  }, [address]);
 
-    result[AllocationId.PRIME_MACHIN] =
-      Object.keys(primeMachinJson).length > 0
-        ? new BigNumber(
-            (primeMachinJson as Record<string, number>)[address] ?? 0,
-          )
-        : getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
-    result[AllocationId.EGG] =
-      Object.keys(eggJson).length > 0
-        ? new BigNumber((eggJson as Record<string, number>)[address] ?? 0)
-        : getOwnedKioskItemsOfType(EGG_TYPE);
-    result[AllocationId.KUMO] =
-      Object.keys(kumoJson).length > 0
-        ? new BigNumber((kumoJson as Record<string, number>)[address] ?? 0)
-        : getOwnedKioskItemsOfType(KUMO_TYPE);
+  // User - Prime Machin
+  const ownedPrimeMachin: BigNumber | undefined = useMemo(() => {
+    if (!address) return undefined;
 
-    return result;
+    if (Object.keys(primeMachinJson).length > 0)
+      return new BigNumber(
+        (primeMachinJson as Record<string, number>)[address] ?? 0,
+      );
+    return getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
   }, [address, getOwnedKioskItemsOfType]);
 
-  const [ownedDoubleUpCitizen, setOwnedDoubleUpCitizen] = useState<
-    BigNumber | undefined | null
-  >(undefined);
+  // User - Egg
+  const ownedEgg: BigNumber | undefined = useMemo(() => {
+    if (!address) return undefined;
 
-  const getOwnedDoubleUpCitizen = useCallback(async () => {
-    if (!address) {
-      setOwnedDoubleUpCitizen(undefined);
-      return;
-    }
+    if (Object.keys(eggJson).length > 0)
+      return new BigNumber((eggJson as Record<string, number>)[address] ?? 0);
+    return getOwnedKioskItemsOfType(EGG_TYPE);
+  }, [address, getOwnedKioskItemsOfType]);
 
-    if (Object.keys(doubleUpCitizenJson).length > 0) {
-      setOwnedDoubleUpCitizen(
-        new BigNumber(
-          (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-        ),
+  // User - DoubleUp Citizen
+  const ownedDoubleUpCitizenFetcher = useCallback(async () => {
+    if (!address) return undefined;
+
+    if (Object.keys(doubleUpCitizenJson).length > 0)
+      return new BigNumber(
+        (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
       );
-      return;
-    }
 
-    const objs = await getOwnedObjectsOfType(DOUBLEUP_CITIZEN_TYPE);
-    setOwnedDoubleUpCitizen(
-      objs.length > 0 ? new BigNumber(objs.length) : null,
+    const ownedKioskItemsOfType = getOwnedKioskItemsOfType(
+      DOUBLEUP_CITIZEN_TYPE,
     );
-  }, [address, getOwnedObjectsOfType]);
+    const objs = await getOwnedObjectsOfType(DOUBLEUP_CITIZEN_TYPE);
 
+    if (ownedKioskItemsOfType === undefined || objs === undefined)
+      return undefined;
+
+    return ownedKioskItemsOfType.plus(objs.length);
+  }, [address, getOwnedKioskItemsOfType, getOwnedObjectsOfType]);
+
+  const { data: ownedDoubleUpCitizen, mutate: mutateOwnedDoubleUpCitizen } =
+    useSWR<BigNumber | undefined>(
+      `ownedDoubleUpCitizen-${address}`,
+      ownedDoubleUpCitizenFetcher,
+      {
+        onSuccess: (data) => {
+          console.log("Refreshed owned DoubleUp Citizen", data);
+        },
+        onError: (err) => {
+          console.error("Failed to refresh owned DoubleUp Citizen", err);
+        },
+      },
+    );
   useEffect(() => {
-    getOwnedDoubleUpCitizen();
-  }, [getOwnedDoubleUpCitizen]);
+    setTimeout(mutateOwnedDoubleUpCitizen);
+  }, [
+    mutateOwnedDoubleUpCitizen,
+    address,
+    getOwnedKioskItemsOfType,
+    getOwnedObjectsOfType,
+  ]);
+
+  // User - Kumo
+  const ownedKumo: BigNumber | undefined = useMemo(() => {
+    if (!address) return undefined;
+
+    if (Object.keys(kumoJson).length > 0)
+      return new BigNumber((kumoJson as Record<string, number>)[address] ?? 0);
+    return getOwnedKioskItemsOfType(KUMO_TYPE);
+  }, [address, getOwnedKioskItemsOfType]);
 
   // User - Anima
-  const isInAnimaSnapshot =
-    address && animaJson.length > 0
-      ? (animaJson as string[]).includes(address)
-      : undefined;
+  const isInAnimaSnapshot = useMemo(() => {
+    if (!address) return undefined;
 
-  // User - Tokens
-  const isInFudSnapshot =
-    address && fudJson.length > 0
-      ? (fudJson as string[]).includes(address)
-      : undefined;
-  const isInOctoSnapshot =
-    address && octoJson.length > 0
-      ? (octoJson as string[]).includes(address)
-      : undefined;
-  const isInAaaSnapshot =
-    address && aaaJson.length > 0
-      ? (aaaJson as string[]).includes(address)
-      : undefined;
-  const isInTismSnapshot =
-    address && tismJson.length > 0
-      ? (tismJson as string[]).includes(address)
-      : undefined;
+    if (animaJson.length > 0) return (animaJson as string[]).includes(address);
+    return undefined;
+  }, [address]);
+
+  // User - FUD
+  const isInFudSnapshot = useMemo(() => {
+    if (!address) return undefined;
+
+    return (fudJson as string[]).includes(address); // TODO
+  }, [address]);
+
+  // User - AAA
+  const isInAaaSnapshot = useMemo(() => {
+    if (!address) return undefined;
+
+    return aaaJson.includes(address);
+  }, [address]);
+
+  // User - OCTO
+  const isInOctoSnapshot = useMemo(() => {
+    if (!address) return undefined;
+
+    return octoJson.includes(address);
+  }, [address]);
+
+  // User - TISM
+  const isInTismSnapshot = useMemo(() => {
+    if (!address) return undefined;
+
+    return tismJson.includes(address);
+  }, [address]);
 
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
-    eligibleWallets: earlyUsersJson.length,
+    eligibleWallets: formatInteger(earlyUsersJson.length),
     totalAllocationPercent: new BigNumber(2),
     totalAllocationBreakdown: {
       wallet: {
@@ -424,6 +461,8 @@ export default function Send() {
     },
   };
   const sendPoints = {
+    snapshotTaken: false,
+    eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(18),
     totalAllocationBreakdown: {
       thousand: {
@@ -433,6 +472,8 @@ export default function Send() {
     },
   };
   const suilendCapsules = {
+    snapshotTaken: false,
+    eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(0.3),
     totalAllocationBreakdown: {
       [SuilendCapsuleRarity.COMMON]: {
@@ -450,6 +491,8 @@ export default function Send() {
     },
   };
   const save = {
+    snapshotTaken: false,
+    eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(15),
     totalAllocationBreakdown: {
       one: {
@@ -459,11 +502,12 @@ export default function Send() {
     },
   };
   const rootlets = {
-    snapshotTaken: Object.keys(rootletsJson).length > 0,
-    eligibleWallets:
+    snapshotTaken: false,
+    eligibleWallets: formatInteger(
       Object.keys(rootletsJson).length > 0
         ? Object.keys(rootletsJson).length
         : 948,
+    ),
     totalAllocationPercent: new BigNumber(1.111),
     totalAllocationBreakdown: {
       one: {
@@ -475,11 +519,12 @@ export default function Send() {
 
   const bluefinLeagues = {
     snapshotTaken: true,
-    eligibleWallets:
+    eligibleWallets: formatInteger(
       bluefinLeaguesGoldJson.length +
-      bluefinLeaguesPlatinumJson.length +
-      bluefinLeaguesBlackJson.length +
-      bluefinLeaguesSapphireJson.length,
+        bluefinLeaguesPlatinumJson.length +
+        bluefinLeaguesBlackJson.length +
+        bluefinLeaguesSapphireJson.length,
+    ),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdown: {
       wallet: {
@@ -494,11 +539,11 @@ export default function Send() {
     },
   };
   const bluefinSendTraders = {
-    snapshotTaken: Object.keys(bluefinSendTradersJson).length > 0,
-    eligibleWallets:
-      Object.keys(bluefinSendTradersJson).length > 0
-        ? Object.keys(bluefinSendTradersJson).length
-        : 400, // TODO (update once we have an initial snapshot)
+    snapshotTaken: false,
+    eligibleWallets: "TBC",
+    // Object.keys(bluefinSendTradersJson).length > 0
+    //   ? Object.keys(bluefinSendTradersJson).length
+    //   : 400, // TODO (update once we have an initial snapshot)
     totalAllocationPercent: new BigNumber(0.125),
     totalAllocationBreakdown: {},
     // totalAllocationBreakdown: {
@@ -512,11 +557,12 @@ export default function Send() {
   };
 
   const primeMachin = {
-    snapshotTaken: Object.keys(primeMachinJson).length > 0,
-    eligibleWallets:
+    snapshotTaken: false,
+    eligibleWallets: formatInteger(
       Object.keys(primeMachinJson).length > 0
         ? Object.keys(primeMachinJson).length
         : 918,
+    ),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
       one: {
@@ -526,9 +572,10 @@ export default function Send() {
     },
   };
   const egg = {
-    snapshotTaken: Object.keys(eggJson).length > 0,
-    eligibleWallets:
+    snapshotTaken: false,
+    eligibleWallets: formatInteger(
       Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2109,
+    ),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
       one: {
@@ -538,11 +585,12 @@ export default function Send() {
     },
   };
   const doubleUpCitizen = {
-    snapshotTaken: Object.keys(doubleUpCitizenJson).length > 0,
-    eligibleWallets:
+    snapshotTaken: false,
+    eligibleWallets: formatInteger(
       Object.keys(doubleUpCitizenJson).length > 0
         ? Object.keys(doubleUpCitizenJson).length
         : 713,
+    ),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdown: {
       one: {
@@ -552,9 +600,10 @@ export default function Send() {
     },
   };
   const kumo = {
-    snapshotTaken: Object.keys(kumoJson).length > 0,
-    eligibleWallets:
+    snapshotTaken: false,
+    eligibleWallets: formatInteger(
       Object.keys(kumoJson).length > 0 ? Object.keys(kumoJson).length : 479,
+    ),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdown: {
       one: {
@@ -565,14 +614,14 @@ export default function Send() {
   };
 
   const anima = {
-    snapshotTaken: animaJson.length > 0,
-    eligibleWallets: animaJson.length > 0 ? animaJson.length : undefined,
+    snapshotTaken: false,
+    eligibleWallets: undefined, //animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdown: {},
   };
 
   const fud = {
-    snapshotTaken: fudJson.length > 0,
+    snapshotTaken: false,
     eligibleWallets: 5000, // Top 5,000 FUD holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
@@ -583,7 +632,7 @@ export default function Send() {
     },
   };
   const aaa = {
-    snapshotTaken: aaaJson.length > 0,
+    snapshotTaken: false,
     eligibleWallets: 5000, // Top 5,000 AAA holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdown: {
@@ -593,9 +642,9 @@ export default function Send() {
       },
     },
   };
-  const tism = {
-    snapshotTaken: tismJson.length > 0,
-    eligibleWallets: 1000, // Top 1,000 TISM holders
+  const octo = {
+    snapshotTaken: false,
+    eligibleWallets: 1000, // Top 1,000 OCTO holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdown: {
       wallet: {
@@ -604,9 +653,9 @@ export default function Send() {
       },
     },
   };
-  const octo = {
-    snapshotTaken: octoJson.length > 0,
-    eligibleWallets: 1000, // Top 1,000 OCTO holders
+  const tism = {
+    snapshotTaken: false,
+    eligibleWallets: 1000, // Top 1,000 TISM holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdown: {
       wallet: {
@@ -625,17 +674,20 @@ export default function Send() {
         "Early users are those who used Suilend prior to the launch of SEND points.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.LENDING,
+      cta: undefined,
       snapshotTaken: earlyUsers.snapshotTaken,
-      eligibleWallets: formatInteger(earlyUsers.eligibleWallets),
+      eligibleWallets: earlyUsers.eligibleWallets,
       totalAllocationPercent: earlyUsers.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         earlyUsers.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        isEarlyUser !== undefined
-          ? isEarlyUser
+        isInEarlyUsersSnapshot !== undefined
+          ? isInEarlyUsersSnapshot
             ? earlyUsers.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : earlyUsers.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -650,6 +702,8 @@ export default function Send() {
         title: "Earn",
         href: "/dashboard",
       },
+      snapshotTaken: sendPoints.snapshotTaken,
+      eligibleWallets: sendPoints.eligibleWallets,
       totalAllocationPercent: sendPoints.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         sendPoints.totalAllocationBreakdown,
@@ -663,16 +717,15 @@ export default function Send() {
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
-      src: "/assets/send/nft/suilend-capsules.gif",
+      src: "/assets/send/nft/suilend-capsules.png",
       title: "Suilend Capsules",
       description:
         "A token of appreciation awarded for outstanding community contributions to Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.NFT,
-      cta: {
-        title: "Buy",
-        href: "https://www.tradeport.xyz/sui/collection/suilend-capsule?bottomTab=trades&tab=items",
-      },
+      cta: undefined,
+      snapshotTaken: suilendCapsules.snapshotTaken,
+      eligibleWallets: suilendCapsules.eligibleWallets,
       totalAllocationPercent: suilendCapsules.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         suilendCapsules.totalAllocationBreakdown,
@@ -714,8 +767,11 @@ export default function Send() {
         title: "View allocation",
         href: "https://save.finance/save",
       },
+      snapshotTaken: save.snapshotTaken,
+      eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
+      userAllocationPercent: undefined, // TODO
     },
     {
       id: AllocationId.ROOTLETS,
@@ -730,14 +786,18 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/rootlets?bottomTab=trades&tab=items",
       },
       snapshotTaken: rootlets.snapshotTaken,
-      eligibleWallets: formatInteger(rootlets.eligibleWallets),
+      eligibleWallets: rootlets.eligibleWallets,
       totalAllocationPercent: rootlets.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         rootlets.totalAllocationBreakdown,
       ),
       userAllocationPercent:
         ownedRootlets !== undefined
-          ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
+          ? ownedRootlets.gt(0)
+            ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
+            : rootlets.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
 
@@ -750,16 +810,18 @@ export default function Send() {
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TRADING,
       snapshotTaken: bluefinLeagues.snapshotTaken,
-      eligibleWallets: formatInteger(bluefinLeagues.eligibleWallets),
+      eligibleWallets: bluefinLeagues.eligibleWallets,
       totalAllocationPercent: bluefinLeagues.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         bluefinLeagues.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        bluefinLeaguesLeague !== undefined
-          ? bluefinLeaguesLeague !== null
+        isInBluefinLeaguesSnapshot !== undefined
+          ? isInBluefinLeaguesSnapshot
             ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : bluefinLeagues.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -775,7 +837,7 @@ export default function Send() {
         href: "https://trade.bluefin.io/SEND-PERP",
       },
       snapshotTaken: bluefinSendTraders.snapshotTaken,
-      eligibleWallets: "TBC", //formatInteger(bluefinSendTraders.eligibleWallets),
+      eligibleWallets: bluefinSendTraders.eligibleWallets,
       totalAllocationPercent: bluefinSendTraders.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         bluefinSendTraders.totalAllocationBreakdown,
@@ -804,16 +866,20 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/prime-machin?bottomTab=trades&tab=items",
       },
       snapshotTaken: primeMachin.snapshotTaken,
-      eligibleWallets: formatInteger(primeMachin.eligibleWallets),
+      eligibleWallets: primeMachin.eligibleWallets,
       totalAllocationPercent: primeMachin.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         primeMachin.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        ownedNfts?.[AllocationId.PRIME_MACHIN] !== undefined
-          ? ownedNfts[AllocationId.PRIME_MACHIN].times(
-              primeMachin.totalAllocationBreakdown.one.percent,
-            )
+        ownedPrimeMachin !== undefined
+          ? ownedPrimeMachin.gt(0)
+            ? ownedPrimeMachin.times(
+                primeMachin.totalAllocationBreakdown.one.percent,
+              )
+            : primeMachin.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -829,14 +895,16 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/egg?bottomTab=trades&tab=items",
       },
       snapshotTaken: egg.snapshotTaken,
-      eligibleWallets: formatInteger(egg.eligibleWallets),
+      eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
       userAllocationPercent:
-        ownedNfts?.[AllocationId.EGG] !== undefined
-          ? ownedNfts[AllocationId.EGG].times(
-              egg.totalAllocationBreakdown.one.percent,
-            )
+        ownedEgg !== undefined
+          ? ownedEgg.gt(0)
+            ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
+            : egg.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -852,16 +920,20 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/doubleup-citizen?bottomTab=trades&tab=items",
       },
       snapshotTaken: doubleUpCitizen.snapshotTaken,
-      eligibleWallets: formatInteger(doubleUpCitizen.eligibleWallets),
+      eligibleWallets: doubleUpCitizen.eligibleWallets,
       totalAllocationPercent: doubleUpCitizen.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
         doubleUpCitizen.totalAllocationBreakdown,
       ),
       userAllocationPercent:
-        ownedDoubleUpCitizen !== undefined && ownedDoubleUpCitizen !== null
-          ? ownedDoubleUpCitizen.times(
-              doubleUpCitizen.totalAllocationBreakdown.one.percent,
-            )
+        ownedDoubleUpCitizen !== undefined
+          ? ownedDoubleUpCitizen.gt(0)
+            ? ownedDoubleUpCitizen.times(
+                doubleUpCitizen.totalAllocationBreakdown.one.percent,
+              )
+            : doubleUpCitizen.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -877,14 +949,16 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/kumo?bottomTab=trades&tab=items",
       },
       snapshotTaken: kumo.snapshotTaken,
-      eligibleWallets: formatInteger(kumo.eligibleWallets),
+      eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
       userAllocationPercent:
-        ownedNfts?.[AllocationId.KUMO] !== undefined
-          ? ownedNfts[AllocationId.KUMO].times(
-              kumo.totalAllocationBreakdown.one.percent,
-            )
+        ownedKumo !== undefined
+          ? ownedKumo.gt(0)
+            ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
+            : kumo.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
 
@@ -901,10 +975,7 @@ export default function Send() {
         href: "https://anima.nexus/drop/genesis",
       },
       snapshotTaken: anima.snapshotTaken,
-      eligibleWallets:
-        anima.eligibleWallets !== undefined
-          ? formatInteger(anima.eligibleWallets)
-          : undefined,
+      eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
       userAllocationPercent: undefined,
@@ -918,12 +989,13 @@ export default function Send() {
     {
       id: AllocationId.FUD,
       src: "/assets/send/token/fud.png",
+      hoverSrc: "/assets/send/token/fud-hover.mp4",
       title: "FUD",
       description: "FUD is the OG culture coin on Sui.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "Get",
+        title: "Buy",
         href: "/swap/SUI-FUD",
       },
       snapshotTaken: fud.snapshotTaken,
@@ -934,7 +1006,9 @@ export default function Send() {
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
             ? fud.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : fud.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -946,7 +1020,7 @@ export default function Send() {
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "Get",
+        title: "Buy",
         href: "/swap/SUI-AAA",
       },
       snapshotTaken: aaa.snapshotTaken,
@@ -957,7 +1031,9 @@ export default function Send() {
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
             ? aaa.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : aaa.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -969,7 +1045,7 @@ export default function Send() {
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "Get",
+        title: "Buy",
         href: `/swap/SUI-${NORMALIZED_OCTO_COINTYPE}`,
       },
       snapshotTaken: octo.snapshotTaken,
@@ -980,7 +1056,9 @@ export default function Send() {
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
             ? octo.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : octo.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
     {
@@ -991,7 +1069,7 @@ export default function Send() {
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "Get",
+        title: "Buy",
         href: `/swap/SUI-${NORMALIZED_TISM_COINTYPE}`,
       },
       snapshotTaken: tism.snapshotTaken,
@@ -1002,7 +1080,9 @@ export default function Send() {
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
-            : new BigNumber(0)
+            : tism.snapshotTaken
+              ? new BigNumber(0)
+              : undefined
           : undefined,
     },
   ];
@@ -1021,10 +1101,12 @@ export default function Send() {
             <HeroSection
               allocations={allocations}
               isLoading={
-                ownedKiosks === undefined ||
                 ownedSuilendCapsulesMap === undefined ||
-                ownedNfts === undefined ||
-                ownedDoubleUpCitizen === undefined
+                ownedRootlets === undefined ||
+                ownedPrimeMachin === undefined ||
+                ownedEgg === undefined ||
+                ownedDoubleUpCitizen === undefined ||
+                ownedKumo === undefined
               }
             />
             <AllocationCardsSection allocations={allocations} />

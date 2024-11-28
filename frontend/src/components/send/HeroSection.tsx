@@ -17,6 +17,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAddress, formatToken } from "@/lib/format";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
 
 interface HeroSectionProps {
@@ -77,16 +78,21 @@ export default function HeroSection({
             <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
               <SendTokenLogo className="h-8 w-8" />
               {isLoading ? (
-                <Skeleton className="h-10 w-40" />
+                <Skeleton className="h-10 w-48" />
               ) : (
-                <TDisplay className="text-4xl">
+                <TDisplay
+                  className={cn(
+                    "text-4xl decoration-foreground/50",
+                    hoverUnderlineClassName,
+                  )}
+                >
                   {formatToken(
                     new BigNumber(SEND_TOTAL_SUPPLY).times(
                       userAllocationPercent.div(100),
                     ),
                     { exact: false },
                   )}
-                  <span className="font-sans leading-none">*</span> SEND
+                  {"* SEND"}
                 </TDisplay>
               )}
             </div>
