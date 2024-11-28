@@ -7,7 +7,7 @@ import BorrowAprCell from "@/components/dashboard/market-table/BorrowAprCell";
 import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
 import styles from "@/components/dashboard/market-table/MarketCardList.module.scss";
 import {
-  EcosystemLstsRowData,
+  CollapsibleRowData,
   HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
@@ -91,17 +91,23 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
   const mainRows = useMemo(() => {
     const result: ReservesRowData[] = [];
     for (const subRow of rows[0].subRows) {
-      if ((subRow as EcosystemLstsRowData).isEcosystemLstsRow)
-        result.push(...(subRow as EcosystemLstsRowData).subRows);
+      if ((subRow as CollapsibleRowData).isCollapsibleRow)
+        result.push(...(subRow as CollapsibleRowData).subRows);
       else result.push(subRow as ReservesRowData);
     }
 
     return result;
   }, [rows]);
-  const isolatedRows = useMemo(
-    () => rows[1].subRows as ReservesRowData[],
-    [rows],
-  );
+  const isolatedRows = useMemo(() => {
+    const result: ReservesRowData[] = [];
+    for (const subRow of rows[1].subRows) {
+      if ((subRow as CollapsibleRowData).isCollapsibleRow)
+        result.push(...(subRow as CollapsibleRowData).subRows);
+      else result.push(subRow as ReservesRowData);
+    }
+
+    return result;
+  }, [rows]);
 
   return (
     <div className="flex flex-col gap-6">

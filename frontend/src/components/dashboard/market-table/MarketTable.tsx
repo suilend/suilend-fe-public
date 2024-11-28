@@ -6,13 +6,15 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_LST_COINTYPES,
+  NORMALIZED_NS_COINTYPE,
   NORMALIZED_kSUI_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isEcosystemLst,
   isInMsafeApp,
+  isMemecoin,
   issSui,
 } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -51,14 +53,13 @@ export interface HeaderRowData {
   isIsolated: boolean;
   count: number;
 
-  subRows: (EcosystemLstsRowData | ReservesRowData)[];
+  subRows: (CollapsibleRowData | ReservesRowData)[];
 }
 
-export interface EcosystemLstsRowData {
-  isEcosystemLstsRow: boolean;
+export interface CollapsibleRowData {
+  isCollapsibleRow: boolean;
+  title: string;
 
-  openLtvPercent: BigNumber;
-  borrowWeight: BigNumber;
   depositedAmount: BigNumber;
   depositedAmountUsd: BigNumber;
   borrowedAmount: BigNumber;
@@ -87,7 +88,7 @@ export interface ReservesRowData {
   totalBorrowAprPercent: BigNumber;
 }
 
-type RowData = HeaderRowData | EcosystemLstsRowData | ReservesRowData;
+type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
   const { data, obligation } = useLoadedAppContext();
@@ -121,8 +122,8 @@ export default function MarketTable() {
               </div>
             );
           }
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow) {
-            const { subRows } = row.original as EcosystemLstsRowData;
+          if ((row.original as CollapsibleRowData).isCollapsibleRow) {
+            const { title, subRows } = row.original as CollapsibleRowData;
 
             const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
@@ -133,7 +134,7 @@ export default function MarketTable() {
                 </div>
 
                 <div className="flex min-w-max flex-col gap-1">
-                  <TBody>Ecosystem LSTs</TBody>
+                  <TBody className="uppercase">{title}</TBody>
                   <TokenLogos
                     className="h-4 w-4"
                     tokens={subRows.map((subRow) => subRow.token)}
@@ -158,8 +159,8 @@ export default function MarketTable() {
           tableHeader(column, "Deposits", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow) {
-            const { depositedAmountUsd } = row.original as EcosystemLstsRowData;
+          if ((row.original as CollapsibleRowData).isCollapsibleRow) {
+            const { depositedAmountUsd } = row.original as CollapsibleRowData;
 
             return (
               <div className="flex flex-col items-end gap-1">
@@ -183,7 +184,7 @@ export default function MarketTable() {
           tableHeader(column, "Borrows", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+          if ((row.original as CollapsibleRowData).isCollapsibleRow)
             return null;
 
           return <TotalBorrowsCell {...(row.original as ReservesRowData)} />;
@@ -199,8 +200,8 @@ export default function MarketTable() {
           }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
-            return <OpenLtvBwCell {...(row.original as ReservesRowData)} />;
+          if ((row.original as CollapsibleRowData).isCollapsibleRow)
+            return null;
 
           return <OpenLtvBwCell {...(row.original as ReservesRowData)} />;
         },
@@ -212,7 +213,7 @@ export default function MarketTable() {
           tableHeader(column, "Deposit APR", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+          if ((row.original as CollapsibleRowData).isCollapsibleRow)
             return null;
 
           return (
@@ -229,7 +230,7 @@ export default function MarketTable() {
           tableHeader(column, "Borrow APR", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+          if ((row.original as CollapsibleRowData).isCollapsibleRow)
             return null;
 
           return (
@@ -429,11 +430,10 @@ export default function MarketTable() {
         subRows: [],
       };
 
-      const ecosystemLstsRow: EcosystemLstsRowData = {
-        isEcosystemLstsRow: true,
+      const ecosystemLstsRow: CollapsibleRowData = {
+        isCollapsibleRow: true,
+        title: "Ecosystem LSTs",
 
-        openLtvPercent: new BigNumber(0),
-        borrowWeight: new BigNumber(0),
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
         borrowedAmount: new BigNumber(0),
@@ -443,12 +443,7 @@ export default function MarketTable() {
       };
 
       for (const reserveRow of mainReserveRows) {
-        if (
-          !issSui(reserveRow.token.coinType) &&
-          NORMALIZED_LST_COINTYPES.includes(reserveRow.token.coinType)
-        ) {
-          ecosystemLstsRow.openLtvPercent = reserveRow.openLtvPercent;
-          ecosystemLstsRow.borrowWeight = reserveRow.borrowWeight;
+        if (isEcosystemLst(reserveRow.token.coinType)) {
           ecosystemLstsRow.depositedAmount =
             ecosystemLstsRow.depositedAmount.plus(reserveRow.depositedAmount);
           ecosystemLstsRow.depositedAmountUsd =
@@ -490,8 +485,47 @@ export default function MarketTable() {
         subRows: [],
       };
 
-      for (const reserveRow of isolatedReserveRows)
-        isolatedAssetsRow.subRows.push(reserveRow);
+      const memecoinsRow: CollapsibleRowData = {
+        isCollapsibleRow: true,
+        title: "Memecoins",
+
+        depositedAmount: new BigNumber(0),
+        depositedAmountUsd: new BigNumber(0),
+        borrowedAmount: new BigNumber(0),
+        borrowedAmountUsd: new BigNumber(0),
+
+        subRows: [],
+      };
+
+      for (const reserveRow of isolatedReserveRows) {
+        if (isMemecoin(reserveRow.token.coinType)) {
+          memecoinsRow.depositedAmount = memecoinsRow.depositedAmount.plus(
+            reserveRow.depositedAmount,
+          );
+          memecoinsRow.depositedAmountUsd =
+            memecoinsRow.depositedAmountUsd.plus(reserveRow.depositedAmountUsd);
+          memecoinsRow.borrowedAmount = memecoinsRow.borrowedAmount.plus(
+            reserveRow.borrowedAmount,
+          );
+          memecoinsRow.borrowedAmountUsd = memecoinsRow.borrowedAmountUsd.plus(
+            reserveRow.borrowedAmountUsd,
+          );
+
+          memecoinsRow.subRows.push(reserveRow);
+        } else isolatedAssetsRow.subRows.push(reserveRow);
+      }
+
+      if (memecoinsRow.subRows.length > 0) {
+        const index = isolatedAssetsRow.subRows.findIndex(
+          (x) =>
+            (x as ReservesRowData).token.coinType === NORMALIZED_NS_COINTYPE,
+        );
+        isolatedAssetsRow.subRows = [
+          ...isolatedAssetsRow.subRows.slice(0, index + 1),
+          memecoinsRow,
+          ...isolatedAssetsRow.subRows.slice(index + 1),
+        ];
+      }
 
       isolatedAssetsRow.count = isolatedReserveRows.length;
       result.push(isolatedAssetsRow);
@@ -520,7 +554,7 @@ export default function MarketTable() {
 
             if ((row.original as HeaderRowData).isHeader)
               return cn(styles.tableRow);
-            if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+            if ((row.original as CollapsibleRowData).isCollapsibleRow)
               return cn(styles.tableRow, row.getIsExpanded() && "bg-muted/5");
 
             if (row.getParentRows().length === 2)
@@ -537,7 +571,7 @@ export default function MarketTable() {
                   ? "bg-card h-auto py-2"
                   : "p-0 h-0",
               );
-            if ((cell.row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+            if ((cell.row.original as CollapsibleRowData).isCollapsibleRow)
               return cn(
                 cell.row.getIsExpanded() &&
                   cell.column.getIsFirstColumn() &&
@@ -563,7 +597,7 @@ export default function MarketTable() {
           }}
           onRowClick={(row) => {
             if ((row.original as HeaderRowData).isHeader) return undefined;
-            if ((row.original as EcosystemLstsRowData).isEcosystemLstsRow)
+            if ((row.original as CollapsibleRowData).isCollapsibleRow)
               return row.getToggleExpandedHandler();
 
             return () =>

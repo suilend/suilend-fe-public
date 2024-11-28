@@ -3,12 +3,12 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 
 import {
-  NORMALIZED_LST_COINTYPES,
   NORMALIZED_SUI_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   Token,
   getMsafeAppStoreUrl,
   isInMsafeApp,
+  isLst,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
@@ -56,7 +56,7 @@ export default function AssetCell({
       if (
         (tableType === AccountAssetTableType.BALANCES ||
           tableType === MarketTableType.MARKET) &&
-        NORMALIZED_LST_COINTYPES.includes(token.coinType)
+        isLst(token.coinType)
       ) {
         result.push({
           title: "Unstake",
