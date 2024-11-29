@@ -6,13 +6,14 @@ import { SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
-import { NORMALIZED_SUI_COINTYPE, isSendPoints } from "@suilend/frontend-sui";
+import { isSendPoints } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
+import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
@@ -1095,6 +1096,7 @@ export default function Send() {
             <AllocationCardsSection allocations={allocations} />
           </div>
 
+          <ClaimSection />
           <TokenomicsSection />
         </div>
       </div>
