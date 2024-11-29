@@ -184,8 +184,21 @@ export default function MarketTable() {
           tableHeader(column, "Borrows", { isNumerical: true }),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) return null;
-          if ((row.original as CollapsibleRowData).isCollapsibleRow)
-            return null;
+          if ((row.original as CollapsibleRowData).isCollapsibleRow) {
+            const { borrowedAmountUsd } = row.original as CollapsibleRowData;
+
+            if (borrowedAmountUsd.eq(0)) return null;
+            return (
+              <div className="flex flex-col items-end gap-1">
+                <TBody>--</TBody>
+                <Tooltip title={formatUsd(borrowedAmountUsd, { exact: true })}>
+                  <TLabel className="min-w-max text-right">
+                    {formatUsd(borrowedAmountUsd)}
+                  </TLabel>
+                </Tooltip>
+              </div>
+            );
+          }
 
           return <TotalBorrowsCell {...(row.original as ReservesRowData)} />;
         },
