@@ -107,7 +107,7 @@ enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
-export const SUILEND_CAPSULE_TYPE =
+const SUILEND_CAPSULE_TYPE =
   "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
 
 const ROOTLETS_TYPE =
@@ -308,10 +308,10 @@ export default function Send() {
   }, [mutateOwnedSuilendCapsulesMap, address, suiClient]);
 
   // User - Save
-  const mSendWith12MonthMaturityBalance = useMemo(() => {
+  const mSendWith12MonthMaturityBridgedAmount = useMemo(() => {
     if (!address) return undefined;
 
-    return undefined; // getBalance(NORMALIZED_SUI_COINTYPE); // TODO
+    return undefined; // TODO
   }, [address]);
 
   // User - Rootlets
@@ -780,9 +780,11 @@ export default function Send() {
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
       userAllocationPercent:
-        // mSendWith12MonthMaturityBalance !== undefined
-        //   ? mSendWith12MonthMaturityBalance.div(SEND_TOTAL_SUPPLY).times(100):
-        undefined,
+        mSendWith12MonthMaturityBridgedAmount !== undefined
+          ? (mSendWith12MonthMaturityBridgedAmount as BigNumber)
+              .div(SEND_TOTAL_SUPPLY)
+              .times(100)
+          : undefined,
     },
     {
       id: AllocationId.ROOTLETS,
