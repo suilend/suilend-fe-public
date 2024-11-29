@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
+import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
+import { toast } from "sonner";
+
+import { NORMALIZED_SEND_POINTS_COINTYPE } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -20,6 +28,8 @@ import {
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
+  SUILEND_CAPSULE_TYPE,
+  getOwnedObjectsOfType,
 } from "@/pages/send";
 
 interface StatusProps {
@@ -110,6 +120,108 @@ interface CtaButtonProps {
 }
 
 function CtaButton({ allocation }: CtaButtonProps) {
+  const { suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+
+  const convertToMsend = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!address) return;
+
+    if (allocation.id === AllocationId.SEND_POINTS) {
+      // Claim points
+
+      // Burn points
+      const transaction = new Transaction();
+      try {
+        const coins = (
+          await suiClient.getCoins({
+            owner: address,
+            coinType: NORMALIZED_SEND_POINTS_COINTYPE,
+          })
+        ).data;
+
+        const mergeCoin = coins[0];
+        if (coins.length > 1) {
+          transaction.mergeCoins(
+            transaction.object(mergeCoin.coinObjectId),
+            coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
+          );
+        }
+
+        transaction.moveCall({
+          target:
+            "0x849200bd9b89b283ded0492ac745a2c743368307581b44f9aa46a2096d6c0f1f::points::burn_points", // TODO
+          typeArguments: [
+            "0xe60ed7e38b3eddd64d98250c495b813ab0d089b216920c5fcf15a55920626a87::m_send_test::M_SEND_TEST", // TODO
+          ],
+          arguments: [
+            transaction.object(
+              "0x6ac4bdd0505e1834cd4906f72c32b021b3e57057d31e2fa8f20a0a3d7cf56344", // TODO
+            ),
+            transaction.object(mergeCoin.coinObjectId),
+          ],
+        });
+
+        await signExecuteAndWaitForTransaction(transaction);
+
+        toast.success("Converted SEND Points to mSEND");
+      } catch (err) {
+        toast.error("Failed to convert SEND Points to mSEND", {
+          description: (err as Error)?.message || "An unknown error occurred",
+        });
+      }
+    } else {
+      const objs = await getOwnedObjectsOfType(
+        suiClient,
+        address,
+        SUILEND_CAPSULE_TYPE,
+      );
+      console.log("XXX convertToMsend, capsules, objs:", objs);
+
+      const transaction = new Transaction();
+      try {
+        for (const obj of objs) {
+          transaction.moveCall({
+            target:
+              "0x849200bd9b89b283ded0492ac745a2c743368307581b44f9aa46a2096d6c0f1f::capsule::burn_capsule", // TODO
+            typeArguments: [
+              "0xe60ed7e38b3eddd64d98250c495b813ab0d089b216920c5fcf15a55920626a87::m_send_test::M_SEND_TEST", // TODO
+            ],
+            arguments: [
+              transaction.object(
+                "0xce349f8dc4ed79382d0bfa71d315e5f852491a3e4884deb428c06ed2b19ce0e7",
+              ), // TODO
+              transaction.object(obj.data?.objectId as string),
+            ],
+          });
+        }
+
+        await signExecuteAndWaitForTransaction(transaction);
+
+        toast.success("Converted Suilend Capsules to mSEND");
+      } catch (err) {
+        toast.error("Failed to convert Suilend Capsules to mSEND", {
+          description: (err as Error)?.message || "An unknown error occurred",
+        });
+      }
+    }
+  };
+
+  if (
+    [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
+      allocation.id,
+    )
+  ) {
+    return (
+      <Button
+        className="h-10 w-full"
+        labelClassName="uppercase text-[16px]"
+        onClick={convertToMsend}
+      >
+        Convert to mSEND
+      </Button>
+    );
+  }
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (
     <Link
       className="flex"
