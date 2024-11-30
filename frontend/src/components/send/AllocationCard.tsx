@@ -160,18 +160,23 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   };
 
   // Video
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const onCardMouseEnter = () => {
-    if (!videoRef.current) return;
+    setIsVideoPlaying(true);
 
+    if (!videoRef.current) return;
     videoRef.current.play();
   };
   const onCardMouseLeave = () => {
-    if (!videoRef.current) return;
+    setIsVideoPlaying(false);
 
-    videoRef.current.pause();
-    videoRef.current.currentTime = 0;
+    setTimeout(() => {
+      if (!videoRef.current) return;
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }, 300);
   };
 
   return (
@@ -214,20 +219,27 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   <Info className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
 
-                {/* Icon */}
-                <div
-                  className="absolute inset-y-4 left-1/2 z-[1] flex w-full max-w-28 -translate-x-1/2 flex-row items-center justify-center"
-                  style={{
-                    backgroundImage: `url('${allocation.src}')`,
-                    backgroundPosition: "center",
-                    backgroundSize: "contain",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
+                {/* Image/video */}
+                <div className="absolute inset-y-0 left-1/2 z-[1] flex w-full max-w-28 -translate-x-1/2 flex-row items-center justify-center">
+                  {/* Image */}
+                  <div
+                    className="absolute inset-0 z-[1]"
+                    style={{
+                      backgroundImage: `url('${allocation.src}')`,
+                      backgroundPosition: "center",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+
+                  {/* Video */}
                   {allocation.hoverSrc && (
                     <video
                       ref={videoRef}
-                      className="h-full w-full"
+                      className={cn(
+                        "relative z-[2] h-full w-full transition-opacity",
+                        isVideoPlaying ? "opacity-100" : "opacity-0",
+                      )}
                       controls={false}
                       loop
                       muted

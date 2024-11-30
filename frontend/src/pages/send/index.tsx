@@ -679,6 +679,7 @@ export default function Send() {
     {
       id: AllocationId.EARLY_USERS,
       src: "/assets/send/lending/early-users.png",
+      hoverSrc: "/assets/send/lending/early-users-hover.mp4",
       title: "Early Users",
       description:
         "Early users are those who used Suilend prior to the launch of SEND points.",
@@ -701,6 +702,7 @@ export default function Send() {
     {
       id: AllocationId.SEND_POINTS,
       src: "/assets/send/points/send-points.png",
+      hoverSrc: "/assets/send/points/send-points-hover.mp4",
       title: "SEND Points",
       description:
         "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
@@ -766,6 +768,7 @@ export default function Send() {
     {
       id: AllocationId.SAVE,
       src: "/assets/send/token/save.png",
+      hoverSrc: "/assets/send/token/save-hover.mp4",
       title: "SAVE",
       description:
         "Suilend thrives thanks to the unwavering support of SLND holders. We honor our roots on Solana with this token of appreciation.",
@@ -787,6 +790,7 @@ export default function Send() {
     {
       id: AllocationId.ROOTLETS,
       src: "/assets/send/nft/rootlets.png",
+      hoverSrc: "/assets/send/nft/rootlets-hover.mp4",
       title: "Rootlets",
       description:
         "Rootlets are the companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
@@ -811,6 +815,7 @@ export default function Send() {
     {
       id: AllocationId.BLUEFIN_LEAGUES,
       src: "/assets/send/trading/bluefin-leagues.png",
+      hoverSrc: "/assets/send/trading/bluefin-leagues-hover.mp4",
       title: "Bluefin Leagues",
       description:
         "Bluefin Leagues offer a structured recognition system to reward users for their engagement and trading activities on the Bluefin platform.",
@@ -832,6 +837,7 @@ export default function Send() {
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
       src: "/assets/send/trading/bluefin-send-traders.png",
+      hoverSrc: "/assets/send/trading/bluefin-send-traders-hover.mp4",
       title: "Bluefin SEND Traders",
       description:
         "For users who traded the SEND pre-launch market on Bluefin.",
@@ -861,6 +867,7 @@ export default function Send() {
     {
       id: AllocationId.PRIME_MACHIN,
       src: "/assets/send/nft/prime-machin.png",
+      hoverSrc: "/assets/send/nft/prime-machin-hover.mp4",
       title: "Prime Machin",
       description:
         "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
@@ -886,6 +893,7 @@ export default function Send() {
     {
       id: AllocationId.EGG,
       src: "/assets/send/nft/egg.png",
+      hoverSrc: "/assets/send/nft/egg-hover.mp4",
       title: "Egg",
       description:
         "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
@@ -907,6 +915,7 @@ export default function Send() {
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
       src: "/assets/send/nft/doubleup-citizen.png",
+      hoverSrc: "/assets/send/nft/doubleup-citizen-hover.mp4",
       title: "DoubleUp Citizen",
       description:
         "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
@@ -932,6 +941,7 @@ export default function Send() {
     {
       id: AllocationId.KUMO,
       src: "/assets/send/nft/kumo.png",
+      hoverSrc: "/assets/send/nft/kumo-hover.mp4",
       title: "Kumo",
       description:
         "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2,222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
@@ -954,6 +964,7 @@ export default function Send() {
     {
       id: AllocationId.ANIMA,
       src: "/assets/send/nft/anima.png",
+      hoverSrc: "/assets/send/nft/anima-hover.mp4",
       title: "Anima",
       description:
         "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
@@ -1001,6 +1012,7 @@ export default function Send() {
     {
       id: AllocationId.AAA,
       src: "/assets/send/token/aaa.png",
+      hoverSrc: "/assets/send/token/aaa-hover.mp4",
       title: "AAA",
       description:
         "AAA Cat is Sui's fastest-growing, top cat meme coin. Built by the community for the community. Can't Stop, Won't Stop!",
@@ -1024,6 +1036,7 @@ export default function Send() {
     {
       id: AllocationId.OCTO,
       src: "/assets/send/token/octo.png",
+      hoverSrc: "/assets/send/token/octo-hover.mp4",
       title: "OCTO",
       description:
         "$OCTO brings fun and community together while crafting a unique Lofi-inspired IP for all to enjoy!",
@@ -1047,6 +1060,7 @@ export default function Send() {
     {
       id: AllocationId.TISM,
       src: "/assets/send/token/tism.png",
+      hoverSrc: "/assets/send/token/tism-hover.mp4",
       title: "TISM",
       description: "got tism?",
       allocationType: AllocationType.FLAT,
