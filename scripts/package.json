@@ -13,7 +13,8 @@
   "dependencies": {
     "@mysten/sui": "1.14.3",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
-    "@suilend/sdk": "^1.1.22",
+    "@suilend/frontend-sui": "^0.1.78",
+    "@suilend/sdk": "^1.1.24",
     "bignumber.js": "^9.1.2"
   },
   "devDependencies": {
