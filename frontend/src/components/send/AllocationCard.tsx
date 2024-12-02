@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
-import { Transaction } from "@mysten/sui/transactions";
-import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
-import { toast } from "sonner";
-
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -28,47 +20,39 @@ import {
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
-  getOwnedObjectsOfType,
 } from "@/pages/send";
-
-// TODO: Replace all of these with the beta values for testing
-const BURN_CONTRACT_PACKAGE_ID =
-  "0x849200bd9b89b283ded0492ac745a2c743368307581b44f9aa46a2096d6c0f1f"; // TODO (this package id only works on testnet)
-const NORMALIZED_mSEND_COINTYPE = normalizeStructTag(
-  "0xe60ed7e38b3eddd64d98250c495b813ab0d089b216920c5fcf15a55920626a87::m_send_test::M_SEND_TEST", // TODO (this coinType works on testnet)
-);
-
-const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
-  "0x34fe4f3c9e450fed4d0a3c587ed842eec5313c30c3cc3c0841247c49425e246b::suilend_point::SUILEND_POINT", // TODO (this is the real SEND Points cointype)
-);
-const POINTS_MANAGER_OBJECT_ID =
-  "0x6ac4bdd0505e1834cd4906f72c32b021b3e57057d31e2fa8f20a0a3d7cf56344"; // TODO (this object id only works on testnet)
-
-const SUILEND_CAPSULE_TYPE =
-  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule"; // TODO (this is the real Suilend Capsule type)
-const CAPSULE_MANAGER_OBJECT_ID =
-  "0xce349f8dc4ed79382d0bfa71d315e5f852491a3e4884deb428c06ed2b19ce0e7"; // TODO (this object id only works on testnet)
 
 interface StatusProps {
   allocation: Allocation;
-  hasBridgedMsend?: boolean;
-  hasClaimedMsend?: boolean;
   isEligible?: boolean;
   isNotEligible?: boolean;
+  hasClaimedMsend?: boolean;
+  hasBridgedMsend?: boolean;
 }
 
 function Status({
   allocation,
-  hasBridgedMsend,
-  hasClaimedMsend,
   isEligible,
   isNotEligible,
+  hasClaimedMsend,
+  hasBridgedMsend,
 }: StatusProps) {
+  const hasTooltip =
+    isEligible &&
+    [
+      AllocationId.SEND_POINTS,
+
+      AllocationId.FUD,
+      AllocationId.AAA,
+      AllocationId.OCTO,
+      AllocationId.TISM,
+    ].includes(allocation.id);
+
   return (
     <div
       className={cn(
-        "relative z-[1] -mb-2 flex h-11 w-full flex-row items-center rounded-t-md px-4 pb-2",
-        hasBridgedMsend || hasClaimedMsend || isEligible
+        "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-4 pt-2",
+        isEligible || hasClaimedMsend || hasBridgedMsend
           ? "justify-between bg-[#5DF886]"
           : cn(
               "justify-center",
@@ -76,22 +60,21 @@ function Status({
             ),
       )}
     >
-      {hasBridgedMsend || hasClaimedMsend || isEligible ? (
+      {isEligible || hasClaimedMsend || hasBridgedMsend ? (
         <>
           <TBody className="text-[#030917]">
-            {hasBridgedMsend
-              ? "mSEND BRIDGED"
+            {isEligible
+              ? "ELIGIBLE"
               : hasClaimedMsend
                 ? "mSEND CLAIMED"
-                : "ELIGIBLE"}
+                : "mSEND BRIDGED"}
           </TBody>
           <div className="flex flex-row items-center gap-1.5">
             <SendTokenLogo />
             <Tooltip
               title={
-                hasBridgedMsend || hasClaimedMsend
-                  ? undefined
-                  : allocation.id === AllocationId.SEND_POINTS
+                hasTooltip
+                  ? allocation.id === AllocationId.SEND_POINTS
                     ? "Allocation is an estimate since SEND Points are still ongoing"
                     : [
                           AllocationId.FUD,
@@ -101,35 +84,27 @@ function Status({
                         ].includes(allocation.id)
                       ? "Allocation is an estimate since the final snapshot has not been taken yet"
                       : undefined
+                  : undefined
               }
             >
               <TBody
                 className={cn(
                   "text-[16px] text-[#030917]",
-                  hasBridgedMsend || hasClaimedMsend
-                    ? undefined
-                    : cn("decoration-[#030917]/50", hoverUnderlineClassName),
+                  hasTooltip &&
+                    cn("decoration-[#030917]/50", hoverUnderlineClassName),
                 )}
               >
                 {formatToken(
-                  hasBridgedMsend
-                    ? allocation.userBridgedMsend!
+                  isEligible
+                    ? new BigNumber(SEND_TOTAL_SUPPLY).times(
+                        allocation.userAllocationPercent!.div(100),
+                      )
                     : hasClaimedMsend
                       ? allocation.userClaimedMsend!
-                      : new BigNumber(SEND_TOTAL_SUPPLY).times(
-                          allocation.userAllocationPercent!.div(100),
-                        ),
+                      : allocation.userBridgedMsend!,
                   { exact: false },
                 )}
-                {hasBridgedMsend || hasClaimedMsend
-                  ? undefined
-                  : [
-                      AllocationId.SEND_POINTS,
-                      AllocationId.FUD,
-                      AllocationId.AAA,
-                      AllocationId.OCTO,
-                      AllocationId.TISM,
-                    ].includes(allocation.id) && "*"}
+                {hasTooltip ? "*" : undefined}
               </TBody>
             </Tooltip>
           </div>
@@ -155,110 +130,16 @@ function Status({
 interface CtaButtonProps {
   allocation: Allocation;
   isEligible?: boolean;
+  claimMsend: () => Promise<void>;
 }
 
-function CtaButton({ allocation, isEligible }: CtaButtonProps) {
-  const { suiClient } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-
+function CtaButton({ allocation, isEligible, claimMsend }: CtaButtonProps) {
   const showClaimMsendCta = true; // TODO: Use exact TGE timestamp
 
-  const claimMsend = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const claimMsendWrapper = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    if (!address) return;
 
-    if (allocation.id === AllocationId.SEND_POINTS) {
-      // TOOD: Claim points
-
-      const transaction = new Transaction();
-      try {
-        // Merge coins
-        const coins = (
-          await suiClient.getCoins({
-            owner: address,
-            coinType: NORMALIZED_SEND_POINTS_COINTYPE,
-          })
-        ).data;
-
-        const mergeCoin = coins[0];
-        if (coins.length > 1) {
-          transaction.mergeCoins(
-            transaction.object(mergeCoin.coinObjectId),
-            coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-          );
-        }
-
-        // Burn points
-        const mSend = transaction.moveCall({
-          target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
-          typeArguments: [NORMALIZED_mSEND_COINTYPE],
-          arguments: [
-            transaction.object(POINTS_MANAGER_OBJECT_ID),
-            transaction.object(mergeCoin.coinObjectId),
-          ],
-        });
-
-        // Transfer mSEND to user
-        transaction.transferObjects([mSend], transaction.pure.address(address));
-
-        await signExecuteAndWaitForTransaction(transaction);
-
-        toast.success("Converted SEND Points to mSEND");
-      } catch (err) {
-        toast.error("Failed to convert SEND Points to mSEND", {
-          description: (err as Error)?.message || "An unknown error occurred",
-        });
-      }
-    } else if (allocation.id === AllocationId.SUILEND_CAPSULES) {
-      // Get capsules owned by user
-      const objs = await getOwnedObjectsOfType(
-        suiClient,
-        address,
-        SUILEND_CAPSULE_TYPE,
-      );
-
-      const transaction = new Transaction();
-      try {
-        const mSendCoins = [];
-
-        for (const obj of objs) {
-          // Burn capsule
-          const mSendCoin = transaction.moveCall({
-            target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
-            typeArguments: [NORMALIZED_mSEND_COINTYPE],
-            arguments: [
-              transaction.object(CAPSULE_MANAGER_OBJECT_ID),
-              transaction.object(obj.data?.objectId as string),
-            ],
-          });
-
-          mSendCoins.push(mSendCoin);
-        }
-
-        // Merge mSEND coins
-        const mergeCoin = mSendCoins[0];
-        if (mSendCoins.length > 1) {
-          transaction.mergeCoins(
-            transaction.object(mergeCoin),
-            mSendCoins.map((c) => transaction.object(c)).slice(1),
-          );
-        }
-
-        // Transfer merged mSEND to user
-        transaction.transferObjects(
-          [mergeCoin],
-          transaction.pure.address(address),
-        );
-
-        await signExecuteAndWaitForTransaction(transaction);
-
-        toast.success("Converted Suilend Capsules to mSEND");
-      } catch (err) {
-        toast.error("Failed to convert Suilend Capsules to mSEND", {
-          description: (err as Error)?.message || "An unknown error occurred",
-        });
-      }
-    }
+    claimMsend();
   };
 
   if (
@@ -272,7 +153,7 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
           <Button
             className="h-10 w-full"
             labelClassName="text-[16px]"
-            onClick={claimMsend}
+            onClick={claimMsendWrapper}
           >
             CLAIM mSEND
           </Button>
@@ -318,9 +199,13 @@ function Wrapper({ children }: PropsWithChildren) {
 
 interface AllocationCardProps {
   allocation: Allocation;
+  claimMsend: () => Promise<void>;
 }
 
-export default function AllocationCard({ allocation }: AllocationCardProps) {
+export default function AllocationCard({
+  allocation,
+  claimMsend,
+}: AllocationCardProps) {
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -353,15 +238,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   };
 
   // Status
-  const hasBridgedMsend = useMemo(
-    () => allocation.userBridgedMsend?.gt(0),
-    [allocation.userBridgedMsend],
-  );
-  const hasClaimedMsend = useMemo(
-    () => allocation.userClaimedMsend?.gt(0),
-    [allocation.userClaimedMsend],
-  );
-
   const isEligible = useMemo(
     () => allocation.userAllocationPercent?.gt(0),
     [allocation.userAllocationPercent],
@@ -369,6 +245,15 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   const isNotEligible = useMemo(
     () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
     [allocation.snapshotTaken, allocation.userAllocationPercent],
+  );
+
+  const hasClaimedMsend = useMemo(
+    () => allocation.userClaimedMsend?.gt(0),
+    [allocation.userClaimedMsend],
+  );
+  const hasBridgedMsend = useMemo(
+    () => allocation.userBridgedMsend?.gt(0),
+    [allocation.userBridgedMsend],
   );
 
   return (
@@ -390,10 +275,10 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
           <div className={cn(styles.front, "absolute inset-0 flex flex-col")}>
             <Status
               allocation={allocation}
-              hasBridgedMsend={hasBridgedMsend}
-              hasClaimedMsend={hasClaimedMsend}
               isEligible={isEligible}
               isNotEligible={isNotEligible}
+              hasClaimedMsend={hasClaimedMsend}
+              hasBridgedMsend={hasBridgedMsend}
             />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-secondary/25">
@@ -465,7 +350,11 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   )}
                 </div>
 
-                <CtaButton allocation={allocation} isEligible={isEligible} />
+                <CtaButton
+                  allocation={allocation}
+                  isEligible={isEligible}
+                  claimMsend={claimMsend}
+                />
               </div>
             </div>
           </div>
