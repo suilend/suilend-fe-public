@@ -49,7 +49,7 @@ function Status({ allocation }: StatusProps) {
         <>
           <TBody className="uppercase text-[#030917]">Eligible</TBody>
           <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo />
+            <SendTokenLogo className="rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]" />
             <Tooltip
               title={
                 allocation.id === AllocationId.SEND_POINTS
