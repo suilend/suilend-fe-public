@@ -2,23 +2,29 @@ import Head from "next/head";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
-import { SuiClient } from "@mysten/sui/client";
+import { SuiClient, TransactionFilter } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
+import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import { toast } from "sonner";
 import useSWR from "swr";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import { getBalanceChange, isSendPoints } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
+import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
 import AllocationCardsSection from "@/components/send/AllocationCardsSection";
 import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
+import TextLink from "@/components/shared/TextLink";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatInteger } from "@/lib/format";
+import { TX_TOAST_DURATION } from "@/lib/constants";
+import { formatInteger, formatToken } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
 import earlyUsersJson from "./lending/early-users.json";
@@ -96,9 +102,9 @@ export type Allocation = {
     percent: BigNumber;
   }[];
 
-  userBridgedMsend?: BigNumber;
-  userClaimedMsend?: BigNumber;
   userAllocationPercent?: BigNumber;
+  userClaimedMsend?: BigNumber;
+  userBridgedMsend?: BigNumber;
 };
 
 enum SuilendCapsuleRarity {
@@ -107,8 +113,22 @@ enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
+const BURN_CONTRACT_PACKAGE_ID =
+  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // TODO: Beta value, change to real value
+const POINTS_MANAGER_OBJECT_ID =
+  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // TODO: Beta value, change to real value
+const CAPSULE_MANAGER_OBJECT_ID =
+  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // TODO: Beta value, change to real value
+
+const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
+  "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
+); // TODO: Beta value, change back to import from @suilend/frontend-sui
+export const NORMALIZED_mSEND_COINTYPE = normalizeStructTag(
+  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+); // TODO: Beta value, change to real mSEND coinType
+
 const SUILEND_CAPSULE_TYPE =
-  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
+  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Beta value, change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
 
 const ROOTLETS_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
@@ -122,7 +142,7 @@ const DOUBLEUP_CITIZEN_TYPE =
 const KUMO_TYPE =
   "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
 
-export const getOwnedObjectsOfType = async (
+const getOwnedObjectsOfType = async (
   suiClient: SuiClient,
   address: string,
   type: string,
@@ -148,10 +168,37 @@ export const getOwnedObjectsOfType = async (
   return allObjs;
 };
 
+const queryTransactionBlocks = async (
+  suiClient: SuiClient,
+  filter: TransactionFilter,
+) => {
+  const allTransactionBlocks = [];
+  let cursor = null;
+  let hasNextPage = true;
+  while (hasNextPage) {
+    const objs = await suiClient.queryTransactionBlocks({
+      cursor,
+      filter,
+      options: {
+        showBalanceChanges: true,
+      },
+    });
+
+    allTransactionBlocks.push(...objs.data);
+    cursor = objs.nextCursor;
+    hasNextPage = objs.hasNextPage;
+  }
+
+  return allTransactionBlocks;
+};
+
 export default function Send() {
-  const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
-  const { data, getBalance } = useLoadedAppContext();
+  const { explorer, suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { data } = useLoadedAppContext();
+
+  const coinMetadataMap = useCoinMetadataMap([NORMALIZED_mSEND_COINTYPE]);
+  const mSendCoinMetadata = coinMetadataMap?.[NORMALIZED_mSEND_COINTYPE];
 
   // Setup - total allocated SEND Points
   const totalAllocatedPoints = useMemo(() => {
@@ -248,70 +295,67 @@ export default function Send() {
   }, [address]);
 
   // User - SEND Points
-  // User - SEND Point - Claimed mSEND
-  const claimedSendPointsMsendFetcher = useCallback(async () => {
+  const userSendPointsFetcher = useCallback(async () => {
     if (!address) return undefined;
+    if (!mSendCoinMetadata) return undefined;
 
-    // TODO
-    return undefined;
-  }, [address]);
+    // Owned
+    const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
+      .totalPoints.total;
 
-  const { data: claimedSendPointsMsend, mutate: mutateClaimedSendPointsMsend } =
-    useSWR<BigNumber | undefined>(
-      `claimedSendPointsMsend-${address}`,
-      claimedSendPointsMsendFetcher,
-      {
-        onSuccess: (data) => {
-          console.log("Refreshed claimed SEND Points mSEND", data);
-        },
-        onError: (err) => {
-          console.error("Failed to refresh claimed SEND Points mSEND", err);
-        },
+    // Claimed
+    const burnTransactions = await queryTransactionBlocks(suiClient, {
+      MoveFunction: {
+        function: "burn_points",
+        module: "points",
+        package: BURN_CONTRACT_PACKAGE_ID,
       },
-    );
+    }); // TODO: Filter by address
+
+    const claimedMsend = burnTransactions
+      .reduce((acc, transaction) => {
+        for (const bc of transaction.balanceChanges ?? []) {
+          if (
+            (bc.owner as any).AddressOwner === address &&
+            normalizeStructTag(bc.coinType) === NORMALIZED_mSEND_COINTYPE
+          )
+            acc = acc.plus(bc.amount);
+        }
+
+        return acc;
+      }, new BigNumber(0))
+      .div(10 ** mSendCoinMetadata.decimals);
+
+    return { owned: ownedSendPoints, claimedMsend };
+  }, [address, mSendCoinMetadata, data.rewardMap, data.obligations, suiClient]);
+
+  const { data: userSendPoints, mutate: mutateUserSendPoints } = useSWR<
+    { owned: BigNumber; claimedMsend: BigNumber } | undefined
+  >(`userSendPoints-${address}`, userSendPointsFetcher, {
+    onSuccess: (data) => {
+      console.log("Refreshed user SEND Points", data);
+    },
+    onError: (err) => {
+      console.error("Failed to user SEND Points", err);
+    },
+  });
   useEffect(() => {
-    setTimeout(mutateClaimedSendPointsMsend);
-  }, [mutateClaimedSendPointsMsend, address]);
-
-  // User - SEND Point - Owned
-  const ownedSendPoints = useMemo(() => {
-    if (!address) return undefined;
-
-    return getPointsStats(data.rewardMap, data.obligations).totalPoints.total;
-  }, [address, data.rewardMap, data.obligations]);
+    setTimeout(mutateUserSendPoints);
+  }, [
+    mutateUserSendPoints,
+    address,
+    mSendCoinMetadata,
+    data.rewardMap,
+    data.obligations,
+    suiClient,
+  ]);
 
   // User - Suilend Capsules
-  // User - Suilend Capsules - Claimed mSEND
-  const claimedSuilendCapsulesMsendFetcher = useCallback(async () => {
+  const userSuilendCapsulesFetcher = useCallback(async () => {
     if (!address) return undefined;
+    if (!mSendCoinMetadata) return undefined;
 
-    // TODO
-    return undefined;
-  }, [address]);
-
-  const {
-    data: claimedSuilendCapsulesMsend,
-    mutate: mutateClaimedSuilendCapsulesMsend,
-  } = useSWR<BigNumber | undefined>(
-    `claimedSuilendCapsulesMsend-${address}`,
-    claimedSuilendCapsulesMsendFetcher,
-    {
-      onSuccess: (data) => {
-        console.log("Refreshed claimed Suilend Capsules mSEND", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh claimed Suilend Capsules mSEND", err);
-      },
-    },
-  );
-  useEffect(() => {
-    setTimeout(mutateClaimedSuilendCapsulesMsend);
-  }, [mutateClaimedSuilendCapsulesMsend, address]);
-
-  // User - Suilend Capsules - Owned
-  const ownedSuilendCapsulesMapFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
+    // Owned
     const objs = await getOwnedObjectsOfType(
       suiClient,
       address,
@@ -333,33 +377,58 @@ export default function Send() {
         (obj.data?.content as any).fields.rarity === SuilendCapsuleRarity.RARE,
     );
 
-    return {
+    const ownedSuilendCapsulesMap = {
       [SuilendCapsuleRarity.COMMON]: new BigNumber(commonCapsuleObjs.length),
       [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
         uncommonCapsuleObjs.length,
       ),
       [SuilendCapsuleRarity.RARE]: new BigNumber(rareCapsuleObjs.length),
     };
-  }, [address, suiClient]);
 
-  const {
-    data: ownedSuilendCapsulesMap,
-    mutate: mutateOwnedSuilendCapsulesMap,
-  } = useSWR<Record<SuilendCapsuleRarity, BigNumber> | undefined>(
-    `ownedSuilendCapsulesMap-${address}`,
-    ownedSuilendCapsulesMapFetcher,
-    {
+    // Claimed
+    const burnTransactions = await queryTransactionBlocks(suiClient, {
+      MoveFunction: {
+        function: "burn_capsule",
+        module: "capsule",
+        package: BURN_CONTRACT_PACKAGE_ID,
+      },
+    }); // TODO: Filter by address
+
+    const claimedMsend = burnTransactions
+      .reduce((acc, transaction) => {
+        for (const bc of transaction.balanceChanges ?? []) {
+          if (
+            (bc.owner as any).AddressOwner === address &&
+            normalizeStructTag(bc.coinType) === NORMALIZED_mSEND_COINTYPE
+          )
+            acc = acc.plus(bc.amount);
+        }
+
+        return acc;
+      }, new BigNumber(0))
+      .div(10 ** mSendCoinMetadata.decimals);
+
+    return { ownedMap: ownedSuilendCapsulesMap, claimedMsend };
+  }, [address, mSendCoinMetadata, suiClient]);
+
+  const { data: userSuilendCapsules, mutate: mutateUserSuilendCapsules } =
+    useSWR<
+      | {
+          ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
+          claimedMsend: BigNumber;
+        }
+      | undefined
+    >(`userSuilendCapsules-${address}`, userSuilendCapsulesFetcher, {
       onSuccess: (data) => {
-        console.log("Refreshed owned Suilend Capsules", data);
+        console.log("Refreshed user Suilend Capsules", data);
       },
       onError: (err) => {
-        console.error("Failed to refresh owned Suilend Capsules", err);
+        console.error("Failed to refresh user Suilend Capsules", err);
       },
-    },
-  );
+    });
   useEffect(() => {
-    setTimeout(mutateOwnedSuilendCapsulesMap);
-  }, [mutateOwnedSuilendCapsulesMap, address, suiClient]);
+    setTimeout(mutateUserSuilendCapsules);
+  }, [mutateUserSuilendCapsules, address, mSendCoinMetadata, suiClient]);
 
   // User - Save
   const bridgedSaveMsendFetcher = useCallback(async () => {
@@ -762,14 +831,14 @@ export default function Send() {
         earlyUsers.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInEarlyUsersSnapshot !== undefined
           ? isInEarlyUsersSnapshot
             ? earlyUsers.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
@@ -791,14 +860,15 @@ export default function Send() {
         sendPoints.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: claimedSendPointsMsend,
       userAllocationPercent:
-        ownedSendPoints !== undefined
-          ? ownedSendPoints
+        userSendPoints !== undefined
+          ? userSendPoints.owned
               .div(1000)
               .times(sendPoints.totalAllocationBreakdown.thousand.percent)
           : undefined,
+      userClaimedMsend:
+        userSendPoints !== undefined ? userSendPoints.claimedMsend : undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
@@ -816,32 +886,37 @@ export default function Send() {
         suilendCapsules.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: claimedSuilendCapsulesMsend,
       userAllocationPercent:
-        ownedSuilendCapsulesMap !== undefined
+        userSuilendCapsules !== undefined
           ? new BigNumber(
-              ownedSuilendCapsulesMap[SuilendCapsuleRarity.COMMON].times(
+              userSuilendCapsules.ownedMap[SuilendCapsuleRarity.COMMON].times(
                 suilendCapsules.totalAllocationBreakdown[
                   SuilendCapsuleRarity.COMMON
                 ].percent,
               ),
             )
               .plus(
-                ownedSuilendCapsulesMap[SuilendCapsuleRarity.UNCOMMON].times(
+                userSuilendCapsules.ownedMap[
+                  SuilendCapsuleRarity.UNCOMMON
+                ].times(
                   suilendCapsules.totalAllocationBreakdown[
                     SuilendCapsuleRarity.UNCOMMON
                   ].percent,
                 ),
               )
               .plus(
-                ownedSuilendCapsulesMap[SuilendCapsuleRarity.RARE].times(
+                userSuilendCapsules.ownedMap[SuilendCapsuleRarity.RARE].times(
                   suilendCapsules.totalAllocationBreakdown[
                     SuilendCapsuleRarity.RARE
                   ].percent,
                 ),
               )
           : undefined,
+      userClaimedMsend:
+        userSuilendCapsules !== undefined
+          ? userSuilendCapsules.claimedMsend
+          : undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SAVE,
@@ -861,9 +936,9 @@ export default function Send() {
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
 
-      userBridgedMsend: bridgedSaveMsend,
-      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: bridgedSaveMsend,
     },
     {
       id: AllocationId.ROOTLETS,
@@ -885,12 +960,12 @@ export default function Send() {
         rootlets.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedRootlets !== undefined
           ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
 
     {
@@ -909,14 +984,14 @@ export default function Send() {
         bluefinLeagues.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInBluefinLeaguesSnapshot !== undefined
           ? isInBluefinLeaguesSnapshot
             ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
@@ -938,8 +1013,6 @@ export default function Send() {
         bluefinSendTraders.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
       // bluefinSendTradersVolumeUsd !== undefined
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
@@ -949,6 +1022,8 @@ export default function Send() {
       //           .percent,
       //       )
       //   : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
 
     {
@@ -971,14 +1046,14 @@ export default function Send() {
         primeMachin.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedPrimeMachin !== undefined
           ? ownedPrimeMachin.times(
               primeMachin.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.EGG,
@@ -998,12 +1073,12 @@ export default function Send() {
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedEgg !== undefined
           ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
@@ -1025,14 +1100,14 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedDoubleUpCitizen !== undefined
           ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.KUMO,
@@ -1052,12 +1127,12 @@ export default function Send() {
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedKumo !== undefined
           ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
 
     {
@@ -1078,14 +1153,14 @@ export default function Send() {
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
       //     ? anima.totalAllocationBreakdown!.percent
       //     : new BigNumber(0)
       //   : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
 
     {
@@ -1105,14 +1180,14 @@ export default function Send() {
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
             ? fud.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.AAA,
@@ -1132,14 +1207,14 @@ export default function Send() {
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
             ? aaa.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.OCTO,
@@ -1159,14 +1234,14 @@ export default function Send() {
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
             ? octo.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
     {
       id: AllocationId.TISM,
@@ -1185,16 +1260,138 @@ export default function Send() {
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
 
-      userBridgedMsend: undefined,
-      userClaimedMsend: undefined,
       userAllocationPercent:
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userClaimedMsend: undefined,
+      userBridgedMsend: undefined,
     },
   ];
+
+  // Claim mSEND
+  const claimMsend = async (allocation: Allocation) => {
+    if (!address) return;
+    if (!mSendCoinMetadata) return;
+
+    if (
+      ![AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
+        allocation.id,
+      )
+    )
+      return;
+
+    const transaction = new Transaction();
+    try {
+      if (allocation.id === AllocationId.SEND_POINTS) {
+        // TODO: Claim SEND Points from obligations
+
+        // Merge SEND Points coins
+        const coins = (
+          await suiClient.getCoins({
+            owner: address,
+            coinType: NORMALIZED_SEND_POINTS_COINTYPE,
+          })
+        ).data;
+        if (coins.length === 0) throw new Error("No SEND Points in wallet");
+
+        const mergeCoin = coins[0];
+        if (coins.length > 1) {
+          transaction.mergeCoins(
+            transaction.object(mergeCoin.coinObjectId),
+            coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
+          );
+        }
+
+        // Burn SEND Points
+        const mSend = transaction.moveCall({
+          target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
+          typeArguments: [NORMALIZED_mSEND_COINTYPE],
+          arguments: [
+            transaction.object(POINTS_MANAGER_OBJECT_ID),
+            transaction.object(mergeCoin.coinObjectId),
+          ],
+        });
+
+        // Transfer mSEND to user
+        transaction.transferObjects([mSend], transaction.pure.address(address));
+      } else {
+        // Get Suilend Capsules owned by user
+        const objs = await getOwnedObjectsOfType(
+          suiClient,
+          address,
+          SUILEND_CAPSULE_TYPE,
+        );
+        if (objs.length === 0) throw new Error("No Suilend Capsules in wallet");
+
+        const mSendCoins = [];
+
+        // Burn Suilend Capsules
+        for (const obj of objs) {
+          const mSendCoin = transaction.moveCall({
+            target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
+            typeArguments: [NORMALIZED_mSEND_COINTYPE],
+            arguments: [
+              transaction.object(CAPSULE_MANAGER_OBJECT_ID),
+              transaction.object(obj.data?.objectId as string),
+            ],
+          });
+
+          mSendCoins.push(mSendCoin);
+        }
+
+        // Merge mSEND coins
+        const mergeCoin = mSendCoins[0];
+        if (mSendCoins.length > 1) {
+          transaction.mergeCoins(
+            transaction.object(mergeCoin),
+            mSendCoins.map((c) => transaction.object(c)).slice(1),
+          );
+        }
+
+        // Transfer mSEND to user
+        transaction.transferObjects(
+          [mergeCoin],
+          transaction.pure.address(address),
+        );
+      }
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      const balanceChange = getBalanceChange(res, address, {
+        coinType: NORMALIZED_mSEND_COINTYPE,
+        ...mSendCoinMetadata,
+      });
+
+      toast.success(
+        balanceChange !== undefined
+          ? `Claimed ${formatToken(balanceChange, {
+              dp: mSendCoinMetadata.decimals,
+              trimTrailingZeros: true,
+            })} mSEND`
+          : "Claimed mSEND",
+        {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        },
+      );
+    } catch (err) {
+      toast.error("Failed to claim mSEND", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    } finally {
+      if (allocation.id === AllocationId.SEND_POINTS)
+        await mutateUserSendPoints();
+      else await mutateUserSuilendCapsules();
+    }
+  };
 
   return (
     <>
@@ -1210,7 +1407,8 @@ export default function Send() {
             <HeroSection
               allocations={allocations}
               isLoading={
-                ownedSuilendCapsulesMap === undefined ||
+                userSendPoints === undefined ||
+                userSuilendCapsules === undefined ||
                 ownedRootlets === undefined ||
                 ownedPrimeMachin === undefined ||
                 ownedEgg === undefined ||
@@ -1218,7 +1416,10 @@ export default function Send() {
                 ownedKumo === undefined
               }
             />
-            <AllocationCardsSection allocations={allocations} />
+            <AllocationCardsSection
+              allocations={allocations}
+              claimMsend={claimMsend}
+            />
           </div>
 
           <ClaimSection />
