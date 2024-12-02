@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 import { TBodySans } from "@/components/shared/Typography";
-import suilendLogo from "@/public/assets/send.svg";
+import suilendLogo from "@/public/assets/suilend.svg";
 
 export default function Logo() {
   return (
