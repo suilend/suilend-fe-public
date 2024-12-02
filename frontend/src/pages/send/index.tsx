@@ -96,8 +96,9 @@ export type Allocation = {
     percent: BigNumber;
   }[];
 
+  userBridgedMsend?: BigNumber;
+  userClaimedMsend?: BigNumber;
   userAllocationPercent?: BigNumber;
-  userMsendClaimed?: BigNumber;
 };
 
 enum SuilendCapsuleRarity {
@@ -247,13 +248,67 @@ export default function Send() {
   }, [address]);
 
   // User - SEND Points
-  const totalSendPoints = useMemo(() => {
+  // User - SEND Point - Claimed mSEND
+  const claimedSendPointsMsendFetcher = useCallback(async () => {
+    if (!address) return undefined;
+
+    // TODO
+    return undefined;
+  }, [address]);
+
+  const { data: claimedSendPointsMsend, mutate: mutateClaimedSendPointsMsend } =
+    useSWR<BigNumber | undefined>(
+      `claimedSendPointsMsend-${address}`,
+      claimedSendPointsMsendFetcher,
+      {
+        onSuccess: (data) => {
+          console.log("Refreshed claimed SEND Points mSEND", data);
+        },
+        onError: (err) => {
+          console.error("Failed to refresh claimed SEND Points mSEND", err);
+        },
+      },
+    );
+  useEffect(() => {
+    setTimeout(mutateClaimedSendPointsMsend);
+  }, [mutateClaimedSendPointsMsend, address]);
+
+  // User - SEND Point - Owned
+  const ownedSendPoints = useMemo(() => {
     if (!address) return undefined;
 
     return getPointsStats(data.rewardMap, data.obligations).totalPoints.total;
   }, [address, data.rewardMap, data.obligations]);
 
   // User - Suilend Capsules
+  // User - Suilend Capsules - Claimed mSEND
+  const claimedSuilendCapsulesMsendFetcher = useCallback(async () => {
+    if (!address) return undefined;
+
+    // TODO
+    return undefined;
+  }, [address]);
+
+  const {
+    data: claimedSuilendCapsulesMsend,
+    mutate: mutateClaimedSuilendCapsulesMsend,
+  } = useSWR<BigNumber | undefined>(
+    `claimedSuilendCapsulesMsend-${address}`,
+    claimedSuilendCapsulesMsendFetcher,
+    {
+      onSuccess: (data) => {
+        console.log("Refreshed claimed Suilend Capsules mSEND", data);
+      },
+      onError: (err) => {
+        console.error("Failed to refresh claimed Suilend Capsules mSEND", err);
+      },
+    },
+  );
+  useEffect(() => {
+    setTimeout(mutateClaimedSuilendCapsulesMsend);
+  }, [mutateClaimedSuilendCapsulesMsend, address]);
+
+  // User - Suilend Capsules - Owned
   const ownedSuilendCapsulesMapFetcher = useCallback(async () => {
     if (!address) return undefined;
 
@@ -307,11 +362,26 @@ export default function Send() {
   }, [mutateOwnedSuilendCapsulesMap, address, suiClient]);
 
   // User - Save
-  const mSendWith12MonthMaturityBridgedAmount = useMemo(() => {
+  const bridgedSaveMsendFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    return undefined; // TODO
+    // TODO
+    return undefined;
   }, [address]);
+
+  const { data: bridgedSaveMsend, mutate: mutateBridgedSaveMsend } = useSWR<
+    BigNumber | undefined
+  >(`bridgedSaveMsend-${address}`, bridgedSaveMsendFetcher, {
+    onSuccess: (data) => {
+      console.log("Refreshed bridged Save mSEND", data);
+    },
+    onError: (err) => {
+      console.error("Failed to refresh bridged Save mSEND", err);
+    },
+  });
+  useEffect(() => {
+    setTimeout(mutateBridgedSaveMsend);
+  }, [mutateBridgedSaveMsend, address]);
 
   // User - Rootlets
   const ownedRootlets: BigNumber | undefined = useMemo(() => {
@@ -692,13 +762,14 @@ export default function Send() {
         earlyUsers.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInEarlyUsersSnapshot !== undefined
           ? isInEarlyUsersSnapshot
             ? earlyUsers.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
@@ -720,13 +791,14 @@ export default function Send() {
         sendPoints.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: claimedSendPointsMsend,
       userAllocationPercent:
-        totalSendPoints !== undefined
-          ? totalSendPoints
+        ownedSendPoints !== undefined
+          ? ownedSendPoints
               .div(1000)
               .times(sendPoints.totalAllocationBreakdown.thousand.percent)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
@@ -744,6 +816,8 @@ export default function Send() {
         suilendCapsules.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: claimedSuilendCapsulesMsend,
       userAllocationPercent:
         ownedSuilendCapsulesMap !== undefined
           ? new BigNumber(
@@ -768,7 +842,6 @@ export default function Send() {
                 ),
               )
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SAVE,
@@ -788,8 +861,9 @@ export default function Send() {
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
 
+      userBridgedMsend: bridgedSaveMsend,
+      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
-      userMsendClaimed: undefined, //mSendWith12MonthMaturityBridgedAmount,
     },
     {
       id: AllocationId.ROOTLETS,
@@ -811,11 +885,12 @@ export default function Send() {
         rootlets.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedRootlets !== undefined
           ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
           : undefined,
-      userMsendClaimed: undefined,
     },
 
     {
@@ -834,13 +909,14 @@ export default function Send() {
         bluefinLeagues.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInBluefinLeaguesSnapshot !== undefined
           ? isInBluefinLeaguesSnapshot
             ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
@@ -862,6 +938,8 @@ export default function Send() {
         bluefinSendTraders.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
       // bluefinSendTradersVolumeUsd !== undefined
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
@@ -871,7 +949,6 @@ export default function Send() {
       //           .percent,
       //       )
       //   : undefined,
-      userMsendClaimed: undefined,
     },
 
     {
@@ -894,13 +971,14 @@ export default function Send() {
         primeMachin.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedPrimeMachin !== undefined
           ? ownedPrimeMachin.times(
               primeMachin.totalAllocationBreakdown.one.percent,
             )
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.EGG,
@@ -920,11 +998,12 @@ export default function Send() {
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedEgg !== undefined
           ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
@@ -946,13 +1025,14 @@ export default function Send() {
         doubleUpCitizen.totalAllocationBreakdown,
       ),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedDoubleUpCitizen !== undefined
           ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.KUMO,
@@ -972,11 +1052,12 @@ export default function Send() {
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         ownedKumo !== undefined
           ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
           : undefined,
-      userMsendClaimed: undefined,
     },
 
     {
@@ -997,13 +1078,14 @@ export default function Send() {
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
       //     ? anima.totalAllocationBreakdown!.percent
       //     : new BigNumber(0)
       //   : undefined,
-      userMsendClaimed: undefined,
     },
 
     {
@@ -1023,13 +1105,14 @@ export default function Send() {
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
             ? fud.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.AAA,
@@ -1049,13 +1132,14 @@ export default function Send() {
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
             ? aaa.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.OCTO,
@@ -1075,13 +1159,14 @@ export default function Send() {
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
             ? octo.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.TISM,
@@ -1100,13 +1185,14 @@ export default function Send() {
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
 
+      userBridgedMsend: undefined,
+      userClaimedMsend: undefined,
       userAllocationPercent:
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
-      userMsendClaimed: undefined,
     },
   ];
 
