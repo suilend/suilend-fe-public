@@ -6,7 +6,7 @@ import { SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
-import { NORMALIZED_SUI_COINTYPE, isSendPoints } from "@suilend/frontend-sui";
+import { isSendPoints } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -17,10 +17,6 @@ import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  NORMALIZED_OCTO_COINTYPE,
-  NORMALIZED_TISM_COINTYPE,
-} from "@/lib/coinType";
 import { formatInteger } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
@@ -98,7 +94,9 @@ export type Allocation = {
     title: string;
     percent: BigNumber;
   }[];
+
   userAllocationPercent?: BigNumber;
+  userMsendClaimed?: BigNumber;
 };
 
 enum SuilendCapsuleRarity {
@@ -692,12 +690,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         earlyUsers.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         isInEarlyUsersSnapshot !== undefined
           ? isInEarlyUsersSnapshot
             ? earlyUsers.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
@@ -718,12 +718,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         sendPoints.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         totalSendPoints !== undefined
           ? totalSendPoints
               .div(1000)
               .times(sendPoints.totalAllocationBreakdown.thousand.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
@@ -740,6 +742,7 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         suilendCapsules.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedSuilendCapsulesMap !== undefined
           ? new BigNumber(
@@ -764,6 +767,7 @@ export default function Send() {
                 ),
               )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SAVE,
@@ -782,10 +786,9 @@ export default function Send() {
       eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
-      userAllocationPercent:
-        // mSendWith12MonthMaturityBalance !== undefined
-        //   ? mSendWith12MonthMaturityBalance.div(SEND_TOTAL_SUPPLY).times(100):
-        undefined,
+
+      userAllocationPercent: undefined,
+      userMsendClaimed: undefined, //mSendWith12MonthMaturityBalance,
     },
     {
       id: AllocationId.ROOTLETS,
@@ -806,10 +809,12 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         rootlets.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedRootlets !== undefined
           ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
@@ -827,12 +832,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         bluefinLeagues.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         isInBluefinLeaguesSnapshot !== undefined
           ? isInBluefinLeaguesSnapshot
             ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
@@ -853,6 +860,7 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         bluefinSendTraders.totalAllocationBreakdown,
       ),
+
       userAllocationPercent: undefined,
       // bluefinSendTradersVolumeUsd !== undefined
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
@@ -862,6 +870,7 @@ export default function Send() {
       //           .percent,
       //       )
       //   : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
@@ -883,12 +892,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         primeMachin.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedPrimeMachin !== undefined
           ? ownedPrimeMachin.times(
               primeMachin.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.EGG,
@@ -907,10 +918,12 @@ export default function Send() {
       eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
+
       userAllocationPercent:
         ownedEgg !== undefined
           ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
@@ -931,12 +944,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         doubleUpCitizen.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedDoubleUpCitizen !== undefined
           ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.KUMO,
@@ -955,10 +970,12 @@ export default function Send() {
       eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
+
       userAllocationPercent:
         ownedKumo !== undefined
           ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
@@ -978,12 +995,14 @@ export default function Send() {
       eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+
       userAllocationPercent: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
       //     ? anima.totalAllocationBreakdown!.percent
       //     : new BigNumber(0)
       //   : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
@@ -1002,12 +1021,14 @@ export default function Send() {
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
             ? fud.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.AAA,
@@ -1026,12 +1047,14 @@ export default function Send() {
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
             ? aaa.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.OCTO,
@@ -1044,18 +1067,20 @@ export default function Send() {
       assetType: AssetType.TOKEN,
       cta: {
         title: "Buy",
-        href: `/swap/SUI-${NORMALIZED_OCTO_COINTYPE}`,
+        href: "/swap/SUI-OCTO",
       },
       snapshotTaken: octo.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
             ? octo.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.TISM,
@@ -1067,18 +1092,20 @@ export default function Send() {
       assetType: AssetType.TOKEN,
       cta: {
         title: "Buy",
-        href: `/swap/SUI-${NORMALIZED_TISM_COINTYPE}`,
+        href: "/swap/SUI-TISM",
       },
       snapshotTaken: tism.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
   ];
 
