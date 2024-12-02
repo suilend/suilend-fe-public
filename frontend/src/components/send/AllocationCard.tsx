@@ -52,14 +52,16 @@ const CAPSULE_MANAGER_OBJECT_ID =
 
 interface StatusProps {
   allocation: Allocation;
-  mSendClaimedAmount?: BigNumber;
+  hasBridgedMsend?: boolean;
+  hasClaimedMsend?: boolean;
   isEligible?: boolean;
   isNotEligible?: boolean;
 }
 
 function Status({
   allocation,
-  mSendClaimedAmount,
+  hasBridgedMsend,
+  hasClaimedMsend,
   isEligible,
   isNotEligible,
 }: StatusProps) {
@@ -67,7 +69,7 @@ function Status({
     <div
       className={cn(
         "relative z-[1] -mb-2 flex h-11 w-full flex-row items-center rounded-t-md px-4 pb-2",
-        mSendClaimedAmount !== undefined || isEligible
+        hasBridgedMsend || hasClaimedMsend || isEligible
           ? "justify-between bg-[#5DF886]"
           : cn(
               "justify-center",
@@ -75,20 +77,20 @@ function Status({
             ),
       )}
     >
-      {mSendClaimedAmount !== undefined || isEligible ? (
+      {hasBridgedMsend || hasClaimedMsend || isEligible ? (
         <>
           <TBody className="text-[#030917]">
-            {mSendClaimedAmount !== undefined
-              ? "mSEND CLAIMED"
-              : allocation.id === AllocationId.SAVE
-                ? "mSEND BRIDGED"
+            {hasBridgedMsend
+              ? "mSEND BRIDGED"
+              : hasClaimedMsend
+                ? "mSEND CLAIMED"
                 : "ELIGIBLE"}
           </TBody>
           <div className="flex flex-row items-center gap-1.5">
             <SendTokenLogo />
             <Tooltip
               title={
-                mSendClaimedAmount !== undefined
+                hasBridgedMsend || hasClaimedMsend
                   ? undefined
                   : allocation.id === AllocationId.SEND_POINTS
                     ? "Allocation is an estimate since SEND Points are still ongoing"
@@ -105,20 +107,22 @@ function Status({
               <TBody
                 className={cn(
                   "text-[16px] text-[#030917]",
-                  mSendClaimedAmount !== undefined
+                  hasBridgedMsend || hasClaimedMsend
                     ? undefined
                     : cn("decoration-[#030917]/50", hoverUnderlineClassName),
                 )}
               >
                 {formatToken(
-                  mSendClaimedAmount !== undefined
-                    ? mSendClaimedAmount
-                    : new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.userAllocationPercent!.div(100),
-                      ),
+                  hasBridgedMsend
+                    ? allocation.userBridgedMsend!
+                    : hasClaimedMsend
+                      ? allocation.userClaimedMsend!
+                      : new BigNumber(SEND_TOTAL_SUPPLY).times(
+                          allocation.userAllocationPercent!.div(100),
+                        ),
                   { exact: false },
                 )}
-                {mSendClaimedAmount !== undefined
+                {hasBridgedMsend || hasClaimedMsend
                   ? undefined
                   : [
                       AllocationId.SEND_POINTS,
@@ -151,14 +155,14 @@ function Status({
 
 interface CtaButtonProps {
   allocation: Allocation;
-  mSendClaimedAmount?: BigNumber;
+  isEligible?: boolean;
 }
 
-function CtaButton({ allocation, mSendClaimedAmount }: CtaButtonProps) {
+function CtaButton({ allocation, isEligible }: CtaButtonProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
 
-  const showSendPointsSuilendCapsulesClaimMsendCta = true;
+  const showClaimMsendCta = true; // TODO: Use exact TGE timestamp
 
   const claimMsend = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -206,7 +210,7 @@ function CtaButton({ allocation, mSendClaimedAmount }: CtaButtonProps) {
           description: (err as Error)?.message || "An unknown error occurred",
         });
       }
-    } else {
+    } else if (allocation.id === AllocationId.SUILEND_CAPSULES) {
       // Get capsules owned by user
       const objs = await getOwnedObjectsOfType(
         suiClient,
@@ -261,22 +265,25 @@ function CtaButton({ allocation, mSendClaimedAmount }: CtaButtonProps) {
   if (
     [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
       allocation.id,
-    ) &&
-    showSendPointsSuilendCapsulesClaimMsendCta &&
-    address
+    )
   ) {
-    if (mSendClaimedAmount === undefined)
-      return (
-        <Button
-          className="h-10 w-full"
-          labelClassName="text-[16px]"
-          onClick={claimMsend}
-        >
-          CLAIM mSEND
-        </Button>
-      );
-    return <div className="h-10 w-full max-sm:hidden" />;
+    if (showClaimMsendCta) {
+      if (isEligible) {
+        return (
+          <Button
+            className="h-10 w-full"
+            labelClassName="text-[16px]"
+            onClick={claimMsend}
+          >
+            CLAIM mSEND
+          </Button>
+        );
+      } else return <div className="h-10 w-full max-sm:hidden" />;
+    }
   }
+  if (allocation.id === AllocationId.SAVE) {
+  }
+
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (
     <Link
       className="flex"
@@ -327,44 +334,34 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   };
 
   // Video
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const onCardMouseEnter = () => {
-    if (!videoRef.current) return;
+    setIsVideoPlaying(true);
 
+    if (!videoRef.current) return;
     videoRef.current.play();
   };
   const onCardMouseLeave = () => {
-    if (!videoRef.current) return;
+    setIsVideoPlaying(false);
 
-    videoRef.current.pause();
-    videoRef.current.currentTime = 0;
+    setTimeout(() => {
+      if (!videoRef.current) return;
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }, 300);
   };
 
   // Status
-  const mSendClaimedAmount = useMemo(() => {
-    if (allocation.userAllocationPercent === undefined) return undefined;
-
-    if (allocation.id === AllocationId.SEND_POINTS) {
-      if (allocation.userAllocationPercent.eq(0)) {
-        // TODO: Get how much mSEND the user has claimed (it's also possible the user simply has 0 SEND Points and never claimed mSEND)
-        return undefined;
-      } else {
-        // Allocation > 0 means the user has outstanding SEND Points to burn - don't show how much mSEND they've claimed
-        return undefined;
-      }
-    } else if (allocation.id === AllocationId.SUILEND_CAPSULES) {
-      if (allocation.userAllocationPercent.eq(0)) {
-        // TODO: Get how much mSEND the user has claimed (it's also possible the user simply has no Suilend Capsules and never claimed mSEND)
-        return undefined;
-      } else {
-        // Allocation > 0 means the user has outstanding Suilend Capsules to burn - don't show how much mSEND they've claimed
-        return undefined;
-      }
-    }
-
-    return undefined;
-  }, [allocation.userAllocationPercent, allocation.id]);
+  const hasBridgedMsend = useMemo(
+    () => allocation.userBridgedMsend?.gt(0),
+    [allocation.userBridgedMsend],
+  );
+  const hasClaimedMsend = useMemo(
+    () => allocation.userClaimedMsend?.gt(0),
+    [allocation.userClaimedMsend],
+  );
 
   const isEligible = useMemo(
     () => allocation.userAllocationPercent?.gt(0),
@@ -394,7 +391,8 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
           <div className={cn(styles.front, "absolute inset-0 flex flex-col")}>
             <Status
               allocation={allocation}
-              mSendClaimedAmount={mSendClaimedAmount}
+              hasBridgedMsend={hasBridgedMsend}
+              hasClaimedMsend={hasClaimedMsend}
               isEligible={isEligible}
               isNotEligible={isNotEligible}
             />
@@ -420,20 +418,27 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   <Info className="h-5 w-5 text-muted-foreground transition-colors group-hover:text-foreground" />
                 </div>
 
-                {/* Icon */}
-                <div
-                  className="absolute inset-y-4 left-1/2 z-[1] flex w-full max-w-28 -translate-x-1/2 flex-row items-center justify-center"
-                  style={{
-                    backgroundImage: `url('${allocation.src}')`,
-                    backgroundPosition: "center",
-                    backgroundSize: "contain",
-                    backgroundRepeat: "no-repeat",
-                  }}
-                >
+                {/* Image/video */}
+                <div className="absolute inset-y-0 left-1/2 z-[1] flex w-full max-w-28 -translate-x-1/2 flex-row items-center justify-center">
+                  {/* Image */}
+                  <div
+                    className="absolute inset-0 z-[1]"
+                    style={{
+                      backgroundImage: `url('${allocation.src}')`,
+                      backgroundPosition: "center",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                    }}
+                  />
+
+                  {/* Video */}
                   {allocation.hoverSrc && (
                     <video
                       ref={videoRef}
-                      className="h-full w-full"
+                      className={cn(
+                        "relative z-[2] h-full w-full transition-opacity",
+                        isVideoPlaying ? "opacity-100" : "opacity-0",
+                      )}
                       controls={false}
                       loop
                       muted
@@ -461,10 +466,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   )}
                 </div>
 
-                <CtaButton
-                  allocation={allocation}
-                  mSendClaimedAmount={mSendClaimedAmount}
-                />
+                <CtaButton allocation={allocation} isEligible={isEligible} />
               </div>
             </div>
           </div>
