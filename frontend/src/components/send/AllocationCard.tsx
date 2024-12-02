@@ -465,7 +465,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   )}
                 </div>
 
-                <CtaButton allocation={allocation} />
+                <CtaButton allocation={allocation} isEligible={isEligible} />
               </div>
             </div>
           </div>
