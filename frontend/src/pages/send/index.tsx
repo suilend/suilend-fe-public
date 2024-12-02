@@ -18,10 +18,6 @@ import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  NORMALIZED_OCTO_COINTYPE,
-  NORMALIZED_TISM_COINTYPE,
-} from "@/lib/coinType";
 import { formatInteger } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
 
@@ -99,7 +95,9 @@ export type Allocation = {
     title: string;
     percent: BigNumber;
   }[];
+
   userAllocationPercent?: BigNumber;
+  userMsendClaimed?: BigNumber;
 };
 
 enum SuilendCapsuleRarity {
@@ -680,6 +678,7 @@ export default function Send() {
     {
       id: AllocationId.EARLY_USERS,
       src: "/assets/send/lending/early-users.png",
+      hoverSrc: "/assets/send/lending/early-users-hover.mp4",
       title: "Early Users",
       description:
         "Early users are those who used Suilend prior to the launch of SEND points.",
@@ -692,16 +691,19 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         earlyUsers.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         isInEarlyUsersSnapshot !== undefined
           ? isInEarlyUsersSnapshot
             ? earlyUsers.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
       src: "/assets/send/points/send-points.png",
+      hoverSrc: "/assets/send/points/send-points-hover.mp4",
       title: "SEND Points",
       description:
         "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
@@ -717,12 +719,14 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         sendPoints.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         totalSendPoints !== undefined
           ? totalSendPoints
               .div(1000)
               .times(sendPoints.totalAllocationBreakdown.thousand.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
@@ -739,6 +743,7 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         suilendCapsules.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedSuilendCapsulesMap !== undefined
           ? new BigNumber(
@@ -763,10 +768,12 @@ export default function Send() {
                 ),
               )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.SAVE,
       src: "/assets/send/token/save.png",
+      hoverSrc: "/assets/send/token/save-hover.mp4",
       title: "SAVE",
       description:
         "Suilend thrives thanks to the unwavering support of SLND holders. We honor our roots on Solana with this token of appreciation.",
@@ -780,16 +787,14 @@ export default function Send() {
       eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
-      userAllocationPercent:
-        mSendWith12MonthMaturityBridgedAmount !== undefined
-          ? (mSendWith12MonthMaturityBridgedAmount as BigNumber)
-              .div(SEND_TOTAL_SUPPLY)
-              .times(100)
-          : undefined,
+
+      userAllocationPercent: undefined,
+      userMsendClaimed: undefined, //mSendWith12MonthMaturityBridgedAmount,
     },
     {
       id: AllocationId.ROOTLETS,
       src: "/assets/send/nft/rootlets.png",
+      hoverSrc: "/assets/send/nft/rootlets-hover.mp4",
       title: "Rootlets",
       description:
         "Rootlets are the companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
@@ -805,15 +810,18 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         rootlets.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedRootlets !== undefined
           ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
       id: AllocationId.BLUEFIN_LEAGUES,
       src: "/assets/send/trading/bluefin-leagues.png",
+      hoverSrc: "/assets/send/trading/bluefin-leagues-hover.mp4",
       title: "Bluefin Leagues",
       description:
         "Bluefin Leagues offer a structured recognition system to reward users for their engagement and trading activities on the Bluefin platform.",
@@ -825,16 +833,19 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         bluefinLeagues.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         isInBluefinLeaguesSnapshot !== undefined
           ? isInBluefinLeaguesSnapshot
             ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
       src: "/assets/send/trading/bluefin-send-traders.png",
+      hoverSrc: "/assets/send/trading/bluefin-send-traders-hover.mp4",
       title: "Bluefin SEND Traders",
       description:
         "For users who traded the SEND pre-launch market on Bluefin.",
@@ -850,6 +861,7 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         bluefinSendTraders.totalAllocationBreakdown,
       ),
+
       userAllocationPercent: undefined,
       // bluefinSendTradersVolumeUsd !== undefined
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
@@ -859,11 +871,13 @@ export default function Send() {
       //           .percent,
       //       )
       //   : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
       id: AllocationId.PRIME_MACHIN,
       src: "/assets/send/nft/prime-machin.png",
+      hoverSrc: "/assets/send/nft/prime-machin-hover.mp4",
       title: "Prime Machin",
       description:
         "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
@@ -879,16 +893,19 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         primeMachin.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedPrimeMachin !== undefined
           ? ownedPrimeMachin.times(
               primeMachin.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.EGG,
       src: "/assets/send/nft/egg.png",
+      hoverSrc: "/assets/send/nft/egg-hover.mp4",
       title: "Egg",
       description:
         "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
@@ -902,14 +919,17 @@ export default function Send() {
       eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
+
       userAllocationPercent:
         ownedEgg !== undefined
           ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
       src: "/assets/send/nft/doubleup-citizen.png",
+      hoverSrc: "/assets/send/nft/doubleup-citizen-hover.mp4",
       title: "DoubleUp Citizen",
       description:
         "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
@@ -925,16 +945,19 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(
         doubleUpCitizen.totalAllocationBreakdown,
       ),
+
       userAllocationPercent:
         ownedDoubleUpCitizen !== undefined
           ? ownedDoubleUpCitizen.times(
               doubleUpCitizen.totalAllocationBreakdown.one.percent,
             )
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.KUMO,
       src: "/assets/send/nft/kumo.png",
+      hoverSrc: "/assets/send/nft/kumo-hover.mp4",
       title: "Kumo",
       description:
         "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2,222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
@@ -948,15 +971,18 @@ export default function Send() {
       eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
+
       userAllocationPercent:
         ownedKumo !== undefined
           ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
           : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
       id: AllocationId.ANIMA,
       src: "/assets/send/nft/anima.png",
+      hoverSrc: "/assets/send/nft/anima-hover.mp4",
       title: "Anima",
       description:
         "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
@@ -970,12 +996,14 @@ export default function Send() {
       eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+
       userAllocationPercent: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
       //     ? anima.totalAllocationBreakdown!.percent
       //     : new BigNumber(0)
       //   : undefined,
+      userMsendClaimed: undefined,
     },
 
     {
@@ -994,16 +1022,19 @@ export default function Send() {
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
             ? fud.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.AAA,
       src: "/assets/send/token/aaa.png",
+      hoverSrc: "/assets/send/token/aaa-hover.mp4",
       title: "AAA",
       description:
         "AAA Cat is Sui's fastest-growing, top cat meme coin. Built by the community for the community. Can't Stop, Won't Stop!",
@@ -1017,16 +1048,19 @@ export default function Send() {
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
             ? aaa.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.OCTO,
       src: "/assets/send/token/octo.png",
+      hoverSrc: "/assets/send/token/octo-hover.mp4",
       title: "OCTO",
       description:
         "$OCTO brings fun and community together while crafting a unique Lofi-inspired IP for all to enjoy!",
@@ -1034,40 +1068,45 @@ export default function Send() {
       assetType: AssetType.TOKEN,
       cta: {
         title: "Buy",
-        href: `/swap/SUI-${NORMALIZED_OCTO_COINTYPE}`,
+        href: "/swap/SUI-OCTO",
       },
       snapshotTaken: octo.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
             ? octo.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
     {
       id: AllocationId.TISM,
       src: "/assets/send/token/tism.png",
+      hoverSrc: "/assets/send/token/tism-hover.mp4",
       title: "TISM",
       description: "got tism?",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TOKEN,
       cta: {
         title: "Buy",
-        href: `/swap/SUI-${NORMALIZED_TISM_COINTYPE}`,
+        href: "/swap/SUI-TISM",
       },
       snapshotTaken: tism.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
+
       userAllocationPercent:
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
             ? tism.totalAllocationBreakdown.wallet.percent
             : new BigNumber(0)
           : undefined,
+      userMsendClaimed: undefined,
     },
   ];
 
