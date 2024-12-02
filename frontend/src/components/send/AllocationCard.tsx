@@ -33,21 +33,22 @@ import {
 
 // TODO: Replace all of these with the beta values for testing
 const BURN_CONTRACT_PACKAGE_ID =
-  "0x849200bd9b89b283ded0492ac745a2c743368307581b44f9aa46a2096d6c0f1f"; // TODO (this package id only works on testnet)
+  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // TODO (this package id only works on testnet)
 const NORMALIZED_mSEND_COINTYPE = normalizeStructTag(
-  "0xe60ed7e38b3eddd64d98250c495b813ab0d089b216920c5fcf15a55920626a87::m_send_test::M_SEND_TEST", // TODO (this coinType works on testnet)
-);
+  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+); // TODO (this coinType works on testnet)
 
 const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
-  "0x34fe4f3c9e450fed4d0a3c587ed842eec5313c30c3cc3c0841247c49425e246b::suilend_point::SUILEND_POINT", // TODO (this is the real SEND Points cointype)
+  "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT", // TODO (this is the real SEND Points cointype)
 );
+
 const POINTS_MANAGER_OBJECT_ID =
-  "0x6ac4bdd0505e1834cd4906f72c32b021b3e57057d31e2fa8f20a0a3d7cf56344"; // TODO (this object id only works on testnet)
+  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // TODO (this object id only works on testnet)
 
 const SUILEND_CAPSULE_TYPE =
-  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule"; // TODO (this is the real Suilend Capsule type)
+  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO (this is the real Suilend Capsule type)
 const CAPSULE_MANAGER_OBJECT_ID =
-  "0xce349f8dc4ed79382d0bfa71d315e5f852491a3e4884deb428c06ed2b19ce0e7"; // TODO (this object id only works on testnet)
+  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // TODO (this object id only works on testnet)
 
 interface StatusProps {
   allocation: Allocation;
