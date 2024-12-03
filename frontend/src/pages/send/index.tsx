@@ -195,7 +195,7 @@ const queryTransactionBlocks = async (
 export default function Send() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { data } = useLoadedAppContext();
+  const { data, getBalance } = useLoadedAppContext();
 
   const coinMetadataMap = useCoinMetadataMap([NORMALIZED_mSEND_COINTYPE]);
   const mSendCoinMetadata = coinMetadataMap?.[NORMALIZED_mSEND_COINTYPE];
@@ -434,9 +434,9 @@ export default function Send() {
   const bridgedSaveMsendFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    // TODO
-    return undefined;
-  }, [address]);
+    // TODO, use 12 month maturity mSEND
+    return getBalance(NORMALIZED_mSEND_COINTYPE);
+  }, [address, getBalance]);
 
   const { data: bridgedSaveMsend, mutate: mutateBridgedSaveMsend } = useSWR<
     BigNumber | undefined
