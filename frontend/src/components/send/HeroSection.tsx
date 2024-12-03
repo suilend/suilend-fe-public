@@ -53,7 +53,7 @@ export default function HeroSection({
         {!address ? (
           <>
             {"Connect your wallet to check your "}
-            <SendTokenLogo className="mr-3 inline-block h-8 w-8 max-md:-mb-0.5 md:mr-4 md:h-10 md:w-10" />
+            <SendTokenLogo className="mr-3 inline-block h-7 w-7 max-md:-mb-0.5 md:mr-4 md:h-10 md:w-10" />
             {"SEND allocation"}
           </>
         ) : userAllocationPercent.gt(0) || isLoading ? (
