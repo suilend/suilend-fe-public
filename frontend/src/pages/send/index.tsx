@@ -105,6 +105,8 @@ enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
+export const TGE_TIMESTAMP_MS = 1733979600000;
+
 export const SUILEND_CAPSULE_TYPE =
   "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
 
@@ -1119,7 +1121,7 @@ export default function Send() {
       <div className="relative flex w-full flex-col items-center">
         <SendHeader />
 
-        <div className="relative z-[2] flex w-full flex-col items-center gap-16 pt-36 md:gap-24 md:pt-32">
+        <div className="relative z-[2] flex w-full flex-col items-center gap-16 pt-36 md:gap-24 md:pt-12">
           <div className="flex w-full flex-col items-center gap-12 md:gap-16">
             <HeroSection
               allocations={allocations}
