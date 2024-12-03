@@ -3,12 +3,12 @@ import { Allocation } from "@/pages/send";
 
 interface AllocationCardsSectionProps {
   allocations: Allocation[];
-  claimMsend: (allocation: Allocation) => Promise<void>;
+  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
 export default function AllocationCardsSection({
   allocations,
-  claimMsend,
+  burnSendPointsSuilendCapsules,
 }: AllocationCardsSectionProps) {
   return (
     <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
@@ -16,7 +16,7 @@ export default function AllocationCardsSection({
         <AllocationCard
           key={allocation.title}
           allocation={allocation}
-          claimMsend={() => claimMsend(allocation)}
+          burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
         />
       ))}
     </div>

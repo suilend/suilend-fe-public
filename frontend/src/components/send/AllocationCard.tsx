@@ -20,6 +20,7 @@ import {
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
+  TGE_TIMESTAMP_MS,
 } from "@/pages/send";
 
 interface StatusProps {
@@ -51,9 +52,9 @@ function Status({
   return (
     <div
       className={cn(
-        "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-4 pt-2",
+        "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-3.5 pt-1.5",
         isEligible || hasClaimedMsend || hasBridgedMsend
-          ? "justify-between bg-[#5DF886]"
+          ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
               !allocation.snapshotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
@@ -62,15 +63,21 @@ function Status({
     >
       {isEligible || hasClaimedMsend || hasBridgedMsend ? (
         <>
-          <TBody className="text-[#030917]">
+          <TBody
+            className={cn(isEligible ? "text-[#030917]" : "text-[#5DF886]")}
+          >
             {isEligible
               ? "ELIGIBLE"
               : hasClaimedMsend
-                ? "mSEND CLAIMED"
-                : "mSEND BRIDGED"}
+                ? "CONVERTED"
+                : "BRIDGED"}
           </TBody>
           <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo className="rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]" />
+            <SendTokenLogo
+              className={cn(
+                "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
+              )}
+            />
             <Tooltip
               title={
                 hasTooltip
@@ -89,7 +96,8 @@ function Status({
             >
               <TBody
                 className={cn(
-                  "text-[16px] text-[#030917]",
+                  "text-[16px]",
+                  isEligible ? "text-[#030917]" : "text-[#5DF886]",
                   hasTooltip &&
                     cn("decoration-[#030917]/50", hoverUnderlineClassName),
                 )}
@@ -130,16 +138,20 @@ function Status({
 interface CtaButtonProps {
   allocation: Allocation;
   isEligible?: boolean;
-  claimMsend: () => Promise<void>;
+  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
-function CtaButton({ allocation, isEligible, claimMsend }: CtaButtonProps) {
-  const showClaimMsendCta = true; // TODO: Use exact TGE timestamp
-
-  const claimMsendWrapper = (e: React.MouseEvent<HTMLButtonElement>) => {
+function CtaButton({
+  allocation,
+  isEligible,
+  burnSendPointsSuilendCapsules,
+}: CtaButtonProps) {
+  const burnSendPointsSuilendCapsulesWrapper = (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     e.stopPropagation();
 
-    claimMsend();
+    burnSendPointsSuilendCapsules();
   };
 
   if (
@@ -147,15 +159,16 @@ function CtaButton({ allocation, isEligible, claimMsend }: CtaButtonProps) {
       allocation.id,
     )
   ) {
-    if (showClaimMsendCta) {
+    if (Date.now() >= TGE_TIMESTAMP_MS) {
       if (isEligible) {
         return (
           <Button
-            className="h-10 w-full"
+            className="h-10 w-full border-secondary text-primary-foreground"
             labelClassName="text-[16px]"
-            onClick={claimMsendWrapper}
+            variant="secondaryOutline"
+            onClick={burnSendPointsSuilendCapsulesWrapper}
           >
-            CLAIM mSEND
+            CONVERT TO mSEND
           </Button>
         );
       } else return <div className="h-10 w-full max-sm:hidden" />;
@@ -199,12 +212,12 @@ function Wrapper({ children }: PropsWithChildren) {
 
 interface AllocationCardProps {
   allocation: Allocation;
-  claimMsend: () => Promise<void>;
+  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
 export default function AllocationCard({
   allocation,
-  claimMsend,
+  burnSendPointsSuilendCapsules,
 }: AllocationCardProps) {
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
@@ -353,7 +366,7 @@ export default function AllocationCard({
                 <CtaButton
                   allocation={allocation}
                   isEligible={isEligible}
-                  claimMsend={claimMsend}
+                  burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
                 />
               </div>
             </div>

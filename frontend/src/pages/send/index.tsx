@@ -2,7 +2,11 @@ import Head from "next/head";
 import { useCallback, useEffect, useMemo } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
-import { SuiClient, TransactionFilter } from "@mysten/sui/client";
+import {
+  SuiClient,
+  SuiTransactionBlockResponse,
+  TransactionFilter,
+} from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -113,22 +117,39 @@ enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
+// ---- START TEMP ----
+export const TGE_TIMESTAMP_MS = 1730419200000; // TODO: Change to 1733979600000
+
 const BURN_CONTRACT_PACKAGE_ID =
-  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // TODO: Beta value, change to real value
+  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // Beta value, TODO
 const POINTS_MANAGER_OBJECT_ID =
-  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // TODO: Beta value, change to real value
+  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // Beta value, TODO
 const CAPSULE_MANAGER_OBJECT_ID =
-  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // TODO: Beta value, change to real value
+  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // Beta value, TODO
 
 const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
   "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
-); // TODO: Beta value, change back to import from @suilend/frontend-sui
-export const NORMALIZED_mSEND_COINTYPE = normalizeStructTag(
+); // Beta value, TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
+
+export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
   "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-); // TODO: Beta value, change to real mSEND coinType
+); // TODO
+export const NORMALIZED_mSEND_6_MONTHS_COINTYPE = normalizeStructTag(
+  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
+); // TODO
+export const NORMALIZED_mSEND_12_MONTHS_COINTYPE = normalizeStructTag(
+  "0xe0644f3e46b2d9f319a2cc3491155c75d1b6132ba9b3601c6e7e102e17296645::goof::GOOF",
+); // TODO
+
+const BURN_SEND_POINTS_EVENT_TYPE =
+  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
+const BURN_SUILEND_CAPSULES_EVENT_TYPE =
+  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
 
 const SUILEND_CAPSULE_TYPE =
   "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Beta value, change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
+
+// ---- END TEMP ----
 
 const ROOTLETS_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
@@ -171,22 +192,39 @@ const getOwnedObjectsOfType = async (
 const queryTransactionBlocks = async (
   suiClient: SuiClient,
   filter: TransactionFilter,
+  minTimestampMs: number,
 ) => {
-  const allTransactionBlocks = [];
+  const allTransactionBlocks: SuiTransactionBlockResponse[] = [];
   let cursor = null;
   let hasNextPage = true;
   while (hasNextPage) {
-    const objs = await suiClient.queryTransactionBlocks({
+    const transactionBlocks = await suiClient.queryTransactionBlocks({
       cursor,
+      order: "descending",
       filter,
       options: {
         showBalanceChanges: true,
+        showEvents: true,
       },
     });
 
-    allTransactionBlocks.push(...objs.data);
-    cursor = objs.nextCursor;
-    hasNextPage = objs.hasNextPage;
+    const transactionBlocksInRange = transactionBlocks.data.filter(
+      (transactionBlock) =>
+        transactionBlock.timestampMs &&
+        +transactionBlock.timestampMs >= minTimestampMs,
+    );
+
+    allTransactionBlocks.push(...transactionBlocksInRange);
+    cursor = transactionBlocks.nextCursor;
+    hasNextPage = transactionBlocks.hasNextPage;
+
+    const lastTransactionBlock = transactionBlocks.data.at(-1);
+    if (
+      lastTransactionBlock &&
+      lastTransactionBlock.timestampMs &&
+      +lastTransactionBlock.timestampMs < minTimestampMs
+    )
+      break;
   }
 
   return allTransactionBlocks;
@@ -195,10 +233,17 @@ const queryTransactionBlocks = async (
 export default function Send() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { data, getBalance } = useLoadedAppContext();
+  const { data } = useLoadedAppContext();
 
-  const coinMetadataMap = useCoinMetadataMap([NORMALIZED_mSEND_COINTYPE]);
-  const mSendCoinMetadata = coinMetadataMap?.[NORMALIZED_mSEND_COINTYPE];
+  const mSendCoinTypes = useMemo(
+    () => [
+      NORMALIZED_mSEND_3_MONTHS_COINTYPE,
+      NORMALIZED_mSEND_6_MONTHS_COINTYPE,
+      NORMALIZED_mSEND_12_MONTHS_COINTYPE,
+    ],
+    [],
+  );
+  const mSendCoinMetadataMap = useCoinMetadataMap(mSendCoinTypes);
 
   // Setup - total allocated SEND Points
   const totalAllocatedPoints = useMemo(() => {
@@ -297,37 +342,44 @@ export default function Send() {
   // User - SEND Points
   const userSendPointsFetcher = useCallback(async () => {
     if (!address) return undefined;
-    if (!mSendCoinMetadata) return undefined;
+
+    const coinMetadata =
+      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    if (!coinMetadata) return undefined;
 
     // Owned
     const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
       .totalPoints.total;
 
     // Claimed
-    const burnTransactions = await queryTransactionBlocks(suiClient, {
-      MoveFunction: {
-        function: "burn_points",
-        module: "points",
-        package: BURN_CONTRACT_PACKAGE_ID,
-      },
-    }); // TODO: Filter by address
+    const userTransactions = await queryTransactionBlocks(
+      suiClient,
+      { FromAddress: address },
+      TGE_TIMESTAMP_MS,
+    );
 
-    const claimedMsend = burnTransactions
+    const claimedMsend = userTransactions
       .reduce((acc, transaction) => {
-        for (const bc of transaction.balanceChanges ?? []) {
-          if (
-            (bc.owner as any).AddressOwner === address &&
-            normalizeStructTag(bc.coinType) === NORMALIZED_mSEND_COINTYPE
-          )
-            acc = acc.plus(bc.amount);
-        }
+        const transactionClaimedMsend = (transaction.events ?? [])
+          .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
+          .reduce(
+            (acc2, event) =>
+              acc2.plus((event.parsedJson as any).liquidity_amount),
+            new BigNumber(0),
+          );
 
-        return acc;
+        return acc.plus(transactionClaimedMsend);
       }, new BigNumber(0))
-      .div(10 ** mSendCoinMetadata.decimals);
+      .div(10 ** coinMetadata.decimals);
 
     return { owned: ownedSendPoints, claimedMsend };
-  }, [address, mSendCoinMetadata, data.rewardMap, data.obligations, suiClient]);
+  }, [
+    address,
+    mSendCoinMetadataMap,
+    data.rewardMap,
+    data.obligations,
+    suiClient,
+  ]);
 
   const { data: userSendPoints, mutate: mutateUserSendPoints } = useSWR<
     { owned: BigNumber; claimedMsend: BigNumber } | undefined
@@ -344,7 +396,7 @@ export default function Send() {
   }, [
     mutateUserSendPoints,
     address,
-    mSendCoinMetadata,
+    mSendCoinMetadataMap,
     data.rewardMap,
     data.obligations,
     suiClient,
@@ -353,7 +405,10 @@ export default function Send() {
   // User - Suilend Capsules
   const userSuilendCapsulesFetcher = useCallback(async () => {
     if (!address) return undefined;
-    if (!mSendCoinMetadata) return undefined;
+
+    const coinMetadata =
+      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    if (!coinMetadata) return undefined;
 
     // Owned
     const objs = await getOwnedObjectsOfType(
@@ -386,30 +441,28 @@ export default function Send() {
     };
 
     // Claimed
-    const burnTransactions = await queryTransactionBlocks(suiClient, {
-      MoveFunction: {
-        function: "burn_capsule",
-        module: "capsule",
-        package: BURN_CONTRACT_PACKAGE_ID,
-      },
-    }); // TODO: Filter by address
+    const userTransactions = await queryTransactionBlocks(
+      suiClient,
+      { FromAddress: address },
+      TGE_TIMESTAMP_MS,
+    );
 
-    const claimedMsend = burnTransactions
+    const claimedMsend = userTransactions
       .reduce((acc, transaction) => {
-        for (const bc of transaction.balanceChanges ?? []) {
-          if (
-            (bc.owner as any).AddressOwner === address &&
-            normalizeStructTag(bc.coinType) === NORMALIZED_mSEND_COINTYPE
-          )
-            acc = acc.plus(bc.amount);
-        }
+        const transactionClaimedMsend = (transaction.events ?? [])
+          .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
+          .reduce(
+            (acc2, event) =>
+              acc2.plus((event.parsedJson as any).liquidity_amount),
+            new BigNumber(0),
+          );
 
-        return acc;
+        return acc.plus(transactionClaimedMsend);
       }, new BigNumber(0))
-      .div(10 ** mSendCoinMetadata.decimals);
+      .div(10 ** coinMetadata.decimals);
 
     return { ownedMap: ownedSuilendCapsulesMap, claimedMsend };
-  }, [address, mSendCoinMetadata, suiClient]);
+  }, [address, mSendCoinMetadataMap, suiClient]);
 
   const { data: userSuilendCapsules, mutate: mutateUserSuilendCapsules } =
     useSWR<
@@ -428,29 +481,63 @@ export default function Send() {
     });
   useEffect(() => {
     setTimeout(mutateUserSuilendCapsules);
-  }, [mutateUserSuilendCapsules, address, mSendCoinMetadata, suiClient]);
+  }, [mutateUserSuilendCapsules, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Save
-  const bridgedSaveMsendFetcher = useCallback(async () => {
+  const userSaveFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    // TODO, use 12 month maturity mSEND
-    return getBalance(NORMALIZED_mSEND_COINTYPE);
-  }, [address, getBalance]);
+    const coinMetadata =
+      mSendCoinMetadataMap?.[NORMALIZED_mSEND_12_MONTHS_COINTYPE];
+    if (!coinMetadata) return undefined;
 
-  const { data: bridgedSaveMsend, mutate: mutateBridgedSaveMsend } = useSWR<
-    BigNumber | undefined
-  >(`bridgedSaveMsend-${address}`, bridgedSaveMsendFetcher, {
+    // Bridged
+    const userTransactions = await queryTransactionBlocks(
+      suiClient,
+      { FromAddress: address },
+      TGE_TIMESTAMP_MS,
+    );
+
+    const bridgedMsend = userTransactions
+      .reduce((acc, transaction) => {
+        const hasWormholeEvent = !!(transaction.events ?? []).find(
+          (event) =>
+            event.type ===
+            "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed",
+        );
+        if (!hasWormholeEvent) return acc;
+
+        const transactionBridgedMsend = (transaction.balanceChanges ?? [])
+          .filter(
+            (balanceChange) =>
+              normalizeStructTag(balanceChange.coinType) ===
+              NORMALIZED_mSEND_12_MONTHS_COINTYPE,
+          )
+          .reduce(
+            (acc2, balanceChange) => acc2.plus(balanceChange.amount),
+            new BigNumber(0),
+          );
+
+        return acc.plus(transactionBridgedMsend);
+      }, new BigNumber(0))
+      .div(10 ** coinMetadata.decimals);
+
+    return { bridgedMsend };
+  }, [address, mSendCoinMetadataMap, suiClient]);
+
+  const { data: userSave, mutate: mutateUserSave } = useSWR<
+    { bridgedMsend: BigNumber } | undefined
+  >(`userSave-${address}`, userSaveFetcher, {
     onSuccess: (data) => {
-      console.log("Refreshed bridged Save mSEND", data);
+      console.log("Refreshed user Save", data);
     },
     onError: (err) => {
-      console.error("Failed to refresh bridged Save mSEND", err);
+      console.error("Failed to refresh user Save", err);
     },
   });
   useEffect(() => {
-    setTimeout(mutateBridgedSaveMsend);
-  }, [mutateBridgedSaveMsend, address]);
+    setTimeout(mutateUserSave);
+  }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Rootlets
   const ownedRootlets: BigNumber | undefined = useMemo(() => {
@@ -939,7 +1026,8 @@ export default function Send() {
 
       userAllocationPercent: undefined,
       userClaimedMsend: undefined,
-      userBridgedMsend: bridgedSaveMsend,
+      userBridgedMsend:
+        userSave !== undefined ? userSave.bridgedMsend : undefined,
     },
     {
       id: AllocationId.ROOTLETS,
@@ -1272,108 +1360,127 @@ export default function Send() {
     },
   ];
 
-  // Claim mSEND
-  const claimMsend = async (allocation: Allocation) => {
+  // Burn SEND Points and Suilend Capsules
+  const burnSendPoints = async (transaction: Transaction) => {
     if (!address) return;
-    if (!mSendCoinMetadata) return;
 
-    if (
-      ![AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
-        allocation.id,
-      )
-    )
+    // TODO: Claim SEND Points from obligations
+
+    // Merge SEND Points coins
+    const coins = (
+      await suiClient.getCoins({
+        owner: address,
+        coinType: NORMALIZED_SEND_POINTS_COINTYPE,
+      })
+    ).data;
+    if (coins.length === 0) throw new Error("No SEND Points in wallet");
+
+    const mergeCoin = coins[0];
+    if (coins.length > 1) {
+      transaction.mergeCoins(
+        transaction.object(mergeCoin.coinObjectId),
+        coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
+      );
+    }
+
+    // Burn SEND Points
+    const mSend = transaction.moveCall({
+      target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
+      typeArguments: [NORMALIZED_mSEND_3_MONTHS_COINTYPE],
+      arguments: [
+        transaction.object(POINTS_MANAGER_OBJECT_ID),
+        transaction.object(mergeCoin.coinObjectId),
+      ],
+    });
+
+    // Transfer mSEND to user
+    transaction.transferObjects([mSend], transaction.pure.address(address));
+  };
+
+  const burnSuilendCapsules = async (transaction: Transaction) => {
+    if (!address) return;
+
+    // Get Suilend Capsules owned by user
+    const objs = await getOwnedObjectsOfType(
+      suiClient,
+      address,
+      SUILEND_CAPSULE_TYPE,
+    );
+
+    // Burn Suilend Capsules
+    const mSendCoins = [];
+
+    for (const obj of objs) {
+      const mSendCoin = transaction.moveCall({
+        target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
+        typeArguments: [NORMALIZED_mSEND_3_MONTHS_COINTYPE],
+        arguments: [
+          transaction.object(CAPSULE_MANAGER_OBJECT_ID),
+          transaction.object(obj.data?.objectId as string),
+        ],
+      });
+
+      mSendCoins.push(mSendCoin);
+    }
+
+    // Merge mSEND coins
+    const mergeCoin = mSendCoins[0];
+    if (mSendCoins.length > 1) {
+      transaction.mergeCoins(
+        transaction.object(mergeCoin),
+        mSendCoins.map((c) => transaction.object(c)).slice(1),
+      );
+    }
+
+    // Transfer mSEND to user
+    transaction.transferObjects([mergeCoin], transaction.pure.address(address));
+  };
+
+  const burnSendPointsSuilendCapsules = async () => {
+    if (!address) return;
+    if (userSendPoints === undefined || userSuilendCapsules === undefined)
       return;
+
+    const coinMetadata =
+      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    if (!coinMetadata) return undefined;
 
     const transaction = new Transaction();
     try {
-      if (allocation.id === AllocationId.SEND_POINTS) {
-        // TODO: Claim SEND Points from obligations
+      const ownedSendPoints = userSendPoints.owned;
+      const ownedSuilendCapsules = Object.values(
+        userSuilendCapsules.ownedMap,
+      ).reduce((acc, val) => acc.plus(val), new BigNumber(0));
 
-        // Merge SEND Points coins
-        const coins = (
-          await suiClient.getCoins({
-            owner: address,
-            coinType: NORMALIZED_SEND_POINTS_COINTYPE,
-          })
-        ).data;
-        if (coins.length === 0) throw new Error("No SEND Points in wallet");
-
-        const mergeCoin = coins[0];
-        if (coins.length > 1) {
-          transaction.mergeCoins(
-            transaction.object(mergeCoin.coinObjectId),
-            coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-          );
-        }
-
-        // Burn SEND Points
-        const mSend = transaction.moveCall({
-          target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
-          typeArguments: [NORMALIZED_mSEND_COINTYPE],
-          arguments: [
-            transaction.object(POINTS_MANAGER_OBJECT_ID),
-            transaction.object(mergeCoin.coinObjectId),
-          ],
-        });
-
-        // Transfer mSEND to user
-        transaction.transferObjects([mSend], transaction.pure.address(address));
-      } else {
-        // Get Suilend Capsules owned by user
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          address,
-          SUILEND_CAPSULE_TYPE,
-        );
-        if (objs.length === 0) throw new Error("No Suilend Capsules in wallet");
-
-        const mSendCoins = [];
-
-        // Burn Suilend Capsules
-        for (const obj of objs) {
-          const mSendCoin = transaction.moveCall({
-            target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
-            typeArguments: [NORMALIZED_mSEND_COINTYPE],
-            arguments: [
-              transaction.object(CAPSULE_MANAGER_OBJECT_ID),
-              transaction.object(obj.data?.objectId as string),
-            ],
-          });
-
-          mSendCoins.push(mSendCoin);
-        }
-
-        // Merge mSEND coins
-        const mergeCoin = mSendCoins[0];
-        if (mSendCoins.length > 1) {
-          transaction.mergeCoins(
-            transaction.object(mergeCoin),
-            mSendCoins.map((c) => transaction.object(c)).slice(1),
-          );
-        }
-
-        // Transfer mSEND to user
-        transaction.transferObjects(
-          [mergeCoin],
-          transaction.pure.address(address),
-        );
-      }
+      if (ownedSendPoints.gt(0)) await burnSendPoints(transaction);
+      if (ownedSuilendCapsules.gt(0)) await burnSuilendCapsules(transaction);
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_mSEND_COINTYPE,
-        ...mSendCoinMetadata,
+        coinType: NORMALIZED_mSEND_3_MONTHS_COINTYPE,
+        ...coinMetadata,
       });
 
       toast.success(
-        balanceChange !== undefined
-          ? `Claimed ${formatToken(balanceChange, {
-              dp: mSendCoinMetadata.decimals,
-              trimTrailingZeros: true,
-            })} mSEND`
-          : "Claimed mSEND",
+        [
+          "Converted",
+          [
+            ownedSendPoints.gt(0)
+              ? `${formatToken(ownedSendPoints, { exact: false })} SEND Points`
+              : undefined,
+            ownedSuilendCapsules.gt(0)
+              ? `${formatToken(ownedSuilendCapsules, { exact: false })} Suilend Capsules`
+              : undefined,
+          ]
+            .filter(Boolean)
+            .join(" and "),
+          "to",
+          balanceChange !== undefined
+            ? `${formatToken(balanceChange, { exact: false })} mSEND`
+            : "mSEND",
+        ].join(" "),
         {
           action: (
             <TextLink className="block" href={txUrl}>
@@ -1384,13 +1491,13 @@ export default function Send() {
         },
       );
     } catch (err) {
-      toast.error("Failed to claim mSEND", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      toast.error(
+        "Failed to convert SEND Points and/or Suilend Capsules to mSEND",
+        { description: (err as Error)?.message || "An unknown error occurred" },
+      );
     } finally {
-      if (allocation.id === AllocationId.SEND_POINTS)
-        await mutateUserSendPoints();
-      else await mutateUserSuilendCapsules();
+      await mutateUserSendPoints();
+      await mutateUserSuilendCapsules();
     }
   };
 
@@ -1419,7 +1526,7 @@ export default function Send() {
             />
             <AllocationCardsSection
               allocations={allocations}
-              claimMsend={claimMsend}
+              burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
             />
           </div>
 

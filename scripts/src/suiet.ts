@@ -42,8 +42,13 @@ const getEventsOfType = async (suiClient: SuiClient, MoveEventType: string) => {
     cursor = events.nextCursor;
     hasNextPage = events.hasNextPage;
 
-    const lastEvent = events.data[events.data.length - 1];
-    if (lastEvent.timestampMs && +lastEvent.timestampMs < minTimestampMs) break;
+    const lastEvent = events.data.at(-1);
+    if (
+      lastEvent &&
+      lastEvent.timestampMs &&
+      +lastEvent.timestampMs < minTimestampMs
+    )
+      break;
   }
 
   return allEvents;
@@ -179,10 +184,7 @@ const getStakeAndDepositSsuiAddresses = async (suiClient: SuiClient) => {
     }),
     {} as Record<string, number>,
   );
-  console.log(
-    "senderSuiStakedAndDepositedMap",
-    senderSuiStakedAndDepositedMap,
-  );
+  console.log("senderSuiStakedAndDepositedMap", senderSuiStakedAndDepositedMap);
 
   const sendersWith10PlusSuiStakedAndDeposited = Object.entries(
     senderSuiStakedAndDepositedMap,

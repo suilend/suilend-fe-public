@@ -46,6 +46,20 @@ export default function HeroSection({
     (acc, allocation) => acc.plus(allocation.userAllocationPercent ?? 0),
     new BigNumber(0),
   );
+  const userClaimedMsend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userClaimedMsend ?? 0),
+    new BigNumber(0),
+  );
+  const userBridgedMsend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userBridgedMsend ?? 0),
+    new BigNumber(0),
+  );
+
+  const userTotalAllocation = new BigNumber(
+    userAllocationPercent.times(SEND_TOTAL_SUPPLY).div(100),
+  )
+    .plus(userClaimedMsend)
+    .plus(userBridgedMsend);
 
   return (
     <div className="flex w-full flex-col items-center gap-8">
@@ -56,7 +70,7 @@ export default function HeroSection({
             <SendTokenLogo className="mr-3 inline-block h-8 w-8 max-md:-mb-0.5 md:mr-4 md:h-10 md:w-10" />
             {"SEND allocation"}
           </>
-        ) : userAllocationPercent.gt(0) || isLoading ? (
+        ) : userTotalAllocation.gt(0) || isLoading ? (
           "Your allocation is"
         ) : (
           "Sorry, you're not eligible"
@@ -86,12 +100,7 @@ export default function HeroSection({
                     hoverUnderlineClassName,
                   )}
                 >
-                  {formatToken(
-                    new BigNumber(SEND_TOTAL_SUPPLY).times(
-                      userAllocationPercent.div(100),
-                    ),
-                    { exact: false },
-                  )}
+                  {formatToken(userTotalAllocation, { exact: false })}
                   {"* SEND"}
                 </TDisplay>
               )}
