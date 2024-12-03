@@ -730,6 +730,7 @@ export default function Send() {
     {
       id: AllocationId.SUILEND_CAPSULES,
       src: "/assets/send/nft/suilend-capsules.png",
+      hoverSrc: "/assets/send/nft/suilend-capsules-hover.mp4",
       title: "Suilend Capsules",
       description:
         "A token of appreciation awarded for outstanding community contributions to Suilend.",
