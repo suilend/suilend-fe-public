@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 import BigNumber from "bignumber.js";
+import { intervalToDuration } from "date-fns";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
@@ -14,11 +16,11 @@ import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBodySans, TDisplay } from "@/components/shared/Typography";
+import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAddress, formatToken } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
-import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
+import { Allocation, SEND_TOTAL_SUPPLY, TGE_TIMESTAMP_MS } from "@/pages/send";
 
 interface HeroSectionProps {
   allocations: Allocation[];
@@ -61,20 +63,72 @@ export default function HeroSection({
     .plus(userClaimedMsend)
     .plus(userBridgedMsend);
 
+  // Countdown
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 1000);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  const duration = intervalToDuration({
+    start: currentDate,
+    end: new Date(TGE_TIMESTAMP_MS),
+  });
+
   return (
-    <div className="flex w-full flex-col items-center gap-8">
+    <div className="flex w-full flex-col items-center gap-8 md:gap-12">
+      {/* Countdown */}
+      <div className="-mb-4 flex flex-row gap-2">
+        {/* Days */}
+        <div className="flex flex-col items-center">
+          <TDisplay className="text-2xl md:text-3xl">
+            {`${duration.days ?? 0}`.padStart(2, "0")}
+          </TDisplay>
+          <TBody>DD</TBody>
+        </div>
+
+        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+        {/* Hours */}
+        <div className="flex flex-col items-center">
+          <TDisplay className="text-2xl md:text-3xl">
+            {`${duration.hours ?? 0}`.padStart(2, "0")}
+          </TDisplay>
+          <TBody>HH</TBody>
+        </div>
+
+        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+        {/* Minutes */}
+        <div className="flex flex-col items-center">
+          <TDisplay className="text-2xl md:text-3xl">
+            {`${duration.minutes ?? 0}`.padStart(2, "0")}
+          </TDisplay>
+          <TBody>MM</TBody>
+        </div>
+
+        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+        {/* Seconds */}
+        <div className="flex flex-col items-center">
+          <TDisplay className="text-2xl md:text-3xl">
+            {`${duration.seconds ?? 0}`.padStart(2, "0")}
+          </TDisplay>
+          <TBody>SS</TBody>
+        </div>
+      </div>
+
       <SectionHeading>
-        {!address ? (
-          <>
-            {"Connect your wallet to check your "}
-            <SendTokenLogo className="mr-3 inline-block h-8 w-8 max-md:-mb-0.5 md:mr-4 md:h-10 md:w-10" />
-            {"SEND allocation"}
-          </>
-        ) : userTotalAllocation.gt(0) || isLoading ? (
-          "Your allocation is"
-        ) : (
-          "Sorry, you're not eligible"
-        )}
+        {!address
+          ? "Connect your wallet to check your allocation"
+          : userTotalAllocation.gt(0) || isLoading
+            ? "Your allocation is"
+            : "Sorry, you're not eligible"}
       </SectionHeading>
 
       <div className="flex w-full flex-col items-center gap-4">
