@@ -1517,6 +1517,7 @@ export default function Send() {
               isLoading={
                 userSendPoints === undefined ||
                 userSuilendCapsules === undefined ||
+                userSave === undefined ||
                 ownedRootlets === undefined ||
                 ownedPrimeMachin === undefined ||
                 ownedEgg === undefined ||
