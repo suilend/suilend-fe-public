@@ -69,7 +69,7 @@ export default function HeroSection({
   return (
     <div className="flex w-full flex-col items-center gap-8 md:gap-12">
       {/* Countdown */}
-      <div className="-mb-4 flex flex-row gap-2">
+      <div className="-mb-4 flex flex-row gap-2 md:-mb-8">
         {/* Days */}
         <div className="flex flex-col items-center">
           <TDisplay className="text-2xl md:text-3xl">
