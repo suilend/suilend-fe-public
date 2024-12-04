@@ -146,6 +146,7 @@ const BURN_SEND_POINTS_EVENT_TYPE =
 const BURN_SUILEND_CAPSULES_EVENT_TYPE =
   "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
 
+// TODO: Update
 const SUILEND_CAPSULE_TYPE =
   "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Beta value, change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
 
