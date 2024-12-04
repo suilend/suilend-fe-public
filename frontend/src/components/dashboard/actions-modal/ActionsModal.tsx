@@ -62,33 +62,22 @@ export default function ActionsModal() {
 
     if (selectedTab === Tab.DEPOSIT) {
       const getNewCalculations = (value: string) => {
-        if (!value.length)
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
-        const valueObj = new BigNumber(value);
-        if (!obligation || valueObj.isNaN())
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
+        if (!obligation || !new BigNumber(value || "0").gt(0)) return undefined;
 
         const newBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.plus(
-          valueObj
+          new BigNumber(value)
             .times(reserve.minPrice)
             .times(reserve.config.openLtvPct / 100),
         );
-        const newBorrowUtilization =
-          newBorrowLimitUsd && !newBorrowLimitUsd.eq(0)
-            ? obligation.maxPriceWeightedBorrowsUsd.div(newBorrowLimitUsd)
-            : null;
+        const newBorrowUtilizationPercent = !newBorrowLimitUsd.eq(0)
+          ? obligation.borrowedAmountUsd.div(newBorrowLimitUsd).times(100)
+          : undefined;
 
         return {
           newBorrowLimitUsd,
-          newBorrowUtilization: newBorrowUtilization
-            ? BigNumber.max(BigNumber.min(1, newBorrowUtilization), 0)
-            : null,
+          newBorrowUtilizationPercent: newBorrowUtilizationPercent
+            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
+            : undefined,
         };
       };
 
@@ -126,34 +115,28 @@ export default function ActionsModal() {
       };
     } else if (selectedTab === Tab.BORROW) {
       const getNewCalculations = (value: string) => {
-        if (!value.length)
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
-        const valueObj = new BigNumber(value);
-        if (!obligation || valueObj.isNaN())
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
+        if (
+          !obligation ||
+          obligation.minPriceBorrowLimitUsd.eq(0) ||
+          !new BigNumber(value || "0").gt(0)
+        )
+          return undefined;
 
-        const newBorrowUtilization =
-          !valueObj.isNaN() && !obligation.minPriceBorrowLimitUsd.eq(0)
-            ? obligation.maxPriceWeightedBorrowsUsd
-                .plus(
-                  valueObj
-                    .times(reserve.maxPrice)
-                    .times(reserve.config.borrowWeightBps / 10000),
-                )
-                .div(obligation.minPriceBorrowLimitUsd)
-            : null;
+        const newBorrowUtilizationPercent = new BigNumber(
+          obligation.maxPriceWeightedBorrowsUsd.plus(
+            new BigNumber(value)
+              .times(reserve.maxPrice)
+              .times(reserve.config.borrowWeightBps / 10000),
+          ),
+        )
+          .div(obligation.minPriceBorrowLimitUsd)
+          .times(100);
 
         return {
-          newBorrowLimitUsd: null,
-          newBorrowUtilization: newBorrowUtilization
-            ? BigNumber.max(BigNumber.min(1, newBorrowUtilization), 0)
-            : null,
+          newBorrowLimitUsd: undefined,
+          newBorrowUtilizationPercent: newBorrowUtilizationPercent
+            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
+            : undefined,
         };
       };
 
@@ -191,36 +174,22 @@ export default function ActionsModal() {
       };
     } else if (selectedTab === Tab.WITHDRAW) {
       const getNewCalculations = (value: string) => {
-        if (!value.length)
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
-        const valueObj = new BigNumber(value);
-        if (!obligation || valueObj.isNaN())
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
+        if (!obligation || !new BigNumber(value || "0").gt(0)) return undefined;
 
-        const newBorrowLimitUsd = !valueObj.isNaN()
-          ? obligation.minPriceBorrowLimitUsd.minus(
-              valueObj
-                .times(reserve.minPrice)
-                .times(reserve.config.openLtvPct / 100),
-            )
-          : null;
-
-        const newBorrowUtilization =
-          newBorrowLimitUsd && !newBorrowLimitUsd.eq(0)
-            ? obligation.borrowedAmountUsd.div(newBorrowLimitUsd)
-            : null;
+        const newBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.minus(
+          new BigNumber(value)
+            .times(reserve.minPrice)
+            .times(reserve.config.openLtvPct / 100),
+        );
+        const newBorrowUtilizationPercent = !newBorrowLimitUsd.eq(0)
+          ? obligation.borrowedAmountUsd.div(newBorrowLimitUsd).times(100)
+          : undefined;
 
         return {
           newBorrowLimitUsd,
-          newBorrowUtilization: newBorrowUtilization
-            ? BigNumber.max(BigNumber.min(1, newBorrowUtilization), 0)
-            : null,
+          newBorrowUtilizationPercent: newBorrowUtilizationPercent
+            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
+            : undefined,
         };
       };
 
@@ -246,34 +215,28 @@ export default function ActionsModal() {
       };
     } else if (selectedTab === Tab.REPAY) {
       const getNewCalculations = (value: string) => {
-        if (!value.length)
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
-        const valueObj = new BigNumber(value);
-        if (!obligation || valueObj.isNaN())
-          return {
-            newBorrowLimitUsd: null,
-            newBorrowUtilization: null,
-          };
+        if (
+          !obligation ||
+          obligation.minPriceBorrowLimitUsd.eq(0) ||
+          !new BigNumber(value || "0").gt(0)
+        )
+          return undefined;
 
-        const newBorrowUtilization =
-          !valueObj.isNaN() && !obligation.minPriceBorrowLimitUsd.eq(0)
-            ? obligation.borrowedAmountUsd
-                .minus(
-                  valueObj
-                    .times(reserve.maxPrice)
-                    .times(reserve.config.borrowFeeBps / 10000),
-                )
-                .div(obligation.minPriceBorrowLimitUsd)
-            : null;
+        const newBorrowUtilizationPercent = new BigNumber(
+          obligation.maxPriceWeightedBorrowsUsd.minus(
+            new BigNumber(value)
+              .times(reserve.maxPrice)
+              .times(reserve.config.borrowWeightBps / 10000),
+          ),
+        )
+          .div(obligation.minPriceBorrowLimitUsd)
+          .times(100);
 
         return {
-          newBorrowLimitUsd: null,
-          newBorrowUtilization: newBorrowUtilization
-            ? BigNumber.max(BigNumber.min(1, newBorrowUtilization), 0)
-            : null,
+          newBorrowLimitUsd: undefined,
+          newBorrowUtilizationPercent: newBorrowUtilizationPercent
+            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
+            : undefined,
         };
       };
 

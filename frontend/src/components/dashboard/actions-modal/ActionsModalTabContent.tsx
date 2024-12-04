@@ -69,10 +69,12 @@ interface ActionsModalTabContentProps {
   action: Action;
   actionPastTense: string;
   getMaxValue: () => BigNumber;
-  getNewCalculations: (value: string) => {
-    newBorrowLimitUsd: BigNumber | null;
-    newBorrowUtilization: BigNumber | null;
-  };
+  getNewCalculations: (value: string) =>
+    | {
+        newBorrowLimitUsd?: BigNumber;
+        newBorrowUtilizationPercent?: BigNumber;
+      }
+    | undefined;
   getSubmitButtonNoValueState?: () => SubmitButtonState | undefined;
   getSubmitButtonState: (value: string) => SubmitButtonState | undefined;
   getSubmitWarningMessages?: () => string[];
@@ -206,7 +208,8 @@ export default function ActionsModalTabContent({
       );
   }, [useMaxAmount, maxAmount, formatAndSetValue, reserve.mintDecimals]);
 
-  const { newBorrowLimitUsd, newBorrowUtilization } = getNewCalculations(value);
+  const { newBorrowLimitUsd, newBorrowUtilizationPercent } =
+    getNewCalculations(value) || {};
 
   // Borrow fee
   const borrowFee = new BigNumber(value || 0)
@@ -438,8 +441,8 @@ export default function ActionsModalTabContent({
             value={
               !obligation
                 ? "N/A"
-                : newBorrowUtilization
-                  ? `${formatPercent(obligation.weightedConservativeBorrowUtilizationPercent)} → ${formatPercent(newBorrowUtilization.times(100))}`
+                : newBorrowUtilizationPercent
+                  ? `${formatPercent(obligation.weightedConservativeBorrowUtilizationPercent)} → ${formatPercent(newBorrowUtilizationPercent)}`
                   : formatPercent(
                       obligation.weightedConservativeBorrowUtilizationPercent,
                     )
