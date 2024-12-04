@@ -5,15 +5,12 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
-  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_NS_COINTYPE,
-  NORMALIZED_trevinSUI_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isEcosystemLst,
-  isInMsafeApp,
   isMemecoin,
   issSui,
 } from "@suilend/frontend-sui";
@@ -91,7 +88,7 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { data, obligation } = useLoadedAppContext();
+  const { data, filteredReserves } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -259,35 +256,6 @@ export default function MarketTable() {
 
   // Rows
   const rows: HeaderRowData[] = useMemo(() => {
-    const filteredReserves = data.lendingMarket.reserves
-      .filter((reserve) =>
-        !isInMsafeApp()
-          ? true
-          : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType),
-      )
-      .filter((reserve) => {
-        const depositPosition = obligation?.deposits?.find(
-          (d) => d.coinType === reserve.coinType,
-        );
-        const borrowPosition = obligation?.borrows?.find(
-          (b) => b.coinType === reserve.coinType,
-        );
-
-        const depositedAmount =
-          depositPosition?.depositedAmount ?? new BigNumber(0);
-        const borrowedAmount =
-          borrowPosition?.borrowedAmount ?? new BigNumber(0);
-
-        return (
-          (reserve.coinType === NORMALIZED_trevinSUI_COINTYPE
-            ? Date.now() >= 1733396400000 // 2024-12-05 11:00:00 UTC
-            : reserve.config.depositLimit.gt(0)) ||
-          depositedAmount.gt(0) ||
-          borrowedAmount.gt(0) ||
-          !!data.lendingMarketOwnerCapId
-        );
-      });
-
     const reserveRows: ReservesRowData[] = filteredReserves.map((reserve) => {
       const token = reserve.token;
       const price = reserve.price;
@@ -545,14 +513,7 @@ export default function MarketTable() {
     }
 
     return result;
-  }, [
-    data.lendingMarket.reserves,
-    obligation?.deposits,
-    obligation?.borrows,
-    data.lendingMarketOwnerCapId,
-    data.rewardMap,
-    data.lstAprPercentMap,
-  ]);
+  }, [filteredReserves, data.rewardMap, data.lstAprPercentMap]);
 
   return (
     <div className="w-full">

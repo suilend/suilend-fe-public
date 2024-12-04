@@ -8,7 +8,6 @@ import {
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_USDT_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
-  NORMALIZED_trevinSUI_COINTYPE,
   SUI_COINTYPE,
   isCoinType,
   isSui,
@@ -109,7 +108,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { data, getBalance } = useLoadedAppContext();
+  const { getBalance, filteredReserves } = useLoadedAppContext();
 
   const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];
@@ -140,15 +139,10 @@ export default function TokenSelectionDialog({
   );
   const reserveTokens = useMemo(
     () =>
-      data.lendingMarket.reserves
-        .filter((reserve) =>
-          reserve.coinType === NORMALIZED_trevinSUI_COINTYPE
-            ? Date.now() >= 1733396400000 // 2024-12-05 11:00:00 UTC
-            : reserve.config.depositLimit.gt(0),
-        )
+      filteredReserves
         .map((r) => tokens.find((t) => t.symbol === r.symbol))
         .filter(Boolean) as SwapToken[],
-    [data.lendingMarket.reserves, tokens],
+    [filteredReserves, tokens],
   );
   const otherTokens = useMemo(
     () =>

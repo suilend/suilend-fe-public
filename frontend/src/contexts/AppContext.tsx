@@ -10,7 +10,12 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { RewardMap } from "@suilend/frontend-sui";
+import {
+  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
+  NORMALIZED_trevinSUI_COINTYPE,
+  RewardMap,
+  isInMsafeApp,
+} from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import useFetchBalances from "@suilend/frontend-sui-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
@@ -53,10 +58,14 @@ interface AppContext {
   obligation: ParsedObligation | undefined;
   obligationOwnerCap: ObligationOwnerCap<string> | undefined;
   setObligationId: (obligationId: string) => void;
+
+  filteredReserves: ParsedReserve[] | undefined;
 }
 type LoadedAppContext = AppContext & {
   suilendClient: SuilendClient;
   data: AppData;
+
+  filteredReserves: ParsedReserve[];
 };
 
 const AppContext = createContext<AppContext>({
@@ -75,6 +84,8 @@ const AppContext = createContext<AppContext>({
   setObligationId: () => {
     throw Error("AppContextProvider not initialized");
   },
+
+  filteredReserves: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -138,6 +149,42 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     [appData?.obligationOwnerCaps, obligation?.id],
   );
 
+  // Filtered reserves
+  const filteredReserves = useMemo(
+    () =>
+      appData?.lendingMarket.reserves
+        .filter((reserve) =>
+          !isInMsafeApp()
+            ? true
+            : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
+                reserve.coinType,
+              ),
+        )
+        .filter((reserve) => {
+          const depositPosition = obligation?.deposits?.find(
+            (d) => d.coinType === reserve.coinType,
+          );
+          const borrowPosition = obligation?.borrows?.find(
+            (b) => b.coinType === reserve.coinType,
+          );
+
+          const depositedAmount =
+            depositPosition?.depositedAmount ?? new BigNumber(0);
+          const borrowedAmount =
+            borrowPosition?.borrowedAmount ?? new BigNumber(0);
+
+          return (
+            (reserve.coinType === NORMALIZED_trevinSUI_COINTYPE
+              ? Date.now() >= 1733396400000 // 2024-12-05 11:00:00 UTC
+              : reserve.config.depositLimit.gt(0)) ||
+            depositedAmount.gt(0) ||
+            borrowedAmount.gt(0) ||
+            !!appData.lendingMarketOwnerCapId
+          );
+        }),
+    [appData?.lendingMarket, obligation, appData?.lendingMarketOwnerCapId],
+  );
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -150,6 +197,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       obligation,
       obligationOwnerCap,
       setObligationId,
+
+      filteredReserves,
     }),
     [
       appData,
@@ -159,6 +208,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       obligation,
       obligationOwnerCap,
       setObligationId,
+      filteredReserves,
     ],
   );
 
