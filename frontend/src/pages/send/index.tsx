@@ -20,12 +20,13 @@ import {
 } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
-import AllocationCardsSection from "@/components/send/AllocationCardsSection";
+import AllocationCard from "@/components/send/AllocationCard";
 import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
 import TextLink from "@/components/shared/TextLink";
+import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken } from "@/lib/format";
@@ -111,7 +112,7 @@ export type Allocation = {
   userBridgedMsend?: BigNumber;
 };
 
-enum SuilendCapsuleRarity {
+export enum SuilendCapsuleRarity {
   COMMON = "common",
   UNCOMMON = "uncommon",
   RARE = "rare",
@@ -314,7 +315,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateOwnedKiosks);
+    setTimeout(mutateOwnedKiosks, 100);
   }, [mutateOwnedKiosks, address, kioskClient]);
 
   const getOwnedKioskItemsOfType = useCallback(
@@ -392,7 +393,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateUserSendPoints);
+    setTimeout(mutateUserSendPoints, 100);
   }, [
     mutateUserSendPoints,
     address,
@@ -480,7 +481,7 @@ export default function Send() {
       },
     });
   useEffect(() => {
-    setTimeout(mutateUserSuilendCapsules);
+    setTimeout(mutateUserSuilendCapsules, 100);
   }, [mutateUserSuilendCapsules, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Save
@@ -536,7 +537,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateUserSave);
+    setTimeout(mutateUserSave, 100);
   }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Rootlets
@@ -630,7 +631,7 @@ export default function Send() {
       },
     );
   useEffect(() => {
-    setTimeout(mutateOwnedDoubleUpCitizen);
+    setTimeout(mutateOwnedDoubleUpCitizen, 100);
   }, [
     mutateOwnedDoubleUpCitizen,
     address,
@@ -683,12 +684,22 @@ export default function Send() {
     return tismJson.includes(address);
   }, [address]);
 
+  const isLoading =
+    userSendPoints === undefined ||
+    userSuilendCapsules === undefined ||
+    userSave === undefined ||
+    ownedRootlets === undefined ||
+    ownedPrimeMachin === undefined ||
+    ownedEgg === undefined ||
+    ownedDoubleUpCitizen === undefined ||
+    ownedKumo === undefined;
+
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
     eligibleWallets: formatInteger(earlyUsersJson.length),
     totalAllocationPercent: new BigNumber(2),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(2).div(earlyUsersJson.length), // Flat
@@ -699,7 +710,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(18),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       thousand: {
         title: "Per 1K Points",
         percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
@@ -710,7 +721,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(0.3),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       [SuilendCapsuleRarity.COMMON]: {
         title: "Per Common",
         percent: new BigNumber(0.1).div(700), // Linear
@@ -729,7 +740,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(15),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per SLND",
         percent: new BigNumber(0.15).div(SEND_TOTAL_SUPPLY).times(100), // Linear
@@ -744,7 +755,7 @@ export default function Send() {
         : 948,
     ),
     totalAllocationPercent: new BigNumber(1.111),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Rootlet",
         percent: new BigNumber(1.111).div(3333), // Linear
@@ -761,7 +772,7 @@ export default function Send() {
         bluefinLeaguesSapphireJson.length,
     ),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.05).div(
@@ -780,8 +791,8 @@ export default function Send() {
     //   ? Object.keys(bluefinSendTradersJson).length
     //   : 400, // TODO (update once we have an initial snapshot)
     totalAllocationPercent: new BigNumber(0.125),
-    totalAllocationBreakdown: {},
-    // totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {},
+    // totalAllocationBreakdownMap: {
     //   thousandUsdVolume: {
     //     title: "Per $1K Volume",
     //     percent: new BigNumber(0.125).div(
@@ -799,7 +810,7 @@ export default function Send() {
         : 918,
     ),
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Prime Machin",
         percent: new BigNumber(0.1).div(3333), // Linear
@@ -812,7 +823,7 @@ export default function Send() {
       Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2109,
     ),
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Egg",
         percent: new BigNumber(0.1).div(9546), // Linear
@@ -827,7 +838,7 @@ export default function Send() {
         : 713,
     ),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per DoubleUp Citizen",
         percent: new BigNumber(0.05).div(2878), // Linear
@@ -840,7 +851,7 @@ export default function Send() {
       Object.keys(kumoJson).length > 0 ? Object.keys(kumoJson).length : 479,
     ),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Kumo",
         percent: new BigNumber(0.05).div(2222), // Linear
@@ -852,14 +863,14 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: undefined, //animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {},
+    totalAllocationBreakdownMap: {},
   };
 
   const fud = {
     snapshotTaken: false,
     eligibleWallets: 5000, // Top 5,000 FUD holders
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.1).div(5000), // Flat
@@ -870,7 +881,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: 5000, // Top 5,000 AAA holders
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.1).div(5000), // Flat
@@ -881,7 +892,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: 1000, // Top 1,000 OCTO holders
     totalAllocationPercent: new BigNumber(0.01),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.01).div(1000), // Flat
@@ -892,7 +903,7 @@ export default function Send() {
     snapshotTaken: false,
     eligibleWallets: 1000, // Top 1,000 TISM holders
     totalAllocationPercent: new BigNumber(0.01),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.01).div(1000), // Flat
@@ -915,13 +926,13 @@ export default function Send() {
       eligibleWallets: earlyUsers.eligibleWallets,
       totalAllocationPercent: earlyUsers.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        earlyUsers.totalAllocationBreakdown,
+        earlyUsers.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         isInEarlyUsersSnapshot !== undefined
           ? isInEarlyUsersSnapshot
-            ? earlyUsers.totalAllocationBreakdown.wallet.percent
+            ? earlyUsers.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -944,14 +955,14 @@ export default function Send() {
       eligibleWallets: sendPoints.eligibleWallets,
       totalAllocationPercent: sendPoints.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        sendPoints.totalAllocationBreakdown,
+        sendPoints.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         userSendPoints !== undefined
           ? userSendPoints.owned
               .div(1000)
-              .times(sendPoints.totalAllocationBreakdown.thousand.percent)
+              .times(sendPoints.totalAllocationBreakdownMap.thousand.percent)
           : undefined,
       userClaimedMsend:
         userSendPoints !== undefined ? userSendPoints.claimedMsend : undefined,
@@ -971,14 +982,14 @@ export default function Send() {
       eligibleWallets: suilendCapsules.eligibleWallets,
       totalAllocationPercent: suilendCapsules.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        suilendCapsules.totalAllocationBreakdown,
+        suilendCapsules.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         userSuilendCapsules !== undefined
           ? new BigNumber(
               userSuilendCapsules.ownedMap[SuilendCapsuleRarity.COMMON].times(
-                suilendCapsules.totalAllocationBreakdown[
+                suilendCapsules.totalAllocationBreakdownMap[
                   SuilendCapsuleRarity.COMMON
                 ].percent,
               ),
@@ -987,14 +998,14 @@ export default function Send() {
                 userSuilendCapsules.ownedMap[
                   SuilendCapsuleRarity.UNCOMMON
                 ].times(
-                  suilendCapsules.totalAllocationBreakdown[
+                  suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.UNCOMMON
                   ].percent,
                 ),
               )
               .plus(
                 userSuilendCapsules.ownedMap[SuilendCapsuleRarity.RARE].times(
-                  suilendCapsules.totalAllocationBreakdown[
+                  suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.RARE
                   ].percent,
                 ),
@@ -1022,7 +1033,7 @@ export default function Send() {
       snapshotTaken: save.snapshotTaken,
       eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(save.totalAllocationBreakdownMap),
 
       userAllocationPercent: undefined,
       userClaimedMsend: undefined,
@@ -1046,12 +1057,14 @@ export default function Send() {
       eligibleWallets: rootlets.eligibleWallets,
       totalAllocationPercent: rootlets.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        rootlets.totalAllocationBreakdown,
+        rootlets.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         ownedRootlets !== undefined
-          ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
+          ? ownedRootlets.times(
+              rootlets.totalAllocationBreakdownMap.one.percent,
+            )
           : undefined,
       userClaimedMsend: undefined,
       userBridgedMsend: undefined,
@@ -1070,13 +1083,13 @@ export default function Send() {
       eligibleWallets: bluefinLeagues.eligibleWallets,
       totalAllocationPercent: bluefinLeagues.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        bluefinLeagues.totalAllocationBreakdown,
+        bluefinLeagues.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         isInBluefinLeaguesSnapshot !== undefined
           ? isInBluefinLeaguesSnapshot
-            ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
+            ? bluefinLeagues.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -1099,7 +1112,7 @@ export default function Send() {
       eligibleWallets: bluefinSendTraders.eligibleWallets,
       totalAllocationPercent: bluefinSendTraders.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        bluefinSendTraders.totalAllocationBreakdown,
+        bluefinSendTraders.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent: undefined,
@@ -1107,7 +1120,7 @@ export default function Send() {
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
       //       .div(1000)
       //       .times(
-      //         bluefinSendTraders.totalAllocationBreakdown.thousandUsdVolume
+      //         bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdVolume
       //           .percent,
       //       )
       //   : undefined,
@@ -1132,13 +1145,13 @@ export default function Send() {
       eligibleWallets: primeMachin.eligibleWallets,
       totalAllocationPercent: primeMachin.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        primeMachin.totalAllocationBreakdown,
+        primeMachin.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         ownedPrimeMachin !== undefined
           ? ownedPrimeMachin.times(
-              primeMachin.totalAllocationBreakdown.one.percent,
+              primeMachin.totalAllocationBreakdownMap.one.percent,
             )
           : undefined,
       userClaimedMsend: undefined,
@@ -1160,11 +1173,11 @@ export default function Send() {
       snapshotTaken: egg.snapshotTaken,
       eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         ownedEgg !== undefined
-          ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
+          ? ownedEgg.times(egg.totalAllocationBreakdownMap.one.percent)
           : undefined,
       userClaimedMsend: undefined,
       userBridgedMsend: undefined,
@@ -1186,13 +1199,13 @@ export default function Send() {
       eligibleWallets: doubleUpCitizen.eligibleWallets,
       totalAllocationPercent: doubleUpCitizen.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        doubleUpCitizen.totalAllocationBreakdown,
+        doubleUpCitizen.totalAllocationBreakdownMap,
       ),
 
       userAllocationPercent:
         ownedDoubleUpCitizen !== undefined
           ? ownedDoubleUpCitizen.times(
-              doubleUpCitizen.totalAllocationBreakdown.one.percent,
+              doubleUpCitizen.totalAllocationBreakdownMap.one.percent,
             )
           : undefined,
       userClaimedMsend: undefined,
@@ -1214,11 +1227,11 @@ export default function Send() {
       snapshotTaken: kumo.snapshotTaken,
       eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         ownedKumo !== undefined
-          ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
+          ? ownedKumo.times(kumo.totalAllocationBreakdownMap.one.percent)
           : undefined,
       userClaimedMsend: undefined,
       userBridgedMsend: undefined,
@@ -1240,12 +1253,14 @@ export default function Send() {
       snapshotTaken: anima.snapshotTaken,
       eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(
+        anima.totalAllocationBreakdownMap,
+      ),
 
       userAllocationPercent: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
-      //     ? anima.totalAllocationBreakdown!.percent
+      //     ? anima.totalAllocationBreakdownMap!.percent
       //     : new BigNumber(0)
       //   : undefined,
       userClaimedMsend: undefined,
@@ -1267,12 +1282,12 @@ export default function Send() {
       snapshotTaken: fud.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: fud.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         isInFudSnapshot !== undefined
           ? isInFudSnapshot
-            ? fud.totalAllocationBreakdown.wallet.percent
+            ? fud.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -1294,12 +1309,12 @@ export default function Send() {
       snapshotTaken: aaa.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: aaa.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         isInAaaSnapshot !== undefined
           ? isInAaaSnapshot
-            ? aaa.totalAllocationBreakdown.wallet.percent
+            ? aaa.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -1321,12 +1336,12 @@ export default function Send() {
       snapshotTaken: octo.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: octo.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         isInOctoSnapshot !== undefined
           ? isInOctoSnapshot
-            ? octo.totalAllocationBreakdown.wallet.percent
+            ? octo.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -1347,12 +1362,12 @@ export default function Send() {
       snapshotTaken: tism.snapshotTaken,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: tism.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdownMap),
 
       userAllocationPercent:
         isInTismSnapshot !== undefined
           ? isInTismSnapshot
-            ? tism.totalAllocationBreakdown.wallet.percent
+            ? tism.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
       userClaimedMsend: undefined,
@@ -1510,28 +1525,33 @@ export default function Send() {
       <div className="relative flex w-full flex-col items-center">
         <SendHeader />
 
-        <div className="relative z-[2] flex w-full flex-col items-center gap-16 pt-36 md:gap-24 md:pt-12">
-          <div className="flex w-full flex-col items-center gap-12 md:gap-16">
-            <HeroSection
-              allocations={allocations}
-              isLoading={
-                userSendPoints === undefined ||
-                userSuilendCapsules === undefined ||
-                userSave === undefined ||
-                ownedRootlets === undefined ||
-                ownedPrimeMachin === undefined ||
-                ownedEgg === undefined ||
-                ownedDoubleUpCitizen === undefined ||
-                ownedKumo === undefined
-              }
-            />
-            <AllocationCardsSection
-              allocations={allocations}
-              burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
-            />
+        <div className="relative z-[2] flex w-full flex-col items-center">
+          <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
+            <HeroSection allocations={allocations} isLoading={isLoading} />
+
+            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+              {allocations.map((allocation) => (
+                <AllocationCard
+                  key={allocation.title}
+                  allocation={allocation}
+                />
+              ))}
+            </div>
           </div>
 
-          <ClaimSection />
+          <Separator />
+          <ClaimSection
+            allocations={allocations}
+            isLoading={isLoading}
+            ownedSendPoints={userSendPoints?.owned}
+            ownedSuilendCapsulesMap={userSuilendCapsules?.ownedMap}
+            suilendCapsulesTotalAllocationBreakdownMap={
+              suilendCapsules.totalAllocationBreakdownMap
+            }
+            burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
+          />
+
+          <Separator />
           <TokenomicsSection />
         </div>
       </div>

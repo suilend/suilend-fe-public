@@ -104,9 +104,9 @@ function Status({
               >
                 {formatToken(
                   isEligible
-                    ? new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.userAllocationPercent!.div(100),
-                      )
+                    ? allocation
+                        .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
+                        .div(100)
                     : hasClaimedMsend
                       ? allocation.userClaimedMsend!
                       : allocation.userBridgedMsend!,
@@ -138,20 +138,23 @@ function Status({
 interface CtaButtonProps {
   allocation: Allocation;
   isEligible?: boolean;
-  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
-function CtaButton({
-  allocation,
-  isEligible,
-  burnSendPointsSuilendCapsules,
-}: CtaButtonProps) {
+function CtaButton({ allocation, isEligible }: CtaButtonProps) {
   const burnSendPointsSuilendCapsulesWrapper = (
     e: React.MouseEvent<HTMLButtonElement>,
   ) => {
     e.stopPropagation();
 
-    burnSendPointsSuilendCapsules();
+    const claimSectionHeadingElement = document.getElementById(
+      "claim-section-heading",
+    );
+    if (!claimSectionHeadingElement) return;
+
+    window.scrollTo({
+      top: claimSectionHeadingElement.offsetTop - 40,
+      behavior: "smooth",
+    });
   };
 
   if (
@@ -212,13 +215,9 @@ function Wrapper({ children }: PropsWithChildren) {
 
 interface AllocationCardProps {
   allocation: Allocation;
-  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
-export default function AllocationCard({
-  allocation,
-  burnSendPointsSuilendCapsules,
-}: AllocationCardProps) {
+export default function AllocationCard({ allocation }: AllocationCardProps) {
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -302,9 +301,9 @@ export default function AllocationCard({
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                   </TBody>
@@ -363,11 +362,7 @@ export default function AllocationCard({
                   )}
                 </div>
 
-                <CtaButton
-                  allocation={allocation}
-                  isEligible={isEligible}
-                  burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
-                />
+                <CtaButton allocation={allocation} isEligible={isEligible} />
               </div>
             </div>
           </div>
@@ -400,9 +395,9 @@ export default function AllocationCard({
                     valueClassName="gap-1.5 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                     horizontal
@@ -418,9 +413,7 @@ export default function AllocationCard({
                       valueClassName="gap-1.5 items-center"
                       valueStartDecorator={<SendTokenLogo />}
                       value={formatToken(
-                        new BigNumber(SEND_TOTAL_SUPPLY).times(
-                          breakdown.percent.div(100),
-                        ),
+                        breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
                         { exact: false },
                       )}
                       horizontal
