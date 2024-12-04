@@ -92,7 +92,7 @@ export default function ClaimSection({
         <Skeleton className="h-16 w-80" />
       ) : (
         (sendPointsAllocation.userAllocationPercent?.gt(0) ||
-          sendPointsAllocation.userAllocationPercent) && (
+          sendPointsAllocation.userAllocationPercent?.gt(0)) && (
           <div className="-mt-8 flex w-full max-w-[560px] flex-col items-center gap-6">
             <TDisplay className="text-3xl uppercase">Convert</TDisplay>
 
