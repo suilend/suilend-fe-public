@@ -216,6 +216,13 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     [tokens, data.coinMetadataMap, balancesCoinMetadataMap, suiClient],
   );
 
+  // Reserves
+  useEffect(() => {
+    fetchTokensMetadata(
+      data.lendingMarket.reserves.map((reserve) => reserve.coinType),
+    );
+  }, [fetchTokensMetadata, data.lendingMarket.reserves]);
+
   // Selected tokens
   const [tokenInSymbol, tokenOutSymbol] =
     slug !== undefined ? slug[0].split("-") : [undefined, undefined];
