@@ -1016,7 +1016,7 @@ export default function Send() {
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "View on Save",
+        title: "Redeem on Save",
         href: "https://save.finance/save",
       },
       snapshotTaken: save.snapshotTaken,
