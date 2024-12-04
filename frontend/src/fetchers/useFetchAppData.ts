@@ -8,7 +8,11 @@ import {
   initializeSuilendSdk,
 } from "@suilend/frontend-sui";
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
-import { SuilendClient } from "@suilend/sdk/client";
+import {
+  LENDING_MARKET_ID,
+  LENDING_MARKET_TYPE,
+  SuilendClient,
+} from "@suilend/sdk/client";
 import { LstClient } from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
@@ -32,7 +36,12 @@ export default function useFetchAppData(address?: string) {
 
       obligationOwnerCaps,
       obligations,
-    } = await initializeSuilendSdk(suiClient, address);
+    } = await initializeSuilendSdk(
+      LENDING_MARKET_ID,
+      LENDING_MARKET_TYPE,
+      suiClient,
+      address,
+    );
     const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
       reserveMap,
       rewardCoinTypes,
