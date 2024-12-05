@@ -1,15 +1,21 @@
 import { PropsWithChildren, ReactElement } from "react";
 
+import { ClassValue } from "clsx";
 import { ExternalLink } from "lucide-react";
 
 import Button from "@/components/shared/Button";
+import { cn } from "@/lib/utils";
 
 interface OpenURLButtonProps extends PropsWithChildren {
+  className?: ClassValue;
+  iconClassName?: ClassValue;
   url: string;
   icon?: ReactElement;
 }
 
 export default function OpenURLButton({
+  className,
+  iconClassName,
   url,
   icon,
   children,
@@ -22,9 +28,9 @@ export default function OpenURLButton({
 
   return (
     <Button
-      className="text-muted-foreground"
+      className={cn("text-muted-foreground", className)}
       tooltip={tooltip}
-      icon={icon || <ExternalLink />}
+      icon={icon || <ExternalLink className={cn(iconClassName)} />}
       variant="ghost"
       size="icon"
       onClick={openUrl}

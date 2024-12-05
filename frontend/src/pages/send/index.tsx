@@ -19,7 +19,6 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
-import { PACKAGE_ID as SUILEND_PACKAGE_ID } from "@suilend/sdk/_generated/suilend";
 
 import AllocationCard from "@/components/send/AllocationCard";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -323,7 +322,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateOwnedKiosks, 100);
+    setTimeout(mutateOwnedKiosks, 250);
   }, [mutateOwnedKiosks, address, kioskClient]);
 
   const getOwnedKioskItemsOfType = useCallback(
@@ -401,7 +400,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateUserSendPoints, 100);
+    setTimeout(mutateUserSendPoints, 250);
   }, [
     mutateUserSendPoints,
     address,
@@ -489,7 +488,7 @@ export default function Send() {
       },
     });
   useEffect(() => {
-    setTimeout(mutateUserSuilendCapsules, 100);
+    setTimeout(mutateUserSuilendCapsules, 250);
   }, [mutateUserSuilendCapsules, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Save
@@ -545,7 +544,7 @@ export default function Send() {
     },
   });
   useEffect(() => {
-    setTimeout(mutateUserSave, 100);
+    setTimeout(mutateUserSave, 250);
   }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
 
   // User - Rootlets
@@ -639,7 +638,7 @@ export default function Send() {
       },
     );
   useEffect(() => {
-    setTimeout(mutateOwnedDoubleUpCitizen, 100);
+    setTimeout(mutateOwnedDoubleUpCitizen, 250);
   }, [
     mutateOwnedDoubleUpCitizen,
     address,

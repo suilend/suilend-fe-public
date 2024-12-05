@@ -3,14 +3,18 @@ import { useState } from "react";
 import { CoinMetadata } from "@mysten/sui/client";
 import { ChevronsUpDown } from "lucide-react";
 
+import { useSettingsContext } from "@suilend/frontend-sui-next";
+
 import Button from "@/components/shared/Button";
+import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
+import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken, formatType } from "@/lib/format";
+import { formatToken } from "@/lib/format";
 
 interface CoinDropdownMenuProps {
   coinMetadataMap?: Record<string, CoinMetadata>;
@@ -23,6 +27,7 @@ export default function CoinDropdownMenu({
   value,
   onChange,
 }: CoinDropdownMenuProps) {
+  const { explorer } = useSettingsContext();
   const { getBalance } = useLoadedAppContext();
 
   // State
@@ -35,7 +40,24 @@ export default function CoinDropdownMenu({
 
   return (
     <div className="flex flex-col gap-2">
-      <TLabelSans>{value ? `coin (${formatType(value)})` : "coin"}</TLabelSans>
+      <div className="flex flex-row gap-1">
+        <TLabelSans>coin</TLabelSans>
+
+        {value && (
+          <div className="flex h-4 flex-row items-center">
+            <CopyToClipboardButton
+              className="h-6 w-6 hover:bg-transparent"
+              iconClassName="w-3 h-3"
+              value={value}
+            />
+            <OpenOnExplorerButton
+              className="h-6 w-6 hover:bg-transparent"
+              iconClassName="w-3 h-3"
+              url={explorer.buildCoinUrl(value)}
+            />
+          </div>
+        )}
+      </div>
       <DropdownMenu
         rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
         trigger={

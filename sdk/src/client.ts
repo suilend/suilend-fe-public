@@ -334,7 +334,7 @@ export class SuilendClient {
       })
     ).data;
 
-    if (coins.length > 1 && !isSui && mergeCoins) {
+    if (coins.length > 1 && !isSui(rewardCoinType) && mergeCoins) {
       transaction.mergeCoins(
         transaction.object(coins[0].coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),

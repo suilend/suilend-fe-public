@@ -82,7 +82,7 @@ const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
 
 type HistoricalUsdPriceData = {
   timestampS: number;
-  value: number;
+  priceUsd: number;
 };
 
 function Page() {
@@ -396,34 +396,23 @@ function Page() {
 
   const fetchTokenHistoricalUsdPrices = useCallback(
     async (token: SwapToken) => {
+      console.log("fetchTokenHistoricalUsdPrices", token.symbol);
+
       try {
-        const url = `https://public-api.birdeye.so/defi/history_price?${new URLSearchParams(
+        const url = `https://suilend.fi/api/birdeye-history_price?${new URLSearchParams(
           {
-            address: isSui(token.coinType) ? SUI_COINTYPE : token.coinType,
-            address_type: "token",
-            type: HISTORICAL_USD_PRICES_INTERVAL,
-            time_from: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
-            time_to: `${Math.floor(new Date().getTime() / 1000)}`,
+            coinType: token.coinType,
+            interval: HISTORICAL_USD_PRICES_INTERVAL,
+            startS: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
+            endS: `${Math.floor(new Date().getTime() / 1000)}`,
           },
         )}`;
-        const res = await fetch(url, {
-          headers: {
-            "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
-            "x-chain": "sui",
-          },
-        });
+        const res = await fetch(url);
         const json = await res.json();
-        if (json.data?.items)
-          setHistoricalUsdPriceMap((o) => ({
-            ...o,
-            [token.coinType]: json.data.items.map(
-              (item: any) =>
-                ({
-                  timestampS: item.unixTime,
-                  value: item.value,
-                }) as HistoricalUsdPriceData,
-            ),
-          }));
+        setHistoricalUsdPriceMap((o) => ({
+          ...o,
+          [token.coinType]: json as HistoricalUsdPriceData[],
+        }));
       } catch (err) {
         console.error(err);
       }
@@ -445,7 +434,7 @@ function Page() {
     () =>
       tokenInHistoricalUsdPrices !== undefined
         ? tokenInHistoricalUsdPrices[tokenInHistoricalUsdPrices.length - 1]
-            ?.value
+            ?.priceUsd
         : undefined,
     [tokenInHistoricalUsdPrices],
   );
@@ -453,7 +442,7 @@ function Page() {
     () =>
       tokenOutHistoricalUsdPrices !== undefined
         ? tokenOutHistoricalUsdPrices[tokenOutHistoricalUsdPrices.length - 1]
-            ?.value
+            ?.priceUsd
         : undefined,
     [tokenOutHistoricalUsdPrices],
   );
@@ -522,12 +511,12 @@ function Page() {
         (!isInverted
           ? tokenInHistoricalUsdPrices
           : tokenOutHistoricalUsdPrices
-        ).find((item) => item.timestampS === timestampS)?.value ?? 0,
+        ).find((item) => item.timestampS === timestampS)?.priceUsd ?? 0,
       ).div(
         (!isInverted
           ? tokenOutHistoricalUsdPrices
           : tokenInHistoricalUsdPrices
-        ).find((item) => item.timestampS === timestampS)?.value ?? 1,
+        ).find((item) => item.timestampS === timestampS)?.priceUsd ?? 1,
       ),
     }));
   }, [tokenInHistoricalUsdPrices, tokenOutHistoricalUsdPrices, isInverted]);
