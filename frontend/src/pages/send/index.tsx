@@ -122,15 +122,20 @@ export enum SuilendCapsuleRarity {
 export const TGE_TIMESTAMP_MS = 1730419200000; // TODO: Change to 1733979600000
 
 const BURN_CONTRACT_PACKAGE_ID =
-  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // Beta value, TODO
+  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770"; // TODO
+const mTOKEN_CONTRACT_PACKAGE_ID =
+  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627"; // TODO
+
 const POINTS_MANAGER_OBJECT_ID =
-  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // Beta value, TODO
+  "0xb1a0dc06cdab0e714d73cb426e03d8daf3c148d66a6b80520827d70b801f742c"; // TODO
 const CAPSULE_MANAGER_OBJECT_ID =
-  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // Beta value, TODO
+  "0x0f820695ba668c81d319874f20798020c46626eae22aa3f11dd4ff065f50dc87"; // TODO
+const mSEND_MANAGER_OBJECT_ID =
+  "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
 const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
   "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
-); // Beta value, TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
+); // TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
 
 export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
   "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
@@ -148,7 +153,7 @@ const BURN_SUILEND_CAPSULES_EVENT_TYPE =
   "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
 
 const SUILEND_CAPSULE_TYPE =
-  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Beta value, change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
+  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
 
 // ---- END TEMP ----
 
