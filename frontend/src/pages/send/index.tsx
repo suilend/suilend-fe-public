@@ -13,7 +13,11 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { getBalanceChange, isSendPoints } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_SEND_POINTS_COINTYPE,
+  getBalanceChange,
+  isSendPoints,
+} from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
