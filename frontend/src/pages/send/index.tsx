@@ -19,6 +19,7 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
+import { PACKAGE_ID as SUILEND_PACKAGE_ID } from "@suilend/sdk/_generated/suilend";
 
 import AllocationCard from "@/components/send/AllocationCard";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -123,18 +124,18 @@ export const TGE_TIMESTAMP_MS = 1730419200000; // TODO: Change to 1733979600000
 
 const BURN_CONTRACT_PACKAGE_ID =
   "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770"; // TODO
-const mTOKEN_CONTRACT_PACKAGE_ID =
+export const mTOKEN_CONTRACT_PACKAGE_ID =
   "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627"; // TODO
 
 const POINTS_MANAGER_OBJECT_ID =
   "0xb1a0dc06cdab0e714d73cb426e03d8daf3c148d66a6b80520827d70b801f742c"; // TODO
 const CAPSULE_MANAGER_OBJECT_ID =
   "0x0f820695ba668c81d319874f20798020c46626eae22aa3f11dd4ff065f50dc87"; // TODO
-const mSEND_MANAGER_OBJECT_ID =
+export const mSEND_MANAGER_OBJECT_ID =
   "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
 const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
-  "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
+  "0x86f166ac3a336248929979d19252c12170b8dce87e5e71004e35c49ece02c247::suilend_point::SUILEND_POINT",
 ); // TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
 
 export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
@@ -148,12 +149,14 @@ export const NORMALIZED_mSEND_12_MONTHS_COINTYPE = normalizeStructTag(
 ); // TODO
 
 const BURN_SEND_POINTS_EVENT_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
+  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::points::BurnEvent";
 const BURN_SUILEND_CAPSULES_EVENT_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
+  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::capsule::BurnEvent";
+const CLAIM_SEND_EVENT_TYPE =
+  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627::mtoken::RedeemMTokensEvent";
 
 const SUILEND_CAPSULE_TYPE =
-  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
+  "0xe225a46bfe059ab96f3264d3aee63c6c4997eccad2b4630350e0957a52badd54::suilend_capsule::SuilendCapsule"; // TODO: Change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
 
 // ---- END TEMP ----
 

@@ -1,6 +1,8 @@
 import Image from "next/image";
 import { Fragment } from "react";
 
+import { Transaction } from "@mysten/sui/transactions";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
@@ -20,6 +22,8 @@ import {
   NORMALIZED_mSEND_6_MONTHS_COINTYPE,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
+  mSEND_MANAGER_OBJECT_ID,
+  mTOKEN_CONTRACT_PACKAGE_ID,
 } from "@/pages/send";
 
 interface ClaimSectionProps {
@@ -79,8 +83,32 @@ export default function ClaimSection({
   const balanceMsend6Months = getBalance(NORMALIZED_mSEND_6_MONTHS_COINTYPE);
   const balanceMsend12Months = getBalance(NORMALIZED_mSEND_12_MONTHS_COINTYPE);
 
-  const claimSend = async () => {
-    // TODO: Claim SEND
+  const claimSend = async (
+    mSendCoinObj: string,
+    suiCoinObj: string,
+    sender: string,
+  ) => {
+    const transaction = new Transaction();
+
+    const MSEND_TYPE =
+      "0x1a98c181ce323d1571be1f805b3d5d19e98c1f79492aa32f592e7fd4575fd9e2::msend::MSEND";
+    const SEND_TYPE =
+      "0x1a98c181ce323d1571be1f805b3d5d19e98c1f79492aa32f592e7fd4575fd9e2::send::SEND";
+
+    const send = transaction.moveCall({
+      target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
+      typeArguments: [MSEND_TYPE, SEND_TYPE, "0x2::sui::SUI"],
+      arguments: [
+        transaction.object(mSEND_MANAGER_OBJECT_ID),
+        transaction.object(mSendCoinObj),
+        transaction.object(suiCoinObj),
+        transaction.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
+
+    transaction.transferObjects([send], sender);
+
+    // TODO: Send tx
   };
 
   return (
