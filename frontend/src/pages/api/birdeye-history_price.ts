@@ -34,7 +34,7 @@ export default async function handler(
     if (json.data?.items) {
       const response = json.data.items.map((item: any) => ({
         timestampS: item.unixTime,
-        priceUsd: item.priceUsd,
+        priceUsd: item.value,
       }));
 
       res.status(200).json(response);
