@@ -48,6 +48,20 @@ export default function HeroSection({
     (acc, allocation) => acc.plus(allocation.userAllocationPercent ?? 0),
     new BigNumber(0),
   );
+  const userClaimedMsend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userClaimedMsend ?? 0),
+    new BigNumber(0),
+  );
+  const userBridgedMsend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userBridgedMsend ?? 0),
+    new BigNumber(0),
+  );
+
+  const userTotalAllocation = new BigNumber(
+    userAllocationPercent.times(SEND_TOTAL_SUPPLY).div(100),
+  )
+    .plus(userClaimedMsend)
+    .plus(userBridgedMsend);
 
   // Countdown
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -112,7 +126,7 @@ export default function HeroSection({
       <SectionHeading>
         {!address
           ? "Connect your wallet to check your allocation"
-          : userAllocationPercent.gt(0) || isLoading
+          : userTotalAllocation.gt(0) || isLoading
             ? "Your allocation is"
             : "Sorry, you're not eligible"}
       </SectionHeading>
@@ -140,12 +154,7 @@ export default function HeroSection({
                     hoverUnderlineClassName,
                   )}
                 >
-                  {formatToken(
-                    new BigNumber(SEND_TOTAL_SUPPLY).times(
-                      userAllocationPercent.div(100),
-                    ),
-                    { exact: false },
-                  )}
+                  {formatToken(userTotalAllocation, { exact: false })}
                   {"* SEND"}
                 </TDisplay>
               )}

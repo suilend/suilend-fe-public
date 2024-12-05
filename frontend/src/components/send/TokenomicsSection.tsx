@@ -5,7 +5,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 export default function TokenomicsSection() {
   return (
-    <div className="flex w-full flex-col items-center gap-16">
+    <div className="flex w-full flex-col items-center gap-12 py-16 md:gap-16 md:py-20">
       <SectionHeading>Token distribution & unlock schedule</SectionHeading>
 
       <div className="flex w-full flex-col items-center justify-center gap-16 md:flex-row">

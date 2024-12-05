@@ -20,69 +20,99 @@ import {
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
+  TGE_TIMESTAMP_MS,
 } from "@/pages/send";
 
 interface StatusProps {
   allocation: Allocation;
+  isEligible?: boolean;
+  isNotEligible?: boolean;
+  hasClaimedMsend?: boolean;
+  hasBridgedMsend?: boolean;
 }
 
-function Status({ allocation }: StatusProps) {
-  const isEligible = allocation.userAllocationPercent?.gt(0);
-  const isNotEligible = useMemo(
-    () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
-    [allocation.snapshotTaken, allocation.userAllocationPercent],
-  );
+function Status({
+  allocation,
+  isEligible,
+  isNotEligible,
+  hasClaimedMsend,
+  hasBridgedMsend,
+}: StatusProps) {
+  const hasTooltip =
+    isEligible &&
+    [
+      AllocationId.SEND_POINTS,
+
+      AllocationId.FUD,
+      AllocationId.AAA,
+      AllocationId.OCTO,
+      AllocationId.TISM,
+    ].includes(allocation.id);
 
   return (
     <div
       className={cn(
-        "relative z-[1] -mb-2 flex h-11 w-full flex-row items-center rounded-t-md px-4 pb-2",
-        isEligible
-          ? "justify-between bg-[#5DF886]"
+        "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-3.5 pt-1.5",
+        isEligible || hasClaimedMsend || hasBridgedMsend
+          ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
               !allocation.snapshotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
             ),
       )}
     >
-      {isEligible ? (
+      {isEligible || hasClaimedMsend || hasBridgedMsend ? (
         <>
-          <TBody className="uppercase text-[#030917]">Eligible</TBody>
+          <TBody
+            className={cn(isEligible ? "text-[#030917]" : "text-[#5DF886]")}
+          >
+            {isEligible
+              ? "ELIGIBLE"
+              : hasClaimedMsend
+                ? "CONVERTED"
+                : "BRIDGED"}
+          </TBody>
           <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo className="rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]" />
+            <SendTokenLogo
+              className={cn(
+                "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
+              )}
+            />
             <Tooltip
               title={
-                allocation.id === AllocationId.SEND_POINTS
-                  ? "Allocation is an estimate since SEND Points are still ongoing"
-                  : [
-                        AllocationId.FUD,
-                        AllocationId.AAA,
-                        AllocationId.OCTO,
-                        AllocationId.TISM,
-                      ].includes(allocation.id)
-                    ? "Allocation is an estimate since the final snapshot has not been taken yet"
-                    : undefined
+                hasTooltip
+                  ? allocation.id === AllocationId.SEND_POINTS
+                    ? "Allocation is an estimate since SEND Points are still ongoing"
+                    : [
+                          AllocationId.FUD,
+                          AllocationId.AAA,
+                          AllocationId.OCTO,
+                          AllocationId.TISM,
+                        ].includes(allocation.id)
+                      ? "Allocation is an estimate since the final snapshot has not been taken yet"
+                      : undefined
+                  : undefined
               }
             >
               <TBody
                 className={cn(
-                  "text-[16px] text-[#030917] decoration-[#030917]/50",
-                  hoverUnderlineClassName,
+                  "text-[16px]",
+                  isEligible ? "text-[#030917]" : "text-[#5DF886]",
+                  hasTooltip &&
+                    cn("decoration-[#030917]/50", hoverUnderlineClassName),
                 )}
               >
                 {formatToken(
-                  new BigNumber(SEND_TOTAL_SUPPLY).times(
-                    allocation.userAllocationPercent!.div(100),
-                  ),
+                  isEligible
+                    ? allocation
+                        .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
+                        .div(100)
+                    : hasClaimedMsend
+                      ? allocation.userClaimedMsend!
+                      : allocation.userBridgedMsend!,
                   { exact: false },
                 )}
-                {[
-                  AllocationId.SEND_POINTS,
-                  AllocationId.FUD,
-                  AllocationId.AAA,
-                  AllocationId.OCTO,
-                  AllocationId.TISM,
-                ].includes(allocation.id) && "*"}
+                {hasTooltip ? "*" : undefined}
               </TBody>
             </Tooltip>
           </div>
@@ -107,9 +137,49 @@ function Status({ allocation }: StatusProps) {
 
 interface CtaButtonProps {
   allocation: Allocation;
+  isEligible?: boolean;
 }
 
-function CtaButton({ allocation }: CtaButtonProps) {
+function CtaButton({ allocation, isEligible }: CtaButtonProps) {
+  const burnSendPointsSuilendCapsulesWrapper = (
+    e: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    e.stopPropagation();
+
+    const claimSectionHeadingElement = document.getElementById(
+      "claim-section-heading",
+    );
+    if (!claimSectionHeadingElement) return;
+
+    window.scrollTo({
+      top: claimSectionHeadingElement.offsetTop - 40,
+      behavior: "smooth",
+    });
+  };
+
+  if (
+    [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
+      allocation.id,
+    )
+  ) {
+    if (Date.now() >= TGE_TIMESTAMP_MS) {
+      if (isEligible) {
+        return (
+          <Button
+            className="h-10 w-full border-secondary text-primary-foreground"
+            labelClassName="text-[16px]"
+            variant="secondaryOutline"
+            onClick={burnSendPointsSuilendCapsulesWrapper}
+          >
+            CONVERT TO mSEND
+          </Button>
+        );
+      } else return <div className="h-10 w-full max-sm:hidden" />;
+    }
+  }
+  if (allocation.id === AllocationId.SAVE) {
+  }
+
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (
     <Link
       className="flex"
@@ -179,6 +249,25 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
     }, 300);
   };
 
+  // Status
+  const isEligible = useMemo(
+    () => allocation.userAllocationPercent?.gt(0),
+    [allocation.userAllocationPercent],
+  );
+  const isNotEligible = useMemo(
+    () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
+    [allocation.snapshotTaken, allocation.userAllocationPercent],
+  );
+
+  const hasClaimedMsend = useMemo(
+    () => allocation.userClaimedMsend?.gt(0),
+    [allocation.userClaimedMsend],
+  );
+  const hasBridgedMsend = useMemo(
+    () => allocation.userBridgedMsend?.gt(0),
+    [allocation.userBridgedMsend],
+  );
+
   return (
     <Wrapper>
       <button
@@ -196,7 +285,13 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
         <div className={cn("relative h-full w-full", styles.cardInner)}>
           {/* Front */}
           <div className={cn(styles.front, "absolute inset-0 flex flex-col")}>
-            <Status allocation={allocation} />
+            <Status
+              allocation={allocation}
+              isEligible={isEligible}
+              isNotEligible={isNotEligible}
+              hasClaimedMsend={hasClaimedMsend}
+              hasBridgedMsend={hasBridgedMsend}
+            />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-secondary/25">
               {/* Top */}
@@ -206,9 +301,9 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                   </TBody>
@@ -267,7 +362,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   )}
                 </div>
 
-                <CtaButton allocation={allocation} />
+                <CtaButton allocation={allocation} isEligible={isEligible} />
               </div>
             </div>
           </div>
@@ -300,9 +395,9 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     valueClassName="gap-1.5 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                     horizontal
@@ -318,9 +413,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                       valueClassName="gap-1.5 items-center"
                       valueStartDecorator={<SendTokenLogo />}
                       value={formatToken(
-                        new BigNumber(SEND_TOTAL_SUPPLY).times(
-                          breakdown.percent.div(100),
-                        ),
+                        breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
                         { exact: false },
                       )}
                       horizontal
