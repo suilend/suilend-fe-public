@@ -505,38 +505,42 @@ export default function Send() {
     if (!coinMetadata) return undefined;
 
     // Bridged
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
+    // const userTransactions = await queryTransactionBlocks(
+    //   suiClient,
+    //   { FromAddress: address },
+    //   TGE_TIMESTAMP_MS,
+    // );
 
-    const bridgedMsend = userTransactions
-      .reduce((acc, transaction) => {
-        const hasWormholeEvent = !!(transaction.events ?? []).find(
-          (event) =>
-            event.type ===
-            "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed",
-        );
-        if (!hasWormholeEvent) return acc;
+    // const bridgedMsend = userTransactions
+    //   .reduce((acc, transaction) => {
+    //     const hasWormholeEvent = !!(transaction.events ?? []).find(
+    //       (event) =>
+    //         event.type ===
+    //         "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed",
+    //     );
+    //     if (!hasWormholeEvent) return acc;
 
-        const transactionBridgedMsend = (transaction.balanceChanges ?? [])
-          .filter(
-            (balanceChange) =>
-              normalizeStructTag(balanceChange.coinType) ===
-              NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-          )
-          .reduce(
-            (acc2, balanceChange) => acc2.plus(balanceChange.amount),
-            new BigNumber(0),
-          );
+    //     const transactionBridgedMsend = (transaction.balanceChanges ?? [])
+    //       .filter(
+    //         (balanceChange) =>
+    //           normalizeStructTag(balanceChange.coinType) ===
+    //           NORMALIZED_mSEND_12_MONTHS_COINTYPE,
+    //       )
+    //       .reduce(
+    //         (acc2, balanceChange) => acc2.plus(balanceChange.amount),
+    //         new BigNumber(0),
+    //       );
 
-        return acc.plus(transactionBridgedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
+    //     return acc.plus(transactionBridgedMsend);
+    //   }, new BigNumber(0))
+    //   .div(10 ** coinMetadata.decimals);
 
-    return { bridgedMsend };
-  }, [address, mSendCoinMetadataMap, suiClient]);
+    return { bridgedMsend: new BigNumber(0) };
+  }, [
+    address,
+    mSendCoinMetadataMap,
+    // suiClient
+  ]);
 
   const { data: userSave, mutate: mutateUserSave } = useSWR<
     { bridgedMsend: BigNumber } | undefined
@@ -550,7 +554,12 @@ export default function Send() {
   });
   useEffect(() => {
     setTimeout(mutateUserSave, 100);
-  }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
+  }, [
+    mutateUserSave,
+    address,
+    mSendCoinMetadataMap,
+    // suiClient
+  ]);
 
   // User - Rootlets
   const ownedRootlets: BigNumber | undefined = useMemo(() => {
