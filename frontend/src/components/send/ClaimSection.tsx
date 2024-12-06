@@ -1,57 +1,88 @@
 import Image from "next/image";
-import { Fragment } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
+import { toast } from "sonner";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
-  NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_mSEND_COINTYPES,
+  getBalanceChange,
 } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
+import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
+import TextLink from "@/components/shared/TextLink";
 import { TBody, TDisplay } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken } from "@/lib/format";
+import {
+  burnSendPoints,
+  burnSuilendCapsules,
+  redeemMsendForSend,
+} from "@/lib/send";
 import {
   Allocation,
   AllocationId,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
-  mSEND_MANAGER_OBJECT_ID,
-  mTOKEN_CONTRACT_PACKAGE_ID,
 } from "@/pages/send";
 
 interface ClaimSectionProps {
   allocations: Allocation[];
   isLoading: boolean;
-  ownedSendPoints?: BigNumber;
-  ownedSuilendCapsulesMap?: Record<SuilendCapsuleRarity, BigNumber>;
   suilendCapsulesTotalAllocationBreakdownMap: Record<
     SuilendCapsuleRarity,
     { percent: BigNumber }
   >;
-  burnSendPointsSuilendCapsules: () => Promise<void>;
+  userSendPoints: { owned: BigNumber; claimedMsend: BigNumber } | undefined;
+  mutateUserSendPoints: () => Promise<void>;
+  userSuilendCapsules:
+    | {
+        ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
+        claimedMsend: BigNumber;
+      }
+    | undefined;
+  mutateUserSuilendCapsules: () => Promise<void>;
+  userSend: { redeemedSend: BigNumber } | undefined;
+  mutateUserSend: () => Promise<void>;
 }
 
 export default function ClaimSection({
   allocations,
   isLoading,
-  ownedSendPoints,
-  ownedSuilendCapsulesMap,
   suilendCapsulesTotalAllocationBreakdownMap,
-  burnSendPointsSuilendCapsules,
+  userSendPoints,
+  mutateUserSendPoints,
+  userSuilendCapsules,
+  mutateUserSuilendCapsules,
+  userSend,
+  mutateUserSend,
 }: ClaimSectionProps) {
-  const { getBalance } = useLoadedAppContext();
+  const { explorer, suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { suilendClient, data, getBalance } = useLoadedAppContext();
 
-  const mSendBetaBalance = getBalance(NORMALIZED_BETA_mSEND_COINTYPE);
+  const mSendBalanceMap = NORMALIZED_mSEND_COINTYPES.reduce(
+    (acc, coinType) => ({ ...acc, [coinType]: getBalance(coinType) }),
+    {} as Record<string, BigNumber>,
+  );
+
+  const coinMetadataMap = useCoinMetadataMap([
+    ...NORMALIZED_mSEND_COINTYPES,
+    NORMALIZED_BETA_SEND_COINTYPE, // TODO
+  ]);
 
   // const mSend3MBalance = getBalance(NORMALIZED_mSEND_3M_COINTYPE);
   // const mSend6MBalance = getBalance(NORMALIZED_mSEND_6M_COINTYPE);
@@ -87,33 +118,115 @@ export default function ClaimSection({
   //     : new BigNumber(0),
   // );
 
-  // Claim SEND
+  // Burn SEND Points and Suilend Capsules for mSEND
+  const onConvertClick = async () => {
+    if (!address) return;
+    if (userSendPoints === undefined || userSuilendCapsules === undefined)
+      return;
 
-  const claimSend = async (
-    mSendCoinObj: string,
-    suiCoinObj: string,
-    sender: string,
-  ) => {
+    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
+    if (!coinMetadata) return undefined; // TODO
+
     const transaction = new Transaction();
+    try {
+      const ownedSendPoints = userSendPoints.owned;
+      const ownedSuilendCapsules = Object.values(
+        userSuilendCapsules.ownedMap,
+      ).reduce((acc, val) => acc.plus(val), new BigNumber(0));
 
-    const send = transaction.moveCall({
-      target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
-      typeArguments: [
-        NORMALIZED_BETA_mSEND_COINTYPE, // TODO
-        NORMALIZED_BETA_SEND_COINTYPE, // TODO
-        NORMALIZED_SUI_COINTYPE,
-      ],
-      arguments: [
-        transaction.object(mSEND_MANAGER_OBJECT_ID),
-        transaction.object(mSendCoinObj),
-        transaction.object(suiCoinObj),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
-      ],
-    });
+      if (ownedSendPoints.gt(0))
+        await burnSendPoints(suilendClient, data, address, transaction);
+      if (ownedSuilendCapsules.gt(0))
+        await burnSuilendCapsules(suiClient, address, transaction);
 
-    transaction.transferObjects([send], sender);
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
 
-    // TODO: Send tx
+      const balanceChange = getBalanceChange(res, address, {
+        coinType: NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+        ...coinMetadata, // TODO
+      });
+
+      toast.success(
+        [
+          "Converted",
+          [
+            ownedSendPoints.gt(0)
+              ? `${formatToken(ownedSendPoints, { exact: false })} SEND Points`
+              : undefined,
+            ownedSuilendCapsules.gt(0)
+              ? `${formatInteger(+ownedSuilendCapsules)} Suilend Capsules`
+              : undefined,
+          ]
+            .filter(Boolean)
+            .join(" and "),
+          "to",
+          balanceChange !== undefined
+            ? `${formatToken(balanceChange, { dp: coinMetadata.decimals })} mSEND`
+            : "mSEND",
+        ].join(" "),
+        {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        },
+      );
+    } catch (err) {
+      toast.error(
+        "Failed to convert SEND Points and/or Suilend Capsules to mSEND",
+        { description: (err as Error)?.message || "An unknown error occurred" },
+      );
+    } finally {
+      await mutateUserSendPoints();
+      await mutateUserSuilendCapsules();
+    }
+  };
+
+  // Redeem mSEND for SEND
+  const onClaimSendClick = async () => {
+    if (!address) return;
+
+    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_SEND_COINTYPE]; // TODO
+    if (!coinMetadata) return undefined;
+
+    const transaction = new Transaction();
+    try {
+      await redeemMsendForSend(suiClient, address, transaction);
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      const balanceChange = getBalanceChange(res, address, {
+        coinType: NORMALIZED_BETA_SEND_COINTYPE, // TODO
+        ...coinMetadata,
+      });
+
+      toast.success(
+        [
+          "Claimed",
+          balanceChange !== undefined
+            ? `${formatToken(balanceChange, { dp: coinMetadata.decimals })} SEND`
+            : "SEND",
+        ].join(" "),
+        {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        },
+      );
+    } catch (err) {
+      toast.error("Failed to claim SEND", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    } finally {
+      await mutateUserSend();
+    }
   };
 
   return (
@@ -141,7 +254,8 @@ export default function ClaimSection({
                       height={28}
                     />
                     <TBody className="text-[16px]">
-                      {formatToken(ownedSendPoints as BigNumber)} SEND Points
+                      {formatToken(userSendPoints!.owned as BigNumber)} SEND
+                      Points
                     </TBody>
                   </div>
 
@@ -167,7 +281,7 @@ export default function ClaimSection({
 
               {/* Suilend Capsules */}
               {suilendCapsulesAllocation.userAllocationPercent?.gt(0) &&
-                Object.entries(ownedSuilendCapsulesMap!)
+                Object.entries(userSuilendCapsules!.ownedMap)
                   .filter(([key, value]) => value.gt(0))
                   .map(([key, value]) => (
                     <div
@@ -211,7 +325,7 @@ export default function ClaimSection({
               className="h-12 w-full"
               labelClassName="text-[16px]"
               size="lg"
-              onClick={burnSendPointsSuilendCapsules}
+              onClick={onConvertClick}
             >
               CONVERT TO mSEND
             </Button>
@@ -222,14 +336,28 @@ export default function ClaimSection({
       <div className="flex flex-col gap-4 rounded-md border px-4 py-3">
         <div className="flex flex-row items-center gap-8">
           <TBody>
-            mSEND in wallet: {formatToken(mSendBetaBalance, { exact: false })}
+            mSEND in wallet:{" "}
+            {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
+              exact: false, // TODO
+            })}
           </TBody>
-          <Button
-            labelClassName="uppercase"
-            // onClick={claimSend}
-          >
-            Claim
+          <Button labelClassName="uppercase" onClick={onClaimSendClick}>
+            Claim SEND
           </Button>
+        </div>
+
+        <div className="flex flex-row items-center gap-8">
+          <TBody>Claimed SEND:</TBody>
+
+          {userSend === undefined ? (
+            <Skeleton className="h-5 w-10" />
+          ) : (
+            <TBody>
+              {formatToken(userSend.redeemedSend ?? new BigNumber(0), {
+                exact: false,
+              })}
+            </TBody>
+          )}
         </div>
       </div>
     </div>

@@ -19,8 +19,9 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAddress, formatToken } from "@/lib/format";
+import { TGE_TIMESTAMP_MS } from "@/lib/send";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
-import { Allocation, SEND_TOTAL_SUPPLY, TGE_TIMESTAMP_MS } from "@/pages/send";
+import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
 
 interface HeroSectionProps {
   allocations: Allocation[];

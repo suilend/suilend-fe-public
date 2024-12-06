@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
-import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
 
 import styles from "@/components/send/AllocationCard.module.scss";
@@ -14,13 +13,13 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
+import { TGE_TIMESTAMP_MS } from "@/lib/send";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import {
   Allocation,
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
-  TGE_TIMESTAMP_MS,
 } from "@/pages/send";
 
 interface StatusProps {
