@@ -1,10 +1,11 @@
+import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import {
+  NORMALIZED_BETA_SEND_POINTS_COINTYPE,
   RewardMap,
   getBorrowShare,
   getDepositShare,
-  isSendPoints,
 } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
@@ -30,10 +31,18 @@ export const getPointsStats = (
 
   const pointsRewards = {
     deposit: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.deposit.filter((r) => isSendPoints(r.stats.rewardCoinType)),
+      rewards.deposit.filter(
+        (r) =>
+          normalizeStructTag(r.stats.rewardCoinType) ===
+          NORMALIZED_BETA_SEND_POINTS_COINTYPE, // TODO
+      ),
     ),
     borrow: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.borrow.filter((r) => isSendPoints(r.stats.rewardCoinType)),
+      rewards.borrow.filter(
+        (r) =>
+          normalizeStructTag(r.stats.rewardCoinType) ===
+          NORMALIZED_BETA_SEND_POINTS_COINTYPE, // TODO
+      ),
     ),
   };
 

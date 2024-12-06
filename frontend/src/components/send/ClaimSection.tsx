@@ -6,6 +6,12 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
+import {
+  NORMALIZED_BETA_SEND_COINTYPE,
+  NORMALIZED_BETA_mSEND_COINTYPE,
+  NORMALIZED_SUI_COINTYPE,
+} from "@suilend/frontend-sui";
+
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
@@ -17,9 +23,6 @@ import { formatInteger, formatToken } from "@/lib/format";
 import {
   Allocation,
   AllocationId,
-  NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-  NORMALIZED_mSEND_3_MONTHS_COINTYPE,
-  NORMALIZED_mSEND_6_MONTHS_COINTYPE,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
   mSEND_MANAGER_OBJECT_ID,
@@ -47,6 +50,12 @@ export default function ClaimSection({
   burnSendPointsSuilendCapsules,
 }: ClaimSectionProps) {
   const { getBalance } = useLoadedAppContext();
+
+  const mSendBetaBalance = getBalance(NORMALIZED_BETA_mSEND_COINTYPE);
+
+  // const mSend3MBalance = getBalance(NORMALIZED_mSEND_3M_COINTYPE);
+  // const mSend6MBalance = getBalance(NORMALIZED_mSEND_6M_COINTYPE);
+  // const mSend12MBalance = getBalance(NORMALIZED_mSEND_12M_COINTYPE);
 
   // Burn SEND Points and Suilend Capsules
   const sendPointsAllocation = allocations.find(
@@ -79,9 +88,6 @@ export default function ClaimSection({
   // );
 
   // Claim SEND
-  const balanceMsend3Months = getBalance(NORMALIZED_mSEND_3_MONTHS_COINTYPE);
-  const balanceMsend6Months = getBalance(NORMALIZED_mSEND_6_MONTHS_COINTYPE);
-  const balanceMsend12Months = getBalance(NORMALIZED_mSEND_12_MONTHS_COINTYPE);
 
   const claimSend = async (
     mSendCoinObj: string,
@@ -90,14 +96,13 @@ export default function ClaimSection({
   ) => {
     const transaction = new Transaction();
 
-    const MSEND_TYPE =
-      "0x1a98c181ce323d1571be1f805b3d5d19e98c1f79492aa32f592e7fd4575fd9e2::msend::MSEND";
-    const SEND_TYPE =
-      "0x1a98c181ce323d1571be1f805b3d5d19e98c1f79492aa32f592e7fd4575fd9e2::send::SEND";
-
     const send = transaction.moveCall({
       target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
-      typeArguments: [MSEND_TYPE, SEND_TYPE, "0x2::sui::SUI"],
+      typeArguments: [
+        NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+        NORMALIZED_BETA_SEND_COINTYPE, // TODO
+        NORMALIZED_SUI_COINTYPE,
+      ],
       arguments: [
         transaction.object(mSEND_MANAGER_OBJECT_ID),
         transaction.object(mSendCoinObj),
@@ -164,41 +169,41 @@ export default function ClaimSection({
               {suilendCapsulesAllocation.userAllocationPercent?.gt(0) &&
                 Object.entries(ownedSuilendCapsulesMap!)
                   .filter(([key, value]) => value.gt(0))
-                  .map(([key, value], index, array) => (
-                    <Fragment key={key}>
-                      <div className="flex w-full flex-row items-center justify-between gap-4">
-                        <div className="flex flex-row items-center gap-3">
-                          <Image
-                            src={suilendCapsulesAllocation.src}
-                            alt="Suilend Capsules"
-                            width={28}
-                            height={28}
-                          />
-                          <TBody className="text-[16px]">
-                            {formatInteger(+value)} {capitalize(key)} Suilend
-                            Capsule{!value.eq(1) && "s"}
-                          </TBody>
-                        </div>
-
-                        <div className="flex flex-row items-center gap-1.5">
-                          {/* TODO: mSEND */}
-                          <SendTokenLogo />
-                          <TBody className="text-[16px]">
-                            {formatToken(
-                              value.times(
-                                suilendCapsulesTotalAllocationBreakdownMap[
-                                  key as SuilendCapsuleRarity
-                                ].percent
-                                  .times(SEND_TOTAL_SUPPLY)
-                                  .div(100),
-                              ),
-                              { exact: false },
-                            )}
-                          </TBody>
-                        </div>
+                  .map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex w-full flex-row items-center justify-between gap-4"
+                    >
+                      <div className="flex flex-row items-center gap-3">
+                        <Image
+                          src={suilendCapsulesAllocation.src}
+                          alt="Suilend Capsules"
+                          width={28}
+                          height={28}
+                        />
+                        <TBody className="text-[16px]">
+                          {formatInteger(+value)} {capitalize(key)} Suilend
+                          Capsule{!value.eq(1) && "s"}
+                        </TBody>
                       </div>
-                      {index !== array.length - 1 && <Separator />}
-                    </Fragment>
+
+                      <div className="flex flex-row items-center gap-1.5">
+                        {/* TODO: mSEND */}
+                        <SendTokenLogo />
+                        <TBody className="text-[16px]">
+                          {formatToken(
+                            value.times(
+                              suilendCapsulesTotalAllocationBreakdownMap[
+                                key as SuilendCapsuleRarity
+                              ].percent
+                                .times(SEND_TOTAL_SUPPLY)
+                                .div(100),
+                            ),
+                            { exact: false },
+                          )}
+                        </TBody>
+                      </div>
+                    </div>
                   ))}
             </div>
 
@@ -217,30 +222,12 @@ export default function ClaimSection({
       <div className="flex flex-col gap-4 rounded-md border px-4 py-3">
         <div className="flex flex-row items-center gap-8">
           <TBody>
-            mSEND (3 months) in wallet:{" "}
-            {formatToken(balanceMsend3Months, { exact: false })}
+            mSEND in wallet: {formatToken(mSendBetaBalance, { exact: false })}
           </TBody>
-          <Button labelClassName="uppercase" onClick={claimSend}>
-            Claim
-          </Button>
-        </div>
-
-        <div className="flex flex-row items-center gap-8">
-          <TBody>
-            mSEND (6 months) in wallet:{" "}
-            {formatToken(balanceMsend6Months, { exact: false })}
-          </TBody>
-          <Button labelClassName="uppercase" onClick={claimSend}>
-            Claim
-          </Button>
-        </div>
-
-        <div className="flex flex-row items-center gap-8">
-          <TBody>
-            mSEND (12 months) in wallet:{" "}
-            {formatToken(balanceMsend12Months, { exact: false })}
-          </TBody>
-          <Button labelClassName="uppercase" onClick={claimSend}>
+          <Button
+            labelClassName="uppercase"
+            // onClick={claimSend}
+          >
             Claim
           </Button>
         </div>

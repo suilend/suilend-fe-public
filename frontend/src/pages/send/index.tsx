@@ -13,7 +13,13 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 import useSWR from "swr";
 
-import { getBalanceChange, isSendPoints } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_BETA_SEND_POINTS_COINTYPE,
+  NORMALIZED_BETA_mSEND_COINTYPE,
+  NORMALIZED_mSEND_12M_COINTYPE,
+  NORMALIZED_mSEND_COINTYPES,
+  getBalanceChange,
+} from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -133,29 +139,19 @@ const CAPSULE_MANAGER_OBJECT_ID =
 export const mSEND_MANAGER_OBJECT_ID =
   "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
-const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
-  "0x86f166ac3a336248929979d19252c12170b8dce87e5e71004e35c49ece02c247::suilend_point::SUILEND_POINT",
-); // TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
-
-export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
-  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-); // TODO
-export const NORMALIZED_mSEND_6_MONTHS_COINTYPE = normalizeStructTag(
-  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-); // TODO
-export const NORMALIZED_mSEND_12_MONTHS_COINTYPE = normalizeStructTag(
-  "0xe0644f3e46b2d9f319a2cc3491155c75d1b6132ba9b3601c6e7e102e17296645::goof::GOOF",
-); // TODO
-
 const BURN_SEND_POINTS_EVENT_TYPE =
-  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::points::BurnEvent";
+  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::points::BurnEvent"; // TODO
 const BURN_SUILEND_CAPSULES_EVENT_TYPE =
-  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::capsule::BurnEvent";
-const CLAIM_SEND_EVENT_TYPE =
-  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627::mtoken::RedeemMTokensEvent";
+  "0x3615c20d2375363f642d99cec657e69799b118d580f115760c731f0568900770::capsule::BurnEvent"; // TODO
+// const CLAIM_SEND_EVENT_TYPE =
+//   "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627::mtoken::RedeemMTokensEvent";
+const WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE =
+  "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed";
 
+const BETA_SUILEND_CAPSULE_TYPE =
+  "0xe225a46bfe059ab96f3264d3aee63c6c4997eccad2b4630350e0957a52badd54::suilend_capsule::SuilendCapsule";
 const SUILEND_CAPSULE_TYPE =
-  "0xe225a46bfe059ab96f3264d3aee63c6c4997eccad2b4630350e0957a52badd54::suilend_capsule::SuilendCapsule"; // TODO: Change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
+  "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
 
 // ---- END TEMP ----
 
@@ -241,17 +237,9 @@ const queryTransactionBlocks = async (
 export default function Send() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { data } = useLoadedAppContext();
+  const { suilendClient, data } = useLoadedAppContext();
 
-  const mSendCoinTypes = useMemo(
-    () => [
-      NORMALIZED_mSEND_3_MONTHS_COINTYPE,
-      NORMALIZED_mSEND_6_MONTHS_COINTYPE,
-      NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-    ],
-    [],
-  );
-  const mSendCoinMetadataMap = useCoinMetadataMap(mSendCoinTypes);
+  const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
 
   // Setup - total allocated SEND Points
   const totalAllocatedPoints = useMemo(() => {
@@ -261,7 +249,10 @@ export default function Send() {
         ...reserve.depositsPoolRewardManager.poolRewards,
         ...reserve.borrowsPoolRewardManager.poolRewards,
       ]) {
-        if (isSendPoints(pr.coinType))
+        if (
+          normalizeStructTag(pr.coinType) ===
+          NORMALIZED_BETA_SEND_POINTS_COINTYPE // TODO
+        )
           result = result.plus(pr.allocatedRewards);
       }
     }
@@ -315,10 +306,10 @@ export default function Send() {
     KioskData[] | undefined
   >(`ownedKiosks-${address}`, ownedKiosksFetcher, {
     onSuccess: (data) => {
-      console.log("Refreshed owned kiosks", data);
+      console.log("Refreshed ownedKiosks", data);
     },
     onError: (err) => {
-      console.error("Failed to refresh owned kiosks", err);
+      console.error("Failed to refresh ownedKiosks", err);
     },
   });
   useEffect(() => {
@@ -340,6 +331,45 @@ export default function Send() {
     [ownedKiosks],
   );
 
+  // Setup - transactions since TGE
+  const transactionsSinceTgeFetcher = useCallback(async () => {
+    if (!address) return undefined;
+
+    const userTransactions = await Promise.all([
+      queryTransactionBlocks(
+        suiClient,
+        { FromAddress: address },
+        TGE_TIMESTAMP_MS,
+      ),
+      queryTransactionBlocks(
+        suiClient,
+        { ToAddress: address },
+        TGE_TIMESTAMP_MS,
+      ),
+    ]);
+
+    return { from: userTransactions[0], to: userTransactions[1] };
+  }, [address, suiClient]);
+
+  const { data: transactionsSinceTge, mutate: mutateTransactionsSinceTge } =
+    useSWR<
+      | {
+          from: SuiTransactionBlockResponse[];
+          to: SuiTransactionBlockResponse[];
+        }
+      | undefined
+    >(`transactionsSinceTge-${address}`, transactionsSinceTgeFetcher, {
+      onSuccess: (data) => {
+        console.log("Refreshed transactionsSinceTge", data);
+      },
+      onError: (err) => {
+        console.error("Failed to refresh transactionsSinceTge", err);
+      },
+    });
+  useEffect(() => {
+    setTimeout(mutateTransactionsSinceTge, 250);
+  }, [mutateTransactionsSinceTge, address, suiClient]);
+
   // User - Early Users
   const isInEarlyUsersSnapshot = useMemo(() => {
     if (!address) return undefined;
@@ -351,8 +381,7 @@ export default function Send() {
   const userSendPointsFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    const coinMetadata = mSendCoinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
     if (!coinMetadata) return undefined;
 
     // Owned
@@ -360,25 +389,26 @@ export default function Send() {
       .totalPoints.total;
 
     // Claimed
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
+    if (transactionsSinceTge === undefined) return undefined;
 
-    const claimedMsend = userTransactions
-      .reduce((acc, transaction) => {
+    const claimedMsend = transactionsSinceTge.from.reduce(
+      (acc, transaction) => {
         const transactionClaimedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
           .reduce(
             (acc2, event) =>
-              acc2.plus((event.parsedJson as any).liquidity_amount),
+              acc2.plus(
+                new BigNumber((event.parsedJson as any).claim_amount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              ),
             new BigNumber(0),
           );
 
         return acc.plus(transactionClaimedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
+      },
+      new BigNumber(0),
+    );
 
     return { owned: ownedSendPoints, claimedMsend };
   }, [
@@ -386,17 +416,17 @@ export default function Send() {
     mSendCoinMetadataMap,
     data.rewardMap,
     data.obligations,
-    suiClient,
+    transactionsSinceTge,
   ]);
 
   const { data: userSendPoints, mutate: mutateUserSendPoints } = useSWR<
     { owned: BigNumber; claimedMsend: BigNumber } | undefined
   >(`userSendPoints-${address}`, userSendPointsFetcher, {
     onSuccess: (data) => {
-      console.log("Refreshed user SEND Points", data);
+      console.log("Refreshed userSendPoints", data);
     },
     onError: (err) => {
-      console.error("Failed to user SEND Points", err);
+      console.error("Failed to userSendPoints", err);
     },
   });
   useEffect(() => {
@@ -407,22 +437,21 @@ export default function Send() {
     mSendCoinMetadataMap,
     data.rewardMap,
     data.obligations,
-    suiClient,
+    transactionsSinceTge,
   ]);
 
   // User - Suilend Capsules
   const userSuilendCapsulesFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    const coinMetadata = mSendCoinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
     if (!coinMetadata) return undefined;
 
     // Owned
     const objs = await getOwnedObjectsOfType(
       suiClient,
       address,
-      SUILEND_CAPSULE_TYPE,
+      BETA_SUILEND_CAPSULE_TYPE, // TODO
     );
 
     const commonCapsuleObjs = objs.filter(
@@ -449,28 +478,29 @@ export default function Send() {
     };
 
     // Claimed
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
+    if (transactionsSinceTge === undefined) return undefined;
 
-    const claimedMsend = userTransactions
-      .reduce((acc, transaction) => {
+    const claimedMsend = transactionsSinceTge.from.reduce(
+      (acc, transaction) => {
         const transactionClaimedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
           .reduce(
             (acc2, event) =>
-              acc2.plus((event.parsedJson as any).liquidity_amount),
+              acc2.plus(
+                new BigNumber((event.parsedJson as any).claim_amount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              ),
             new BigNumber(0),
           );
 
         return acc.plus(transactionClaimedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
+      },
+      new BigNumber(0),
+    );
 
     return { ownedMap: ownedSuilendCapsulesMap, claimedMsend };
-  }, [address, mSendCoinMetadataMap, suiClient]);
+  }, [address, mSendCoinMetadataMap, suiClient, transactionsSinceTge]);
 
   const { data: userSuilendCapsules, mutate: mutateUserSuilendCapsules } =
     useSWR<
@@ -481,71 +511,73 @@ export default function Send() {
       | undefined
     >(`userSuilendCapsules-${address}`, userSuilendCapsulesFetcher, {
       onSuccess: (data) => {
-        console.log("Refreshed user Suilend Capsules", data);
+        console.log("Refreshed userSuilendCapsules", data);
       },
       onError: (err) => {
-        console.error("Failed to refresh user Suilend Capsules", err);
+        console.error("Failed to refresh userSuilendCapsules", err);
       },
     });
   useEffect(() => {
     setTimeout(mutateUserSuilendCapsules, 250);
-  }, [mutateUserSuilendCapsules, address, mSendCoinMetadataMap, suiClient]);
+  }, [
+    mutateUserSuilendCapsules,
+    address,
+    mSendCoinMetadataMap,
+    suiClient,
+    transactionsSinceTge,
+  ]);
 
   // User - Save
   const userSaveFetcher = useCallback(async () => {
     if (!address) return undefined;
 
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_12_MONTHS_COINTYPE];
+    const coinMetadata = mSendCoinMetadataMap?.[NORMALIZED_mSEND_12M_COINTYPE];
     if (!coinMetadata) return undefined;
 
     // Bridged
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
+    if (transactionsSinceTge === undefined) return undefined;
 
-    const bridgedMsend = userTransactions
-      .reduce((acc, transaction) => {
-        const hasWormholeEvent = !!(transaction.events ?? []).find(
-          (event) =>
-            event.type ===
-            "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed",
+    const bridgedMsend = transactionsSinceTge.to.reduce((acc, transaction) => {
+      const hasWormholeEvent = !!(transaction.events ?? []).find(
+        (event) => event.type === WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
+      );
+      if (!hasWormholeEvent) return acc;
+
+      const transactionBridgedMsend = (transaction.balanceChanges ?? [])
+        .filter(
+          (balanceChange) =>
+            normalizeStructTag(balanceChange.coinType) ===
+            NORMALIZED_mSEND_12M_COINTYPE,
+        )
+        .reduce(
+          (acc2, balanceChange) =>
+            acc2.plus(
+              new BigNumber(balanceChange.amount).div(
+                10 ** coinMetadata.decimals,
+              ),
+            ),
+          new BigNumber(0),
         );
-        if (!hasWormholeEvent) return acc;
 
-        const transactionBridgedMsend = (transaction.balanceChanges ?? [])
-          .filter(
-            (balanceChange) =>
-              normalizeStructTag(balanceChange.coinType) ===
-              NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-          )
-          .reduce(
-            (acc2, balanceChange) => acc2.plus(balanceChange.amount),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionBridgedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
+      return acc.plus(transactionBridgedMsend);
+    }, new BigNumber(0));
 
     return { bridgedMsend };
-  }, [address, mSendCoinMetadataMap, suiClient]);
+  }, [address, mSendCoinMetadataMap, transactionsSinceTge]);
 
   const { data: userSave, mutate: mutateUserSave } = useSWR<
     { bridgedMsend: BigNumber } | undefined
   >(`userSave-${address}`, userSaveFetcher, {
     onSuccess: (data) => {
-      console.log("Refreshed user Save", data);
+      console.log("Refreshed userSave", data);
     },
     onError: (err) => {
-      console.error("Failed to refresh user Save", err);
+      console.error("Failed to refresh userSave", err);
     },
   });
   useEffect(() => {
     setTimeout(mutateUserSave, 250);
-  }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
+  }, [mutateUserSave, address, mSendCoinMetadataMap, transactionsSinceTge]);
 
   // User - Rootlets
   const ownedRootlets: BigNumber | undefined = useMemo(() => {
@@ -630,10 +662,10 @@ export default function Send() {
       ownedDoubleUpCitizenFetcher,
       {
         onSuccess: (data) => {
-          console.log("Refreshed owned DoubleUp Citizen", data);
+          console.log("Refreshed ownedDoubleUpCitizen", data);
         },
         onError: (err) => {
-          console.error("Failed to refresh owned DoubleUp Citizen", err);
+          console.error("Failed to refresh ownedDoubleUpCitizen", err);
         },
       },
     );
@@ -1386,37 +1418,57 @@ export default function Send() {
   const burnSendPoints = async (transaction: Transaction) => {
     if (!address) return;
 
-    // TODO: Claim SEND Points from obligations
+    // Claim rewards
+    const claimedSendPointsCoins = [];
+    for (const obligation of data.obligations ?? []) {
+      const obligationOwnerCap = data.obligationOwnerCaps?.find(
+        (o) => o.obligationId === obligation.id,
+      );
+      if (!obligationOwnerCap) continue;
 
-    // Merge SEND Points coins
-    const coins = (
-      await suiClient.getCoins({
-        owner: address,
-        coinType: NORMALIZED_SEND_POINTS_COINTYPE,
-      })
-    ).data;
-    if (coins.length === 0) throw new Error("No SEND Points in wallet");
+      const sendPointsRewards = Object.values(data.rewardMap).flatMap(
+        (rewards) =>
+          [...rewards.deposit, ...rewards.borrow].filter(
+            (r) =>
+              normalizeStructTag(r.stats.rewardCoinType) ===
+                NORMALIZED_BETA_SEND_POINTS_COINTYPE && // TODO
+              !!r.obligationClaims[obligation.id] &&
+              r.obligationClaims[obligation.id].claimableAmount.gt(0),
+          ),
+      );
+      for (const sendPointsReward of sendPointsRewards) {
+        const [claimedSendPointsCoin] = suilendClient.claimReward(
+          obligationOwnerCap.id,
+          sendPointsReward.obligationClaims[obligation.id].reserveArrayIndex,
+          BigInt(sendPointsReward.stats.rewardIndex),
+          sendPointsReward.stats.rewardCoinType,
+          sendPointsReward.stats.side,
+          transaction,
+        );
+        claimedSendPointsCoins.push(claimedSendPointsCoin);
+      }
+    }
 
-    const mergeCoin = coins[0];
-    if (coins.length > 1) {
+    const mergedSendPointsCoin = claimedSendPointsCoins[0];
+    if (claimedSendPointsCoins.length > 1) {
       transaction.mergeCoins(
-        transaction.object(mergeCoin.coinObjectId),
-        coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
+        mergedSendPointsCoin,
+        claimedSendPointsCoins.slice(1),
       );
     }
 
-    // Burn SEND Points
-    const mSend = transaction.moveCall({
+    // Burn for mSEND
+    const mSendCoin = transaction.moveCall({
       target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
-      typeArguments: [NORMALIZED_mSEND_3_MONTHS_COINTYPE],
+      typeArguments: [NORMALIZED_BETA_mSEND_COINTYPE], // TODO
       arguments: [
         transaction.object(POINTS_MANAGER_OBJECT_ID),
-        transaction.object(mergeCoin.coinObjectId),
+        transaction.object(mergedSendPointsCoin),
       ],
     });
 
     // Transfer mSEND to user
-    transaction.transferObjects([mSend], transaction.pure.address(address));
+    transaction.transferObjects([mSendCoin], transaction.pure.address(address));
   };
 
   const burnSuilendCapsules = async (transaction: Transaction) => {
@@ -1426,36 +1478,36 @@ export default function Send() {
     const objs = await getOwnedObjectsOfType(
       suiClient,
       address,
-      SUILEND_CAPSULE_TYPE,
+      BETA_SUILEND_CAPSULE_TYPE, // TODO
     );
 
-    // Burn Suilend Capsules
+    // Burn
     const mSendCoins = [];
-
     for (const obj of objs) {
       const mSendCoin = transaction.moveCall({
         target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
-        typeArguments: [NORMALIZED_mSEND_3_MONTHS_COINTYPE],
+        typeArguments: [NORMALIZED_BETA_mSEND_COINTYPE], // TODO
         arguments: [
           transaction.object(CAPSULE_MANAGER_OBJECT_ID),
           transaction.object(obj.data?.objectId as string),
         ],
       });
-
       mSendCoins.push(mSendCoin);
     }
 
-    // Merge mSEND coins
-    const mergeCoin = mSendCoins[0];
+    const mergedMsendCoin = mSendCoins[0];
     if (mSendCoins.length > 1) {
       transaction.mergeCoins(
-        transaction.object(mergeCoin),
+        transaction.object(mergedMsendCoin),
         mSendCoins.map((c) => transaction.object(c)).slice(1),
       );
     }
 
     // Transfer mSEND to user
-    transaction.transferObjects([mergeCoin], transaction.pure.address(address));
+    transaction.transferObjects(
+      [mergedMsendCoin],
+      transaction.pure.address(address),
+    );
   };
 
   const burnSendPointsSuilendCapsules = async () => {
@@ -1463,8 +1515,7 @@ export default function Send() {
     if (userSendPoints === undefined || userSuilendCapsules === undefined)
       return;
 
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
+    const coinMetadata = mSendCoinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
     if (!coinMetadata) return undefined;
 
     const transaction = new Transaction();
@@ -1481,7 +1532,7 @@ export default function Send() {
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_mSEND_3_MONTHS_COINTYPE,
+        coinType: NORMALIZED_BETA_mSEND_COINTYPE, // TODO
         ...coinMetadata,
       });
 
@@ -1493,14 +1544,14 @@ export default function Send() {
               ? `${formatToken(ownedSendPoints, { exact: false })} SEND Points`
               : undefined,
             ownedSuilendCapsules.gt(0)
-              ? `${formatToken(ownedSuilendCapsules, { exact: false })} Suilend Capsules`
+              ? `${formatInteger(+ownedSuilendCapsules)} Suilend Capsules`
               : undefined,
           ]
             .filter(Boolean)
             .join(" and "),
           "to",
           balanceChange !== undefined
-            ? `${formatToken(balanceChange, { exact: false })} mSEND`
+            ? `${formatToken(balanceChange, { dp: coinMetadata.decimals })} mSEND`
             : "mSEND",
         ].join(" "),
         {
