@@ -12,8 +12,10 @@ import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
+  NORMALIZED_WETH_COINTYPE,
   NORMALIZED_trevinSUI_COINTYPE,
   RewardMap,
+  isDeprecated,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
@@ -176,7 +178,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
           return (
             (reserve.coinType === NORMALIZED_trevinSUI_COINTYPE
               ? Date.now() >= 1733396400000 // 2024-12-05 11:00:00 UTC
-              : reserve.config.depositLimit.gt(0)) ||
+              : isDeprecated(reserve.coinType) // Always show deprecated reserves
+                ? true
+                : reserve.config.depositLimit.gt(0)) ||
             depositedAmount.gt(0) ||
             borrowedAmount.gt(0) ||
             !!appData.lendingMarketOwnerCapId
