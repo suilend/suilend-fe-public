@@ -5,11 +5,11 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
-  NORMALIZED_NS_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isDeprecated,
   isEcosystemLst,
   isMemecoin,
   issSui,
@@ -423,6 +423,18 @@ export default function MarketTable() {
         subRows: [],
       };
 
+      const deprecatedRow: CollapsibleRowData = {
+        isCollapsibleRow: true,
+        title: "DEPRECATED",
+
+        depositedAmount: new BigNumber(0),
+        depositedAmountUsd: new BigNumber(0),
+        borrowedAmount: new BigNumber(0),
+        borrowedAmountUsd: new BigNumber(0),
+
+        subRows: [],
+      };
+
       for (const reserveRow of mainReserveRows) {
         if (isEcosystemLst(reserveRow.token.coinType)) {
           ecosystemLstsRow.depositedAmount =
@@ -439,6 +451,21 @@ export default function MarketTable() {
             );
 
           ecosystemLstsRow.subRows.push(reserveRow);
+        } else if (isDeprecated(reserveRow.token.coinType)) {
+          deprecatedRow.depositedAmount = deprecatedRow.depositedAmount.plus(
+            reserveRow.depositedAmount,
+          );
+          deprecatedRow.depositedAmountUsd =
+            deprecatedRow.depositedAmountUsd.plus(
+              reserveRow.depositedAmountUsd,
+            );
+          deprecatedRow.borrowedAmount = deprecatedRow.borrowedAmount.plus(
+            reserveRow.borrowedAmount,
+          );
+          deprecatedRow.borrowedAmountUsd =
+            deprecatedRow.borrowedAmountUsd.plus(reserveRow.borrowedAmountUsd);
+
+          deprecatedRow.subRows.push(reserveRow);
         } else mainAssetsRow.subRows.push(reserveRow);
       }
 
@@ -452,6 +479,9 @@ export default function MarketTable() {
           ...mainAssetsRow.subRows.slice(index + 1),
         ];
       }
+
+      if (deprecatedRow.subRows.length > 0)
+        mainAssetsRow.subRows = [...mainAssetsRow.subRows, deprecatedRow];
 
       mainAssetsRow.count = mainReserveRows.length;
       result.push(mainAssetsRow);
@@ -496,17 +526,11 @@ export default function MarketTable() {
         } else isolatedAssetsRow.subRows.push(reserveRow);
       }
 
-      if (memecoinsRow.subRows.length > 0) {
-        const index = isolatedAssetsRow.subRows.findIndex(
-          (x) =>
-            (x as ReservesRowData).token.coinType === NORMALIZED_NS_COINTYPE,
-        );
+      if (memecoinsRow.subRows.length > 0)
         isolatedAssetsRow.subRows = [
-          ...isolatedAssetsRow.subRows.slice(0, index + 1),
+          ...isolatedAssetsRow.subRows,
           memecoinsRow,
-          ...isolatedAssetsRow.subRows.slice(index + 1),
         ];
-      }
 
       isolatedAssetsRow.count = isolatedReserveRows.length;
       result.push(isolatedAssetsRow);
