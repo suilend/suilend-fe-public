@@ -1,24 +1,6 @@
 import Head from "next/head";
-import { useCallback, useEffect, useMemo } from "react";
 
-import { KioskClient, KioskData, Network } from "@mysten/kiosk";
-import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import useSWR from "swr";
-
-import {
-  NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_SEND_POINTS_COINTYPE,
-  NORMALIZED_BETA_mSEND_COINTYPE,
-  NORMALIZED_mSEND_12M_COINTYPE,
-  NORMALIZED_mSEND_COINTYPES,
-} from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
 import AllocationCard from "@/components/send/AllocationCard";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -26,673 +8,34 @@ import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatInteger } from "@/lib/format";
-import { getPointsStats } from "@/lib/points";
 import {
-  BETA_SUILEND_CAPSULE_TYPE,
-  BURN_SEND_POINTS_EVENT_TYPE,
-  BURN_SUILEND_CAPSULES_EVENT_TYPE,
-  REDEEM_SEND_EVENT_TYPE,
+  SendContextProvider,
+  useLoadedSendContext,
+} from "@/contexts/SendContext";
+import { formatInteger } from "@/lib/format";
+import {
+  Allocation,
+  AllocationId,
+  AllocationType,
+  AssetType,
+  SEND_TOTAL_SUPPLY,
+  SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
 } from "@/lib/send";
-import {
-  getOwnedObjectsOfType,
-  queryTransactionBlocksAfter,
-} from "@/lib/transactions";
 
 import earlyUsersJson from "./lending/early-users.json";
-import animaJson from "./nft/anima.json";
 import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
 import eggJson from "./nft/egg.json";
 import kumoJson from "./nft/kumo.json";
 import primeMachinJson from "./nft/prime-machin.json";
 import rootletsJson from "./nft/rootlets.json";
-import aaaJson from "./token/aaa.json";
-import fudJson from "./token/fud.json";
-import octoJson from "./token/octo.json";
-import tismJson from "./token/tism.json";
 import bluefinLeaguesBlackJson from "./trading/bluefin-leagues-black.json";
 import bluefinLeaguesGoldJson from "./trading/bluefin-leagues-gold.json";
 import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json";
 import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json";
-import bluefinSendTradersJson from "./trading/bluefin-send-traders.json";
 
-export const SEND_TOTAL_SUPPLY = 100_000_000;
-
-export enum AllocationId {
-  EARLY_USERS = "earlyUsers",
-  SEND_POINTS = "sendPoints",
-  SUILEND_CAPSULES = "suilendCapsules",
-  SAVE = "save",
-  ROOTLETS = "rootlets",
-
-  BLUEFIN_LEAGUES = "bluefinLeagues",
-  BLUEFIN_SEND_TRADERS = "bluefinSendTraders",
-
-  PRIME_MACHIN = "primeMachin",
-  EGG = "egg",
-  DOUBLEUP_CITIZEN = "doubleUpCitizen",
-  KUMO = "kumo",
-
-  ANIMA = "anima",
-
-  FUD = "fud",
-  AAA = "aaa",
-  OCTO = "octo",
-  TISM = "tism",
-}
-
-export enum AllocationType {
-  FLAT = "Flat",
-  LINEAR = "Linear",
-}
-
-export enum AssetType {
-  LENDING = "lending",
-  NFT = "nft",
-  TOKEN = "token",
-  TRADING = "trading",
-  POINTS = "points",
-}
-
-export type Allocation = {
-  id: AllocationId;
-  src: string;
-  hoverSrc?: string;
-  title: string;
-  description: string;
-  allocationType: AllocationType;
-  assetType?: AssetType;
-  cta?: {
-    title: string;
-    href: string;
-  };
-  snapshotTaken: boolean;
-  eligibleWallets?: string;
-  totalAllocationPercent: BigNumber;
-  totalAllocationBreakdown: {
-    title: string;
-    percent: BigNumber;
-  }[];
-
-  userAllocationPercent?: BigNumber;
-  userClaimedMsend?: BigNumber;
-  userBridgedMsend?: BigNumber;
-};
-
-export enum SuilendCapsuleRarity {
-  COMMON = "common",
-  UNCOMMON = "uncommon",
-  RARE = "rare",
-}
-
-const WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE =
-  "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed";
-
-const ROOTLETS_TYPE =
-  "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
-
-const PRIME_MACHIN_TYPE =
-  "0x034c162f6b594cb5a1805264dd01ca5d80ce3eca6522e6ee37fd9ebfb9d3ddca::factory::PrimeMachin";
-const EGG_TYPE =
-  "0x484932c474bf09f002b82e4a57206a6658a0ca6dbdb15896808dcd1929c77820::egg::AfEgg";
-const DOUBLEUP_CITIZEN_TYPE =
-  "0x862810efecf0296db2e9df3e075a7af8034ba374e73ff1098e88cc4bb7c15437::doubleup_citizens::DoubleUpCitizen";
-const KUMO_TYPE =
-  "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
-
-export default function Send() {
-  const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
-  const { data } = useLoadedAppContext();
-
-  const coinMetadataMap = useCoinMetadataMap([
-    ...NORMALIZED_mSEND_COINTYPES,
-    NORMALIZED_BETA_SEND_COINTYPE, // TODO
-  ]);
-
-  // Setup - total allocated SEND Points
-  const totalAllocatedPoints = useMemo(() => {
-    let result = new BigNumber(0);
-    for (const reserve of data.lendingMarket.reserves) {
-      for (const pr of [
-        ...reserve.depositsPoolRewardManager.poolRewards,
-        ...reserve.borrowsPoolRewardManager.poolRewards,
-      ]) {
-        if (
-          normalizeStructTag(pr.coinType) ===
-          NORMALIZED_BETA_SEND_POINTS_COINTYPE // TODO
-        )
-          result = result.plus(pr.allocatedRewards);
-      }
-    }
-
-    return result;
-  }, [data.lendingMarket.reserves]);
-
-  // Setup - Bluefin SEND Traders total volume
-  const bluefinSendTradersTotalVolumeUsd = useMemo(
-    () =>
-      Object.values(bluefinSendTradersJson as number[]).reduce(
-        (acc, volumeUsd) => acc.plus(volumeUsd),
-        new BigNumber(0),
-      ),
-    [],
-  );
-
-  // Setup - owned kiosks
-  const kioskClient = useMemo(
-    () => new KioskClient({ client: suiClient, network: Network.MAINNET }),
-    [suiClient],
-  );
-
-  const ownedKiosksFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const allKioskIds = [];
-    let cursor = undefined;
-    let hasNextPage = true;
-    while (hasNextPage) {
-      const kiosks = await kioskClient.getOwnedKiosks({
-        address: address,
-        pagination: {
-          cursor,
-        },
-      });
-
-      allKioskIds.push(...kiosks.kioskIds);
-      cursor = kiosks.nextCursor ?? undefined;
-      hasNextPage = kiosks.hasNextPage;
-    }
-
-    const allKiosks = await Promise.all(
-      allKioskIds.map((kioskId) => kioskClient.getKiosk({ id: kioskId })),
-    );
-
-    return allKiosks;
-  }, [address, kioskClient]);
-
-  const { data: ownedKiosks, mutate: mutateOwnedKiosks } = useSWR<
-    KioskData[] | undefined
-  >(`ownedKiosks-${address}`, ownedKiosksFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed ownedKiosks", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh ownedKiosks", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateOwnedKiosks, 250);
-  }, [mutateOwnedKiosks, address, kioskClient]);
-
-  const getOwnedKioskItemsOfType = useCallback(
-    (type: string) => {
-      if (ownedKiosks === undefined) return undefined;
-
-      const count = ownedKiosks.reduce(
-        (acc, kiosk) =>
-          acc.plus(kiosk.items.filter((item) => item.type === type).length),
-        new BigNumber(0),
-      );
-
-      return count;
-    },
-    [ownedKiosks],
-  );
-
-  // Setup - transactions since TGE
-  const transactionsSinceTgeFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const userTransactions = await Promise.all([
-      queryTransactionBlocksAfter(
-        suiClient,
-        { FromAddress: address },
-        TGE_TIMESTAMP_MS,
-      ),
-      queryTransactionBlocksAfter(
-        suiClient,
-        { ToAddress: address },
-        TGE_TIMESTAMP_MS,
-      ),
-    ]);
-
-    return { from: userTransactions[0], to: userTransactions[1] };
-  }, [address, suiClient]);
-
-  const { data: transactionsSinceTge, mutate: mutateTransactionsSinceTge } =
-    useSWR<
-      | {
-          from: SuiTransactionBlockResponse[];
-          to: SuiTransactionBlockResponse[];
-        }
-      | undefined
-    >(`transactionsSinceTge-${address}`, transactionsSinceTgeFetcher, {
-      onSuccess: (data) => {
-        console.log("Refreshed transactionsSinceTge", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh transactionsSinceTge", err);
-      },
-    });
-  useEffect(() => {
-    setTimeout(mutateTransactionsSinceTge, 250);
-  }, [mutateTransactionsSinceTge, address, suiClient]);
-
-  // User - Early Users
-  const isInEarlyUsersSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return earlyUsersJson.includes(address);
-  }, [address]);
-
-  // User - SEND Points
-  const userSendPointsFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
-    if (!coinMetadata) return undefined;
-
-    // Owned
-    const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
-      .totalPoints.total;
-
-    // Claimed
-    if (transactionsSinceTge === undefined) return undefined;
-
-    const claimedMsend = transactionsSinceTge.from.reduce(
-      (acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
-          .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
-          .reduce(
-            (acc2, event) =>
-              acc2.plus(
-                new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 ** coinMetadata.decimals,
-                ),
-              ),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionClaimedMsend);
-      },
-      new BigNumber(0),
-    );
-
-    return { owned: ownedSendPoints, claimedMsend };
-  }, [
-    address,
-    coinMetadataMap,
-    data.rewardMap,
-    data.obligations,
-    transactionsSinceTge,
-  ]);
-
-  const { data: userSendPoints, mutate: mutateUserSendPoints } = useSWR<
-    { owned: BigNumber; claimedMsend: BigNumber } | undefined
-  >(`userSendPoints-${address}`, userSendPointsFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userSendPoints", data);
-    },
-    onError: (err) => {
-      console.error("Failed to userSendPoints", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateUserSendPoints, 250);
-  }, [
-    mutateUserSendPoints,
-    address,
-    coinMetadataMap,
-    data.rewardMap,
-    data.obligations,
-    transactionsSinceTge,
-  ]);
-
-  // User - Suilend Capsules
-  const userSuilendCapsulesFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
-    if (!coinMetadata) return undefined;
-
-    // Owned
-    const objs = await getOwnedObjectsOfType(
-      suiClient,
-      address,
-      BETA_SUILEND_CAPSULE_TYPE, // TODO
-    );
-
-    const commonCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity ===
-        SuilendCapsuleRarity.COMMON,
-    );
-    const uncommonCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity ===
-        SuilendCapsuleRarity.UNCOMMON,
-    );
-    const rareCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity === SuilendCapsuleRarity.RARE,
-    );
-
-    const ownedSuilendCapsulesMap = {
-      [SuilendCapsuleRarity.COMMON]: new BigNumber(commonCapsuleObjs.length),
-      [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
-        uncommonCapsuleObjs.length,
-      ),
-      [SuilendCapsuleRarity.RARE]: new BigNumber(rareCapsuleObjs.length),
-    };
-
-    // Claimed
-    if (transactionsSinceTge === undefined) return undefined;
-
-    const claimedMsend = transactionsSinceTge.from.reduce(
-      (acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
-          .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
-          .reduce(
-            (acc2, event) =>
-              acc2.plus(
-                new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 ** coinMetadata.decimals,
-                ),
-              ),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionClaimedMsend);
-      },
-      new BigNumber(0),
-    );
-
-    return { ownedMap: ownedSuilendCapsulesMap, claimedMsend };
-  }, [address, coinMetadataMap, suiClient, transactionsSinceTge]);
-
-  const { data: userSuilendCapsules, mutate: mutateUserSuilendCapsules } =
-    useSWR<
-      | {
-          ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
-          claimedMsend: BigNumber;
-        }
-      | undefined
-    >(`userSuilendCapsules-${address}`, userSuilendCapsulesFetcher, {
-      onSuccess: (data) => {
-        console.log("Refreshed userSuilendCapsules", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh userSuilendCapsules", err);
-      },
-    });
-  useEffect(() => {
-    setTimeout(mutateUserSuilendCapsules, 250);
-  }, [
-    mutateUserSuilendCapsules,
-    address,
-    coinMetadataMap,
-    suiClient,
-    transactionsSinceTge,
-  ]);
-
-  // User - Save
-  const userSaveFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_mSEND_12M_COINTYPE];
-    if (!coinMetadata) return undefined;
-
-    // Bridged
-    if (transactionsSinceTge === undefined) return undefined;
-
-    const bridgedMsend = transactionsSinceTge.to.reduce((acc, transaction) => {
-      const hasWormholeEvent = !!(transaction.events ?? []).find(
-        (event) => event.type === WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
-      );
-      if (!hasWormholeEvent) return acc;
-
-      const transactionBridgedMsend = (transaction.balanceChanges ?? [])
-        .filter(
-          (balanceChange) =>
-            normalizeStructTag(balanceChange.coinType) ===
-            NORMALIZED_mSEND_12M_COINTYPE,
-        )
-        .reduce(
-          (acc2, balanceChange) =>
-            acc2.plus(
-              new BigNumber(balanceChange.amount).div(
-                10 ** coinMetadata.decimals,
-              ),
-            ),
-          new BigNumber(0),
-        );
-
-      return acc.plus(transactionBridgedMsend);
-    }, new BigNumber(0));
-
-    return { bridgedMsend };
-  }, [address, coinMetadataMap, transactionsSinceTge]);
-
-  const { data: userSave, mutate: mutateUserSave } = useSWR<
-    { bridgedMsend: BigNumber } | undefined
-  >(`userSave-${address}`, userSaveFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userSave", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh userSave", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateUserSave, 250);
-  }, [mutateUserSave, address, coinMetadataMap, transactionsSinceTge]);
-
-  // User - Rootlets
-  const ownedRootlets: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(rootletsJson).length > 0)
-      return new BigNumber(
-        (rootletsJson as Record<string, number>)[address] ?? 0,
-      );
-    return getOwnedKioskItemsOfType(ROOTLETS_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Bluefin Leagues
-  const isInBluefinLeaguesSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return (
-      bluefinLeaguesGoldJson.includes(address) ||
-      bluefinLeaguesPlatinumJson.includes(address) ||
-      bluefinLeaguesBlackJson.includes(address) ||
-      bluefinLeaguesSapphireJson.includes(address)
-    );
-  }, [address]);
-
-  // User - Bluefin SEND Traders
-  const bluefinSendTradersVolumeUsd = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(bluefinSendTradersJson).length > 0)
-      return new BigNumber(
-        (bluefinSendTradersJson as Record<string, number>)[address] ?? 0,
-      );
-    return undefined;
-  }, [address]);
-
-  // User - Prime Machin
-  const ownedPrimeMachin: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(primeMachinJson).length > 0)
-      return new BigNumber(
-        (primeMachinJson as Record<string, number>)[address] ?? 0,
-      );
-    return getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Egg
-  const ownedEgg: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(eggJson).length > 0)
-      return new BigNumber((eggJson as Record<string, number>)[address] ?? 0);
-    return getOwnedKioskItemsOfType(EGG_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - DoubleUp Citizen
-  const ownedDoubleUpCitizenFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    if (Object.keys(doubleUpCitizenJson).length > 0)
-      return new BigNumber(
-        (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-      );
-
-    const ownedKioskItemsOfType = getOwnedKioskItemsOfType(
-      DOUBLEUP_CITIZEN_TYPE,
-    );
-    const objs = await getOwnedObjectsOfType(
-      suiClient,
-      address,
-      DOUBLEUP_CITIZEN_TYPE,
-    );
-
-    if (ownedKioskItemsOfType === undefined) return undefined;
-
-    return ownedKioskItemsOfType.plus(objs.length);
-  }, [address, getOwnedKioskItemsOfType, suiClient]);
-
-  const { data: ownedDoubleUpCitizen, mutate: mutateOwnedDoubleUpCitizen } =
-    useSWR<BigNumber | undefined>(
-      `ownedDoubleUpCitizen-${address}`,
-      ownedDoubleUpCitizenFetcher,
-      {
-        onSuccess: (data) => {
-          console.log("Refreshed ownedDoubleUpCitizen", data);
-        },
-        onError: (err) => {
-          console.error("Failed to refresh ownedDoubleUpCitizen", err);
-        },
-      },
-    );
-  useEffect(() => {
-    setTimeout(mutateOwnedDoubleUpCitizen, 250);
-  }, [
-    mutateOwnedDoubleUpCitizen,
-    address,
-    getOwnedKioskItemsOfType,
-    suiClient,
-  ]);
-
-  // User - Kumo
-  const ownedKumo: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(kumoJson).length > 0)
-      return new BigNumber((kumoJson as Record<string, number>)[address] ?? 0);
-    return getOwnedKioskItemsOfType(KUMO_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Anima
-  const isInAnimaSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    if (animaJson.length > 0) return (animaJson as string[]).includes(address);
-    return undefined;
-  }, [address]);
-
-  // User - FUD
-  const isInFudSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return fudJson.includes(address);
-  }, [address]);
-
-  // User - AAA
-  const isInAaaSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return aaaJson.includes(address);
-  }, [address]);
-
-  // User - OCTO
-  const isInOctoSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return octoJson.includes(address);
-  }, [address]);
-
-  // User - TISM
-  const isInTismSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return tismJson.includes(address);
-  }, [address]);
-
-  const isLoading =
-    userSendPoints === undefined ||
-    userSuilendCapsules === undefined ||
-    userSave === undefined ||
-    ownedRootlets === undefined ||
-    ownedPrimeMachin === undefined ||
-    ownedEgg === undefined ||
-    ownedDoubleUpCitizen === undefined ||
-    ownedKumo === undefined;
-
-  // User - SEND
-  const userSendFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_SEND_COINTYPE]; // TODO
-    if (!coinMetadata) return undefined;
-
-    // Redeemed
-    if (transactionsSinceTge === undefined) return undefined;
-
-    const redeemedSend = transactionsSinceTge.from.reduce(
-      (acc, transaction) => {
-        const transactionRedeemedSend = (transaction.events ?? [])
-          .filter(
-            (event) =>
-              event.type ===
-              `${REDEEM_SEND_EVENT_TYPE}<${NORMALIZED_BETA_mSEND_COINTYPE}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO,
-          )
-          .reduce(
-            (acc2, event) =>
-              acc2.plus(
-                new BigNumber((event.parsedJson as any).withdraw_amount).div(
-                  10 ** coinMetadata.decimals,
-                ),
-              ),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionRedeemedSend);
-      },
-      new BigNumber(0),
-    );
-
-    return { redeemedSend };
-  }, [address, coinMetadataMap, transactionsSinceTge]);
-
-  const { data: userSend, mutate: mutateUserSend } = useSWR<
-    { redeemedSend: BigNumber } | undefined
-  >(`userSend-${address}`, userSendFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userSend", data);
-    },
-    onError: (err) => {
-      console.error("Failed to userSend", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateUserSend, 250);
-  }, [mutateUserSend, address, coinMetadataMap, transactionsSinceTge]);
+function Page() {
+  const { totalAllocatedPoints, userAllocations } = useLoadedSendContext();
 
   // Allocations
   const earlyUsers = {
@@ -930,8 +273,8 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        isInEarlyUsersSnapshot !== undefined
-          ? isInEarlyUsersSnapshot
+        userAllocations !== undefined
+          ? userAllocations.earlyUsers.isInSnapshot
             ? earlyUsers.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -959,13 +302,15 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        userSendPoints !== undefined
-          ? userSendPoints.owned
+        userAllocations !== undefined
+          ? userAllocations.sendPoints.owned
               .div(1000)
               .times(sendPoints.totalAllocationBreakdownMap.thousand.percent)
           : undefined,
       userClaimedMsend:
-        userSendPoints !== undefined ? userSendPoints.claimedMsend : undefined,
+        userAllocations !== undefined
+          ? userAllocations.sendPoints.claimedMsend
+          : undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -986,16 +331,18 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        userSuilendCapsules !== undefined
+        userAllocations !== undefined
           ? new BigNumber(
-              userSuilendCapsules.ownedMap[SuilendCapsuleRarity.COMMON].times(
+              userAllocations.suilendCapsules.ownedMap[
+                SuilendCapsuleRarity.COMMON
+              ].times(
                 suilendCapsules.totalAllocationBreakdownMap[
                   SuilendCapsuleRarity.COMMON
                 ].percent,
               ),
             )
               .plus(
-                userSuilendCapsules.ownedMap[
+                userAllocations.suilendCapsules.ownedMap[
                   SuilendCapsuleRarity.UNCOMMON
                 ].times(
                   suilendCapsules.totalAllocationBreakdownMap[
@@ -1004,7 +351,9 @@ export default function Send() {
                 ),
               )
               .plus(
-                userSuilendCapsules.ownedMap[SuilendCapsuleRarity.RARE].times(
+                userAllocations.suilendCapsules.ownedMap[
+                  SuilendCapsuleRarity.RARE
+                ].times(
                   suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.RARE
                   ].percent,
@@ -1012,8 +361,8 @@ export default function Send() {
               )
           : undefined,
       userClaimedMsend:
-        userSuilendCapsules !== undefined
-          ? userSuilendCapsules.claimedMsend
+        userAllocations !== undefined
+          ? userAllocations.suilendCapsules.claimedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
@@ -1038,7 +387,9 @@ export default function Send() {
       userAllocationPercent: undefined,
       userClaimedMsend: undefined,
       userBridgedMsend:
-        userSave !== undefined ? userSave.bridgedMsend : undefined,
+        userAllocations !== undefined
+          ? userAllocations.save.bridgedMsend
+          : undefined,
     },
     {
       id: AllocationId.ROOTLETS,
@@ -1061,8 +412,8 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        ownedRootlets !== undefined
-          ? ownedRootlets.times(
+        userAllocations !== undefined
+          ? userAllocations.rootlets.owned.times(
               rootlets.totalAllocationBreakdownMap.one.percent,
             )
           : undefined,
@@ -1087,8 +438,8 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        isInBluefinLeaguesSnapshot !== undefined
-          ? isInBluefinLeaguesSnapshot
+        userAllocations !== undefined
+          ? userAllocations.bluefinLeagues.isInSnapshot
             ? bluefinLeagues.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -1149,8 +500,8 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        ownedPrimeMachin !== undefined
-          ? ownedPrimeMachin.times(
+        userAllocations !== undefined
+          ? userAllocations.primeMachin.owned.times(
               primeMachin.totalAllocationBreakdownMap.one.percent,
             )
           : undefined,
@@ -1176,8 +527,10 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        ownedEgg !== undefined
-          ? ownedEgg.times(egg.totalAllocationBreakdownMap.one.percent)
+        userAllocations !== undefined
+          ? userAllocations.egg.owned.times(
+              egg.totalAllocationBreakdownMap.one.percent,
+            )
           : undefined,
       userClaimedMsend: undefined,
       userBridgedMsend: undefined,
@@ -1203,8 +556,8 @@ export default function Send() {
       ),
 
       userAllocationPercent:
-        ownedDoubleUpCitizen !== undefined
-          ? ownedDoubleUpCitizen.times(
+        userAllocations !== undefined
+          ? userAllocations.doubleUpCitizen.owned.times(
               doubleUpCitizen.totalAllocationBreakdownMap.one.percent,
             )
           : undefined,
@@ -1230,8 +583,10 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        ownedKumo !== undefined
-          ? ownedKumo.times(kumo.totalAllocationBreakdownMap.one.percent)
+        userAllocations !== undefined
+          ? userAllocations.kumo.owned.times(
+              kumo.totalAllocationBreakdownMap.one.percent,
+            )
           : undefined,
       userClaimedMsend: undefined,
       userBridgedMsend: undefined,
@@ -1285,8 +640,8 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        isInFudSnapshot !== undefined
-          ? isInFudSnapshot
+        userAllocations !== undefined
+          ? userAllocations.fud.isInSnapshot
             ? fud.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -1312,8 +667,8 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        isInAaaSnapshot !== undefined
-          ? isInAaaSnapshot
+        userAllocations !== undefined
+          ? userAllocations.aaa.isInSnapshot
             ? aaa.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -1339,8 +694,8 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        isInOctoSnapshot !== undefined
-          ? isInOctoSnapshot
+        userAllocations !== undefined
+          ? userAllocations.octo.isInSnapshot
             ? octo.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -1365,8 +720,8 @@ export default function Send() {
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdownMap),
 
       userAllocationPercent:
-        isInTismSnapshot !== undefined
-          ? isInTismSnapshot
+        userAllocations !== undefined
+          ? userAllocations.tism.isInSnapshot
             ? tism.totalAllocationBreakdownMap.wallet.percent
             : new BigNumber(0)
           : undefined,
@@ -1386,7 +741,7 @@ export default function Send() {
 
         <div className="relative z-[2] flex w-full flex-col items-center">
           <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
-            <HeroSection allocations={allocations} isLoading={isLoading} />
+            <HeroSection allocations={allocations} />
 
             <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
               {allocations.map((allocation) => (
@@ -1403,22 +758,9 @@ export default function Send() {
               <Separator />
               <ClaimSection
                 allocations={allocations}
-                isLoading={isLoading}
                 suilendCapsulesTotalAllocationBreakdownMap={
                   suilendCapsules.totalAllocationBreakdownMap
                 }
-                userSendPoints={userSendPoints}
-                mutateUserSendPoints={async () => {
-                  await mutateUserSendPoints();
-                }}
-                userSuilendCapsules={userSuilendCapsules}
-                mutateUserSuilendCapsules={async () => {
-                  await mutateUserSuilendCapsules();
-                }}
-                userSend={userSend}
-                mutateUserSend={async () => {
-                  await mutateUserSend();
-                }}
               />
             </>
           )}
@@ -1428,5 +770,13 @@ export default function Send() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function Send() {
+  return (
+    <SendContextProvider>
+      <Page />
+    </SendContextProvider>
   );
 }

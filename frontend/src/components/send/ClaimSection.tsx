@@ -1,137 +1,88 @@
 import Image from "next/image";
+import { Fragment } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
+import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
-  NORMALIZED_mSEND_COINTYPES,
   getBalanceChange,
 } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
+import Card from "@/components/dashboard/Card";
+import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import SectionHeading from "@/components/send/SectionHeading";
-import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
-import { TBody, TDisplay } from "@/components/shared/Typography";
+import Tooltip from "@/components/shared/Tooltip";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedSendContext } from "@/contexts/SendContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken } from "@/lib/format";
-import {
-  burnSendPoints,
-  burnSuilendCapsules,
-  redeemMsendForSend,
-} from "@/lib/send";
 import {
   Allocation,
   AllocationId,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
-} from "@/pages/send";
+  burnSendPoints,
+  burnSuilendCapsules,
+  formatDuration,
+  mSEND_CONVERSION_END_TIMESTAMP_MS,
+  redeemMsendForSend,
+} from "@/lib/send";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
-interface ClaimSectionProps {
-  allocations: Allocation[];
-  isLoading: boolean;
+interface ConvertTabContentProps {
+  sendPointsAllocation: Allocation;
+  suilendCapsulesAllocation: Allocation;
+  totalClaimableMsend: BigNumber;
   suilendCapsulesTotalAllocationBreakdownMap: Record<
     SuilendCapsuleRarity,
     { percent: BigNumber }
   >;
-  userSendPoints: { owned: BigNumber; claimedMsend: BigNumber } | undefined;
-  mutateUserSendPoints: () => Promise<void>;
-  userSuilendCapsules:
-    | {
-        ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
-        claimedMsend: BigNumber;
-      }
-    | undefined;
-  mutateUserSuilendCapsules: () => Promise<void>;
-  userSend: { redeemedSend: BigNumber } | undefined;
-  mutateUserSend: () => Promise<void>;
 }
 
-export default function ClaimSection({
-  allocations,
-  isLoading,
+function ConvertTabContent({
+  sendPointsAllocation,
+  suilendCapsulesAllocation,
+  totalClaimableMsend,
   suilendCapsulesTotalAllocationBreakdownMap,
-  userSendPoints,
-  mutateUserSendPoints,
-  userSuilendCapsules,
-  mutateUserSuilendCapsules,
-  userSend,
-  mutateUserSend,
-}: ClaimSectionProps) {
+}: ConvertTabContentProps) {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, getBalance } = useLoadedAppContext();
+  const { suilendClient, data } = useLoadedAppContext();
 
-  const mSendBalanceMap = NORMALIZED_mSEND_COINTYPES.reduce(
-    (acc, coinType) => ({ ...acc, [coinType]: getBalance(coinType) }),
-    {} as Record<string, BigNumber>,
-  );
+  const { mSendCoinMetadataMap, userAllocations, refreshUserAllocations } =
+    useLoadedSendContext();
 
-  const coinMetadataMap = useCoinMetadataMap([
-    ...NORMALIZED_mSEND_COINTYPES,
-    NORMALIZED_BETA_SEND_COINTYPE, // TODO
-  ]);
+  // Ends
+  const endsDuration = intervalToDuration({
+    start: Date.now(),
+    end: new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+  });
 
-  // const mSend3MBalance = getBalance(NORMALIZED_mSEND_3M_COINTYPE);
-  // const mSend6MBalance = getBalance(NORMALIZED_mSEND_6M_COINTYPE);
-  // const mSend12MBalance = getBalance(NORMALIZED_mSEND_12M_COINTYPE);
-
-  // Burn SEND Points and Suilend Capsules
-  const sendPointsAllocation = allocations.find(
-    (a) => a.id === AllocationId.SEND_POINTS,
-  ) as Allocation;
-  const suilendCapsulesAllocation = allocations.find(
-    (a) => a.id === AllocationId.SUILEND_CAPSULES,
-  ) as Allocation;
-
-  // const totalClaimableMsend = new BigNumber(
-  //   new BigNumber(sendPointsAllocation.userAllocationPercent ?? 0)
-  //     .times(SEND_TOTAL_SUPPLY)
-  //     .div(100),
-  // ).plus(
-  //   ownedSuilendCapsulesMap
-  //     ? Object.entries(ownedSuilendCapsulesMap).reduce(
-  //         (acc, [key, value]) =>
-  //           acc.plus(
-  //             value.times(
-  //               suilendCapsulesTotalAllocationBreakdownMap[
-  //                 key as SuilendCapsuleRarity
-  //               ].percent
-  //                 .times(SEND_TOTAL_SUPPLY)
-  //                 .div(100),
-  //             ),
-  //           ),
-  //         new BigNumber(0),
-  //       )
-  //     : new BigNumber(0),
-  // );
-
-  // Burn SEND Points and Suilend Capsules for mSEND
-  const onConvertClick = async () => {
+  // Submit
+  const onSubmitClick = async () => {
     if (!address) return;
-    if (userSendPoints === undefined || userSuilendCapsules === undefined)
-      return;
-
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
-    if (!coinMetadata) return undefined; // TODO
+    if (userAllocations === undefined) return;
 
     const transaction = new Transaction();
     try {
-      const ownedSendPoints = userSendPoints.owned;
+      const ownedSendPoints = userAllocations.sendPoints.owned;
       const ownedSuilendCapsules = Object.values(
-        userSuilendCapsules.ownedMap,
+        userAllocations.suilendCapsules.ownedMap,
       ).reduce((acc, val) => acc.plus(val), new BigNumber(0));
 
       if (ownedSendPoints.gt(0))
@@ -144,7 +95,7 @@ export default function ClaimSection({
 
       const balanceChange = getBalanceChange(res, address, {
         coinType: NORMALIZED_BETA_mSEND_COINTYPE, // TODO
-        ...coinMetadata, // TODO
+        ...mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE], // TODO
       });
 
       toast.success(
@@ -162,7 +113,10 @@ export default function ClaimSection({
             .join(" and "),
           "to",
           balanceChange !== undefined
-            ? `${formatToken(balanceChange, { dp: coinMetadata.decimals })} mSEND`
+            ? `${formatToken(balanceChange, {
+                dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                  .decimals,
+              })} mSEND`
             : "mSEND",
         ].join(" "),
         {
@@ -180,17 +134,173 @@ export default function ClaimSection({
         { description: (err as Error)?.message || "An unknown error occurred" },
       );
     } finally {
-      await mutateUserSendPoints();
-      await mutateUserSuilendCapsules();
+      await refreshUserAllocations();
     }
   };
 
-  // Redeem mSEND for SEND
-  const onClaimSendClick = async () => {
-    if (!address) return;
+  return (
+    <>
+      <div className="flex w-full flex-col gap-4">
+        <div className="relative flex w-full flex-col">
+          {/* List */}
+          {userAllocations !== undefined && (
+            <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
+              {/* SEND Points */}
+              {sendPointsAllocation.userAllocationPercent?.gt(0) && (
+                <>
+                  <div className="flex w-full flex-row items-center justify-between gap-4">
+                    <div className="flex flex-row items-center gap-3">
+                      <Image
+                        src={sendPointsAllocation.src}
+                        alt="SEND Points"
+                        width={24}
+                        height={24}
+                      />
+                      <TBody className="text-[16px]">
+                        {formatToken(userAllocations.sendPoints.owned, {
+                          exact: false,
+                        })}{" "}
+                        SEND Points
+                      </TBody>
+                    </div>
 
-    const coinMetadata = coinMetadataMap?.[NORMALIZED_BETA_SEND_COINTYPE]; // TODO
-    if (!coinMetadata) return undefined;
+                    <div className="flex flex-row items-center gap-2">
+                      <MsendTokenLogo
+                        className="h-5 w-5"
+                        coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                      />
+                      <TBody className="text-[16px]">
+                        {formatToken(
+                          sendPointsAllocation.userAllocationPercent
+                            .times(SEND_TOTAL_SUPPLY)
+                            .div(100),
+                          { exact: false },
+                        )}
+                      </TBody>
+                    </div>
+                  </div>
+
+                  {suilendCapsulesAllocation.userAllocationPercent?.gt(0) && (
+                    <Separator />
+                  )}
+                </>
+              )}
+
+              {/* Suilend Capsules */}
+              {suilendCapsulesAllocation.userAllocationPercent?.gt(0) &&
+                Object.entries(userAllocations.suilendCapsules.ownedMap)
+                  .filter(([rarity, owned]) => owned.gt(0))
+                  .map(([rarity, owned], index, array) => (
+                    <Fragment key={rarity}>
+                      <div className="flex w-full flex-row items-center justify-between gap-4">
+                        <div className="flex flex-row items-center gap-3">
+                          <Image
+                            src={`/assets/send/nft/suilend-capsules-${rarity}.png`}
+                            alt={`${capitalize(rarity)} Suilend Capsule`}
+                            width={24}
+                            height={24}
+                          />
+                          <TBody className="text-[16px]">
+                            {formatInteger(+owned)} {capitalize(rarity)} Suilend
+                            Capsule{!owned.eq(1) && "s"}
+                          </TBody>
+                        </div>
+
+                        <div className="flex flex-row items-center gap-2">
+                          <MsendTokenLogo
+                            className="h-5 w-5"
+                            coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                          />
+                          <TBody className="text-[16px]">
+                            {formatToken(
+                              owned.times(
+                                suilendCapsulesTotalAllocationBreakdownMap[
+                                  rarity as SuilendCapsuleRarity
+                                ].percent
+                                  .times(SEND_TOTAL_SUPPLY)
+                                  .div(100),
+                              ),
+                              { exact: false },
+                            )}
+                          </TBody>
+                        </div>
+                      </div>
+
+                      {index !== array.length - 1 && <Separator />}
+                    </Fragment>
+                  ))}
+            </div>
+          )}
+
+          {/* Total */}
+          <div className="relative z-[1] -mt-2 flex w-full flex-row items-center justify-between rounded-b-md bg-border px-4 pb-2 pt-4">
+            <TBodySans className="text-muted-foreground">Total</TBodySans>
+
+            <div className="flex flex-row items-center gap-2">
+              <MsendTokenLogo
+                className="h-5 w-5"
+                coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+              />
+              <TBody className="text-[16px]">
+                {formatToken(totalClaimableMsend, { exact: false })}
+              </TBody>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex w-full flex-row items-center justify-between gap-4">
+          <TBodySans className="text-muted-foreground">
+            Conversion ends in
+          </TBodySans>
+
+          <div className="flex flex-row items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Tooltip
+              title={formatDate(
+                new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+                "yyyy-MM-dd HH:mm:ss",
+              )}
+            >
+              <TBody
+                className={cn(
+                  "decoration-foreground/50",
+                  hoverUnderlineClassName,
+                )}
+              >
+                {formatDuration(endsDuration)}
+              </TBody>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        className="h-14 w-full"
+        labelClassName="text-[16px]"
+        size="lg"
+        onClick={onSubmitClick}
+      >
+        CONVERT TO mSEND
+      </Button>
+    </>
+  );
+}
+
+function ClaimTabContent() {
+  const { explorer, suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+
+  const {
+    mSendCoinMetadataMap,
+    sendCoinMetadataMap,
+    mSendBalanceMap,
+    userSend,
+    refreshUserSend,
+  } = useLoadedSendContext();
+
+  // Submit
+  const onSubmitClick = async () => {
+    if (!address) return;
 
     const transaction = new Transaction();
     try {
@@ -201,14 +311,16 @@ export default function ClaimSection({
 
       const balanceChange = getBalanceChange(res, address, {
         coinType: NORMALIZED_BETA_SEND_COINTYPE, // TODO
-        ...coinMetadata,
+        ...sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE], // TODO
       });
 
       toast.success(
         [
           "Claimed",
           balanceChange !== undefined
-            ? `${formatToken(balanceChange, { dp: coinMetadata.decimals })} SEND`
+            ? `${formatToken(balanceChange, {
+                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+              })} SEND`
             : "SEND",
         ].join(" "),
         {
@@ -225,141 +337,151 @@ export default function ClaimSection({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await mutateUserSend();
+      await refreshUserSend();
     }
   };
 
   return (
-    <div className="flex w-full flex-col items-center gap-12 py-16 md:gap-16 md:py-20">
-      <SectionHeading id="claim-section-heading">Claim SEND</SectionHeading>
+    <div className="flex flex-col gap-4 rounded-md border px-4 py-3">
+      <div className="flex flex-row items-center gap-8">
+        <TBody>
+          mSEND in wallet:{" "}
+          {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
+            dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
+          })}
+        </TBody>
+        <Button labelClassName="uppercase" onClick={onSubmitClick}>
+          Claim SEND
+        </Button>
+      </div>
 
-      {/* Convert */}
-      {isLoading ? (
-        <Skeleton className="h-16 w-80" />
-      ) : (
-        (sendPointsAllocation.userAllocationPercent?.gt(0) ||
-          sendPointsAllocation.userAllocationPercent?.gt(0)) && (
-          <div className="-mt-8 flex w-full max-w-[560px] flex-col items-center gap-6">
-            <TDisplay className="text-3xl uppercase">Convert</TDisplay>
+      <div className="flex flex-row items-center gap-8">
+        <TBody>Claimed SEND:</TBody>
 
-            <div className="flex w-full flex-col gap-4 rounded-md border p-4">
-              {/* SEND Points */}
-              {sendPointsAllocation.userAllocationPercent?.gt(0) && (
-                <div className="flex w-full flex-row items-center justify-between gap-4">
-                  <div className="flex flex-row items-center gap-3">
-                    <Image
-                      src={sendPointsAllocation.src}
-                      alt="SEND Points"
-                      width={28}
-                      height={28}
-                    />
-                    <TBody className="text-[16px]">
-                      {formatToken(userSendPoints!.owned as BigNumber)} SEND
-                      Points
-                    </TBody>
-                  </div>
-
-                  <div className="flex flex-row items-center gap-1.5">
-                    {/* TODO: mSEND */}
-                    <SendTokenLogo />
-                    <TBody className="text-[16px]">
-                      {formatToken(
-                        sendPointsAllocation.userAllocationPercent
-                          .times(SEND_TOTAL_SUPPLY)
-                          .div(100),
-                        { exact: false },
-                      )}
-                    </TBody>
-                  </div>
-                </div>
-              )}
-
-              {sendPointsAllocation.userAllocationPercent?.gt(0) &&
-                suilendCapsulesAllocation.userAllocationPercent?.gt(0) && (
-                  <Separator />
-                )}
-
-              {/* Suilend Capsules */}
-              {suilendCapsulesAllocation.userAllocationPercent?.gt(0) &&
-                Object.entries(userSuilendCapsules!.ownedMap)
-                  .filter(([key, value]) => value.gt(0))
-                  .map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="flex w-full flex-row items-center justify-between gap-4"
-                    >
-                      <div className="flex flex-row items-center gap-3">
-                        <Image
-                          src={suilendCapsulesAllocation.src}
-                          alt="Suilend Capsules"
-                          width={28}
-                          height={28}
-                        />
-                        <TBody className="text-[16px]">
-                          {formatInteger(+value)} {capitalize(key)} Suilend
-                          Capsule{!value.eq(1) && "s"}
-                        </TBody>
-                      </div>
-
-                      <div className="flex flex-row items-center gap-1.5">
-                        {/* TODO: mSEND */}
-                        <SendTokenLogo />
-                        <TBody className="text-[16px]">
-                          {formatToken(
-                            value.times(
-                              suilendCapsulesTotalAllocationBreakdownMap[
-                                key as SuilendCapsuleRarity
-                              ].percent
-                                .times(SEND_TOTAL_SUPPLY)
-                                .div(100),
-                            ),
-                            { exact: false },
-                          )}
-                        </TBody>
-                      </div>
-                    </div>
-                  ))}
-            </div>
-
-            <Button
-              className="h-12 w-full"
-              labelClassName="text-[16px]"
-              size="lg"
-              onClick={onConvertClick}
-            >
-              CONVERT TO mSEND
-            </Button>
-          </div>
-        )
-      )}
-
-      <div className="flex flex-col gap-4 rounded-md border px-4 py-3">
-        <div className="flex flex-row items-center gap-8">
+        {userSend === undefined ? (
+          <Skeleton className="h-5 w-10" />
+        ) : (
           <TBody>
-            mSEND in wallet:{" "}
-            {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
-              exact: false, // TODO
+            {formatToken(userSend.redeemed, {
+              dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
             })}
           </TBody>
-          <Button labelClassName="uppercase" onClick={onClaimSendClick}>
-            Claim SEND
-          </Button>
-        </div>
-
-        <div className="flex flex-row items-center gap-8">
-          <TBody>Claimed SEND:</TBody>
-
-          {userSend === undefined ? (
-            <Skeleton className="h-5 w-10" />
-          ) : (
-            <TBody>
-              {formatToken(userSend.redeemedSend ?? new BigNumber(0), {
-                exact: false,
-              })}
-            </TBody>
-          )}
-        </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+interface ClaimSectionProps {
+  allocations: Allocation[];
+  suilendCapsulesTotalAllocationBreakdownMap: Record<
+    SuilendCapsuleRarity,
+    { percent: BigNumber }
+  >;
+}
+
+export default function ClaimSection({
+  allocations,
+  suilendCapsulesTotalAllocationBreakdownMap,
+}: ClaimSectionProps) {
+  const { mSendCoinMetadataMap, userAllocations } = useLoadedSendContext();
+
+  // Allocations
+  const sendPointsAllocation = allocations.find(
+    (a) => a.id === AllocationId.SEND_POINTS,
+  ) as Allocation;
+  const suilendCapsulesAllocation = allocations.find(
+    (a) => a.id === AllocationId.SUILEND_CAPSULES,
+  ) as Allocation;
+
+  // 1) Convert
+  const minMsendAmount =
+    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals); // TODO
+
+  const totalClaimableMsend = new BigNumber(
+    new BigNumber(sendPointsAllocation.userAllocationPercent ?? 0)
+      .times(SEND_TOTAL_SUPPLY)
+      .div(100),
+  ).plus(
+    Object.entries(userAllocations?.suilendCapsules.ownedMap ?? {}).reduce(
+      (acc, [rarity, owned]) =>
+        acc.plus(
+          owned.times(
+            suilendCapsulesTotalAllocationBreakdownMap[
+              rarity as SuilendCapsuleRarity
+            ].percent
+              .times(SEND_TOTAL_SUPPLY)
+              .div(100),
+          ),
+        ),
+      new BigNumber(0),
+    ),
+  );
+
+  // Tabs
+  enum Tab {
+    CONVERT = "convert",
+    CLAIM = "claim",
+  }
+
+  const tabs = [
+    { id: Tab.CONVERT, title: "Convert" },
+    { id: Tab.CLAIM, title: "Claim" },
+  ];
+
+  const selectedTab =
+    totalClaimableMsend.gt(minMsendAmount) &&
+    Date.now() < mSEND_CONVERSION_END_TIMESTAMP_MS
+      ? Tab.CONVERT
+      : Tab.CLAIM;
+
+  return (
+    <div className="flex w-full flex-col items-center gap-12 py-16 md:py-20">
+      <SectionHeading id="claim-section-heading">Claim</SectionHeading>
+
+      <Card className="max-w-[480px] rounded-md">
+        <div className="flex w-full flex-row items-stretch">
+          {tabs.map((tab, index) => (
+            <div
+              key={tab.id}
+              className={cn(
+                "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
+                tab.id === selectedTab
+                  ? "border-b-primary bg-primary/5"
+                  : "cursor-not-allowed bg-background/50",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex flex-row items-center gap-2.5",
+                  tab.id !== selectedTab && "opacity-50",
+                )}
+              >
+                <div className="flex h-4 w-4 flex-row items-center justify-center rounded-sm bg-primary">
+                  <TLabelSans className="text-foreground">
+                    {index + 1}
+                  </TLabelSans>
+                </div>
+                <TBody className="uppercase">{tab.title}</TBody>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex w-full flex-col gap-6 p-4 pt-6">
+          {selectedTab === Tab.CONVERT && (
+            <ConvertTabContent
+              sendPointsAllocation={sendPointsAllocation}
+              suilendCapsulesAllocation={suilendCapsulesAllocation}
+              totalClaimableMsend={totalClaimableMsend}
+              suilendCapsulesTotalAllocationBreakdownMap={
+                suilendCapsulesTotalAllocationBreakdownMap
+              }
+            />
+          )}
+          {selectedTab === Tab.CLAIM && <ClaimTabContent />}
+        </div>
+      </Card>
     </div>
   );
 }

@@ -18,24 +18,21 @@ import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedSendContext } from "@/contexts/SendContext";
 import { formatAddress, formatToken } from "@/lib/format";
-import { TGE_TIMESTAMP_MS } from "@/lib/send";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
-import { Allocation, SEND_TOTAL_SUPPLY } from "@/pages/send";
+import { Allocation, SEND_TOTAL_SUPPLY, TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {
   allocations: Allocation[];
-  isLoading: boolean;
 }
 
-export default function HeroSection({
-  allocations,
-  isLoading,
-}: HeroSectionProps) {
+export default function HeroSection({ allocations }: HeroSectionProps) {
   const router = useRouter();
 
   const { isImpersonating, setIsConnectWalletDropdownOpen, address } =
     useWalletContext();
+
+  const { userAllocations } = useLoadedSendContext();
 
   // Impersonation mode
   const onImpersonationModeBannerClick = () => {
@@ -76,7 +73,7 @@ export default function HeroSection({
     };
   }, []);
 
-  const duration = intervalToDuration({
+  const tgeDuration = intervalToDuration({
     start: currentDate,
     end: new Date(TGE_TIMESTAMP_MS),
   });
@@ -88,7 +85,7 @@ export default function HeroSection({
         {/* Days */}
         <div className="flex flex-col items-center">
           <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.days ?? 0}`.padStart(2, "0")}
+            {`${tgeDuration.days ?? 0}`.padStart(2, "0")}
           </TDisplay>
           <TBody>DD</TBody>
         </div>
@@ -98,7 +95,7 @@ export default function HeroSection({
         {/* Hours */}
         <div className="flex flex-col items-center">
           <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.hours ?? 0}`.padStart(2, "0")}
+            {`${tgeDuration.hours ?? 0}`.padStart(2, "0")}
           </TDisplay>
           <TBody>HH</TBody>
         </div>
@@ -108,7 +105,7 @@ export default function HeroSection({
         {/* Minutes */}
         <div className="flex flex-col items-center">
           <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.minutes ?? 0}`.padStart(2, "0")}
+            {`${tgeDuration.minutes ?? 0}`.padStart(2, "0")}
           </TDisplay>
           <TBody>MM</TBody>
         </div>
@@ -118,7 +115,7 @@ export default function HeroSection({
         {/* Seconds */}
         <div className="flex flex-col items-center">
           <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.seconds ?? 0}`.padStart(2, "0")}
+            {`${tgeDuration.seconds ?? 0}`.padStart(2, "0")}
           </TDisplay>
           <TBody>SS</TBody>
         </div>
@@ -127,7 +124,7 @@ export default function HeroSection({
       <SectionHeading>
         {!address
           ? "Connect your wallet to check your allocation"
-          : userTotalAllocation.gt(0) || isLoading
+          : userTotalAllocation.gt(0) || userAllocations === undefined
             ? "Your allocation is"
             : "Sorry, you're not eligible"}
       </SectionHeading>
@@ -135,7 +132,7 @@ export default function HeroSection({
       <div className="flex w-full flex-col items-center gap-4">
         {!address ? (
           <Button
-            className="h-16 w-[240px] px-10 md:w-[320px]"
+            className="h-16 w-[240px] md:w-[320px]"
             labelClassName="uppercase text-[16px]"
             size="lg"
             onClick={() => setIsConnectWalletDropdownOpen(true)}
@@ -146,17 +143,12 @@ export default function HeroSection({
           <Tooltip title="Allocation is an estimate since some snapshots haven't been taken yet">
             <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
               <SendTokenLogo className="h-8 w-8" />
-              {isLoading ? (
+              {userAllocations === undefined ? (
                 <Skeleton className="h-10 w-48" />
               ) : (
-                <TDisplay
-                  className={cn(
-                    "text-4xl decoration-foreground/50",
-                    hoverUnderlineClassName,
-                  )}
-                >
+                <TDisplay className="text-4xl">
                   {formatToken(userTotalAllocation, { exact: false })}
-                  {"* SEND"}
+                  {" SEND"}
                 </TDisplay>
               )}
             </div>

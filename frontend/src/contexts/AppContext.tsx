@@ -12,7 +12,6 @@ import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_WETH_COINTYPE,
   NORMALIZED_trevinSUI_COINTYPE,
   RewardMap,
   isDeprecated,

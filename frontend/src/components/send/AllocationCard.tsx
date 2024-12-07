@@ -7,20 +7,19 @@ import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
-import { TGE_TIMESTAMP_MS } from "@/lib/send";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import {
   Allocation,
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
-} from "@/pages/send";
+  TGE_TIMESTAMP_MS,
+} from "@/lib/send";
+import { cn } from "@/lib/utils";
 
 interface StatusProps {
   allocation: Allocation;
@@ -37,17 +36,6 @@ function Status({
   hasClaimedMsend,
   hasBridgedMsend,
 }: StatusProps) {
-  const hasTooltip =
-    isEligible &&
-    [
-      AllocationId.SEND_POINTS,
-
-      AllocationId.FUD,
-      AllocationId.AAA,
-      AllocationId.OCTO,
-      AllocationId.TISM,
-    ].includes(allocation.id);
-
   return (
     <div
       className={cn(
@@ -56,14 +44,14 @@ function Status({
           ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
-              !allocation.snapshotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
+              !allocation.snapshotTaken ? "bg-secondary" : "bg-[#192A3A]",
             ),
       )}
     >
       {isEligible || hasClaimedMsend || hasBridgedMsend ? (
         <>
           <TBody
-            className={cn(isEligible ? "text-[#030917]" : "text-[#5DF886]")}
+            className={cn(isEligible ? "text-background" : "text-[#5DF886]")}
           >
             {isEligible
               ? "ELIGIBLE"
@@ -71,56 +59,33 @@ function Status({
                 ? "CONVERTED"
                 : "BRIDGED"}
           </TBody>
-          <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo
+
+          <div className="flex flex-row items-center gap-2">
+            <SendTokenLogo className="rounded-[50%] bg-background outline outline-[0.5px] outline-background" />
+            <TBody
               className={cn(
-                "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
+                "text-[16px]",
+                isEligible ? "text-background" : "text-[#5DF886]",
               )}
-            />
-            <Tooltip
-              title={
-                hasTooltip
-                  ? allocation.id === AllocationId.SEND_POINTS
-                    ? "Allocation is an estimate since SEND Points are still ongoing"
-                    : [
-                          AllocationId.FUD,
-                          AllocationId.AAA,
-                          AllocationId.OCTO,
-                          AllocationId.TISM,
-                        ].includes(allocation.id)
-                      ? "Allocation is an estimate since the final snapshot has not been taken yet"
-                      : undefined
-                  : undefined
-              }
             >
-              <TBody
-                className={cn(
-                  "text-[16px]",
-                  isEligible ? "text-[#030917]" : "text-[#5DF886]",
-                  hasTooltip &&
-                    cn("decoration-[#030917]/50", hoverUnderlineClassName),
-                )}
-              >
-                {formatToken(
-                  isEligible
-                    ? allocation
-                        .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
-                        .div(100)
-                    : hasClaimedMsend
-                      ? allocation.userClaimedMsend!
-                      : allocation.userBridgedMsend!,
-                  { exact: false },
-                )}
-                {hasTooltip ? "*" : undefined}
-              </TBody>
-            </Tooltip>
+              {formatToken(
+                isEligible
+                  ? allocation
+                      .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
+                      .div(100)
+                  : hasClaimedMsend
+                    ? allocation.userClaimedMsend!
+                    : allocation.userBridgedMsend!,
+                { exact: false },
+              )}
+            </TBody>
           </div>
         </>
       ) : (
         <TBody
           className={cn(
             "uppercase",
-            !allocation.snapshotTaken ? "text-[#030917]" : "text-[#8FDCF4]",
+            !allocation.snapshotTaken ? "text-background" : "text-secondary",
           )}
         >
           {!allocation.snapshotTaken
@@ -294,9 +259,9 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-secondary/25">
               {/* Top */}
-              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-[#030917]">
+              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-background">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-2">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2">
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
@@ -391,7 +356,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   <LabelWithValue
                     labelClassName="text-sm"
                     label="Total allocation"
-                    valueClassName="gap-1.5 items-center"
+                    valueClassName="gap-2 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
                       allocation.totalAllocationPercent
@@ -409,7 +374,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                         <div className="h-1 w-1 rounded-[50%] bg-muted" />
                       }
                       label={breakdown.title}
-                      valueClassName="gap-1.5 items-center"
+                      valueClassName="gap-2 items-center"
                       valueStartDecorator={<SendTokenLogo />}
                       value={formatToken(
                         breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
