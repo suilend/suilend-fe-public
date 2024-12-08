@@ -27,6 +27,7 @@ import {
   SUI_GAS_MIN,
   getBalanceChange,
   getFilteredRewards,
+  getHistoryPrice,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
@@ -401,23 +402,17 @@ function Page() {
       try {
         const currentTime = Math.floor(new Date().getTime() / 1000);
 
-        const url = `https://api.suilend.fi/proxy/history-price?${new URLSearchParams(
-          {
-            address: isSui(token.coinType) ? SUI_COINTYPE : token.coinType,
-            type: HISTORICAL_USD_PRICES_INTERVAL,
-            time_from: `${currentTime - 24 * 60 * 60}`,
-            time_to: `${currentTime}`,
-          },
-        )}`;
-        const res = await fetch(url);
-        const json = await res.json();
+        const result = await getHistoryPrice(
+          token.coinType,
+          HISTORICAL_USD_PRICES_INTERVAL,
+          currentTime - 24 * 60 * 60,
+          currentTime,
+        );
+        if (result === undefined) return;
 
         setHistoricalUsdPriceMap((o) => ({
           ...o,
-          [token.coinType]: json.data.items.map((item: any) => ({
-            timestampS: item.unixTime,
-            priceUsd: item.value,
-          })) as HistoricalUsdPriceData[],
+          [token.coinType]: result,
         }));
       } catch (err) {
         console.error(err);
