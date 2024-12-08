@@ -27,6 +27,7 @@ import {
   SUI_GAS_MIN,
   getBalanceChange,
   getFilteredRewards,
+  getHistoryPrice,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
@@ -399,19 +400,19 @@ function Page() {
       console.log("fetchTokenHistoricalUsdPrices", token.symbol);
 
       try {
-        const url = `https://suilend.fi/api/birdeye-history_price?${new URLSearchParams(
-          {
-            coinType: token.coinType,
-            interval: HISTORICAL_USD_PRICES_INTERVAL,
-            startS: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
-            endS: `${Math.floor(new Date().getTime() / 1000)}`,
-          },
-        )}`;
-        const res = await fetch(url);
-        const json = await res.json();
+        const currentTime = Math.floor(new Date().getTime() / 1000);
+
+        const result = await getHistoryPrice(
+          token.coinType,
+          HISTORICAL_USD_PRICES_INTERVAL,
+          currentTime - 24 * 60 * 60,
+          currentTime,
+        );
+        if (result === undefined) return;
+
         setHistoricalUsdPriceMap((o) => ({
           ...o,
-          [token.coinType]: json as HistoricalUsdPriceData[],
+          [token.coinType]: result,
         }));
       } catch (err) {
         console.error(err);
