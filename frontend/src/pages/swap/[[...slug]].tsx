@@ -399,19 +399,25 @@ function Page() {
       console.log("fetchTokenHistoricalUsdPrices", token.symbol);
 
       try {
-        const url = `https://suilend.fi/api/birdeye-history_price?${new URLSearchParams(
+        const currentTime = Math.floor(new Date().getTime() / 1000);
+
+        const url = `https://api.suilend.fi/proxy/history-price?${new URLSearchParams(
           {
-            coinType: token.coinType,
-            interval: HISTORICAL_USD_PRICES_INTERVAL,
-            startS: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
-            endS: `${Math.floor(new Date().getTime() / 1000)}`,
+            address: isSui(token.coinType) ? SUI_COINTYPE : token.coinType,
+            type: HISTORICAL_USD_PRICES_INTERVAL,
+            time_from: `${currentTime - 24 * 60 * 60}`,
+            time_to: `${currentTime}`,
           },
         )}`;
         const res = await fetch(url);
         const json = await res.json();
+
         setHistoricalUsdPriceMap((o) => ({
           ...o,
-          [token.coinType]: json as HistoricalUsdPriceData[],
+          [token.coinType]: json.data.items.map((item: any) => ({
+            timestampS: item.unixTime,
+            priceUsd: item.value,
+          })) as HistoricalUsdPriceData[],
         }));
       } catch (err) {
         console.error(err);
