@@ -46,8 +46,8 @@ import {
   burnSendPoints,
   burnSuilendCapsules,
   formatDuration,
+  mSEND_COINTYPE_MANAGER_MAP,
   mSEND_CONVERSION_END_TIMESTAMP_MS,
-  mSEND_MANAGER_OBJECT_ID,
   redeemMsendForSend,
 } from "@/lib/send";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -312,7 +312,12 @@ function ClaimTabContent() {
 
     const transaction = new Transaction();
     try {
-      await redeemMsendForSend(suiClient, address, transaction);
+      await redeemMsendForSend(
+        suiClient,
+        address,
+        NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+        transaction,
+      );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -497,7 +502,10 @@ export default function ClaimSection({
         </div>
       </Card>
 
-      {mSendObjectMap[mSEND_MANAGER_OBJECT_ID].currentPenaltySui.gt(0) && (
+      {/* TODO */}
+      {mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE].currentPenaltySui.gt(
+        0,
+      ) && (
         <div className="flex w-full flex-col gap-4">
           <TBody className="text-[16px] uppercase">Penalty Chart</TBody>
 
@@ -546,7 +554,8 @@ export default function ClaimSection({
                   <TokenLogo className="h-4 w-4" token={suiReserve.token} />
                   <TBody>
                     {formatToken(
-                      mSendObjectMap[mSEND_MANAGER_OBJECT_ID].currentPenaltySui,
+                      mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                        .currentPenaltySui,
                     )}
                     {" SUI / SEND"}
                   </TBody>
@@ -554,7 +563,7 @@ export default function ClaimSection({
                 <TLabel>
                   {formatUsd(
                     mSendObjectMap[
-                      mSEND_MANAGER_OBJECT_ID
+                      NORMALIZED_BETA_mSEND_COINTYPE // TODO
                     ].currentPenaltySui.times(suiReserve.price),
                   )}
                   {" / SEND"}

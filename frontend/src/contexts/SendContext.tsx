@@ -42,7 +42,7 @@ import {
   SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
   WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
-  mSEND_MANAGER_OBJECT_ID,
+  mSEND_COINTYPE_MANAGER_MAP,
 } from "@/lib/send";
 import {
   getOwnedObjectsOfType,
@@ -143,8 +143,11 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   // mSend object map
   const mSendObjectMapFetcher = async () => {
-    const mSendManagerObjectIds = [mSEND_MANAGER_OBJECT_ID];
+    const mSEND_COINTYPES = [NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
 
+    const mSendManagerObjectIds = mSEND_COINTYPES.map(
+      (coinType) => mSEND_COINTYPE_MANAGER_MAP[coinType],
+    );
     const objs = await Promise.all(
       mSendManagerObjectIds.map((objectId) =>
         suiClient.getObject({
@@ -157,7 +160,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     const result: Record<string, MsendObject> = {};
-    for (let i = 0; i < mSendManagerObjectIds.length; i++) {
+    for (let i = 0; i < mSEND_COINTYPES.length; i++) {
       const obj = objs[i];
 
       const penaltyStartTimeS = new BigNumber(
@@ -185,7 +188,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           )
         : endPenaltySui;
 
-      result[mSendManagerObjectIds[i]] = {
+      result[mSEND_COINTYPES[i]] = {
         penaltyStartTimeS,
         penaltyEndTimeS,
 

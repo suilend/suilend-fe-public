@@ -35,6 +35,10 @@ const CAPSULE_MANAGER_OBJECT_ID =
 export const mSEND_MANAGER_OBJECT_ID =
   "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
+export const mSEND_COINTYPE_MANAGER_MAP = {
+  [NORMALIZED_BETA_mSEND_COINTYPE]: mSEND_MANAGER_OBJECT_ID, // TODO
+};
+
 // Events
 export const BURN_SEND_POINTS_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::points::BurnEvent`;
 export const BURN_SUILEND_CAPSULES_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::capsule::BurnEvent`;
@@ -240,13 +244,14 @@ export const burnSuilendCapsules = async (
 export const redeemMsendForSend = async (
   suiClient: SuiClient,
   address: string,
+  mSendCoinType: string,
   transaction: Transaction,
 ) => {
   // Get mSEND coins
   const mSendCoins = (
     await suiClient.getCoins({
       owner: address,
-      coinType: NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+      coinType: mSendCoinType,
     })
   ).data;
 
@@ -262,12 +267,12 @@ export const redeemMsendForSend = async (
   const sendCoin = transaction.moveCall({
     target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
     typeArguments: [
-      NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+      mSendCoinType,
       NORMALIZED_BETA_SEND_COINTYPE, // TODO
       NORMALIZED_SUI_COINTYPE,
     ],
     arguments: [
-      transaction.object(mSEND_MANAGER_OBJECT_ID),
+      transaction.object(mSEND_COINTYPE_MANAGER_MAP[mSendCoinType]),
       transaction.object(mergedMsendCoin.coinObjectId),
       transaction.object(transaction.gas),
       transaction.object(SUI_CLOCK_OBJECT_ID),
