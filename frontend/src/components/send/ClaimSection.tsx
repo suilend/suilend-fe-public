@@ -573,7 +573,9 @@ export default function ClaimSection({
 
           <div className="flex w-full flex-col gap-3">
             {/* Penalty ends in */}
-            {Date.now() < mSEND_CONVERSION_END_TIMESTAMP_MS && (
+            {Date.now() <
+              +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE].penaltyEndTimeS *
+                1000 && (
               <div className="flex w-full flex-row justify-between gap-4">
                 <TBodySans className="text-muted-foreground">
                   Penalty ends in
@@ -583,7 +585,10 @@ export default function ClaimSection({
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <Tooltip
                     title={formatDate(
-                      new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+                      new Date(
+                        +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE]
+                          .penaltyEndTimeS * 1000,
+                      ),
                       "yyyy-MM-dd HH:mm:ss",
                     )}
                   >
@@ -596,7 +601,10 @@ export default function ClaimSection({
                       {formatDuration(
                         intervalToDuration({
                           start: Date.now(),
-                          end: new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+                          end: new Date(
+                            +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE]
+                              .penaltyEndTimeS * 1000, // TODO
+                          ),
                         }),
                       )}
                     </TBody>
