@@ -1033,7 +1033,7 @@ function Page() {
           </div>
 
           {/* Submit */}
-          <div className="flex w-full flex-col gap-[1px]">
+          <div className="flex w-full flex-col gap-px">
             {/* Swap */}
             <Button
               className={cn(

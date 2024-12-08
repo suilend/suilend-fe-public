@@ -399,7 +399,7 @@ function ClaimTabContent() {
 
       <div
         className={cn(
-          "flex w-full flex-col gap-4",
+          "flex w-full flex-col gap-6",
           !ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
         )}
       >
@@ -410,29 +410,37 @@ function ClaimTabContent() {
           })}
         </TBody>
 
-        <Button
-          className="h-14 w-full"
-          labelClassName="uppercase text-[16px]"
-          size="lg"
-          onClick={onSubmitClick}
-        >
-          Claim SEND
-        </Button>
+        <div className="flex w-full flex-col gap-4">
+          <div className="flex w-full flex-col gap-px">
+            <Button
+              className="h-14 w-full"
+              labelClassName="uppercase text-[16px]"
+              size="lg"
+              onClick={onSubmitClick}
+            >
+              Claim SEND
+            </Button>
+          </div>
 
-        <div className="flex flex-row items-center gap-2">
-          <SendTokenLogo />
+          <div className="flex flex-row items-center gap-2">
+            <SendTokenLogo />
 
-          <TBody>
-            {userRedeemedSendMap === undefined ? (
-              <Skeleton className="inline-block h-5 w-16 align-top" />
-            ) : (
-              // TODO
-              formatToken(userRedeemedSendMap[NORMALIZED_BETA_mSEND_COINTYPE], {
-                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
-              })
-            )}
-            {" SEND claimed"}
-          </TBody>
+            <TBody>
+              {userRedeemedSendMap === undefined ? (
+                <Skeleton className="inline-block h-5 w-16 align-top" />
+              ) : (
+                // TODO
+                formatToken(
+                  userRedeemedSendMap[NORMALIZED_BETA_mSEND_COINTYPE],
+                  {
+                    dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
+                      .decimals, // TODO
+                  },
+                )
+              )}
+              {" SEND claimed"}
+            </TBody>
+          </div>
         </div>
       </div>
     </>
