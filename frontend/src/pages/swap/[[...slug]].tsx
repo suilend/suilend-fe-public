@@ -28,6 +28,7 @@ import {
   getBalanceChange,
   getFilteredRewards,
   getHistoryPrice,
+  getPrice,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
@@ -400,13 +401,13 @@ function Page() {
       console.log("fetchTokenHistoricalUsdPrices", token.symbol);
 
       try {
-        const currentTime = Math.floor(new Date().getTime() / 1000);
+        const currentTimeS = Math.floor(new Date().getTime() / 1000);
 
         const result = await getHistoryPrice(
           token.coinType,
           HISTORICAL_USD_PRICES_INTERVAL,
-          currentTime - 24 * 60 * 60,
-          currentTime,
+          currentTimeS - 24 * 60 * 60,
+          currentTimeS,
         );
         if (result === undefined) return;
 
@@ -431,22 +432,42 @@ function Page() {
   }, [fetchTokenHistoricalUsdPrices, tokenIn, tokenOut]);
 
   // USD prices - current
+  const [usdPricesMap, setUsdPriceMap] = useState<Record<string, BigNumber>>(
+    {},
+  );
   const tokenInUsdPrice = useMemo(
-    () =>
-      tokenInHistoricalUsdPrices !== undefined
-        ? tokenInHistoricalUsdPrices[tokenInHistoricalUsdPrices.length - 1]
-            ?.priceUsd
-        : undefined,
-    [tokenInHistoricalUsdPrices],
+    () => usdPricesMap[tokenIn.coinType],
+    [usdPricesMap, tokenIn.coinType],
   );
   const tokenOutUsdPrice = useMemo(
-    () =>
-      tokenOutHistoricalUsdPrices !== undefined
-        ? tokenOutHistoricalUsdPrices[tokenOutHistoricalUsdPrices.length - 1]
-            ?.priceUsd
-        : undefined,
-    [tokenOutHistoricalUsdPrices],
+    () => usdPricesMap[tokenOut.coinType],
+    [usdPricesMap, tokenOut.coinType],
   );
+
+  const fetchTokenUsdPrice = useCallback(async (token: SwapToken) => {
+    console.log("fetchTokenUsdPrice", token.symbol);
+
+    try {
+      const result = await getPrice(token.coinType);
+      if (result === undefined) return;
+
+      setUsdPriceMap((o) => ({
+        ...o,
+        [token.coinType]: BigNumber(result),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const fetchedInitialTokenUsdPricesRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (fetchedInitialTokenUsdPricesRef.current) return;
+
+    fetchTokenUsdPrice(tokenIn);
+    fetchTokenUsdPrice(tokenOut);
+    fetchedInitialTokenUsdPricesRef.current = true;
+  }, [fetchTokenUsdPrice, tokenIn, tokenOut]);
 
   const tokenInUsdValue = useMemo(
     () =>
