@@ -2,6 +2,8 @@ import Head from "next/head";
 
 import BigNumber from "bignumber.js";
 
+import { useWalletContext } from "@suilend/frontend-sui-next";
+
 import AllocationCard from "@/components/send/AllocationCard";
 import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
@@ -35,6 +37,8 @@ import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json"
 import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json";
 
 function Page() {
+  const { address } = useWalletContext();
+
   const { totalAllocatedPoints, userAllocations } = useLoadedSendContext();
 
   // Allocations
@@ -753,7 +757,7 @@ function Page() {
             </div>
           </div>
 
-          {Date.now() >= TGE_TIMESTAMP_MS && (
+          {address && Date.now() >= TGE_TIMESTAMP_MS && (
             <>
               <Separator />
               <ClaimSection

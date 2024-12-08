@@ -107,9 +107,7 @@ interface CtaButtonProps {
 }
 
 function CtaButton({ allocation, isEligible }: CtaButtonProps) {
-  const burnSendPointsSuilendCapsulesWrapper = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const onConvertClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
     const claimSectionHeadingElement = document.getElementById(
@@ -124,9 +122,11 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
   };
 
   if (
-    [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
-      allocation.id,
-    )
+    [
+      AllocationId.SEND_POINTS,
+      AllocationId.SUILEND_CAPSULES,
+      AllocationId.ROOTLETS,
+    ].includes(allocation.id)
   ) {
     if (Date.now() >= TGE_TIMESTAMP_MS) {
       if (isEligible) {
@@ -135,15 +135,13 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
             className="h-10 w-full border-secondary text-primary-foreground"
             labelClassName="text-[16px]"
             variant="secondaryOutline"
-            onClick={burnSendPointsSuilendCapsulesWrapper}
+            onClick={onConvertClick}
           >
             CONVERT TO mSEND
           </Button>
         );
       } else return <div className="h-10 w-full max-sm:hidden" />;
     }
-  }
-  if (allocation.id === AllocationId.SAVE) {
   }
 
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (

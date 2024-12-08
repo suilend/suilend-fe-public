@@ -1,18 +1,22 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Fragment } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
+import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
-import { Clock } from "lucide-react";
+import { ArrowUpRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_sSUI_COINTYPE,
   getBalanceChange,
+  issSui,
 } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
@@ -22,6 +26,7 @@ import {
 import Card from "@/components/dashboard/Card";
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import SectionHeading from "@/components/send/SectionHeading";
+import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -38,6 +43,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken, formatUsd } from "@/lib/format";
+import { DASHBOARD_URL } from "@/lib/navigation";
 import {
   Allocation,
   AllocationId,
@@ -46,7 +52,6 @@ import {
   burnSendPoints,
   burnSuilendCapsules,
   formatDuration,
-  mSEND_COINTYPE_MANAGER_MAP,
   mSEND_CONVERSION_END_TIMESTAMP_MS,
   redeemMsendForSend,
 } from "@/lib/send";
@@ -297,14 +302,27 @@ function ConvertTabContent({
 function ClaimTabContent() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { data } = useLoadedAppContext();
 
   const {
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     mSendBalanceMap,
-    userSend,
-    refreshUserSend,
+    userRedeemedSendMap,
+    refreshUserRedeemedSendMap,
   } = useLoadedSendContext();
+
+  // Deposit sSUI
+  const ssuiDepositedAmount = (data.obligations ?? []).reduce(
+    (acc, obligation) =>
+      acc.plus(
+        obligation.deposits.reduce(
+          (acc2, d) => acc2.plus(issSui(d.coinType) ? d.depositedAmount : 0),
+          new BigNumber(0),
+        ),
+      ),
+    new BigNumber(0),
+  );
 
   // Submit
   const onSubmitClick = async () => {
@@ -350,38 +368,74 @@ function ClaimTabContent() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refreshUserSend();
+      await refreshUserRedeemedSendMap();
     }
   };
 
   return (
-    <div className="flex flex-col gap-4 rounded-md border px-4 py-3">
-      <div className="flex flex-row items-center gap-8">
+    <>
+      {/* Deposit sSUI */}
+      <div
+        className={cn(
+          "flex w-full flex-row items-center gap-4",
+          ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
+        )}
+      >
+        <div className="flex flex-1 flex-col gap-1">
+          <TBody className="text-[16px]">DEPOSIT sSUI</TBody>
+          <TBodySans className="text-muted-foreground">
+            Deposit any amount of sSUI
+          </TBodySans>
+        </div>
+
+        <Link href={`${DASHBOARD_URL}?asset=sSUI`}>
+          <Button labelClassName="uppercase" endIcon={<ArrowUpRight />}>
+            Deposit
+          </Button>
+        </Link>
+      </div>
+
+      <Separator />
+
+      <div
+        className={cn(
+          "flex w-full flex-col gap-4",
+          !ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
+        )}
+      >
         <TBody>
           mSEND in wallet:{" "}
           {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
             dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
           })}
         </TBody>
-        <Button labelClassName="uppercase" onClick={onSubmitClick}>
+
+        <Button
+          className="h-14 w-full"
+          labelClassName="uppercase text-[16px]"
+          size="lg"
+          onClick={onSubmitClick}
+        >
           Claim SEND
         </Button>
-      </div>
 
-      <div className="flex flex-row items-center gap-8">
-        <TBody>Claimed SEND:</TBody>
+        <div className="flex flex-row items-center gap-2">
+          <SendTokenLogo />
 
-        {userSend === undefined ? (
-          <Skeleton className="h-5 w-10" />
-        ) : (
           <TBody>
-            {formatToken(userSend.redeemed, {
-              dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
-            })}
+            {userRedeemedSendMap === undefined ? (
+              <Skeleton className="inline-block h-5 w-16 align-top" />
+            ) : (
+              // TODO
+              formatToken(userRedeemedSendMap[NORMALIZED_BETA_mSEND_COINTYPE], {
+                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+              })
+            )}
+            {" SEND claimed"}
           </TBody>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -467,7 +521,7 @@ export default function ClaimSection({
                 "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
                 tab.id === selectedTab
                   ? "border-b-primary bg-primary/5"
-                  : "cursor-not-allowed bg-background/50",
+                  : "pointer-events-none bg-background/50",
               )}
             >
               <div
@@ -553,11 +607,27 @@ export default function ClaimSection({
                 <div className="flex flex-row items-center gap-2">
                   <TokenLogo className="h-4 w-4" token={suiReserve.token} />
                   <TBody>
-                    {formatToken(
-                      mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
-                        .currentPenaltySui,
-                    )}
-                    {" SUI / SEND"}
+                    <Tooltip
+                      title={`${formatToken(
+                        mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                          .currentPenaltySui,
+                        { dp: SUI_DECIMALS },
+                      )} SUI`}
+                    >
+                      <span
+                        className={cn(
+                          "decoration-foreground/50",
+                          hoverUnderlineClassName,
+                        )}
+                      >
+                        {formatToken(
+                          mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                            .currentPenaltySui,
+                        )}
+                        {" SUI"}
+                      </span>
+                    </Tooltip>
+                    {" / SEND"}
                   </TBody>
                 </div>
                 <TLabel>

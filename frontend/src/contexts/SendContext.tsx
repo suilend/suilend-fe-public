@@ -101,8 +101,8 @@ interface SendContext {
     | undefined;
   refreshUserAllocations: () => Promise<void>;
 
-  userSend: { redeemed: BigNumber } | undefined;
-  refreshUserSend: () => Promise<void>;
+  userRedeemedSendMap: Record<string, BigNumber> | undefined;
+  refreshUserRedeemedSendMap: () => Promise<void>;
 }
 type LoadedSendContext = SendContext & {
   mSendObjectMap: Record<string, MsendObject>;
@@ -127,8 +127,8 @@ const SendContext = createContext<SendContext>({
     throw Error("SendContextProvider not initialized");
   },
 
-  userSend: undefined,
-  refreshUserSend: async () => {
+  userRedeemedSendMap: undefined,
+  refreshUserRedeemedSendMap: async () => {
     throw Error("SendContextProvider not initialized");
   },
 });
@@ -141,10 +141,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { data, getBalance } = useLoadedAppContext();
 
+  const mSEND_COINTYPES = [NORMALIZED_BETA_mSEND_COINTYPE]; // TODO: Use NORMALIZED_mSEND_COINTYPES
+
   // mSend object map
   const mSendObjectMapFetcher = async () => {
-    const mSEND_COINTYPES = [NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
-
     const mSendManagerObjectIds = mSEND_COINTYPES.map(
       (coinType) => mSEND_COINTYPE_MANAGER_MAP[coinType],
     );
@@ -649,59 +649,73 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     await mutateUserAllocations();
   }, [mutateTransactionsSinceTge, mutateUserAllocations]);
 
-  // User - SEND
-  const userSendFetcher = async () => {
+  // User - Redeemed SEND
+  const userRedeemedSendMapFetcher = async () => {
     if (!address) return undefined;
 
     if (sendCoinMetadataMap === undefined) return undefined;
     if (transactionsSinceTge === undefined) return undefined;
 
-    const redeemedSend = transactionsSinceTge.from.reduce(
-      (acc, transaction) => {
-        const transactionRedeemedSend = (transaction.events ?? [])
-          .filter(
-            (event) =>
-              event.type ===
-              `${REDEEM_SEND_EVENT_TYPE}<${NORMALIZED_BETA_mSEND_COINTYPE}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO,
-          )
-          .reduce(
-            (acc2, event) =>
-              acc2.plus(
-                new BigNumber((event.parsedJson as any).withdraw_amount).div(
-                  10 **
-                    sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+    const result: Record<string, BigNumber> = {};
+    for (let i = 0; i < mSEND_COINTYPES.length; i++) {
+      const redeemedSend = transactionsSinceTge.from.reduce(
+        (acc, transaction) => {
+          const transactionRedeemedSend = (transaction.events ?? [])
+            .filter(
+              (event) =>
+                event.type ===
+                `${REDEEM_SEND_EVENT_TYPE}<${mSEND_COINTYPES[i]}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO
+            )
+            .reduce(
+              (acc2, event) =>
+                acc2.plus(
+                  new BigNumber((event.parsedJson as any).withdraw_amount).div(
+                    10 **
+                      sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
+                        .decimals, // TODO
+                  ),
                 ),
-              ),
-            new BigNumber(0),
-          );
+              new BigNumber(0),
+            );
 
-        return acc.plus(transactionRedeemedSend);
-      },
-      new BigNumber(0),
-    );
+          return acc.plus(transactionRedeemedSend);
+        },
+        new BigNumber(0),
+      );
 
-    return { redeemed: redeemedSend };
+      result[mSEND_COINTYPES[i]] = redeemedSend;
+    }
+
+    return result;
   };
 
-  const { data: userSend, mutate: mutateUserSend } = useSWR<
-    SendContext["userSend"]
-  >(`userSend-${address}`, userSendFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userSend", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh userSend", err);
-    },
-  });
+  const { data: userRedeemedSendMap, mutate: mutateUserRedeemedSendMap } =
+    useSWR<SendContext["userRedeemedSendMap"]>(
+      `userSend-${address}`,
+      userRedeemedSendMapFetcher,
+      {
+        onSuccess: (data) => {
+          console.log("Refreshed userRedeemedSendMap", data);
+        },
+        onError: (err) => {
+          console.error("Failed to refresh userRedeemedSendMap", err);
+        },
+      },
+    );
 
   useEffect(() => {
-    mutateUserSend();
-  }, [mutateUserSend, address, sendCoinMetadataMap, transactionsSinceTge]);
+    mutateUserRedeemedSendMap();
+  }, [
+    mutateUserRedeemedSendMap,
+    address,
+    sendCoinMetadataMap,
+    transactionsSinceTge,
+  ]);
 
-  const refreshUserSend = useCallback(async () => {
+  const refreshUserRedeemedSendMap = useCallback(async () => {
     await mutateTransactionsSinceTge();
-    await mutateUserSend();
-  }, [mutateTransactionsSinceTge, mutateUserSend]);
+    await mutateUserRedeemedSendMap();
+  }, [mutateTransactionsSinceTge, mutateUserRedeemedSendMap]);
 
   // Context
   const contextValue: SendContext = useMemo(
@@ -719,8 +733,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       userAllocations,
       refreshUserAllocations,
 
-      userSend,
-      refreshUserSend,
+      userRedeemedSendMap,
+      refreshUserRedeemedSendMap,
     }),
     [
       mSendObjectMap,
@@ -731,8 +745,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       bluefinSendTradersTotalVolumeUsd,
       userAllocations,
       refreshUserAllocations,
-      userSend,
-      refreshUserSend,
+      userRedeemedSendMap,
+      refreshUserRedeemedSendMap,
     ],
   );
 
