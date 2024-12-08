@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
+  NORMALIZED_SUI_COINTYPE,
   getBalanceChange,
 } from "@suilend/frontend-sui";
 import {
@@ -23,14 +24,20 @@ import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import SectionHeading from "@/components/send/SectionHeading";
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
+import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
-import { formatInteger, formatToken } from "@/lib/format";
+import { formatInteger, formatToken, formatUsd } from "@/lib/format";
 import {
   Allocation,
   AllocationId,
@@ -40,6 +47,7 @@ import {
   burnSuilendCapsules,
   formatDuration,
   mSEND_CONVERSION_END_TIMESTAMP_MS,
+  mSEND_MANAGER_OBJECT_ID,
   redeemMsendForSend,
 } from "@/lib/send";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -67,8 +75,8 @@ function ConvertTabContent({
   const { mSendCoinMetadataMap, userAllocations, refreshUserAllocations } =
     useLoadedSendContext();
 
-  // Ends
-  const endsDuration = intervalToDuration({
+  // Conversion ends
+  const conversionEndsDuration = intervalToDuration({
     start: Date.now(),
     end: new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
   });
@@ -267,7 +275,7 @@ function ConvertTabContent({
                   hoverUnderlineClassName,
                 )}
               >
-                {formatDuration(endsDuration)}
+                {formatDuration(conversionEndsDuration)}
               </TBody>
             </Tooltip>
           </div>
@@ -384,7 +392,10 @@ export default function ClaimSection({
   allocations,
   suilendCapsulesTotalAllocationBreakdownMap,
 }: ClaimSectionProps) {
-  const { mSendCoinMetadataMap, userAllocations } = useLoadedSendContext();
+  const { data } = useLoadedAppContext();
+
+  const { mSendObjectMap, mSendCoinMetadataMap, userAllocations } =
+    useLoadedSendContext();
 
   // Allocations
   const sendPointsAllocation = allocations.find(
@@ -435,11 +446,14 @@ export default function ClaimSection({
       ? Tab.CONVERT
       : Tab.CLAIM;
 
+  // Penalty
+  const suiReserve = data.reserveMap[NORMALIZED_SUI_COINTYPE];
+
   return (
-    <div className="flex w-full flex-col items-center gap-12 py-16 md:py-20">
+    <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim-section-heading">Claim</SectionHeading>
 
-      <Card className="max-w-[480px] rounded-md">
+      <Card className="rounded-md">
         <div className="flex w-full flex-row items-stretch">
           {tabs.map((tab, index) => (
             <div
@@ -482,6 +496,74 @@ export default function ClaimSection({
           {selectedTab === Tab.CLAIM && <ClaimTabContent />}
         </div>
       </Card>
+
+      {mSendObjectMap[mSEND_MANAGER_OBJECT_ID].currentPenaltySui.gt(0) && (
+        <div className="flex w-full flex-col gap-4">
+          <TBody className="text-[16px] uppercase">Penalty Chart</TBody>
+
+          <div className="flex w-full flex-col gap-3">
+            {/* Penalty ends in */}
+            {Date.now() < mSEND_CONVERSION_END_TIMESTAMP_MS && (
+              <div className="flex w-full flex-row justify-between gap-4">
+                <TBodySans className="text-muted-foreground">
+                  Penalty ends in
+                </TBodySans>
+
+                <div className="flex flex-row items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Tooltip
+                    title={formatDate(
+                      new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+                      "yyyy-MM-dd HH:mm:ss",
+                    )}
+                  >
+                    <TBody
+                      className={cn(
+                        "decoration-foreground/50",
+                        hoverUnderlineClassName,
+                      )}
+                    >
+                      {formatDuration(
+                        intervalToDuration({
+                          start: Date.now(),
+                          end: new Date(mSEND_CONVERSION_END_TIMESTAMP_MS),
+                        }),
+                      )}
+                    </TBody>
+                  </Tooltip>
+                </div>
+              </div>
+            )}
+
+            {/* Current penalty */}
+            <div className="flex w-full flex-row justify-between gap-4">
+              <TBodySans className="text-muted-foreground">
+                Current penalty
+              </TBodySans>
+
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-row items-center gap-2">
+                  <TokenLogo className="h-4 w-4" token={suiReserve.token} />
+                  <TBody>
+                    {formatToken(
+                      mSendObjectMap[mSEND_MANAGER_OBJECT_ID].currentPenaltySui,
+                    )}
+                    {" SUI / SEND"}
+                  </TBody>
+                </div>
+                <TLabel>
+                  {formatUsd(
+                    mSendObjectMap[
+                      mSEND_MANAGER_OBJECT_ID
+                    ].currentPenaltySui.times(suiReserve.price),
+                  )}
+                  {" / SEND"}
+                </TLabel>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

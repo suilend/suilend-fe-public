@@ -9,7 +9,7 @@ import {
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
 import { CoinMetadata, SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { normalizeStructTag } from "@mysten/sui/utils";
+import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
@@ -35,12 +35,14 @@ import {
   DOUBLEUP_CITIZEN_TYPE,
   EGG_TYPE,
   KUMO_TYPE,
+  MsendObject,
   PRIME_MACHIN_TYPE,
   REDEEM_SEND_EVENT_TYPE,
   ROOTLETS_TYPE,
   SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
   WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
+  mSEND_MANAGER_OBJECT_ID,
 } from "@/lib/send";
 import {
   getOwnedObjectsOfType,
@@ -64,6 +66,8 @@ import bluefinLeaguesSapphireJson from "../pages/send/trading/bluefin-leagues-sa
 import bluefinSendTradersJson from "../pages/send/trading/bluefin-send-traders.json";
 
 interface SendContext {
+  mSendObjectMap: Record<string, MsendObject> | undefined;
+
   mSendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   sendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
 
@@ -101,11 +105,15 @@ interface SendContext {
   refreshUserSend: () => Promise<void>;
 }
 type LoadedSendContext = SendContext & {
+  mSendObjectMap: Record<string, MsendObject>;
+
   mSendCoinMetadataMap: Record<string, CoinMetadata>;
   sendCoinMetadataMap: Record<string, CoinMetadata>;
 };
 
 const SendContext = createContext<SendContext>({
+  mSendObjectMap: undefined,
+
   mSendCoinMetadataMap: undefined,
   sendCoinMetadataMap: undefined,
 
@@ -132,6 +140,83 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { data, getBalance } = useLoadedAppContext();
+
+  // mSend object map
+  const mSendObjectMapFetcher = async () => {
+    const mSendManagerObjectIds = [mSEND_MANAGER_OBJECT_ID];
+
+    const objs = await Promise.all(
+      mSendManagerObjectIds.map((objectId) =>
+        suiClient.getObject({
+          id: objectId,
+          options: {
+            showContent: true,
+          },
+        }),
+      ),
+    );
+
+    const result: Record<string, MsendObject> = {};
+    for (let i = 0; i < mSendManagerObjectIds.length; i++) {
+      const obj = objs[i];
+
+      const penaltyStartTimeS = new BigNumber(
+        (obj.data?.content as any).fields.start_time_s,
+      );
+      const penaltyEndTimeS = new BigNumber(
+        (obj.data?.content as any).fields.end_time_s,
+      );
+
+      const startPenaltySui = new BigNumber(
+        (obj.data?.content as any).fields.start_penalty_numerator,
+      ).div((obj.data?.content as any).fields.penalty_denominator);
+      const endPenaltySui = new BigNumber(
+        (obj.data?.content as any).fields.end_penalty_numerator,
+      ).div((obj.data?.content as any).fields.penalty_denominator);
+
+      const currentTimeS = Date.now() / 1000;
+      const timeWeight = new BigNumber(penaltyEndTimeS.minus(currentTimeS)).div(
+        penaltyEndTimeS.minus(penaltyStartTimeS),
+      );
+
+      const currentPenaltySui = penaltyEndTimeS.gt(currentTimeS)
+        ? new BigNumber(startPenaltySui.times(timeWeight)).plus(
+            endPenaltySui.times(new BigNumber(1).minus(timeWeight)),
+          )
+        : endPenaltySui;
+
+      result[mSendManagerObjectIds[i]] = {
+        penaltyStartTimeS,
+        penaltyEndTimeS,
+
+        startPenaltySui: new BigNumber(1)
+          .times(10 ** 6)
+          .times(startPenaltySui)
+          .div(10 ** SUI_DECIMALS),
+        endPenaltySui: new BigNumber(1)
+          .times(10 ** 6)
+          .times(endPenaltySui)
+          .div(10 ** SUI_DECIMALS),
+        currentPenaltySui: new BigNumber(1)
+          .times(10 ** 6)
+          .times(currentPenaltySui)
+          .div(10 ** SUI_DECIMALS),
+      };
+    }
+
+    return result;
+  };
+
+  const { data: mSendObjectMap, mutate: mutateSendObjectMap } = useSWR<
+    Record<string, MsendObject> | undefined
+  >("mSendObjectMap", mSendObjectMapFetcher, {
+    onSuccess: (data) => {
+      console.log("Refreshed mSendObjectMap", data);
+    },
+    onError: (err) => {
+      console.error("Failed to refresh mSendObjectMap", err);
+    },
+  });
 
   // CoinMetadata
   const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
@@ -178,7 +263,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  // Transactions since TGE
+  // User - Transactions since TGE
   const transactionsSinceTgeFetcher = async () => {
     if (!address) return undefined;
 
@@ -218,7 +303,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     mutateTransactionsSinceTge();
   }, [mutateTransactionsSinceTge, address, suiClient]);
 
-  // Kiosks
+  // User - Kiosks
   const kioskClient = useMemo(
     () => new KioskClient({ client: suiClient, network: Network.MAINNET }),
     [suiClient],
@@ -265,7 +350,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     mutateOwnedKiosks();
   }, [mutateOwnedKiosks, address, kioskClient]);
 
-  // User allocations
+  // User - Allocations
   const userAllocationsFetcher = async () => {
     if (!address) return undefined;
 
@@ -561,7 +646,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     await mutateUserAllocations();
   }, [mutateTransactionsSinceTge, mutateUserAllocations]);
 
-  // User SEND
+  // User - SEND
   const userSendFetcher = async () => {
     if (!address) return undefined;
 
@@ -618,6 +703,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: SendContext = useMemo(
     () => ({
+      mSendObjectMap,
+
       mSendCoinMetadataMap,
       sendCoinMetadataMap,
 
@@ -633,6 +720,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       refreshUserSend,
     }),
     [
+      mSendObjectMap,
       mSendCoinMetadataMap,
       sendCoinMetadataMap,
       mSendBalanceMap,
@@ -647,7 +735,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SendContext.Provider value={contextValue}>
-      {mSendCoinMetadataMap && sendCoinMetadataMap ? (
+      {mSendObjectMap !== undefined &&
+      mSendCoinMetadataMap !== undefined &&
+      sendCoinMetadataMap !== undefined ? (
         children
       ) : (
         <FullPageSpinner />

@@ -32,7 +32,7 @@ const POINTS_MANAGER_OBJECT_ID =
   "0xab8000923b7f708aed446d66145487ea902d9e61f17e6157662973d971c16e6e"; // TODO
 const CAPSULE_MANAGER_OBJECT_ID =
   "0x57903dd513e0962e71622295e133cbeed4be985862b74ce2bff040889b305064"; // TODO
-const mSEND_MANAGER_OBJECT_ID =
+export const mSEND_MANAGER_OBJECT_ID =
   "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
 // Events
@@ -62,6 +62,15 @@ export const KUMO_TYPE =
   "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
 
 // Types
+export type MsendObject = {
+  penaltyStartTimeS: BigNumber;
+  penaltyEndTimeS: BigNumber;
+
+  startPenaltySui: BigNumber;
+  endPenaltySui: BigNumber;
+  currentPenaltySui: BigNumber;
+};
+
 export enum SuilendCapsuleRarity {
   COMMON = "common",
   UNCOMMON = "uncommon",
