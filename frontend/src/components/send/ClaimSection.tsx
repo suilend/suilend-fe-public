@@ -14,7 +14,6 @@ import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_sSUI_COINTYPE,
   getBalanceChange,
   issSui,
 } from "@suilend/frontend-sui";
@@ -25,6 +24,7 @@ import {
 
 import Card from "@/components/dashboard/Card";
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
+import PenaltyLineChart from "@/components/send/PenaltyLineChart";
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
@@ -649,6 +649,8 @@ export default function ClaimSection({
               </div>
             </div>
           </div>
+
+          <PenaltyLineChart />
         </div>
       )}
     </div>
