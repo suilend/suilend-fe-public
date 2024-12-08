@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
-import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
+
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
@@ -218,6 +219,8 @@ interface AllocationCardProps {
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
+  const isTouchscreen = useIsTouchscreen();
+
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -234,14 +237,17 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const onCardMouseEnter = () => {
+    if (isTouchscreen) return;
+
     setIsVideoPlaying(true);
 
     if (!videoRef.current) return;
     videoRef.current.play();
   };
   const onCardMouseLeave = () => {
-    setIsVideoPlaying(false);
+    if (isTouchscreen) return;
 
+    setIsVideoPlaying(false);
     setTimeout(() => {
       if (!videoRef.current) return;
       videoRef.current.pause();
@@ -278,8 +284,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
         onClick={() => setIsFlipped((is) => !is)}
         onMouseEnter={onCardMouseEnter}
         onMouseLeave={onCardMouseLeave}
-        onTouchStart={onCardMouseEnter}
-        onTouchEnd={onCardMouseLeave}
         style={{ perspective: "1000px" }}
       >
         <div className={cn("relative h-full w-full", styles.cardInner)}>
@@ -328,7 +332,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   />
 
                   {/* Video */}
-                  {allocation.hoverSrc && (
+                  {allocation.hoverSrc && !isTouchscreen && (
                     <video
                       ref={videoRef}
                       className={cn(
