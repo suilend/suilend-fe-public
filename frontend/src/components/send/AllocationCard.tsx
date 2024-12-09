@@ -27,7 +27,7 @@ interface StatusProps {
   allocation: Allocation;
   isEligible?: boolean;
   isNotEligible?: boolean;
-  hasClaimedMsend?: boolean;
+  hasRedeemedMsend?: boolean;
   hasBridgedMsend?: boolean;
 }
 
@@ -35,14 +35,14 @@ function Status({
   allocation,
   isEligible,
   isNotEligible,
-  hasClaimedMsend,
+  hasRedeemedMsend,
   hasBridgedMsend,
 }: StatusProps) {
   return (
     <div
       className={cn(
         "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-3.5 pt-1.5",
-        isEligible || hasClaimedMsend || hasBridgedMsend
+        isEligible || hasRedeemedMsend || hasBridgedMsend
           ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
@@ -50,15 +50,15 @@ function Status({
             ),
       )}
     >
-      {isEligible || hasClaimedMsend || hasBridgedMsend ? (
+      {isEligible || hasRedeemedMsend || hasBridgedMsend ? (
         <>
           <TBody
             className={cn(isEligible ? "text-background" : "text-[#5DF886]")}
           >
             {isEligible
               ? "ELIGIBLE"
-              : hasClaimedMsend
-                ? "CONVERTED"
+              : hasRedeemedMsend
+                ? "REDEEMED"
                 : "BRIDGED"}
           </TBody>
 
@@ -72,11 +72,9 @@ function Status({
             >
               {formatToken(
                 isEligible
-                  ? allocation
-                      .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
-                      .div(100)
-                  : hasClaimedMsend
-                    ? allocation.userClaimedMsend!
+                  ? allocation.userEligibleSend!
+                  : hasRedeemedMsend
+                    ? allocation.userRedeemedMsend!
                     : allocation.userBridgedMsend!,
                 { exact: false },
               )}
@@ -110,9 +108,7 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
   const onConvertClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    const claimSectionHeadingElement = document.getElementById(
-      "claim-section-heading",
-    );
+    const claimSectionHeadingElement = document.getElementById("claim");
     if (!claimSectionHeadingElement) return;
 
     window.scrollTo({
@@ -220,17 +216,17 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
   // Status
   const isEligible = useMemo(
-    () => allocation.userAllocationPercent?.gt(0),
-    [allocation.userAllocationPercent],
+    () => allocation.userEligibleSend?.gt(0),
+    [allocation.userEligibleSend],
   );
   const isNotEligible = useMemo(
-    () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
-    [allocation.snapshotTaken, allocation.userAllocationPercent],
+    () => allocation.snapshotTaken && allocation.userEligibleSend?.eq(0),
+    [allocation.snapshotTaken, allocation.userEligibleSend],
   );
 
-  const hasClaimedMsend = useMemo(
-    () => allocation.userClaimedMsend?.gt(0),
-    [allocation.userClaimedMsend],
+  const hasRedeemedMsend = useMemo(
+    () => allocation.userRedeemedMsend?.gt(0),
+    [allocation.userRedeemedMsend],
   );
   const hasBridgedMsend = useMemo(
     () => allocation.userBridgedMsend?.gt(0),
@@ -256,7 +252,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               allocation={allocation}
               isEligible={isEligible}
               isNotEligible={isNotEligible}
-              hasClaimedMsend={hasClaimedMsend}
+              hasRedeemedMsend={hasRedeemedMsend}
               hasBridgedMsend={hasBridgedMsend}
             />
 
@@ -264,7 +260,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               {/* Top */}
               <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-background">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2 backdrop-blur-md">
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(

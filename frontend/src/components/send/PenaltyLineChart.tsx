@@ -103,7 +103,7 @@ export default function PenaltyLineChart() {
   const domainY = [minY, maxY];
 
   return (
-    <div className="-mr-[24px] h-[200px] shrink-0 transform-gpu">
+    <div className="-mr-[16px] h-[200px] shrink-0 transform-gpu md:-mr-[24px]">
       <Recharts.ResponsiveContainer width="100%" height="100%">
         <Recharts.ComposedChart
           data={data}

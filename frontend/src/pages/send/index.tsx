@@ -276,13 +276,15 @@ function Page() {
         earlyUsers.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.earlyUsers.isInSnapshot
             ? earlyUsers.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -305,15 +307,19 @@ function Page() {
         sendPoints.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.sendPoints.owned
               .div(1000)
-              .times(sendPoints.totalAllocationBreakdownMap.thousand.percent)
+              .times(
+                sendPoints.totalAllocationBreakdownMap.thousand.percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
+              )
           : undefined,
-      userClaimedMsend:
+      userRedeemedMsend:
         userAllocations !== undefined
-          ? userAllocations.sendPoints.claimedMsend
+          ? userAllocations.sendPoints.redeemedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
@@ -334,7 +340,7 @@ function Page() {
         suilendCapsules.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? new BigNumber(
               userAllocations.suilendCapsules.ownedMap[
@@ -342,7 +348,9 @@ function Page() {
               ].times(
                 suilendCapsules.totalAllocationBreakdownMap[
                   SuilendCapsuleRarity.COMMON
-                ].percent,
+                ].percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
               ),
             )
               .plus(
@@ -351,7 +359,9 @@ function Page() {
                 ].times(
                   suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.UNCOMMON
-                  ].percent,
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
                 ),
               )
               .plus(
@@ -360,13 +370,15 @@ function Page() {
                 ].times(
                   suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.RARE
-                  ].percent,
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
                 ),
               )
           : undefined,
-      userClaimedMsend:
+      userRedeemedMsend:
         userAllocations !== undefined
-          ? userAllocations.suilendCapsules.claimedMsend
+          ? userAllocations.suilendCapsules.redeemedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
@@ -388,8 +400,8 @@ function Page() {
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdownMap),
 
-      userAllocationPercent: undefined,
-      userClaimedMsend: undefined,
+      userEligibleSend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend:
         userAllocations !== undefined
           ? userAllocations.save.bridgedMsend
@@ -415,13 +427,21 @@ function Page() {
         rootlets.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
-          ? userAllocations.rootlets.owned.times(
-              rootlets.totalAllocationBreakdownMap.one.percent,
+          ? (Date.now() >= TGE_TIMESTAMP_MS
+              ? userAllocations.rootlets.msendOwning
+              : userAllocations.rootlets.owned
+            ).times(
+              rootlets.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend:
+        userAllocations !== undefined
+          ? userAllocations.rootlets.redeemedMsend
+          : undefined,
       userBridgedMsend: undefined,
     },
 
@@ -441,13 +461,15 @@ function Page() {
         bluefinLeagues.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.bluefinLeagues.isInSnapshot
             ? bluefinLeagues.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -470,16 +492,16 @@ function Page() {
         bluefinSendTraders.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent: undefined,
+      userEligibleSend: undefined,
       // bluefinSendTradersVolumeUsd !== undefined
       //   ? (bluefinSendTradersVolumeUsd as BigNumber)
       //       .div(1000)
       //       .times(
       //         bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdVolume
-      //           .percent,
+      //            .percent.times(SEND_TOTAL_SUPPLY).div(100)
       //       )
       //   : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
@@ -503,13 +525,15 @@ function Page() {
         primeMachin.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.primeMachin.owned.times(
-              primeMachin.totalAllocationBreakdownMap.one.percent,
+              primeMachin.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -530,13 +554,15 @@ function Page() {
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.egg.owned.times(
-              egg.totalAllocationBreakdownMap.one.percent,
+              egg.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -559,13 +585,15 @@ function Page() {
         doubleUpCitizen.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.doubleUpCitizen.owned.times(
-              doubleUpCitizen.totalAllocationBreakdownMap.one.percent,
+              doubleUpCitizen.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -586,13 +614,15 @@ function Page() {
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.kumo.owned.times(
-              kumo.totalAllocationBreakdownMap.one.percent,
+              kumo.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
@@ -616,13 +646,13 @@ function Page() {
         anima.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent: undefined,
+      userEligibleSend: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
-      //     ? anima.totalAllocationBreakdownMap!.percent
+      //     ? anima.totalAllocationBreakdownMap!.percent.times(SEND_TOTAL_SUPPLY).div(100)
       //     : new BigNumber(0)
       //   : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
@@ -643,13 +673,15 @@ function Page() {
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.fud.isInSnapshot
             ? fud.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -670,13 +702,15 @@ function Page() {
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.aaa.isInSnapshot
             ? aaa.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -697,13 +731,15 @@ function Page() {
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.octo.isInSnapshot
             ? octo.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
@@ -723,13 +759,15 @@ function Page() {
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
+      userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.tism.isInSnapshot
             ? tism.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
   ];
@@ -762,9 +800,9 @@ function Page() {
               <Separator />
               <ClaimSection
                 allocations={allocations}
-                suilendCapsulesTotalAllocationBreakdownMap={
-                  suilendCapsules.totalAllocationBreakdownMap
-                }
+                totalAllocationBreakdownMaps={{
+                  suilendCapsules: suilendCapsules.totalAllocationBreakdownMap,
+                }}
               />
             </>
           )}

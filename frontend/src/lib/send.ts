@@ -1,3 +1,4 @@
+import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID, normalizeStructTag } from "@mysten/sui/utils";
@@ -18,7 +19,7 @@ import { getOwnedObjectsOfType } from "@/lib/transactions";
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
 export const TGE_TIMESTAMP_MS = 1733011200000; // TODO: Change to 1733979600000
-export const mSEND_CONVERSION_END_TIMESTAMP_MS =
+export const mSEND_REDEMPTION_END_TIMESTAMP_MS =
   TGE_TIMESTAMP_MS + 365 * 24 * 60 * 60 * 1000; // 1 year after TGE
 
 // Contracts
@@ -137,19 +138,20 @@ export type Allocation = {
     percent: BigNumber;
   }[];
 
-  userAllocationPercent?: BigNumber;
-  userClaimedMsend?: BigNumber;
+  userEligibleSend?: BigNumber;
+  userRedeemedMsend?: BigNumber;
   userBridgedMsend?: BigNumber;
 };
 
-export const burnSendPoints = async (
+export const redeemSendPointsMsend = async (
   suilendClient: SuilendClient,
   data: AppData,
   address: string,
   transaction: Transaction,
 ) => {
   // Claim SEND Points rewards
-  const claimedSendPointsCoins = [];
+  const sendPointsCoins = [];
+
   for (const obligation of data.obligations ?? []) {
     const obligationOwnerCap = data.obligationOwnerCaps?.find(
       (o) => o.obligationId === obligation.id,
@@ -165,8 +167,9 @@ export const burnSendPoints = async (
           r.obligationClaims[obligation.id].claimableAmount.gt(0),
       ),
     );
+
     for (const sendPointsReward of sendPointsRewards) {
-      const [claimedSendPointsCoin] = suilendClient.claimReward(
+      const [sendPointsCoin] = suilendClient.claimReward(
         obligationOwnerCap.id,
         sendPointsReward.obligationClaims[obligation.id].reserveArrayIndex,
         BigInt(sendPointsReward.stats.rewardIndex),
@@ -174,16 +177,16 @@ export const burnSendPoints = async (
         sendPointsReward.stats.side,
         transaction,
       );
-      claimedSendPointsCoins.push(claimedSendPointsCoin);
+      sendPointsCoins.push(sendPointsCoin);
     }
   }
 
-  const mergedSendPointsCoin = claimedSendPointsCoins[0];
-  if (claimedSendPointsCoins.length > 1) {
-    transaction.mergeCoins(
-      mergedSendPointsCoin,
-      claimedSendPointsCoins.slice(1),
-    );
+  // Merge SEND Points coins
+  if (sendPointsCoins.length === 0) return;
+
+  const mergedSendPointsCoin = sendPointsCoins[0];
+  if (sendPointsCoins.length > 1) {
+    transaction.mergeCoins(mergedSendPointsCoin, sendPointsCoins.slice(1));
   }
 
   // Burn SEND Points for mSEND
@@ -200,7 +203,7 @@ export const burnSendPoints = async (
   transaction.transferObjects([mSendCoin], transaction.pure.address(address));
 };
 
-export const burnSuilendCapsules = async (
+export const redeemSuilendCapsulesMsend = async (
   suiClient: SuiClient,
   address: string,
   transaction: Transaction,
@@ -214,6 +217,7 @@ export const burnSuilendCapsules = async (
 
   // Burn Suilend Capsules for mSEND
   const mSendCoins = [];
+
   for (const obj of objs) {
     const mSendCoin = transaction.moveCall({
       target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
@@ -225,6 +229,9 @@ export const burnSuilendCapsules = async (
     });
     mSendCoins.push(mSendCoin);
   }
+
+  // Merge mSEND coins
+  if (mSendCoins.length === 0) return;
 
   const mergedMsendCoin = mSendCoins[0];
   if (mSendCoins.length > 1) {
@@ -241,7 +248,111 @@ export const burnSuilendCapsules = async (
   );
 };
 
-export const redeemMsendForSend = async (
+export const redeemRootletsMsend = async (
+  suiClient: SuiClient,
+  kioskClient: KioskClient,
+  ownedKiosksWithKioskOwnerCaps: {
+    kiosk: KioskData;
+    kioskOwnerCap: KioskOwnerCap;
+  }[],
+  address: string,
+  transaction: Transaction,
+) => {
+  const personalKioskRulePackageId = kioskClient.getRulePackageId(
+    "personalKioskRulePackageId",
+  );
+
+  const mSendCoins = [];
+
+  for (const {
+    kiosk,
+    kioskOwnerCap: personalKioskOwnerCap,
+  } of ownedKiosksWithKioskOwnerCaps) {
+    const kioskItems = kiosk.items.filter(
+      (item) => item.type === ROOTLETS_TYPE && !item.listing,
+    );
+
+    for (const kioskItem of kioskItems) {
+      // Get mSEND coins owned by the Rootlets NFT
+      const objs = await getOwnedObjectsOfType(
+        suiClient,
+        kioskItem.objectId,
+        `0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`, // TODO
+      );
+      const ownedMsendRaw = objs.reduce(
+        (acc, obj) =>
+          acc.plus(new BigNumber((obj.data?.content as any).fields.balance)),
+        new BigNumber(0),
+      );
+      if (ownedMsendRaw.eq(0)) continue;
+
+      // Borrow item from personal kiosk
+      const [kioskOwnerCap, borrow] = transaction.moveCall({
+        target: `${personalKioskRulePackageId}::personal_kiosk::borrow_val`,
+        arguments: [transaction.object(personalKioskOwnerCap.objectId)],
+      });
+
+      // Borrow item from kiosk
+      const [item, promise] = transaction.moveCall({
+        target: "0x2::kiosk::borrow_val",
+        arguments: [
+          transaction.object(kioskItem.kioskId),
+          kioskOwnerCap,
+          transaction.pure.id(kioskItem.objectId),
+        ],
+        typeArguments: [ROOTLETS_TYPE],
+      });
+
+      for (const obj of objs) {
+        if ((obj.data?.content as any).fields.balance === "0") continue;
+
+        // Take mSEND coin out of Rootlets NFT
+        const mSendCoin = transaction.moveCall({
+          target:
+            "0xbe7741c72669f1552d0912a4bc5cdadb5856bcb970350613df9b4362e4855dc5::rootlet::receive_obj",
+          arguments: [item, transaction.object(obj.data?.objectId as string)],
+          typeArguments: [`0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`], // TODO
+        });
+        mSendCoins.push(mSendCoin);
+      }
+
+      // Return item to kiosk
+      transaction.moveCall({
+        target: "0x2::kiosk::return_val",
+        arguments: [transaction.object(kioskItem.kioskId), item, promise],
+        typeArguments: [ROOTLETS_TYPE],
+      });
+
+      // Return item to personal kiosk
+      transaction.moveCall({
+        target: `${personalKioskRulePackageId}::personal_kiosk::return_val`,
+        arguments: [
+          transaction.object(
+            transaction.object(personalKioskOwnerCap.objectId),
+          ),
+          kioskOwnerCap,
+          borrow,
+        ],
+      });
+    }
+  }
+
+  // Merge mSEND coins
+  if (mSendCoins.length === 0) return;
+
+  const mergedMsendCoin = mSendCoins[0];
+  if (mSendCoins.length > 1) {
+    transaction.mergeCoins(mergedMsendCoin, mSendCoins.slice(1));
+  }
+
+  // Transfer mSEND to user
+  transaction.transferObjects(
+    [mergedMsendCoin],
+    transaction.pure.address(address),
+  );
+};
+
+export const claimSend = async (
   suiClient: SuiClient,
   address: string,
   mSendCoinType: string,
@@ -255,6 +366,9 @@ export const redeemMsendForSend = async (
     })
   ).data;
 
+  // Merge mSEND coins
+  if (mSendCoins.length === 0) return;
+
   const mergedMsendCoin = mSendCoins[0];
   if (mSendCoins.length > 1) {
     transaction.mergeCoins(
@@ -263,7 +377,7 @@ export const redeemMsendForSend = async (
     );
   }
 
-  // Redeem mSEND
+  // Claim SEND
   const sendCoin = transaction.moveCall({
     target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
     typeArguments: [

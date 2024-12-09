@@ -7,8 +7,19 @@ import {
   useMemo,
 } from "react";
 
-import { KioskClient, KioskData, Network } from "@mysten/kiosk";
-import { CoinMetadata, SuiTransactionBlockResponse } from "@mysten/sui/client";
+import {
+  KioskClient,
+  KioskData,
+  KioskItem,
+  KioskOwnerCap,
+  Network,
+} from "@mysten/kiosk";
+import {
+  CoinMetadata,
+  SuiClient,
+  SuiTransactionBlockResponse,
+  getFullnodeUrl,
+} from "@mysten/sui/client";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
@@ -76,16 +87,24 @@ interface SendContext {
   totalAllocatedPoints: BigNumber;
   bluefinSendTradersTotalVolumeUsd: BigNumber;
 
+  kioskClient: KioskClient;
+  ownedKiosksWithKioskOwnerCaps:
+    | { kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[]
+    | undefined;
   userAllocations:
     | {
         earlyUsers: { isInSnapshot: boolean };
-        sendPoints: { owned: BigNumber; claimedMsend: BigNumber };
+        sendPoints: { owned: BigNumber; redeemedMsend: BigNumber };
         suilendCapsules: {
           ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
-          claimedMsend: BigNumber;
+          redeemedMsend: BigNumber;
         };
         save: { bridgedMsend: BigNumber };
-        rootlets: { owned: BigNumber };
+        rootlets: {
+          owned: BigNumber;
+          msendOwning: BigNumber;
+          redeemedMsend: BigNumber;
+        };
         bluefinLeagues: { isInSnapshot: boolean };
         bluefinSendTraders: { volumeUsd: BigNumber | undefined };
         primeMachin: { owned: BigNumber };
@@ -101,8 +120,8 @@ interface SendContext {
     | undefined;
   refreshUserAllocations: () => Promise<void>;
 
-  userRedeemedSendMap: Record<string, BigNumber> | undefined;
-  refreshUserRedeemedSendMap: () => Promise<void>;
+  userClaimedSendMap: Record<string, BigNumber> | undefined;
+  refreshUserClaimedSendMap: () => Promise<void>;
 }
 type LoadedSendContext = SendContext & {
   mSendObjectMap: Record<string, MsendObject>;
@@ -122,13 +141,18 @@ const SendContext = createContext<SendContext>({
   totalAllocatedPoints: new BigNumber(0),
   bluefinSendTradersTotalVolumeUsd: new BigNumber(0),
 
+  kioskClient: new KioskClient({
+    client: new SuiClient({ url: getFullnodeUrl("mainnet") }),
+    network: Network.MAINNET,
+  }),
+  ownedKiosksWithKioskOwnerCaps: undefined,
   userAllocations: undefined,
   refreshUserAllocations: async () => {
     throw Error("SendContextProvider not initialized");
   },
 
-  userRedeemedSendMap: undefined,
-  refreshUserRedeemedSendMap: async () => {
+  userClaimedSendMap: undefined,
+  refreshUserClaimedSendMap: async () => {
     throw Error("SendContextProvider not initialized");
   },
 });
@@ -312,10 +336,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     [suiClient],
   );
 
-  const ownedKiosksFetcher = async () => {
+  const ownedKiosksWithKioskOwnerCapsFetcher = async () => {
     if (!address) return undefined;
 
-    const allKioskIds = [];
+    const allKioskOwnerCaps = [];
     let cursor = undefined;
     let hasNextPage = true;
     while (hasNextPage) {
@@ -326,32 +350,47 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         },
       });
 
-      allKioskIds.push(...kiosks.kioskIds);
+      allKioskOwnerCaps.push(...kiosks.kioskOwnerCaps);
       cursor = kiosks.nextCursor ?? undefined;
       hasNextPage = kiosks.hasNextPage;
     }
 
-    const allKiosks = await Promise.all(
-      allKioskIds.map((kioskId) => kioskClient.getKiosk({ id: kioskId })),
+    const allKiosksWithKioskOwnerCaps = await Promise.all(
+      allKioskOwnerCaps
+        .filter((kioskOwnerCap) => kioskOwnerCap.isPersonal)
+        .map((kioskOwnerCap) =>
+          (async () => {
+            const kiosk = await kioskClient.getKiosk({
+              id: kioskOwnerCap.kioskId,
+            });
+
+            return { kiosk, kioskOwnerCap };
+          })(),
+        ),
     );
 
-    return allKiosks;
+    return allKiosksWithKioskOwnerCaps;
   };
 
-  const { data: ownedKiosks, mutate: mutateOwnedKiosks } = useSWR<
-    KioskData[] | undefined
-  >(`ownedKiosks-${address}`, ownedKiosksFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed ownedKiosks", data);
+  const {
+    data: ownedKiosksWithKioskOwnerCaps,
+    mutate: mutateOwnedKiosksWithKioskOwnerCaps,
+  } = useSWR<{ kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[] | undefined>(
+    `ownedKiosksWithKioskOwnerCaps-${address}`,
+    ownedKiosksWithKioskOwnerCapsFetcher,
+    {
+      onSuccess: (data) => {
+        console.log("Refreshed ownedKiosksWithKioskOwnerCaps", data);
+      },
+      onError: (err) => {
+        console.error("Failed to refresh ownedKiosksWithKioskOwnerCaps", err);
+      },
     },
-    onError: (err) => {
-      console.error("Failed to refresh ownedKiosks", err);
-    },
-  });
+  );
 
   useEffect(() => {
-    mutateOwnedKiosks();
-  }, [mutateOwnedKiosks, address, kioskClient]);
+    mutateOwnedKiosksWithKioskOwnerCaps();
+  }, [mutateOwnedKiosksWithKioskOwnerCaps, address, kioskClient]);
 
   // User - Allocations
   const userAllocationsFetcher = async () => {
@@ -360,7 +399,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     if (mSendCoinMetadataMap === undefined || sendCoinMetadataMap === undefined)
       return undefined;
     if (transactionsSinceTge === undefined) return undefined;
-    if (ownedKiosks === undefined) return undefined;
+    if (ownedKiosksWithKioskOwnerCaps === undefined) return undefined;
 
     // Early Users
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
@@ -369,9 +408,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
       .totalPoints.total;
 
-    const claimedSendPointsMsend = transactionsSinceTge.from.reduce(
+    const redeemedSendPointsMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
+        const transactionRedeemedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
           .reduce(
             (acc2, event) =>
@@ -385,7 +424,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             new BigNumber(0),
           );
 
-        return acc.plus(transactionClaimedMsend);
+        return acc.plus(transactionRedeemedMsend);
       },
       new BigNumber(0),
     );
@@ -423,9 +462,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       };
     })();
 
-    const claimedSuilendCapsulesMsend = transactionsSinceTge.from.reduce(
+    const redeemedSuilendCapsulesMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
+        const transactionRedeemedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
           .reduce(
             (acc2, event) =>
@@ -439,7 +478,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             new BigNumber(0),
           );
 
-        return acc.plus(transactionClaimedMsend);
+        return acc.plus(transactionRedeemedMsend);
       },
       new BigNumber(0),
     );
@@ -476,17 +515,46 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Rootlets
-    const ownedRootlets = (() => {
-      // TODO: Fetch how many rootlets have allocations
-      // TODO: Fetch how many rootlets have allocations claimed
-      return ownedKiosks.reduce(
-        (acc, kiosk) =>
-          acc.plus(
-            kiosk.items.filter((item) => item.type === ROOTLETS_TYPE).length,
-          ),
-        new BigNumber(0),
-      );
+    const rootletsKioskItems = ownedKiosksWithKioskOwnerCaps.reduce(
+      (acc, { kiosk }) => [
+        ...acc,
+        ...kiosk.items.filter(
+          (item) => item.type === ROOTLETS_TYPE && !item.listing,
+        ),
+      ],
+      [] as KioskItem[],
+    );
+
+    const ownedRootlets = new BigNumber(rootletsKioskItems.length);
+
+    const msendOwningRootlets = await (async () => {
+      let result = new BigNumber(0);
+
+      const rootletsObjectIds = rootletsKioskItems.map((item) => item.objectId);
+      for (const rootletsObjectId of rootletsObjectIds) {
+        const objs = await getOwnedObjectsOfType(
+          suiClient,
+          rootletsObjectId,
+          `0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`, // TODO
+        );
+
+        const ownedMsend = objs.reduce(
+          (acc, obj) =>
+            acc.plus(
+              new BigNumber((obj.data?.content as any).fields.balance).div(
+                10 **
+                  mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
+              ),
+            ),
+          new BigNumber(0),
+        );
+        if (ownedMsend.gt(0)) result = result.plus(1);
+      }
+
+      return result;
     })();
+
+    const redeemedRootletsMsend = new BigNumber(0);
 
     // Bluefin Leagues
     const isInBluefinLeaguesSnapshot =
@@ -512,11 +580,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           (primeMachinJson as Record<string, number>)[address] ?? 0,
         );
 
-      return ownedKiosks.reduce(
-        (acc, kiosk) =>
+      return ownedKiosksWithKioskOwnerCaps.reduce(
+        (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter((item) => item.type === PRIME_MACHIN_TYPE)
-              .length,
+            kiosk.items.filter(
+              (item) => item.type === PRIME_MACHIN_TYPE && !item.listing,
+            ).length,
           ),
         new BigNumber(0),
       );
@@ -527,9 +596,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       if (Object.keys(eggJson).length > 0)
         return new BigNumber((eggJson as Record<string, number>)[address] ?? 0);
 
-      return ownedKiosks.reduce(
-        (acc, kiosk) =>
-          acc.plus(kiosk.items.filter((item) => item.type === EGG_TYPE).length),
+      return ownedKiosksWithKioskOwnerCaps.reduce(
+        (acc, { kiosk }) =>
+          acc.plus(
+            kiosk.items.filter(
+              (item) => item.type === EGG_TYPE && !item.listing,
+            ).length,
+          ),
         new BigNumber(0),
       );
     })();
@@ -541,11 +614,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
         );
 
-      const ownedKioskItemsOfType = ownedKiosks.reduce(
-        (acc, kiosk) =>
+      const ownedKioskItemsOfType = ownedKiosksWithKioskOwnerCaps.reduce(
+        (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter((item) => item.type === DOUBLEUP_CITIZEN_TYPE)
-              .length,
+            kiosk.items.filter(
+              (item) => item.type === DOUBLEUP_CITIZEN_TYPE && !item.listing,
+            ).length,
           ),
         new BigNumber(0),
       );
@@ -565,10 +639,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           (kumoJson as Record<string, number>)[address] ?? 0,
         );
 
-      return ownedKiosks.reduce(
-        (acc, kiosk) =>
+      return ownedKiosksWithKioskOwnerCaps.reduce(
+        (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter((item) => item.type === KUMO_TYPE).length,
+            kiosk.items.filter(
+              (item) => item.type === KUMO_TYPE && !item.listing,
+            ).length,
           ),
         new BigNumber(0),
       );
@@ -598,14 +674,18 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       earlyUsers: { isInSnapshot: isInEarlyUsersSnapshot },
       sendPoints: {
         owned: ownedSendPoints,
-        claimedMsend: claimedSendPointsMsend,
+        redeemedMsend: redeemedSendPointsMsend,
       },
       suilendCapsules: {
         ownedMap: ownedSuilendCapsulesMap,
-        claimedMsend: claimedSuilendCapsulesMsend,
+        redeemedMsend: redeemedSuilendCapsulesMsend,
       },
       save: { bridgedMsend: bridgedSaveMsend },
-      rootlets: { owned: ownedRootlets },
+      rootlets: {
+        owned: ownedRootlets,
+        msendOwning: msendOwningRootlets,
+        redeemedMsend: redeemedRootletsMsend,
+      },
       bluefinLeagues: { isInSnapshot: isInBluefinLeaguesSnapshot },
       bluefinSendTraders: { volumeUsd: bluefinSendTradersVolumeUsd },
       primeMachin: { owned: ownedPrimeMachin },
@@ -639,7 +719,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     transactionsSinceTge,
-    ownedKiosks,
+    ownedKiosksWithKioskOwnerCaps,
     data.rewardMap,
     data.obligations,
   ]);
@@ -649,8 +729,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     await mutateUserAllocations();
   }, [mutateTransactionsSinceTge, mutateUserAllocations]);
 
-  // User - Redeemed SEND
-  const userRedeemedSendMapFetcher = async () => {
+  // User - Claimed SEND
+  const userClaimedSendMapFetcher = async () => {
     if (!address) return undefined;
 
     if (sendCoinMetadataMap === undefined) return undefined;
@@ -658,9 +738,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     const result: Record<string, BigNumber> = {};
     for (let i = 0; i < mSEND_COINTYPES.length; i++) {
-      const redeemedSend = transactionsSinceTge.from.reduce(
+      const claimedSend = transactionsSinceTge.from.reduce(
         (acc, transaction) => {
-          const transactionRedeemedSend = (transaction.events ?? [])
+          const transactionClaimedSend = (transaction.events ?? [])
             .filter(
               (event) =>
                 event.type ===
@@ -678,44 +758,41 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               new BigNumber(0),
             );
 
-          return acc.plus(transactionRedeemedSend);
+          return acc.plus(transactionClaimedSend);
         },
         new BigNumber(0),
       );
 
-      result[mSEND_COINTYPES[i]] = redeemedSend;
+      result[mSEND_COINTYPES[i]] = claimedSend;
     }
 
     return result;
   };
 
-  const { data: userRedeemedSendMap, mutate: mutateUserRedeemedSendMap } =
-    useSWR<SendContext["userRedeemedSendMap"]>(
-      `userSend-${address}`,
-      userRedeemedSendMapFetcher,
-      {
-        onSuccess: (data) => {
-          console.log("Refreshed userRedeemedSendMap", data);
-        },
-        onError: (err) => {
-          console.error("Failed to refresh userRedeemedSendMap", err);
-        },
-      },
-    );
+  const { data: userClaimedSendMap, mutate: mutateUserClaimedSendMap } = useSWR<
+    SendContext["userClaimedSendMap"]
+  >(`userClaimedSendMap-${address}`, userClaimedSendMapFetcher, {
+    onSuccess: (data) => {
+      console.log("Refreshed userClaimedSendMap", data);
+    },
+    onError: (err) => {
+      console.error("Failed to refresh userClaimedSendMap", err);
+    },
+  });
 
   useEffect(() => {
-    mutateUserRedeemedSendMap();
+    mutateUserClaimedSendMap();
   }, [
-    mutateUserRedeemedSendMap,
+    mutateUserClaimedSendMap,
     address,
     sendCoinMetadataMap,
     transactionsSinceTge,
   ]);
 
-  const refreshUserRedeemedSendMap = useCallback(async () => {
+  const refreshUserClaimedSendMap = useCallback(async () => {
     await mutateTransactionsSinceTge();
-    await mutateUserRedeemedSendMap();
-  }, [mutateTransactionsSinceTge, mutateUserRedeemedSendMap]);
+    await mutateUserClaimedSendMap();
+  }, [mutateTransactionsSinceTge, mutateUserClaimedSendMap]);
 
   // Context
   const contextValue: SendContext = useMemo(
@@ -730,11 +807,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       totalAllocatedPoints,
       bluefinSendTradersTotalVolumeUsd,
 
+      kioskClient,
+      ownedKiosksWithKioskOwnerCaps,
       userAllocations,
       refreshUserAllocations,
 
-      userRedeemedSendMap,
-      refreshUserRedeemedSendMap,
+      userClaimedSendMap,
+      refreshUserClaimedSendMap,
     }),
     [
       mSendObjectMap,
@@ -743,10 +822,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       mSendBalanceMap,
       totalAllocatedPoints,
       bluefinSendTradersTotalVolumeUsd,
+      kioskClient,
+      ownedKiosksWithKioskOwnerCaps,
       userAllocations,
       refreshUserAllocations,
-      userRedeemedSendMap,
-      refreshUserRedeemedSendMap,
+      userClaimedSendMap,
+      refreshUserClaimedSendMap,
     ],
   );
 
