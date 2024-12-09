@@ -557,17 +557,29 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     const redeemedRootletsMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {
-        const isRootletsRedeemTransaction = transaction.objectChanges?.some(
-          (objectChange) => (objectChange as any)?.objectType === ROOTLETS_TYPE,
+        const mSendBalanceChanges = (transaction.balanceChanges ?? []).filter(
+          (balanceChange) =>
+            normalizeStructTag(balanceChange.coinType) ===
+            NORMALIZED_BETA_mSEND_COINTYPE, // TODO
         );
-        if (!isRootletsRedeemTransaction) return acc;
 
-        const transactionRedeemedMsend = (transaction.balanceChanges ?? [])
-          .filter(
+        const isRootletsRedeemTransaction =
+          mSendBalanceChanges.some(
+            (balanceChange) =>
+              (balanceChange.owner as any)?.AddressOwner !== address &&
+              new BigNumber(balanceChange.amount).lt(0),
+          ) &&
+          mSendBalanceChanges.some(
             (balanceChange) =>
               (balanceChange.owner as any)?.AddressOwner === address &&
-              normalizeStructTag(balanceChange.coinType) ===
-                NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+              new BigNumber(balanceChange.amount).gt(0),
+          );
+        if (!isRootletsRedeemTransaction) return acc;
+
+        const transactionRedeemedMsend = mSendBalanceChanges
+          .filter(
+            (balanceChange) =>
+              (balanceChange.owner as any)?.AddressOwner === address,
           )
           .reduce(
             (acc2, balanceChange) =>
