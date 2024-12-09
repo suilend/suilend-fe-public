@@ -46,6 +46,7 @@ export const queryTransactionBlocksAfter = async (
       options: {
         showBalanceChanges: true,
         showEvents: true,
+        showObjectChanges: true,
       },
     });
 

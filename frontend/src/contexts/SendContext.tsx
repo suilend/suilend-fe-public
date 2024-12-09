@@ -494,8 +494,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         const transactionBridgedMsend = (transaction.balanceChanges ?? [])
           .filter(
             (balanceChange) =>
+              (balanceChange.owner as any)?.AddressOwner === address &&
               normalizeStructTag(balanceChange.coinType) ===
-              NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+                NORMALIZED_BETA_mSEND_COINTYPE, // TODO
           )
           .reduce(
             (acc2, balanceChange) =>
@@ -554,7 +555,36 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       return result;
     })();
 
-    const redeemedRootletsMsend = new BigNumber(0);
+    const redeemedRootletsMsend = transactionsSinceTge.from.reduce(
+      (acc, transaction) => {
+        const isRootletsRedeemTransaction = transaction.objectChanges?.some(
+          (objectChange) => (objectChange as any)?.objectType === ROOTLETS_TYPE,
+        );
+        if (!isRootletsRedeemTransaction) return acc;
+
+        const transactionRedeemedMsend = (transaction.balanceChanges ?? [])
+          .filter(
+            (balanceChange) =>
+              (balanceChange.owner as any)?.AddressOwner === address &&
+              normalizeStructTag(balanceChange.coinType) ===
+                NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+          )
+          .reduce(
+            (acc2, balanceChange) =>
+              acc2.plus(
+                new BigNumber(balanceChange.amount).div(
+                  10 **
+                    mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE]
+                      .decimals, // TODO
+                ),
+              ),
+            new BigNumber(0),
+          );
+
+        return acc.plus(transactionRedeemedMsend);
+      },
+      new BigNumber(0),
+    );
 
     // Bluefin Leagues
     const isInBluefinLeaguesSnapshot =

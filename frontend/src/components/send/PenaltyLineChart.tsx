@@ -194,16 +194,18 @@ export default function PenaltyLineChart() {
               </Label>
             )}
           />
-          <Recharts.ReferenceLine
-            x={Date.now() / 1000}
-            stroke="hsl(var(--foreground))"
-            strokeWidth={2}
-            label={(props) => (
-              <Label fill="hsl(var(--foreground))" {...props}>
-                NOW
-              </Label>
-            )}
-          />
+          {Date.now() / 1000 < +mSendObject.penaltyEndTimeS && (
+            <Recharts.ReferenceLine
+              x={Date.now() / 1000}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              label={(props) => (
+                <Label fill="hsl(var(--foreground))" {...props}>
+                  NOW
+                </Label>
+              )}
+            />
+          )}
         </Recharts.ComposedChart>
       </Recharts.ResponsiveContainer>
     </div>
