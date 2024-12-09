@@ -203,7 +203,6 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
             }))}
           reference={{
             utilPercent: +reserve.utilizationPercent,
-            aprPercent: +reserve.borrowAprPercent,
           }}
         />
         <Separator />

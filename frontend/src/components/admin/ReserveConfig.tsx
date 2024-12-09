@@ -4,6 +4,7 @@ import BigNumber from "bignumber.js";
 import { Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
+import { ParsedReserve } from "@suilend/sdk";
 import { CreateReserveConfigArgs } from "@suilend/sdk/_generated/suilend/reserve-config/functions";
 
 import AprLineChart from "@/components/shared/AprLineChart";
@@ -140,10 +141,12 @@ export const useReserveConfigState = (initialConfigState: ConfigState) => {
 
 type ReserveConfigProps = {
   symbol?: string;
+  reserve?: ParsedReserve;
 } & ReturnType<typeof useReserveConfigState>;
 
 export default function ReserveConfig({
   symbol,
+  reserve,
   configState,
   setConfigStateKeyValue,
   interestRate,
@@ -357,6 +360,13 @@ export default function ReserveConfig({
                 utilPercent: +row.utilPercent,
                 aprPercent: +row.aprPercent,
               }))}
+              reference={
+                reserve
+                  ? {
+                      utilPercent: +reserve.utilizationPercent,
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>

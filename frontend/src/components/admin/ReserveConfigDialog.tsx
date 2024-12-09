@@ -221,7 +221,11 @@ export default function ReserveConfigDialog({
           onChange={setPythPriceId}
         />
 
-        <ReserveConfig symbol={reserve.symbol} {...reserveConfigState} />
+        <ReserveConfig
+          symbol={reserve.symbol}
+          reserve={reserve}
+          {...reserveConfigState}
+        />
       </Grid>
 
       <Diff
