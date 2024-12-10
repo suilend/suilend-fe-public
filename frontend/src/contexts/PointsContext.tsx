@@ -61,7 +61,7 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
 
   // Season
-  const season: PointsContext["season"] = useMemo(() => 1, []);
+  const season: PointsContext["season"] = useMemo(() => 2, []); // Change this value to change the current season
   const seasonMap: PointsContext["seasonMap"] = useMemo(
     () => ({
       1: {
