@@ -3,10 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import DataTable, {
   decimalSortingFn,
@@ -22,10 +19,15 @@ import { LeaderboardRowData, usePointsContext } from "@/contexts/PointsContext";
 import { formatAddress } from "@/lib/format";
 import { DASHBOARD_URL } from "@/lib/navigation";
 
-export default function PointsLeaderboardTable() {
+interface PointsLeaderboardTableProps {
+  season: number;
+}
+
+export default function PointsLeaderboardTable({
+  season,
+}: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
-  const { address } = useWalletContext();
-  const { leaderboardRows } = usePointsContext();
+  const { leaderboardRowsMap } = usePointsContext();
 
   // Columns
   const columns: ColumnDef<LeaderboardRowData>[] = useMemo(
@@ -36,7 +38,7 @@ export default function PointsLeaderboardTable() {
         header: ({ column }) => tableHeader(column, "Rank"),
         cell: ({ row }) => {
           const { rank } = row.original;
-          return <PointsRank rank={rank} noTooltip />;
+          return <PointsRank season={season} rank={rank} noTooltip />;
         },
       },
       {
@@ -78,7 +80,7 @@ export default function PointsLeaderboardTable() {
 
           return (
             <div className="flex flex-row justify-end">
-              <PointsCount points={pointsPerDay} />
+              <PointsCount season={season} amount={pointsPerDay} />
             </div>
           );
         },
@@ -93,28 +95,23 @@ export default function PointsLeaderboardTable() {
 
           return (
             <div className="flex flex-row justify-end">
-              <PointsCount points={totalPoints} />
+              <PointsCount season={season} amount={totalPoints} />
             </div>
           );
         },
       },
     ],
-    [explorer],
+    [season, explorer],
   );
 
   return (
     <div className="flex w-full max-w-[960px] flex-col gap-6">
       <DataTable<LeaderboardRowData>
         columns={columns}
-        data={leaderboardRows}
+        data={leaderboardRowsMap?.[season]}
         noDataMessage="No users"
         pageSize={100}
         tableClassName="border-y"
-        tableRowClassName={(row) =>
-          address &&
-          row?.original.address === address &&
-          "shadow-[inset_0_0_0_2px_hsl(var(--secondary))] !bg-secondary/5"
-        }
       />
     </div>
   );

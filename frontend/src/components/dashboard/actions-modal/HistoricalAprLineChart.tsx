@@ -19,12 +19,7 @@ import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRo
 import Button from "@/components/shared/Button";
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";
-import {
-  TBody,
-  TBodySans,
-  TLabel,
-  TLabelSans,
-} from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
@@ -122,7 +117,9 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
                       iconUrl: data.coinMetadataMap[coinType].iconUrl,
                     }}
                   />
-                  <TLabel>{data.coinMetadataMap[coinType].symbol}</TLabel>
+                  <TLabelSans>
+                    {data.coinMetadataMap[coinType].symbol}
+                  </TLabelSans>
                 </>
               )}
             </AprRewardsBreakdownRow>

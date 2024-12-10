@@ -4,7 +4,7 @@ import { SuiClient } from "@mysten/sui/client";
 
 import { NORMALIZED_sSUI_COINTYPE } from "@suilend/frontend-sui";
 
-import { getBorrowAddresses, getMintAndDepositLstAddresses } from "./utils";
+import { getBorrowAddresses, getStakeSuiForLstAndDepositAddresses } from "./utils";
 
 const minTimestampMs = 1731898800000; // 18 Nov 11AM GMT+8
 const maxTimestampMs = 1733436000000; // 5 Dec 5PM EST
@@ -19,18 +19,18 @@ async function main() {
     }`,
   });
 
-  const sendersWith10PlusSsuiMintedAndDeposited =
-    await getMintAndDepositLstAddresses(
+  const sendersWith10PlusSuiStakedForSsuiAndDeposited =
+    await getStakeSuiForLstAndDepositAddresses(
       id,
       suiClient,
-      NORMALIZED_sSUI_COINTYPE,
       10,
+      NORMALIZED_sSUI_COINTYPE,
       minTimestampMs,
       maxTimestampMs,
     );
   fs.writeFileSync(
-    `csv/${id}-senders-with-10-plus-ssui-minted-and-deposited.csv`,
-    `address\n${sendersWith10PlusSsuiMintedAndDeposited.join("\n")}`,
+    `csv/${id}-senders-with-10-plus-sui-staked-for-ssui-and-deposited.csv`,
+    `address\n${sendersWith10PlusSuiStakedForSsuiAndDeposited.join("\n")}`,
   );
 
   const sendersWith5PlusSuiBorrowed = await getBorrowAddresses(
@@ -48,19 +48,19 @@ async function main() {
   const eligibleSenders = [];
   for (const sender of Array.from(
     new Set([
-      ...sendersWith10PlusSsuiMintedAndDeposited,
+      ...sendersWith10PlusSuiStakedForSsuiAndDeposited,
       ...sendersWith5PlusSuiBorrowed,
     ]),
   )) {
     if (
-      sendersWith10PlusSsuiMintedAndDeposited.includes(sender) &&
+      sendersWith10PlusSuiStakedForSsuiAndDeposited.includes(sender) &&
       sendersWith5PlusSuiBorrowed.includes(sender)
     )
       eligibleSenders.push(sender);
   }
   console.log(
-    "sendersWith10PlusSsuiMintedAndDeposited.length",
-    sendersWith10PlusSsuiMintedAndDeposited.length,
+    "sendersWith10PlusSuiStakedForSsuiAndDeposited.length",
+    sendersWith10PlusSuiStakedForSsuiAndDeposited.length,
     "sendersWith5PlusSuiBorrowed.length",
     sendersWith5PlusSuiBorrowed.length,
     "eligibleSenders.length",

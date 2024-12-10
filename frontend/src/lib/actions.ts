@@ -273,7 +273,7 @@ export const getSubmitButtonNoValueState =
       )
         return {
           isDisabled: true,
-          title: "Max deposit positions",
+          title: "Max 5 deposit positions",
           description: "Cannot have more than 5 unique deposits at a time",
         };
       return undefined;
@@ -301,7 +301,7 @@ export const getSubmitButtonNoValueState =
       )
         return {
           isDisabled: true,
-          title: "Max borrow positions",
+          title: "Max 5 borrow positions",
           description: "Cannot have more than 5 unique borrows at a time",
         };
 

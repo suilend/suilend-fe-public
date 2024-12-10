@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
@@ -9,6 +10,7 @@ import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
+import Button from "@/components/shared/Button";
 import { Separator } from "@/components/ui/separator";
 import {
   SendContextProvider,
@@ -24,6 +26,7 @@ import {
   SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
 } from "@/lib/send";
+import { cn } from "@/lib/utils";
 
 import earlyUsersJson from "./lending/early-users.json";
 import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
@@ -40,6 +43,8 @@ function Page() {
   const { address } = useWalletContext();
 
   const { totalAllocatedPoints, userAllocations } = useLoadedSendContext();
+
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
   // Allocations
   const earlyUsers = {
@@ -59,7 +64,7 @@ function Page() {
     totalAllocationPercent: new BigNumber(18),
     totalAllocationBreakdownMap: {
       thousand: {
-        title: "Per 1K Points",
+        title: "Per 1K SEND Points",
         percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
       },
     },
@@ -291,9 +296,9 @@ function Page() {
       id: AllocationId.SEND_POINTS,
       src: "/assets/send/points/send-points.png",
       hoverSrc: "/assets/send/points/send-points-hover.mp4",
-      title: "SEND Points",
+      title: "SEND Points S1",
       description:
-        "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
+        "SEND Points (Season 1) were distributed as rewards for depositing/borrowing activity on Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
       cta: {
@@ -785,13 +790,47 @@ function Page() {
           <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
             <HeroSection allocations={allocations} />
 
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-              {allocations.map((allocation) => (
-                <AllocationCard
-                  key={allocation.title}
-                  allocation={allocation}
-                />
-              ))}
+            <div
+              className={cn(
+                "relative w-full",
+                isCollapsed && "h-[400px] overflow-hidden md:h-[600px]",
+              )}
+            >
+              <div
+                className={cn(
+                  "relative z-[1] h-full w-full",
+                  isCollapsed && "pointer-events-none",
+                )}
+                style={
+                  isCollapsed
+                    ? {
+                        maskImage:
+                          "linear-gradient(to bottom, black 0%, transparent 100%)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                  {allocations.map((allocation) => (
+                    <AllocationCard
+                      key={allocation.title}
+                      allocation={allocation}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {isCollapsed && (
+                <Button
+                  className="absolute bottom-0 left-1/2 z-[2] -translate-x-1/2 border-secondary"
+                  labelClassName="text-[16px] uppercase text-primary-foreground"
+                  variant="secondaryOutline"
+                  size="lg"
+                  onClick={() => setIsCollapsed(false)}
+                >
+                  Show full list
+                </Button>
+              )}
             </div>
           </div>
 

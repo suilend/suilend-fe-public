@@ -405,8 +405,11 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
 
     // SEND Points
-    const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
-      .totalPoints.total;
+    const ownedSendPoints = getPointsStats(
+      NORMALIZED_BETA_SEND_POINTS_COINTYPE, //TODO
+      data.rewardMap,
+      data.obligations,
+    ).totalPoints.total;
 
     const redeemedSendPointsMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {

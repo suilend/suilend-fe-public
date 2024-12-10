@@ -8,6 +8,7 @@ import { formatRank } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface PointsRankProps {
+  season: number;
   rank?: number | null;
   noTooltip?: boolean;
   isCentered?: boolean;
@@ -15,6 +16,7 @@ interface PointsRankProps {
 }
 
 export default function PointsRank({
+  season,
   rank,
   noTooltip,
   isCentered,
@@ -34,7 +36,9 @@ export default function PointsRank({
       {rank === undefined ? (
         <Skeleton className="h-5 w-full" />
       ) : (
-        <Tooltip title={!noTooltip && <PointsDataLastUpdatedAt />}>
+        <Tooltip
+          title={!noTooltip && <PointsDataLastUpdatedAt season={season} />}
+        >
           {rank === null ? (
             <TBody
               className={cn(
