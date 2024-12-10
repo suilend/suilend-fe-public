@@ -59,11 +59,9 @@ export default function AssetCell({
         isLst(token.coinType)
       ) {
         result.push({
-          title: "Unstake",
+          title: "Stake",
           href: !isInMsafeApp()
-            ? `${SPRINGSUI_URL}?${new URLSearchParams({
-                lst: token.symbol,
-              })}&tab=unstake`
+            ? `${SPRINGSUI_URL}?${new URLSearchParams({ lst: token.symbol })}`
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
