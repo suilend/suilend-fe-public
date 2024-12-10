@@ -9,13 +9,12 @@ import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   Allocation,
   AllocationId,
@@ -39,17 +38,6 @@ function Status({
   hasClaimedMsend,
   hasBridgedMsend,
 }: StatusProps) {
-  const hasTooltip =
-    isEligible &&
-    [
-      AllocationId.SEND_POINTS,
-
-      AllocationId.FUD,
-      AllocationId.AAA,
-      AllocationId.OCTO,
-      AllocationId.TISM,
-    ].includes(allocation.id);
-
   return (
     <div
       className={cn(
@@ -79,43 +67,24 @@ function Status({
                 "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
               )}
             />
-            <Tooltip
-              title={
-                hasTooltip
-                  ? allocation.id === AllocationId.SEND_POINTS
-                    ? "Allocation is an estimate since SEND Points are still ongoing"
-                    : [
-                          AllocationId.FUD,
-                          AllocationId.AAA,
-                          AllocationId.OCTO,
-                          AllocationId.TISM,
-                        ].includes(allocation.id)
-                      ? "Allocation is an estimate since the final snapshot has not been taken yet"
-                      : undefined
-                  : undefined
-              }
+
+            <TBody
+              className={cn(
+                "text-[16px]",
+                isEligible ? "text-[#030917]" : "text-[#5DF886]",
+              )}
             >
-              <TBody
-                className={cn(
-                  "text-[16px]",
-                  isEligible ? "text-[#030917]" : "text-[#5DF886]",
-                  hasTooltip &&
-                    cn("decoration-[#030917]/50", hoverUnderlineClassName),
-                )}
-              >
-                {formatToken(
-                  isEligible
-                    ? allocation
-                        .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
-                        .div(100)
-                    : hasClaimedMsend
-                      ? allocation.userClaimedMsend!
-                      : allocation.userBridgedMsend!,
-                  { exact: false },
-                )}
-                {hasTooltip ? "*" : undefined}
-              </TBody>
-            </Tooltip>
+              {formatToken(
+                isEligible
+                  ? allocation
+                      .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
+                      .div(100)
+                  : hasClaimedMsend
+                    ? allocation.userClaimedMsend!
+                    : allocation.userBridgedMsend!,
+                { exact: false },
+              )}
+            </TBody>
           </div>
         </>
       ) : (
