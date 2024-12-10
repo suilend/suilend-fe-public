@@ -687,7 +687,12 @@ function Page() {
       depositSubmitButtonNoValueState !== undefined &&
       depositSubmitButtonNoValueState.isDisabled
     )
-      return depositSubmitButtonNoValueState.title;
+      return [
+        depositSubmitButtonNoValueState.title,
+        depositSubmitButtonNoValueState.description,
+      ]
+        .filter(Boolean)
+        .join(" - ");
     if (
       depositSubmitButtonState !== undefined &&
       depositSubmitButtonState.isDisabled
