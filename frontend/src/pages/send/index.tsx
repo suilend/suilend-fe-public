@@ -740,7 +740,7 @@ export default function Send() {
     totalAllocationPercent: new BigNumber(18),
     totalAllocationBreakdownMap: {
       thousand: {
-        title: "Per 1K Points",
+        title: "Per 1K SEND Points",
         percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
       },
     },
@@ -970,9 +970,9 @@ export default function Send() {
       id: AllocationId.SEND_POINTS,
       src: "/assets/send/points/send-points.png",
       hoverSrc: "/assets/send/points/send-points-hover.mp4",
-      title: "SEND Points",
+      title: "SEND Points S1",
       description:
-        "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
+        "SEND Points (Season 1) were distributed as rewards for depositing/borrowing activity on Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
       cta: {
