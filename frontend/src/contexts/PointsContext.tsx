@@ -37,9 +37,8 @@ interface PointsContext {
 
   leaderboardRowsMap: Record<number, LeaderboardRowData[]> | undefined;
   updatedAtMap: Record<number, Date> | undefined;
+  addressRowMap: Record<number, LeaderboardRowData | null> | undefined;
   fetchLeaderboardRows: (season: number) => Promise<void>;
-
-  rankMap: Record<number, number | null> | undefined;
 }
 
 const defaultContextValue: PointsContext = {
@@ -48,11 +47,10 @@ const defaultContextValue: PointsContext = {
 
   leaderboardRowsMap: undefined,
   updatedAtMap: undefined,
+  addressRowMap: undefined,
   fetchLeaderboardRows: async () => {
     throw Error("PointsContextProvider not initialized");
   },
-
-  rankMap: undefined,
 };
 
 const PointsContext = createContext<PointsContext>(defaultContextValue);
@@ -118,25 +116,23 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
     fetchLeaderboardRows(season);
   }, [fetchLeaderboardRows, season]);
 
-  // Rank
-  const [rankMap, setRankMap] = useState<PointsContext["rankMap"]>(
-    defaultContextValue["rankMap"],
-  );
+  // Address row
+  const [addressRowMap, setAddressRowMap] = useState<
+    PointsContext["addressRowMap"]
+  >(defaultContextValue["addressRowMap"]);
 
   useEffect(() => {
     if (!address || leaderboardRowsMap === undefined) {
-      setRankMap(undefined);
+      setAddressRowMap(undefined);
       return;
     }
 
-    setRankMap(
+    setAddressRowMap(
       Object.entries(leaderboardRowsMap).reduce((acc, [key, value]) => {
         if (value === undefined) return acc;
 
         const row = value.find((row) => row.address === address);
-        return row === undefined
-          ? { ...acc, [key]: null }
-          : { ...acc, [key]: row.rank };
+        return { ...acc, [key]: row ?? null };
       }, {}),
     );
   }, [address, leaderboardRowsMap]);
@@ -149,17 +145,16 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
 
       leaderboardRowsMap,
       updatedAtMap,
+      addressRowMap,
       fetchLeaderboardRows,
-
-      rankMap,
     }),
     [
       season,
       seasonMap,
       leaderboardRowsMap,
       updatedAtMap,
+      addressRowMap,
       fetchLeaderboardRows,
-      rankMap,
     ],
   );
 

@@ -3,10 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import DataTable, {
   decimalSortingFn,
@@ -30,7 +27,6 @@ export default function PointsLeaderboardTable({
   season,
 }: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
-  const { address } = useWalletContext();
   const { leaderboardRowsMap } = usePointsContext();
 
   // Columns
@@ -116,11 +112,6 @@ export default function PointsLeaderboardTable({
         noDataMessage="No users"
         pageSize={100}
         tableClassName="border-y"
-        tableRowClassName={(row) =>
-          address &&
-          row?.original.address === address &&
-          "shadow-[inset_0_0_0_2px_hsl(var(--secondary))] !bg-secondary/5"
-        }
       />
     </div>
   );

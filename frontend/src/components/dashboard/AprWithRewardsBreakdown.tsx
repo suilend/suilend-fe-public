@@ -19,12 +19,7 @@ import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRo
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import {
-  TBody,
-  TBodySans,
-  TLabel,
-  TLabelSans,
-} from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatPoints, formatToken } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -232,8 +227,7 @@ export default function AprWithRewardsBreakdown({
           <>
             {filteredRewards.length > 0 && (
               <TLabelSans>
-                {capitalize(side)}{" "}
-                <span className="font-mono">{reserve.symbol}</span>
+                {capitalize(side)} {reserve.symbol}
                 {" and earn "}
                 {perDayRewards.length > 0 && (
                   <>points{aprRewards.length > 0 && " & "}</>
@@ -261,7 +255,7 @@ export default function AprWithRewardsBreakdown({
                         <br />
                         <span className="font-sans text-muted-foreground">
                           {"Per "}
-                          <span className="font-mono">{reserve.symbol}</span>
+                          {reserve.symbol}
                           {" per day"}
                         </span>
                       </>
@@ -275,7 +269,7 @@ export default function AprWithRewardsBreakdown({
                         iconUrl: reward.stats.iconUrl,
                       }}
                     />
-                    <TLabel>{reward.stats.symbol}</TLabel>
+                    <TLabelSans>{reward.stats.symbol}</TLabelSans>
                   </AprRewardsBreakdownRow>
                 ))}
               </div>
@@ -337,7 +331,7 @@ export default function AprWithRewardsBreakdown({
                       iconUrl: reward.stats.iconUrl,
                     }}
                   />
-                  <TLabel>{reward.stats.symbol}</TLabel>
+                  <TLabelSans>{reward.stats.symbol}</TLabelSans>
                 </AprRewardsBreakdownRow>
               ))}
             </div>

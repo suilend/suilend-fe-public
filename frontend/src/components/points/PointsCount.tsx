@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface PointsCountProps {
   labelClassName?: ClassValue;
   season: number;
-  amount?: BigNumber;
+  amount?: BigNumber | null;
 }
 
 export default function PointsCount({
@@ -29,14 +29,17 @@ export default function PointsCount({
   return (
     <div className="flex w-max flex-row items-center gap-1.5">
       <PointsLogo season={season} />
-      {amount !== undefined ? (
+
+      {amount === undefined ? (
+        <Skeleton className="h-5 w-10" />
+      ) : amount === null ? (
+        <TBody className={cn(labelClassName)}>N/A</TBody>
+      ) : (
         <Tooltip
           title={`${formatPoints(amount, { dp: coinMetadata?.decimals })} ${coinMetadata?.symbol}`}
         >
           <TBody className={cn(labelClassName)}>{formatPoints(amount)}</TBody>
         </Tooltip>
-      ) : (
-        <Skeleton className="h-5 w-10" />
       )}
     </div>
   );

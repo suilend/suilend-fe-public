@@ -81,7 +81,7 @@ function ClaimableRewards({
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { data, obligation } = useLoadedAppContext();
-  const { season, seasonMap } = usePointsContext();
+  const { season, seasonMap, addressRowMap } = usePointsContext();
 
   const { md } = useBreakpoint();
 
@@ -197,9 +197,22 @@ export default function RewardsCard() {
               {hasClaimableRewards && (
                 <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
               )}
-              <TotalPointsStat amount={pointsStats.totalPoints.total} />
-              <PointsPerDayStat amount={pointsStats.pointsPerDay.total} />
-              <RankStat />
+              <TotalPointsStat
+                season={season}
+                amount={pointsStats.totalPoints.total}
+              />
+              <PointsPerDayStat
+                season={season}
+                amount={pointsStats.pointsPerDay.total}
+              />
+              <RankStat
+                season={season}
+                rank={
+                  addressRowMap?.[season] === null
+                    ? null
+                    : addressRowMap?.[season].rank
+                }
+              />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
@@ -210,15 +223,25 @@ export default function RewardsCard() {
                 />
               )}
               <TotalPointsStat
+                season={season}
                 amount={pointsStats.totalPoints.total}
                 isCentered
               />
 
               <PointsPerDayStat
+                season={season}
                 amount={pointsStats.pointsPerDay.total}
                 isCentered
               />
-              <RankStat isCentered />
+              <RankStat
+                season={season}
+                rank={
+                  addressRowMap?.[season] === null
+                    ? null
+                    : addressRowMap?.[season].rank
+                }
+                isCentered
+              />
             </div>
           )}
         </div>

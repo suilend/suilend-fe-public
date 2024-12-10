@@ -3,21 +3,21 @@ import BigNumber from "bignumber.js";
 import PointsCount from "@/components/points/PointsCount";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { usePointsContext } from "@/contexts/PointsContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { cn } from "@/lib/utils";
 
 interface PointsPerDayStatProps {
-  amount: BigNumber;
+  season: number;
+  amount?: BigNumber | null;
   isCentered?: boolean;
 }
 
 export default function PointsPerDayStat({
+  season,
   amount,
   isCentered,
 }: PointsPerDayStatProps) {
   const { data, obligation } = useLoadedAppContext();
-  const { season } = usePointsContext();
 
   const isLooping = getIsLooping(data, obligation);
   const wasLooping = getWasLooping(data, obligation);

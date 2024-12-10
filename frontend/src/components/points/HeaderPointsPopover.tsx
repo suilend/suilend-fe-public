@@ -20,7 +20,7 @@ export default function PointsCountPopover() {
   const router = useRouter();
 
   const { data } = useAppContext();
-  const { season, seasonMap, rankMap } = usePointsContext();
+  const { season, seasonMap, addressRowMap } = usePointsContext();
 
   // Points
   const pointsStats = data
@@ -67,7 +67,7 @@ export default function PointsCountPopover() {
 
         <div className="flex w-full flex-col gap-2">
           <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>Total Points</TLabelSans>
+            <TLabelSans>Total SEND Points</TLabelSans>
             <PointsCount
               season={season}
               amount={pointsStats?.totalPoints.total}
@@ -75,7 +75,7 @@ export default function PointsCountPopover() {
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>Points per day</TLabelSans>
+            <TLabelSans>SEND Points per day</TLabelSans>
             <PointsCount
               season={season}
               amount={pointsStats?.pointsPerDay.total}
@@ -86,7 +86,11 @@ export default function PointsCountPopover() {
             <TLabelSans>Rank</TLabelSans>
             <PointsRank
               season={season}
-              rank={rankMap?.[season]}
+              rank={
+                addressRowMap?.[season] === null
+                  ? null
+                  : addressRowMap?.[season].rank
+              }
               isRightAligned
             />
           </div>

@@ -2,10 +2,14 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo } from "react";
 
-import { shallowPushQuery } from "@suilend/frontend-sui-next";
+import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
 
+import Card from "@/components/dashboard/Card";
 import PointsHeader from "@/components/points/PointsHeader";
 import PointsLeaderboardTable from "@/components/points/PointsLeaderboardTable";
+import PointsPerDayStat from "@/components/points/PointsPerDayStat";
+import RankStat from "@/components/points/RankStat";
+import TotalPointsStat from "@/components/points/TotalPointsStat";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { Tab, usePointsContext } from "@/contexts/PointsContext";
 
@@ -22,7 +26,9 @@ export default function Points() {
     [router.query],
   );
 
-  const { season, fetchLeaderboardRows } = usePointsContext();
+  const { address } = useWalletContext();
+  const { season, seasonMap, addressRowMap, fetchLeaderboardRows } =
+    usePointsContext();
 
   // Tabs
   const selectedTab = useMemo(
@@ -42,6 +48,12 @@ export default function Points() {
     fetchLeaderboardRows(+selectedTab);
   }, [fetchLeaderboardRows, selectedTab]);
 
+  // Address row
+  const addressRow = useMemo(
+    () => addressRowMap?.[+selectedTab],
+    [addressRowMap, selectedTab],
+  );
+
   return (
     <>
       <Head>
@@ -57,13 +69,27 @@ export default function Points() {
           <ImpersonationModeBanner />
         </div>
 
-        {/* <Card>
-          <div className="flex flex-row items-center justify-between gap-4">
-            <TotalPointsStat amount={new BigNumber(1000)} />
-            <PointsPerDayStat amount={new BigNumber(10)} />
-            <RankStat />
-          </div>
-        </Card> */}
+        {address && (
+          <Card
+            className="max-w-[960px] p-4"
+            style={{ borderColor: seasonMap[+selectedTab].color }}
+          >
+            <div className="flex flex-row items-center justify-between gap-4">
+              <RankStat
+                season={+selectedTab}
+                rank={addressRow === null ? null : addressRow?.rank}
+              />
+              <PointsPerDayStat
+                season={+selectedTab}
+                amount={addressRow === null ? null : addressRow?.pointsPerDay}
+              />
+              <TotalPointsStat
+                season={+selectedTab}
+                amount={addressRow === null ? null : addressRow?.totalPoints}
+              />
+            </div>
+          </Card>
+        )}
 
         <PointsLeaderboardTable season={+selectedTab} />
       </div>
