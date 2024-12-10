@@ -14,9 +14,9 @@ import { toast } from "sonner";
 import useSWR from "swr";
 
 import {
-  NORMALIZED_SEND_POINTS_COINTYPE,
+  NORMALIZED_SEND_POINTS_S1_COINTYPE,
   getBalanceChange,
-  isSendPoints,
+  isSendPointsS1,
 } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
@@ -137,9 +137,9 @@ const CAPSULE_MANAGER_OBJECT_ID =
 const mSEND_MANAGER_OBJECT_ID =
   "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
 
-// const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
+// const NORMALIZED_SEND_POINTS_S1_COINTYPE = normalizeStructTag(
 //   "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
-// ); // TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
+// ); // TODO: Change back to NORMALIZED_SEND_POINTS_S1_COINTYPE from @suilend/frontend-sui
 
 export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
   "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
@@ -263,7 +263,7 @@ export default function Send() {
         ...reserve.depositsPoolRewardManager.poolRewards,
         ...reserve.borrowsPoolRewardManager.poolRewards,
       ]) {
-        if (isSendPoints(pr.coinType))
+        if (isSendPointsS1(pr.coinType))
           result = result.plus(pr.allocatedRewards);
       }
     }
@@ -1406,7 +1406,7 @@ export default function Send() {
     const coins = (
       await suiClient.getCoins({
         owner: address,
-        coinType: NORMALIZED_SEND_POINTS_COINTYPE,
+        coinType: NORMALIZED_SEND_POINTS_S1_COINTYPE,
       })
     ).data;
     if (coins.length === 0) throw new Error("No SEND Points in wallet");

@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 import PointsCount from "@/components/points/PointsCount";
-import PointsIcon from "@/components/points/PointsIcon";
+import PointsLogo from "@/components/points/PointsLogo";
 import PointsRank from "@/components/points/PointsRank";
 import Button from "@/components/shared/Button";
 import Popover from "@/components/shared/Popover";
@@ -37,7 +37,7 @@ export default function PointsCountPopover() {
       trigger={
         <Button
           className="gap-1.5 bg-muted/15"
-          startIcon={<PointsIcon className="h-4 w-4" />}
+          startIcon={<PointsLogo />}
           variant="ghost"
           role="combobox"
         >
@@ -54,7 +54,9 @@ export default function PointsCountPopover() {
       }}
     >
       <div className="flex flex-col gap-4">
-        <TitleWithIcon icon={<PointsIcon />}>SEND points</TitleWithIcon>
+        <TitleWithIcon icon={<PointsLogo />}>
+          SEND points Season 1
+        </TitleWithIcon>
 
         <div className="flex w-full flex-col gap-2">
           <div className="flex flex-row items-center justify-between gap-4">
