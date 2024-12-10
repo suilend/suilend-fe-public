@@ -57,7 +57,7 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
 
       isFetchingLeaderboardRowsRef.current = true;
       try {
-        const url = `${API_URL}/points/leaderboard?season=1`;
+        const url = `${API_URL}/points/leaderboard`;
         const res = await fetch(url);
         const json = await res.json();
 
