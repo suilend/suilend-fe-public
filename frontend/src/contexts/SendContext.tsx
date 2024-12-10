@@ -522,9 +522,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const rootletsKioskItems = ownedKiosksWithKioskOwnerCaps.reduce(
       (acc, { kiosk }) => [
         ...acc,
-        ...kiosk.items.filter(
-          (item) => item.type === ROOTLETS_TYPE && !item.listing,
-        ),
+        ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
       ],
       [] as KioskItem[],
     );
@@ -628,9 +626,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       return ownedKiosksWithKioskOwnerCaps.reduce(
         (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter(
-              (item) => item.type === PRIME_MACHIN_TYPE && !item.listing,
-            ).length,
+            kiosk.items.filter((item) => item.type === PRIME_MACHIN_TYPE)
+              .length,
           ),
         new BigNumber(0),
       );
@@ -643,11 +640,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
       return ownedKiosksWithKioskOwnerCaps.reduce(
         (acc, { kiosk }) =>
-          acc.plus(
-            kiosk.items.filter(
-              (item) => item.type === EGG_TYPE && !item.listing,
-            ).length,
-          ),
+          acc.plus(kiosk.items.filter((item) => item.type === EGG_TYPE).length),
         new BigNumber(0),
       );
     })();
@@ -662,9 +655,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       const ownedKioskItemsOfType = ownedKiosksWithKioskOwnerCaps.reduce(
         (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter(
-              (item) => item.type === DOUBLEUP_CITIZEN_TYPE && !item.listing,
-            ).length,
+            kiosk.items.filter((item) => item.type === DOUBLEUP_CITIZEN_TYPE)
+              .length,
           ),
         new BigNumber(0),
       );
@@ -687,9 +679,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       return ownedKiosksWithKioskOwnerCaps.reduce(
         (acc, { kiosk }) =>
           acc.plus(
-            kiosk.items.filter(
-              (item) => item.type === KUMO_TYPE && !item.listing,
-            ).length,
+            kiosk.items.filter((item) => item.type === KUMO_TYPE).length,
           ),
         new BigNumber(0),
       );
