@@ -7,8 +7,9 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Card from "@/components/dashboard/Card";
 import ClaimRewardsPopover from "@/components/dashboard/ClaimRewardsPopover";
-import PointsCount from "@/components/points/PointsCount";
-import PointsRank from "@/components/points/PointsRank";
+import PointsPerDayStat from "@/components/points/PointsPerDayStat";
+import RankStat from "@/components/points/RankStat";
+import TotalPointsStat from "@/components/points/TotalPointsStat";
 import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -18,7 +19,6 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
-import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
 import { cn } from "@/lib/utils";
@@ -71,65 +71,9 @@ function ClaimableRewards({
         Claimable rewards
       </TLabelSans>
 
-      <div className="flex flex-col gap-1">
-        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
-          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-interface TotalPointsStatProps {
-  totalPoints: BigNumber;
-  isCentered?: boolean;
-}
-
-function TotalPointsStat({ totalPoints, isCentered }: TotalPointsStatProps) {
-  return (
-    <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
-      <TLabelSans className={cn(isCentered && "text-center")}>
-        Total SEND Points
-      </TLabelSans>
-      <PointsCount points={totalPoints} />
-    </div>
-  );
-}
-
-interface PointsPerDayStatProps {
-  pointsPerDay: BigNumber;
-  isCentered?: boolean;
-}
-
-function PointsPerDayStat({ pointsPerDay, isCentered }: PointsPerDayStatProps) {
-  const { data, obligation } = useLoadedAppContext();
-
-  const isLooping = getIsLooping(data, obligation);
-  const wasLooping = getWasLooping(data, obligation);
-
-  return (
-    <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
-      <TLabelSans className={cn(isCentered && "text-center")}>
-        SEND Points per day
-      </TLabelSans>
-      <PointsCount
-        points={pointsPerDay}
-        labelClassName={cn((isLooping || wasLooping) && "text-warning")}
-      />
-    </div>
-  );
-}
-
-interface RankStatProps {
-  rank?: number | null;
-  isCentered?: boolean;
-}
-
-function RankStat({ rank, isCentered }: RankStatProps) {
-  return (
-    <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
-      <TLabelSans className={cn(isCentered && "text-center")}>Rank</TLabelSans>
-      <PointsRank rank={rank} isCentered={isCentered} />
+      {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+        <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
+      ))}
     </div>
   );
 }
@@ -137,8 +81,7 @@ function RankStat({ rank, isCentered }: RankStatProps) {
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { data, obligation } = useLoadedAppContext();
-
-  const { rank } = usePointsContext();
+  const { season, seasonMap } = usePointsContext();
 
   const { md } = useBreakpoint();
 
@@ -176,7 +119,11 @@ export default function RewardsCard() {
   );
 
   // Points
-  const pointsStats = getPointsStats(data.rewardMap, data.obligations);
+  const pointsStats = getPointsStats(
+    seasonMap[season].coinType,
+    data.rewardMap,
+    data.obligations,
+  );
 
   return !address ? (
     <Card className="bg-background">
@@ -250,9 +197,9 @@ export default function RewardsCard() {
               {hasClaimableRewards && (
                 <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
               )}
-              <TotalPointsStat totalPoints={pointsStats.totalPoints.total} />
-              <PointsPerDayStat pointsPerDay={pointsStats.pointsPerDay.total} />
-              <RankStat rank={rank} />
+              <TotalPointsStat amount={pointsStats.totalPoints.total} />
+              <PointsPerDayStat amount={pointsStats.pointsPerDay.total} />
+              <RankStat />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
@@ -263,15 +210,15 @@ export default function RewardsCard() {
                 />
               )}
               <TotalPointsStat
-                totalPoints={pointsStats.totalPoints.total}
+                amount={pointsStats.totalPoints.total}
                 isCentered
               />
 
               <PointsPerDayStat
-                pointsPerDay={pointsStats.pointsPerDay.total}
+                amount={pointsStats.pointsPerDay.total}
                 isCentered
               />
-              <RankStat rank={rank} isCentered />
+              <RankStat isCentered />
             </div>
           )}
         </div>

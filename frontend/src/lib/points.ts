@@ -4,14 +4,11 @@ import {
   RewardMap,
   getBorrowShare,
   getDepositShare,
-  isSendPointsS1,
 } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
-export const roundPoints = (value: BigNumber) =>
-  value.decimalPlaces(0, BigNumber.ROUND_HALF_UP);
-
 export const getPointsStats = (
+  coinType: string,
   rewardMap: RewardMap,
   obligations?: ParsedObligation[],
 ) => {
@@ -30,10 +27,10 @@ export const getPointsStats = (
 
   const pointsRewards = {
     deposit: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.deposit.filter((r) => isSendPointsS1(r.stats.rewardCoinType)),
+      rewards.deposit.filter((r) => r.stats.rewardCoinType === coinType),
     ),
     borrow: Object.values(rewardMap).flatMap((rewards) =>
-      rewards.borrow.filter((r) => isSendPointsS1(r.stats.rewardCoinType)),
+      rewards.borrow.filter((r) => r.stats.rewardCoinType === coinType),
     ),
   };
 

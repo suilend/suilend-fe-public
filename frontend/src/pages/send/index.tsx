@@ -358,8 +358,11 @@ export default function Send() {
     if (!coinMetadata) return undefined;
 
     // Owned
-    const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
-      .totalPoints.total;
+    const ownedSendPoints = getPointsStats(
+      NORMALIZED_SEND_POINTS_S1_COINTYPE,
+      data.rewardMap,
+      data.obligations,
+    ).totalPoints.total;
 
     // Claimed
     // const userTransactions = await queryTransactionBlocks(

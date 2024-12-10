@@ -1,18 +1,22 @@
-import {
-  COINTYPE_LOGO_MAP,
-  NORMALIZED_SEND_POINTS_S1_COINTYPE,
-} from "@suilend/frontend-sui";
+import { COINTYPE_LOGO_MAP, COINTYPE_SYMBOL_MAP } from "@suilend/frontend-sui";
 
 import TokenLogo from "@/components/shared/TokenLogo";
+import { usePointsContext } from "@/contexts/PointsContext";
 
-export default function PointsLogo() {
+interface PointsLogoProps {
+  season: number;
+}
+
+export default function PointsLogo({ season }: PointsLogoProps) {
+  const { seasonMap } = usePointsContext();
+
   return (
     <TokenLogo
       className="h-4 w-4"
       token={{
-        coinType: NORMALIZED_SEND_POINTS_S1_COINTYPE,
-        symbol: "SEND Points S1",
-        iconUrl: COINTYPE_LOGO_MAP[NORMALIZED_SEND_POINTS_S1_COINTYPE],
+        coinType: seasonMap[season].coinType,
+        symbol: COINTYPE_SYMBOL_MAP[seasonMap[season].coinType],
+        iconUrl: COINTYPE_LOGO_MAP[seasonMap[season].coinType],
       }}
     />
   );
