@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { KioskClient, KioskData, Network } from "@mysten/kiosk";
 import {
@@ -29,12 +29,14 @@ import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
+import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken } from "@/lib/format";
 import { getPointsStats } from "@/lib/points";
+import { cn } from "@/lib/utils";
 
 import earlyUsersJson from "./lending/early-users.json";
 import animaJson from "./nft/anima.json";
@@ -254,6 +256,8 @@ export default function Send() {
     [],
   );
   const mSendCoinMetadataMap = useCoinMetadataMap(mSendCoinTypes);
+
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
   // Setup - total allocated SEND Points
   const totalAllocatedPoints = useMemo(() => {
@@ -1553,13 +1557,47 @@ export default function Send() {
           <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
             <HeroSection allocations={allocations} isLoading={isLoading} />
 
-            <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-              {allocations.map((allocation) => (
-                <AllocationCard
-                  key={allocation.title}
-                  allocation={allocation}
-                />
-              ))}
+            <div
+              className={cn(
+                "relative w-full",
+                isCollapsed && "h-[400px] overflow-hidden md:h-[600px]",
+              )}
+            >
+              <div
+                className={cn(
+                  "relative z-[1] h-full w-full",
+                  isCollapsed && "pointer-events-none",
+                )}
+                style={
+                  isCollapsed
+                    ? {
+                        maskImage:
+                          "linear-gradient(to bottom, black 0%, transparent 100%)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                  {allocations.map((allocation) => (
+                    <AllocationCard
+                      key={allocation.title}
+                      allocation={allocation}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {isCollapsed && (
+                <Button
+                  className="absolute bottom-0 left-1/2 z-[2] -translate-x-1/2 border-secondary"
+                  labelClassName="text-[16px] uppercase text-primary-foreground"
+                  variant="secondaryOutline"
+                  size="lg"
+                  onClick={() => setIsCollapsed(false)}
+                >
+                  Show full list
+                </Button>
+              )}
             </div>
           </div>
 
