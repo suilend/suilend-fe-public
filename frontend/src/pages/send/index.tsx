@@ -831,11 +831,11 @@ export default function Send() {
   };
 
   const primeMachin = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: formatInteger(
       Object.keys(primeMachinJson).length > 0
         ? Object.keys(primeMachinJson).length
-        : 918,
+        : 930,
     ),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -846,9 +846,9 @@ export default function Send() {
     },
   };
   const egg = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: formatInteger(
-      Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2109,
+      Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2104,
     ),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -859,11 +859,11 @@ export default function Send() {
     },
   };
   const doubleUpCitizen = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: formatInteger(
       Object.keys(doubleUpCitizenJson).length > 0
         ? Object.keys(doubleUpCitizenJson).length
-        : 713,
+        : 684,
     ),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
@@ -895,7 +895,7 @@ export default function Send() {
   };
 
   const fud = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: 5000, // Top 5,000 FUD holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -906,7 +906,7 @@ export default function Send() {
     },
   };
   const aaa = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: 5000, // Top 5,000 AAA holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -917,7 +917,7 @@ export default function Send() {
     },
   };
   const octo = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: 1000, // Top 1,000 OCTO holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdownMap: {
@@ -928,7 +928,7 @@ export default function Send() {
     },
   };
   const tism = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     eligibleWallets: 1000, // Top 1,000 TISM holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdownMap: {
