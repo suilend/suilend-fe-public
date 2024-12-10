@@ -522,7 +522,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const rootletsKioskItems = ownedKiosksWithKioskOwnerCaps.reduce(
       (acc, { kiosk }) => [
         ...acc,
-        ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
+        ...kiosk.items.filter(
+          (item) => item.type === ROOTLETS_TYPE && !item.listing,
+        ),
       ],
       [] as KioskItem[],
     );

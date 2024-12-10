@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
 
+import { KioskItem } from "@mysten/kiosk";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -47,6 +48,7 @@ import { DASHBOARD_URL } from "@/lib/navigation";
 import {
   Allocation,
   AllocationId,
+  ROOTLETS_TYPE,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
   claimSend,
@@ -178,7 +180,7 @@ function RedeemTabContent({
                     <div className="flex flex-row items-center gap-3">
                       <Image
                         src={sendPointsAllocation.src}
-                        alt="SEND Points"
+                        alt="SEND Points S1"
                         width={24}
                         height={24}
                       />
@@ -186,7 +188,7 @@ function RedeemTabContent({
                         {formatToken(userAllocations.sendPoints.owned, {
                           exact: false,
                         })}{" "}
-                        SEND Points
+                        SEND Points S1
                       </TBody>
                     </div>
 
@@ -267,11 +269,29 @@ function RedeemTabContent({
                         width={24}
                         height={24}
                       />
-                      <TBody className="text-[16px]">
-                        {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
-                        Rootlets NFT
-                        {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
-                      </TBody>
+                      <div className="flex flex-col gap-1">
+                        <TBody className="text-[16px]">
+                          {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
+                          Rootlets NFT
+                          {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
+                        </TBody>
+                        {(ownedKiosksWithKioskOwnerCaps ?? []).reduce(
+                          (acc, { kiosk }) => [
+                            ...acc,
+                            ...kiosk.items.filter(
+                              (item) =>
+                                item.type === ROOTLETS_TYPE && item.listing,
+                            ),
+                          ],
+                          [] as KioskItem[],
+                        ).length > 0 && (
+                          <TLabelSans>
+                            {
+                              "You'll need to unlist your listed Rootlets NFTs to redeem them"
+                            }
+                          </TLabelSans>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-row items-center gap-2">
