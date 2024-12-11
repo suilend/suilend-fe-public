@@ -539,6 +539,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     if (!mSendCoinMetadataMap || !sendCoinMetadataMap) return undefined;
     if (transactionsSinceTge === undefined) return undefined;
     if (ownedKiosks === undefined) return undefined;
+    if (ownedSuilendCapsulesMap === undefined) return undefined;
+    if (mSendOwningRootlets === undefined) return undefined;
 
     // Early Users
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
