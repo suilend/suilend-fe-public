@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import SectionHeading from "@/components/send/SectionHeading";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { ASSETS_URL } from "@/lib/constants";
 
 export default function TokenomicsSection() {
   return (
@@ -13,7 +14,7 @@ export default function TokenomicsSection() {
           <AspectRatio ratio={1031 / 828}>
             <Image
               className="object-cover"
-              src="/assets/send/tokenomics-pie.png"
+              src={`${ASSETS_URL}/send/tokenomics-pie.png`}
               alt="SEND pie chart"
               fill
               quality={100}
@@ -25,7 +26,7 @@ export default function TokenomicsSection() {
           <AspectRatio ratio={1029 / 830}>
             <Image
               className="object-cover"
-              src="/assets/send/tokenomics-unlocks.png"
+              src={`${ASSETS_URL}/send/tokenomics-unlocks.png`}
               alt="SEND unlocks chart"
               fill
               quality={100}

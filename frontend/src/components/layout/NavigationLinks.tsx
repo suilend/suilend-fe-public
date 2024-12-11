@@ -6,6 +6,7 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
 import { useAppContext } from "@/contexts/AppContext";
+import { usePointsContext } from "@/contexts/PointsContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import {
   ADMIN_URL,
@@ -20,6 +21,7 @@ import {
 export default function NavigationLinks() {
   const { address } = useWalletContext();
   const { data } = useAppContext();
+  const { season } = usePointsContext();
 
   return (
     <>
@@ -28,7 +30,7 @@ export default function NavigationLinks() {
         SEND
       </Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
-        <Link href={POINTS_URL} className="flex-1">
+        <Link className="flex-1" href={POINTS_URL} label={`S${season}`}>
           Points
         </Link>
 

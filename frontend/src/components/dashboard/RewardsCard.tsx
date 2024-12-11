@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
+import { ASSETS_URL } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
@@ -130,13 +131,13 @@ export default function RewardsCard() {
       <div
         className="flex h-[100px] flex-col items-center justify-center gap-4 sm:h-[110px]"
         style={{
-          backgroundImage: "url('/assets/dashboard/rewards-not-connected.png')",
+          backgroundImage: `url('${ASSETS_URL}/dashboard/rewards-not-connected.png')`,
           backgroundPosition: "center",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
         }}
       >
-        <TTitle className="text-center uppercase text-primary-foreground sm:text-[16px]">
+        <TTitle className="text-center uppercase text-foreground sm:text-[16px]">
           Start earning SEND Points & rewards
         </TTitle>
 
@@ -151,15 +152,7 @@ export default function RewardsCard() {
     </Card>
   ) : (
     <Card className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]">
-      <div
-        className="rounded-[3px] bg-background p-4"
-        style={{
-          backgroundImage: "url('/assets/dashboard/rewards-connected.png')",
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
+      <div className="rounded-[3px] bg-background p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-1">

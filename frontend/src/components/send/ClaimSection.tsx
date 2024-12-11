@@ -43,7 +43,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { TX_TOAST_DURATION } from "@/lib/constants";
+import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatToken, formatUsd } from "@/lib/format";
 import { DASHBOARD_URL } from "@/lib/navigation";
 import {
@@ -219,7 +219,7 @@ function RedeemTabContent({
                         <div className="flex w-full flex-row items-center justify-between gap-4">
                           <div className="flex flex-row items-center gap-3">
                             <Image
-                              src={`/assets/send/nft/suilend-capsules-${rarity}.png`}
+                              src={`/${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
                               alt={`${capitalize(rarity)} Suilend Capsule`}
                               width={24}
                               height={24}

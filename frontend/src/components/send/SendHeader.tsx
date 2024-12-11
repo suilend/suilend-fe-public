@@ -4,6 +4,7 @@ import { ClassValue } from "clsx";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import useBreakpoint from "@/hooks/useBreakpoint";
+import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface SendHeaderProps {
@@ -34,7 +35,7 @@ export default function SendHeader({ className }: SendHeaderProps) {
               width="100%"
               height="auto"
             >
-              <source src="/assets/send/header.mp4" type="video/mp4" />
+              <source src={`${ASSETS_URL}/send/header.mp4`} type="video/mp4" />
             </video>
           </AspectRatio>
         </div>
@@ -43,7 +44,7 @@ export default function SendHeader({ className }: SendHeaderProps) {
           <AspectRatio ratio={3840 / 995}>
             <Image
               className="object-cover"
-              src="/assets/send/header-mobile.png"
+              src={`${ASSETS_URL}/send/header-mobile.png`}
               alt="SEND Header"
               fill
               quality={100}
