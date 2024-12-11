@@ -1,3 +1,4 @@
+import { intervalToDuration } from "date-fns";
 import { ExternalLink } from "lucide-react";
 
 import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
@@ -17,16 +18,31 @@ import {
   SPRINGSUI_URL,
   SWAP_URL,
 } from "@/lib/navigation";
+import { TGE_TIMESTAMP_MS } from "@/lib/send";
 
 export default function NavigationLinks() {
   const { address } = useWalletContext();
   const { data } = useAppContext();
   const { season } = usePointsContext();
 
+  const getSendLabel = () => {
+    if (Date.now() >= TGE_TIMESTAMP_MS) return "TGE";
+
+    const interval = intervalToDuration({
+      start: Date.now(),
+      end: new Date(TGE_TIMESTAMP_MS),
+    });
+
+    if (interval.hours) return `${interval.hours}h to TGE`;
+    if (interval.minutes) return `${interval.minutes}m to TGE`;
+    if (interval.seconds) return `${interval.seconds}s to TGE`;
+    return "TGE";
+  };
+
   return (
     <>
       <Link href={DASHBOARD_URL}>Dashboard</Link>
-      <Link href={SEND_URL} label="New">
+      <Link href={SEND_URL} label={getSendLabel()}>
         SEND
       </Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
