@@ -104,7 +104,6 @@ function Page() {
     },
   };
 
-  console.log("XXX", 3 * 5956, 60 * 187, 244.48 * 25, 400 * 37);
   const bluefinLeagues = {
     snapshotTaken: true,
     eligibleWallets: formatInteger(5956 + 187 + 25 + 37),
@@ -120,7 +119,7 @@ function Page() {
       },
       [BluefinLeague.BLACK]: {
         title: "Black",
-        percent: new BigNumber(244.48).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+        percent: new BigNumber(244.5).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
       },
       [BluefinLeague.SAPPHIRE]: {
         title: "Sapphire",
