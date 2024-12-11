@@ -15,6 +15,7 @@ import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_mSEND_3M_COINTYPE,
   getBalanceChange,
   issSui,
 } from "@suilend/frontend-sui";
@@ -91,7 +92,7 @@ function RedeemTabContent({
 
   // Items
   const minMsendAmount =
-    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals); // TODO
+    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
 
   const hasSendPointsItem =
     sendPointsAllocation.userEligibleSend?.gte(minMsendAmount);
@@ -131,8 +132,8 @@ function RedeemTabContent({
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_BETA_mSEND_COINTYPE, // TODO
-        ...mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE], // TODO
+        coinType: NORMALIZED_mSEND_3M_COINTYPE,
+        ...mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE],
       });
 
       toast.success(
@@ -140,8 +141,7 @@ function RedeemTabContent({
           "Redeemed",
           balanceChange !== undefined
             ? formatToken(balanceChange, {
-                dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
-                  .decimals,
+                dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
               })
             : null,
           "mSEND",
@@ -195,7 +195,7 @@ function RedeemTabContent({
                     <div className="flex flex-row items-center gap-2">
                       <MsendTokenLogo
                         className="h-5 w-5"
-                        coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                        coinType={NORMALIZED_mSEND_3M_COINTYPE}
                       />
                       <TBody className="text-[16px]">
                         {formatToken(sendPointsAllocation.userEligibleSend!, {
@@ -233,7 +233,7 @@ function RedeemTabContent({
                           <div className="flex flex-row items-center gap-2">
                             <MsendTokenLogo
                               className="h-5 w-5"
-                              coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                              coinType={NORMALIZED_mSEND_3M_COINTYPE}
                             />
                             <TBody className="text-[16px]">
                               {formatToken(
@@ -297,7 +297,7 @@ function RedeemTabContent({
                     <div className="flex flex-row items-center gap-2">
                       <MsendTokenLogo
                         className="h-5 w-5"
-                        coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                        coinType={NORMALIZED_mSEND_3M_COINTYPE}
                       />
                       <TBody className="text-[16px]">
                         {formatToken(rootletsAllocation.userEligibleSend!, {
@@ -318,7 +318,7 @@ function RedeemTabContent({
             <div className="flex flex-row items-center gap-2">
               <MsendTokenLogo
                 className="h-5 w-5"
-                coinType={NORMALIZED_BETA_mSEND_COINTYPE} // TODO
+                coinType={NORMALIZED_mSEND_3M_COINTYPE}
               />
               <TBody className="text-[16px]">
                 {formatToken(totalRedeemableMsend, { exact: false })}
@@ -544,7 +544,7 @@ export default function ClaimSection({
 
   // 1) Redeem mSEND
   const minMsendAmount =
-    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals); // TODO
+    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
 
   const totalRedeemableMsend = new BigNumber(
     sendPointsAllocation.userEligibleSend ?? 0,
@@ -620,16 +620,14 @@ export default function ClaimSection({
       </Card>
 
       {/* TODO */}
-      {mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE].currentPenaltySui.gt(
-        0,
-      ) && (
+      {mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].currentPenaltySui.gt(0) && (
         <div className="flex w-full flex-col gap-4">
-          <TBody className="text-[16px] uppercase">Penalty Chart</TBody>
+          <TBody className="text-[16px]">PENALTY</TBody>
 
           <div className="flex w-full flex-col gap-3">
             {/* Penalty ends in */}
             {Date.now() <
-              +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE].penaltyEndTimeS *
+              +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].penaltyEndTimeS *
                 1000 && (
               <div className="flex w-full flex-row justify-between gap-4">
                 <TBodySans className="text-muted-foreground">
@@ -641,7 +639,7 @@ export default function ClaimSection({
                   <Tooltip
                     title={formatDate(
                       new Date(
-                        +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE]
+                        +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
                           .penaltyEndTimeS * 1000,
                       ),
                       "yyyy-MM-dd HH:mm:ss",
@@ -657,8 +655,8 @@ export default function ClaimSection({
                         intervalToDuration({
                           start: Date.now(),
                           end: new Date(
-                            +mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE]
-                              .penaltyEndTimeS * 1000, // TODO
+                            +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
+                              .penaltyEndTimeS * 1000,
                           ),
                         }),
                       )}
@@ -680,7 +678,7 @@ export default function ClaimSection({
                   <TBody>
                     <Tooltip
                       title={`${formatToken(
-                        mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                        mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
                           .currentPenaltySui,
                         { dp: SUI_DECIMALS },
                       )} SUI`}
@@ -692,7 +690,7 @@ export default function ClaimSection({
                         )}
                       >
                         {formatToken(
-                          mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE] // TODO
+                          mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
                             .currentPenaltySui,
                         )}
                         {" SUI"}
@@ -704,7 +702,7 @@ export default function ClaimSection({
                 <TLabel>
                   {formatUsd(
                     mSendObjectMap[
-                      NORMALIZED_BETA_mSEND_COINTYPE // TODO
+                      NORMALIZED_mSEND_3M_COINTYPE
                     ].currentPenaltySui.times(suiReserve.price),
                   )}
                   {" / SEND"}
@@ -713,7 +711,7 @@ export default function ClaimSection({
             </div>
           </div>
 
-          <PenaltyLineChart />
+          <PenaltyLineChart mSendCoinType={NORMALIZED_mSEND_3M_COINTYPE} />
         </div>
       )}
     </div>

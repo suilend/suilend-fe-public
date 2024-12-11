@@ -1,9 +1,6 @@
 import { ClassValue } from "clsx";
 
-import {
-  NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_SEND_COINTYPE,
-} from "@suilend/frontend-sui";
+import { NORMALIZED_SEND_COINTYPE } from "@suilend/frontend-sui";
 
 import TokenLogo from "@/components/shared/TokenLogo";
 import { useLoadedSendContext } from "@/contexts/SendContext";
@@ -16,7 +13,7 @@ interface SendTokenLogoProps {
 export default function SendTokenLogo({ className }: SendTokenLogoProps) {
   const { sendCoinMetadataMap } = useLoadedSendContext();
 
-  const coinMetadata = sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]; // TODO
+  const coinMetadata = sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE];
 
   return (
     <TokenLogo

@@ -26,8 +26,10 @@ import useSWR from "swr";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_SEND_POINTS_COINTYPE,
-  NORMALIZED_BETA_mSEND_COINTYPE,
+  NORMALIZED_SEND_COINTYPE,
+  NORMALIZED_SEND_POINTS_S1_COINTYPE,
+  NORMALIZED_mSEND_12M_COINTYPE,
+  NORMALIZED_mSEND_3M_COINTYPE,
   NORMALIZED_mSEND_COINTYPES,
 } from "@suilend/frontend-sui";
 import {
@@ -40,7 +42,6 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getPointsStats } from "@/lib/points";
 import {
-  BETA_SUILEND_CAPSULE_TYPE,
   BURN_SEND_POINTS_EVENT_TYPE,
   BURN_SUILEND_CAPSULES_EVENT_TYPE,
   DOUBLEUP_CITIZEN_TYPE,
@@ -50,6 +51,7 @@ import {
   PRIME_MACHIN_TYPE,
   REDEEM_SEND_EVENT_TYPE,
   ROOTLETS_TYPE,
+  SUILEND_CAPSULE_TYPE,
   SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
   WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
@@ -83,9 +85,6 @@ interface SendContext {
   sendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
 
   mSendBalanceMap: Record<string, BigNumber>;
-
-  totalAllocatedPoints: BigNumber;
-  bluefinSendTradersTotalVolumeUsd: BigNumber;
 
   kioskClient: KioskClient;
   ownedKiosksWithKioskOwnerCaps:
@@ -138,9 +137,6 @@ const SendContext = createContext<SendContext>({
 
   mSendBalanceMap: {},
 
-  totalAllocatedPoints: new BigNumber(0),
-  bluefinSendTradersTotalVolumeUsd: new BigNumber(0),
-
   kioskClient: new KioskClient({
     client: new SuiClient({ url: getFullnodeUrl("mainnet") }),
     network: Network.MAINNET,
@@ -165,11 +161,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { data, getBalance } = useLoadedAppContext();
 
-  const mSEND_COINTYPES = [NORMALIZED_BETA_mSEND_COINTYPE]; // TODO: Use NORMALIZED_mSEND_COINTYPES
-
   // mSend object map
   const mSendObjectMapFetcher = async () => {
-    const mSendManagerObjectIds = mSEND_COINTYPES.map(
+    const mSendManagerObjectIds = NORMALIZED_mSEND_COINTYPES.map(
       (coinType) => mSEND_COINTYPE_MANAGER_MAP[coinType],
     );
     const objs = await Promise.all(
@@ -184,7 +178,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     const result: Record<string, MsendObject> = {};
-    for (let i = 0; i < mSEND_COINTYPES.length; i++) {
+    for (let i = 0; i < NORMALIZED_mSEND_COINTYPES.length; i++) {
       const obj = objs[i];
 
       const penaltyStartTimeS = new BigNumber(
@@ -212,7 +206,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           )
         : endPenaltySui;
 
-      result[mSEND_COINTYPES[i]] = {
+      result[NORMALIZED_mSEND_COINTYPES[i]] = {
         penaltyStartTimeS,
         penaltyEndTimeS,
 
@@ -244,12 +238,20 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       console.error("Failed to refresh mSendObjectMap", err);
     },
   });
+  console.log("XXXX mSendObjectMap", mSendObjectMap);
 
   // CoinMetadata
   const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
   const sendCoinMetadataMap = useCoinMetadataMap([
-    NORMALIZED_BETA_SEND_COINTYPE,
-  ]); // TODO
+    NORMALIZED_SEND_COINTYPE,
+    NORMALIZED_BETA_SEND_COINTYPE, // TODO
+  ]);
+  console.log(
+    "XXXX mSendCoinMetadataMap:",
+    mSendCoinMetadataMap,
+    "sendCoinMetadataMap:",
+    sendCoinMetadataMap,
+  );
 
   // Balances
   const mSendBalanceMap = useMemo(
@@ -259,35 +261,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         {} as Record<string, BigNumber>,
       ),
     [getBalance],
-  );
-
-  // Total allocated SEND Points
-  const totalAllocatedPoints = useMemo(() => {
-    let result = new BigNumber(0);
-    for (const reserve of data.lendingMarket.reserves) {
-      for (const pr of [
-        ...reserve.depositsPoolRewardManager.poolRewards,
-        ...reserve.borrowsPoolRewardManager.poolRewards,
-      ]) {
-        if (
-          normalizeStructTag(pr.coinType) ===
-          NORMALIZED_BETA_SEND_POINTS_COINTYPE // TODO
-        )
-          result = result.plus(pr.allocatedRewards);
-      }
-    }
-
-    return result;
-  }, [data.lendingMarket.reserves]);
-
-  // Bluefin SEND Traders total volume
-  const bluefinSendTradersTotalVolumeUsd = useMemo(
-    () =>
-      Object.values(bluefinSendTradersJson as number[]).reduce(
-        (acc, volumeUsd) => acc.plus(volumeUsd),
-        new BigNumber(0),
-      ),
-    [],
   );
 
   // User - Transactions since TGE
@@ -325,6 +298,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         console.error("Failed to refresh transactionsSinceTge", err);
       },
     });
+  console.log("XXXX transactionsSinceTge", transactionsSinceTge);
 
   useEffect(() => {
     mutateTransactionsSinceTge();
@@ -406,7 +380,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     // SEND Points
     const ownedSendPoints = getPointsStats(
-      NORMALIZED_BETA_SEND_POINTS_COINTYPE, //TODO
+      NORMALIZED_SEND_POINTS_S1_COINTYPE,
       data.rewardMap,
       data.obligations,
     ).totalPoints.total;
@@ -420,8 +394,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               acc2.plus(
                 new BigNumber((event.parsedJson as any).claim_amount).div(
                   10 **
-                    mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE]
-                      .decimals, // TODO
+                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
                 ),
               ),
             new BigNumber(0),
@@ -437,7 +410,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       const objs = await getOwnedObjectsOfType(
         suiClient,
         address,
-        BETA_SUILEND_CAPSULE_TYPE, // TODO
+        SUILEND_CAPSULE_TYPE,
       );
 
       return {
@@ -474,8 +447,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               acc2.plus(
                 new BigNumber((event.parsedJson as any).claim_amount).div(
                   10 **
-                    mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE]
-                      .decimals, // TODO
+                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
                 ),
               ),
             new BigNumber(0),
@@ -499,15 +471,15 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (balanceChange) =>
               (balanceChange.owner as any)?.AddressOwner === address &&
               normalizeStructTag(balanceChange.coinType) ===
-                NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+                NORMALIZED_mSEND_12M_COINTYPE,
           )
           .reduce(
             (acc2, balanceChange) =>
               acc2.plus(
                 new BigNumber(balanceChange.amount).div(
                   10 **
-                    mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE]
-                      .decimals, // TODO
+                    mSendCoinMetadataMap[NORMALIZED_mSEND_12M_COINTYPE]
+                      .decimals,
                 ),
               ),
             new BigNumber(0),
@@ -539,7 +511,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         const objs = await getOwnedObjectsOfType(
           suiClient,
           rootletsObjectId,
-          `0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`, // TODO
+          `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
         );
 
         const ownedMsend = objs.reduce(
@@ -547,7 +519,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             acc.plus(
               new BigNumber((obj.data?.content as any).fields.balance).div(
                 10 **
-                  mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
+                  mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
               ),
             ),
           new BigNumber(0),
@@ -563,7 +535,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         const mSendBalanceChanges = (transaction.balanceChanges ?? []).filter(
           (balanceChange) =>
             normalizeStructTag(balanceChange.coinType) ===
-            NORMALIZED_BETA_mSEND_COINTYPE, // TODO
+            NORMALIZED_mSEND_3M_COINTYPE,
         );
 
         const isRootletsRedeemTransaction =
@@ -589,8 +561,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               acc2.plus(
                 new BigNumber(balanceChange.amount).div(
                   10 **
-                    mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE]
-                      .decimals, // TODO
+                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
                 ),
               ),
             new BigNumber(0),
@@ -774,14 +745,14 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     if (transactionsSinceTge === undefined) return undefined;
 
     const result: Record<string, BigNumber> = {};
-    for (let i = 0; i < mSEND_COINTYPES.length; i++) {
+    for (let i = 0; i < NORMALIZED_mSEND_COINTYPES.length; i++) {
       const claimedSend = transactionsSinceTge.from.reduce(
         (acc, transaction) => {
           const transactionClaimedSend = (transaction.events ?? [])
             .filter(
               (event) =>
                 event.type ===
-                `${REDEEM_SEND_EVENT_TYPE}<${mSEND_COINTYPES[i]}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO
+                `${REDEEM_SEND_EVENT_TYPE}<${NORMALIZED_mSEND_COINTYPES[i]}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO
             )
             .reduce(
               (acc2, event) =>
@@ -800,7 +771,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         new BigNumber(0),
       );
 
-      result[mSEND_COINTYPES[i]] = claimedSend;
+      result[NORMALIZED_mSEND_COINTYPES[i]] = claimedSend;
     }
 
     return result;
@@ -841,9 +812,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
       mSendBalanceMap,
 
-      totalAllocatedPoints,
-      bluefinSendTradersTotalVolumeUsd,
-
       kioskClient,
       ownedKiosksWithKioskOwnerCaps,
       userAllocations,
@@ -857,8 +825,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       mSendCoinMetadataMap,
       sendCoinMetadataMap,
       mSendBalanceMap,
-      totalAllocatedPoints,
-      bluefinSendTradersTotalVolumeUsd,
       kioskClient,
       ownedKiosksWithKioskOwnerCaps,
       userAllocations,

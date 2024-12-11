@@ -42,7 +42,7 @@ import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json"
 function Page() {
   const { address } = useWalletContext();
 
-  const { totalAllocatedPoints, userAllocations } = useLoadedSendContext();
+  const { userAllocations } = useLoadedSendContext();
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
@@ -65,7 +65,9 @@ function Page() {
     totalAllocationBreakdownMap: {
       thousand: {
         title: "Per 1K SEND Points",
-        percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
+        percent: new BigNumber((18000 / 2764929) * 1000)
+          .div(SEND_TOTAL_SUPPLY)
+          .times(100), //Linear
       },
     },
   };
@@ -301,10 +303,7 @@ function Page() {
         "SEND Points (Season 1) were distributed as rewards for depositing/borrowing activity on Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
-      cta: {
-        title: "Earn",
-        href: "/dashboard",
-      },
+      cta: undefined,
       snapshotTaken: sendPoints.snapshotTaken,
       eligibleWallets: sendPoints.eligibleWallets,
       totalAllocationPercent: sendPoints.totalAllocationPercent,
@@ -397,7 +396,7 @@ function Page() {
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "Redeem on Save",
+        title: "Convert SLND",
         href: "https://save.finance/save",
       },
       snapshotTaken: save.snapshotTaken,
@@ -834,7 +833,7 @@ function Page() {
             </div>
           </div>
 
-          {address && Date.now() >= TGE_TIMESTAMP_MS && (
+          {address && (
             <>
               <Separator />
               <ClaimSection

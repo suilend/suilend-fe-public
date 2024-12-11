@@ -1,15 +1,18 @@
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
 import { SuiClient } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_CLOCK_OBJECT_ID, normalizeStructTag } from "@mysten/sui/utils";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_SEND_POINTS_COINTYPE,
   NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_mSEND_12M_COINTYPE,
+  NORMALIZED_mSEND_3M_COINTYPE,
+  NORMALIZED_mSEND_6M_COINTYPE,
+  isSendPointsS1,
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
 
@@ -18,26 +21,32 @@ import { getOwnedObjectsOfType } from "@/lib/transactions";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
-export const TGE_TIMESTAMP_MS = 1730419200000; // TODO: Change to 1733979600000
+export const TGE_TIMESTAMP_MS = 1733702400000; // TODO Real: 1733979600000;
 export const mSEND_REDEMPTION_END_TIMESTAMP_MS =
   TGE_TIMESTAMP_MS + 365 * 24 * 60 * 60 * 1000; // 1 year after TGE
 
 // Contracts
 const BURN_CONTRACT_PACKAGE_ID =
-  "0x2cab7e7606f801f1bdf08b9e168bf29faec39f377ec9a618e4eeb2d3a52e3b83"; // TODO
+  "0xf4e0686b311e9b9d6da7e61fc42dae4254828f5ee3ded8ab5480ecd27e46ff08";
 const mTOKEN_CONTRACT_PACKAGE_ID =
-  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627"; // TODO
+  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627"; // TODO Real: 0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3
 
 // Managers
 const POINTS_MANAGER_OBJECT_ID =
-  "0xab8000923b7f708aed446d66145487ea902d9e61f17e6157662973d971c16e6e"; // TODO
+  "0x1236a2059bd24b46067cd6818469802b56a05920c9029c7b16c16a47efab2260";
 const CAPSULE_MANAGER_OBJECT_ID =
-  "0x57903dd513e0962e71622295e133cbeed4be985862b74ce2bff040889b305064"; // TODO
-export const mSEND_MANAGER_OBJECT_ID =
-  "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7"; // TODO
+  "0x5307419ec2f76bb70a948d71adf22ffde99a102961a3aa61361cc233f6d31e6e";
 
 export const mSEND_COINTYPE_MANAGER_MAP = {
-  [NORMALIZED_BETA_mSEND_COINTYPE]: mSEND_MANAGER_OBJECT_ID, // TODO
+  [NORMALIZED_BETA_mSEND_COINTYPE]:
+    "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7",
+
+  [NORMALIZED_mSEND_3M_COINTYPE]:
+    "0xef40b6d070de0c55dcb12775e4c438b1d83e0b5f445e95875f46eb2742a5549c",
+  [NORMALIZED_mSEND_6M_COINTYPE]:
+    "0xe060231ad4a84d503d643d4ff3dbe374ed4fdd7073a999a238458a0969b83fb6",
+  [NORMALIZED_mSEND_12M_COINTYPE]:
+    "0x3e6911fb0eaa7a534dd004784e62e75ae7b2db2c570d0075d0b1889c5966b0b9",
 };
 
 // Events
@@ -49,8 +58,6 @@ export const WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE =
   "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed";
 
 // NFTs
-export const BETA_SUILEND_CAPSULE_TYPE =
-  "0xe225a46bfe059ab96f3264d3aee63c6c4997eccad2b4630350e0957a52badd54::suilend_capsule::SuilendCapsule";
 export const SUILEND_CAPSULE_TYPE =
   "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
 
@@ -161,8 +168,7 @@ export const redeemSendPointsMsend = async (
     const sendPointsRewards = Object.values(data.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].filter(
         (r) =>
-          normalizeStructTag(r.stats.rewardCoinType) ===
-            NORMALIZED_BETA_SEND_POINTS_COINTYPE && // TODO
+          isSendPointsS1(r.stats.rewardCoinType) &&
           !!r.obligationClaims[obligation.id] &&
           r.obligationClaims[obligation.id].claimableAmount.gt(0),
       ),
@@ -192,7 +198,7 @@ export const redeemSendPointsMsend = async (
   // Burn SEND Points for mSEND
   const mSendCoin = transaction.moveCall({
     target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
-    typeArguments: [NORMALIZED_BETA_mSEND_COINTYPE], // TODO
+    typeArguments: [NORMALIZED_mSEND_3M_COINTYPE],
     arguments: [
       transaction.object(POINTS_MANAGER_OBJECT_ID),
       transaction.object(mergedSendPointsCoin),
@@ -212,7 +218,7 @@ export const redeemSuilendCapsulesMsend = async (
   const objs = await getOwnedObjectsOfType(
     suiClient,
     address,
-    BETA_SUILEND_CAPSULE_TYPE, // TODO
+    SUILEND_CAPSULE_TYPE,
   );
 
   // Burn Suilend Capsules for mSEND
@@ -221,7 +227,7 @@ export const redeemSuilendCapsulesMsend = async (
   for (const obj of objs) {
     const mSendCoin = transaction.moveCall({
       target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
-      typeArguments: [NORMALIZED_BETA_mSEND_COINTYPE], // TODO
+      typeArguments: [NORMALIZED_mSEND_3M_COINTYPE],
       arguments: [
         transaction.object(CAPSULE_MANAGER_OBJECT_ID),
         transaction.object(obj.data?.objectId as string),
@@ -277,7 +283,7 @@ export const redeemRootletsMsend = async (
       const objs = await getOwnedObjectsOfType(
         suiClient,
         kioskItem.objectId,
-        `0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`, // TODO
+        `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
       );
       const ownedMsendRaw = objs.reduce(
         (acc, obj) =>
@@ -311,7 +317,7 @@ export const redeemRootletsMsend = async (
           target:
             "0xbe7741c72669f1552d0912a4bc5cdadb5856bcb970350613df9b4362e4855dc5::rootlet::receive_obj",
           arguments: [item, transaction.object(obj.data?.objectId as string)],
-          typeArguments: [`0x2::coin::Coin<${NORMALIZED_BETA_mSEND_COINTYPE}>`], // TODO
+          typeArguments: [`0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`],
         });
         mSendCoins.push(mSendCoin);
       }
@@ -398,12 +404,13 @@ export const claimSend = async (
 };
 
 export const formatDuration = (duration: Duration) =>
-  (duration.months
+  (duration.years || duration.months
     ? [
-        `${duration.months}m`,
+        duration.years ? `${duration.years}y` : null,
+        `${duration.months ?? 0}m`,
         `${duration.days ?? 0}d`,
         `${duration.hours ?? 0}h`,
-      ]
+      ].filter(Boolean)
     : duration.days
       ? [
           `${duration.days}d`,

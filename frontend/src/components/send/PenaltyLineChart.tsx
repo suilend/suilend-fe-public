@@ -5,8 +5,6 @@ import { formatDate } from "date-fns";
 import * as Recharts from "recharts";
 import { CartesianViewBox } from "recharts/types/util/types";
 
-import { NORMALIZED_BETA_mSEND_COINTYPE } from "@suilend/frontend-sui";
-
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { formatToken } from "@/lib/format";
 
@@ -34,10 +32,16 @@ type ChartData = {
   penaltySui: number;
 };
 
-export default function PenaltyLineChart() {
+interface PenaltyLineChartProps {
+  mSendCoinType: string;
+}
+
+export default function PenaltyLineChart({
+  mSendCoinType,
+}: PenaltyLineChartProps) {
   const { mSendObjectMap } = useLoadedSendContext();
 
-  const mSendObject = mSendObjectMap[NORMALIZED_BETA_mSEND_COINTYPE]; // TODO
+  const mSendObject = mSendObjectMap[mSendCoinType];
 
   // Data
   const n = 1; // 1 + (n - 1) + 1 + (n - 1) + 1 = 2n + 1 points

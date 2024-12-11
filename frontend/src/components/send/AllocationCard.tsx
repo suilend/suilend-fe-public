@@ -20,6 +20,7 @@ import {
   AssetType,
   SEND_TOTAL_SUPPLY,
   TGE_TIMESTAMP_MS,
+  mSEND_REDEMPTION_END_TIMESTAMP_MS,
 } from "@/lib/send";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,23 @@ function Status({
   hasRedeemedMsend,
   hasBridgedMsend,
 }: StatusProps) {
+  const getSnapshotNotTakenStatus = () => {
+    if (Date.now() >= TGE_TIMESTAMP_MS) {
+      if (
+        allocation.id === AllocationId.SEND_POINTS ||
+        allocation.id === AllocationId.SUILEND_CAPSULES
+      ) {
+        return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+          ? "Redemptions open"
+          : "Redemptions closed";
+      }
+      if (allocation.id === AllocationId.SAVE) return "Conversions open";
+      if (allocation.id === AllocationId.ROOTLETS) return "Redemptions open";
+    }
+
+    return "Snapshot not taken";
+  };
+
   return (
     <div
       className={cn(
@@ -89,7 +107,7 @@ function Status({
           )}
         >
           {!allocation.snapshotTaken
-            ? "Snapshot not taken"
+            ? getSnapshotNotTakenStatus()
             : isNotEligible
               ? "Not eligible"
               : "Snapshot taken"}
@@ -105,7 +123,7 @@ interface CtaButtonProps {
 }
 
 function CtaButton({ allocation, isEligible }: CtaButtonProps) {
-  const onConvertClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onRedeemClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
     const claimSectionHeadingElement = document.getElementById("claim");
@@ -117,26 +135,41 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
     });
   };
 
-  if (
-    [
-      AllocationId.SEND_POINTS,
-      AllocationId.SUILEND_CAPSULES,
-      AllocationId.ROOTLETS,
-    ].includes(allocation.id)
-  ) {
-    if (Date.now() >= TGE_TIMESTAMP_MS) {
-      if (isEligible) {
-        return (
+  if (Date.now() >= TGE_TIMESTAMP_MS) {
+    if (
+      allocation.id === AllocationId.SEND_POINTS ||
+      allocation.id === AllocationId.SUILEND_CAPSULES
+    ) {
+      return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS ? (
+        isEligible ? (
           <Button
             className="h-10 w-full border-secondary text-primary-foreground"
             labelClassName="text-[16px]"
             variant="secondaryOutline"
-            onClick={onConvertClick}
+            onClick={onRedeemClick}
           >
-            CONVERT TO mSEND
+            REDEEM mSEND
           </Button>
-        );
-      } else return <div className="h-10 w-full max-sm:hidden" />;
+        ) : (
+          <div className="h-10 w-full max-sm:hidden" />
+        )
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
+    }
+    if (allocation.id === AllocationId.ROOTLETS) {
+      return isEligible ? (
+        <Button
+          className="h-10 w-full border-secondary text-primary-foreground"
+          labelClassName="text-[16px]"
+          variant="secondaryOutline"
+          onClick={onRedeemClick}
+        >
+          REDEEM mSEND
+        </Button>
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
     }
   }
 
@@ -397,14 +430,26 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   </>
                 )}
 
-                <Separator className="bg-[#192A3A]" />
-                <LabelWithValue
-                  labelClassName="text-sm"
-                  label="Snapshot"
-                  valueClassName="uppercase"
-                  value={allocation.snapshotTaken ? "Taken" : "Not taken"}
-                  horizontal
-                />
+                {!(
+                  Date.now() >= TGE_TIMESTAMP_MS &&
+                  [
+                    AllocationId.SEND_POINTS,
+                    AllocationId.SUILEND_CAPSULES,
+                    AllocationId.SAVE,
+                    AllocationId.ROOTLETS,
+                  ].includes(allocation.id)
+                ) && (
+                  <>
+                    <Separator className="bg-[#192A3A]" />
+                    <LabelWithValue
+                      labelClassName="text-sm"
+                      label="Snapshot"
+                      valueClassName="uppercase"
+                      value={allocation.snapshotTaken ? "Taken" : "Not taken"}
+                      horizontal
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>
