@@ -44,11 +44,7 @@ import { getPointsStats } from "@/lib/points";
 import {
   BURN_SEND_POINTS_EVENT_TYPE,
   BURN_SUILEND_CAPSULES_EVENT_TYPE,
-  DOUBLEUP_CITIZEN_TYPE,
-  EGG_TYPE,
-  KUMO_TYPE,
   MsendObject,
-  PRIME_MACHIN_TYPE,
   REDEEM_SEND_EVENT_TYPE,
   ROOTLETS_TYPE,
   SUILEND_CAPSULE_TYPE,
@@ -590,73 +586,24 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     })();
 
     // Prime Machin
-    const ownedPrimeMachin = (() => {
-      if (Object.keys(primeMachinJson).length > 0)
-        return new BigNumber(
-          (primeMachinJson as Record<string, number>)[address] ?? 0,
-        );
-
-      return ownedKiosksWithKioskOwnerCaps.reduce(
-        (acc, { kiosk }) =>
-          acc.plus(
-            kiosk.items.filter((item) => item.type === PRIME_MACHIN_TYPE)
-              .length,
-          ),
-        new BigNumber(0),
-      );
-    })();
+    const ownedPrimeMachin = new BigNumber(
+      (primeMachinJson as Record<string, number>)[address] ?? 0,
+    );
 
     // Egg
-    const ownedEgg = (() => {
-      if (Object.keys(eggJson).length > 0)
-        return new BigNumber((eggJson as Record<string, number>)[address] ?? 0);
-
-      return ownedKiosksWithKioskOwnerCaps.reduce(
-        (acc, { kiosk }) =>
-          acc.plus(kiosk.items.filter((item) => item.type === EGG_TYPE).length),
-        new BigNumber(0),
-      );
-    })();
+    const ownedEgg = new BigNumber(
+      (eggJson as Record<string, number>)[address] ?? 0,
+    );
 
     // DoubleUp Citizen
-    const ownedDoubleUpCitizen = await (async () => {
-      if (Object.keys(doubleUpCitizenJson).length > 0)
-        return new BigNumber(
-          (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-        );
-
-      const ownedKioskItemsOfType = ownedKiosksWithKioskOwnerCaps.reduce(
-        (acc, { kiosk }) =>
-          acc.plus(
-            kiosk.items.filter((item) => item.type === DOUBLEUP_CITIZEN_TYPE)
-              .length,
-          ),
-        new BigNumber(0),
-      );
-      const objs = await getOwnedObjectsOfType(
-        suiClient,
-        address,
-        DOUBLEUP_CITIZEN_TYPE,
-      );
-
-      return ownedKioskItemsOfType.plus(objs.length);
-    })();
+    const ownedDoubleUpCitizen = new BigNumber(
+      (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
+    );
 
     // Kumo
-    const ownedKumo = (() => {
-      if (Object.keys(kumoJson).length > 0)
-        return new BigNumber(
-          (kumoJson as Record<string, number>)[address] ?? 0,
-        );
-
-      return ownedKiosksWithKioskOwnerCaps.reduce(
-        (acc, { kiosk }) =>
-          acc.plus(
-            kiosk.items.filter((item) => item.type === KUMO_TYPE).length,
-          ),
-        new BigNumber(0),
-      );
-    })();
+    const ownedKumo = new BigNumber(
+      (kumoJson as Record<string, number>)[address] ?? 0,
+    );
 
     // Anima
     const isInAnimaSnapshot = (() => {

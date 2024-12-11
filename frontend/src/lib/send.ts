@@ -64,15 +64,6 @@ export const SUILEND_CAPSULE_TYPE =
 export const ROOTLETS_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
 
-export const PRIME_MACHIN_TYPE =
-  "0x034c162f6b594cb5a1805264dd01ca5d80ce3eca6522e6ee37fd9ebfb9d3ddca::factory::PrimeMachin";
-export const EGG_TYPE =
-  "0x484932c474bf09f002b82e4a57206a6658a0ca6dbdb15896808dcd1929c77820::egg::AfEgg";
-export const DOUBLEUP_CITIZEN_TYPE =
-  "0x862810efecf0296db2e9df3e075a7af8034ba374e73ff1098e88cc4bb7c15437::doubleup_citizens::DoubleUpCitizen";
-export const KUMO_TYPE =
-  "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
-
 // Types
 export type MsendObject = {
   penaltyStartTimeS: BigNumber;

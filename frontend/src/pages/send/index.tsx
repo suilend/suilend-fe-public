@@ -33,7 +33,6 @@ import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
 import eggJson from "./nft/egg.json";
 import kumoJson from "./nft/kumo.json";
 import primeMachinJson from "./nft/prime-machin.json";
-import rootletsJson from "./nft/rootlets.json";
 import bluefinLeaguesBlackJson from "./trading/bluefin-leagues-black.json";
 import bluefinLeaguesGoldJson from "./trading/bluefin-leagues-gold.json";
 import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json";
@@ -103,11 +102,7 @@ function Page() {
   };
   const rootlets = {
     snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(rootletsJson).length > 0
-        ? Object.keys(rootletsJson).length
-        : 948,
-    ),
+    eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(1.111),
     totalAllocationBreakdownMap: {
       one: {
@@ -158,11 +153,7 @@ function Page() {
 
   const primeMachin = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(
-      Object.keys(primeMachinJson).length > 0
-        ? Object.keys(primeMachinJson).length
-        : 930,
-    ),
+    eligibleWallets: formatInteger(Object.keys(primeMachinJson).length),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
       one: {
@@ -173,9 +164,7 @@ function Page() {
   };
   const egg = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(
-      Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2104,
-    ),
+    eligibleWallets: formatInteger(Object.keys(eggJson).length),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
       one: {
@@ -186,11 +175,7 @@ function Page() {
   };
   const doubleUpCitizen = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(
-      Object.keys(doubleUpCitizenJson).length > 0
-        ? Object.keys(doubleUpCitizenJson).length
-        : 684,
-    ),
+    eligibleWallets: formatInteger(Object.keys(doubleUpCitizenJson).length),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
       one: {
@@ -200,10 +185,8 @@ function Page() {
     },
   };
   const kumo = {
-    snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(kumoJson).length > 0 ? Object.keys(kumoJson).length : 479,
-    ),
+    snapshotTaken: true,
+    eligibleWallets: formatInteger(Object.keys(kumoJson).length),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
       one: {
