@@ -23,21 +23,12 @@ import {
   AllocationId,
   AllocationType,
   AssetType,
+  BluefinLeague,
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
   TGE_TIMESTAMP_MS,
 } from "@/lib/send";
 import { cn } from "@/lib/utils";
-
-import earlyUsersJson from "./lending/early-users.json";
-import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
-import eggJson from "./nft/egg.json";
-import kumoJson from "./nft/kumo.json";
-import primeMachinJson from "./nft/prime-machin.json";
-import bluefinLeaguesBlackJson from "./trading/bluefin-leagues-black.json";
-import bluefinLeaguesGoldJson from "./trading/bluefin-leagues-gold.json";
-import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json";
-import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json";
 
 function Page() {
   const { address } = useWalletContext();
@@ -49,12 +40,12 @@ function Page() {
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(earlyUsersJson.length),
+    eligibleWallets: formatInteger(3899),
     totalAllocationPercent: new BigNumber(2),
     totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(2).div(earlyUsersJson.length), // Flat
+        percent: new BigNumber(2).div(3899), // Flat
       },
     },
   };
@@ -115,92 +106,84 @@ function Page() {
 
   const bluefinLeagues = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(
-      bluefinLeaguesGoldJson.length +
-        bluefinLeaguesPlatinumJson.length +
-        bluefinLeaguesBlackJson.length +
-        bluefinLeaguesSapphireJson.length,
-    ),
+    eligibleWallets: formatInteger(5956 + 187 + 25 + 37),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.05).div(
-          bluefinLeaguesGoldJson.length +
-            bluefinLeaguesPlatinumJson.length +
-            bluefinLeaguesBlackJson.length +
-            bluefinLeaguesSapphireJson.length,
-        ), // Flat
+      [BluefinLeague.GOLD]: {
+        title: "Gold",
+        percent: new BigNumber(3).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+      },
+      [BluefinLeague.PLATINUM]: {
+        title: "Platinum",
+        percent: new BigNumber(60).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+      },
+      [BluefinLeague.BLACK]: {
+        title: "Black",
+        percent: new BigNumber(244.5).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+      },
+      [BluefinLeague.SAPPHIRE]: {
+        title: "Sapphire",
+        percent: new BigNumber(400).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
       },
     },
   };
   const bluefinSendTraders = {
-    snapshotTaken: false,
-    eligibleWallets: "TBC",
-    // Object.keys(bluefinSendTradersJson).length > 0
-    //   ? Object.keys(bluefinSendTradersJson).length
-    //   : 400, // TODO (update once we have an initial snapshot)
-    totalAllocationPercent: new BigNumber(0.125),
-    totalAllocationBreakdownMap: {},
-    // totalAllocationBreakdownMap: {
-    //   thousandUsdVolume: {
-    //     title: "Per $1K Volume",
-    //     percent: new BigNumber(0.125).div(
-    //       bluefinSendTradersTotalVolumeUsd.div(1000),
-    //     ), // Linear
-    //   },
-    // },
+    snapshotTaken: true,
+    eligibleWallets: formatInteger(3820), // Unique(Makers, Takers)
+    totalAllocationPercent: new BigNumber(0.0625 + 0.0625),
+    totalAllocationBreakdownMap: {
+      thousandUsdMakerVolume: {
+        title: "Per $1K Maker Volume",
+        percent: new BigNumber(0.0625).div(1165111.27).times(1000), // Linear
+      },
+      thousandUsdTakerVolume: {
+        title: "Per $1K Taker Volume",
+        percent: new BigNumber(0.0625).div(1474402.92).times(1000), // Linear
+      },
+    },
   };
 
   const primeMachin = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(Object.keys(primeMachinJson).length),
+    eligibleWallets: formatInteger(930),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Prime Machin",
-        percent: new BigNumber(0.1).div(
-          Object.values(primeMachinJson).reduce((acc, val) => acc + val, 0),
-        ), // Linear
+        percent: new BigNumber(0.1).div(3333), // Linear
       },
     },
   };
   const egg = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(Object.keys(eggJson).length),
+    eligibleWallets: formatInteger(2105),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Egg",
-        percent: new BigNumber(0.1).div(
-          Object.values(eggJson).reduce((acc, val) => acc + val, 0),
-        ), // Linear
+        percent: new BigNumber(0.1).div(9546), // Linear
       },
     },
   };
   const doubleUpCitizen = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(Object.keys(doubleUpCitizenJson).length),
+    eligibleWallets: formatInteger(684),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
       one: {
         title: "Per DoubleUp Citizen",
-        percent: new BigNumber(0.05).div(
-          Object.values(doubleUpCitizenJson).reduce((acc, val) => acc + val, 0),
-        ), // Linear
+        percent: new BigNumber(0.05).div(2878), // Linear
       },
     },
   };
   const kumo = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(Object.keys(kumoJson).length),
+    eligibleWallets: formatInteger(508),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Kumo",
-        percent: new BigNumber(0.05).div(
-          Object.values(kumoJson).reduce((acc, val) => acc + val, 0),
-        ), // Linear
+        percent: new BigNumber(0.05).div(1251), // Linear
       },
     },
   };
@@ -460,7 +443,9 @@ function Page() {
       userEligibleSend:
         userAllocations !== undefined
           ? userAllocations.bluefinLeagues.isInSnapshot
-            ? bluefinLeagues.totalAllocationBreakdownMap.wallet.percent
+            ? bluefinLeagues.totalAllocationBreakdownMap[
+                userAllocations.bluefinLeagues.isInSnapshot as BluefinLeague
+              ].percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
             : new BigNumber(0)
@@ -488,15 +473,26 @@ function Page() {
         bluefinSendTraders.totalAllocationBreakdownMap,
       ),
 
-      userEligibleSend: undefined,
-      // bluefinSendTradersVolumeUsd !== undefined
-      //   ? (bluefinSendTradersVolumeUsd as BigNumber)
-      //       .div(1000)
-      //       .times(
-      //         bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdVolume
-      //            .percent.times(SEND_TOTAL_SUPPLY).div(100)
-      //       )
-      //   : undefined,
+      userEligibleSend:
+        userAllocations !== undefined
+          ? new BigNumber(
+              userAllocations.bluefinSendTraders.makerVolumeUsd
+                .div(1000)
+                .times(
+                  bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdMakerVolume.percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+            ).plus(
+              userAllocations.bluefinSendTraders.takerVolumeUsd
+                .div(1000)
+                .times(
+                  bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdTakerVolume.percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+            )
+          : undefined,
       userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
