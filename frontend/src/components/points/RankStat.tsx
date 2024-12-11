@@ -6,21 +6,38 @@ interface RankStatProps {
   season: number;
   rank?: number | null;
   isCentered?: boolean;
+  isRightAligned?: boolean;
 }
 
-export default function RankStat({ season, rank, isCentered }: RankStatProps) {
+export default function RankStat({
+  season,
+  rank,
+  isCentered,
+  isRightAligned,
+}: RankStatProps) {
   return (
     <div
       className={cn(
         "flex flex-col gap-1",
-        isCentered ? "items-center" : "items-end",
+        isCentered && "items-center",
+        isRightAligned && "items-end",
       )}
     >
-      <TLabelSans className={cn(isCentered ? "text-center" : "text-right")}>
+      <TLabelSans
+        className={cn(
+          isCentered && "text-center",
+          isRightAligned && "text-right",
+        )}
+      >
         Rank
       </TLabelSans>
 
-      <PointsRank season={season} rank={rank} isCentered={isCentered} />
+      <PointsRank
+        season={season}
+        rank={rank}
+        isCentered={isCentered}
+        isRightAligned={isRightAligned}
+      />
     </div>
   );
 }

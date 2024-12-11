@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import PointsDataLastUpdatedAt from "@/components/points/LeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";
@@ -60,7 +60,7 @@ export default function PointsRank({
               )}
             >
               {formatRank(rank)}
-              {[1, 2, 3].includes(rank) && <Star className="h-3 w-3" />}
+              {[1, 2, 3].includes(rank) && <Trophy className="h-3 w-3" />}
             </TBody>
           )}
         </Tooltip>

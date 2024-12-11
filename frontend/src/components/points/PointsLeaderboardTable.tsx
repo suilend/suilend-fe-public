@@ -27,11 +27,11 @@ export default function PointsLeaderboardTable({
   season,
 }: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
-  const { leaderboardRowsMap } = usePointsContext();
+  const { season: currentSeason, leaderboardRowsMap } = usePointsContext();
 
   // Columns
-  const columns: ColumnDef<LeaderboardRowData>[] = useMemo(
-    () => [
+  const columns = useMemo(() => {
+    const result: ColumnDef<LeaderboardRowData>[] = [
       {
         accessorKey: "rank",
         enableSorting: false,
@@ -70,7 +70,9 @@ export default function PointsLeaderboardTable({
           );
         },
       },
-      {
+    ];
+    if (season === currentSeason)
+      result.push({
         accessorKey: "pointsPerDay",
         sortingFn: decimalSortingFn("pointsPerDay"),
         header: ({ column }) =>
@@ -84,25 +86,25 @@ export default function PointsLeaderboardTable({
             </div>
           );
         },
-      },
-      {
-        accessorKey: "totalPoints",
-        sortingFn: decimalSortingFn("totalPoints"),
-        header: ({ column }) =>
-          tableHeader(column, "Total Points", { isNumerical: true }),
-        cell: ({ row }) => {
-          const { totalPoints } = row.original;
+      });
+    result.push({
+      accessorKey: "totalPoints",
+      sortingFn: decimalSortingFn("totalPoints"),
+      header: ({ column }) =>
+        tableHeader(column, "Total Points", { isNumerical: true }),
+      cell: ({ row }) => {
+        const { totalPoints } = row.original;
 
-          return (
-            <div className="flex flex-row justify-end">
-              <PointsCount season={season} amount={totalPoints} />
-            </div>
-          );
-        },
+        return (
+          <div className="flex flex-row justify-end">
+            <PointsCount season={season} amount={totalPoints} />
+          </div>
+        );
       },
-    ],
-    [season, explorer],
-  );
+    });
+
+    return result;
+  }, [season, explorer, currentSeason]);
 
   return (
     <div className="flex w-full max-w-[960px] flex-col gap-6">

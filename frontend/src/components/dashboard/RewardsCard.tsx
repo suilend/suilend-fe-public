@@ -205,6 +205,7 @@ export default function RewardsCard() {
                     ? null
                     : addressRowMap?.[season].rank
                 }
+                isRightAligned
               />
             </div>
           ) : (

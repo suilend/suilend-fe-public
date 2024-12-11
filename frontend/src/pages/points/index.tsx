@@ -79,13 +79,16 @@ export default function Points() {
                 season={+selectedTab}
                 amount={addressRow === null ? null : addressRow?.totalPoints}
               />
-              <PointsPerDayStat
-                season={+selectedTab}
-                amount={addressRow === null ? null : addressRow?.pointsPerDay}
-              />
+              {+selectedTab === season && (
+                <PointsPerDayStat
+                  season={+selectedTab}
+                  amount={addressRow === null ? null : addressRow?.pointsPerDay}
+                />
+              )}
               <RankStat
                 season={+selectedTab}
                 rank={addressRow === null ? null : addressRow?.rank}
+                isRightAligned
               />
             </div>
           </Card>
