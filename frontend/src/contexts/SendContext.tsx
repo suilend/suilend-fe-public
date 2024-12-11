@@ -116,6 +116,9 @@ interface SendContext {
 
   userClaimedSendMap: Record<string, BigNumber> | undefined;
   refreshUserClaimedSendMap: () => Promise<void>;
+
+  selectedMsendCoinType: string;
+  setSelectedMsendCoinType: (coinType: string) => void;
 }
 type LoadedSendContext = SendContext & {
   mSendObjectMap: Record<string, MsendObject>;
@@ -144,6 +147,11 @@ const SendContext = createContext<SendContext>({
 
   userClaimedSendMap: undefined,
   refreshUserClaimedSendMap: async () => {
+    throw Error("SendContextProvider not initialized");
+  },
+
+  selectedMsendCoinType: "",
+  setSelectedMsendCoinType: () => {
     throw Error("SendContextProvider not initialized");
   },
 });
@@ -838,6 +846,11 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     await fetchTransactionsSinceTge(address);
   }, [address, fetchTransactionsSinceTge]);
 
+  // Selected mSEND
+  const [selectedMsendCoinType, setSelectedMsendCoinType] = useState<string>(
+    NORMALIZED_mSEND_3M_COINTYPE,
+  );
+
   // Context
   const contextValue: SendContext = useMemo(
     () => ({
@@ -855,6 +868,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
       userClaimedSendMap,
       refreshUserClaimedSendMap,
+
+      selectedMsendCoinType,
+      setSelectedMsendCoinType,
     }),
     [
       mSendObjectMap,
@@ -867,6 +883,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       refreshUserAllocations,
       userClaimedSendMap,
       refreshUserClaimedSendMap,
+      selectedMsendCoinType,
+      setSelectedMsendCoinType,
     ],
   );
 

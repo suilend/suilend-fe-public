@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   getBalanceChange,
@@ -376,6 +375,7 @@ function ClaimTabContent() {
     mSendBalanceMap,
     userClaimedSendMap,
     refreshUserClaimedSendMap,
+    selectedMsendCoinType,
   } = useLoadedSendContext();
 
   // Deposit sSUI
@@ -396,19 +396,14 @@ function ClaimTabContent() {
 
     const transaction = new Transaction();
     try {
-      await claimSend(
-        suiClient,
-        address,
-        NORMALIZED_BETA_mSEND_COINTYPE, // TODO
-        transaction,
-      );
+      await claimSend(suiClient, address, selectedMsendCoinType, transaction);
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_BETA_SEND_COINTYPE, // TODO
-        ...sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE], // TODO
+        coinType: selectedMsendCoinType,
+        ...sendCoinMetadataMap[selectedMsendCoinType],
       });
 
       toast.success(
@@ -416,7 +411,7 @@ function ClaimTabContent() {
           "Claimed",
           balanceChange !== undefined
             ? formatToken(balanceChange, {
-                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+                dp: sendCoinMetadataMap[selectedMsendCoinType].decimals,
               })
             : null,
           "SEND",
@@ -474,8 +469,8 @@ function ClaimTabContent() {
       >
         <TBody>
           mSEND in wallet:{" "}
-          {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
-            dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
+          {formatToken(mSendBalanceMap[selectedMsendCoinType], {
+            dp: mSendCoinMetadataMap[selectedMsendCoinType].decimals,
           })}
         </TBody>
 
@@ -498,14 +493,10 @@ function ClaimTabContent() {
               {userClaimedSendMap === undefined ? (
                 <Skeleton className="inline-block h-5 w-16 align-top" />
               ) : (
-                // TODO
-                formatToken(
-                  userClaimedSendMap[NORMALIZED_BETA_mSEND_COINTYPE],
-                  {
-                    dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
-                      .decimals, // TODO
-                  },
-                )
+                formatToken(userClaimedSendMap[selectedMsendCoinType], {
+                  dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
+                    .decimals, // TODO
+                })
               )}
               {" SEND claimed"}
             </TBody>
@@ -529,7 +520,12 @@ export default function ClaimSection({
 }: ClaimSectionProps) {
   const { data } = useLoadedAppContext();
 
-  const { mSendObjectMap, mSendCoinMetadataMap } = useLoadedSendContext();
+  const {
+    mSendObjectMap,
+    mSendCoinMetadataMap,
+    userAllocations,
+    selectedMsendCoinType,
+  } = useLoadedSendContext();
 
   // Allocations
   const sendPointsAllocation = allocations.find(
@@ -563,6 +559,7 @@ export default function ClaimSection({
     { id: Tab.CLAIM, title: "CLAIM SEND" },
   ];
 
+  // TODO: To fix, as this will prevent Rootlets from being redeemed 1 year after TGE
   const selectedTab =
     totalRedeemableMsend.gt(minMsendAmount) &&
     Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
@@ -576,143 +573,152 @@ export default function ClaimSection({
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim">Claim</SectionHeading>
 
-      <Card className="rounded-md">
-        <div className="flex w-full flex-row items-stretch">
-          {tabs.map((tab, index) => (
-            <div
-              key={tab.id}
-              className={cn(
-                "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
-                tab.id === selectedTab
-                  ? "border-b-primary bg-primary/5"
-                  : "pointer-events-none bg-background/50",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-2.5",
-                  tab.id !== selectedTab && "opacity-50",
-                )}
-              >
-                <div className="flex h-4 w-4 flex-row items-center justify-center rounded-sm bg-primary">
-                  <TLabelSans className="text-foreground">
-                    {index + 1}
-                  </TLabelSans>
-                </div>
-                <TBody>{tab.title}</TBody>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex w-full flex-col gap-6 p-4 pt-6">
-          {selectedTab === Tab.REDEEM && (
-            <RedeemTabContent
-              sendPointsAllocation={sendPointsAllocation}
-              suilendCapsulesAllocation={suilendCapsulesAllocation}
-              rootletsAllocation={rootletsAllocation}
-              totalRedeemableMsend={totalRedeemableMsend}
-              totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
-            />
-          )}
-          {selectedTab === Tab.CLAIM && <ClaimTabContent />}
-        </div>
-      </Card>
-
-      {/* TODO */}
-      {mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].currentPenaltySui.gt(0) && (
-        <div className="flex w-full flex-col gap-4">
-          <TBody className="text-[16px]">PENALTY</TBody>
-
-          <div className="flex w-full flex-col gap-3">
-            {/* Penalty ends in */}
-            {Date.now() <
-              +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].penaltyEndTimeS *
-                1000 && (
-              <div className="flex w-full flex-row justify-between gap-4">
-                <TBodySans className="text-muted-foreground">
-                  Penalty ends in
-                </TBodySans>
-
-                <div className="flex flex-row items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <Tooltip
-                    title={formatDate(
-                      new Date(
-                        +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                          .penaltyEndTimeS * 1000,
-                      ),
-                      "yyyy-MM-dd HH:mm:ss",
+      {userAllocations === undefined ? (
+        <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
+      ) : (
+        <>
+          <Card className="rounded-md">
+            <div className="flex w-full flex-row items-stretch">
+              {tabs.map((tab, index) => (
+                <div
+                  key={tab.id}
+                  className={cn(
+                    "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
+                    tab.id === selectedTab
+                      ? "border-b-primary bg-primary/5"
+                      : "pointer-events-none bg-background/50",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-2.5",
+                      tab.id !== selectedTab && "opacity-50",
                     )}
                   >
-                    <TBody
-                      className={cn(
-                        "decoration-foreground/50",
-                        hoverUnderlineClassName,
-                      )}
-                    >
-                      {formatDuration(
-                        intervalToDuration({
-                          start: Date.now(),
-                          end: new Date(
-                            +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                              .penaltyEndTimeS * 1000,
-                          ),
-                        }),
-                      )}
-                    </TBody>
-                  </Tooltip>
+                    <div className="flex h-4 w-4 flex-row items-center justify-center rounded-sm bg-primary">
+                      <TLabelSans className="text-foreground">
+                        {index + 1}
+                      </TLabelSans>
+                    </div>
+                    <TBody>{tab.title}</TBody>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            <div className="flex w-full flex-col gap-6 p-4 pt-6">
+              {selectedTab === Tab.REDEEM && (
+                <RedeemTabContent
+                  sendPointsAllocation={sendPointsAllocation}
+                  suilendCapsulesAllocation={suilendCapsulesAllocation}
+                  rootletsAllocation={rootletsAllocation}
+                  totalRedeemableMsend={totalRedeemableMsend}
+                  totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
+                />
+              )}
+              {selectedTab === Tab.CLAIM && <ClaimTabContent />}
+            </div>
+          </Card>
+
+          {selectedTab === Tab.CLAIM &&
+            mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) && (
+              <div className="flex w-full flex-col gap-4">
+                <TBody className="text-[16px]">PENALTY</TBody>
+
+                <div className="flex w-full flex-col gap-3">
+                  {/* Penalty ends in */}
+                  {Date.now() <
+                    +mSendObjectMap[selectedMsendCoinType].penaltyEndTimeS *
+                      1000 && (
+                    <div className="flex w-full flex-row justify-between gap-4">
+                      <TBodySans className="text-muted-foreground">
+                        Penalty ends in
+                      </TBodySans>
+
+                      <div className="flex flex-row items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <Tooltip
+                          title={formatDate(
+                            new Date(
+                              +mSendObjectMap[selectedMsendCoinType]
+                                .penaltyEndTimeS * 1000,
+                            ),
+                            "yyyy-MM-dd HH:mm:ss",
+                          )}
+                        >
+                          <TBody
+                            className={cn(
+                              "decoration-foreground/50",
+                              hoverUnderlineClassName,
+                            )}
+                          >
+                            {formatDuration(
+                              intervalToDuration({
+                                start: Date.now(),
+                                end: new Date(
+                                  +mSendObjectMap[selectedMsendCoinType]
+                                    .penaltyEndTimeS * 1000,
+                                ),
+                              }),
+                            )}
+                          </TBody>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Current penalty */}
+                  <div className="flex w-full flex-row justify-between gap-4">
+                    <TBodySans className="text-muted-foreground">
+                      Current penalty
+                    </TBodySans>
+
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-row items-center gap-2">
+                        <TokenLogo
+                          className="h-4 w-4"
+                          token={suiReserve.token}
+                        />
+                        <TBody>
+                          <Tooltip
+                            title={`${formatToken(
+                              mSendObjectMap[selectedMsendCoinType]
+                                .currentPenaltySui,
+                              { dp: SUI_DECIMALS },
+                            )} SUI`}
+                          >
+                            <span
+                              className={cn(
+                                "decoration-foreground/50",
+                                hoverUnderlineClassName,
+                              )}
+                            >
+                              {formatToken(
+                                mSendObjectMap[selectedMsendCoinType]
+                                  .currentPenaltySui,
+                              )}
+                              {" SUI"}
+                            </span>
+                          </Tooltip>
+                          {" / SEND"}
+                        </TBody>
+                      </div>
+                      <TLabel>
+                        {formatUsd(
+                          mSendObjectMap[
+                            selectedMsendCoinType
+                          ].currentPenaltySui.times(suiReserve.price),
+                        )}
+                        {" / SEND"}
+                      </TLabel>
+                    </div>
+                  </div>
+                </div>
+
+                <PenaltyLineChart mSendCoinType={selectedMsendCoinType} />
               </div>
             )}
-
-            {/* Current penalty */}
-            <div className="flex w-full flex-row justify-between gap-4">
-              <TBodySans className="text-muted-foreground">
-                Current penalty
-              </TBodySans>
-
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex flex-row items-center gap-2">
-                  <TokenLogo className="h-4 w-4" token={suiReserve.token} />
-                  <TBody>
-                    <Tooltip
-                      title={`${formatToken(
-                        mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                          .currentPenaltySui,
-                        { dp: SUI_DECIMALS },
-                      )} SUI`}
-                    >
-                      <span
-                        className={cn(
-                          "decoration-foreground/50",
-                          hoverUnderlineClassName,
-                        )}
-                      >
-                        {formatToken(
-                          mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                            .currentPenaltySui,
-                        )}
-                        {" SUI"}
-                      </span>
-                    </Tooltip>
-                    {" / SEND"}
-                  </TBody>
-                </div>
-                <TLabel>
-                  {formatUsd(
-                    mSendObjectMap[
-                      NORMALIZED_mSEND_3M_COINTYPE
-                    ].currentPenaltySui.times(suiReserve.price),
-                  )}
-                  {" / SEND"}
-                </TLabel>
-              </div>
-            </div>
-          </div>
-
-          <PenaltyLineChart mSendCoinType={NORMALIZED_mSEND_3M_COINTYPE} />
-        </div>
+        </>
       )}
     </div>
   );

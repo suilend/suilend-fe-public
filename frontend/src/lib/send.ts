@@ -21,7 +21,7 @@ import { getOwnedObjectsOfType } from "@/lib/transactions";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
-export const TGE_TIMESTAMP_MS = 1733979600000;
+export const TGE_TIMESTAMP_MS = 1733875200000; // TODO: Change back to 1733979600000
 export const mSEND_REDEMPTION_END_TIMESTAMP_MS =
   TGE_TIMESTAMP_MS + 365 * 24 * 60 * 60 * 1000; // 1 year after TGE
 
