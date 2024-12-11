@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import AllocationCard from "@/components/send/AllocationCard";
+import BlurbSection from "@/components/send/BlurbSection";
 import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
@@ -816,6 +817,9 @@ function Page() {
               )}
             </div>
           </div>
+
+          <Separator />
+          <BlurbSection />
 
           {address && Date.now() >= TGE_TIMESTAMP_MS && (
             <>
