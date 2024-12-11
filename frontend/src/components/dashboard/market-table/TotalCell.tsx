@@ -1,3 +1,5 @@
+import { TEMPORARY_PYTH_PRICE_FEED_COINTYPES } from "@suilend/frontend-sui";
+
 import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
@@ -5,6 +7,7 @@ import { formatToken, formatUsd } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface TotalCellProps {
+  reserve: ReservesRowData["reserve"];
   token: ReservesRowData["token"];
   total: ReservesRowData["depositedAmount"] | ReservesRowData["borrowedAmount"];
   totalUsd:
@@ -16,6 +19,7 @@ interface TotalCellProps {
   horizontal?: boolean;
 }
 export default function TotalCell({
+  reserve,
   token,
   total,
   totalUsd,
@@ -48,8 +52,18 @@ export default function TotalCell({
           {formatToken(total, { exact: false })} {token.symbol}
         </TBody>
       </Tooltip>
-      <Tooltip title={formatUsd(totalUsd, { exact: true })}>
-        <TLabel className="text-right">{formatUsd(totalUsd)}</TLabel>
+      <Tooltip
+        title={
+          !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+            ? formatUsd(totalUsd, { exact: true })
+            : undefined
+        }
+      >
+        <TLabel className="text-right">
+          {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+            ? formatUsd(totalUsd)
+            : "--"}
+        </TLabel>
       </Tooltip>
     </div>
   );
