@@ -2,6 +2,7 @@ import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable
 import TotalCell from "@/components/dashboard/market-table/TotalCell";
 
 interface TotalBorrowsCellProps {
+  reserve: ReservesRowData["reserve"];
   token: ReservesRowData["token"];
   borrowedAmount: ReservesRowData["borrowedAmount"];
   borrowedAmountUsd: ReservesRowData["borrowedAmountUsd"];
@@ -10,6 +11,7 @@ interface TotalBorrowsCellProps {
 }
 
 export default function TotalBorrowsCell({
+  reserve,
   token,
   borrowedAmount,
   borrowedAmountUsd,
@@ -18,6 +20,7 @@ export default function TotalBorrowsCell({
 }: TotalBorrowsCellProps) {
   return (
     <TotalCell
+      reserve={reserve}
       token={token}
       total={borrowedAmount}
       totalUsd={borrowedAmountUsd}

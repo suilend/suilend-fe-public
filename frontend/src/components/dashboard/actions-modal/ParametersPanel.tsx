@@ -5,6 +5,7 @@ import { capitalize } from "lodash";
 
 import {
   COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP,
+  TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   getPythOracleUrl,
 } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
@@ -70,7 +71,11 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       />
       <LabelWithValue
         label="Deposits (USD)"
-        value={formatUsd(reserve.depositedAmountUsd, { dp: 0, exact: true })}
+        value={
+          !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+            ? formatUsd(reserve.depositedAmountUsd, { dp: 0, exact: true })
+            : "--"
+        }
         horizontal
       />
       <LabelWithValue
@@ -96,7 +101,11 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       />
       <LabelWithValue
         label="Borrows (USD)"
-        value={formatUsd(reserve.borrowedAmountUsd, { dp: 0, exact: true })}
+        value={
+          !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+            ? formatUsd(reserve.borrowedAmountUsd, { dp: 0, exact: true })
+            : "--"
+        }
         horizontal
       />
       <LabelWithValue
