@@ -6,7 +6,6 @@ import * as Recharts from "recharts";
 import { CartesianViewBox } from "recharts/types/util/types";
 
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { formatToken } from "@/lib/format";
 
 interface LabelProps extends Recharts.LabelProps, PropsWithChildren {
   fill: string;
@@ -100,7 +99,11 @@ export default function PenaltyLineChart({
   const tickFormatterX = (timestampS: number) =>
     formatDate(new Date(timestampS * 1000), "MMM yy").toUpperCase();
   const tickFormatterY = (penaltySui: number) =>
-    `${penaltySui === 0 ? "0" : formatToken(new BigNumber(penaltySui), { dp: 1 })} SUI`;
+    `${
+      penaltySui === 0
+        ? "0"
+        : new BigNumber(penaltySui).decimalPlaces(2, BigNumber.ROUND_UP)
+    } SUI`;
 
   // Domain
   const domainX = [minX, maxX];
@@ -198,6 +201,7 @@ export default function PenaltyLineChart({
               </Label>
             )}
           />
+          {/* TODO: This line's label will clash with the Current Penalty line's label when the dates get closer */}
           {Date.now() / 1000 < +mSendObject.penaltyEndTimeS && (
             <Recharts.ReferenceLine
               x={Date.now() / 1000}

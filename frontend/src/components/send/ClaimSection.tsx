@@ -13,7 +13,6 @@ import { toast } from "sonner";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_mSEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   getBalanceChange,
@@ -63,8 +62,10 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface RedeemTabContentProps {
   sendPointsAllocation: Allocation;
-  suilendCapsulesAllocation: Allocation;
   rootletsAllocation: Allocation;
+  hasSendPointsToRedeem: boolean;
+  hasSuilendCapsulesToRedeem: boolean;
+  hasRootletsToRedeem: boolean;
   totalRedeemableMsend: BigNumber;
   totalAllocationBreakdownMaps: {
     suilendCapsules: Record<SuilendCapsuleRarity, { percent: BigNumber }>;
@@ -73,8 +74,10 @@ interface RedeemTabContentProps {
 
 function RedeemTabContent({
   sendPointsAllocation,
-  suilendCapsulesAllocation,
   rootletsAllocation,
+  hasSendPointsToRedeem,
+  hasSuilendCapsulesToRedeem,
+  hasRootletsToRedeem,
   totalRedeemableMsend,
   totalAllocationBreakdownMaps,
 }: RedeemTabContentProps) {
@@ -86,20 +89,10 @@ function RedeemTabContent({
     mSendCoinMetadataMap,
     kioskClient,
     ownedKiosks,
-    userAllocations,
     refreshUserAllocations,
+    ...restLoadedSendContext
   } = useLoadedSendContext();
-
-  // Items
-  const minMsendAmount =
-    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
-
-  const hasSendPointsItem =
-    sendPointsAllocation.userEligibleSend?.gte(minMsendAmount);
-  const hasSuilendCapsulesItem =
-    suilendCapsulesAllocation.userEligibleSend?.gte(minMsendAmount);
-  const hasRootletsItem =
-    rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
+  const userAllocations = restLoadedSendContext.userAllocations!;
 
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
@@ -111,15 +104,14 @@ function RedeemTabContent({
   const onSubmitClick = async () => {
     if (!address) return;
     if (ownedKiosks === undefined) return;
-    if (userAllocations === undefined) return;
 
     const transaction = new Transaction();
     try {
-      if (hasSendPointsItem)
+      if (hasSendPointsToRedeem)
         await redeemSendPointsMsend(suilendClient, data, address, transaction);
-      if (hasSuilendCapsulesItem)
+      if (hasSuilendCapsulesToRedeem)
         await redeemSuilendCapsulesMsend(suiClient, address, transaction);
-      if (hasRootletsItem)
+      if (hasRootletsToRedeem)
         await redeemRootletsMsend(
           suiClient,
           kioskClient,
@@ -170,146 +162,146 @@ function RedeemTabContent({
     <>
       <div className="flex w-full flex-col gap-4">
         <div className="relative flex w-full flex-col">
-          {/* List */}
-          {userAllocations !== undefined && (
-            <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
-              {/* SEND Points */}
-              {hasSendPointsItem && (
-                <>
-                  <div className="flex w-full flex-row items-center justify-between gap-4">
-                    <div className="flex flex-row items-center gap-3">
-                      <Image
-                        src={sendPointsAllocation.src}
-                        alt="SEND Points S1"
-                        width={24}
-                        height={24}
-                      />
-                      <TBody className="text-[16px]">
-                        {formatToken(userAllocations.sendPoints.owned, {
-                          exact: false,
-                        })}{" "}
-                        SEND Points S1
-                      </TBody>
-                    </div>
-
-                    <div className="flex flex-row items-center gap-2">
-                      <MsendTokenLogo
-                        className="h-5 w-5"
-                        coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                      />
-                      <TBody className="text-[16px]">
-                        {formatToken(sendPointsAllocation.userEligibleSend!, {
-                          exact: false,
-                        })}
-                      </TBody>
-                    </div>
+          {/* Items */}
+          <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
+            {/* SEND Points */}
+            {hasSendPointsToRedeem && (
+              <>
+                <div className="flex w-full flex-row items-center justify-between gap-4">
+                  <div className="flex flex-row items-center gap-3">
+                    <Image
+                      src={sendPointsAllocation.src}
+                      alt="SEND Points S1"
+                      width={24}
+                      height={24}
+                    />
+                    <TBody className="text-[16px]">
+                      {formatToken(userAllocations.sendPoints.owned, {
+                        exact: false,
+                      })}{" "}
+                      SEND Points S1
+                    </TBody>
                   </div>
 
-                  {(hasSuilendCapsulesItem || hasRootletsItem) && <Separator />}
-                </>
-              )}
+                  <div className="flex flex-row items-center gap-2">
+                    <MsendTokenLogo
+                      className="h-5 w-5"
+                      coinType={NORMALIZED_mSEND_3M_COINTYPE}
+                    />
+                    <TBody className="text-[16px]">
+                      {formatToken(sendPointsAllocation.userEligibleSend!, {
+                        exact: false,
+                      })}
+                    </TBody>
+                  </div>
+                </div>
 
-              {/* Suilend Capsules */}
-              {hasSuilendCapsulesItem && (
-                <>
-                  {Object.entries(userAllocations.suilendCapsules.ownedMap)
-                    .filter(([rarity, owned]) => owned.gt(0))
-                    .map(([rarity, owned], index, array) => (
-                      <Fragment key={rarity}>
-                        <div className="flex w-full flex-row items-center justify-between gap-4">
-                          <div className="flex flex-row items-center gap-3">
-                            <Image
-                              src={`/${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
-                              alt={`${capitalize(rarity)} Suilend Capsule`}
-                              width={24}
-                              height={24}
-                            />
-                            <TBody className="text-[16px]">
-                              {formatInteger(+owned)} {capitalize(rarity)}{" "}
-                              Suilend Capsule{!owned.eq(1) && "s"}
-                            </TBody>
-                          </div>
+                {(hasSuilendCapsulesToRedeem || hasRootletsToRedeem) && (
+                  <Separator />
+                )}
+              </>
+            )}
 
-                          <div className="flex flex-row items-center gap-2">
-                            <MsendTokenLogo
-                              className="h-5 w-5"
-                              coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                            />
-                            <TBody className="text-[16px]">
-                              {formatToken(
-                                owned.times(
-                                  totalAllocationBreakdownMaps.suilendCapsules[
-                                    rarity as SuilendCapsuleRarity
-                                  ].percent
-                                    .times(SEND_TOTAL_SUPPLY)
-                                    .div(100),
-                                ),
-                                { exact: false },
-                              )}
-                            </TBody>
-                          </div>
+            {/* Suilend Capsules */}
+            {hasSuilendCapsulesToRedeem && (
+              <>
+                {Object.entries(userAllocations.suilendCapsules.ownedMap)
+                  .filter(([rarity, owned]) => owned.gt(0))
+                  .map(([rarity, owned], index, array) => (
+                    <Fragment key={rarity}>
+                      <div className="flex w-full flex-row items-center justify-between gap-4">
+                        <div className="flex flex-row items-center gap-3">
+                          <Image
+                            src={`/${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
+                            alt={`${capitalize(rarity)} Suilend Capsule`}
+                            width={24}
+                            height={24}
+                          />
+                          <TBody className="text-[16px]">
+                            {formatInteger(+owned)} {capitalize(rarity)} Suilend
+                            Capsule{!owned.eq(1) && "s"}
+                          </TBody>
                         </div>
 
-                        {index !== array.length - 1 && <Separator />}
-                      </Fragment>
-                    ))}
-
-                  {hasRootletsItem && <Separator />}
-                </>
-              )}
-
-              {/* Rootlets */}
-              {hasRootletsItem && (
-                <>
-                  <div className="flex w-full flex-row items-center justify-between gap-4">
-                    <div className="flex flex-row items-center gap-3">
-                      <Image
-                        src={rootletsAllocation.src}
-                        alt="Rootlets"
-                        width={24}
-                        height={24}
-                      />
-                      <div className="flex flex-col gap-1">
-                        <TBody className="text-[16px]">
-                          {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
-                          Rootlets NFT
-                          {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
-                        </TBody>
-                        {(ownedKiosks ?? []).reduce(
-                          (acc, { kiosk }) => [
-                            ...acc,
-                            ...kiosk.items.filter(
-                              (item) =>
-                                item.type === ROOTLETS_TYPE && item.listing,
-                            ),
-                          ],
-                          [] as KioskItem[],
-                        ).length > 0 && (
-                          <TLabelSans>
-                            {
-                              "Note: You'll need to unlist your listed Rootlets NFTs to redeem them"
-                            }
-                          </TLabelSans>
-                        )}
+                        <div className="flex flex-row items-center gap-2">
+                          <MsendTokenLogo
+                            className="h-5 w-5"
+                            coinType={NORMALIZED_mSEND_3M_COINTYPE}
+                          />
+                          <TBody className="text-[16px]">
+                            {formatToken(
+                              owned.times(
+                                totalAllocationBreakdownMaps.suilendCapsules[
+                                  rarity as SuilendCapsuleRarity
+                                ].percent
+                                  .times(SEND_TOTAL_SUPPLY)
+                                  .div(100),
+                              ),
+                              { exact: false },
+                            )}
+                          </TBody>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-row items-center gap-2">
-                      <MsendTokenLogo
-                        className="h-5 w-5"
-                        coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                      />
+                      {index !== array.length - 1 && <Separator />}
+                    </Fragment>
+                  ))}
+
+                {hasRootletsToRedeem && <Separator />}
+              </>
+            )}
+
+            {/* Rootlets */}
+            {hasRootletsToRedeem && (
+              <>
+                <div className="flex w-full flex-row items-center justify-between gap-4">
+                  <div className="flex flex-row items-center gap-3">
+                    <Image
+                      src={rootletsAllocation.src}
+                      alt="Rootlets"
+                      width={24}
+                      height={24}
+                    />
+                    <div className="flex flex-col gap-1">
                       <TBody className="text-[16px]">
-                        {formatToken(rootletsAllocation.userEligibleSend!, {
-                          exact: false,
-                        })}
+                        {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
+                        Rootlets NFT
+                        {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
                       </TBody>
+                      {(ownedKiosks ?? []).reduce(
+                        (acc, { kiosk }) => [
+                          ...acc,
+                          ...kiosk.items.filter(
+                            (item) =>
+                              item.type === ROOTLETS_TYPE && item.listing,
+                          ),
+                        ],
+                        [] as KioskItem[],
+                      ).length > 0 && (
+                        <TLabelSans>
+                          {
+                            "Note: You'll need to unlist your listed Rootlets NFTs to redeem them"
+                          }
+                        </TLabelSans>
+                      )}
                     </div>
                   </div>
-                </>
-              )}
-            </div>
-          )}
+
+                  <div className="flex flex-row items-center gap-2">
+                    <MsendTokenLogo
+                      className="h-5 w-5"
+                      coinType={NORMALIZED_mSEND_3M_COINTYPE}
+                    />
+                    <TBody className="text-[16px]">
+                      {formatToken(rootletsAllocation.userEligibleSend!, {
+                        exact: false,
+                      })}
+                    </TBody>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Total */}
           <div className="relative z-[1] -mt-2 flex w-full flex-row items-center justify-between rounded-b-md bg-border px-4 pb-2 pt-4">
@@ -327,30 +319,33 @@ function RedeemTabContent({
           </div>
         </div>
 
-        <div className="flex w-full flex-row items-center justify-between gap-4">
-          <TBodySans className="text-muted-foreground">
-            Redemption ends in
-          </TBodySans>
+        {/* Redemption ends in */}
+        {(hasSendPointsToRedeem || hasSuilendCapsulesToRedeem) && (
+          <div className="flex w-full flex-row items-center justify-between gap-4">
+            <TBodySans className="text-muted-foreground">
+              Redemption ends in
+            </TBodySans>
 
-          <div className="flex flex-row items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <Tooltip
-              title={formatDate(
-                new Date(mSEND_REDEMPTION_END_TIMESTAMP_MS),
-                "yyyy-MM-dd HH:mm:ss",
-              )}
-            >
-              <TBody
-                className={cn(
-                  "decoration-foreground/50",
-                  hoverUnderlineClassName,
+            <div className="flex flex-row items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Tooltip
+                title={formatDate(
+                  new Date(mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                  "yyyy-MM-dd HH:mm:ss",
                 )}
               >
-                {formatDuration(redemptionEndsDuration)}
-              </TBody>
-            </Tooltip>
+                <TBody
+                  className={cn(
+                    "decoration-foreground/50",
+                    hoverUnderlineClassName,
+                  )}
+                >
+                  {formatDuration(redemptionEndsDuration)}
+                </TBody>
+              </Tooltip>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <Button
@@ -376,6 +371,7 @@ function ClaimTabContent() {
     mSendBalanceMap,
     userClaimedSendMap,
     refreshUserClaimedSendMap,
+    selectedMsendCoinType,
   } = useLoadedSendContext();
 
   // Deposit sSUI
@@ -396,19 +392,14 @@ function ClaimTabContent() {
 
     const transaction = new Transaction();
     try {
-      await claimSend(
-        suiClient,
-        address,
-        NORMALIZED_BETA_mSEND_COINTYPE, // TODO
-        transaction,
-      );
+      await claimSend(suiClient, address, selectedMsendCoinType, transaction);
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_BETA_SEND_COINTYPE, // TODO
-        ...sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE], // TODO
+        coinType: selectedMsendCoinType,
+        ...sendCoinMetadataMap[selectedMsendCoinType],
       });
 
       toast.success(
@@ -416,7 +407,7 @@ function ClaimTabContent() {
           "Claimed",
           balanceChange !== undefined
             ? formatToken(balanceChange, {
-                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+                dp: sendCoinMetadataMap[selectedMsendCoinType].decimals,
               })
             : null,
           "SEND",
@@ -474,8 +465,8 @@ function ClaimTabContent() {
       >
         <TBody>
           mSEND in wallet:{" "}
-          {formatToken(mSendBalanceMap[NORMALIZED_BETA_mSEND_COINTYPE], {
-            dp: mSendCoinMetadataMap[NORMALIZED_BETA_mSEND_COINTYPE].decimals, // TODO
+          {formatToken(mSendBalanceMap[selectedMsendCoinType], {
+            dp: mSendCoinMetadataMap[selectedMsendCoinType].decimals,
           })}
         </TBody>
 
@@ -498,14 +489,10 @@ function ClaimTabContent() {
               {userClaimedSendMap === undefined ? (
                 <Skeleton className="inline-block h-5 w-16 align-top" />
               ) : (
-                // TODO
-                formatToken(
-                  userClaimedSendMap[NORMALIZED_BETA_mSEND_COINTYPE],
-                  {
-                    dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
-                      .decimals, // TODO
-                  },
-                )
+                formatToken(userClaimedSendMap[selectedMsendCoinType], {
+                  dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
+                    .decimals, // TODO
+                })
               )}
               {" SEND claimed"}
             </TBody>
@@ -529,7 +516,12 @@ export default function ClaimSection({
 }: ClaimSectionProps) {
   const { data } = useLoadedAppContext();
 
-  const { mSendObjectMap, mSendCoinMetadataMap } = useLoadedSendContext();
+  const {
+    mSendObjectMap,
+    mSendCoinMetadataMap,
+    userAllocations,
+    selectedMsendCoinType,
+  } = useLoadedSendContext();
 
   // Allocations
   const sendPointsAllocation = allocations.find(
@@ -545,6 +537,15 @@ export default function ClaimSection({
   // 1) Redeem mSEND
   const minMsendAmount =
     10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
+
+  const hasSendPointsToRedeem =
+    !!sendPointsAllocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasSuilendCapsulesToRedeem =
+    !!suilendCapsulesAllocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasRootletsToRedeem =
+    !!rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
 
   const totalRedeemableMsend = new BigNumber(
     sendPointsAllocation.userEligibleSend ?? 0,
@@ -565,7 +566,7 @@ export default function ClaimSection({
 
   const selectedTab =
     totalRedeemableMsend.gt(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+    (Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS || hasRootletsToRedeem)
       ? Tab.REDEEM
       : Tab.CLAIM;
 
@@ -576,143 +577,155 @@ export default function ClaimSection({
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim">Claim</SectionHeading>
 
-      <Card className="rounded-md">
-        <div className="flex w-full flex-row items-stretch">
-          {tabs.map((tab, index) => (
-            <div
-              key={tab.id}
-              className={cn(
-                "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
-                tab.id === selectedTab
-                  ? "border-b-primary bg-primary/5"
-                  : "pointer-events-none bg-background/50",
-              )}
-            >
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-2.5",
-                  tab.id !== selectedTab && "opacity-50",
-                )}
-              >
-                <div className="flex h-4 w-4 flex-row items-center justify-center rounded-sm bg-primary">
-                  <TLabelSans className="text-foreground">
-                    {index + 1}
-                  </TLabelSans>
-                </div>
-                <TBody>{tab.title}</TBody>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex w-full flex-col gap-6 p-4 pt-6">
-          {selectedTab === Tab.REDEEM && (
-            <RedeemTabContent
-              sendPointsAllocation={sendPointsAllocation}
-              suilendCapsulesAllocation={suilendCapsulesAllocation}
-              rootletsAllocation={rootletsAllocation}
-              totalRedeemableMsend={totalRedeemableMsend}
-              totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
-            />
-          )}
-          {selectedTab === Tab.CLAIM && <ClaimTabContent />}
-        </div>
-      </Card>
-
-      {/* TODO */}
-      {mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].currentPenaltySui.gt(0) && (
-        <div className="flex w-full flex-col gap-4">
-          <TBody className="text-[16px]">PENALTY</TBody>
-
-          <div className="flex w-full flex-col gap-3">
-            {/* Penalty ends in */}
-            {Date.now() <
-              +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE].penaltyEndTimeS *
-                1000 && (
-              <div className="flex w-full flex-row justify-between gap-4">
-                <TBodySans className="text-muted-foreground">
-                  Penalty ends in
-                </TBodySans>
-
-                <div className="flex flex-row items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <Tooltip
-                    title={formatDate(
-                      new Date(
-                        +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                          .penaltyEndTimeS * 1000,
-                      ),
-                      "yyyy-MM-dd HH:mm:ss",
+      {userAllocations === undefined ? (
+        <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
+      ) : (
+        <>
+          <Card className="rounded-md">
+            {/* Tabs */}
+            <div className="flex w-full flex-row items-stretch">
+              {tabs.map((tab, index) => (
+                <div
+                  key={tab.id}
+                  className={cn(
+                    "flex flex-1 flex-row items-center justify-center border-b px-4 py-4",
+                    tab.id === selectedTab
+                      ? "border-b-primary bg-primary/5"
+                      : "pointer-events-none bg-background/50",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-2.5",
+                      tab.id !== selectedTab && "opacity-50",
                     )}
                   >
-                    <TBody
-                      className={cn(
-                        "decoration-foreground/50",
-                        hoverUnderlineClassName,
-                      )}
-                    >
-                      {formatDuration(
-                        intervalToDuration({
-                          start: Date.now(),
-                          end: new Date(
-                            +mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                              .penaltyEndTimeS * 1000,
-                          ),
-                        }),
-                      )}
-                    </TBody>
-                  </Tooltip>
+                    <div className="flex h-4 w-4 flex-row items-center justify-center rounded-sm bg-primary">
+                      <TLabelSans className="text-foreground">
+                        {index + 1}
+                      </TLabelSans>
+                    </div>
+                    <TBody>{tab.title}</TBody>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            <div className="flex w-full flex-col gap-6 p-4 pt-6">
+              {selectedTab === Tab.REDEEM && (
+                <RedeemTabContent
+                  sendPointsAllocation={sendPointsAllocation}
+                  rootletsAllocation={rootletsAllocation}
+                  hasSendPointsToRedeem={hasSendPointsToRedeem}
+                  hasSuilendCapsulesToRedeem={hasSuilendCapsulesToRedeem}
+                  hasRootletsToRedeem={hasRootletsToRedeem}
+                  totalRedeemableMsend={totalRedeemableMsend}
+                  totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
+                />
+              )}
+              {selectedTab === Tab.CLAIM && <ClaimTabContent />}
+            </div>
+          </Card>
+
+          {selectedTab === Tab.CLAIM &&
+            mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) && (
+              <div className="flex w-full flex-col gap-4">
+                <TBody className="text-[16px]">PENALTY</TBody>
+
+                <div className="flex w-full flex-col gap-3">
+                  {/* Penalty ends in */}
+                  {Date.now() <
+                    +mSendObjectMap[selectedMsendCoinType].penaltyEndTimeS *
+                      1000 && (
+                    <div className="flex w-full flex-row justify-between gap-4">
+                      <TBodySans className="text-muted-foreground">
+                        Penalty ends in
+                      </TBodySans>
+
+                      <div className="flex flex-row items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <Tooltip
+                          title={formatDate(
+                            new Date(
+                              +mSendObjectMap[selectedMsendCoinType]
+                                .penaltyEndTimeS * 1000,
+                            ),
+                            "yyyy-MM-dd HH:mm:ss",
+                          )}
+                        >
+                          <TBody
+                            className={cn(
+                              "decoration-foreground/50",
+                              hoverUnderlineClassName,
+                            )}
+                          >
+                            {formatDuration(
+                              intervalToDuration({
+                                start: Date.now(),
+                                end: new Date(
+                                  +mSendObjectMap[selectedMsendCoinType]
+                                    .penaltyEndTimeS * 1000,
+                                ),
+                              }),
+                            )}
+                          </TBody>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Current penalty */}
+                  <div className="flex w-full flex-row justify-between gap-4">
+                    <TBodySans className="text-muted-foreground">
+                      Current penalty
+                    </TBodySans>
+
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-row items-center gap-2">
+                        <TokenLogo
+                          className="h-4 w-4"
+                          token={suiReserve.token}
+                        />
+                        <TBody>
+                          <Tooltip
+                            title={`${formatToken(
+                              mSendObjectMap[selectedMsendCoinType]
+                                .currentPenaltySui,
+                              { dp: SUI_DECIMALS },
+                            )} SUI`}
+                          >
+                            <span
+                              className={cn(
+                                "decoration-foreground/50",
+                                hoverUnderlineClassName,
+                              )}
+                            >
+                              {formatToken(
+                                mSendObjectMap[selectedMsendCoinType]
+                                  .currentPenaltySui,
+                              )}
+                              {" SUI"}
+                            </span>
+                          </Tooltip>
+                          {" / SEND"}
+                        </TBody>
+                      </div>
+                      <TLabel>
+                        {formatUsd(
+                          mSendObjectMap[
+                            selectedMsendCoinType
+                          ].currentPenaltySui.times(suiReserve.price),
+                        )}
+                        {" / SEND"}
+                      </TLabel>
+                    </div>
+                  </div>
+                </div>
+
+                <PenaltyLineChart mSendCoinType={selectedMsendCoinType} />
               </div>
             )}
-
-            {/* Current penalty */}
-            <div className="flex w-full flex-row justify-between gap-4">
-              <TBodySans className="text-muted-foreground">
-                Current penalty
-              </TBodySans>
-
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex flex-row items-center gap-2">
-                  <TokenLogo className="h-4 w-4" token={suiReserve.token} />
-                  <TBody>
-                    <Tooltip
-                      title={`${formatToken(
-                        mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                          .currentPenaltySui,
-                        { dp: SUI_DECIMALS },
-                      )} SUI`}
-                    >
-                      <span
-                        className={cn(
-                          "decoration-foreground/50",
-                          hoverUnderlineClassName,
-                        )}
-                      >
-                        {formatToken(
-                          mSendObjectMap[NORMALIZED_mSEND_3M_COINTYPE]
-                            .currentPenaltySui,
-                        )}
-                        {" SUI"}
-                      </span>
-                    </Tooltip>
-                    {" / SEND"}
-                  </TBody>
-                </div>
-                <TLabel>
-                  {formatUsd(
-                    mSendObjectMap[
-                      NORMALIZED_mSEND_3M_COINTYPE
-                    ].currentPenaltySui.times(suiReserve.price),
-                  )}
-                  {" / SEND"}
-                </TLabel>
-              </div>
-            </div>
-          </div>
-
-          <PenaltyLineChart mSendCoinType={NORMALIZED_mSEND_3M_COINTYPE} />
-        </div>
+        </>
       )}
     </div>
   );
