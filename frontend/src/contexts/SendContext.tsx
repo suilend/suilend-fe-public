@@ -45,6 +45,7 @@ import { getPointsStats } from "@/lib/points";
 import {
   BURN_SEND_POINTS_EVENT_TYPE,
   BURN_SUILEND_CAPSULES_EVENT_TYPE,
+  BluefinLeague,
   MsendObject,
   REDEEM_SEND_EVENT_TYPE,
   ROOTLETS_TYPE,
@@ -73,7 +74,8 @@ import bluefinLeaguesBlackJson from "../pages/send/trading/bluefin-leagues-black
 import bluefinLeaguesGoldJson from "../pages/send/trading/bluefin-leagues-gold.json";
 import bluefinLeaguesPlatinumJson from "../pages/send/trading/bluefin-leagues-platinum.json";
 import bluefinLeaguesSapphireJson from "../pages/send/trading/bluefin-leagues-sapphire.json";
-import bluefinSendTradersJson from "../pages/send/trading/bluefin-send-traders.json";
+import bluefinSendTradersMakersJson from "../pages/send/trading/bluefin-send-traders-makers.json";
+import bluefinSendTradersTakersJson from "../pages/send/trading/bluefin-send-traders-takers.json";
 
 interface SendContext {
   mSendObjectMap: Record<string, MsendObject> | undefined;
@@ -99,8 +101,11 @@ interface SendContext {
           msendOwning: BigNumber;
           redeemedMsend: BigNumber;
         };
-        bluefinLeagues: { isInSnapshot: boolean };
-        bluefinSendTraders: { volumeUsd: BigNumber | undefined };
+        bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
+        bluefinSendTraders: {
+          makerVolumeUsd: BigNumber;
+          takerVolumeUsd: BigNumber;
+        };
         primeMachin: { owned: BigNumber };
         egg: { owned: BigNumber };
         doubleUpCitizen: { owned: BigNumber };
@@ -687,21 +692,23 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Bluefin Leagues
-    const isInBluefinLeaguesSnapshot =
-      bluefinLeaguesGoldJson.includes(address) ||
-      bluefinLeaguesPlatinumJson.includes(address) ||
-      bluefinLeaguesBlackJson.includes(address) ||
-      bluefinLeaguesSapphireJson.includes(address);
+    const isInBluefinLeaguesSnapshot = bluefinLeaguesGoldJson.includes(address)
+      ? BluefinLeague.GOLD
+      : bluefinLeaguesPlatinumJson.includes(address)
+        ? BluefinLeague.PLATINUM
+        : bluefinLeaguesBlackJson.includes(address)
+          ? BluefinLeague.BLACK
+          : bluefinLeaguesSapphireJson.includes(address)
+            ? BluefinLeague.SAPPHIRE
+            : false;
 
     // Bluefin SEND Traders
-    const bluefinSendTradersVolumeUsd = (() => {
-      if (Object.keys(bluefinSendTradersJson).length > 0)
-        return new BigNumber(
-          (bluefinSendTradersJson as Record<string, number>)[address] ?? 0,
-        );
-
-      return undefined;
-    })();
+    const bluefinSendTradersMakerVolumeUsd = new BigNumber(
+      (bluefinSendTradersMakersJson as Record<string, number>)[address] ?? 0,
+    );
+    const bluefinSendTradersTakerVolumeUsd = new BigNumber(
+      (bluefinSendTradersTakersJson as Record<string, number>)[address] ?? 0,
+    );
 
     // Prime Machin
     const ownedPrimeMachin = new BigNumber(
@@ -760,7 +767,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         redeemedMsend: redeemedRootletsMsend,
       },
       bluefinLeagues: { isInSnapshot: isInBluefinLeaguesSnapshot },
-      bluefinSendTraders: { volumeUsd: bluefinSendTradersVolumeUsd },
+      bluefinSendTraders: {
+        makerVolumeUsd: bluefinSendTradersMakerVolumeUsd,
+        takerVolumeUsd: bluefinSendTradersTakerVolumeUsd,
+      },
       primeMachin: { owned: ownedPrimeMachin },
       egg: { owned: ownedEgg },
       doubleUpCitizen: { owned: ownedDoubleUpCitizen },
