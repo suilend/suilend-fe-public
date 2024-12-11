@@ -18,7 +18,7 @@ export default function TotalPointsStat({
   return (
     <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
       <TLabelSans className={cn(isCentered && "text-center")}>
-        Total SEND Points
+        Total Points
       </TLabelSans>
 
       <PointsCount season={season} amount={amount} />

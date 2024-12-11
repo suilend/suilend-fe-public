@@ -75,17 +75,17 @@ export default function Points() {
             style={{ borderColor: seasonMap[+selectedTab].color }}
           >
             <div className="flex flex-row items-center justify-between gap-4">
-              <RankStat
+              <TotalPointsStat
                 season={+selectedTab}
-                rank={addressRow === null ? null : addressRow?.rank}
+                amount={addressRow === null ? null : addressRow?.totalPoints}
               />
               <PointsPerDayStat
                 season={+selectedTab}
                 amount={addressRow === null ? null : addressRow?.pointsPerDay}
               />
-              <TotalPointsStat
+              <RankStat
                 season={+selectedTab}
-                amount={addressRow === null ? null : addressRow?.totalPoints}
+                rank={addressRow === null ? null : addressRow?.rank}
               />
             </div>
           </Card>

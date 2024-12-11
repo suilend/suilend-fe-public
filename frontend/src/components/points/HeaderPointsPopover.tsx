@@ -67,7 +67,7 @@ export default function PointsCountPopover() {
 
         <div className="flex w-full flex-col gap-2">
           <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>Total SEND Points</TLabelSans>
+            <TLabelSans>Total Points</TLabelSans>
             <PointsCount
               season={season}
               amount={pointsStats?.totalPoints.total}
@@ -75,7 +75,7 @@ export default function PointsCountPopover() {
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>SEND Points per day</TLabelSans>
+            <TLabelSans>Points per day</TLabelSans>
             <PointsCount
               season={season}
               amount={pointsStats?.pointsPerDay.total}

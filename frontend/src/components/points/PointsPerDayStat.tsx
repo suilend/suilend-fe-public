@@ -25,7 +25,7 @@ export default function PointsPerDayStat({
   return (
     <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
       <TLabelSans className={cn(isCentered && "text-center")}>
-        SEND Points per day
+        Points per day
       </TLabelSans>
 
       <PointsCount
