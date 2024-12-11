@@ -62,8 +62,10 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface RedeemTabContentProps {
   sendPointsAllocation: Allocation;
-  suilendCapsulesAllocation: Allocation;
   rootletsAllocation: Allocation;
+  hasSendPointsToRedeem: boolean;
+  hasSuilendCapsulesToRedeem: boolean;
+  hasRootletsToRedeem: boolean;
   totalRedeemableMsend: BigNumber;
   totalAllocationBreakdownMaps: {
     suilendCapsules: Record<SuilendCapsuleRarity, { percent: BigNumber }>;
@@ -72,8 +74,10 @@ interface RedeemTabContentProps {
 
 function RedeemTabContent({
   sendPointsAllocation,
-  suilendCapsulesAllocation,
   rootletsAllocation,
+  hasSendPointsToRedeem,
+  hasSuilendCapsulesToRedeem,
+  hasRootletsToRedeem,
   totalRedeemableMsend,
   totalAllocationBreakdownMaps,
 }: RedeemTabContentProps) {
@@ -90,19 +94,6 @@ function RedeemTabContent({
   } = useLoadedSendContext();
   const userAllocations = restLoadedSendContext.userAllocations!;
 
-  // Items
-  const minMsendAmount =
-    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
-
-  const hasSendPointsItem =
-    sendPointsAllocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
-  const hasSuilendCapsulesItem =
-    suilendCapsulesAllocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
-  const hasRootletsItem =
-    rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
-
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
     start: Date.now(),
@@ -116,11 +107,11 @@ function RedeemTabContent({
 
     const transaction = new Transaction();
     try {
-      if (hasSendPointsItem)
+      if (hasSendPointsToRedeem)
         await redeemSendPointsMsend(suilendClient, data, address, transaction);
-      if (hasSuilendCapsulesItem)
+      if (hasSuilendCapsulesToRedeem)
         await redeemSuilendCapsulesMsend(suiClient, address, transaction);
-      if (hasRootletsItem)
+      if (hasRootletsToRedeem)
         await redeemRootletsMsend(
           suiClient,
           kioskClient,
@@ -174,7 +165,7 @@ function RedeemTabContent({
           {/* Items */}
           <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
             {/* SEND Points */}
-            {hasSendPointsItem && (
+            {hasSendPointsToRedeem && (
               <>
                 <div className="flex w-full flex-row items-center justify-between gap-4">
                   <div className="flex flex-row items-center gap-3">
@@ -205,12 +196,14 @@ function RedeemTabContent({
                   </div>
                 </div>
 
-                {(hasSuilendCapsulesItem || hasRootletsItem) && <Separator />}
+                {(hasSuilendCapsulesToRedeem || hasRootletsToRedeem) && (
+                  <Separator />
+                )}
               </>
             )}
 
             {/* Suilend Capsules */}
-            {hasSuilendCapsulesItem && (
+            {hasSuilendCapsulesToRedeem && (
               <>
                 {Object.entries(userAllocations.suilendCapsules.ownedMap)
                   .filter(([rarity, owned]) => owned.gt(0))
@@ -254,12 +247,12 @@ function RedeemTabContent({
                     </Fragment>
                   ))}
 
-                {hasRootletsItem && <Separator />}
+                {hasRootletsToRedeem && <Separator />}
               </>
             )}
 
             {/* Rootlets */}
-            {hasRootletsItem && (
+            {hasRootletsToRedeem && (
               <>
                 <div className="flex w-full flex-row items-center justify-between gap-4">
                   <div className="flex flex-row items-center gap-3">
@@ -327,7 +320,7 @@ function RedeemTabContent({
         </div>
 
         {/* Redemption ends in */}
-        {(hasSendPointsItem || hasSuilendCapsulesItem) && (
+        {(hasSendPointsToRedeem || hasSuilendCapsulesToRedeem) && (
           <div className="flex w-full flex-row items-center justify-between gap-4">
             <TBodySans className="text-muted-foreground">
               Redemption ends in
@@ -545,6 +538,15 @@ export default function ClaimSection({
   const minMsendAmount =
     10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
 
+  const hasSendPointsToRedeem =
+    !!sendPointsAllocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasSuilendCapsulesToRedeem =
+    !!suilendCapsulesAllocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasRootletsToRedeem =
+    !!rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
+
   const totalRedeemableMsend = new BigNumber(
     sendPointsAllocation.userEligibleSend ?? 0,
   )
@@ -562,10 +564,9 @@ export default function ClaimSection({
     { id: Tab.CLAIM, title: "CLAIM SEND" },
   ];
 
-  // TODO: To fix, as this will prevent Rootlets from being redeemed 1 year after TGE
   const selectedTab =
     totalRedeemableMsend.gt(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+    (Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS || hasRootletsToRedeem)
       ? Tab.REDEEM
       : Tab.CLAIM;
 
@@ -614,8 +615,10 @@ export default function ClaimSection({
               {selectedTab === Tab.REDEEM && (
                 <RedeemTabContent
                   sendPointsAllocation={sendPointsAllocation}
-                  suilendCapsulesAllocation={suilendCapsulesAllocation}
                   rootletsAllocation={rootletsAllocation}
+                  hasSendPointsToRedeem={hasSendPointsToRedeem}
+                  hasSuilendCapsulesToRedeem={hasSuilendCapsulesToRedeem}
+                  hasRootletsToRedeem={hasRootletsToRedeem}
                   totalRedeemableMsend={totalRedeemableMsend}
                   totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
                 />
