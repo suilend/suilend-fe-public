@@ -248,7 +248,7 @@ export const redeemSuilendCapsulesMsend = async (
 export const redeemRootletsMsend = async (
   suiClient: SuiClient,
   kioskClient: KioskClient,
-  ownedKiosksWithKioskOwnerCaps: {
+  ownedKiosks: {
     kiosk: KioskData;
     kioskOwnerCap: KioskOwnerCap;
   }[],
@@ -261,10 +261,7 @@ export const redeemRootletsMsend = async (
 
   const mSendCoins = [];
 
-  for (const {
-    kiosk,
-    kioskOwnerCap: personalKioskOwnerCap,
-  } of ownedKiosksWithKioskOwnerCaps) {
+  for (const { kiosk, kioskOwnerCap: personalKioskOwnerCap } of ownedKiosks) {
     const kioskItems = kiosk.items.filter(
       (item) => item.type === ROOTLETS_TYPE && !item.listing,
     );

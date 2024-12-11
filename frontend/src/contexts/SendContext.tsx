@@ -5,6 +5,8 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 
 import {
@@ -22,7 +24,6 @@ import {
 } from "@mysten/sui/client";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import useSWR from "swr";
 
 import {
   NORMALIZED_BETA_SEND_COINTYPE,
@@ -83,9 +84,7 @@ interface SendContext {
   mSendBalanceMap: Record<string, BigNumber>;
 
   kioskClient: KioskClient;
-  ownedKiosksWithKioskOwnerCaps:
-    | { kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[]
-    | undefined;
+  ownedKiosks: { kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[] | undefined;
   userAllocations:
     | {
         earlyUsers: { isInSnapshot: boolean };
@@ -137,7 +136,7 @@ const SendContext = createContext<SendContext>({
     client: new SuiClient({ url: getFullnodeUrl("mainnet") }),
     network: Network.MAINNET,
   }),
-  ownedKiosksWithKioskOwnerCaps: undefined,
+  ownedKiosks: undefined,
   userAllocations: undefined,
   refreshUserAllocations: async () => {
     throw Error("SendContextProvider not initialized");
@@ -157,84 +156,89 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { data, getBalance } = useLoadedAppContext();
 
-  // mSend object map
-  const mSendObjectMapFetcher = async () => {
-    const mSendManagerObjectIds = NORMALIZED_mSEND_COINTYPES.map(
-      (coinType) => mSEND_COINTYPE_MANAGER_MAP[coinType],
-    );
-    const objs = await Promise.all(
-      mSendManagerObjectIds.map((objectId) =>
-        suiClient.getObject({
-          id: objectId,
-          options: {
-            showContent: true,
-          },
-        }),
-      ),
-    );
-
-    const result: Record<string, MsendObject> = {};
-    for (let i = 0; i < NORMALIZED_mSEND_COINTYPES.length; i++) {
-      const obj = objs[i];
-
-      const penaltyStartTimeS = new BigNumber(
-        (obj.data?.content as any).fields.start_time_s,
-      );
-      const penaltyEndTimeS = new BigNumber(
-        (obj.data?.content as any).fields.end_time_s,
-      );
-
-      const startPenaltySui = new BigNumber(
-        (obj.data?.content as any).fields.start_penalty_numerator,
-      ).div((obj.data?.content as any).fields.penalty_denominator);
-      const endPenaltySui = new BigNumber(
-        (obj.data?.content as any).fields.end_penalty_numerator,
-      ).div((obj.data?.content as any).fields.penalty_denominator);
-
-      const currentTimeS = Date.now() / 1000;
-      const timeWeight = new BigNumber(penaltyEndTimeS.minus(currentTimeS)).div(
-        penaltyEndTimeS.minus(penaltyStartTimeS),
-      );
-
-      const currentPenaltySui = penaltyEndTimeS.gt(currentTimeS)
-        ? new BigNumber(startPenaltySui.times(timeWeight)).plus(
-            endPenaltySui.times(new BigNumber(1).minus(timeWeight)),
-          )
-        : endPenaltySui;
-
-      result[NORMALIZED_mSEND_COINTYPES[i]] = {
-        penaltyStartTimeS,
-        penaltyEndTimeS,
-
-        startPenaltySui: new BigNumber(1)
-          .times(10 ** 6)
-          .times(startPenaltySui)
-          .div(10 ** SUI_DECIMALS),
-        endPenaltySui: new BigNumber(1)
-          .times(10 ** 6)
-          .times(endPenaltySui)
-          .div(10 ** SUI_DECIMALS),
-        currentPenaltySui: new BigNumber(1)
-          .times(10 ** 6)
-          .times(currentPenaltySui)
-          .div(10 ** SUI_DECIMALS),
-      };
-    }
-
-    return result;
-  };
-
-  const { data: mSendObjectMap, mutate: mutateSendObjectMap } = useSWR<
+  // mSEND object map
+  const [mSendObjectMap, setMsendObjectMap] = useState<
     Record<string, MsendObject> | undefined
-  >("mSendObjectMap", mSendObjectMapFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed mSendObjectMap", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh mSendObjectMap", err);
-    },
-  });
-  console.log("XXXX mSendObjectMap", mSendObjectMap);
+  >(undefined);
+
+  const isFetchingMsendObjectMapRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (isFetchingMsendObjectMapRef.current) return;
+    isFetchingMsendObjectMapRef.current = true;
+
+    console.log("Fetching mSendObjectMap");
+
+    (async () => {
+      try {
+        const mSendManagerObjectIds = NORMALIZED_mSEND_COINTYPES.map(
+          (coinType) => mSEND_COINTYPE_MANAGER_MAP[coinType],
+        );
+        const objs = await Promise.all(
+          mSendManagerObjectIds.map((objectId) =>
+            suiClient.getObject({
+              id: objectId,
+              options: {
+                showContent: true,
+              },
+            }),
+          ),
+        );
+
+        const result: Record<string, MsendObject> = {};
+        for (let i = 0; i < NORMALIZED_mSEND_COINTYPES.length; i++) {
+          const obj = objs[i];
+
+          const penaltyStartTimeS = new BigNumber(
+            (obj.data?.content as any).fields.start_time_s,
+          );
+          const penaltyEndTimeS = new BigNumber(
+            (obj.data?.content as any).fields.end_time_s,
+          );
+
+          const startPenaltySui = new BigNumber(
+            (obj.data?.content as any).fields.start_penalty_numerator,
+          ).div((obj.data?.content as any).fields.penalty_denominator);
+          const endPenaltySui = new BigNumber(
+            (obj.data?.content as any).fields.end_penalty_numerator,
+          ).div((obj.data?.content as any).fields.penalty_denominator);
+
+          const currentTimeS = Date.now() / 1000;
+          const timeWeight = new BigNumber(
+            penaltyEndTimeS.minus(currentTimeS),
+          ).div(penaltyEndTimeS.minus(penaltyStartTimeS));
+
+          const currentPenaltySui = penaltyEndTimeS.gt(currentTimeS)
+            ? new BigNumber(startPenaltySui.times(timeWeight)).plus(
+                endPenaltySui.times(new BigNumber(1).minus(timeWeight)),
+              )
+            : endPenaltySui;
+
+          result[NORMALIZED_mSEND_COINTYPES[i]] = {
+            penaltyStartTimeS,
+            penaltyEndTimeS,
+
+            startPenaltySui: new BigNumber(1)
+              .times(10 ** 6)
+              .times(startPenaltySui)
+              .div(10 ** SUI_DECIMALS),
+            endPenaltySui: new BigNumber(1)
+              .times(10 ** 6)
+              .times(endPenaltySui)
+              .div(10 ** SUI_DECIMALS),
+            currentPenaltySui: new BigNumber(1)
+              .times(10 ** 6)
+              .times(currentPenaltySui)
+              .div(10 ** SUI_DECIMALS),
+          };
+        }
+
+        setMsendObjectMap(result);
+        console.log("Fetched mSendObjectMap", result);
+      } catch (err) {
+        console.error("Failed to fetch mSendObjectMap", err);
+      }
+    })();
+  }, [suiClient]);
 
   // CoinMetadata
   const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
@@ -242,12 +246,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     NORMALIZED_SEND_COINTYPE,
     NORMALIZED_BETA_SEND_COINTYPE, // TODO
   ]);
-  console.log(
-    "XXXX mSendCoinMetadataMap:",
-    mSendCoinMetadataMap,
-    "sendCoinMetadataMap:",
-    sendCoinMetadataMap,
-  );
 
   // Balances
   const mSendBalanceMap = useMemo(
@@ -260,45 +258,60 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   );
 
   // User - Transactions since TGE
-  const transactionsSinceTgeFetcher = async () => {
-    if (!address) return undefined;
-
-    const userTransactions = await Promise.all([
-      queryTransactionBlocksAfter(
-        suiClient,
-        { FromAddress: address },
-        TGE_TIMESTAMP_MS,
-      ),
-      queryTransactionBlocksAfter(
-        suiClient,
-        { ToAddress: address },
-        TGE_TIMESTAMP_MS,
-      ),
-    ]);
-
-    return { from: userTransactions[0], to: userTransactions[1] };
-  };
-
-  const { data: transactionsSinceTge, mutate: mutateTransactionsSinceTge } =
-    useSWR<
+  const [transactionsSinceTgeMap, setTransactionsSinceTgeMap] = useState<
+    Record<
+      string,
       | {
           from: SuiTransactionBlockResponse[];
           to: SuiTransactionBlockResponse[];
         }
       | undefined
-    >(`transactionsSinceTge-${address}`, transactionsSinceTgeFetcher, {
-      onSuccess: (data) => {
-        console.log("Refreshed transactionsSinceTge", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh transactionsSinceTge", err);
-      },
-    });
-  console.log("XXXX transactionsSinceTge", transactionsSinceTge);
+    >
+  >({});
 
+  const fetchTransactionsSinceTge = useCallback(
+    async (_address: string) => {
+      console.log("Fetching transactionsSinceTge", _address);
+
+      try {
+        const userTransactions = await Promise.all([
+          queryTransactionBlocksAfter(
+            suiClient,
+            { FromAddress: _address },
+            TGE_TIMESTAMP_MS,
+          ),
+          queryTransactionBlocksAfter(
+            suiClient,
+            { ToAddress: _address },
+            TGE_TIMESTAMP_MS,
+          ),
+        ]);
+
+        const result = { from: userTransactions[0], to: userTransactions[1] };
+
+        setTransactionsSinceTgeMap((prev) => ({ ...prev, [_address]: result }));
+        console.log("Fetched transactionsSinceTge", _address, result);
+      } catch (err) {
+        console.error("Failed to fetch transactionsSinceTge", err);
+      }
+    },
+    [suiClient],
+  );
+
+  const isFetchingTransactionsSinceTgeRef = useRef<string[]>([]);
   useEffect(() => {
-    mutateTransactionsSinceTge();
-  }, [mutateTransactionsSinceTge, address, suiClient]);
+    if (!address) return;
+
+    if (isFetchingTransactionsSinceTgeRef.current.includes(address)) return;
+    isFetchingTransactionsSinceTgeRef.current.push(address);
+
+    fetchTransactionsSinceTge(address);
+  }, [address, fetchTransactionsSinceTge]);
+
+  const transactionsSinceTge = useMemo(
+    () => (!address ? undefined : transactionsSinceTgeMap[address]),
+    [address, transactionsSinceTgeMap],
+  );
 
   // User - Kiosks
   const kioskClient = useMemo(
@@ -306,70 +319,226 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     [suiClient],
   );
 
-  const ownedKiosksWithKioskOwnerCapsFetcher = async () => {
-    if (!address) return undefined;
+  const [ownedKiosksMap, setOwnedKiosksMap] = useState<
+    Record<
+      string,
+      { kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[] | undefined
+    >
+  >({});
 
-    const allKioskOwnerCaps = [];
-    let cursor = undefined;
-    let hasNextPage = true;
-    while (hasNextPage) {
-      const kiosks = await kioskClient.getOwnedKiosks({
-        address: address,
-        pagination: {
-          cursor,
-        },
-      });
+  const fetchOwnedKiosks = useCallback(
+    async (_address: string) => {
+      console.log("Fetching ownedKiosks", _address);
 
-      allKioskOwnerCaps.push(...kiosks.kioskOwnerCaps);
-      cursor = kiosks.nextCursor ?? undefined;
-      hasNextPage = kiosks.hasNextPage;
-    }
+      try {
+        const allKioskOwnerCaps = [];
+        let cursor = undefined;
+        let hasNextPage = true;
+        while (hasNextPage) {
+          const kiosks = await kioskClient.getOwnedKiosks({
+            address: _address,
+            pagination: {
+              cursor,
+            },
+          });
 
-    const allKiosksWithKioskOwnerCaps = await Promise.all(
-      allKioskOwnerCaps
-        .filter((kioskOwnerCap) => kioskOwnerCap.isPersonal)
-        .map((kioskOwnerCap) =>
-          (async () => {
-            const kiosk = await kioskClient.getKiosk({
-              id: kioskOwnerCap.kioskId,
-            });
+          allKioskOwnerCaps.push(...kiosks.kioskOwnerCaps);
+          cursor = kiosks.nextCursor ?? undefined;
+          hasNextPage = kiosks.hasNextPage;
+        }
 
-            return { kiosk, kioskOwnerCap };
-          })(),
-        ),
-    );
+        const result = await Promise.all(
+          allKioskOwnerCaps
+            .filter((kioskOwnerCap) => kioskOwnerCap.isPersonal)
+            .map((kioskOwnerCap) =>
+              (async () => {
+                const kiosk = await kioskClient.getKiosk({
+                  id: kioskOwnerCap.kioskId,
+                });
 
-    return allKiosksWithKioskOwnerCaps;
-  };
+                return { kiosk, kioskOwnerCap };
+              })(),
+            ),
+        );
 
-  const {
-    data: ownedKiosksWithKioskOwnerCaps,
-    mutate: mutateOwnedKiosksWithKioskOwnerCaps,
-  } = useSWR<{ kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[] | undefined>(
-    `ownedKiosksWithKioskOwnerCaps-${address}`,
-    ownedKiosksWithKioskOwnerCapsFetcher,
-    {
-      onSuccess: (data) => {
-        console.log("Refreshed ownedKiosksWithKioskOwnerCaps", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh ownedKiosksWithKioskOwnerCaps", err);
-      },
+        setOwnedKiosksMap((prev) => ({ ...prev, [_address]: result }));
+        console.log("Fetched ownedKiosks", _address, result);
+
+        return result; // Used when fetching mSEND-owning Rootlets
+      } catch (err) {
+        console.error("Failed to fetch ownedKiosks", err);
+      }
     },
+    [kioskClient],
   );
 
+  const isFetchingOwnedKiosksRef = useRef<string[]>([]);
   useEffect(() => {
-    mutateOwnedKiosksWithKioskOwnerCaps();
-  }, [mutateOwnedKiosksWithKioskOwnerCaps, address, kioskClient]);
+    if (!address) return;
+
+    if (isFetchingOwnedKiosksRef.current.includes(address)) return;
+    isFetchingOwnedKiosksRef.current.push(address);
+
+    fetchOwnedKiosks(address);
+  }, [address, fetchOwnedKiosks]);
+
+  const ownedKiosks = useMemo(
+    () => (!address ? undefined : ownedKiosksMap[address]),
+    [address, ownedKiosksMap],
+  );
+
+  // User - Suilend Capsules
+  const [ownedSuilendCapsulesMapMap, setOwnedSuilendCapsulesMapMap] = useState<
+    Record<string, Record<SuilendCapsuleRarity, BigNumber>>
+  >({});
+
+  const fetchOwnedSuilendCapsulesMap = useCallback(
+    async (_address: string) => {
+      console.log("Fetching ownedSuilendCapsulesMap", _address);
+
+      try {
+        const objs = await getOwnedObjectsOfType(
+          suiClient,
+          _address,
+          SUILEND_CAPSULE_TYPE,
+        );
+
+        const result = {
+          [SuilendCapsuleRarity.COMMON]: new BigNumber(
+            objs.filter(
+              (obj) =>
+                (obj.data?.content as any).fields.rarity ===
+                SuilendCapsuleRarity.COMMON,
+            ).length,
+          ),
+          [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
+            objs.filter(
+              (obj) =>
+                (obj.data?.content as any).fields.rarity ===
+                SuilendCapsuleRarity.UNCOMMON,
+            ).length,
+          ),
+          [SuilendCapsuleRarity.RARE]: new BigNumber(
+            objs.filter(
+              (obj) =>
+                (obj.data?.content as any).fields.rarity ===
+                SuilendCapsuleRarity.RARE,
+            ).length,
+          ),
+        };
+
+        setOwnedSuilendCapsulesMapMap((prev) => ({
+          ...prev,
+          [_address]: result,
+        }));
+        console.log("Fetched ownedSuilendCapsulesMap", _address, result);
+      } catch (err) {
+        console.error("Failed to fetch ownedSuilendCapsulesMap", err);
+      }
+    },
+    [suiClient],
+  );
+
+  const isFetchingOwnedSuilendCapsulesMapRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!address) return;
+
+    if (isFetchingOwnedSuilendCapsulesMapRef.current.includes(address)) return;
+    isFetchingOwnedSuilendCapsulesMapRef.current.push(address);
+
+    fetchOwnedSuilendCapsulesMap(address);
+  }, [address, fetchOwnedSuilendCapsulesMap]);
+
+  const ownedSuilendCapsulesMap = useMemo(
+    () => (!address ? undefined : ownedSuilendCapsulesMapMap[address]),
+    [address, ownedSuilendCapsulesMapMap],
+  );
+
+  // User - Rootlets
+  const [mSendOwningRootletsMap, setMsendOwningRootletsMap] = useState<
+    Record<string, BigNumber>
+  >({});
+
+  const fetchMsendOwningRootlets = useCallback(
+    async (
+      _address: string,
+      _mSendCoinMetadataMap: Record<string, CoinMetadata>,
+      _ownedKiosks: {
+        kiosk: KioskData;
+        kioskOwnerCap: KioskOwnerCap;
+      }[],
+    ) => {
+      console.log("Fetching mSendOwningRootlets", _address);
+
+      try {
+        const rootletsObjectIds = _ownedKiosks
+          .reduce(
+            (acc, { kiosk }) => [
+              ...acc,
+              ...kiosk.items.filter(
+                (item) => item.type === ROOTLETS_TYPE && !item.listing,
+              ),
+            ],
+            [] as KioskItem[],
+          )
+          .map((item) => item.objectId);
+
+        let result = new BigNumber(0);
+        for (const rootletsObjectId of rootletsObjectIds) {
+          const objs = await getOwnedObjectsOfType(
+            suiClient,
+            rootletsObjectId,
+            `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
+          );
+
+          const ownedMsend = objs.reduce(
+            (acc, obj) =>
+              acc.plus(
+                new BigNumber((obj.data?.content as any).fields.balance).div(
+                  10 **
+                    _mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
+                      .decimals,
+                ),
+              ),
+            new BigNumber(0),
+          );
+          if (ownedMsend.gt(0)) result = result.plus(1);
+        }
+
+        setMsendOwningRootletsMap((prev) => ({ ...prev, [_address]: result }));
+        console.log("Fetched mSendOwningRootlets", _address, result);
+      } catch (err) {
+        console.error("Failed to fetch mSendOwningRootlets", err);
+      }
+    },
+    [suiClient],
+  );
+
+  const isFetchingMsendOwningRootletsRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!address) return;
+
+    if (!mSendCoinMetadataMap) return;
+    if (!ownedKiosks) return;
+
+    if (isFetchingMsendOwningRootletsRef.current.includes(address)) return;
+    isFetchingMsendOwningRootletsRef.current.push(address);
+
+    fetchMsendOwningRootlets(address, mSendCoinMetadataMap, ownedKiosks);
+  }, [address, mSendCoinMetadataMap, ownedKiosks, fetchMsendOwningRootlets]);
+
+  const mSendOwningRootlets = useMemo(
+    () => (!address ? undefined : mSendOwningRootletsMap[address]),
+    [address, mSendOwningRootletsMap],
+  );
 
   // User - Allocations
-  const userAllocationsFetcher = async () => {
+  const userAllocations = useMemo(() => {
     if (!address) return undefined;
 
-    if (mSendCoinMetadataMap === undefined || sendCoinMetadataMap === undefined)
-      return undefined;
+    if (!mSendCoinMetadataMap || !sendCoinMetadataMap) return undefined;
     if (transactionsSinceTge === undefined) return undefined;
-    if (ownedKiosksWithKioskOwnerCaps === undefined) return undefined;
+    if (ownedKiosks === undefined) return undefined;
 
     // Early Users
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
@@ -402,38 +571,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Suilend Capsules
-    const ownedSuilendCapsulesMap = await (async () => {
-      const objs = await getOwnedObjectsOfType(
-        suiClient,
-        address,
-        SUILEND_CAPSULE_TYPE,
-      );
-
-      return {
-        [SuilendCapsuleRarity.COMMON]: new BigNumber(
-          objs.filter(
-            (obj) =>
-              (obj.data?.content as any).fields.rarity ===
-              SuilendCapsuleRarity.COMMON,
-          ).length,
-        ),
-        [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
-          objs.filter(
-            (obj) =>
-              (obj.data?.content as any).fields.rarity ===
-              SuilendCapsuleRarity.UNCOMMON,
-          ).length,
-        ),
-        [SuilendCapsuleRarity.RARE]: new BigNumber(
-          objs.filter(
-            (obj) =>
-              (obj.data?.content as any).fields.rarity ===
-              SuilendCapsuleRarity.RARE,
-          ).length,
-        ),
-      };
-    })();
-
     const redeemedSuilendCapsulesMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {
         const transactionRedeemedMsend = (transaction.events ?? [])
@@ -487,44 +624,15 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Rootlets
-    const rootletsKioskItems = ownedKiosksWithKioskOwnerCaps.reduce(
-      (acc, { kiosk }) => [
-        ...acc,
-        ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
-      ],
-      [] as KioskItem[],
+    const ownedRootlets = new BigNumber(
+      ownedKiosks.reduce(
+        (acc, { kiosk }) => [
+          ...acc,
+          ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
+        ],
+        [] as KioskItem[],
+      ).length,
     );
-
-    const ownedRootlets = new BigNumber(rootletsKioskItems.length);
-
-    const msendOwningRootlets = await (async () => {
-      let result = new BigNumber(0);
-
-      const rootletsObjectIds = rootletsKioskItems
-        .filter((item) => !item.listing)
-        .map((item) => item.objectId);
-      for (const rootletsObjectId of rootletsObjectIds) {
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          rootletsObjectId,
-          `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
-        );
-
-        const ownedMsend = objs.reduce(
-          (acc, obj) =>
-            acc.plus(
-              new BigNumber((obj.data?.content as any).fields.balance).div(
-                10 **
-                  mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
-              ),
-            ),
-          new BigNumber(0),
-        );
-        if (ownedMsend.gt(0)) result = result.plus(1);
-      }
-
-      return result;
-    })();
 
     const redeemedRootletsMsend = transactionsSinceTge.from.reduce(
       (acc, transaction) => {
@@ -632,13 +740,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         redeemedMsend: redeemedSendPointsMsend,
       },
       suilendCapsules: {
-        ownedMap: ownedSuilendCapsulesMap,
+        ownedMap: ownedSuilendCapsulesMap!,
         redeemedMsend: redeemedSuilendCapsulesMsend,
       },
       save: { bridgedMsend: bridgedSaveMsend },
       rootlets: {
         owned: ownedRootlets,
-        msendOwning: msendOwningRootlets,
+        msendOwning: mSendOwningRootlets!,
         redeemedMsend: redeemedRootletsMsend,
       },
       bluefinLeagues: { isInSnapshot: isInBluefinLeaguesSnapshot },
@@ -653,41 +761,39 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       octo: { isInSnapshot: isInOctoSnapshot },
       tism: { isInSnapshot: isInTismSnapshot },
     };
-  };
-
-  const { data: userAllocations, mutate: mutateUserAllocations } = useSWR<
-    SendContext["userAllocations"]
-  >(`userAllocations-${address}`, userAllocationsFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userAllocations", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh userAllocations", err);
-    },
-  });
-
-  useEffect(() => {
-    mutateUserAllocations();
   }, [
-    mutateUserAllocations,
     address,
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     transactionsSinceTge,
-    ownedKiosksWithKioskOwnerCaps,
+    ownedKiosks,
     data.rewardMap,
     data.obligations,
+    ownedSuilendCapsulesMap,
+    mSendOwningRootlets,
   ]);
 
   const refreshUserAllocations = useCallback(async () => {
-    await mutateTransactionsSinceTge();
-    await mutateUserAllocations();
-  }, [mutateTransactionsSinceTge, mutateUserAllocations]);
+    if (!address) return;
+
+    if (!mSendCoinMetadataMap) return;
+
+    fetchTransactionsSinceTge(address);
+    fetchOwnedSuilendCapsulesMap(address);
+
+    const newOwnedKiosks = await fetchOwnedKiosks(address);
+    fetchMsendOwningRootlets(address, mSendCoinMetadataMap, newOwnedKiosks!);
+  }, [
+    address,
+    mSendCoinMetadataMap,
+    fetchTransactionsSinceTge,
+    fetchOwnedSuilendCapsulesMap,
+    fetchOwnedKiosks,
+    fetchMsendOwningRootlets,
+  ]);
 
   // User - Claimed SEND
-  const userClaimedSendMapFetcher = async () => {
-    if (!address) return undefined;
-
+  const userClaimedSendMap = useMemo(() => {
     if (sendCoinMetadataMap === undefined) return undefined;
     if (transactionsSinceTge === undefined) return undefined;
 
@@ -722,32 +828,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     }
 
     return result;
-  };
-
-  const { data: userClaimedSendMap, mutate: mutateUserClaimedSendMap } = useSWR<
-    SendContext["userClaimedSendMap"]
-  >(`userClaimedSendMap-${address}`, userClaimedSendMapFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed userClaimedSendMap", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh userClaimedSendMap", err);
-    },
-  });
-
-  useEffect(() => {
-    mutateUserClaimedSendMap();
-  }, [
-    mutateUserClaimedSendMap,
-    address,
-    sendCoinMetadataMap,
-    transactionsSinceTge,
-  ]);
+  }, [sendCoinMetadataMap, transactionsSinceTge]);
 
   const refreshUserClaimedSendMap = useCallback(async () => {
-    await mutateTransactionsSinceTge();
-    await mutateUserClaimedSendMap();
-  }, [mutateTransactionsSinceTge, mutateUserClaimedSendMap]);
+    if (!address) return;
+
+    await fetchTransactionsSinceTge(address);
+  }, [address, fetchTransactionsSinceTge]);
 
   // Context
   const contextValue: SendContext = useMemo(
@@ -760,7 +847,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       mSendBalanceMap,
 
       kioskClient,
-      ownedKiosksWithKioskOwnerCaps,
+      ownedKiosks,
       userAllocations,
       refreshUserAllocations,
 
@@ -773,7 +860,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       sendCoinMetadataMap,
       mSendBalanceMap,
       kioskClient,
-      ownedKiosksWithKioskOwnerCaps,
+      ownedKiosks,
       userAllocations,
       refreshUserAllocations,
       userClaimedSendMap,

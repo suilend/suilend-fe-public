@@ -817,7 +817,7 @@ function Page() {
             </div>
           </div>
 
-          {address && (
+          {address && Date.now() >= TGE_TIMESTAMP_MS && (
             <>
               <Separator />
               <ClaimSection

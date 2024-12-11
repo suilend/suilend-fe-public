@@ -85,7 +85,7 @@ function RedeemTabContent({
   const {
     mSendCoinMetadataMap,
     kioskClient,
-    ownedKiosksWithKioskOwnerCaps,
+    ownedKiosks,
     userAllocations,
     refreshUserAllocations,
   } = useLoadedSendContext();
@@ -110,7 +110,7 @@ function RedeemTabContent({
   // Submit
   const onSubmitClick = async () => {
     if (!address) return;
-    if (ownedKiosksWithKioskOwnerCaps === undefined) return;
+    if (ownedKiosks === undefined) return;
     if (userAllocations === undefined) return;
 
     const transaction = new Transaction();
@@ -123,7 +123,7 @@ function RedeemTabContent({
         await redeemRootletsMsend(
           suiClient,
           kioskClient,
-          ownedKiosksWithKioskOwnerCaps,
+          ownedKiosks,
           address,
           transaction,
         );
@@ -275,7 +275,7 @@ function RedeemTabContent({
                           Rootlets NFT
                           {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
                         </TBody>
-                        {(ownedKiosksWithKioskOwnerCaps ?? []).reduce(
+                        {(ownedKiosks ?? []).reduce(
                           (acc, { kiosk }) => [
                             ...acc,
                             ...kiosk.items.filter(
