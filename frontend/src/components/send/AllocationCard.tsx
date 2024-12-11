@@ -14,20 +14,21 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import {
   Allocation,
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
   TGE_TIMESTAMP_MS,
-} from "@/pages/send";
+  mSEND_REDEMPTION_END_TIMESTAMP_MS,
+} from "@/lib/send";
+import { cn } from "@/lib/utils";
 
 interface StatusProps {
   allocation: Allocation;
   isEligible?: boolean;
   isNotEligible?: boolean;
-  hasClaimedMsend?: boolean;
+  hasRedeemedMsend?: boolean;
   hasBridgedMsend?: boolean;
 }
 
@@ -35,52 +36,63 @@ function Status({
   allocation,
   isEligible,
   isNotEligible,
-  hasClaimedMsend,
+  hasRedeemedMsend,
   hasBridgedMsend,
 }: StatusProps) {
+  const getSnapshotNotTakenStatus = () => {
+    if (Date.now() >= TGE_TIMESTAMP_MS) {
+      if (
+        allocation.id === AllocationId.SEND_POINTS ||
+        allocation.id === AllocationId.SUILEND_CAPSULES
+      ) {
+        return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+          ? "Redemptions open"
+          : "Redemptions closed";
+      }
+      if (allocation.id === AllocationId.SAVE) return "Conversions open";
+      if (allocation.id === AllocationId.ROOTLETS) return "Redemptions open";
+    }
+
+    return "Snapshot not taken";
+  };
+
   return (
     <div
       className={cn(
         "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-3.5 pt-1.5",
-        isEligible || hasClaimedMsend || hasBridgedMsend
+        isEligible || hasRedeemedMsend || hasBridgedMsend
           ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
-              !allocation.snapshotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
+              !allocation.snapshotTaken ? "bg-secondary" : "bg-[#192A3A]",
             ),
       )}
     >
-      {isEligible || hasClaimedMsend || hasBridgedMsend ? (
+      {isEligible || hasRedeemedMsend || hasBridgedMsend ? (
         <>
           <TBody
-            className={cn(isEligible ? "text-[#030917]" : "text-[#5DF886]")}
+            className={cn(isEligible ? "text-background" : "text-[#5DF886]")}
           >
             {isEligible
               ? "ELIGIBLE"
-              : hasClaimedMsend
-                ? "CONVERTED"
+              : hasRedeemedMsend
+                ? "REDEEMED"
                 : "BRIDGED"}
           </TBody>
-          <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo
-              className={cn(
-                "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
-              )}
-            />
 
+          <div className="flex flex-row items-center gap-2">
+            <SendTokenLogo className="rounded-[50%] bg-background outline outline-[0.5px] outline-background" />
             <TBody
               className={cn(
                 "text-[16px]",
-                isEligible ? "text-[#030917]" : "text-[#5DF886]",
+                isEligible ? "text-background" : "text-[#5DF886]",
               )}
             >
               {formatToken(
                 isEligible
-                  ? allocation
-                      .userAllocationPercent!.times(SEND_TOTAL_SUPPLY)
-                      .div(100)
-                  : hasClaimedMsend
-                    ? allocation.userClaimedMsend!
+                  ? allocation.userEligibleSend!
+                  : hasRedeemedMsend
+                    ? allocation.userRedeemedMsend!
                     : allocation.userBridgedMsend!,
                 { exact: false },
               )}
@@ -91,11 +103,11 @@ function Status({
         <TBody
           className={cn(
             "uppercase",
-            !allocation.snapshotTaken ? "text-[#030917]" : "text-[#8FDCF4]",
+            !allocation.snapshotTaken ? "text-background" : "text-secondary",
           )}
         >
           {!allocation.snapshotTaken
-            ? "Snapshot not taken"
+            ? getSnapshotNotTakenStatus()
             : isNotEligible
               ? "Not eligible"
               : "Snapshot taken"}
@@ -111,14 +123,10 @@ interface CtaButtonProps {
 }
 
 function CtaButton({ allocation, isEligible }: CtaButtonProps) {
-  const burnSendPointsSuilendCapsulesWrapper = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const onRedeemClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    const claimSectionHeadingElement = document.getElementById(
-      "claim-section-heading",
-    );
+    const claimSectionHeadingElement = document.getElementById("claim");
     if (!claimSectionHeadingElement) return;
 
     window.scrollTo({
@@ -127,27 +135,42 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
     });
   };
 
-  if (
-    [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
-      allocation.id,
-    )
-  ) {
-    if (Date.now() >= TGE_TIMESTAMP_MS) {
-      if (isEligible) {
-        return (
+  if (Date.now() >= TGE_TIMESTAMP_MS) {
+    if (
+      allocation.id === AllocationId.SEND_POINTS ||
+      allocation.id === AllocationId.SUILEND_CAPSULES
+    ) {
+      return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS ? (
+        isEligible ? (
           <Button
             className="h-10 w-full border-secondary text-primary-foreground"
             labelClassName="text-[16px]"
             variant="secondaryOutline"
-            onClick={burnSendPointsSuilendCapsulesWrapper}
+            onClick={onRedeemClick}
           >
-            CONVERT TO mSEND
+            REDEEM mSEND
           </Button>
-        );
-      } else return <div className="h-10 w-full max-sm:hidden" />;
+        ) : (
+          <div className="h-10 w-full max-sm:hidden" />
+        )
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
     }
-  }
-  if (allocation.id === AllocationId.SAVE) {
+    if (allocation.id === AllocationId.ROOTLETS) {
+      return isEligible ? (
+        <Button
+          className="h-10 w-full border-secondary text-primary-foreground"
+          labelClassName="text-[16px]"
+          variant="secondaryOutline"
+          onClick={onRedeemClick}
+        >
+          REDEEM mSEND
+        </Button>
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
+    }
   }
 
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (
@@ -226,17 +249,17 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
   // Status
   const isEligible = useMemo(
-    () => allocation.userAllocationPercent?.gt(0),
-    [allocation.userAllocationPercent],
+    () => allocation.userEligibleSend?.gt(0),
+    [allocation.userEligibleSend],
   );
   const isNotEligible = useMemo(
-    () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
-    [allocation.snapshotTaken, allocation.userAllocationPercent],
+    () => allocation.snapshotTaken && allocation.userEligibleSend?.eq(0),
+    [allocation.snapshotTaken, allocation.userEligibleSend],
   );
 
-  const hasClaimedMsend = useMemo(
-    () => allocation.userClaimedMsend?.gt(0),
-    [allocation.userClaimedMsend],
+  const hasRedeemedMsend = useMemo(
+    () => allocation.userRedeemedMsend?.gt(0),
+    [allocation.userRedeemedMsend],
   );
   const hasBridgedMsend = useMemo(
     () => allocation.userBridgedMsend?.gt(0),
@@ -262,15 +285,15 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               allocation={allocation}
               isEligible={isEligible}
               isNotEligible={isNotEligible}
-              hasClaimedMsend={hasClaimedMsend}
+              hasRedeemedMsend={hasRedeemedMsend}
               hasBridgedMsend={hasBridgedMsend}
             />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-secondary/25">
               {/* Top */}
-              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-[#030917]">
+              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-background">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-2">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2 backdrop-blur-md">
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
@@ -365,7 +388,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   <LabelWithValue
                     labelClassName="text-sm"
                     label="Total allocation"
-                    valueClassName="gap-1.5 items-center"
+                    valueClassName="gap-2 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
                       allocation.totalAllocationPercent
@@ -383,7 +406,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                         <div className="h-1 w-1 rounded-[50%] bg-muted" />
                       }
                       label={breakdown.title}
-                      valueClassName="gap-1.5 items-center"
+                      valueClassName="gap-2 items-center"
                       valueStartDecorator={<SendTokenLogo />}
                       value={formatToken(
                         breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
@@ -407,14 +430,26 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   </>
                 )}
 
-                <Separator className="bg-[#192A3A]" />
-                <LabelWithValue
-                  labelClassName="text-sm"
-                  label="Snapshot"
-                  valueClassName="uppercase"
-                  value={allocation.snapshotTaken ? "Taken" : "Not taken"}
-                  horizontal
-                />
+                {!(
+                  Date.now() >= TGE_TIMESTAMP_MS &&
+                  [
+                    AllocationId.SEND_POINTS,
+                    AllocationId.SUILEND_CAPSULES,
+                    AllocationId.SAVE,
+                    AllocationId.ROOTLETS,
+                  ].includes(allocation.id)
+                ) && (
+                  <>
+                    <Separator className="bg-[#192A3A]" />
+                    <LabelWithValue
+                      labelClassName="text-sm"
+                      label="Snapshot"
+                      valueClassName="uppercase"
+                      value={allocation.snapshotTaken ? "Taken" : "Not taken"}
+                      horizontal
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>

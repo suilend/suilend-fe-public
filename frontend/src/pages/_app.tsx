@@ -59,16 +59,16 @@ export default function App({ Component, pageProps }: AppProps) {
           <SettingsContextProvider>
             <WalletContextProvider appName="Suilend">
               <AppContextProvider>
-                <WormholeConnectContextProvider>
-                  <PointsContextProvider>
+                <PointsContextProvider>
+                  <WormholeConnectContextProvider>
                     <TooltipProvider>
                       <Layout>
                         <Component {...pageProps} />
                       </Layout>
                       <Toaster />
                     </TooltipProvider>
-                  </PointsContextProvider>
-                </WormholeConnectContextProvider>
+                  </WormholeConnectContextProvider>
+                </PointsContextProvider>
               </AppContextProvider>
             </WalletContextProvider>
           </SettingsContextProvider>
