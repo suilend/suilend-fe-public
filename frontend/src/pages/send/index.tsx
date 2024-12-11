@@ -159,7 +159,9 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Prime Machin",
-        percent: new BigNumber(0.1).div(3333), // Linear
+        percent: new BigNumber(0.1).div(
+          Object.values(primeMachinJson).reduce((acc, val) => acc + val, 0),
+        ), // Linear
       },
     },
   };
@@ -170,7 +172,9 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Egg",
-        percent: new BigNumber(0.1).div(9546), // Linear
+        percent: new BigNumber(0.1).div(
+          Object.values(eggJson).reduce((acc, val) => acc + val, 0),
+        ), // Linear
       },
     },
   };
@@ -181,7 +185,9 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per DoubleUp Citizen",
-        percent: new BigNumber(0.05).div(2878), // Linear
+        percent: new BigNumber(0.05).div(
+          Object.values(doubleUpCitizenJson).reduce((acc, val) => acc + val, 0),
+        ), // Linear
       },
     },
   };
@@ -192,7 +198,9 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Kumo",
-        percent: new BigNumber(0.05).div(2222), // Linear
+        percent: new BigNumber(0.05).div(
+          Object.values(kumoJson).reduce((acc, val) => acc + val, 0),
+        ), // Linear
       },
     },
   };
