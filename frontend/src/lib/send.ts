@@ -80,6 +80,13 @@ export enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
+export enum BluefinLeague {
+  GOLD = "gold",
+  PLATINUM = "platinum",
+  BLACK = "black",
+  SAPPHIRE = "sapphire",
+}
+
 export enum AllocationId {
   EARLY_USERS = "earlyUsers",
   SEND_POINTS = "sendPoints",
