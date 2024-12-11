@@ -41,6 +41,7 @@ function Page() {
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(3899),
     totalAllocationPercent: new BigNumber(2),
     totalAllocationBreakdownMap: {
@@ -52,6 +53,7 @@ function Page() {
   };
   const sendPoints = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(18),
     totalAllocationBreakdownMap: {
@@ -65,6 +67,7 @@ function Page() {
   };
   const suilendCapsules = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(0.3),
     totalAllocationBreakdownMap: {
@@ -84,6 +87,7 @@ function Page() {
   };
   const save = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(15),
     totalAllocationBreakdownMap: {
@@ -95,6 +99,7 @@ function Page() {
   };
   const rootlets = {
     snapshotTaken: false,
+    airdropSent: true,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(1.111),
     totalAllocationBreakdownMap: {
@@ -107,6 +112,7 @@ function Page() {
 
   const bluefinLeagues = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(5956 + 187 + 25 + 37),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
@@ -130,6 +136,7 @@ function Page() {
   };
   const bluefinSendTraders = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(3820), // Unique(Makers, Takers)
     totalAllocationPercent: new BigNumber(0.0625 + 0.0625),
     totalAllocationBreakdownMap: {
@@ -146,6 +153,7 @@ function Page() {
 
   const primeMachin = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(930),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -157,6 +165,7 @@ function Page() {
   };
   const egg = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(2105),
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -168,6 +177,7 @@ function Page() {
   };
   const doubleUpCitizen = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: formatInteger(684),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
@@ -179,6 +189,7 @@ function Page() {
   };
   const kumo = {
     snapshotTaken: true,
+    airdropSent: false,
     eligibleWallets: formatInteger(508),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
@@ -191,6 +202,7 @@ function Page() {
 
   const anima = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined, //animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {},
@@ -198,6 +210,7 @@ function Page() {
 
   const fud = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 5000, // Top 5,000 FUD holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -209,6 +222,7 @@ function Page() {
   };
   const aaa = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 5000, // Top 5,000 AAA holders
     totalAllocationPercent: new BigNumber(0.1),
     totalAllocationBreakdownMap: {
@@ -220,6 +234,7 @@ function Page() {
   };
   const octo = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 1000, // Top 1,000 OCTO holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdownMap: {
@@ -231,6 +246,7 @@ function Page() {
   };
   const tism = {
     snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 1000, // Top 1,000 TISM holders
     totalAllocationPercent: new BigNumber(0.01),
     totalAllocationBreakdownMap: {
@@ -253,6 +269,7 @@ function Page() {
       assetType: AssetType.LENDING,
       cta: undefined,
       snapshotTaken: earlyUsers.snapshotTaken,
+      airdropSent: earlyUsers.airdropSent,
       eligibleWallets: earlyUsers.eligibleWallets,
       totalAllocationPercent: earlyUsers.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -281,6 +298,7 @@ function Page() {
       assetType: AssetType.POINTS,
       cta: undefined,
       snapshotTaken: sendPoints.snapshotTaken,
+      airdropSent: sendPoints.airdropSent,
       eligibleWallets: sendPoints.eligibleWallets,
       totalAllocationPercent: sendPoints.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -314,6 +332,7 @@ function Page() {
       assetType: AssetType.NFT,
       cta: undefined,
       snapshotTaken: suilendCapsules.snapshotTaken,
+      airdropSent: suilendCapsules.airdropSent,
       eligibleWallets: suilendCapsules.eligibleWallets,
       totalAllocationPercent: suilendCapsules.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -376,6 +395,7 @@ function Page() {
         href: "https://save.finance/save",
       },
       snapshotTaken: save.snapshotTaken,
+      airdropSent: save.airdropSent,
       eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(save.totalAllocationBreakdownMap),
@@ -401,6 +421,7 @@ function Page() {
         href: "https://www.tradeport.xyz/sui/collection/rootlets?bottomTab=trades&tab=items",
       },
       snapshotTaken: rootlets.snapshotTaken,
+      airdropSent: rootlets.airdropSent,
       eligibleWallets: rootlets.eligibleWallets,
       totalAllocationPercent: rootlets.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -435,6 +456,7 @@ function Page() {
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TRADING,
       snapshotTaken: bluefinLeagues.snapshotTaken,
+      airdropSent: bluefinLeagues.airdropSent,
       eligibleWallets: bluefinLeagues.eligibleWallets,
       totalAllocationPercent: bluefinLeagues.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -468,6 +490,7 @@ function Page() {
         href: "https://trade.bluefin.io/SEND-PERP",
       },
       snapshotTaken: bluefinSendTraders.snapshotTaken,
+      airdropSent: bluefinSendTraders.airdropSent,
       eligibleWallets: bluefinSendTraders.eligibleWallets,
       totalAllocationPercent: bluefinSendTraders.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -512,6 +535,7 @@ function Page() {
         href: "https://www.tradeport.xyz/sui/collection/prime-machin?bottomTab=trades&tab=items",
       },
       snapshotTaken: primeMachin.snapshotTaken,
+      airdropSent: primeMachin.airdropSent,
       eligibleWallets: primeMachin.eligibleWallets,
       totalAllocationPercent: primeMachin.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -543,6 +567,7 @@ function Page() {
         href: "https://www.tradeport.xyz/sui/collection/egg?bottomTab=trades&tab=items",
       },
       snapshotTaken: egg.snapshotTaken,
+      airdropSent: egg.airdropSent,
       eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdownMap),
@@ -572,6 +597,7 @@ function Page() {
         href: "https://www.tradeport.xyz/sui/collection/doubleup-citizen?bottomTab=trades&tab=items",
       },
       snapshotTaken: doubleUpCitizen.snapshotTaken,
+      airdropSent: doubleUpCitizen.airdropSent,
       eligibleWallets: doubleUpCitizen.eligibleWallets,
       totalAllocationPercent: doubleUpCitizen.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -603,6 +629,7 @@ function Page() {
         href: "https://www.tradeport.xyz/sui/collection/kumo?bottomTab=trades&tab=items",
       },
       snapshotTaken: kumo.snapshotTaken,
+      airdropSent: kumo.airdropSent,
       eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdownMap),
@@ -633,6 +660,7 @@ function Page() {
         href: "https://anima.nexus/drop/genesis",
       },
       snapshotTaken: anima.snapshotTaken,
+      airdropSent: anima.airdropSent,
       eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
@@ -662,6 +690,7 @@ function Page() {
         href: "/swap/SUI-FUD",
       },
       snapshotTaken: fud.snapshotTaken,
+      airdropSent: fud.airdropSent,
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: fud.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdownMap),
@@ -691,6 +720,7 @@ function Page() {
         href: "/swap/SUI-AAA",
       },
       snapshotTaken: aaa.snapshotTaken,
+      airdropSent: aaa.airdropSent,
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: aaa.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdownMap),
@@ -720,6 +750,7 @@ function Page() {
         href: "/swap/SUI-OCTO",
       },
       snapshotTaken: octo.snapshotTaken,
+      airdropSent: octo.airdropSent,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: octo.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdownMap),
@@ -748,6 +779,7 @@ function Page() {
         href: "/swap/SUI-TISM",
       },
       snapshotTaken: tism.snapshotTaken,
+      airdropSent: tism.airdropSent,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: tism.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdownMap),

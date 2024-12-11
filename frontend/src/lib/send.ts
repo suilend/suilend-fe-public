@@ -136,6 +136,7 @@ export type Allocation = {
     href: string;
   };
   snapshotTaken: boolean;
+  airdropSent: boolean;
   eligibleWallets?: string;
   totalAllocationPercent: BigNumber;
   totalAllocationBreakdown: {

@@ -71,13 +71,18 @@ function Status({
       {isEligible || hasRedeemedMsend || hasBridgedMsend ? (
         <>
           <TBody
-            className={cn(isEligible ? "text-background" : "text-[#5DF886]")}
+            className={cn(
+              isEligible ? "uppercase text-background" : "text-[#5DF886]",
+            )}
           >
             {isEligible
-              ? "ELIGIBLE"
+              ? allocation.airdropSent &&
+                allocation.id !== AllocationId.ROOTLETS
+                ? "Airdropped"
+                : "Eligible"
               : hasRedeemedMsend
-                ? "REDEEMED"
-                : "BRIDGED"}
+                ? "Redeemed"
+                : "Bridged"}
           </TBody>
 
           <div className="flex flex-row items-center gap-2">
