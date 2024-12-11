@@ -1,7 +1,7 @@
 import { CSSProperties } from "react";
 
 import Tabs from "@/components/shared/Tabs";
-import { TDisplay, TLabel } from "@/components/shared/Typography";
+import { TDisplay } from "@/components/shared/Typography";
 import { Tab, usePointsContext } from "@/contexts/PointsContext";
 import { cn } from "@/lib/utils";
 
@@ -38,16 +38,16 @@ export default function PointsHeader({
             }}
           />
 
-          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center gap-6 md:gap-8">
-            <div className="flex h-6 w-max flex-col justify-center rounded-sm bg-border px-2">
-              <TLabel className="uppercase text-muted-foreground">
-                Leaderboard
-              </TLabel>
-            </div>
+          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center gap-8">
+            <div className="flex flex-col items-center gap-2 md:gap-4">
+              <TDisplay className="text-center text-4xl md:text-5xl">
+                SEND Points
+              </TDisplay>
 
-            <TDisplay className="text-center text-4xl md:text-5xl">
-              SEND Points
-            </TDisplay>
+              <TDisplay className="uppercase text-foreground">
+                Leaderboard
+              </TDisplay>
+            </div>
 
             <Tabs
               tabs={tabs}
