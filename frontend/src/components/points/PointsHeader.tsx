@@ -3,6 +3,7 @@ import { CSSProperties } from "react";
 import Tabs from "@/components/shared/Tabs";
 import { TDisplay } from "@/components/shared/Typography";
 import { Tab, usePointsContext } from "@/contexts/PointsContext";
+import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface PointsHeaderProps {
@@ -29,7 +30,7 @@ export default function PointsHeader({
           <div
             className="absolute inset-0 z-[1]"
             style={{
-              backgroundImage: "url('/assets/points/header.png')",
+              backgroundImage: `url('${ASSETS_URL}/points/header.png')`,
               backgroundPosition: "top center",
               backgroundSize: "cover",
               backgroundRepeat: "no-repeat",

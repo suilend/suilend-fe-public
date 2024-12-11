@@ -6,6 +6,7 @@ import Dialog from "@/components/dashboard/Dialog";
 import { TBodySans } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { ASSETS_URL } from "@/lib/constants";
 
 export type EventsData = {
   deposit: ApiDepositEvent[];
@@ -55,7 +56,7 @@ export default function FirstDepositDialog() {
             height="auto"
           >
             <source
-              src="/assets/dashboard/account-nft-explainer.mp4"
+              src={`${ASSETS_URL}/dashboard/account-nft-explainer.mp4`}
               type="video/mp4"
             />
           </video>

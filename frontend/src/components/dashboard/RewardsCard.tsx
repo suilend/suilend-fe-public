@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
+import { ASSETS_URL } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
@@ -130,7 +131,7 @@ export default function RewardsCard() {
       <div
         className="flex h-[100px] flex-col items-center justify-center gap-4 sm:h-[110px]"
         style={{
-          backgroundImage: "url('/assets/dashboard/rewards-not-connected.png')",
+          backgroundImage: `url('${ASSETS_URL}/dashboard/rewards-not-connected.png')`,
           backgroundPosition: "center",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
