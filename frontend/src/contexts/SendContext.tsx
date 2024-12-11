@@ -494,9 +494,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const rootletsKioskItems = ownedKiosksWithKioskOwnerCaps.reduce(
       (acc, { kiosk }) => [
         ...acc,
-        ...kiosk.items.filter(
-          (item) => item.type === ROOTLETS_TYPE && !item.listing,
-        ),
+        ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
       ],
       [] as KioskItem[],
     );
@@ -506,7 +504,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const msendOwningRootlets = await (async () => {
       let result = new BigNumber(0);
 
-      const rootletsObjectIds = rootletsKioskItems.map((item) => item.objectId);
+      const rootletsObjectIds = rootletsKioskItems
+        .filter((item) => !item.listing)
+        .map((item) => item.objectId);
       for (const rootletsObjectId of rootletsObjectIds) {
         const objs = await getOwnedObjectsOfType(
           suiClient,

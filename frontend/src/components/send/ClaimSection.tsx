@@ -287,7 +287,7 @@ function RedeemTabContent({
                         ).length > 0 && (
                           <TLabelSans>
                             {
-                              "You'll need to unlist your listed Rootlets NFTs to redeem them"
+                              "Note: You'll need to unlist your listed Rootlets NFTs to redeem them"
                             }
                           </TLabelSans>
                         )}
