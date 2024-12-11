@@ -15,7 +15,6 @@ import {
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSendContext } from "@/contexts/SendContext";
@@ -140,19 +139,18 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             Connect wallet
           </Button>
         ) : (
-          <Tooltip title="Allocation is an estimate since some snapshots haven't been taken yet">
-            <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
-              <SendTokenLogo className="h-8 w-8" />
-              {userAllocations === undefined ? (
-                <Skeleton className="h-10 w-48" />
-              ) : (
-                <TDisplay className="text-4xl">
-                  {formatToken(userTotalAllocation, { exact: false })}
-                  {" SEND"}
-                </TDisplay>
-              )}
-            </div>
-          </Tooltip>
+          <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
+            <SendTokenLogo className="h-8 w-8" />
+
+            {userAllocations === undefined ? (
+              <Skeleton className="h-10 w-48" />
+            ) : (
+              <TDisplay className="text-4xl">
+                {formatToken(userTotalAllocation, { exact: false })}
+                {" SEND"}
+              </TDisplay>
+            )}
+          </div>
         )}
 
         {isImpersonating && address && (
