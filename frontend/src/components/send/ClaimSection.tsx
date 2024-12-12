@@ -591,9 +591,6 @@ function ClaimTabContent() {
 
   return (
     <>
-      {/* Select mSEND */}
-      {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
-
       {/* Deposit sSUI */}
       <div
         className={cn(
@@ -624,6 +621,9 @@ function ClaimTabContent() {
         )}
       >
         <div className="flex w-full flex-col gap-4">
+          {/* Select mSEND */}
+          {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
+
           {/* Input */}
           <div className="relative flex w-full flex-col">
             <div className="relative z-[2] w-full">
@@ -665,7 +665,7 @@ function ClaimTabContent() {
                 style={{
                   height: `${INPUT_HEIGHT}px`,
                   paddingLeft: `${3 * 4 + MAX_BUTTON_WIDTH + 3 * 4}px`,
-                  paddingRight: `${3 * 4 + "mSEND".length * 14.4 + 3 * 4}px`,
+                  paddingRight: `${3 * 4 + mSendCoinMetadataMap[selectedMsendCoinType].symbol.length * 14.4 + 3 * 4}px`,
                 }}
                 step="any"
               />
