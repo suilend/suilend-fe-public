@@ -7,7 +7,7 @@ export default function BlurbSection() {
     [
       "delphi-ventures.png",
       "big-brain-holdings.png",
-      "figment.png",
+      "figment-capital.png",
       "alliance.png",
     ],
     [
