@@ -354,6 +354,7 @@ export const claimSend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
   address: string,
+  claimAmount: string,
   mSendCoinType: string,
   isDepositing: boolean,
   transaction: Transaction,
@@ -378,6 +379,17 @@ export const claimSend = async (
     );
   }
 
+  const value = new BigNumber(claimAmount)
+    .times(10 ** 6)
+    .integerValue(BigNumber.ROUND_DOWN)
+    .toString();
+  console.log("XXX value", value);
+
+  const [splitCoin] = transaction.splitCoins(
+    transaction.object(mergedMsendCoin.coinObjectId),
+    [value],
+  );
+
   // Claim SEND
   const sendCoin = transaction.moveCall({
     target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
@@ -388,7 +400,7 @@ export const claimSend = async (
     ],
     arguments: [
       transaction.object(mSEND_COINTYPE_MANAGER_MAP[mSendCoinType]),
-      transaction.object(mergedMsendCoin.coinObjectId),
+      transaction.object(splitCoin),
       transaction.object(transaction.gas),
       transaction.object(SUI_CLOCK_OBJECT_ID),
     ],

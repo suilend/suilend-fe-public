@@ -544,6 +544,7 @@ function ClaimTabContent() {
         suiClient,
         suilendClient,
         address,
+        claimAmount,
         selectedMsendCoinType,
         isDepositing,
         transaction,
