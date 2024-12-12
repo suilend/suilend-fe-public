@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { KioskItem } from "@mysten/kiosk";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import { ClassValue } from "clsx";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
 import { ArrowUpRight, Clock } from "lucide-react";
@@ -15,6 +16,7 @@ import {
   NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
+  SUI_GAS_MIN,
   getBalanceChange,
   issSui,
 } from "@suilend/frontend-sui";
@@ -28,7 +30,8 @@ import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import PenaltyLineChart from "@/components/send/PenaltyLineChart";
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
-import Button from "@/components/shared/Button";
+import Button, { ButtonProps } from "@/components/shared/Button";
+import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -60,6 +63,41 @@ import {
 } from "@/lib/send";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
+type SubmitButtonState = {
+  isLoading?: boolean;
+  isDisabled?: boolean;
+  title?: string;
+};
+
+interface SubmitButtonProps {
+  className?: ClassValue;
+  labelClassName?: ClassValue;
+  variant?: ButtonProps["variant"];
+  state: SubmitButtonState;
+  submit: () => Promise<void>;
+}
+
+function SubmitButton({
+  className,
+  labelClassName,
+  variant,
+  state,
+  submit,
+}: SubmitButtonProps) {
+  return (
+    <Button
+      className={cn("h-auto min-h-14 w-full rounded-md py-2", className)}
+      labelClassName={cn("text-[16px] text-wrap", labelClassName)}
+      variant={variant}
+      style={{ overflowWrap: "anywhere" }}
+      disabled={state.isDisabled}
+      onClick={submit}
+    >
+      {state.isLoading ? <Spinner size="md" /> : state.title}
+    </Button>
+  );
+}
+
 interface RedeemTabContentProps {
   sendPointsAllocation: Allocation;
   rootletsAllocation: Allocation;
@@ -83,7 +121,7 @@ function RedeemTabContent({
 }: RedeemTabContentProps) {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data } = useLoadedAppContext();
+  const { suilendClient, data, getBalance } = useLoadedAppContext();
 
   const {
     mSendCoinMetadataMap,
@@ -94,6 +132,9 @@ function RedeemTabContent({
   } = useLoadedSendContext();
   const userAllocations = restLoadedSendContext.userAllocations!;
 
+  // Balances
+  const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
+
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
     start: Date.now(),
@@ -101,9 +142,29 @@ function RedeemTabContent({
   });
 
   // Submit
-  const onSubmitClick = async () => {
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const submitButtonState: SubmitButtonState = useMemo(() => {
+    if (isSubmitting) return { isLoading: true, isDisabled: true };
+
+    if (suiBalance.lt(SUI_GAS_MIN))
+      return {
+        isDisabled: true,
+        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+      };
+
+    return {
+      title: "REDEEM mSEND",
+    };
+  }, [isSubmitting, suiBalance]);
+
+  const submit = async () => {
     if (!address) return;
     if (ownedKiosks === undefined) return;
+
+    if (submitButtonState.isDisabled) return;
+
+    setIsSubmitting(true);
 
     const transaction = new Transaction();
     try {
@@ -152,8 +213,10 @@ function RedeemTabContent({
     } catch (err) {
       toast.error("Failed to redeem mSEND", {
         description: (err as Error)?.message || "An unknown error occurred",
+        duration: TX_TOAST_DURATION,
       });
     } finally {
+      setIsSubmitting(false);
       await refreshUserAllocations();
     }
   };
@@ -212,7 +275,7 @@ function RedeemTabContent({
                       <div className="flex w-full flex-row items-center justify-between gap-4">
                         <div className="flex flex-row items-center gap-3">
                           <Image
-                            src={`/${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
+                            src={`${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
                             alt={`${capitalize(rarity)} Suilend Capsule`}
                             width={24}
                             height={24}
@@ -313,7 +376,10 @@ function RedeemTabContent({
                 coinType={NORMALIZED_mSEND_3M_COINTYPE}
               />
               <TBody className="text-[16px]">
-                {formatToken(totalRedeemableMsend, { exact: false })}
+                {formatToken(totalRedeemableMsend, {
+                  dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
+                    .decimals,
+                })}
               </TBody>
             </div>
           </div>
@@ -348,14 +414,8 @@ function RedeemTabContent({
         )}
       </div>
 
-      <Button
-        className="h-14 w-full"
-        labelClassName="text-[16px]"
-        size="lg"
-        onClick={onSubmitClick}
-      >
-        REDEEM mSEND
-      </Button>
+      {/* Submit */}
+      <SubmitButton state={submitButtonState} submit={submit} />
     </>
   );
 }
@@ -363,9 +423,11 @@ function RedeemTabContent({
 function ClaimTabContent() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { data } = useLoadedAppContext();
+  const { suilendClient, data, getBalance, obligationOwnerCap } =
+    useLoadedAppContext();
 
   const {
+    mSendObjectMap,
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     mSendBalanceMap,
@@ -373,6 +435,10 @@ function ClaimTabContent() {
     refreshUserClaimedSendMap,
     selectedMsendCoinType,
   } = useLoadedSendContext();
+
+  // Balances
+  const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
+  const mSendBalance = mSendBalanceMap[selectedMsendCoinType];
 
   // Deposit sSUI
   const ssuiDepositedAmount = (data.obligations ?? []).reduce(
@@ -386,20 +452,101 @@ function ClaimTabContent() {
     new BigNumber(0),
   );
 
+  // Amount
+  const [claimAmount, setClaimAmount] = useState<string>("");
+  // new BigNumber(mSendBalance).toFixed(
+  //   mSendCoinMetadataMap[selectedMsendCoinType].decimals,
+  //   BigNumber.ROUND_DOWN,
+  // ); // TODO
+
+  // Penalty
+  const claimPenaltyAmountSui = mSendObjectMap[
+    selectedMsendCoinType
+  ].currentPenaltySui.times(claimAmount || 0);
+
   // Submit
-  const onSubmitClick = async () => {
+  const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
+  const [isSubmitting_claimAndDeposit, setIsSubmitting_claimAndDeposit] =
+    useState<boolean>(false);
+
+  const submitButtonState_claim: SubmitButtonState = useMemo(() => {
+    if (isSubmitting_claim) return { isLoading: true, isDisabled: true };
+
+    if (new BigNumber(claimAmount || 0).lte(0))
+      return { title: "Enter an amount", isDisabled: true };
+    if (new BigNumber(claimAmount).gt(mSendBalance))
+      return { title: "Insufficient mSEND balance", isDisabled: true };
+
+    if (suiBalance.lt(SUI_GAS_MIN))
+      return {
+        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        isDisabled: true,
+      };
+    if (suiBalance.lt(claimPenaltyAmountSui))
+      return {
+        title: "Insufficient SUI balance to pay penalty",
+        isDisabled: true,
+      };
+
+    return {
+      title: "Claim SEND",
+      isDisabled: isSubmitting_claimAndDeposit,
+    };
+  }, [
+    isSubmitting_claim,
+    claimAmount,
+    mSendBalance,
+    suiBalance,
+    claimPenaltyAmountSui,
+    isSubmitting_claimAndDeposit,
+  ]);
+
+  const submitButtonState_claimAndDeposit: SubmitButtonState = useMemo(() => {
+    if (isSubmitting_claimAndDeposit)
+      return { isLoading: true, isDisabled: true };
+
+    return {
+      title: "Claim and Deposit SEND",
+      isDisabled: submitButtonState_claim.isDisabled || isSubmitting_claim,
+    };
+  }, [
+    isSubmitting_claimAndDeposit,
+    submitButtonState_claim.isDisabled,
+    isSubmitting_claim,
+  ]);
+
+  const submit = async (isDepositing: boolean) => {
     if (!address) return;
+
+    if (isDepositing) {
+      if (submitButtonState_claimAndDeposit.isDisabled) return;
+    } else {
+      if (submitButtonState_claim.isDisabled) return;
+    }
+
+    const setIsSubmitting = isDepositing
+      ? setIsSubmitting_claimAndDeposit
+      : setIsSubmitting_claim;
+    setIsSubmitting(true);
 
     const transaction = new Transaction();
     try {
-      await claimSend(suiClient, address, selectedMsendCoinType, transaction);
+      await claimSend(
+        suiClient,
+        suilendClient,
+        address,
+        selectedMsendCoinType,
+        isDepositing,
+        transaction,
+        obligationOwnerCap?.id,
+      );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: selectedMsendCoinType,
-        ...sendCoinMetadataMap[selectedMsendCoinType],
+        coinType: NORMALIZED_BETA_SEND_COINTYPE, //TODO
+        ...sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE], // TODO
       });
 
       toast.success(
@@ -407,7 +554,7 @@ function ClaimTabContent() {
           "Claimed",
           balanceChange !== undefined
             ? formatToken(balanceChange, {
-                dp: sendCoinMetadataMap[selectedMsendCoinType].decimals,
+                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
               })
             : null,
           "SEND",
@@ -426,8 +573,10 @@ function ClaimTabContent() {
     } catch (err) {
       toast.error("Failed to claim SEND", {
         description: (err as Error)?.message || "An unknown error occurred",
+        duration: TX_TOAST_DURATION,
       });
     } finally {
+      setIsSubmitting(false);
       await refreshUserClaimedSendMap();
     }
   };
@@ -460,7 +609,7 @@ function ClaimTabContent() {
       <div
         className={cn(
           "flex w-full flex-col gap-6",
-          !ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
+          !ssuiDepositedAmount.gte(0) && "pointer-events-none opacity-50",
         )}
       >
         <TBody>
@@ -471,15 +620,24 @@ function ClaimTabContent() {
         </TBody>
 
         <div className="flex w-full flex-col gap-4">
+          {/* Submit */}
           <div className="flex w-full flex-col gap-px">
-            <Button
-              className="h-14 w-full"
-              labelClassName="uppercase text-[16px]"
-              size="lg"
-              onClick={onSubmitClick}
-            >
-              Claim SEND
-            </Button>
+            {/* Claim */}
+            <SubmitButton
+              className="rounded-b-none"
+              labelClassName="uppercase"
+              state={submitButtonState_claim}
+              submit={() => submit(false)}
+            />
+
+            {/* Claim and deposit */}
+            <SubmitButton
+              className="min-h-8 rounded-t-none"
+              labelClassName="uppercase text-sm"
+              variant="secondary"
+              state={submitButtonState_claimAndDeposit}
+              submit={() => submit(true)}
+            />
           </div>
 
           <div className="flex flex-row items-center gap-2">

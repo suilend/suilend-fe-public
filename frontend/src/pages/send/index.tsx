@@ -47,7 +47,7 @@ function Page() {
     totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(2).div(3899), // Flat
+        percent: new BigNumber(512).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
     },
   };
@@ -73,15 +73,15 @@ function Page() {
     totalAllocationBreakdownMap: {
       [SuilendCapsuleRarity.COMMON]: {
         title: "Per Common",
-        percent: new BigNumber(0.1).div(700), // Linear
+        percent: new BigNumber(142).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
       [SuilendCapsuleRarity.UNCOMMON]: {
         title: "Per Uncommon",
-        percent: new BigNumber(0.1).div(200), // Linear
+        percent: new BigNumber(500).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
       [SuilendCapsuleRarity.RARE]: {
         title: "Per Rare",
-        percent: new BigNumber(0.1).div(50), // Linear
+        percent: new BigNumber(2000).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
@@ -104,8 +104,8 @@ function Page() {
     totalAllocationPercent: new BigNumber(1.111),
     totalAllocationBreakdownMap: {
       one: {
-        title: "Per Rootlet",
-        percent: new BigNumber(1.111).div(3333), // Linear
+        title: "Per Rootlets NFT",
+        percent: new BigNumber(333.333333).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };

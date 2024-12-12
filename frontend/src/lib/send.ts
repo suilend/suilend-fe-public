@@ -356,9 +356,12 @@ export const redeemRootletsMsend = async (
 
 export const claimSend = async (
   suiClient: SuiClient,
+  suilendClient: SuilendClient,
   address: string,
   mSendCoinType: string,
+  isDepositing: boolean,
   transaction: Transaction,
+  obligationOwnerCapId?: string,
 ) => {
   // Get mSEND coins
   const mSendCoins = (
@@ -395,8 +398,19 @@ export const claimSend = async (
     ],
   });
 
-  // Transfer SEND to user
-  transaction.transferObjects([sendCoin], transaction.pure.address(address));
+  if (isDepositing) {
+    // Deposit SEND
+    suilendClient.depositCoin(
+      address,
+      sendCoin,
+      NORMALIZED_BETA_SEND_COINTYPE, // TODO
+      transaction,
+      obligationOwnerCapId,
+    );
+  } else {
+    // Transfer SEND to user
+    transaction.transferObjects([sendCoin], transaction.pure.address(address));
+  }
 };
 
 export const formatDuration = (duration: Duration) =>
