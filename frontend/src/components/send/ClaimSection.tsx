@@ -152,7 +152,7 @@ function RedeemTabContent({
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
         isDisabled: true,
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
       };
 
     return {
@@ -460,18 +460,6 @@ function ClaimTabContent() {
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
 
-  // Flash loan
-  const [isFlashLoanChecked, setIsFlashLoanChecked] = useState(false);
-  const [slippagePercentage, setSlippagePercentage] = useState("");
-
-  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setIsFlashLoanChecked(event.target.checked);
-  };
-
-  const handleSlippageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value; // Extract the value as a string
-    setSlippagePercentage(value); // Update state
-  };
   // new BigNumber(mSendBalance).toFixed(
   //   mSendCoinMetadataMap[selectedMsendCoinType].decimals,
   //   BigNumber.ROUND_DOWN,
@@ -486,6 +474,23 @@ function ClaimTabContent() {
     selectedMsendCoinType
   ].currentPenaltySui.times(claimAmount || 0);
 
+  // Flash loan
+  const [isFlashLoan, setIsFlashLoan] = useState<boolean>(false);
+  const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
+    useState<string>("");
+
+  const handleIsFlashLoanChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsFlashLoan(event.target.checked);
+  };
+
+  const handleFlashLoanSlippagePercentChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setFlashLoanSlippagePercent(event.target.value);
+  };
+
   // Submit
   const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
   const [isSubmitting_claimAndDeposit, setIsSubmitting_claimAndDeposit] =
@@ -495,23 +500,23 @@ function ClaimTabContent() {
     if (isSubmitting_claim) return { isLoading: true, isDisabled: true };
 
     if (new BigNumber(claimAmount || 0).lte(0))
-      return { title: "Enter an amount", isDisabled: true };
+      return { title: "ENTER AN AMOUNT", isDisabled: true };
     if (new BigNumber(claimAmount).gt(mSendBalance))
-      return { title: "Insufficient mSEND balance", isDisabled: true };
+      return { title: "INSUFFICIENT mSEND BALANCE", isDisabled: true };
 
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
         isDisabled: true,
       };
-    if (suiBalance.lt(claimPenaltyAmountSui))
+    if (!isFlashLoan && suiBalance.lt(claimPenaltyAmountSui))
       return {
-        title: "Insufficient SUI balance to pay penalty",
+        title: "INSUFFICIENT SUI BALANCE TO PAY PENALTY",
         isDisabled: true,
       };
 
     return {
-      title: "Claim SEND",
+      title: "CLAIM SEND",
       isDisabled: isSubmitting_claimAndDeposit,
     };
   }, [
@@ -519,6 +524,7 @@ function ClaimTabContent() {
     claimAmount,
     mSendBalance,
     suiBalance,
+    isFlashLoan,
     claimPenaltyAmountSui,
     isSubmitting_claimAndDeposit,
   ]);
@@ -528,7 +534,7 @@ function ClaimTabContent() {
       return { isLoading: true, isDisabled: true };
 
     return {
-      title: "Claim and Deposit SEND",
+      title: "CLAIM AND DEPOSIT SEND",
       isDisabled: submitButtonState_claim.isDisabled || isSubmitting_claim,
     };
   }, [
@@ -558,11 +564,11 @@ function ClaimTabContent() {
         suiClient,
         suilendClient,
         address,
+        selectedMsendCoinType,
         claimAmount,
         claimPenaltyAmountSui,
-        selectedMsendCoinType,
-        isFlashLoanChecked,
-        Number(slippagePercentage),
+        isFlashLoan,
+        +flashLoanSlippagePercent,
         isDepositing,
         transaction,
         obligationOwnerCap?.id,
@@ -710,40 +716,6 @@ function ClaimTabContent() {
                 </TBody>
               </div>
             </div>
-            <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
-              <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
-                <input
-                  type="checkbox"
-                  id="flash-loan-checkbox"
-                  className="h-4 w-4"
-                  checked={isFlashLoanChecked}
-                  onChange={handleCheckboxChange}
-                />
-                <label
-                  htmlFor="flash-loan-checkbox"
-                  className="text-muted-foreground"
-                >
-                  Flash loan
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label
-                  htmlFor="slippage-input"
-                  className="text-muted-foreground"
-                ></label>
-                <input
-                  type="number"
-                  id="slippage-input"
-                  className="h-8 w-full rounded-md border border-gray-300 px-3 py-1 text-sm text-blue-500 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Slippage (%)"
-                  onChange={handleSlippageChange}
-                  value={
-                    slippagePercentage !== undefined ? slippagePercentage : ""
-                  }
-                />
-              </div>
-            </div>
           </div>
 
           {/* Penalty */}
@@ -776,12 +748,45 @@ function ClaimTabContent() {
           </div>
         </div>
 
+        {/* Flash loan */}
+        <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
+          <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
+            <input
+              type="checkbox"
+              id="flash-loan-checkbox"
+              className="h-4 w-4"
+              checked={isFlashLoan}
+              onChange={handleIsFlashLoanChange}
+            />
+            <label
+              htmlFor="flash-loan-checkbox"
+              className="text-muted-foreground"
+            >
+              Flash loan
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="slippage-input"
+              className="text-muted-foreground"
+            ></label>
+            <input
+              type="number"
+              id="slippage-input"
+              className="h-8 w-full rounded-md border border-gray-300 px-3 py-1 text-sm text-blue-500 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Slippage (%)"
+              onChange={handleFlashLoanSlippagePercentChange}
+              value={flashLoanSlippagePercent ?? ""}
+            />
+          </div>
+        </div>
+
         {/* Submit */}
         <div className="flex w-full flex-col gap-px">
           {/* Claim */}
           <SubmitButton
             className="rounded-b-none"
-            labelClassName="uppercase"
             state={submitButtonState_claim}
             submit={() => submit(false)}
           />
@@ -789,7 +794,7 @@ function ClaimTabContent() {
           {/* Claim and deposit */}
           <SubmitButton
             className="min-h-9 rounded-t-none py-1"
-            labelClassName="uppercase text-sm"
+            labelClassName="text-sm"
             variant="secondary"
             state={submitButtonState_claimAndDeposit}
             submit={() => submit(true)}
