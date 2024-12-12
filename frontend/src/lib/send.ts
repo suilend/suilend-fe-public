@@ -438,9 +438,18 @@ const repayFlashLoan = (args: {
   emptySendBalance: any; // Empty balance object that we get from the flash loan
   receipt: any;
   sendCoin: any; // Send coin object we get from the claiming mSEND
+  suiPenaltycoin: any;
+  sender: string;
   transaction: Transaction;
 }): any => {
-  const { emptySendBalance, receipt, sendCoin, transaction } = args;
+  const {
+    emptySendBalance,
+    receipt,
+    sendCoin,
+    suiPenaltycoin,
+    sender,
+    transaction,
+  } = args;
 
   const sendPayAmount = transaction.moveCall({
     target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::swap_pay_amount`,
@@ -479,6 +488,8 @@ const repayFlashLoan = (args: {
       receipt,
     ],
   });
+
+  transaction.transferObjects([suiPenaltycoin], sender);
 
   return sendCoin;
 };
@@ -530,9 +541,9 @@ export const claimSend = async (
 
   if (isFlashLoan) {
     const currentPrice = await getCurrentPrice(initMainnetSDK(rpc.url));
-    const minPrice = computeMinPrice(currentPrice, 0.05); // TODO: Get slippage form UI
+    const minPrice = computeMinPrice(currentPrice, 0.05); // TODO: Get slippage from UI
 
-    const [emptySendBalance, borrowedSuiBalance, receipt] = borrowFlashLoan({
+    const [emptySendBalance, borrowedSuiCoin, receipt] = borrowFlashLoan({
       minPrice, // 1 SUI; slippage of 5%, minPrice = 0.95SUI
       burnAmount: BigInt(value),
       suiPenaltyAmount: BigInt(
@@ -546,7 +557,7 @@ export const claimSend = async (
       transaction,
     });
 
-    suiPenaltycoin = borrowedSuiBalance;
+    suiPenaltycoin = borrowedSuiCoin;
     flashLoanArgs.emptySendBalance = emptySendBalance;
     flashLoanArgs.receipt = receipt;
   }
@@ -573,6 +584,8 @@ export const claimSend = async (
       emptySendBalance: flashLoanArgs.emptySendBalance,
       receipt: flashLoanArgs.receipt,
       sendCoin,
+      suiPenaltycoin,
+      sender: address,
       transaction,
     });
   }
