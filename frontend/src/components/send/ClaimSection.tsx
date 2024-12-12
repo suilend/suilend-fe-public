@@ -546,6 +546,7 @@ function ClaimTabContent() {
         address,
         claimAmount,
         selectedMsendCoinType,
+        false,
         isDepositing,
         transaction,
         obligationOwnerCap?.id,
