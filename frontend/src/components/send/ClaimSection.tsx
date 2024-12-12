@@ -13,7 +13,7 @@ import { ArrowUpRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  NORMALIZED_BETA_SEND_COINTYPE,
+  NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   SUI_GAS_MIN,
@@ -544,8 +544,8 @@ function ClaimTabContent() {
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_BETA_SEND_COINTYPE, //TODO
-        ...sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE], // TODO
+        coinType: NORMALIZED_SEND_COINTYPE,
+        ...sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE],
       });
 
       toast.success(
@@ -553,7 +553,7 @@ function ClaimTabContent() {
           "Claimed",
           balanceChange !== undefined
             ? formatToken(balanceChange, {
-                dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE].decimals, // TODO
+                dp: sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE].decimals,
               })
             : null,
           "SEND",

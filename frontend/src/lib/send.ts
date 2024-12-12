@@ -6,8 +6,7 @@ import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
 
 import {
-  NORMALIZED_BETA_SEND_COINTYPE,
-  NORMALIZED_BETA_mSEND_COINTYPE,
+  NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_12M_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
@@ -29,7 +28,7 @@ export const mSEND_REDEMPTION_END_TIMESTAMP_MS =
 const BURN_CONTRACT_PACKAGE_ID =
   "0xf4e0686b311e9b9d6da7e61fc42dae4254828f5ee3ded8ab5480ecd27e46ff08";
 const mTOKEN_CONTRACT_PACKAGE_ID =
-  "0xd0d8ed2a83da2f0f171de7d60b0b128637d51e6dbfbec232447a764cdc6af627"; // TODO Real: 0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3
+  "0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3";
 
 // Managers
 const POINTS_MANAGER_OBJECT_ID =
@@ -38,9 +37,6 @@ const CAPSULE_MANAGER_OBJECT_ID =
   "0x5307419ec2f76bb70a948d71adf22ffde99a102961a3aa61361cc233f6d31e6e";
 
 export const mSEND_COINTYPE_MANAGER_MAP = {
-  [NORMALIZED_BETA_mSEND_COINTYPE]:
-    "0x776471131804197216d32d2805e38a46dd40fe2a7b1a76adde4a1787f878c2d7",
-
   [NORMALIZED_mSEND_3M_COINTYPE]:
     "0xef40b6d070de0c55dcb12775e4c438b1d83e0b5f445e95875f46eb2742a5549c",
   [NORMALIZED_mSEND_6M_COINTYPE]:
@@ -387,7 +383,7 @@ export const claimSend = async (
     target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::redeem_mtokens`,
     typeArguments: [
       mSendCoinType,
-      NORMALIZED_BETA_SEND_COINTYPE, // TODO
+      NORMALIZED_SEND_COINTYPE,
       NORMALIZED_SUI_COINTYPE,
     ],
     arguments: [
@@ -403,7 +399,7 @@ export const claimSend = async (
     suilendClient.depositCoin(
       address,
       sendCoin,
-      NORMALIZED_BETA_SEND_COINTYPE, // TODO
+      NORMALIZED_SEND_COINTYPE,
       transaction,
       obligationOwnerCapId,
     );

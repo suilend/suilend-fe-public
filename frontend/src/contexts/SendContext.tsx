@@ -26,7 +26,6 @@ import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import {
-  NORMALIZED_BETA_SEND_COINTYPE,
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_mSEND_12M_COINTYPE,
@@ -248,10 +247,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   // CoinMetadata
   const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
-  const sendCoinMetadataMap = useCoinMetadataMap([
-    NORMALIZED_SEND_COINTYPE,
-    NORMALIZED_BETA_SEND_COINTYPE, // TODO
-  ]);
+  const sendCoinMetadataMap = useCoinMetadataMap([NORMALIZED_SEND_COINTYPE]);
 
   // Balances
   const mSendBalanceMap = useMemo(
