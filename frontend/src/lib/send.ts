@@ -265,14 +265,17 @@ export const redeemRootletsMsend = async (
 
   const mSendCoins = [];
 
+  let count = 0;
+  const maxCount = 25;
   for (const { kiosk, kioskOwnerCap: personalKioskOwnerCap } of ownedKiosks) {
+    if (count > maxCount) break;
+
     const kioskItems = kiosk.items.filter(
       (item) => item.type === ROOTLETS_TYPE && !item.listing,
     );
 
-    const n = Math.min(kioskItems.length, 25); // Max 25 Rootlets NFTs at a time
-    for (let i = 0; i < n; i++) {
-      const kioskItem = kioskItems[i];
+    for (const kioskItem of kioskItems) {
+      if (count > maxCount) break; // Redeem max `maxCount` Rootlets NFTs at a time
 
       // Get mSEND coins owned by the Rootlets NFT
       const objs = await getOwnedObjectsOfType(
@@ -286,6 +289,8 @@ export const redeemRootletsMsend = async (
         new BigNumber(0),
       );
       if (ownedMsendRaw.eq(0)) continue;
+
+      count++;
 
       // Borrow item from personal kiosk
       const [kioskOwnerCap, borrow] = transaction.moveCall({
