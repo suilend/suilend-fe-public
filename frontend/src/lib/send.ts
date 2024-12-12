@@ -270,7 +270,10 @@ export const redeemRootletsMsend = async (
       (item) => item.type === ROOTLETS_TYPE && !item.listing,
     );
 
-    for (const kioskItem of kioskItems) {
+    const n = Math.min(kioskItems.length, 25); // Max 25 Rootlets NFTs at a time
+    for (let i = 0; i < n; i++) {
+      const kioskItem = kioskItems[i];
+
       // Get mSEND coins owned by the Rootlets NFT
       const objs = await getOwnedObjectsOfType(
         suiClient,
