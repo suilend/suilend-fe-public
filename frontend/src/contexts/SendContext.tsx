@@ -666,7 +666,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           );
         if (!isRootletsRedeemTransaction) return acc;
 
-        const transactionRedeemedMsend = mSendBalanceChanges
+        const transactionTotalRedeemedMsend = mSendBalanceChanges
           .filter(
             (balanceChange) =>
               (balanceChange.owner as any)?.AddressOwner === address,
@@ -681,8 +681,24 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               ),
             new BigNumber(0),
           );
+        const transactionSendPointsRedeemedMsend = (transaction.events ?? [])
+          .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
+          .reduce(
+            (acc2, event) =>
+              acc2.plus(
+                new BigNumber((event.parsedJson as any).claim_amount).div(
+                  10 **
+                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+                ),
+              ),
+            new BigNumber(0),
+          );
 
-        return acc.plus(transactionRedeemedMsend);
+        return acc.plus(
+          transactionTotalRedeemedMsend.minus(
+            transactionSendPointsRedeemedMsend,
+          ),
+        );
       },
       new BigNumber(0),
     );
