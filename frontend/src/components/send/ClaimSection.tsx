@@ -9,7 +9,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
-import { ArrowUpRight, Check, Clock, Square } from "lucide-react";
+import { ArrowUpRight, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -475,8 +475,6 @@ function ClaimTabContent() {
   const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
     useState<string>(`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`);
 
-  const FlashLoanCheckboxIcon = isFlashLoan ? Check : Square;
-
   // Submit
   const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
   const [isSubmitting_claimAndDeposit, setIsSubmitting_claimAndDeposit] =
@@ -741,7 +739,7 @@ function ClaimTabContent() {
             className="group flex w-max cursor-pointer flex-row items-center gap-2"
             onClick={() => setIsFlashLoan((is) => !is)}
           >
-            <FlashLoanCheckboxIcon
+            <Check
               className={cn(
                 "h-5 w-5",
                 isFlashLoan
@@ -793,7 +791,7 @@ function ClaimTabContent() {
 
           {/* Claim and deposit */}
           <SubmitButton
-            className="min-h-9 rounded-t-none"
+            className="min-h-9 rounded-t-none py-1"
             variant="secondary"
             state={submitButtonState_claimAndDeposit}
             submit={() => submit(true)}
