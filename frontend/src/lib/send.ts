@@ -1,11 +1,10 @@
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
-import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { SuiClient } from "@mysten/sui/client";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
-import { toast } from "sonner";
 
 import {
   NORMALIZED_SEND_COINTYPE,
@@ -13,10 +12,10 @@ import {
   NORMALIZED_mSEND_12M_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   NORMALIZED_mSEND_6M_COINTYPE,
+  Rpc,
   isSendPointsS1,
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
-import { Decimal } from "@suilend/sdk/_generated/suilend/decimal/structs";
 
 import { AppData } from "@/contexts/AppContext";
 import { getOwnedObjectsOfType } from "@/lib/transactions";
@@ -375,14 +374,14 @@ export const redeemRootletsMsend = async (
   );
 };
 
-export function borrowFlashLoan(args: {
+const borrowFlashLoan = (args: {
   minPrice: number; // based on slippage
   burnAmount: bigint; // without decimal part
   suiPenaltyAmount: bigint;
   mTokenManager: string;
   mSendCoinType: string;
   transaction: Transaction;
-}): [any, any, any] {
+}): [any, any, any] => {
   const {
     minPrice,
     burnAmount,
@@ -433,14 +432,14 @@ export function borrowFlashLoan(args: {
   });
 
   return [emptySendBalance, penaltyCoin, receipt];
-}
+};
 
-export function repayFlashLoan(args: {
+const repayFlashLoan = (args: {
   emptySendBalance: any; // Empty balance object that we get from the flash loan
   receipt: any;
   sendCoin: any; // Send coin object we get from the claiming mSEND
   transaction: Transaction;
-}): any {
+}): any => {
   const { emptySendBalance, receipt, sendCoin, transaction } = args;
 
   const sendPayAmount = transaction.moveCall({
@@ -482,9 +481,10 @@ export function repayFlashLoan(args: {
   });
 
   return sendCoin;
-}
+};
 
 export const claimSend = async (
+  rpc: Rpc,
   suiClient: SuiClient,
   suilendClient: SuilendClient,
   address: string,
@@ -526,12 +526,12 @@ export const claimSend = async (
   );
 
   let suiPenaltycoin = transaction.gas;
-  let flashLoanArgs;
+  const flashLoanArgs: Record<string, any> = {};
 
   if (isFlashLoan) {
-    const currentPrice = await getCurrentPrice(initMainnetSDK()); // TODO: Pass our RPC Node instead of defaulting to cetus'
+    const currentPrice = await getCurrentPrice(initMainnetSDK(rpc.url));
     const minPrice = computeMinPrice(currentPrice, 0.05); // TODO: Get slippage form UI
-    // const claimPenaltyAmountSui =
+
     const [emptySendBalance, borrowedSuiBalance, receipt] = borrowFlashLoan({
       minPrice, // 1 SUI; slippage of 5%, minPrice = 0.95SUI
       burnAmount: BigInt(value),
@@ -547,11 +547,8 @@ export const claimSend = async (
     });
 
     suiPenaltycoin = borrowedSuiBalance;
-
-    flashLoanArgs = {
-      emptySendBalance,
-      receipt,
-    };
+    flashLoanArgs.emptySendBalance = emptySendBalance;
+    flashLoanArgs.receipt = receipt;
   }
 
   // Claim SEND
@@ -573,8 +570,8 @@ export const claimSend = async (
   let finalSendCoin = sendCoin;
   if (isFlashLoan) {
     finalSendCoin = repayFlashLoan({
-      emptySendBalance: flashLoanArgs?.emptySendBalance,
-      receipt: flashLoanArgs?.receipt,
+      emptySendBalance: flashLoanArgs.emptySendBalance,
+      receipt: flashLoanArgs.receipt,
       sendCoin,
       transaction,
     });

@@ -427,7 +427,7 @@ const MAX_BUTTON_WIDTH = 60; // px
 const MAX_BUTTON_HEIGHT = 40; // px
 
 function ClaimTabContent() {
-  const { explorer, suiClient } = useSettingsContext();
+  const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, getBalance, obligationOwnerCap } =
     useLoadedAppContext();
@@ -541,6 +541,7 @@ function ClaimTabContent() {
     const transaction = new Transaction();
     try {
       await claimSend(
+        rpc,
         suiClient,
         suilendClient,
         address,
