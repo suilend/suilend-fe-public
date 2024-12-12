@@ -30,6 +30,7 @@ import MsendDropdownMenu from "@/components/send/MsendDropdownMenu";
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import PenaltyLineChart from "@/components/send/PenaltyLineChart";
 import SectionHeading from "@/components/send/SectionHeading";
+import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button, { ButtonProps } from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
@@ -41,6 +42,7 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -420,6 +422,10 @@ function RedeemTabContent({
   );
 }
 
+const INPUT_HEIGHT = 70; // px
+const MAX_BUTTON_WIDTH = 60; // px
+const MAX_BUTTON_HEIGHT = 40; // px
+
 function ClaimTabContent() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -458,7 +464,11 @@ function ClaimTabContent() {
   //   BigNumber.ROUND_DOWN,
   // ); // TODO
 
+  const useMaxAmount = new BigNumber(claimAmount || "").eq(mSendBalance);
+
   // Penalty
+  const suiReserve = data.reserveMap[NORMALIZED_SUI_COINTYPE];
+
   const claimPenaltyAmountSui = mSendObjectMap[
     selectedMsendCoinType
   ].currentPenaltySui.times(claimAmount || 0);
@@ -613,33 +623,125 @@ function ClaimTabContent() {
           !ssuiDepositedAmount.gte(0) && "pointer-events-none opacity-50",
         )}
       >
-        <TBody>
-          mSEND in wallet:{" "}
-          {formatToken(mSendBalanceMap[selectedMsendCoinType], {
-            dp: mSendCoinMetadataMap[selectedMsendCoinType].decimals,
-          })}
-        </TBody>
-
         <div className="flex w-full flex-col gap-4">
-          {/* Submit */}
-          <div className="flex w-full flex-col gap-px">
-            {/* Claim */}
-            <SubmitButton
-              className="rounded-b-none"
-              labelClassName="uppercase"
-              state={submitButtonState_claim}
-              submit={() => submit(false)}
-            />
+          {/* Input */}
+          <div className="relative flex w-full flex-col">
+            <div className="relative z-[2] w-full">
+              <div className="absolute left-3 top-1/2 z-[2] -translate-y-2/4">
+                <Button
+                  className={cn(
+                    useMaxAmount &&
+                      "border-secondary bg-secondary/5 disabled:opacity-100",
+                  )}
+                  labelClassName={cn(
+                    "uppercase",
+                    useMaxAmount && "text-primary-foreground",
+                  )}
+                  variant="secondaryOutline"
+                  onClick={() =>
+                    setClaimAmount(
+                      mSendBalance.toFixed(
+                        mSendCoinMetadataMap[selectedMsendCoinType].decimals,
+                        BigNumber.ROUND_DOWN,
+                      ),
+                    )
+                  }
+                  disabled={useMaxAmount}
+                  style={{
+                    width: `${MAX_BUTTON_WIDTH}px`,
+                    height: `${MAX_BUTTON_HEIGHT}px`,
+                  }}
+                >
+                  Max
+                </Button>
+              </div>
 
-            {/* Claim and deposit */}
-            <SubmitButton
-              className="min-h-8 rounded-t-none"
-              labelClassName="uppercase text-sm"
-              variant="secondary"
-              state={submitButtonState_claimAndDeposit}
-              submit={() => submit(true)}
-            />
+              <Input
+                className="relative z-[1] border-primary bg-card px-0 py-0 text-right text-2xl"
+                type="number"
+                value={claimAmount}
+                onChange={(e) => setClaimAmount(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+                style={{
+                  height: `${INPUT_HEIGHT}px`,
+                  paddingLeft: `${3 * 4 + MAX_BUTTON_WIDTH + 3 * 4}px`,
+                  paddingRight: `${3 * 4 + "mSEND".length * 14.4 + 3 * 4}px`,
+                }}
+                step="any"
+              />
+
+              <div
+                className="absolute right-3 top-0 z-[2] flex flex-col items-end justify-center"
+                style={{ height: `${INPUT_HEIGHT}px` }}
+              >
+                <TBody className="text-right text-2xl">
+                  {mSendCoinMetadataMap[selectedMsendCoinType].symbol}
+                </TBody>
+              </div>
+            </div>
+
+            <div className="relative z-[1] -mt-2 flex flex-row items-center justify-between rounded-b-md bg-primary/25 px-4 pb-2 pt-4">
+              <TBodySans className="text-muted-foreground">Claimable</TBodySans>
+
+              <div className="flex flex-row items-center gap-2">
+                <SendTokenLogo className="h-5 w-5" />
+                <TBody className="text-[16px]">
+                  {formatToken(mSendBalance, {
+                    dp: sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE].decimals,
+                  })}
+                </TBody>
+              </div>
+            </div>
           </div>
+
+          {/* Penalty */}
+          <div className="flex w-full flex-row justify-between gap-4">
+            <TBodySans className="text-muted-foreground">Penalty</TBodySans>
+
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-row items-center gap-2">
+                <TokenLogo className="h-4 w-4" token={suiReserve.token} />
+                <Tooltip
+                  title={`${formatToken(claimPenaltyAmountSui, {
+                    dp: SUI_DECIMALS,
+                  })} SUI`}
+                >
+                  <TBody
+                    className={cn(
+                      "decoration-foreground/50",
+                      hoverUnderlineClassName,
+                    )}
+                  >
+                    {formatToken(claimPenaltyAmountSui, { exact: false })}
+                    {" SUI"}
+                  </TBody>
+                </Tooltip>
+              </div>
+              <TLabel>
+                {formatUsd(claimPenaltyAmountSui.times(suiReserve.price))}
+              </TLabel>
+            </div>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <div className="flex w-full flex-col gap-px">
+          {/* Claim */}
+          <SubmitButton
+            className="rounded-b-none"
+            labelClassName="uppercase"
+            state={submitButtonState_claim}
+            submit={() => submit(false)}
+          />
+
+          {/* Claim and deposit */}
+          <SubmitButton
+            className="min-h-9 rounded-t-none py-1"
+            labelClassName="uppercase text-sm"
+            variant="secondary"
+            state={submitButtonState_claimAndDeposit}
+            submit={() => submit(true)}
+          />
         </div>
       </div>
     </>
@@ -846,6 +948,7 @@ export default function ClaimSection({
                               {formatToken(
                                 mSendObjectMap[selectedMsendCoinType]
                                   .currentPenaltySui,
+                                { exact: false },
                               )}
                               {" SUI"}
                             </span>
