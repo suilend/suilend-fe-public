@@ -503,6 +503,7 @@ export const claimSend = async (
   claimPenaltyAmountSui: BigNumber,
   mSendCoinType: string,
   isFlashLoan: boolean,
+  slippagePercentage: number,
   isDepositing: boolean,
   transaction: Transaction,
   obligationOwnerCapId?: string,
@@ -541,7 +542,7 @@ export const claimSend = async (
 
   if (isFlashLoan) {
     const currentPrice = await getCurrentPrice(initMainnetSDK(rpc.url));
-    const minPrice = computeMinPrice(currentPrice, 0.05); // TODO: Get slippage from UI
+    const minPrice = computeMinPrice(currentPrice, slippagePercentage); // TODO: Get slippage from UI
 
     const [emptySendBalance, borrowedSuiCoin, receipt] = borrowFlashLoan({
       minPrice, // 1 SUI; slippage of 5%, minPrice = 0.95SUI

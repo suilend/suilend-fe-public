@@ -459,6 +459,19 @@ function ClaimTabContent() {
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
+
+  // Flash loan
+  const [isFlashLoanChecked, setIsFlashLoanChecked] = useState(false);
+  const [slippagePercentage, setSlippagePercentage] = useState("");
+
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setIsFlashLoanChecked(event.target.checked);
+  };
+
+  const handleSlippageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value; // Extract the value as a string
+    setSlippagePercentage(value); // Update state
+  };
   // new BigNumber(mSendBalance).toFixed(
   //   mSendCoinMetadataMap[selectedMsendCoinType].decimals,
   //   BigNumber.ROUND_DOWN,
@@ -548,7 +561,8 @@ function ClaimTabContent() {
         claimAmount,
         claimPenaltyAmountSui,
         selectedMsendCoinType,
-        true, // TODO: REVERT THIS!!
+        isFlashLoanChecked,
+        Number(slippagePercentage),
         isDepositing,
         transaction,
         obligationOwnerCap?.id,
@@ -694,6 +708,40 @@ function ClaimTabContent() {
                     dp: sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE].decimals,
                   })}
                 </TBody>
+              </div>
+            </div>
+            <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
+              <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
+                <input
+                  type="checkbox"
+                  id="flash-loan-checkbox"
+                  className="h-4 w-4"
+                  checked={isFlashLoanChecked}
+                  onChange={handleCheckboxChange}
+                />
+                <label
+                  htmlFor="flash-loan-checkbox"
+                  className="text-muted-foreground"
+                >
+                  Flash loan
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="slippage-input"
+                  className="text-muted-foreground"
+                ></label>
+                <input
+                  type="number"
+                  id="slippage-input"
+                  className="h-8 w-full rounded-md border border-gray-300 px-3 py-1 text-sm text-blue-500 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Slippage (%)"
+                  onChange={handleSlippageChange}
+                  value={
+                    slippagePercentage !== undefined ? slippagePercentage : ""
+                  }
+                />
               </div>
             </div>
           </div>
