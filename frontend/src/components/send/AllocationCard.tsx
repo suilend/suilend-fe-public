@@ -213,7 +213,6 @@ function Wrapper({ children }: PropsWithChildren) {
 
 interface AllocationCardProps {
   allocation: Allocation;
-  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
