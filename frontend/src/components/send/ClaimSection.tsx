@@ -9,7 +9,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
-import { ArrowUpRight, Clock } from "lucide-react";
+import { ArrowUpRight, Check, Clock, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -89,7 +89,7 @@ function SubmitButton({
   return (
     <Button
       className={cn("h-auto min-h-14 w-full rounded-md py-2", className)}
-      labelClassName={cn("text-[16px] text-wrap", labelClassName)}
+      labelClassName={cn("text-wrap", labelClassName)}
       variant={variant}
       style={{ overflowWrap: "anywhere" }}
       disabled={state.isDisabled}
@@ -240,7 +240,7 @@ function RedeemTabContent({
                       width={24}
                       height={24}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(userAllocations.sendPoints.owned, {
                         exact: false,
                       })}{" "}
@@ -253,7 +253,7 @@ function RedeemTabContent({
                       className="h-5 w-5"
                       coinType={NORMALIZED_mSEND_3M_COINTYPE}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(sendPointsAllocation.userEligibleSend!, {
                         exact: false,
                       })}
@@ -282,7 +282,7 @@ function RedeemTabContent({
                             width={24}
                             height={24}
                           />
-                          <TBody className="text-[16px]">
+                          <TBody>
                             {formatInteger(+owned)} {capitalize(rarity)} Suilend
                             Capsule{!owned.eq(1) && "s"}
                           </TBody>
@@ -293,7 +293,7 @@ function RedeemTabContent({
                             className="h-5 w-5"
                             coinType={NORMALIZED_mSEND_3M_COINTYPE}
                           />
-                          <TBody className="text-[16px]">
+                          <TBody>
                             {formatToken(
                               owned.times(
                                 totalAllocationBreakdownMaps.suilendCapsules[
@@ -328,7 +328,7 @@ function RedeemTabContent({
                       height={24}
                     />
                     <div className="flex flex-col gap-1">
-                      <TBody className="text-[16px]">
+                      <TBody>
                         {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
                         Rootlets NFT
                         {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
@@ -357,7 +357,7 @@ function RedeemTabContent({
                       className="h-5 w-5"
                       coinType={NORMALIZED_mSEND_3M_COINTYPE}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(rootletsAllocation.userEligibleSend!, {
                         exact: false,
                       })}
@@ -377,7 +377,7 @@ function RedeemTabContent({
                 className="h-5 w-5"
                 coinType={NORMALIZED_mSEND_3M_COINTYPE}
               />
-              <TBody className="text-[16px]">
+              <TBody>
                 {formatToken(totalRedeemableMsend, {
                   dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
                     .decimals,
@@ -426,6 +426,8 @@ const INPUT_HEIGHT = 70; // px
 const MAX_BUTTON_WIDTH = 60; // px
 const MAX_BUTTON_HEIGHT = 40; // px
 
+const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
+
 function ClaimTabContent() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -459,12 +461,6 @@ function ClaimTabContent() {
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
-
-  // new BigNumber(mSendBalance).toFixed(
-  //   mSendCoinMetadataMap[selectedMsendCoinType].decimals,
-  //   BigNumber.ROUND_DOWN,
-  // ); // TODO
-
   const useMaxAmount = new BigNumber(claimAmount || "").eq(mSendBalance);
 
   // Penalty
@@ -477,19 +473,9 @@ function ClaimTabContent() {
   // Flash loan
   const [isFlashLoan, setIsFlashLoan] = useState<boolean>(false);
   const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
-    useState<string>("3");
+    useState<string>(`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`);
 
-  const handleIsFlashLoanChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setIsFlashLoan(event.target.checked);
-  };
-
-  const handleFlashLoanSlippagePercentChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setFlashLoanSlippagePercent(event.target.value);
-  };
+  const FlashLoanCheckboxIcon = isFlashLoan ? Check : Square;
 
   // Submit
   const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
@@ -709,7 +695,7 @@ function ClaimTabContent() {
 
               <div className="flex flex-row items-center gap-2">
                 <SendTokenLogo className="h-5 w-5" />
-                <TBody className="text-[16px]">
+                <TBody>
                   {formatToken(mSendBalance, {
                     dp: sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE].decimals,
                   })}
@@ -749,37 +735,51 @@ function ClaimTabContent() {
         </div>
 
         {/* Flash loan */}
-        <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
-          <div className="relative flex flex-row items-center justify-between rounded-b-md px-4 pb-2 pt-4">
-            <input
-              type="checkbox"
-              id="flash-loan-checkbox"
-              className="h-4 w-4"
-              checked={isFlashLoan}
-              onChange={handleIsFlashLoanChange}
+        <div className="flex w-full flex-col gap-4">
+          {/* Checkbox */}
+          <div
+            className="group flex w-max cursor-pointer flex-row items-center gap-2"
+            onClick={() => setIsFlashLoan((is) => !is)}
+          >
+            <FlashLoanCheckboxIcon
+              className={cn(
+                "h-5 w-5",
+                isFlashLoan
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground transition-colors group-hover:text-primary-foreground",
+              )}
             />
-            <label
-              htmlFor="flash-loan-checkbox"
-              className="text-muted-foreground"
+            <TBodySans
+              className={cn(
+                isFlashLoan
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground transition-colors group-hover:text-primary-foreground",
+              )}
             >
-              Flash loan
-            </label>
+              Pay penalty using a flash loan
+            </TBodySans>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="slippage-input"
-              className="text-muted-foreground"
-            ></label>
-            <input
-              type="number"
-              id="slippage-input"
-              className="h-8 w-full rounded-md border border-gray-300 px-3 py-1 text-sm text-blue-500 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Slippage (%)"
-              onChange={handleFlashLoanSlippagePercentChange}
-              value={flashLoanSlippagePercent ?? ""}
-            />
-          </div>
+          {/* Slippage */}
+          {isFlashLoan && (
+            <div className="flex flex-row items-center gap-3">
+              <TBodySans className="text-muted-foreground">Slippage</TBodySans>
+
+              <div className="flex flex-row items-center gap-1">
+                <Input
+                  className="h-7 w-[60px] rounded-md border-0 bg-muted/10 transition-colors focus:bg-muted/15"
+                  type="number"
+                  placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={flashLoanSlippagePercent ?? ""}
+                  onChange={(e) => setFlashLoanSlippagePercent(e.target.value)}
+                />
+                <TBody className="text-muted-foreground">%</TBody>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Submit */}
@@ -793,8 +793,7 @@ function ClaimTabContent() {
 
           {/* Claim and deposit */}
           <SubmitButton
-            className="min-h-9 rounded-t-none py-1"
-            labelClassName="text-sm"
+            className="min-h-9 rounded-t-none"
             variant="secondary"
             state={submitButtonState_claimAndDeposit}
             submit={() => submit(true)}
