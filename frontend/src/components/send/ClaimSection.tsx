@@ -477,7 +477,7 @@ function ClaimTabContent() {
   // Flash loan
   const [isFlashLoan, setIsFlashLoan] = useState<boolean>(false);
   const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
-    useState<string>("");
+    useState<string>("3");
 
   const handleIsFlashLoanChange = (
     event: React.ChangeEvent<HTMLInputElement>,
