@@ -425,7 +425,7 @@ export const formatDuration = (duration: Duration) =>
   (duration.years || duration.months
     ? [
         duration.years ? `${duration.years}y` : null,
-        `${duration.months ?? 0}m`,
+        `${duration.months ?? 0}mo`,
         `${duration.days ?? 0}d`,
         `${duration.hours ?? 0}h`,
       ].filter(Boolean)
