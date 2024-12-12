@@ -1,35 +1,45 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
-import PointsIcon from "@/components/points/PointsIcon";
+import PointsLogo from "@/components/points/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAppContext } from "@/contexts/AppContext";
+import { usePointsContext } from "@/contexts/PointsContext";
 import { formatPoints } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface PointsCountProps {
-  className?: ClassValue;
-  iconClassName?: ClassValue;
   labelClassName?: ClassValue;
-  points?: BigNumber;
+  season: number;
+  amount?: BigNumber | null;
 }
 
 export default function PointsCount({
-  className,
-  iconClassName,
   labelClassName,
-  points,
+  season,
+  amount,
 }: PointsCountProps) {
+  const { data } = useAppContext();
+  const { seasonMap } = usePointsContext();
+
+  const coinMetadata = data?.coinMetadataMap[seasonMap[season].coinType];
+
   return (
-    <div className={cn("flex w-max flex-row items-center gap-1.5", className)}>
-      <PointsIcon className={iconClassName} />
-      {points !== undefined ? (
-        <Tooltip title={formatPoints(points, { dp: 6 })}>
-          <TBody className={cn(labelClassName)}>{formatPoints(points)}</TBody>
-        </Tooltip>
-      ) : (
+    <div className="flex w-max flex-row items-center gap-1.5">
+      <PointsLogo season={season} />
+
+      {amount === undefined ? (
         <Skeleton className="h-5 w-10" />
+      ) : amount === null ? (
+        <TBody className={cn(labelClassName)}>N/A</TBody>
+      ) : (
+        <Tooltip
+          title={`${formatPoints(amount, { dp: coinMetadata?.decimals })} ${coinMetadata?.symbol}`}
+        >
+          <TBody className={cn(labelClassName)}>{formatPoints(amount)}</TBody>
+        </Tooltip>
       )}
     </div>
   );

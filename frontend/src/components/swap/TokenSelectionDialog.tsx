@@ -108,7 +108,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { data, getBalance } = useLoadedAppContext();
+  const { getBalance, filteredReserves } = useLoadedAppContext();
 
   const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];
@@ -139,10 +139,10 @@ export default function TokenSelectionDialog({
   );
   const reserveTokens = useMemo(
     () =>
-      data.lendingMarket.reserves
+      filteredReserves
         .map((r) => tokens.find((t) => t.symbol === r.symbol))
         .filter(Boolean) as SwapToken[],
-    [data.lendingMarket.reserves, tokens],
+    [filteredReserves, tokens],
   );
   const otherTokens = useMemo(
     () =>

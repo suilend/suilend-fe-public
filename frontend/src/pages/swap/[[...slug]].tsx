@@ -27,6 +27,8 @@ import {
   SUI_GAS_MIN,
   getBalanceChange,
   getFilteredRewards,
+  getHistoryPrice,
+  getPrice,
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
@@ -82,7 +84,7 @@ const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
 
 type HistoricalUsdPriceData = {
   timestampS: number;
-  value: number;
+  priceUsd: number;
 };
 
 function Page() {
@@ -396,34 +398,23 @@ function Page() {
 
   const fetchTokenHistoricalUsdPrices = useCallback(
     async (token: SwapToken) => {
+      console.log("fetchTokenHistoricalUsdPrices", token.symbol);
+
       try {
-        const url = `https://public-api.birdeye.so/defi/history_price?${new URLSearchParams(
-          {
-            address: isSui(token.coinType) ? SUI_COINTYPE : token.coinType,
-            address_type: "token",
-            type: HISTORICAL_USD_PRICES_INTERVAL,
-            time_from: `${Math.floor(new Date().getTime() / 1000) - 24 * 60 * 60}`,
-            time_to: `${Math.floor(new Date().getTime() / 1000)}`,
-          },
-        )}`;
-        const res = await fetch(url, {
-          headers: {
-            "X-API-KEY": process.env.NEXT_PUBLIC_BIRDEYE_API_KEY as string,
-            "x-chain": "sui",
-          },
-        });
-        const json = await res.json();
-        if (json.data?.items)
-          setHistoricalUsdPriceMap((o) => ({
-            ...o,
-            [token.coinType]: json.data.items.map(
-              (item: any) =>
-                ({
-                  timestampS: item.unixTime,
-                  value: item.value,
-                }) as HistoricalUsdPriceData,
-            ),
-          }));
+        const currentTimeS = Math.floor(new Date().getTime() / 1000);
+
+        const result = await getHistoryPrice(
+          token.coinType,
+          HISTORICAL_USD_PRICES_INTERVAL,
+          currentTimeS - 24 * 60 * 60,
+          currentTimeS,
+        );
+        if (result === undefined) return;
+
+        setHistoricalUsdPriceMap((o) => ({
+          ...o,
+          [token.coinType]: result,
+        }));
       } catch (err) {
         console.error(err);
       }
@@ -441,22 +432,42 @@ function Page() {
   }, [fetchTokenHistoricalUsdPrices, tokenIn, tokenOut]);
 
   // USD prices - current
+  const [usdPricesMap, setUsdPriceMap] = useState<Record<string, BigNumber>>(
+    {},
+  );
   const tokenInUsdPrice = useMemo(
-    () =>
-      tokenInHistoricalUsdPrices !== undefined
-        ? tokenInHistoricalUsdPrices[tokenInHistoricalUsdPrices.length - 1]
-            ?.value
-        : undefined,
-    [tokenInHistoricalUsdPrices],
+    () => usdPricesMap[tokenIn.coinType],
+    [usdPricesMap, tokenIn.coinType],
   );
   const tokenOutUsdPrice = useMemo(
-    () =>
-      tokenOutHistoricalUsdPrices !== undefined
-        ? tokenOutHistoricalUsdPrices[tokenOutHistoricalUsdPrices.length - 1]
-            ?.value
-        : undefined,
-    [tokenOutHistoricalUsdPrices],
+    () => usdPricesMap[tokenOut.coinType],
+    [usdPricesMap, tokenOut.coinType],
   );
+
+  const fetchTokenUsdPrice = useCallback(async (token: SwapToken) => {
+    console.log("fetchTokenUsdPrice", token.symbol);
+
+    try {
+      const result = await getPrice(token.coinType);
+      if (result === undefined) return;
+
+      setUsdPriceMap((o) => ({
+        ...o,
+        [token.coinType]: BigNumber(result),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const fetchedInitialTokenUsdPricesRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (fetchedInitialTokenUsdPricesRef.current) return;
+
+    fetchTokenUsdPrice(tokenIn);
+    fetchTokenUsdPrice(tokenOut);
+    fetchedInitialTokenUsdPricesRef.current = true;
+  }, [fetchTokenUsdPrice, tokenIn, tokenOut]);
 
   const tokenInUsdValue = useMemo(
     () =>
@@ -522,12 +533,12 @@ function Page() {
         (!isInverted
           ? tokenInHistoricalUsdPrices
           : tokenOutHistoricalUsdPrices
-        ).find((item) => item.timestampS === timestampS)?.value ?? 0,
+        ).find((item) => item.timestampS === timestampS)?.priceUsd ?? 0,
       ).div(
         (!isInverted
           ? tokenOutHistoricalUsdPrices
           : tokenInHistoricalUsdPrices
-        ).find((item) => item.timestampS === timestampS)?.value ?? 1,
+        ).find((item) => item.timestampS === timestampS)?.priceUsd ?? 1,
       ),
     }));
   }, [tokenInHistoricalUsdPrices, tokenOutHistoricalUsdPrices, isInverted]);
@@ -676,7 +687,12 @@ function Page() {
       depositSubmitButtonNoValueState !== undefined &&
       depositSubmitButtonNoValueState.isDisabled
     )
-      return depositSubmitButtonNoValueState.title;
+      return [
+        depositSubmitButtonNoValueState.title,
+        depositSubmitButtonNoValueState.description,
+      ]
+        .filter(Boolean)
+        .join(" - ");
     if (
       depositSubmitButtonState !== undefined &&
       depositSubmitButtonState.isDisabled
@@ -1022,7 +1038,7 @@ function Page() {
           </div>
 
           {/* Submit */}
-          <div className="flex w-full flex-col gap-[1px]">
+          <div className="flex w-full flex-col gap-px">
             {/* Swap */}
             <Button
               className={cn(

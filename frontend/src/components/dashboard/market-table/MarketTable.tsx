@@ -5,15 +5,12 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
-  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_NS_COINTYPE,
-  NORMALIZED_kSUI_COINTYPE,
   Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  isDeprecated,
   isEcosystemLst,
-  isInMsafeApp,
   isMemecoin,
   issSui,
 } from "@suilend/frontend-sui";
@@ -91,7 +88,7 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { data, obligation } = useLoadedAppContext();
+  const { data, filteredReserves } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -259,35 +256,6 @@ export default function MarketTable() {
 
   // Rows
   const rows: HeaderRowData[] = useMemo(() => {
-    const filteredReserves = data.lendingMarket.reserves
-      .filter((reserve) =>
-        !isInMsafeApp()
-          ? true
-          : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType),
-      )
-      .filter((reserve) => {
-        const depositPosition = obligation?.deposits?.find(
-          (d) => d.coinType === reserve.coinType,
-        );
-        const borrowPosition = obligation?.borrows?.find(
-          (b) => b.coinType === reserve.coinType,
-        );
-
-        const depositedAmount =
-          depositPosition?.depositedAmount ?? new BigNumber(0);
-        const borrowedAmount =
-          borrowPosition?.borrowedAmount ?? new BigNumber(0);
-
-        return (
-          (reserve.coinType === NORMALIZED_kSUI_COINTYPE
-            ? Date.now() >= 1732708800000 // 2024-11-27 12:00:00 UTC
-            : reserve.config.depositLimit.gt(0)) ||
-          depositedAmount.gt(0) ||
-          borrowedAmount.gt(0) ||
-          !!data.lendingMarketOwnerCapId
-        );
-      });
-
     const reserveRows: ReservesRowData[] = filteredReserves.map((reserve) => {
       const token = reserve.token;
       const price = reserve.price;
@@ -455,6 +423,18 @@ export default function MarketTable() {
         subRows: [],
       };
 
+      const deprecatedRow: CollapsibleRowData = {
+        isCollapsibleRow: true,
+        title: "DEPRECATED",
+
+        depositedAmount: new BigNumber(0),
+        depositedAmountUsd: new BigNumber(0),
+        borrowedAmount: new BigNumber(0),
+        borrowedAmountUsd: new BigNumber(0),
+
+        subRows: [],
+      };
+
       for (const reserveRow of mainReserveRows) {
         if (isEcosystemLst(reserveRow.token.coinType)) {
           ecosystemLstsRow.depositedAmount =
@@ -471,6 +451,21 @@ export default function MarketTable() {
             );
 
           ecosystemLstsRow.subRows.push(reserveRow);
+        } else if (isDeprecated(reserveRow.token.coinType)) {
+          deprecatedRow.depositedAmount = deprecatedRow.depositedAmount.plus(
+            reserveRow.depositedAmount,
+          );
+          deprecatedRow.depositedAmountUsd =
+            deprecatedRow.depositedAmountUsd.plus(
+              reserveRow.depositedAmountUsd,
+            );
+          deprecatedRow.borrowedAmount = deprecatedRow.borrowedAmount.plus(
+            reserveRow.borrowedAmount,
+          );
+          deprecatedRow.borrowedAmountUsd =
+            deprecatedRow.borrowedAmountUsd.plus(reserveRow.borrowedAmountUsd);
+
+          deprecatedRow.subRows.push(reserveRow);
         } else mainAssetsRow.subRows.push(reserveRow);
       }
 
@@ -484,6 +479,9 @@ export default function MarketTable() {
           ...mainAssetsRow.subRows.slice(index + 1),
         ];
       }
+
+      if (deprecatedRow.subRows.length > 0)
+        mainAssetsRow.subRows = [...mainAssetsRow.subRows, deprecatedRow];
 
       mainAssetsRow.count = mainReserveRows.length;
       result.push(mainAssetsRow);
@@ -528,31 +526,18 @@ export default function MarketTable() {
         } else isolatedAssetsRow.subRows.push(reserveRow);
       }
 
-      if (memecoinsRow.subRows.length > 0) {
-        const index = isolatedAssetsRow.subRows.findIndex(
-          (x) =>
-            (x as ReservesRowData).token.coinType === NORMALIZED_NS_COINTYPE,
-        );
+      if (memecoinsRow.subRows.length > 0)
         isolatedAssetsRow.subRows = [
-          ...isolatedAssetsRow.subRows.slice(0, index + 1),
+          ...isolatedAssetsRow.subRows,
           memecoinsRow,
-          ...isolatedAssetsRow.subRows.slice(index + 1),
         ];
-      }
 
       isolatedAssetsRow.count = isolatedReserveRows.length;
       result.push(isolatedAssetsRow);
     }
 
     return result;
-  }, [
-    data.lendingMarket.reserves,
-    obligation?.deposits,
-    obligation?.borrows,
-    data.lendingMarketOwnerCapId,
-    data.rewardMap,
-    data.lstAprPercentMap,
-  ]);
+  }, [filteredReserves, data.rewardMap, data.lstAprPercentMap]);
 
   return (
     <div className="w-full">

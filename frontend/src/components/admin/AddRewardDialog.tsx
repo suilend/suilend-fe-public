@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import CoinPopover from "@/components/admin/CoinPopover";
+import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
@@ -134,7 +134,7 @@ export default function AddRewardDialog({
           Add reward
         </Button>
       }
-      contentProps={{ className: "sm:max-w-lg" }}
+      contentProps={{ className: "sm:max-w-xl" }}
       titleIcon={<Plus />}
       title="Add Reward"
       footer={
@@ -161,7 +161,7 @@ export default function AddRewardDialog({
       }
     >
       <Grid>
-        <CoinPopover
+        <CoinDropdownMenu
           coinMetadataMap={balancesCoinMetadataMap}
           value={coinType}
           onChange={setCoinType}

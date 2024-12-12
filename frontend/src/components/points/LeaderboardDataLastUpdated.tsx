@@ -3,15 +3,23 @@ import BigNumber from "bignumber.js";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { formatDuration } from "@/lib/format";
 
-export default function LeaderboardDataLastUpdated() {
-  const { updatedAt } = usePointsContext();
+interface LeaderboardDataLastUpdatedProps {
+  season: number;
+}
 
-  if (!updatedAt) return null;
+export default function LeaderboardDataLastUpdated({
+  season,
+}: LeaderboardDataLastUpdatedProps) {
+  const { updatedAtMap } = usePointsContext();
+
+  if (!updatedAtMap?.[season]) return null;
   return (
     <>
       {"Last updated "}
       {formatDuration(
-        new BigNumber((new Date().getTime() - updatedAt.getTime()) / 1000),
+        new BigNumber(
+          (new Date().getTime() - updatedAtMap[season].getTime()) / 1000,
+        ),
       )}
       {" ago"}
     </>

@@ -1,4 +1,9 @@
-import { PropsWithChildren, ReactElement, cloneElement } from "react";
+import {
+  CSSProperties,
+  PropsWithChildren,
+  ReactElement,
+  cloneElement,
+} from "react";
 
 import { ClassValue } from "clsx";
 
@@ -16,6 +21,8 @@ interface TabsProps extends PropsWithChildren {
   selectedTab: string;
   onTabChange: (tab: string) => void;
   listClassName?: ClassValue;
+  listStyle?: CSSProperties;
+  triggerClassName?: (tab: Tab) => ClassValue;
 }
 
 export default function Tabs({
@@ -23,6 +30,9 @@ export default function Tabs({
   selectedTab,
   onTabChange,
   listClassName,
+  listStyle,
+  triggerClassName,
+
   children,
 }: TabsProps) {
   return (
@@ -32,11 +42,15 @@ export default function Tabs({
           "mb-4 flex h-fit w-full flex-row rounded-[5px] bg-card p-[1px]",
           listClassName,
         )}
+        style={listStyle}
       >
         {tabs.map((tab) => (
           <TabsTrigger
             key={tab.id}
-            className="flex h-10 flex-1 flex-row items-center gap-2 px-0 font-normal uppercase text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className={cn(
+              "flex h-10 flex-1 flex-row items-center gap-2 px-0 font-normal uppercase text-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground",
+              triggerClassName?.(tab),
+            )}
             value={tab.id}
           >
             {tab.icon &&

@@ -13,7 +13,14 @@ export default function ObligationBorrowsCard() {
     <Card
       id="assets-borrowed"
       headerProps={{
-        title: "Borrowed assets",
+        title: (
+          <>
+            Borrowed assets
+            <span className="text-xs text-muted-foreground">
+              {obligation.borrowPositionCount}
+            </span>
+          </>
+        ),
         noSeparator: true,
       }}
     >

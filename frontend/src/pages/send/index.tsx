@@ -1,736 +1,96 @@
 import Head from "next/head";
-import { useCallback, useEffect, useMemo } from "react";
+import { useState } from "react";
 
-import { KioskClient, KioskData, Network } from "@mysten/kiosk";
-import {
-  SuiClient,
-  SuiTransactionBlockResponse,
-  TransactionFilter,
-} from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
-import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import { toast } from "sonner";
-import useSWR from "swr";
 
-import { getBalanceChange, isSendPoints } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 
-import AllocationCardsSection from "@/components/send/AllocationCardsSection";
+import AllocationCard from "@/components/send/AllocationCard";
+import BlurbSection from "@/components/send/BlurbSection";
 import ClaimSection from "@/components/send/ClaimSection";
 import HeroSection from "@/components/send/HeroSection";
 import SendHeader from "@/components/send/SendHeader";
 import TokenomicsSection from "@/components/send/TokenomicsSection";
-import TextLink from "@/components/shared/TextLink";
-import { useLoadedAppContext } from "@/contexts/AppContext";
-import { TX_TOAST_DURATION } from "@/lib/constants";
-import { formatInteger, formatToken } from "@/lib/format";
-import { getPointsStats } from "@/lib/points";
-
-import earlyUsersJson from "./lending/early-users.json";
-import animaJson from "./nft/anima.json";
-import doubleUpCitizenJson from "./nft/doubleup-citizen.json";
-import eggJson from "./nft/egg.json";
-import kumoJson from "./nft/kumo.json";
-import primeMachinJson from "./nft/prime-machin.json";
-import rootletsJson from "./nft/rootlets.json";
-import aaaJson from "./token/aaa.json";
-import fudJson from "./token/fud.json";
-import octoJson from "./token/octo.json";
-import tismJson from "./token/tism.json";
-import bluefinLeaguesBlackJson from "./trading/bluefin-leagues-black.json";
-import bluefinLeaguesGoldJson from "./trading/bluefin-leagues-gold.json";
-import bluefinLeaguesPlatinumJson from "./trading/bluefin-leagues-platinum.json";
-import bluefinLeaguesSapphireJson from "./trading/bluefin-leagues-sapphire.json";
-import bluefinSendTradersJson from "./trading/bluefin-send-traders.json";
-
-export const SEND_TOTAL_SUPPLY = 100_000_000;
-
-export enum AllocationId {
-  EARLY_USERS = "earlyUsers",
-  SEND_POINTS = "sendPoints",
-  SUILEND_CAPSULES = "suilendCapsules",
-  SAVE = "save",
-  ROOTLETS = "rootlets",
-
-  BLUEFIN_LEAGUES = "bluefinLeagues",
-  BLUEFIN_SEND_TRADERS = "bluefinSendTraders",
-
-  PRIME_MACHIN = "primeMachin",
-  EGG = "egg",
-  DOUBLEUP_CITIZEN = "doubleUpCitizen",
-  KUMO = "kumo",
-
-  ANIMA = "anima",
-
-  FUD = "fud",
-  AAA = "aaa",
-  OCTO = "octo",
-  TISM = "tism",
-}
-
-export enum AllocationType {
-  FLAT = "Flat",
-  LINEAR = "Linear",
-}
-
-export enum AssetType {
-  LENDING = "lending",
-  NFT = "nft",
-  TOKEN = "token",
-  TRADING = "trading",
-  POINTS = "points",
-}
-
-export type Allocation = {
-  id: AllocationId;
-  src: string;
-  hoverSrc?: string;
-  title: string;
-  description: string;
-  allocationType: AllocationType;
-  assetType?: AssetType;
-  cta?: {
-    title: string;
-    href: string;
-  };
-  snapshotTaken: boolean;
-  eligibleWallets?: string;
-  totalAllocationPercent: BigNumber;
-  totalAllocationBreakdown: {
-    title: string;
-    percent: BigNumber;
-  }[];
-
-  userAllocationPercent?: BigNumber;
-  userClaimedMsend?: BigNumber;
-  userBridgedMsend?: BigNumber;
-};
-
-enum SuilendCapsuleRarity {
-  COMMON = "common",
-  UNCOMMON = "uncommon",
-  RARE = "rare",
-}
-
-// ---- START TEMP ----
-export const TGE_TIMESTAMP_MS = 1730419200000; // TODO: Change to 1733979600000
-
-const BURN_CONTRACT_PACKAGE_ID =
-  "0x1ae006077198a118422daac60cf8f45be747e21eb1325e6d053f4ead54140439"; // Beta value, TODO
-const POINTS_MANAGER_OBJECT_ID =
-  "0xb35e03beab5b92c2c21be2df8287cc8ecd8848647102a9c68b128c8325462c7b"; // Beta value, TODO
-const CAPSULE_MANAGER_OBJECT_ID =
-  "0xf932cacba8c0d31b06ed5e1c0fc382c6f77b3ef64d106098a474876165dc8e04"; // Beta value, TODO
-
-const NORMALIZED_SEND_POINTS_COINTYPE = normalizeStructTag(
-  "0x2a094736a1d4e08e71069a65eb5ef9fb6da2f5f0d76679947f8f4499b13af8d0::suilend_point::SUILEND_POINT",
-); // Beta value, TODO: Change back to NORMALIZED_SEND_POINTS_COINTYPE from @suilend/frontend-sui
-
-export const NORMALIZED_mSEND_3_MONTHS_COINTYPE = normalizeStructTag(
-  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-); // TODO
-export const NORMALIZED_mSEND_6_MONTHS_COINTYPE = normalizeStructTag(
-  "0x2053d08c1e2bd02791056171aab0fd12bd7cd7efad2ab8f6b9c8902f14df2ff2::ausd::AUSD",
-); // TODO
-export const NORMALIZED_mSEND_12_MONTHS_COINTYPE = normalizeStructTag(
-  "0xe0644f3e46b2d9f319a2cc3491155c75d1b6132ba9b3601c6e7e102e17296645::goof::GOOF",
-); // TODO
-
-const BURN_SEND_POINTS_EVENT_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
-const BURN_SUILEND_CAPSULES_EVENT_TYPE =
-  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent"; // TODO
-
-// TODO: Update
-const SUILEND_CAPSULE_TYPE =
-  "0xd4bfdc2c61eda39fe286eb0c844b11daa24f9529e8c04be6c082c0d6a62e8a6a::suilend_capsule::SuilendCapsule"; // TODO: Beta value, change back to 0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule
-
-// ---- END TEMP ----
-
-const ROOTLETS_TYPE =
-  "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
-
-const PRIME_MACHIN_TYPE =
-  "0x034c162f6b594cb5a1805264dd01ca5d80ce3eca6522e6ee37fd9ebfb9d3ddca::factory::PrimeMachin";
-const EGG_TYPE =
-  "0x484932c474bf09f002b82e4a57206a6658a0ca6dbdb15896808dcd1929c77820::egg::AfEgg";
-const DOUBLEUP_CITIZEN_TYPE =
-  "0x862810efecf0296db2e9df3e075a7af8034ba374e73ff1098e88cc4bb7c15437::doubleup_citizens::DoubleUpCitizen";
-const KUMO_TYPE =
-  "0x57191e5e5c41166b90a4b7811ad3ec7963708aa537a8438c1761a5d33e2155fd::kumo::Kumo";
-
-const getOwnedObjectsOfType = async (
-  suiClient: SuiClient,
-  address: string,
-  type: string,
-) => {
-  const allObjs = [];
-  let cursor = null;
-  let hasNextPage = true;
-  while (hasNextPage) {
-    const objs = await suiClient.getOwnedObjects({
-      owner: address,
-      cursor,
-      filter: {
-        StructType: type,
-      },
-      options: { showContent: true },
-    });
-
-    allObjs.push(...objs.data);
-    cursor = objs.nextCursor;
-    hasNextPage = objs.hasNextPage;
-  }
-
-  return allObjs;
-};
-
-const queryTransactionBlocks = async (
-  suiClient: SuiClient,
-  filter: TransactionFilter,
-  minTimestampMs: number,
-) => {
-  const allTransactionBlocks: SuiTransactionBlockResponse[] = [];
-  let cursor = null;
-  let hasNextPage = true;
-  while (hasNextPage) {
-    const transactionBlocks = await suiClient.queryTransactionBlocks({
-      cursor,
-      order: "descending",
-      filter,
-      options: {
-        showBalanceChanges: true,
-        showEvents: true,
-      },
-    });
-
-    const transactionBlocksInRange = transactionBlocks.data.filter(
-      (transactionBlock) =>
-        transactionBlock.timestampMs &&
-        +transactionBlock.timestampMs >= minTimestampMs,
-    );
-
-    allTransactionBlocks.push(...transactionBlocksInRange);
-    cursor = transactionBlocks.nextCursor;
-    hasNextPage = transactionBlocks.hasNextPage;
-
-    const lastTransactionBlock = transactionBlocks.data.at(-1);
-    if (
-      lastTransactionBlock &&
-      lastTransactionBlock.timestampMs &&
-      +lastTransactionBlock.timestampMs < minTimestampMs
-    )
-      break;
-  }
-
-  return allTransactionBlocks;
-};
-
-export default function Send() {
-  const { explorer, suiClient } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { data } = useLoadedAppContext();
-
-  const mSendCoinTypes = useMemo(
-    () => [
-      NORMALIZED_mSEND_3_MONTHS_COINTYPE,
-      NORMALIZED_mSEND_6_MONTHS_COINTYPE,
-      NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-    ],
-    [],
-  );
-  const mSendCoinMetadataMap = useCoinMetadataMap(mSendCoinTypes);
-
-  // Setup - total allocated SEND Points
-  const totalAllocatedPoints = useMemo(() => {
-    let result = new BigNumber(0);
-    for (const reserve of data.lendingMarket.reserves) {
-      for (const pr of [
-        ...reserve.depositsPoolRewardManager.poolRewards,
-        ...reserve.borrowsPoolRewardManager.poolRewards,
-      ]) {
-        if (isSendPoints(pr.coinType))
-          result = result.plus(pr.allocatedRewards);
-      }
-    }
-
-    return result;
-  }, [data.lendingMarket.reserves]);
-
-  // Setup - Bluefin SEND Traders total volume
-  const bluefinSendTradersTotalVolumeUsd = useMemo(
-    () =>
-      Object.values(bluefinSendTradersJson as number[]).reduce(
-        (acc, volumeUsd) => acc.plus(volumeUsd),
-        new BigNumber(0),
-      ),
-    [],
-  );
-
-  // Setup - owned kiosks
-  const kioskClient = useMemo(
-    () => new KioskClient({ client: suiClient, network: Network.MAINNET }),
-    [suiClient],
-  );
-
-  const ownedKiosksFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const allKioskIds = [];
-    let cursor = undefined;
-    let hasNextPage = true;
-    while (hasNextPage) {
-      const kiosks = await kioskClient.getOwnedKiosks({
-        address: address,
-        pagination: {
-          cursor,
-        },
-      });
-
-      allKioskIds.push(...kiosks.kioskIds);
-      cursor = kiosks.nextCursor ?? undefined;
-      hasNextPage = kiosks.hasNextPage;
-    }
-
-    const allKiosks = await Promise.all(
-      allKioskIds.map((kioskId) => kioskClient.getKiosk({ id: kioskId })),
-    );
-
-    return allKiosks;
-  }, [address, kioskClient]);
-
-  const { data: ownedKiosks, mutate: mutateOwnedKiosks } = useSWR<
-    KioskData[] | undefined
-  >(`ownedKiosks-${address}`, ownedKiosksFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed owned kiosks", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh owned kiosks", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateOwnedKiosks);
-  }, [mutateOwnedKiosks, address, kioskClient]);
-
-  const getOwnedKioskItemsOfType = useCallback(
-    (type: string) => {
-      if (ownedKiosks === undefined) return undefined;
-
-      const count = ownedKiosks.reduce(
-        (acc, kiosk) =>
-          acc.plus(kiosk.items.filter((item) => item.type === type).length),
-        new BigNumber(0),
-      );
-
-      return count;
-    },
-    [ownedKiosks],
-  );
-
-  // User - Early Users
-  const isInEarlyUsersSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return earlyUsersJson.includes(address);
-  }, [address]);
-
-  // User - SEND Points
-  const userSendPointsFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
-    if (!coinMetadata) return undefined;
-
-    // Owned
-    const ownedSendPoints = getPointsStats(data.rewardMap, data.obligations)
-      .totalPoints.total;
-
-    // Claimed
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
-
-    const claimedMsend = userTransactions
-      .reduce((acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
-          .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
-          .reduce(
-            (acc2, event) =>
-              acc2.plus((event.parsedJson as any).liquidity_amount),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionClaimedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
-
-    return { owned: ownedSendPoints, claimedMsend };
-  }, [
-    address,
-    mSendCoinMetadataMap,
-    data.rewardMap,
-    data.obligations,
-    suiClient,
-  ]);
-
-  const { data: userSendPoints, mutate: mutateUserSendPoints } = useSWR<
-    { owned: BigNumber; claimedMsend: BigNumber } | undefined
-  >(`userSendPoints-${address}`, userSendPointsFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed user SEND Points", data);
-    },
-    onError: (err) => {
-      console.error("Failed to user SEND Points", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateUserSendPoints);
-  }, [
-    mutateUserSendPoints,
-    address,
-    mSendCoinMetadataMap,
-    data.rewardMap,
-    data.obligations,
-    suiClient,
-  ]);
-
-  // User - Suilend Capsules
-  const userSuilendCapsulesFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_3_MONTHS_COINTYPE];
-    if (!coinMetadata) return undefined;
-
-    // Owned
-    const objs = await getOwnedObjectsOfType(
-      suiClient,
-      address,
-      SUILEND_CAPSULE_TYPE,
-    );
-
-    const commonCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity ===
-        SuilendCapsuleRarity.COMMON,
-    );
-    const uncommonCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity ===
-        SuilendCapsuleRarity.UNCOMMON,
-    );
-    const rareCapsuleObjs = objs.filter(
-      (obj) =>
-        (obj.data?.content as any).fields.rarity === SuilendCapsuleRarity.RARE,
-    );
-
-    const ownedSuilendCapsulesMap = {
-      [SuilendCapsuleRarity.COMMON]: new BigNumber(commonCapsuleObjs.length),
-      [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
-        uncommonCapsuleObjs.length,
-      ),
-      [SuilendCapsuleRarity.RARE]: new BigNumber(rareCapsuleObjs.length),
-    };
-
-    // Claimed
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
-
-    const claimedMsend = userTransactions
-      .reduce((acc, transaction) => {
-        const transactionClaimedMsend = (transaction.events ?? [])
-          .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
-          .reduce(
-            (acc2, event) =>
-              acc2.plus((event.parsedJson as any).liquidity_amount),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionClaimedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
-
-    return { ownedMap: ownedSuilendCapsulesMap, claimedMsend };
-  }, [address, mSendCoinMetadataMap, suiClient]);
-
-  const { data: userSuilendCapsules, mutate: mutateUserSuilendCapsules } =
-    useSWR<
-      | {
-          ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
-          claimedMsend: BigNumber;
-        }
-      | undefined
-    >(`userSuilendCapsules-${address}`, userSuilendCapsulesFetcher, {
-      onSuccess: (data) => {
-        console.log("Refreshed user Suilend Capsules", data);
-      },
-      onError: (err) => {
-        console.error("Failed to refresh user Suilend Capsules", err);
-      },
-    });
-  useEffect(() => {
-    setTimeout(mutateUserSuilendCapsules);
-  }, [mutateUserSuilendCapsules, address, mSendCoinMetadataMap, suiClient]);
-
-  // User - Save
-  const userSaveFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    const coinMetadata =
-      mSendCoinMetadataMap?.[NORMALIZED_mSEND_12_MONTHS_COINTYPE];
-    if (!coinMetadata) return undefined;
-
-    // Bridged
-    const userTransactions = await queryTransactionBlocks(
-      suiClient,
-      { FromAddress: address },
-      TGE_TIMESTAMP_MS,
-    );
-
-    const bridgedMsend = userTransactions
-      .reduce((acc, transaction) => {
-        const hasWormholeEvent = !!(transaction.events ?? []).find(
-          (event) =>
-            event.type ===
-            "0x26efee2b51c911237888e5dc6702868abca3c7ac12c53f76ef8eba0697695e3d::complete_transfer::TransferRedeemed",
-        );
-        if (!hasWormholeEvent) return acc;
-
-        const transactionBridgedMsend = (transaction.balanceChanges ?? [])
-          .filter(
-            (balanceChange) =>
-              normalizeStructTag(balanceChange.coinType) ===
-              NORMALIZED_mSEND_12_MONTHS_COINTYPE,
-          )
-          .reduce(
-            (acc2, balanceChange) => acc2.plus(balanceChange.amount),
-            new BigNumber(0),
-          );
-
-        return acc.plus(transactionBridgedMsend);
-      }, new BigNumber(0))
-      .div(10 ** coinMetadata.decimals);
-
-    return { bridgedMsend };
-  }, [address, mSendCoinMetadataMap, suiClient]);
-
-  const { data: userSave, mutate: mutateUserSave } = useSWR<
-    { bridgedMsend: BigNumber } | undefined
-  >(`userSave-${address}`, userSaveFetcher, {
-    onSuccess: (data) => {
-      console.log("Refreshed user Save", data);
-    },
-    onError: (err) => {
-      console.error("Failed to refresh user Save", err);
-    },
-  });
-  useEffect(() => {
-    setTimeout(mutateUserSave);
-  }, [mutateUserSave, address, mSendCoinMetadataMap, suiClient]);
-
-  // User - Rootlets
-  const ownedRootlets: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(rootletsJson).length > 0)
-      return new BigNumber(
-        (rootletsJson as Record<string, number>)[address] ?? 0,
-      );
-    return getOwnedKioskItemsOfType(ROOTLETS_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Bluefin Leagues
-  const isInBluefinLeaguesSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return (
-      bluefinLeaguesGoldJson.includes(address) ||
-      bluefinLeaguesPlatinumJson.includes(address) ||
-      bluefinLeaguesBlackJson.includes(address) ||
-      bluefinLeaguesSapphireJson.includes(address)
-    );
-  }, [address]);
-
-  // User - Bluefin SEND Traders
-  const bluefinSendTradersVolumeUsd = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(bluefinSendTradersJson).length > 0)
-      return new BigNumber(
-        (bluefinSendTradersJson as Record<string, number>)[address] ?? 0,
-      );
-    return undefined;
-  }, [address]);
-
-  // User - Prime Machin
-  const ownedPrimeMachin: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(primeMachinJson).length > 0)
-      return new BigNumber(
-        (primeMachinJson as Record<string, number>)[address] ?? 0,
-      );
-    return getOwnedKioskItemsOfType(PRIME_MACHIN_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Egg
-  const ownedEgg: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(eggJson).length > 0)
-      return new BigNumber((eggJson as Record<string, number>)[address] ?? 0);
-    return getOwnedKioskItemsOfType(EGG_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - DoubleUp Citizen
-  const ownedDoubleUpCitizenFetcher = useCallback(async () => {
-    if (!address) return undefined;
-
-    if (Object.keys(doubleUpCitizenJson).length > 0)
-      return new BigNumber(
-        (doubleUpCitizenJson as Record<string, number>)[address] ?? 0,
-      );
-
-    const ownedKioskItemsOfType = getOwnedKioskItemsOfType(
-      DOUBLEUP_CITIZEN_TYPE,
-    );
-    const objs = await getOwnedObjectsOfType(
-      suiClient,
-      address,
-      DOUBLEUP_CITIZEN_TYPE,
-    );
-
-    if (ownedKioskItemsOfType === undefined) return undefined;
-
-    return ownedKioskItemsOfType.plus(objs.length);
-  }, [address, getOwnedKioskItemsOfType, suiClient]);
-
-  const { data: ownedDoubleUpCitizen, mutate: mutateOwnedDoubleUpCitizen } =
-    useSWR<BigNumber | undefined>(
-      `ownedDoubleUpCitizen-${address}`,
-      ownedDoubleUpCitizenFetcher,
-      {
-        onSuccess: (data) => {
-          console.log("Refreshed owned DoubleUp Citizen", data);
-        },
-        onError: (err) => {
-          console.error("Failed to refresh owned DoubleUp Citizen", err);
-        },
-      },
-    );
-  useEffect(() => {
-    setTimeout(mutateOwnedDoubleUpCitizen);
-  }, [
-    mutateOwnedDoubleUpCitizen,
-    address,
-    getOwnedKioskItemsOfType,
-    suiClient,
-  ]);
-
-  // User - Kumo
-  const ownedKumo: BigNumber | undefined = useMemo(() => {
-    if (!address) return undefined;
-
-    if (Object.keys(kumoJson).length > 0)
-      return new BigNumber((kumoJson as Record<string, number>)[address] ?? 0);
-    return getOwnedKioskItemsOfType(KUMO_TYPE);
-  }, [address, getOwnedKioskItemsOfType]);
-
-  // User - Anima
-  const isInAnimaSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    if (animaJson.length > 0) return (animaJson as string[]).includes(address);
-    return undefined;
-  }, [address]);
-
-  // User - FUD
-  const isInFudSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return fudJson.includes(address);
-  }, [address]);
-
-  // User - AAA
-  const isInAaaSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return aaaJson.includes(address);
-  }, [address]);
-
-  // User - OCTO
-  const isInOctoSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return octoJson.includes(address);
-  }, [address]);
-
-  // User - TISM
-  const isInTismSnapshot = useMemo(() => {
-    if (!address) return undefined;
-
-    return tismJson.includes(address);
-  }, [address]);
+import Button from "@/components/shared/Button";
+import { Separator } from "@/components/ui/separator";
+import {
+  SendContextProvider,
+  useLoadedSendContext,
+} from "@/contexts/SendContext";
+import { ASSETS_URL } from "@/lib/constants";
+import { formatInteger } from "@/lib/format";
+import {
+  Allocation,
+  AllocationId,
+  AllocationType,
+  AssetType,
+  BluefinLeague,
+  SEND_TOTAL_SUPPLY,
+  SuilendCapsuleRarity,
+  TGE_TIMESTAMP_MS,
+} from "@/lib/send";
+import { cn } from "@/lib/utils";
+
+function Page() {
+  const { address } = useWalletContext();
+
+  const { userAllocations } = useLoadedSendContext();
+
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
   // Allocations
   const earlyUsers = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(earlyUsersJson.length),
+    airdropSent: true,
+    eligibleWallets: formatInteger(3899),
     totalAllocationPercent: new BigNumber(2),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
-        percent: new BigNumber(2).div(earlyUsersJson.length), // Flat
+        percent: new BigNumber(512).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
     },
   };
   const sendPoints = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(18),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       thousand: {
-        title: "Per 1K Points",
-        percent: new BigNumber(18).div(totalAllocatedPoints.div(1000)), // Linear
+        title: "Per 1K SEND Points",
+        percent: new BigNumber((18000 / 2764929) * 1000)
+          .div(SEND_TOTAL_SUPPLY)
+          .times(100), //Linear
       },
     },
   };
   const suilendCapsules = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(0.3),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       [SuilendCapsuleRarity.COMMON]: {
         title: "Per Common",
-        percent: new BigNumber(0.1).div(700), // Linear
+        percent: new BigNumber(142).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
       [SuilendCapsuleRarity.UNCOMMON]: {
         title: "Per Uncommon",
-        percent: new BigNumber(0.1).div(200), // Linear
+        percent: new BigNumber(500).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
       [SuilendCapsuleRarity.RARE]: {
         title: "Per Rare",
-        percent: new BigNumber(0.1).div(50), // Linear
+        percent: new BigNumber(2000).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
   const save = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(15),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per SLND",
         percent: new BigNumber(0.15).div(SEND_TOTAL_SUPPLY).times(100), // Linear
@@ -739,128 +99,121 @@ export default function Send() {
   };
   const rootlets = {
     snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(rootletsJson).length > 0
-        ? Object.keys(rootletsJson).length
-        : 948,
-    ),
+    airdropSent: true,
+    eligibleWallets: undefined,
     totalAllocationPercent: new BigNumber(1.111),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
-        title: "Per Rootlet",
-        percent: new BigNumber(1.111).div(3333), // Linear
+        title: "Per Rootlets NFT",
+        percent: new BigNumber(333.333333).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
 
   const bluefinLeagues = {
     snapshotTaken: true,
-    eligibleWallets: formatInteger(
-      bluefinLeaguesGoldJson.length +
-        bluefinLeaguesPlatinumJson.length +
-        bluefinLeaguesBlackJson.length +
-        bluefinLeaguesSapphireJson.length,
-    ),
+    airdropSent: true,
+    eligibleWallets: formatInteger(5956 + 187 + 25 + 37),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
-      wallet: {
-        title: "Per wallet",
-        percent: new BigNumber(0.05).div(
-          bluefinLeaguesGoldJson.length +
-            bluefinLeaguesPlatinumJson.length +
-            bluefinLeaguesBlackJson.length +
-            bluefinLeaguesSapphireJson.length,
-        ), // Flat
+    totalAllocationBreakdownMap: {
+      [BluefinLeague.GOLD]: {
+        title: "Gold",
+        percent: new BigNumber(3).div(SEND_TOTAL_SUPPLY).times(100), // Flat
+      },
+      [BluefinLeague.PLATINUM]: {
+        title: "Platinum",
+        percent: new BigNumber(60).div(SEND_TOTAL_SUPPLY).times(100), // Flat
+      },
+      [BluefinLeague.BLACK]: {
+        title: "Black",
+        percent: new BigNumber(244.5).div(SEND_TOTAL_SUPPLY).times(100), // Flat
+      },
+      [BluefinLeague.SAPPHIRE]: {
+        title: "Sapphire",
+        percent: new BigNumber(400).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
     },
   };
   const bluefinSendTraders = {
-    snapshotTaken: false,
-    eligibleWallets: "TBC",
-    // Object.keys(bluefinSendTradersJson).length > 0
-    //   ? Object.keys(bluefinSendTradersJson).length
-    //   : 400, // TODO (update once we have an initial snapshot)
-    totalAllocationPercent: new BigNumber(0.125),
-    totalAllocationBreakdown: {},
-    // totalAllocationBreakdown: {
-    //   thousandUsdVolume: {
-    //     title: "Per $1K Volume",
-    //     percent: new BigNumber(0.125).div(
-    //       bluefinSendTradersTotalVolumeUsd.div(1000),
-    //     ), // Linear
-    //   },
-    // },
+    snapshotTaken: true,
+    airdropSent: true,
+    eligibleWallets: formatInteger(3820), // Unique(Makers, Takers)
+    totalAllocationPercent: new BigNumber(0.0625 + 0.0625),
+    totalAllocationBreakdownMap: {
+      thousandUsdMakerVolume: {
+        title: "Per $1K Maker Volume",
+        percent: new BigNumber(0.0625).div(1165111.27).times(1000), // Linear
+      },
+      thousandUsdTakerVolume: {
+        title: "Per $1K Taker Volume",
+        percent: new BigNumber(0.0625).div(1474402.92).times(1000), // Linear
+      },
+    },
   };
 
   const primeMachin = {
-    snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(primeMachinJson).length > 0
-        ? Object.keys(primeMachinJson).length
-        : 918,
-    ),
+    snapshotTaken: true,
+    airdropSent: true,
+    eligibleWallets: formatInteger(930),
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Prime Machin",
-        percent: new BigNumber(0.1).div(3333), // Linear
+        percent: new BigNumber(30).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
   const egg = {
-    snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(eggJson).length > 0 ? Object.keys(eggJson).length : 2109,
-    ),
+    snapshotTaken: true,
+    airdropSent: true,
+    eligibleWallets: formatInteger(2105),
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Egg",
-        percent: new BigNumber(0.1).div(9546), // Linear
+        percent: new BigNumber(10.4).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
   const doubleUpCitizen = {
-    snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(doubleUpCitizenJson).length > 0
-        ? Object.keys(doubleUpCitizenJson).length
-        : 713,
-    ),
+    snapshotTaken: true,
+    airdropSent: true,
+    eligibleWallets: formatInteger(684),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per DoubleUp Citizen",
-        percent: new BigNumber(0.05).div(2878), // Linear
+        percent: new BigNumber(17.3).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
   const kumo = {
-    snapshotTaken: false,
-    eligibleWallets: formatInteger(
-      Object.keys(kumoJson).length > 0 ? Object.keys(kumoJson).length : 479,
-    ),
+    snapshotTaken: true,
+    airdropSent: false,
+    eligibleWallets: formatInteger(508),
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       one: {
         title: "Per Kumo",
-        percent: new BigNumber(0.05).div(2222), // Linear
+        percent: new BigNumber(0.05).div(1251), // Linear
       },
     },
   };
 
   const anima = {
     snapshotTaken: false,
+    airdropSent: false,
     eligibleWallets: undefined, //animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
-    totalAllocationBreakdown: {},
+    totalAllocationBreakdownMap: {},
   };
 
   const fud = {
-    snapshotTaken: false,
+    snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 5000, // Top 5,000 FUD holders
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.1).div(5000), // Flat
@@ -868,10 +221,11 @@ export default function Send() {
     },
   };
   const aaa = {
-    snapshotTaken: false,
+    snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 5000, // Top 5,000 AAA holders
     totalAllocationPercent: new BigNumber(0.1),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.1).div(5000), // Flat
@@ -879,10 +233,11 @@ export default function Send() {
     },
   };
   const octo = {
-    snapshotTaken: false,
+    snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 1000, // Top 1,000 OCTO holders
     totalAllocationPercent: new BigNumber(0.01),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.01).div(1000), // Flat
@@ -890,10 +245,11 @@ export default function Send() {
     },
   };
   const tism = {
-    snapshotTaken: false,
+    snapshotTaken: true,
+    airdropSent: true,
     eligibleWallets: 1000, // Top 1,000 TISM holders
     totalAllocationPercent: new BigNumber(0.01),
-    totalAllocationBreakdown: {
+    totalAllocationBreakdownMap: {
       wallet: {
         title: "Per wallet",
         percent: new BigNumber(0.01).div(1000), // Flat
@@ -904,8 +260,8 @@ export default function Send() {
   const allocations: Allocation[] = [
     {
       id: AllocationId.EARLY_USERS,
-      src: "/assets/send/lending/early-users.png",
-      hoverSrc: "/assets/send/lending/early-users-hover.mp4",
+      src: `${ASSETS_URL}/send/lending/early-users.png`,
+      hoverSrc: `${ASSETS_URL}/send/lending/early-users-hover.mp4`,
       title: "Early Users",
       description:
         "Early users are those who used Suilend prior to the launch of SEND points.",
@@ -913,55 +269,62 @@ export default function Send() {
       assetType: AssetType.LENDING,
       cta: undefined,
       snapshotTaken: earlyUsers.snapshotTaken,
+      airdropSent: earlyUsers.airdropSent,
       eligibleWallets: earlyUsers.eligibleWallets,
       totalAllocationPercent: earlyUsers.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        earlyUsers.totalAllocationBreakdown,
+        earlyUsers.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        isInEarlyUsersSnapshot !== undefined
-          ? isInEarlyUsersSnapshot
-            ? earlyUsers.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.earlyUsers.isInSnapshot
+            ? earlyUsers.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SEND_POINTS,
-      src: "/assets/send/points/send-points.png",
-      hoverSrc: "/assets/send/points/send-points-hover.mp4",
-      title: "SEND Points",
+      src: `${ASSETS_URL}/send/points/send-points.png`,
+      hoverSrc: `${ASSETS_URL}/send/points/send-points-hover.mp4`,
+      title: "SEND Points S1",
       description:
-        "SEND Points were distributed as rewards for depositing/borrowing activity on Suilend.",
+        "SEND Points (Season 1) were distributed as rewards for depositing/borrowing activity on Suilend.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
-      cta: {
-        title: "Earn",
-        href: "/dashboard",
-      },
+      cta: undefined,
       snapshotTaken: sendPoints.snapshotTaken,
+      airdropSent: sendPoints.airdropSent,
       eligibleWallets: sendPoints.eligibleWallets,
       totalAllocationPercent: sendPoints.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        sendPoints.totalAllocationBreakdown,
+        sendPoints.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        userSendPoints !== undefined
-          ? userSendPoints.owned
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.sendPoints.owned
               .div(1000)
-              .times(sendPoints.totalAllocationBreakdown.thousand.percent)
+              .times(
+                sendPoints.totalAllocationBreakdownMap.thousand.percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
+              )
           : undefined,
-      userClaimedMsend:
-        userSendPoints !== undefined ? userSendPoints.claimedMsend : undefined,
+      userRedeemedMsend:
+        userAllocations !== undefined
+          ? userAllocations.sendPoints.redeemedMsend
+          : undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SUILEND_CAPSULES,
-      src: "/assets/send/nft/suilend-capsules.png",
-      hoverSrc: "/assets/send/nft/suilend-capsules-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/suilend-capsules.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/suilend-capsules-hover.mp4`,
       title: "Suilend Capsules",
       description:
         "A token of appreciation awarded for outstanding community contributions to Suilend.",
@@ -969,71 +332,85 @@ export default function Send() {
       assetType: AssetType.NFT,
       cta: undefined,
       snapshotTaken: suilendCapsules.snapshotTaken,
+      airdropSent: suilendCapsules.airdropSent,
       eligibleWallets: suilendCapsules.eligibleWallets,
       totalAllocationPercent: suilendCapsules.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        suilendCapsules.totalAllocationBreakdown,
+        suilendCapsules.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        userSuilendCapsules !== undefined
+      userEligibleSend:
+        userAllocations !== undefined
           ? new BigNumber(
-              userSuilendCapsules.ownedMap[SuilendCapsuleRarity.COMMON].times(
-                suilendCapsules.totalAllocationBreakdown[
+              userAllocations.suilendCapsules.ownedMap[
+                SuilendCapsuleRarity.COMMON
+              ].times(
+                suilendCapsules.totalAllocationBreakdownMap[
                   SuilendCapsuleRarity.COMMON
-                ].percent,
+                ].percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
               ),
             )
               .plus(
-                userSuilendCapsules.ownedMap[
+                userAllocations.suilendCapsules.ownedMap[
                   SuilendCapsuleRarity.UNCOMMON
                 ].times(
-                  suilendCapsules.totalAllocationBreakdown[
+                  suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.UNCOMMON
-                  ].percent,
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
                 ),
               )
               .plus(
-                userSuilendCapsules.ownedMap[SuilendCapsuleRarity.RARE].times(
-                  suilendCapsules.totalAllocationBreakdown[
+                userAllocations.suilendCapsules.ownedMap[
+                  SuilendCapsuleRarity.RARE
+                ].times(
+                  suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.RARE
-                  ].percent,
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
                 ),
               )
           : undefined,
-      userClaimedMsend:
-        userSuilendCapsules !== undefined
-          ? userSuilendCapsules.claimedMsend
+      userRedeemedMsend:
+        userAllocations !== undefined
+          ? userAllocations.suilendCapsules.redeemedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.SAVE,
-      src: "/assets/send/token/save.png",
-      hoverSrc: "/assets/send/token/save-hover.mp4",
+      src: `${ASSETS_URL}/send/token/save.png`,
+      hoverSrc: `${ASSETS_URL}/send/token/save-hover.mp4`,
       title: "SAVE",
       description:
         "Suilend thrives thanks to the unwavering support of SLND holders. We honor our roots on Solana with this token of appreciation.",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.TOKEN,
       cta: {
-        title: "View on Save",
+        title: "Convert SLND",
         href: "https://save.finance/save",
       },
       snapshotTaken: save.snapshotTaken,
+      airdropSent: save.airdropSent,
       eligibleWallets: save.eligibleWallets,
       totalAllocationPercent: save.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(save.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(save.totalAllocationBreakdownMap),
 
-      userAllocationPercent: undefined,
-      userClaimedMsend: undefined,
+      userEligibleSend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend:
-        userSave !== undefined ? userSave.bridgedMsend : undefined,
+        userAllocations !== undefined
+          ? userAllocations.save.bridgedMsend
+          : undefined,
     },
     {
       id: AllocationId.ROOTLETS,
-      src: "/assets/send/nft/rootlets.png",
-      hoverSrc: "/assets/send/nft/rootlets-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/rootlets.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/rootlets-hover.mp4`,
       title: "Rootlets",
       description:
         "Rootlets are the companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
@@ -1044,49 +421,65 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/rootlets?bottomTab=trades&tab=items",
       },
       snapshotTaken: rootlets.snapshotTaken,
+      airdropSent: rootlets.airdropSent,
       eligibleWallets: rootlets.eligibleWallets,
       totalAllocationPercent: rootlets.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        rootlets.totalAllocationBreakdown,
+        rootlets.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        ownedRootlets !== undefined
-          ? ownedRootlets.times(rootlets.totalAllocationBreakdown.one.percent)
+      userEligibleSend:
+        userAllocations !== undefined
+          ? (Date.now() >= TGE_TIMESTAMP_MS
+              ? userAllocations.rootlets.msendOwning
+              : userAllocations.rootlets.owned
+            ).times(
+              rootlets.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
+            )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend:
+        userAllocations !== undefined
+          ? userAllocations.rootlets.redeemedMsend
+          : undefined,
       userBridgedMsend: undefined,
     },
 
     {
       id: AllocationId.BLUEFIN_LEAGUES,
-      src: "/assets/send/trading/bluefin-leagues.png",
-      hoverSrc: "/assets/send/trading/bluefin-leagues-hover.mp4",
+      src: `${ASSETS_URL}/send/trading/bluefin-leagues.png`,
+      hoverSrc: `${ASSETS_URL}/send/trading/bluefin-leagues-hover.mp4`,
       title: "Bluefin Leagues",
       description:
         "Bluefin Leagues offer a structured recognition system to reward users for their engagement and trading activities on the Bluefin platform.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.TRADING,
       snapshotTaken: bluefinLeagues.snapshotTaken,
+      airdropSent: bluefinLeagues.airdropSent,
       eligibleWallets: bluefinLeagues.eligibleWallets,
       totalAllocationPercent: bluefinLeagues.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        bluefinLeagues.totalAllocationBreakdown,
+        bluefinLeagues.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        isInBluefinLeaguesSnapshot !== undefined
-          ? isInBluefinLeaguesSnapshot
-            ? bluefinLeagues.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.bluefinLeagues.isInSnapshot
+            ? bluefinLeagues.totalAllocationBreakdownMap[
+                userAllocations.bluefinLeagues.isInSnapshot as BluefinLeague
+              ].percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.BLUEFIN_SEND_TRADERS,
-      src: "/assets/send/trading/bluefin-send-traders.png",
-      hoverSrc: "/assets/send/trading/bluefin-send-traders-hover.mp4",
+      src: `${ASSETS_URL}/send/trading/bluefin-send-traders.png`,
+      hoverSrc: `${ASSETS_URL}/send/trading/bluefin-send-traders-hover.mp4`,
       title: "Bluefin SEND Traders",
       description:
         "For users who traded the SEND pre-launch market on Bluefin.",
@@ -1097,29 +490,41 @@ export default function Send() {
         href: "https://trade.bluefin.io/SEND-PERP",
       },
       snapshotTaken: bluefinSendTraders.snapshotTaken,
+      airdropSent: bluefinSendTraders.airdropSent,
       eligibleWallets: bluefinSendTraders.eligibleWallets,
       totalAllocationPercent: bluefinSendTraders.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        bluefinSendTraders.totalAllocationBreakdown,
+        bluefinSendTraders.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent: undefined,
-      // bluefinSendTradersVolumeUsd !== undefined
-      //   ? (bluefinSendTradersVolumeUsd as BigNumber)
-      //       .div(1000)
-      //       .times(
-      //         bluefinSendTraders.totalAllocationBreakdown.thousandUsdVolume
-      //           .percent,
-      //       )
-      //   : undefined,
-      userClaimedMsend: undefined,
+      userEligibleSend:
+        userAllocations !== undefined
+          ? new BigNumber(
+              userAllocations.bluefinSendTraders.makerVolumeUsd
+                .div(1000)
+                .times(
+                  bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdMakerVolume.percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+            ).plus(
+              userAllocations.bluefinSendTraders.takerVolumeUsd
+                .div(1000)
+                .times(
+                  bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdTakerVolume.percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+            )
+          : undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
     {
       id: AllocationId.PRIME_MACHIN,
-      src: "/assets/send/nft/prime-machin.png",
-      hoverSrc: "/assets/send/nft/prime-machin-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/prime-machin.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/prime-machin-hover.mp4`,
       title: "Prime Machin",
       description:
         "Prime Machin is a collection of 3,333 robots featuring dynamic coloring, storytelling and a focus on art.",
@@ -1130,25 +535,28 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/prime-machin?bottomTab=trades&tab=items",
       },
       snapshotTaken: primeMachin.snapshotTaken,
+      airdropSent: primeMachin.airdropSent,
       eligibleWallets: primeMachin.eligibleWallets,
       totalAllocationPercent: primeMachin.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        primeMachin.totalAllocationBreakdown,
+        primeMachin.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        ownedPrimeMachin !== undefined
-          ? ownedPrimeMachin.times(
-              primeMachin.totalAllocationBreakdown.one.percent,
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.primeMachin.owned.times(
+              primeMachin.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.EGG,
-      src: "/assets/send/nft/egg.png",
-      hoverSrc: "/assets/send/nft/egg-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/egg.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/egg-hover.mp4`,
       title: "Egg",
       description:
         "Aftermath is building the next-gen on-chain trading platform. Swap, Trade, Stake, & MEV Infra. They also have eggs!",
@@ -1159,21 +567,26 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/egg?bottomTab=trades&tab=items",
       },
       snapshotTaken: egg.snapshotTaken,
+      airdropSent: egg.airdropSent,
       eligibleWallets: egg.eligibleWallets,
       totalAllocationPercent: egg.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(egg.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        ownedEgg !== undefined
-          ? ownedEgg.times(egg.totalAllocationBreakdown.one.percent)
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.egg.owned.times(
+              egg.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
+            )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.DOUBLEUP_CITIZEN,
-      src: "/assets/send/nft/doubleup-citizen.png",
-      hoverSrc: "/assets/send/nft/doubleup-citizen-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/doubleup-citizen.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/doubleup-citizen-hover.mp4`,
       title: "DoubleUp Citizen",
       description:
         "Citizens are the avatars through which you can immerse yourself into the flourishing World of DoubleUp.",
@@ -1184,25 +597,28 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/doubleup-citizen?bottomTab=trades&tab=items",
       },
       snapshotTaken: doubleUpCitizen.snapshotTaken,
+      airdropSent: doubleUpCitizen.airdropSent,
       eligibleWallets: doubleUpCitizen.eligibleWallets,
       totalAllocationPercent: doubleUpCitizen.totalAllocationPercent,
       totalAllocationBreakdown: Object.values(
-        doubleUpCitizen.totalAllocationBreakdown,
+        doubleUpCitizen.totalAllocationBreakdownMap,
       ),
 
-      userAllocationPercent:
-        ownedDoubleUpCitizen !== undefined
-          ? ownedDoubleUpCitizen.times(
-              doubleUpCitizen.totalAllocationBreakdown.one.percent,
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.doubleUpCitizen.owned.times(
+              doubleUpCitizen.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
             )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.KUMO,
-      src: "/assets/send/nft/kumo.png",
-      hoverSrc: "/assets/send/nft/kumo-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/kumo.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/kumo-hover.mp4`,
       title: "Kumo",
       description:
         "Kumo, Lucky Kat's clumsy cloud-cat mascot, debuts with 2,222 customizable dNFTs! Holders enjoy $KOBAN airdrops & in-game perks across the Lucky Kat gaming ecosystem.",
@@ -1213,22 +629,27 @@ export default function Send() {
         href: "https://www.tradeport.xyz/sui/collection/kumo?bottomTab=trades&tab=items",
       },
       snapshotTaken: kumo.snapshotTaken,
+      airdropSent: kumo.airdropSent,
       eligibleWallets: kumo.eligibleWallets,
       totalAllocationPercent: kumo.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(kumo.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        ownedKumo !== undefined
-          ? ownedKumo.times(kumo.totalAllocationBreakdown.one.percent)
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.kumo.owned.times(
+              kumo.totalAllocationBreakdownMap.one.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100),
+            )
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
     {
       id: AllocationId.ANIMA,
-      src: "/assets/send/nft/anima.png",
-      hoverSrc: "/assets/send/nft/anima-hover.mp4",
+      src: `${ASSETS_URL}/send/nft/anima.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/anima-hover.mp4`,
       title: "Anima",
       description:
         "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
@@ -1239,24 +660,27 @@ export default function Send() {
         href: "https://anima.nexus/drop/genesis",
       },
       snapshotTaken: anima.snapshotTaken,
+      airdropSent: anima.airdropSent,
       eligibleWallets: anima.eligibleWallets,
       totalAllocationPercent: anima.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(anima.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(
+        anima.totalAllocationBreakdownMap,
+      ),
 
-      userAllocationPercent: undefined,
+      userEligibleSend: undefined,
       // isInAnimaSnapshot !== undefined
       //   ? isInAnimaSnapshot
-      //     ? anima.totalAllocationBreakdown!.percent
+      //     ? anima.totalAllocationBreakdownMap!.percent.times(SEND_TOTAL_SUPPLY).div(100)
       //     : new BigNumber(0)
       //   : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
 
     {
       id: AllocationId.FUD,
-      src: "/assets/send/token/fud.png",
-      hoverSrc: "/assets/send/token/fud-hover.mp4",
+      src: `${ASSETS_URL}/send/token/fud.png`,
+      hoverSrc: `${ASSETS_URL}/send/token/fud-hover.mp4`,
       title: "FUD",
       description: "FUD is the OG culture coin on Sui.",
       allocationType: AllocationType.FLAT,
@@ -1266,23 +690,26 @@ export default function Send() {
         href: "/swap/SUI-FUD",
       },
       snapshotTaken: fud.snapshotTaken,
+      airdropSent: fud.airdropSent,
       eligibleWallets: `Top ${formatInteger(fud.eligibleWallets)}`,
       totalAllocationPercent: fud.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(fud.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        isInFudSnapshot !== undefined
-          ? isInFudSnapshot
-            ? fud.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.fud.isInSnapshot
+            ? fud.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.AAA,
-      src: "/assets/send/token/aaa.png",
-      hoverSrc: "/assets/send/token/aaa-hover.mp4",
+      src: `${ASSETS_URL}/send/token/aaa.png`,
+      hoverSrc: `${ASSETS_URL}/send/token/aaa-hover.mp4`,
       title: "AAA",
       description:
         "AAA Cat is Sui's fastest-growing, top cat meme coin. Built by the community for the community. Can't Stop, Won't Stop!",
@@ -1293,23 +720,26 @@ export default function Send() {
         href: "/swap/SUI-AAA",
       },
       snapshotTaken: aaa.snapshotTaken,
+      airdropSent: aaa.airdropSent,
       eligibleWallets: `Top ${formatInteger(aaa.eligibleWallets)}`,
       totalAllocationPercent: aaa.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(aaa.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        isInAaaSnapshot !== undefined
-          ? isInAaaSnapshot
-            ? aaa.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.aaa.isInSnapshot
+            ? aaa.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.OCTO,
-      src: "/assets/send/token/octo.png",
-      hoverSrc: "/assets/send/token/octo-hover.mp4",
+      src: `${ASSETS_URL}/send/token/octo.png`,
+      hoverSrc: `${ASSETS_URL}/send/token/octo-hover.mp4`,
       title: "OCTO",
       description:
         "$OCTO brings fun and community together while crafting a unique Lofi-inspired IP for all to enjoy!",
@@ -1320,23 +750,26 @@ export default function Send() {
         href: "/swap/SUI-OCTO",
       },
       snapshotTaken: octo.snapshotTaken,
+      airdropSent: octo.airdropSent,
       eligibleWallets: `Top ${formatInteger(octo.eligibleWallets)}`,
       totalAllocationPercent: octo.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(octo.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        isInOctoSnapshot !== undefined
-          ? isInOctoSnapshot
-            ? octo.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.octo.isInSnapshot
+            ? octo.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
     {
       id: AllocationId.TISM,
-      src: "/assets/send/token/tism.png",
-      hoverSrc: "/assets/send/token/tism-hover.mp4",
+      src: `${ASSETS_URL}/send/token/tism.png`,
+      hoverSrc: `${ASSETS_URL}/send/token/tism-hover.mp4`,
       title: "TISM",
       description: "got tism?",
       allocationType: AllocationType.FLAT,
@@ -1346,17 +779,20 @@ export default function Send() {
         href: "/swap/SUI-TISM",
       },
       snapshotTaken: tism.snapshotTaken,
+      airdropSent: tism.airdropSent,
       eligibleWallets: `Top ${formatInteger(tism.eligibleWallets)}`,
       totalAllocationPercent: tism.totalAllocationPercent,
-      totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdown),
+      totalAllocationBreakdown: Object.values(tism.totalAllocationBreakdownMap),
 
-      userAllocationPercent:
-        isInTismSnapshot !== undefined
-          ? isInTismSnapshot
-            ? tism.totalAllocationBreakdown.wallet.percent
+      userEligibleSend:
+        userAllocations !== undefined
+          ? userAllocations.tism.isInSnapshot
+            ? tism.totalAllocationBreakdownMap.wallet.percent
+                .times(SEND_TOTAL_SUPPLY)
+                .div(100)
             : new BigNumber(0)
           : undefined,
-      userClaimedMsend: undefined,
+      userRedeemedMsend: undefined,
       userBridgedMsend: undefined,
     },
   ];
@@ -1511,31 +947,81 @@ export default function Send() {
       <div className="relative flex w-full flex-col items-center">
         <SendHeader />
 
-        <div className="relative z-[2] flex w-full flex-col items-center gap-16 pt-36 md:gap-24 md:pt-12">
-          <div className="flex w-full flex-col items-center gap-12 md:gap-16">
-            <HeroSection
-              allocations={allocations}
-              isLoading={
-                userSendPoints === undefined ||
-                userSuilendCapsules === undefined ||
-                userSave === undefined ||
-                ownedRootlets === undefined ||
-                ownedPrimeMachin === undefined ||
-                ownedEgg === undefined ||
-                ownedDoubleUpCitizen === undefined ||
-                ownedKumo === undefined
-              }
-            />
-            <AllocationCardsSection
-              allocations={allocations}
-              burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
-            />
+        <div className="relative z-[2] flex w-full flex-col items-center">
+          <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
+            <HeroSection allocations={allocations} />
+
+            <div
+              className={cn(
+                "relative w-full",
+                isCollapsed && "h-[400px] overflow-hidden md:h-[600px]",
+              )}
+            >
+              <div
+                className={cn(
+                  "relative z-[1] h-full w-full",
+                  isCollapsed && "pointer-events-none",
+                )}
+                style={
+                  isCollapsed
+                    ? {
+                        maskImage:
+                          "linear-gradient(to bottom, black 0%, transparent 100%)",
+                      }
+                    : undefined
+                }
+              >
+                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
+                  {allocations.map((allocation) => (
+                    <AllocationCard
+                      key={allocation.title}
+                      allocation={allocation}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {isCollapsed && (
+                <Button
+                  className="absolute bottom-0 left-1/2 z-[2] -translate-x-1/2 border-secondary"
+                  labelClassName="text-[16px] uppercase text-primary-foreground"
+                  variant="secondaryOutline"
+                  size="lg"
+                  onClick={() => setIsCollapsed(false)}
+                >
+                  Show full list
+                </Button>
+              )}
+            </div>
           </div>
 
-          <ClaimSection />
+          <Separator />
+          <BlurbSection />
+
+          {address && Date.now() >= TGE_TIMESTAMP_MS && (
+            <>
+              <Separator />
+              <ClaimSection
+                allocations={allocations}
+                totalAllocationBreakdownMaps={{
+                  suilendCapsules: suilendCapsules.totalAllocationBreakdownMap,
+                }}
+              />
+            </>
+          )}
+
+          <Separator />
           <TokenomicsSection />
         </div>
       </div>
     </>
+  );
+}
+
+export default function Send() {
+  return (
+    <SendContextProvider>
+      <Page />
+    </SendContextProvider>
   );
 }

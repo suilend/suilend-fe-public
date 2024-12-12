@@ -90,6 +90,8 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
 
   const mainRows = useMemo(() => {
     const result: ReservesRowData[] = [];
+    if (!rows[0]) return result;
+
     for (const subRow of rows[0].subRows) {
       if ((subRow as CollapsibleRowData).isCollapsibleRow)
         result.push(...(subRow as CollapsibleRowData).subRows);
@@ -100,6 +102,8 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
   }, [rows]);
   const isolatedRows = useMemo(() => {
     const result: ReservesRowData[] = [];
+    if (!rows[1]) return result;
+
     for (const subRow of rows[1].subRows) {
       if ((subRow as CollapsibleRowData).isCollapsibleRow)
         result.push(...(subRow as CollapsibleRowData).subRows);

@@ -15,26 +15,23 @@ import {
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedSendContext } from "@/contexts/SendContext";
 import { formatAddress, formatToken } from "@/lib/format";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
-import { Allocation, SEND_TOTAL_SUPPLY, TGE_TIMESTAMP_MS } from "@/pages/send";
+import { Allocation, TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {
   allocations: Allocation[];
-  isLoading: boolean;
 }
 
-export default function HeroSection({
-  allocations,
-  isLoading,
-}: HeroSectionProps) {
+export default function HeroSection({ allocations }: HeroSectionProps) {
   const router = useRouter();
 
   const { isImpersonating, setIsConnectWalletDropdownOpen, address } =
     useWalletContext();
+
+  const { userAllocations } = useLoadedSendContext();
 
   // Impersonation mode
   const onImpersonationModeBannerClick = () => {
@@ -44,12 +41,12 @@ export default function HeroSection({
   };
 
   // User
-  const userAllocationPercent = allocations.reduce(
-    (acc, allocation) => acc.plus(allocation.userAllocationPercent ?? 0),
+  const userEligibleSend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userEligibleSend ?? 0),
     new BigNumber(0),
   );
-  const userClaimedMsend = allocations.reduce(
-    (acc, allocation) => acc.plus(allocation.userClaimedMsend ?? 0),
+  const userRedeemedMsend = allocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userRedeemedMsend ?? 0),
     new BigNumber(0),
   );
   const userBridgedMsend = allocations.reduce(
@@ -57,10 +54,8 @@ export default function HeroSection({
     new BigNumber(0),
   );
 
-  const userTotalAllocation = new BigNumber(
-    userAllocationPercent.times(SEND_TOTAL_SUPPLY).div(100),
-  )
-    .plus(userClaimedMsend)
+  const userTotalAllocation = userEligibleSend
+    .plus(userRedeemedMsend)
     .plus(userBridgedMsend);
 
   // Countdown
@@ -75,7 +70,7 @@ export default function HeroSection({
     };
   }, []);
 
-  const duration = intervalToDuration({
+  const tgeDuration = intervalToDuration({
     start: currentDate,
     end: new Date(TGE_TIMESTAMP_MS),
   });
@@ -83,50 +78,52 @@ export default function HeroSection({
   return (
     <div className="flex w-full flex-col items-center gap-8 md:gap-12">
       {/* Countdown */}
-      <div className="-mb-4 flex flex-row gap-2">
-        {/* Days */}
-        <div className="flex flex-col items-center">
-          <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.days ?? 0}`.padStart(2, "0")}
-          </TDisplay>
-          <TBody>DD</TBody>
+      {Date.now() < TGE_TIMESTAMP_MS && (
+        <div className="-mb-4 flex flex-row gap-2 md:-mb-8">
+          {/* Days */}
+          <div className="flex flex-col items-center">
+            <TDisplay className="text-2xl md:text-3xl">
+              {`${tgeDuration.days ?? 0}`.padStart(2, "0")}
+            </TDisplay>
+            <TBody>DD</TBody>
+          </div>
+
+          <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+          {/* Hours */}
+          <div className="flex flex-col items-center">
+            <TDisplay className="text-2xl md:text-3xl">
+              {`${tgeDuration.hours ?? 0}`.padStart(2, "0")}
+            </TDisplay>
+            <TBody>HH</TBody>
+          </div>
+
+          <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+          {/* Minutes */}
+          <div className="flex flex-col items-center">
+            <TDisplay className="text-2xl md:text-3xl">
+              {`${tgeDuration.minutes ?? 0}`.padStart(2, "0")}
+            </TDisplay>
+            <TBody>MM</TBody>
+          </div>
+
+          <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
+
+          {/* Seconds */}
+          <div className="flex flex-col items-center">
+            <TDisplay className="text-2xl md:text-3xl">
+              {`${tgeDuration.seconds ?? 0}`.padStart(2, "0")}
+            </TDisplay>
+            <TBody>SS</TBody>
+          </div>
         </div>
-
-        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
-
-        {/* Hours */}
-        <div className="flex flex-col items-center">
-          <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.hours ?? 0}`.padStart(2, "0")}
-          </TDisplay>
-          <TBody>HH</TBody>
-        </div>
-
-        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
-
-        {/* Minutes */}
-        <div className="flex flex-col items-center">
-          <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.minutes ?? 0}`.padStart(2, "0")}
-          </TDisplay>
-          <TBody>MM</TBody>
-        </div>
-
-        <TDisplay className="text-2xl md:text-3xl">:</TDisplay>
-
-        {/* Seconds */}
-        <div className="flex flex-col items-center">
-          <TDisplay className="text-2xl md:text-3xl">
-            {`${duration.seconds ?? 0}`.padStart(2, "0")}
-          </TDisplay>
-          <TBody>SS</TBody>
-        </div>
-      </div>
+      )}
 
       <SectionHeading>
         {!address
           ? "Connect your wallet to check your allocation"
-          : userTotalAllocation.gt(0) || isLoading
+          : userTotalAllocation.gt(0) || userAllocations === undefined
             ? "Your allocation is"
             : "Sorry, you're not eligible"}
       </SectionHeading>
@@ -134,7 +131,7 @@ export default function HeroSection({
       <div className="flex w-full flex-col items-center gap-4">
         {!address ? (
           <Button
-            className="h-16 w-[240px] px-10 md:w-[320px]"
+            className="h-16 w-[240px] md:w-[320px]"
             labelClassName="uppercase text-[16px]"
             size="lg"
             onClick={() => setIsConnectWalletDropdownOpen(true)}
@@ -142,24 +139,18 @@ export default function HeroSection({
             Connect wallet
           </Button>
         ) : (
-          <Tooltip title="Allocation is an estimate since some snapshots haven't been taken yet">
-            <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
-              <SendTokenLogo className="h-8 w-8" />
-              {isLoading ? (
-                <Skeleton className="h-10 w-48" />
-              ) : (
-                <TDisplay
-                  className={cn(
-                    "text-4xl decoration-foreground/50",
-                    hoverUnderlineClassName,
-                  )}
-                >
-                  {formatToken(userTotalAllocation, { exact: false })}
-                  {"* SEND"}
-                </TDisplay>
-              )}
-            </div>
-          </Tooltip>
+          <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
+            <SendTokenLogo className="h-8 w-8" />
+
+            {userAllocations === undefined ? (
+              <Skeleton className="h-10 w-48" />
+            ) : (
+              <TDisplay className="text-4xl">
+                {formatToken(userTotalAllocation, { exact: false })}
+                {" SEND"}
+              </TDisplay>
+            )}
+          </div>
         )}
 
         {isImpersonating && address && (

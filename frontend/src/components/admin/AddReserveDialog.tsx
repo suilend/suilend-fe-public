@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
-import CoinPopover from "@/components/admin/CoinPopover";
+import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Dialog from "@/components/admin/Dialog";
 import ReserveConfig, {
   ConfigState,
@@ -213,7 +213,7 @@ export default function AddReserveDialog() {
       }
     >
       <Grid>
-        <CoinPopover
+        <CoinDropdownMenu
           coinMetadataMap={balancesCoinMetadataMap}
           value={coinType}
           onChange={setCoinType}

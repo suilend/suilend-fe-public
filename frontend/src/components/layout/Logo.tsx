@@ -5,7 +5,7 @@ import suilendLogo from "@/public/assets/suilend.svg";
 
 export default function Logo() {
   return (
-    <div className="flex flex-row items-center gap-1.5">
+    <div className="flex flex-row items-center gap-2">
       <Image
         src={suilendLogo}
         alt="Suilend logo"

@@ -1,4 +1,4 @@
-import { Star } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import PointsDataLastUpdatedAt from "@/components/points/LeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";
@@ -8,6 +8,7 @@ import { formatRank } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface PointsRankProps {
+  season: number;
   rank?: number | null;
   noTooltip?: boolean;
   isCentered?: boolean;
@@ -15,6 +16,7 @@ interface PointsRankProps {
 }
 
 export default function PointsRank({
+  season,
   rank,
   noTooltip,
   isCentered,
@@ -34,7 +36,9 @@ export default function PointsRank({
       {rank === undefined ? (
         <Skeleton className="h-5 w-full" />
       ) : (
-        <Tooltip title={!noTooltip && <PointsDataLastUpdatedAt />}>
+        <Tooltip
+          title={!noTooltip && <PointsDataLastUpdatedAt season={season} />}
+        >
           {rank === null ? (
             <TBody
               className={cn(
@@ -56,7 +60,7 @@ export default function PointsRank({
               )}
             >
               {formatRank(rank)}
-              {[1, 2, 3].includes(rank) && <Star className="h-3 w-3" />}
+              {[1, 2, 3].includes(rank) && <Trophy className="h-3 w-3" />}
             </TBody>
           )}
         </Tooltip>

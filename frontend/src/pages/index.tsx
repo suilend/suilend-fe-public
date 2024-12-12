@@ -4,12 +4,9 @@ import NextLink from "next/link";
 import { Droplet, Server } from "lucide-react";
 
 import {
-  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_kSUI_COINTYPE,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
-  isInMsafeApp,
 } from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/types";
 
@@ -29,7 +26,7 @@ import { DASHBOARD_URL, DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
 import suilendLogo from "@/public/assets/suilend.svg";
 
 export default function Home() {
-  const { data } = useAppContext();
+  const { data, filteredReserves } = useAppContext();
 
   return (
     <>
@@ -158,60 +155,45 @@ export default function Home() {
 
         {/* Ticker */}
         <div className="h-16 w-full shrink-0 overflow-hidden border-t bg-background">
-          {!data ? (
+          {!data || !filteredReserves ? (
             <Skeleton className="h-full w-full bg-muted/10" />
           ) : (
             <Ticker
               className="h-16"
-              items={data.lendingMarket.reserves
-                .filter((reserve) =>
-                  !isInMsafeApp()
-                    ? true
-                    : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
-                        reserve.coinType,
-                      ),
-                )
-                .filter((reserve) =>
-                  reserve.coinType === NORMALIZED_kSUI_COINTYPE
-                    ? Date.now() >= 1732708800000 // 2024-11-27 12:00:00 UTC
-                    : reserve.config.depositLimit.gt(0),
-                )
-                .map((reserve) => {
-                  const stakingYieldAprPercent = getStakingYieldAprPercent(
-                    Side.DEPOSIT,
-                    reserve,
-                    data.lstAprPercentMap,
-                  );
+              items={filteredReserves.map((reserve) => {
+                const stakingYieldAprPercent = getStakingYieldAprPercent(
+                  Side.DEPOSIT,
+                  reserve,
+                  data.lstAprPercentMap,
+                );
 
-                  const totalDepositAprPercent = getTotalAprPercent(
-                    Side.DEPOSIT,
-                    reserve.depositAprPercent,
-                    getFilteredRewards(
-                      data.rewardMap[reserve.coinType].deposit,
-                    ),
-                    stakingYieldAprPercent,
-                  );
+                const totalDepositAprPercent = getTotalAprPercent(
+                  Side.DEPOSIT,
+                  reserve.depositAprPercent,
+                  getFilteredRewards(data.rewardMap[reserve.coinType].deposit),
+                  stakingYieldAprPercent,
+                );
 
-                  return (
-                    <div
-                      key={reserve.coinType}
-                      className="flex flex-row items-center gap-3 py-2"
-                    >
-                      <TokenLogo
-                        token={{
-                          coinType: reserve.coinType,
-                          symbol: reserve.symbol,
-                          iconUrl: reserve.iconUrl,
-                        }}
-                      />
-                      <TBody>{reserve.symbol}</TBody>
-                      <TBody className="text-muted-foreground">
-                        {formatPercent(totalDepositAprPercent)}
-                        {stakingYieldAprPercent && "*"} APR
-                      </TBody>
-                    </div>
-                  );
-                })}
+                return (
+                  <div
+                    key={reserve.coinType}
+                    className="flex flex-row items-center gap-3 py-2"
+                  >
+                    <TokenLogo
+                      token={{
+                        coinType: reserve.coinType,
+                        symbol: reserve.symbol,
+                        iconUrl: reserve.iconUrl,
+                      }}
+                    />
+                    <TBody>{reserve.symbol}</TBody>
+                    <TBody className="text-muted-foreground">
+                      {formatPercent(totalDepositAprPercent)}
+                      {stakingYieldAprPercent && "*"} APR
+                    </TBody>
+                  </div>
+                );
+              })}
             />
           )}
         </div>

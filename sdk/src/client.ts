@@ -72,10 +72,10 @@ const SUILEND_UPGRADE_CAP_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? "0x05da14368a42a351e106806c09727968ae26be77a6741a018239ef0f99d5185e"
   : "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
 export const LENDING_MARKET_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8"
+  ? "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667"
   : "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
 export const LENDING_MARKET_TYPE = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x2::sui::SUI"
+  ? "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI"
   : "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
@@ -334,7 +334,7 @@ export class SuilendClient {
       })
     ).data;
 
-    if (coins.length > 1 && !isSui && mergeCoins) {
+    if (coins.length > 1 && !isSui(rewardCoinType) && mergeCoins) {
       transaction.mergeCoins(
         transaction.object(coins[0].coinObjectId),
         coins.map((c) => transaction.object(c.coinObjectId)).slice(1),

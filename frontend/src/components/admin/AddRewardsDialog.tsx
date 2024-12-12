@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { Side } from "@suilend/sdk/types";
 
-import CoinPopover from "@/components/admin/CoinPopover";
+import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
@@ -172,7 +172,7 @@ export default function AddRewardsDialog() {
       }
     >
       <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
-        <CoinPopover
+        <CoinDropdownMenu
           coinMetadataMap={balancesCoinMetadataMap}
           value={coinType}
           onChange={setCoinType}

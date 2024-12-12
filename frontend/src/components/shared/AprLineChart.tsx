@@ -69,7 +69,7 @@ function TooltipContent({ d, viewBox, x }: TooltipContentProps) {
 
 interface AprLineChartProps {
   data: ChartData[];
-  reference?: ChartData;
+  reference?: Pick<ChartData, "utilPercent">;
 }
 
 export default function AprLineChart({ data, reference }: AprLineChartProps) {

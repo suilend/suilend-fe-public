@@ -13,7 +13,14 @@ export default function ObligationDepositsCard() {
     <Card
       id="assets-deposited"
       headerProps={{
-        title: "Deposited assets",
+        title: (
+          <>
+            Deposited assets
+            <span className="text-xs text-muted-foreground">
+              {obligation.depositPositionCount}
+            </span>
+          </>
+        ),
         noSeparator: true,
       }}
     >

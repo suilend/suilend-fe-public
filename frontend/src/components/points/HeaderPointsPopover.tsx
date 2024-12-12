@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 import PointsCount from "@/components/points/PointsCount";
-import PointsIcon from "@/components/points/PointsIcon";
+import PointsLogo from "@/components/points/PointsLogo";
 import PointsRank from "@/components/points/PointsRank";
 import Button from "@/components/shared/Button";
 import Popover from "@/components/shared/Popover";
@@ -20,11 +20,15 @@ export default function PointsCountPopover() {
   const router = useRouter();
 
   const { data } = useAppContext();
-  const { rank } = usePointsContext();
+  const { season, seasonMap, addressRowMap } = usePointsContext();
 
   // Points
   const pointsStats = data
-    ? getPointsStats(data.rewardMap, data.obligations)
+    ? getPointsStats(
+        seasonMap[season].coinType,
+        data.rewardMap,
+        data.obligations,
+      )
     : undefined;
 
   // State
@@ -37,7 +41,7 @@ export default function PointsCountPopover() {
       trigger={
         <Button
           className="gap-1.5 bg-muted/15"
-          startIcon={<PointsIcon className="h-4 w-4" />}
+          startIcon={<PointsLogo season={season} />}
           variant="ghost"
           role="combobox"
         >
@@ -54,22 +58,41 @@ export default function PointsCountPopover() {
       }}
     >
       <div className="flex flex-col gap-4">
-        <TitleWithIcon icon={<PointsIcon />}>SEND points</TitleWithIcon>
+        <TitleWithIcon
+          icon={<PointsLogo season={season} />}
+          style={{ color: seasonMap[season].color }}
+        >
+          SEND points Season {season}
+        </TitleWithIcon>
 
         <div className="flex w-full flex-col gap-2">
           <div className="flex flex-row items-center justify-between gap-4">
             <TLabelSans>Total Points</TLabelSans>
-            <PointsCount points={pointsStats?.totalPoints.total} />
+            <PointsCount
+              season={season}
+              amount={pointsStats?.totalPoints.total}
+            />
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4">
             <TLabelSans>Points per day</TLabelSans>
-            <PointsCount points={pointsStats?.pointsPerDay.total} />
+            <PointsCount
+              season={season}
+              amount={pointsStats?.pointsPerDay.total}
+            />
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4">
             <TLabelSans>Rank</TLabelSans>
-            <PointsRank rank={rank} isRightAligned />
+            <PointsRank
+              season={season}
+              rank={
+                addressRowMap?.[season] === null
+                  ? null
+                  : addressRowMap?.[season].rank
+              }
+              isRightAligned
+            />
           </div>
         </div>
 

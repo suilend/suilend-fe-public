@@ -1,33 +1,34 @@
 import Link from "next/link";
 import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
-import BigNumber from "bignumber.js";
 import { ArrowUpRight, Info } from "lucide-react";
+
+import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { formatToken } from "@/lib/format";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import {
   Allocation,
   AllocationId,
   AssetType,
   SEND_TOTAL_SUPPLY,
   TGE_TIMESTAMP_MS,
-} from "@/pages/send";
+  mSEND_REDEMPTION_END_TIMESTAMP_MS,
+} from "@/lib/send";
+import { cn } from "@/lib/utils";
 
 interface StatusProps {
   allocation: Allocation;
   isEligible?: boolean;
   isNotEligible?: boolean;
-  hasClaimedMsend?: boolean;
+  hasRedeemedMsend?: boolean;
   hasBridgedMsend?: boolean;
 }
 
@@ -35,97 +36,83 @@ function Status({
   allocation,
   isEligible,
   isNotEligible,
-  hasClaimedMsend,
+  hasRedeemedMsend,
   hasBridgedMsend,
 }: StatusProps) {
-  const hasTooltip =
-    isEligible &&
-    [
-      AllocationId.SEND_POINTS,
+  const getSnapshotNotTakenStatus = () => {
+    if (Date.now() >= TGE_TIMESTAMP_MS) {
+      if (
+        allocation.id === AllocationId.SEND_POINTS ||
+        allocation.id === AllocationId.SUILEND_CAPSULES
+      ) {
+        return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+          ? "Redemptions open"
+          : "Redemptions closed";
+      }
+      if (allocation.id === AllocationId.SAVE) return "Conversions open";
+      if (allocation.id === AllocationId.ROOTLETS) return "Redemptions open";
+    }
 
-      AllocationId.FUD,
-      AllocationId.AAA,
-      AllocationId.OCTO,
-      AllocationId.TISM,
-    ].includes(allocation.id);
+    return "Snapshot not taken";
+  };
 
   return (
     <div
       className={cn(
         "relative z-[1] -mb-2 flex min-h-11 w-full flex-row items-center rounded-t-md px-4 pb-3.5 pt-1.5",
-        isEligible || hasClaimedMsend || hasBridgedMsend
+        isEligible || hasRedeemedMsend || hasBridgedMsend
           ? cn("justify-between", isEligible ? "bg-[#5DF886]" : "bg-[#1A4533]")
           : cn(
               "justify-center",
-              !allocation.snapshotTaken ? "bg-[#8FDCF4]" : "bg-[#192A3A]",
+              !allocation.snapshotTaken ? "bg-secondary" : "bg-[#192A3A]",
             ),
       )}
     >
-      {isEligible || hasClaimedMsend || hasBridgedMsend ? (
+      {isEligible || hasRedeemedMsend || hasBridgedMsend ? (
         <>
           <TBody
-            className={cn(isEligible ? "text-[#030917]" : "text-[#5DF886]")}
+            className={cn(
+              isEligible ? "uppercase text-background" : "text-[#5DF886]",
+            )}
           >
             {isEligible
-              ? "ELIGIBLE"
-              : hasClaimedMsend
-                ? "CONVERTED"
-                : "BRIDGED"}
+              ? allocation.airdropSent &&
+                allocation.id !== AllocationId.ROOTLETS
+                ? "Airdropped"
+                : "Eligible"
+              : hasRedeemedMsend
+                ? "Redeemed"
+                : "Bridged"}
           </TBody>
-          <div className="flex flex-row items-center gap-1.5">
-            <SendTokenLogo
+
+          <div className="flex flex-row items-center gap-2">
+            <SendTokenLogo className="rounded-[50%] bg-background outline outline-[0.5px] outline-background" />
+            <TBody
               className={cn(
-                "rounded-[50%] bg-[#020818] outline outline-[0.5px] outline-[#020818]",
+                "text-[16px]",
+                isEligible ? "text-background" : "text-[#5DF886]",
               )}
-            />
-            <Tooltip
-              title={
-                hasTooltip
-                  ? allocation.id === AllocationId.SEND_POINTS
-                    ? "Allocation is an estimate since SEND Points are still ongoing"
-                    : [
-                          AllocationId.FUD,
-                          AllocationId.AAA,
-                          AllocationId.OCTO,
-                          AllocationId.TISM,
-                        ].includes(allocation.id)
-                      ? "Allocation is an estimate since the final snapshot has not been taken yet"
-                      : undefined
-                  : undefined
-              }
             >
-              <TBody
-                className={cn(
-                  "text-[16px]",
-                  isEligible ? "text-[#030917]" : "text-[#5DF886]",
-                  hasTooltip &&
-                    cn("decoration-[#030917]/50", hoverUnderlineClassName),
-                )}
-              >
-                {formatToken(
-                  isEligible
-                    ? new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.userAllocationPercent!.div(100),
-                      )
-                    : hasClaimedMsend
-                      ? allocation.userClaimedMsend!
-                      : allocation.userBridgedMsend!,
-                  { exact: false },
-                )}
-                {hasTooltip ? "*" : undefined}
-              </TBody>
-            </Tooltip>
+              {formatToken(
+                isEligible
+                  ? allocation.userEligibleSend!
+                  : hasRedeemedMsend
+                    ? allocation.userRedeemedMsend!
+                    : allocation.userBridgedMsend!,
+                { exact: false },
+              )}
+            </TBody>
           </div>
         </>
       ) : (
         <TBody
           className={cn(
             "uppercase",
-            !allocation.snapshotTaken ? "text-[#030917]" : "text-[#8FDCF4]",
+            !allocation.snapshotTaken ? "text-background" : "text-secondary",
           )}
         >
           {!allocation.snapshotTaken
-            ? "Snapshot not taken"
+            ? getSnapshotNotTakenStatus()
             : isNotEligible
               ? "Not eligible"
               : "Snapshot taken"}
@@ -138,43 +125,57 @@ function Status({
 interface CtaButtonProps {
   allocation: Allocation;
   isEligible?: boolean;
-  burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
-function CtaButton({
-  allocation,
-  isEligible,
-  burnSendPointsSuilendCapsules,
-}: CtaButtonProps) {
-  const burnSendPointsSuilendCapsulesWrapper = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+function CtaButton({ allocation, isEligible }: CtaButtonProps) {
+  const onRedeemClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    burnSendPointsSuilendCapsules();
+    const claimSectionHeadingElement = document.getElementById("claim");
+    if (!claimSectionHeadingElement) return;
+
+    window.scrollTo({
+      top: claimSectionHeadingElement.offsetTop - 40,
+      behavior: "smooth",
+    });
   };
 
-  if (
-    [AllocationId.SEND_POINTS, AllocationId.SUILEND_CAPSULES].includes(
-      allocation.id,
-    )
-  ) {
-    if (Date.now() >= TGE_TIMESTAMP_MS) {
-      if (isEligible) {
-        return (
+  if (Date.now() >= TGE_TIMESTAMP_MS) {
+    if (
+      allocation.id === AllocationId.SEND_POINTS ||
+      allocation.id === AllocationId.SUILEND_CAPSULES
+    ) {
+      return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS ? (
+        isEligible ? (
           <Button
             className="h-10 w-full border-secondary text-primary-foreground"
             labelClassName="text-[16px]"
             variant="secondaryOutline"
-            onClick={burnSendPointsSuilendCapsulesWrapper}
+            onClick={onRedeemClick}
           >
-            CONVERT TO mSEND
+            REDEEM mSEND
           </Button>
-        );
-      } else return <div className="h-10 w-full max-sm:hidden" />;
+        ) : (
+          <div className="h-10 w-full max-sm:hidden" />
+        )
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
     }
-  }
-  if (allocation.id === AllocationId.SAVE) {
+    if (allocation.id === AllocationId.ROOTLETS) {
+      return isEligible ? (
+        <Button
+          className="h-10 w-full border-secondary text-primary-foreground"
+          labelClassName="text-[16px]"
+          variant="secondaryOutline"
+          onClick={onRedeemClick}
+        >
+          REDEEM mSEND
+        </Button>
+      ) : (
+        <div className="h-10 w-full max-sm:hidden" />
+      );
+    }
   }
 
   return allocation.cta !== undefined && !allocation.snapshotTaken ? (
@@ -215,10 +216,9 @@ interface AllocationCardProps {
   burnSendPointsSuilendCapsules: () => Promise<void>;
 }
 
-export default function AllocationCard({
-  allocation,
-  burnSendPointsSuilendCapsules,
-}: AllocationCardProps) {
+export default function AllocationCard({ allocation }: AllocationCardProps) {
+  const isTouchscreen = useIsTouchscreen();
+
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
 
@@ -235,14 +235,17 @@ export default function AllocationCard({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const onCardMouseEnter = () => {
+    if (isTouchscreen) return;
+
     setIsVideoPlaying(true);
 
     if (!videoRef.current) return;
     videoRef.current.play();
   };
   const onCardMouseLeave = () => {
-    setIsVideoPlaying(false);
+    if (isTouchscreen) return;
 
+    setIsVideoPlaying(false);
     setTimeout(() => {
       if (!videoRef.current) return;
       videoRef.current.pause();
@@ -252,17 +255,17 @@ export default function AllocationCard({
 
   // Status
   const isEligible = useMemo(
-    () => allocation.userAllocationPercent?.gt(0),
-    [allocation.userAllocationPercent],
+    () => allocation.userEligibleSend?.gt(0),
+    [allocation.userEligibleSend],
   );
   const isNotEligible = useMemo(
-    () => allocation.snapshotTaken && allocation.userAllocationPercent?.eq(0),
-    [allocation.snapshotTaken, allocation.userAllocationPercent],
+    () => allocation.snapshotTaken && allocation.userEligibleSend?.eq(0),
+    [allocation.snapshotTaken, allocation.userEligibleSend],
   );
 
-  const hasClaimedMsend = useMemo(
-    () => allocation.userClaimedMsend?.gt(0),
-    [allocation.userClaimedMsend],
+  const hasRedeemedMsend = useMemo(
+    () => allocation.userRedeemedMsend?.gt(0),
+    [allocation.userRedeemedMsend],
   );
   const hasBridgedMsend = useMemo(
     () => allocation.userBridgedMsend?.gt(0),
@@ -279,8 +282,6 @@ export default function AllocationCard({
         onClick={() => setIsFlipped((is) => !is)}
         onMouseEnter={onCardMouseEnter}
         onMouseLeave={onCardMouseLeave}
-        onTouchStart={onCardMouseEnter}
-        onTouchEnd={onCardMouseLeave}
         style={{ perspective: "1000px" }}
       >
         <div className={cn("relative h-full w-full", styles.cardInner)}>
@@ -290,21 +291,21 @@ export default function AllocationCard({
               allocation={allocation}
               isEligible={isEligible}
               isNotEligible={isNotEligible}
-              hasClaimedMsend={hasClaimedMsend}
+              hasRedeemedMsend={hasRedeemedMsend}
               hasBridgedMsend={hasBridgedMsend}
             />
 
             <div className="relative z-[2] flex flex-1 flex-col rounded-md border border-[#192A3A] bg-[#0D1221] transition-colors group-hover:border-secondary/25">
               {/* Top */}
-              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-[#030917]">
+              <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-background">
                 {/* Total allocation */}
-                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-1.5 rounded-sm bg-[#202639] px-2">
+                <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2 backdrop-blur-md">
                   <SendTokenLogo />
                   <TBody className="text-[16px]">
                     {formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                   </TBody>
@@ -329,7 +330,7 @@ export default function AllocationCard({
                   />
 
                   {/* Video */}
-                  {allocation.hoverSrc && (
+                  {allocation.hoverSrc && !isTouchscreen && (
                     <video
                       ref={videoRef}
                       className={cn(
@@ -363,11 +364,7 @@ export default function AllocationCard({
                   )}
                 </div>
 
-                <CtaButton
-                  allocation={allocation}
-                  isEligible={isEligible}
-                  burnSendPointsSuilendCapsules={burnSendPointsSuilendCapsules}
-                />
+                <CtaButton allocation={allocation} isEligible={isEligible} />
               </div>
             </div>
           </div>
@@ -397,12 +394,12 @@ export default function AllocationCard({
                   <LabelWithValue
                     labelClassName="text-sm"
                     label="Total allocation"
-                    valueClassName="gap-1.5 items-center"
+                    valueClassName="gap-2 items-center"
                     valueStartDecorator={<SendTokenLogo />}
                     value={formatToken(
-                      new BigNumber(SEND_TOTAL_SUPPLY).times(
-                        allocation.totalAllocationPercent.div(100),
-                      ),
+                      allocation.totalAllocationPercent
+                        .times(SEND_TOTAL_SUPPLY)
+                        .div(100),
                       { exact: false },
                     )}
                     horizontal
@@ -415,12 +412,10 @@ export default function AllocationCard({
                         <div className="h-1 w-1 rounded-[50%] bg-muted" />
                       }
                       label={breakdown.title}
-                      valueClassName="gap-1.5 items-center"
+                      valueClassName="gap-2 items-center"
                       valueStartDecorator={<SendTokenLogo />}
                       value={formatToken(
-                        new BigNumber(SEND_TOTAL_SUPPLY).times(
-                          breakdown.percent.div(100),
-                        ),
+                        breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
                         { exact: false },
                       )}
                       horizontal
@@ -441,14 +436,26 @@ export default function AllocationCard({
                   </>
                 )}
 
-                <Separator className="bg-[#192A3A]" />
-                <LabelWithValue
-                  labelClassName="text-sm"
-                  label="Snapshot"
-                  valueClassName="uppercase"
-                  value={allocation.snapshotTaken ? "Taken" : "Not taken"}
-                  horizontal
-                />
+                {!(
+                  Date.now() >= TGE_TIMESTAMP_MS &&
+                  [
+                    AllocationId.SEND_POINTS,
+                    AllocationId.SUILEND_CAPSULES,
+                    AllocationId.SAVE,
+                    AllocationId.ROOTLETS,
+                  ].includes(allocation.id)
+                ) && (
+                  <>
+                    <Separator className="bg-[#192A3A]" />
+                    <LabelWithValue
+                      labelClassName="text-sm"
+                      label="Snapshot"
+                      valueClassName="uppercase"
+                      value={allocation.snapshotTaken ? "Taken" : "Not taken"}
+                      horizontal
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>
