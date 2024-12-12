@@ -11,7 +11,7 @@ export default function TokenomicsSection() {
 
       <div className="flex w-full flex-col items-center justify-center gap-16 md:flex-row">
         <div className="max-w-96 max-md:w-full md:flex-1">
-          <AspectRatio ratio={1031 / 828}>
+          <AspectRatio ratio={1029 / 828}>
             <Image
               className="object-cover"
               src={`${ASSETS_URL}/send/tokenomics-pie.png`}
