@@ -754,7 +754,7 @@ function ClaimTabContent() {
                   : "text-muted-foreground transition-colors group-hover:text-primary-foreground",
               )}
             >
-              Pay penalty using a flash loan
+              Deduct penalty from claimed SEND
             </TBodySans>
           </div>
 
