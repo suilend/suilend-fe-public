@@ -29,7 +29,6 @@ import Card from "@/components/dashboard/Card";
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import PenaltyLineChart from "@/components/send/PenaltyLineChart";
 import SectionHeading from "@/components/send/SectionHeading";
-import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button, { ButtonProps } from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
@@ -431,8 +430,6 @@ function ClaimTabContent() {
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     mSendBalanceMap,
-    userClaimedSendMap,
-    refreshUserClaimedSendMap,
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
@@ -577,7 +574,6 @@ function ClaimTabContent() {
       });
     } finally {
       setIsSubmitting(false);
-      await refreshUserClaimedSendMap();
     }
   };
 
@@ -638,22 +634,6 @@ function ClaimTabContent() {
               state={submitButtonState_claimAndDeposit}
               submit={() => submit(true)}
             />
-          </div>
-
-          <div className="flex flex-row items-center gap-2">
-            <SendTokenLogo />
-
-            <TBody>
-              {userClaimedSendMap === undefined ? (
-                <Skeleton className="inline-block h-5 w-16 align-top" />
-              ) : (
-                formatToken(userClaimedSendMap[selectedMsendCoinType], {
-                  dp: sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
-                    .decimals, // TODO
-                })
-              )}
-              {" SEND claimed"}
-            </TBody>
           </div>
         </div>
       </div>

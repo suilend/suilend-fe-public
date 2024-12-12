@@ -118,19 +118,19 @@ function Page() {
     totalAllocationBreakdownMap: {
       [BluefinLeague.GOLD]: {
         title: "Gold",
-        percent: new BigNumber(3).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+        percent: new BigNumber(3).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
       [BluefinLeague.PLATINUM]: {
         title: "Platinum",
-        percent: new BigNumber(60).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+        percent: new BigNumber(60).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
       [BluefinLeague.BLACK]: {
         title: "Black",
-        percent: new BigNumber(244.5).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+        percent: new BigNumber(244.5).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
       [BluefinLeague.SAPPHIRE]: {
         title: "Sapphire",
-        percent: new BigNumber(400).div(SEND_TOTAL_SUPPLY).times(100), // TODO: Flat
+        percent: new BigNumber(400).div(SEND_TOTAL_SUPPLY).times(100), // Flat
       },
     },
   };
@@ -159,7 +159,7 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Prime Machin",
-        percent: new BigNumber(0.1).div(3333), // Linear
+        percent: new BigNumber(30).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
@@ -171,7 +171,7 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Egg",
-        percent: new BigNumber(0.1).div(9546), // Linear
+        percent: new BigNumber(10.4).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
@@ -183,7 +183,7 @@ function Page() {
     totalAllocationBreakdownMap: {
       one: {
         title: "Per DoubleUp Citizen",
-        percent: new BigNumber(0.05).div(2878), // Linear
+        percent: new BigNumber(17.3).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };

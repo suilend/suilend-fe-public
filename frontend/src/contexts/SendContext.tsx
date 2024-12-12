@@ -47,7 +47,6 @@ import {
   BURN_SUILEND_CAPSULES_EVENT_TYPE,
   BluefinLeague,
   MsendObject,
-  REDEEM_SEND_EVENT_TYPE,
   ROOTLETS_TYPE,
   SUILEND_CAPSULE_TYPE,
   SuilendCapsuleRarity,
@@ -119,9 +118,6 @@ interface SendContext {
     | undefined;
   refreshUserAllocations: () => Promise<void>;
 
-  userClaimedSendMap: Record<string, BigNumber> | undefined;
-  refreshUserClaimedSendMap: () => Promise<void>;
-
   selectedMsendCoinType: string;
   setSelectedMsendCoinType: (coinType: string) => void;
 }
@@ -147,11 +143,6 @@ const SendContext = createContext<SendContext>({
   ownedKiosks: undefined,
   userAllocations: undefined,
   refreshUserAllocations: async () => {
-    throw Error("SendContextProvider not initialized");
-  },
-
-  userClaimedSendMap: undefined,
-  refreshUserClaimedSendMap: async () => {
     throw Error("SendContextProvider not initialized");
   },
 
@@ -812,50 +803,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     fetchMsendOwningRootlets,
   ]);
 
-  // User - Claimed SEND
-  const userClaimedSendMap = useMemo(() => {
-    if (sendCoinMetadataMap === undefined) return undefined;
-    if (transactionsSinceTge === undefined) return undefined;
-
-    const result: Record<string, BigNumber> = {};
-    for (let i = 0; i < NORMALIZED_mSEND_COINTYPES.length; i++) {
-      const claimedSend = transactionsSinceTge.from.reduce(
-        (acc, transaction) => {
-          const transactionClaimedSend = (transaction.events ?? [])
-            .filter(
-              (event) =>
-                event.type ===
-                `${REDEEM_SEND_EVENT_TYPE}<${NORMALIZED_mSEND_COINTYPES[i]}, ${NORMALIZED_BETA_SEND_COINTYPE}, 0x2::sui::SUI>`, // TODO
-            )
-            .reduce(
-              (acc2, event) =>
-                acc2.plus(
-                  new BigNumber((event.parsedJson as any).withdraw_amount).div(
-                    10 **
-                      sendCoinMetadataMap[NORMALIZED_BETA_SEND_COINTYPE]
-                        .decimals, // TODO
-                  ),
-                ),
-              new BigNumber(0),
-            );
-
-          return acc.plus(transactionClaimedSend);
-        },
-        new BigNumber(0),
-      );
-
-      result[NORMALIZED_mSEND_COINTYPES[i]] = claimedSend;
-    }
-
-    return result;
-  }, [sendCoinMetadataMap, transactionsSinceTge]);
-
-  const refreshUserClaimedSendMap = useCallback(async () => {
-    if (!address) return;
-
-    await fetchTransactionsSinceTge(address);
-  }, [address, fetchTransactionsSinceTge]);
-
   // Selected mSEND
   const [selectedMsendCoinType, setSelectedMsendCoinType] = useState<string>(
     NORMALIZED_mSEND_3M_COINTYPE,
@@ -876,9 +823,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       userAllocations,
       refreshUserAllocations,
 
-      userClaimedSendMap,
-      refreshUserClaimedSendMap,
-
       selectedMsendCoinType,
       setSelectedMsendCoinType,
     }),
@@ -891,8 +835,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       ownedKiosks,
       userAllocations,
       refreshUserAllocations,
-      userClaimedSendMap,
-      refreshUserClaimedSendMap,
       selectedMsendCoinType,
       setSelectedMsendCoinType,
     ],
