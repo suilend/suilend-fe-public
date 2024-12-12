@@ -1,7 +1,8 @@
+import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
 import { SuiClient } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
-import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import { Transaction, TransactionResult } from "@mysten/sui/transactions";
+import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
 
@@ -11,11 +12,19 @@ import {
   NORMALIZED_mSEND_12M_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   NORMALIZED_mSEND_6M_COINTYPE,
+  Rpc,
   isSendPointsS1,
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
 
 import { AppData } from "@/contexts/AppContext";
+import {
+  CETUS_CONTRACT_PACKAGE_ID,
+  CETUS_GLOBAL_CONFIG_OBJECT_ID,
+  CETUS_POOL_OBJECT_ID,
+  getCetusClosestSqrtPriceFromPrice,
+  getCetusCurrentPrice,
+} from "@/lib/cetus";
 import { getOwnedObjectsOfType } from "@/lib/transactions";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
@@ -145,6 +154,7 @@ export type Allocation = {
   userBridgedMsend?: BigNumber;
 };
 
+// Redeem mSEND
 export const redeemSendPointsMsend = async (
   suilendClient: SuilendClient,
   data: AppData,
@@ -358,12 +368,137 @@ export const redeemRootletsMsend = async (
   );
 };
 
+// Claim SEND
+const borrowFlashLoan = (args: {
+  minSendPrice: number; // based on slippage
+  burnAmount: bigint; // without decimal part
+  suiPenaltyAmount: bigint;
+  mTokenManager: string;
+  mSendCoinType: string;
+  transaction: Transaction;
+}): [any, any, any] => {
+  const {
+    minSendPrice,
+    burnAmount,
+    suiPenaltyAmount,
+    mTokenManager,
+    mSendCoinType,
+    transaction,
+  } = args;
+
+  // const suiPenaltyAmount = transaction.moveCall({
+  //   target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::get_penalty_amount`,
+  //   typeArguments: [
+  //     mSendCoinType,
+  //     NORMALIZED_SEND_COINTYPE,
+  //     NORMALIZED_SUI_COINTYPE,
+  //   ],
+  //   arguments: [
+  //     transaction.object(mTokenManager),
+  //     transaction.pure.u64(burnAmount),
+  //     transaction.object(SUI_CLOCK_OBJECT_ID),
+  //   ],
+  // });
+
+  const minSqrtPrice = getCetusClosestSqrtPriceFromPrice(
+    minSendPrice,
+    6, // SEND_DECIMALS
+    SUI_DECIMALS,
+    220, // TICK_SPACING
+  );
+  const [emptySendBalance, borrowedSuiBalance, receipt] = transaction.moveCall({
+    target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::flash_swap`,
+    typeArguments: [NORMALIZED_SEND_COINTYPE, NORMALIZED_SUI_COINTYPE],
+    arguments: [
+      transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
+      transaction.object(CETUS_POOL_OBJECT_ID),
+      transaction.pure.bool(true), // a2b, i.e. Get SUI, pay SEND later
+      transaction.pure.bool(false), // by_amount_in, false because we want to specify how much SUI we get which is equivalent to penalty amount
+      transaction.pure.u64(suiPenaltyAmount),
+      transaction.pure.u128(minSqrtPrice),
+      transaction.object(SUI_CLOCK_OBJECT_ID),
+    ],
+  });
+
+  const penaltyCoin: TransactionResult = transaction.moveCall({
+    target: `0x2::coin::from_balance`,
+    typeArguments: [NORMALIZED_SUI_COINTYPE],
+    arguments: [borrowedSuiBalance],
+  });
+
+  return [emptySendBalance, penaltyCoin, receipt];
+};
+
+const repayFlashLoan = (args: {
+  emptySendBalance: any; // Empty balance object that we get from the flash loan
+  receipt: any;
+  sendCoin: any; // Send coin object we get from the claiming mSEND
+  suiPenaltyCoin: any;
+  address: string;
+  transaction: Transaction;
+}): any => {
+  const {
+    emptySendBalance,
+    receipt,
+    sendCoin,
+    suiPenaltyCoin,
+    address,
+    transaction,
+  } = args;
+
+  const sendPayAmount = transaction.moveCall({
+    target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::swap_pay_amount`,
+    typeArguments: [NORMALIZED_SEND_COINTYPE, NORMALIZED_SUI_COINTYPE],
+    arguments: [transaction.object(receipt)],
+  });
+
+  const sendCoinToPay = transaction.splitCoins(sendCoin, [sendPayAmount]);
+
+  const sendBalToMerge = transaction.moveCall({
+    target: `0x2::coin::into_balance`,
+    typeArguments: [NORMALIZED_SEND_COINTYPE],
+    arguments: [sendCoinToPay],
+  });
+
+  transaction.moveCall({
+    target: `0x2::balance::join`,
+    typeArguments: [NORMALIZED_SEND_COINTYPE],
+    arguments: [emptySendBalance, sendBalToMerge],
+  });
+
+  const emptySuiBalance = transaction.moveCall({
+    target: `0x2::balance::zero`,
+    typeArguments: [NORMALIZED_SUI_COINTYPE],
+    arguments: [],
+  });
+
+  transaction.moveCall({
+    target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::repay_flash_swap`,
+    typeArguments: [NORMALIZED_SEND_COINTYPE, NORMALIZED_SUI_COINTYPE],
+    arguments: [
+      transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
+      transaction.object(CETUS_POOL_OBJECT_ID),
+      transaction.object(emptySendBalance),
+      transaction.object(emptySuiBalance),
+      receipt,
+    ],
+  });
+
+  transaction.transferObjects([suiPenaltyCoin], address);
+
+  return sendCoin;
+};
+
 export const claimSend = async (
+  rpc: Rpc,
   suiClient: SuiClient,
   suilendClient: SuilendClient,
   address: string,
-  claimAmount: string,
   mSendCoinType: string,
+  claimAmount: string,
+  claimPenaltyAmountSui: BigNumber,
+  isFlashLoan: boolean,
+  flashLoanSlippagePercent: number,
   isDepositing: boolean,
   transaction: Transaction,
   obligationOwnerCapId?: string,
@@ -392,10 +527,37 @@ export const claimSend = async (
     .integerValue(BigNumber.ROUND_DOWN)
     .toString();
 
-  const [splitCoin] = transaction.splitCoins(
+  const [splitMsendCoin] = transaction.splitCoins(
     transaction.object(mergedMsendCoin.coinObjectId),
     [value],
   );
+
+  let suiPenaltyCoin = transaction.gas;
+  const flashLoanArgs: Record<string, any> = {};
+  if (isFlashLoan) {
+    const sendPrice = await getCetusCurrentPrice(initMainnetSDK(rpc.url));
+    const minSendPrice = sendPrice
+      .mul(1 - flashLoanSlippagePercent / 100)
+      .toNumber();
+
+    const [emptySendBalance, borrowedSuiCoin, receipt] = borrowFlashLoan({
+      minSendPrice,
+      burnAmount: BigInt(value),
+      suiPenaltyAmount: BigInt(
+        claimPenaltyAmountSui
+          .times(10 ** SUI_DECIMALS)
+          .integerValue(BigNumber.ROUND_UP)
+          .toString(),
+      ),
+      mTokenManager: mSEND_COINTYPE_MANAGER_MAP[mSendCoinType],
+      mSendCoinType,
+      transaction,
+    });
+
+    suiPenaltyCoin = borrowedSuiCoin;
+    flashLoanArgs.emptySendBalance = emptySendBalance;
+    flashLoanArgs.receipt = receipt;
+  }
 
   // Claim SEND
   const sendCoin = transaction.moveCall({
@@ -407,27 +569,43 @@ export const claimSend = async (
     ],
     arguments: [
       transaction.object(mSEND_COINTYPE_MANAGER_MAP[mSendCoinType]),
-      transaction.object(splitCoin),
-      transaction.object(transaction.gas),
+      transaction.object(splitMsendCoin),
+      transaction.object(suiPenaltyCoin),
       transaction.object(SUI_CLOCK_OBJECT_ID),
     ],
   });
+
+  let finalSendCoin = sendCoin;
+  if (isFlashLoan) {
+    finalSendCoin = repayFlashLoan({
+      emptySendBalance: flashLoanArgs.emptySendBalance,
+      receipt: flashLoanArgs.receipt,
+      sendCoin,
+      suiPenaltyCoin,
+      address,
+      transaction,
+    });
+  }
 
   if (isDepositing) {
     // Deposit SEND
     suilendClient.depositCoin(
       address,
-      sendCoin,
+      finalSendCoin,
       NORMALIZED_SEND_COINTYPE,
       transaction,
       obligationOwnerCapId,
     );
   } else {
     // Transfer SEND to user
-    transaction.transferObjects([sendCoin], transaction.pure.address(address));
+    transaction.transferObjects(
+      [finalSendCoin],
+      transaction.pure.address(address),
+    );
   }
 };
 
+// Utils
 export const formatDuration = (duration: Duration) =>
   (duration.years || duration.months
     ? [

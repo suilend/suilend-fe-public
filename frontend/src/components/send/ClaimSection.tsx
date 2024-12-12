@@ -9,7 +9,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
-import { ArrowUpRight, Clock } from "lucide-react";
+import { ArrowUpRight, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -89,7 +89,7 @@ function SubmitButton({
   return (
     <Button
       className={cn("h-auto min-h-14 w-full rounded-md py-2", className)}
-      labelClassName={cn("text-[16px] text-wrap", labelClassName)}
+      labelClassName={cn("text-wrap", labelClassName)}
       variant={variant}
       style={{ overflowWrap: "anywhere" }}
       disabled={state.isDisabled}
@@ -152,7 +152,7 @@ function RedeemTabContent({
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
         isDisabled: true,
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
       };
 
     return {
@@ -240,7 +240,7 @@ function RedeemTabContent({
                       width={24}
                       height={24}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(userAllocations.sendPoints.owned, {
                         exact: false,
                       })}{" "}
@@ -253,7 +253,7 @@ function RedeemTabContent({
                       className="h-5 w-5"
                       coinType={NORMALIZED_mSEND_3M_COINTYPE}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(sendPointsAllocation.userEligibleSend!, {
                         exact: false,
                       })}
@@ -282,7 +282,7 @@ function RedeemTabContent({
                             width={24}
                             height={24}
                           />
-                          <TBody className="text-[16px]">
+                          <TBody>
                             {formatInteger(+owned)} {capitalize(rarity)} Suilend
                             Capsule{!owned.eq(1) && "s"}
                           </TBody>
@@ -293,7 +293,7 @@ function RedeemTabContent({
                             className="h-5 w-5"
                             coinType={NORMALIZED_mSEND_3M_COINTYPE}
                           />
-                          <TBody className="text-[16px]">
+                          <TBody>
                             {formatToken(
                               owned.times(
                                 totalAllocationBreakdownMaps.suilendCapsules[
@@ -328,7 +328,7 @@ function RedeemTabContent({
                       height={24}
                     />
                     <div className="flex flex-col gap-1">
-                      <TBody className="text-[16px]">
+                      <TBody>
                         {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
                         Rootlets NFT
                         {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
@@ -357,7 +357,7 @@ function RedeemTabContent({
                       className="h-5 w-5"
                       coinType={NORMALIZED_mSEND_3M_COINTYPE}
                     />
-                    <TBody className="text-[16px]">
+                    <TBody>
                       {formatToken(rootletsAllocation.userEligibleSend!, {
                         exact: false,
                       })}
@@ -377,7 +377,7 @@ function RedeemTabContent({
                 className="h-5 w-5"
                 coinType={NORMALIZED_mSEND_3M_COINTYPE}
               />
-              <TBody className="text-[16px]">
+              <TBody>
                 {formatToken(totalRedeemableMsend, {
                   dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
                     .decimals,
@@ -426,8 +426,10 @@ const INPUT_HEIGHT = 70; // px
 const MAX_BUTTON_WIDTH = 60; // px
 const MAX_BUTTON_HEIGHT = 40; // px
 
+const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
+
 function ClaimTabContent() {
-  const { explorer, suiClient } = useSettingsContext();
+  const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, getBalance, obligationOwnerCap } =
     useLoadedAppContext();
@@ -459,11 +461,6 @@ function ClaimTabContent() {
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
-  // new BigNumber(mSendBalance).toFixed(
-  //   mSendCoinMetadataMap[selectedMsendCoinType].decimals,
-  //   BigNumber.ROUND_DOWN,
-  // ); // TODO
-
   const useMaxAmount = new BigNumber(claimAmount || "").eq(mSendBalance);
 
   // Penalty
@@ -472,6 +469,11 @@ function ClaimTabContent() {
   const claimPenaltyAmountSui = mSendObjectMap[
     selectedMsendCoinType
   ].currentPenaltySui.times(claimAmount || 0);
+
+  // Flash loan
+  const [isFlashLoan, setIsFlashLoan] = useState<boolean>(false);
+  const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
+    useState<string>(`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`);
 
   // Submit
   const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
@@ -482,23 +484,23 @@ function ClaimTabContent() {
     if (isSubmitting_claim) return { isLoading: true, isDisabled: true };
 
     if (new BigNumber(claimAmount || 0).lte(0))
-      return { title: "Enter an amount", isDisabled: true };
+      return { title: "ENTER AN AMOUNT", isDisabled: true };
     if (new BigNumber(claimAmount).gt(mSendBalance))
-      return { title: "Insufficient mSEND balance", isDisabled: true };
+      return { title: "INSUFFICIENT mSEND BALANCE", isDisabled: true };
 
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
         isDisabled: true,
       };
-    if (suiBalance.lt(claimPenaltyAmountSui))
+    if (!isFlashLoan && suiBalance.lt(claimPenaltyAmountSui))
       return {
-        title: "Insufficient SUI balance to pay penalty",
+        title: "INSUFFICIENT SUI BALANCE TO PAY PENALTY",
         isDisabled: true,
       };
 
     return {
-      title: "Claim SEND",
+      title: "CLAIM SEND",
       isDisabled: isSubmitting_claimAndDeposit,
     };
   }, [
@@ -506,6 +508,7 @@ function ClaimTabContent() {
     claimAmount,
     mSendBalance,
     suiBalance,
+    isFlashLoan,
     claimPenaltyAmountSui,
     isSubmitting_claimAndDeposit,
   ]);
@@ -515,7 +518,7 @@ function ClaimTabContent() {
       return { isLoading: true, isDisabled: true };
 
     return {
-      title: "Claim and Deposit SEND",
+      title: "CLAIM AND DEPOSIT SEND",
       isDisabled: submitButtonState_claim.isDisabled || isSubmitting_claim,
     };
   }, [
@@ -541,11 +544,15 @@ function ClaimTabContent() {
     const transaction = new Transaction();
     try {
       await claimSend(
+        rpc,
         suiClient,
         suilendClient,
         address,
-        claimAmount,
         selectedMsendCoinType,
+        claimAmount,
+        claimPenaltyAmountSui,
+        isFlashLoan,
+        +flashLoanSlippagePercent,
         isDepositing,
         transaction,
         obligationOwnerCap?.id,
@@ -686,7 +693,7 @@ function ClaimTabContent() {
 
               <div className="flex flex-row items-center gap-2">
                 <SendTokenLogo className="h-5 w-5" />
-                <TBody className="text-[16px]">
+                <TBody>
                   {formatToken(mSendBalance, {
                     dp: sendCoinMetadataMap[NORMALIZED_SEND_COINTYPE].decimals,
                   })}
@@ -725,12 +732,59 @@ function ClaimTabContent() {
           </div>
         </div>
 
+        {/* Flash loan */}
+        <div className="flex w-full flex-col gap-4">
+          {/* Checkbox */}
+          <div
+            className="group flex w-max cursor-pointer flex-row items-center gap-2"
+            onClick={() => setIsFlashLoan((is) => !is)}
+          >
+            <Check
+              className={cn(
+                "h-5 w-5",
+                isFlashLoan
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground transition-colors group-hover:text-primary-foreground",
+              )}
+            />
+            <TBodySans
+              className={cn(
+                isFlashLoan
+                  ? "text-primary-foreground"
+                  : "text-muted-foreground transition-colors group-hover:text-primary-foreground",
+              )}
+            >
+              Pay penalty using a flash loan
+            </TBodySans>
+          </div>
+
+          {/* Slippage */}
+          {isFlashLoan && (
+            <div className="flex flex-row items-center gap-3">
+              <TBodySans className="text-muted-foreground">Slippage</TBodySans>
+
+              <div className="flex flex-row items-center gap-1">
+                <Input
+                  className="h-7 w-[60px] rounded-md border-0 bg-muted/10 transition-colors focus:bg-muted/15"
+                  type="number"
+                  placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={flashLoanSlippagePercent ?? ""}
+                  onChange={(e) => setFlashLoanSlippagePercent(e.target.value)}
+                />
+                <TBody className="text-muted-foreground">%</TBody>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Submit */}
         <div className="flex w-full flex-col gap-px">
           {/* Claim */}
           <SubmitButton
             className="rounded-b-none"
-            labelClassName="uppercase"
             state={submitButtonState_claim}
             submit={() => submit(false)}
           />
@@ -738,7 +792,6 @@ function ClaimTabContent() {
           {/* Claim and deposit */}
           <SubmitButton
             className="min-h-9 rounded-t-none py-1"
-            labelClassName="uppercase text-sm"
             variant="secondary"
             state={submitButtonState_claimAndDeposit}
             submit={() => submit(true)}
