@@ -391,7 +391,6 @@ export const claimSend = async (
     .times(10 ** 6)
     .integerValue(BigNumber.ROUND_DOWN)
     .toString();
-  console.log("XXX value", value);
 
   const [splitCoin] = transaction.splitCoins(
     transaction.object(mergedMsendCoin.coinObjectId),
