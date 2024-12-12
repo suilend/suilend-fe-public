@@ -1,10 +1,11 @@
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
-import { SuiClient } from "@mysten/sui/client";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
+import { toast } from "sonner";
 
 import {
   NORMALIZED_SEND_COINTYPE,
@@ -38,7 +39,7 @@ const mTOKEN_CONTRACT_PACKAGE_ID =
   "0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3";
 
 const CETUS_CONTRACT_PACKAGE_ID =
-  "0x6f5e582ede61fe5395b50c4a449ec11479a54d7ff8e0158247adfda60d98970b";
+  "0xdc67d6de3f00051c505da10d8f6fbab3b3ec21ec65f0dc22a2f36c13fc102110";
 
 // Flash loan objects
 const CETUS_GLOBAL_CONFIG_OBJECT_ID =
@@ -377,26 +378,33 @@ export const redeemRootletsMsend = async (
 export function borrowFlashLoan(args: {
   minPrice: number; // based on slippage
   burnAmount: bigint; // without decimal part
+  suiPenaltyAmount: bigint;
   mTokenManager: string;
   mSendCoinType: string;
   transaction: Transaction;
 }): [any, any, any] {
-  const { minPrice, burnAmount, mTokenManager, mSendCoinType, transaction } =
-    args;
+  const {
+    minPrice,
+    burnAmount,
+    suiPenaltyAmount,
+    mTokenManager,
+    mSendCoinType,
+    transaction,
+  } = args;
 
-  const suiPenaltyAmount = transaction.moveCall({
-    target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::get_penalty_amount`,
-    typeArguments: [
-      mSendCoinType,
-      NORMALIZED_SEND_COINTYPE,
-      NORMALIZED_SUI_COINTYPE,
-    ],
-    arguments: [
-      transaction.object(mTokenManager),
-      transaction.pure.u64(burnAmount),
-      transaction.object(SUI_CLOCK_OBJECT_ID),
-    ],
-  });
+  // const suiPenaltyAmount = transaction.moveCall({
+  //   target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::get_penalty_amount`,
+  //   typeArguments: [
+  //     mSendCoinType,
+  //     NORMALIZED_SEND_COINTYPE,
+  //     NORMALIZED_SUI_COINTYPE,
+  //   ],
+  //   arguments: [
+  //     transaction.object(mTokenManager),
+  //     transaction.pure.u64(burnAmount),
+  //     transaction.object(SUI_CLOCK_OBJECT_ID),
+  //   ],
+  // });
 
   const minSqrtPrice = getClosestSqrtPriceFromPrice(
     minPrice,
@@ -412,7 +420,7 @@ export function borrowFlashLoan(args: {
       transaction.object(CETUS_POOL_OBJECT_ID),
       transaction.pure.bool(true), // a2b, i.e. Get SUI, pay SEND later
       transaction.pure.bool(false), // by_amount_in, false because we want to specify how much SUI we get which is equivalent to penalty amount
-      suiPenaltyAmount,
+      transaction.pure.u64(suiPenaltyAmount),
       transaction.pure.u128(minSqrtPrice),
       transaction.object(SUI_CLOCK_OBJECT_ID),
     ],
@@ -481,6 +489,7 @@ export const claimSend = async (
   suilendClient: SuilendClient,
   address: string,
   claimAmount: string,
+  claimPenaltyAmountSui: BigNumber,
   mSendCoinType: string,
   isFlashLoan: boolean,
   isDepositing: boolean,
@@ -522,10 +531,16 @@ export const claimSend = async (
   if (isFlashLoan) {
     const currentPrice = await getCurrentPrice(initMainnetSDK()); // TODO: Pass our RPC Node instead of defaulting to cetus'
     const minPrice = computeMinPrice(currentPrice, 0.05); // TODO: Get slippage form UI
-
+    // const claimPenaltyAmountSui =
     const [emptySendBalance, borrowedSuiBalance, receipt] = borrowFlashLoan({
       minPrice, // 1 SUI; slippage of 5%, minPrice = 0.95SUI
       burnAmount: BigInt(value),
+      suiPenaltyAmount: BigInt(
+        claimPenaltyAmountSui
+          .times(10 ** SUI_DECIMALS)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString(),
+      ),
       mTokenManager: mSEND_COINTYPE_MANAGER_MAP[mSendCoinType],
       mSendCoinType,
       transaction,

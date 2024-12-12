@@ -545,8 +545,9 @@ function ClaimTabContent() {
         suilendClient,
         address,
         claimAmount,
+        claimPenaltyAmountSui,
         selectedMsendCoinType,
-        false,
+        true, // TODO: REVERT THIS!!
         isDepositing,
         transaction,
         obligationOwnerCap?.id,
