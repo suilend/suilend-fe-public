@@ -83,6 +83,7 @@ interface SendContext {
   sendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
 
   mSendBalanceMap: Record<string, BigNumber>;
+  mSendCoinTypesWithBalance: string[];
 
   kioskClient: KioskClient;
   ownedKiosks: { kiosk: KioskData; kioskOwnerCap: KioskOwnerCap }[] | undefined;
@@ -135,6 +136,7 @@ const SendContext = createContext<SendContext>({
   sendCoinMetadataMap: undefined,
 
   mSendBalanceMap: {},
+  mSendCoinTypesWithBalance: [],
 
   kioskClient: new KioskClient({
     client: new SuiClient({ url: getFullnodeUrl("mainnet") }),
@@ -259,6 +261,14 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         {} as Record<string, BigNumber>,
       ),
     [getBalance],
+  );
+
+  const mSendCoinTypesWithBalance = useMemo(
+    () =>
+      NORMALIZED_mSEND_COINTYPES.filter((coinType) =>
+        mSendBalanceMap[coinType].gt(0),
+      ),
+    [mSendBalanceMap],
   );
 
   // User - Transactions since TGE
@@ -806,6 +816,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     NORMALIZED_mSEND_3M_COINTYPE,
   );
 
+  useEffect(() => {
+    if (mSendCoinTypesWithBalance.length === 0) return;
+
+    if (!mSendCoinTypesWithBalance.includes(selectedMsendCoinType))
+      setSelectedMsendCoinType(mSendCoinTypesWithBalance[0]);
+  }, [mSendCoinTypesWithBalance, selectedMsendCoinType]);
+
   // Context
   const contextValue: SendContext = useMemo(
     () => ({
@@ -823,6 +840,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
       selectedMsendCoinType,
       setSelectedMsendCoinType,
+
+      mSendCoinTypesWithBalance,
     }),
     [
       mSendObjectMap,
@@ -835,6 +854,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       refreshUserAllocations,
       selectedMsendCoinType,
       setSelectedMsendCoinType,
+      mSendCoinTypesWithBalance,
     ],
   );
 

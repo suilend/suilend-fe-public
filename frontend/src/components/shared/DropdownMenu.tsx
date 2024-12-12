@@ -1,7 +1,8 @@
-import { PropsWithChildren, ReactNode } from "react";
+import { CSSProperties, PropsWithChildren, ReactNode } from "react";
 
 import { DropdownMenuProps as DropdownMenuRootProps } from "@radix-ui/react-dropdown-menu";
 import { ClassValue } from "clsx";
+import { merge } from "lodash";
 
 import {
   DropdownMenuContent,
@@ -46,6 +47,7 @@ export function DropdownMenuSeparator() {
 interface DropdownMenuProps {
   rootProps?: DropdownMenuRootProps;
   trigger: ReactNode;
+  contentStyle?: CSSProperties;
   title?: string;
   description?: ReactNode;
   noItems?: boolean;
@@ -55,6 +57,7 @@ interface DropdownMenuProps {
 export default function DropdownMenu({
   rootProps,
   trigger,
+  contentStyle,
   title,
   description,
   noItems,
@@ -67,12 +70,15 @@ export default function DropdownMenu({
         className="rounded-md p-4"
         align="end"
         collisionPadding={4}
-        style={{
-          maxHeight: "var(--radix-dropdown-menu-content-available-height)",
-          overflowY: "auto",
-          minWidth: "280px",
-          maxWidth: "300px",
-        }}
+        style={merge(
+          {
+            maxHeight: "var(--radix-dropdown-menu-content-available-height)",
+            overflowY: "auto",
+            minWidth: "280px",
+            maxWidth: "300px",
+          },
+          contentStyle,
+        )}
       >
         {title && (
           <div className={cn("flex flex-col gap-1", !noItems && "mb-4")}>

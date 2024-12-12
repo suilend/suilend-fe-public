@@ -26,6 +26,7 @@ import {
 } from "@suilend/frontend-sui-next";
 
 import Card from "@/components/dashboard/Card";
+import MsendDropdownMenu from "@/components/send/MsendDropdownMenu";
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import PenaltyLineChart from "@/components/send/PenaltyLineChart";
 import SectionHeading from "@/components/send/SectionHeading";
@@ -430,6 +431,7 @@ function ClaimTabContent() {
     mSendCoinMetadataMap,
     sendCoinMetadataMap,
     mSendBalanceMap,
+    mSendCoinTypesWithBalance,
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
@@ -579,6 +581,9 @@ function ClaimTabContent() {
 
   return (
     <>
+      {/* Select mSEND */}
+      {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
+
       {/* Deposit sSUI */}
       <div
         className={cn(
