@@ -89,16 +89,16 @@ interface SendContext {
   userAllocations:
     | {
         earlyUsers: { isInSnapshot: boolean };
-        sendPoints: { owned: BigNumber; redeemedMsend: BigNumber };
+        sendPoints: { owned: BigNumber; redeemedMsend: BigNumber | undefined };
         suilendCapsules: {
           ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
-          redeemedMsend: BigNumber;
+          redeemedMsend: BigNumber | undefined;
         };
-        save: { bridgedMsend: BigNumber };
+        save: { bridgedMsend: BigNumber | undefined };
         rootlets: {
           owned: BigNumber;
           msendOwning: BigNumber;
-          redeemedMsend: BigNumber;
+          redeemedMsend: BigNumber | undefined;
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
         bluefinSendTraders: {
@@ -540,8 +540,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const userAllocations = useMemo(() => {
     if (!address) return undefined;
 
-    if (!mSendCoinMetadataMap || !sendCoinMetadataMap) return undefined;
-    if (transactionsSinceTge === undefined) return undefined;
+    if (!mSendCoinMetadataMap) return undefined;
     if (ownedKiosks === undefined) return undefined;
     if (ownedSuilendCapsulesMap === undefined) return undefined;
     if (mSendOwningRootlets === undefined) return undefined;
@@ -556,7 +555,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       data.obligations,
     ).totalPoints.total;
 
-    const redeemedSendPointsMsend = transactionsSinceTge.from.reduce(
+    const redeemedSendPointsMsend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
         const transactionRedeemedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
@@ -577,7 +576,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Suilend Capsules
-    const redeemedSuilendCapsulesMsend = transactionsSinceTge.from.reduce(
+    const redeemedSuilendCapsulesMsend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
         const transactionRedeemedMsend = (transaction.events ?? [])
           .filter((event) => event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE)
@@ -598,7 +597,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Save
-    const bridgedSaveMsend = transactionsSinceTge.to.reduce(
+    const bridgedSaveMsend = transactionsSinceTge?.to.reduce(
       (acc, transaction) => {
         const hasWormholeEvent = !!(transaction.events ?? []).find(
           (event) => event.type === WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
@@ -640,7 +639,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       ).length,
     );
 
-    const redeemedRootletsMsend = transactionsSinceTge.from.reduce(
+    const redeemedRootletsMsend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
         const mSendBalanceChanges = (transaction.balanceChanges ?? []).filter(
           (balanceChange) =>
@@ -748,13 +747,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         redeemedMsend: redeemedSendPointsMsend,
       },
       suilendCapsules: {
-        ownedMap: ownedSuilendCapsulesMap!,
+        ownedMap: ownedSuilendCapsulesMap,
         redeemedMsend: redeemedSuilendCapsulesMsend,
       },
       save: { bridgedMsend: bridgedSaveMsend },
       rootlets: {
         owned: ownedRootlets,
-        msendOwning: mSendOwningRootlets!,
+        msendOwning: mSendOwningRootlets,
         redeemedMsend: redeemedRootletsMsend,
       },
       bluefinLeagues: { isInSnapshot: isInBluefinLeaguesSnapshot },
@@ -775,7 +774,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   }, [
     address,
     mSendCoinMetadataMap,
-    sendCoinMetadataMap,
     transactionsSinceTge,
     ownedKiosks,
     data.rewardMap,
@@ -790,9 +788,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     if (!mSendCoinMetadataMap) return;
 
     fetchTransactionsSinceTge(address);
-    fetchOwnedSuilendCapsulesMap(address);
-
     const newOwnedKiosks = await fetchOwnedKiosks(address);
+
+    fetchOwnedSuilendCapsulesMap(address);
     fetchMsendOwningRootlets(address, mSendCoinMetadataMap, newOwnedKiosks!);
   }, [
     address,
