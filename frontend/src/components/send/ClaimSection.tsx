@@ -466,7 +466,7 @@ function ClaimTabContent() {
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
-  const useMaxAmount = new BigNumber(claimAmount || "").eq(mSendBalance);
+  const useMaxAmount = new BigNumber(claimAmount || 0).eq(mSendBalance);
 
   // SEND Price
   const [sendPrice, setSendPrice] = useState<BigNumber | undefined>(undefined);
@@ -498,7 +498,7 @@ function ClaimTabContent() {
       : undefined;
   const flashLoanEstimatedProceedsAmountSend =
     flashLoanEstimatedDeductionAmountSend !== undefined
-      ? new BigNumber(claimAmount || "").minus(
+      ? new BigNumber(claimAmount || 0).minus(
           flashLoanEstimatedDeductionAmountSend,
         )
       : undefined;
