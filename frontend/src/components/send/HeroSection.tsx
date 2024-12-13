@@ -123,9 +123,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
       <SectionHeading>
         {!address
           ? "Connect your wallet to check your allocation"
-          : userTotalAllocation.gt(0) || userAllocations === undefined
-            ? "Your allocation is"
-            : "Sorry, you're not eligible"}
+          : "Your allocation is"}
       </SectionHeading>
 
       <div className="flex w-full flex-col items-center gap-4">

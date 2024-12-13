@@ -23,7 +23,7 @@ import {
   CETUS_GLOBAL_CONFIG_OBJECT_ID,
   CETUS_POOL_OBJECT_ID,
   getCetusClosestSqrtPriceFromPrice,
-  getCetusCurrentPrice,
+  getCetusCurrentSuiPrice,
 } from "@/lib/cetus";
 import { getOwnedObjectsOfType } from "@/lib/transactions";
 
@@ -535,7 +535,7 @@ export const claimSend = async (
   let suiPenaltyCoin = transaction.gas;
   const flashLoanArgs: Record<string, any> = {};
   if (isFlashLoan) {
-    const sendPrice = await getCetusCurrentPrice(initMainnetSDK(rpc.url));
+    const sendPrice = await getCetusCurrentSuiPrice(initMainnetSDK(rpc.url));
     const minSendPrice = sendPrice
       .mul(1 - flashLoanSlippagePercent / 100)
       .toNumber();

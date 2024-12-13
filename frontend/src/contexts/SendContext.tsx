@@ -26,7 +26,6 @@ import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import {
-  NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_mSEND_12M_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
@@ -77,10 +76,7 @@ import bluefinSendTradersTakersJson from "../pages/send/trading/bluefin-send-tra
 
 interface SendContext {
   mSendObjectMap: Record<string, MsendObject> | undefined;
-
   mSendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
-  sendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
-
   mSendBalanceMap: Record<string, BigNumber>;
   mSendCoinTypesWithBalance: string[];
 
@@ -123,17 +119,12 @@ interface SendContext {
 }
 type LoadedSendContext = SendContext & {
   mSendObjectMap: Record<string, MsendObject>;
-
   mSendCoinMetadataMap: Record<string, CoinMetadata>;
-  sendCoinMetadataMap: Record<string, CoinMetadata>;
 };
 
 const SendContext = createContext<SendContext>({
   mSendObjectMap: undefined,
-
   mSendCoinMetadataMap: undefined,
-  sendCoinMetadataMap: undefined,
-
   mSendBalanceMap: {},
   mSendCoinTypesWithBalance: [],
 
@@ -161,7 +152,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { data, getBalance } = useLoadedAppContext();
 
-  // mSEND object map
+  // mSEND - object map
   const [mSendObjectMap, setMsendObjectMap] = useState<
     Record<string, MsendObject> | undefined
   >(undefined);
@@ -245,11 +236,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     })();
   }, [suiClient]);
 
-  // CoinMetadata
+  // mSEND - coinMetadata
   const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
-  const sendCoinMetadataMap = useCoinMetadataMap([NORMALIZED_SEND_COINTYPE]);
 
-  // Balances
+  // mSEND - Balances
   const mSendBalanceMap = useMemo(
     () =>
       NORMALIZED_mSEND_COINTYPES.reduce(
@@ -839,11 +829,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const contextValue: SendContext = useMemo(
     () => ({
       mSendObjectMap,
-
       mSendCoinMetadataMap,
-      sendCoinMetadataMap,
-
       mSendBalanceMap,
+      mSendCoinTypesWithBalance,
 
       kioskClient,
       ownedKiosks,
@@ -852,29 +840,24 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
       selectedMsendCoinType,
       setSelectedMsendCoinType,
-
-      mSendCoinTypesWithBalance,
     }),
     [
       mSendObjectMap,
       mSendCoinMetadataMap,
-      sendCoinMetadataMap,
       mSendBalanceMap,
+      mSendCoinTypesWithBalance,
       kioskClient,
       ownedKiosks,
       userAllocations,
       refreshUserAllocations,
       selectedMsendCoinType,
       setSelectedMsendCoinType,
-      mSendCoinTypesWithBalance,
     ],
   );
 
   return (
     <SendContext.Provider value={contextValue}>
-      {mSendObjectMap !== undefined &&
-      mSendCoinMetadataMap !== undefined &&
-      sendCoinMetadataMap !== undefined ? (
+      {mSendObjectMap !== undefined && mSendCoinMetadataMap !== undefined ? (
         children
       ) : (
         <FullPageSpinner />

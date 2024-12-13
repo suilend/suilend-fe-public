@@ -13,7 +13,7 @@ export const CETUS_GLOBAL_CONFIG_OBJECT_ID =
 export const CETUS_POOL_OBJECT_ID =
   "0xfd444d112caeb75011316785548093781b3b9032ceccb5f4817103bc5f1b9f55";
 
-export const getCetusCurrentPrice = async (
+export const getCetusCurrentSuiPrice = async (
   cetusSDK: CetusClmmSDK,
 ): Promise<Decimal> => {
   const poolModule = new PoolModule(cetusSDK);
