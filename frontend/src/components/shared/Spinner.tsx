@@ -1,4 +1,5 @@
 import { VariantProps, cva } from "class-variance-authority";
+import { ClassValue } from "clsx";
 import { Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -16,8 +17,10 @@ const spinnerVariants = cva("animate-spin", {
   },
 });
 
-type SpinnerProps = VariantProps<typeof spinnerVariants>;
+interface SpinnerProps extends VariantProps<typeof spinnerVariants> {
+  className?: ClassValue;
+}
 
-export default function Spinner({ size }: SpinnerProps) {
-  return <Loader2 className={cn(spinnerVariants({ size }))} />;
+export default function Spinner({ className, size }: SpinnerProps) {
+  return <Loader2 className={cn(className, spinnerVariants({ size }))} />;
 }

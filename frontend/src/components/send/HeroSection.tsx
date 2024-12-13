@@ -15,10 +15,15 @@ import {
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
-import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TDisplay,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { formatAddress, formatToken } from "@/lib/format";
+import { formatAddress, formatList, formatToken } from "@/lib/format";
 import { Allocation, TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {
@@ -53,6 +58,15 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
     (acc, allocation) => acc.plus(allocation.userBridgedMsend ?? 0),
     new BigNumber(0),
   );
+
+  const isFetchingUserRedeemedMsend =
+    userAllocations !== undefined &&
+    (userAllocations.sendPoints.redeemedMsend === undefined ||
+      userAllocations.suilendCapsules.redeemedMsend === undefined ||
+      userAllocations.rootlets.redeemedMsend === undefined);
+  const isFetchingUserBridgedMsend =
+    userAllocations !== undefined &&
+    userAllocations.save.bridgedMsend === undefined;
 
   const userTotalAllocation = userEligibleSend
     .plus(userRedeemedMsend)
@@ -137,16 +151,33 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             Connect wallet
           </Button>
         ) : (
-          <div className="flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
-            <SendTokenLogo className="h-8 w-8" />
+          <div className="relative flex flex-col">
+            <div className="z-[2] flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
+              <SendTokenLogo className="h-8 w-8" />
 
-            {userAllocations === undefined ? (
-              <Skeleton className="h-10 w-48" />
-            ) : (
-              <TDisplay className="text-4xl">
-                {formatToken(userTotalAllocation, { exact: false })}
-                {" SEND"}
-              </TDisplay>
+              {userAllocations === undefined ? (
+                <Skeleton className="h-10 w-48" />
+              ) : (
+                <TDisplay className="text-4xl">
+                  {formatToken(userTotalAllocation, { exact: false })}
+                  {" SEND"}
+                </TDisplay>
+              )}
+            </div>
+
+            {(isFetchingUserRedeemedMsend || isFetchingUserBridgedMsend) && (
+              <div className="relative z-[1] -mt-2 flex flex-row justify-center rounded-b-md bg-primary/25 px-4 pb-2 pt-4">
+                <TLabelSans className="animate-pulse">
+                  {"Fetching "}
+                  {formatList(
+                    [
+                      isFetchingUserRedeemedMsend ? "redeemed" : null,
+                      isFetchingUserBridgedMsend ? "bridged" : null,
+                    ].filter(Boolean) as string[],
+                  )}
+                  {" mSEND"}
+                </TLabelSans>
+              </div>
             )}
           </div>
         )}
