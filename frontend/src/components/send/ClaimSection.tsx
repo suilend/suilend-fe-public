@@ -727,7 +727,7 @@ function ClaimTabContent() {
               <TBodySans className="text-muted-foreground">Claimable</TBodySans>
 
               <div className="flex flex-row items-center gap-2">
-                <SendTokenLogo className="h-5 w-5" />
+                <SendTokenLogo />
                 <TBody>
                   {formatToken(mSendBalance, {
                     dp: sendReserve.token.decimals,
