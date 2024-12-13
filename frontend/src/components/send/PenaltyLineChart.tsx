@@ -5,7 +5,7 @@ import { formatDate } from "date-fns";
 import * as Recharts from "recharts";
 import { CartesianViewBox } from "recharts/types/util/types";
 
-import { useLoadedSendContext } from "@/contexts/SendContext";
+import { MsendObject } from "@/lib/send";
 
 interface LabelProps extends Recharts.LabelProps, PropsWithChildren {
   fill: string;
@@ -32,16 +32,12 @@ type ChartData = {
 };
 
 interface PenaltyLineChartProps {
-  mSendCoinType: string;
+  mSendObject: MsendObject;
 }
 
 export default function PenaltyLineChart({
-  mSendCoinType,
+  mSendObject,
 }: PenaltyLineChartProps) {
-  const { mSendObjectMap } = useLoadedSendContext();
-
-  const mSendObject = mSendObjectMap[mSendCoinType];
-
   // Data
   const n = 1; // 1 + (n - 1) + 1 + (n - 1) + 1 = 2n + 1 points
   const diffS = mSendObject.penaltyEndTimeS.minus(

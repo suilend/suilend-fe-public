@@ -1155,7 +1155,9 @@ export default function ClaimSection({
                   </div>
                 </div>
 
-                <PenaltyLineChart mSendCoinType={selectedMsendCoinType} />
+                <PenaltyLineChart
+                  mSendObject={mSendObjectMap[selectedMsendCoinType]}
+                />
               </div>
             )}
         </>
