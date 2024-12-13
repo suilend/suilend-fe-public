@@ -836,24 +836,10 @@ function ClaimTabContent() {
                         <div className="flex flex-row items-center gap-2">
                           <SendTokenLogo />
                           <TBody>
-                            <Tooltip
-                              title={`${formatToken(
-                                flashLoanEstimatedDeductionAmountSend,
-                                { dp: sendReserve.token.decimals },
-                              )} SEND`}
-                            >
-                              <span
-                                className={cn(
-                                  "decoration-foreground/50",
-                                  hoverUnderlineClassName,
-                                )}
-                              >
-                                {formatToken(
-                                  flashLoanEstimatedDeductionAmountSend,
-                                  { exact: false },
-                                )}
-                              </span>
-                            </Tooltip>
+                            {formatToken(
+                              flashLoanEstimatedDeductionAmountSend,
+                              { exact: false },
+                            )}
                             {" SEND"}
                           </TBody>
                         </div>
@@ -877,24 +863,9 @@ function ClaimTabContent() {
                         <div className="flex flex-row items-center gap-2">
                           <SendTokenLogo />
                           <TBody>
-                            <Tooltip
-                              title={`${formatToken(
-                                flashLoanEstimatedProceedsAmountSend,
-                                { dp: sendReserve.token.decimals },
-                              )} SEND`}
-                            >
-                              <span
-                                className={cn(
-                                  "decoration-foreground/50",
-                                  hoverUnderlineClassName,
-                                )}
-                              >
-                                {formatToken(
-                                  flashLoanEstimatedProceedsAmountSend,
-                                  { exact: false },
-                                )}
-                              </span>
-                            </Tooltip>
+                            {formatToken(flashLoanEstimatedProceedsAmountSend, {
+                              exact: false,
+                            })}
                             {" SEND"}
                           </TBody>
                         </div>
