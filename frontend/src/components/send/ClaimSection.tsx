@@ -775,7 +775,7 @@ function ClaimTabContent() {
                   hoverUnderlineClassName,
                 )}
               >
-                Deduct penalty from claimed SEND
+                Use flash loan to pay penalty
               </TBodySans>
             </Tooltip>
 
