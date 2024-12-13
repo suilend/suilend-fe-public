@@ -475,9 +475,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           .reduce(
             (acc, { kiosk }) => [
               ...acc,
-              ...kiosk.items.filter(
-                (item) => item.type === ROOTLETS_TYPE && !item.listing,
-              ),
+              ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
             ],
             [] as KioskItem[],
           )
