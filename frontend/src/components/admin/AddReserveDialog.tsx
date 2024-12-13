@@ -78,10 +78,6 @@ export default function AddReserveDialog() {
 
   // Submit
   const createPriceFeed = async () => {
-    if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
-
     if (pythPriceId === "") {
       toast.error("Enter a pyth price id");
       return;
@@ -226,7 +222,6 @@ export default function AddReserveDialog() {
             value={pythPriceId}
             onChange={setPythPriceId}
           />
-
           <Button
             className="my-1"
             tooltip="Create price feed"
@@ -235,7 +230,7 @@ export default function AddReserveDialog() {
             size="icon"
             onClick={createPriceFeed}
           >
-            Remove row
+            Create price feed
           </Button>
         </div>
 

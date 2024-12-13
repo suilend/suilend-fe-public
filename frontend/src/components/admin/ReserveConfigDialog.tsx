@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { cloneDeep } from "lodash";
-import { Bolt, Undo2 } from "lucide-react";
+import { Bolt, Rss, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -124,6 +124,34 @@ export default function ReserveConfigDialog({
   };
 
   // Save
+  const createPriceFeed = async () => {
+    if (pythPriceId === "") {
+      toast.error("Enter a pyth price id");
+      return;
+    }
+
+    const transaction = new Transaction();
+
+    try {
+      const priceUpdateData =
+        await suilendClient.pythConnection.getPriceFeedsUpdateData([
+          pythPriceId,
+        ]);
+      await suilendClient.pythClient.createPriceFeed(
+        transaction as any,
+        priceUpdateData,
+      );
+
+      await signExecuteAndWaitForTransaction(transaction);
+
+      toast.success("Pyth price feed created");
+    } catch (err) {
+      toast.error("Failed to create Pyth price feed", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  };
+
   const saveChanges = async () => {
     if (!address) throw new Error("Wallet not connected");
     if (!data.lendingMarketOwnerCapId)
@@ -214,12 +242,25 @@ export default function ReserveConfigDialog({
           value={reserve.config.$typeName}
           isType
         />
-        <Input
-          label="pythPriceId"
-          id="pythPriceId"
-          value={pythPriceId}
-          onChange={setPythPriceId}
-        />
+        <div className="flex w-full flex-row items-end gap-2">
+          <Input
+            className="flex-1"
+            label="pythPriceId"
+            id="pythPriceId"
+            value={pythPriceId}
+            onChange={setPythPriceId}
+          />
+          <Button
+            className="my-1"
+            tooltip="Create price feed"
+            icon={<Rss />}
+            variant="secondary"
+            size="icon"
+            onClick={createPriceFeed}
+          >
+            Create price feed
+          </Button>
+        </div>
 
         <ReserveConfig
           symbol={reserve.symbol}
