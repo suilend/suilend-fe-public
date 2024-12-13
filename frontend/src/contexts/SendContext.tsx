@@ -671,8 +671,15 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               ),
             new BigNumber(0),
           );
-        const transactionSendPointsRedeemedMsend = (transaction.events ?? [])
-          .filter((event) => event.type === BURN_SEND_POINTS_EVENT_TYPE)
+
+        const transactionSendPointsSuilendCapsulesRedeemedMsend = (
+          transaction.events ?? []
+        )
+          .filter(
+            (event) =>
+              event.type === BURN_SEND_POINTS_EVENT_TYPE ||
+              event.type === BURN_SUILEND_CAPSULES_EVENT_TYPE,
+          )
           .reduce(
             (acc2, event) =>
               acc2.plus(
@@ -686,7 +693,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
         return acc.plus(
           transactionTotalRedeemedMsend.minus(
-            transactionSendPointsRedeemedMsend,
+            transactionSendPointsSuilendCapsulesRedeemedMsend,
           ),
         );
       },
