@@ -1,6 +1,10 @@
 import Image from "next/image";
+import Link from "next/link";
+
+import { ArrowUpRight } from "lucide-react";
 
 import SectionHeading from "@/components/send/SectionHeading";
+import Button from "@/components/shared/Button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ASSETS_URL } from "@/lib/constants";
 
@@ -34,6 +38,20 @@ export default function TokenomicsSection() {
           </AspectRatio>
         </div>
       </div>
+
+      <Link
+        target="_blank"
+        href="https://blog.suilend.fi/suilend-send-tokenomics-b5272c3074fe"
+      >
+        <Button
+          className="h-10 w-full border-secondary text-primary-foreground"
+          labelClassName="uppercase text-[16px]"
+          endIcon={<ArrowUpRight className="h-4 w-4" />}
+          variant="secondaryOutline"
+        >
+          Read blog post
+        </Button>
+      </Link>
     </div>
   );
 }

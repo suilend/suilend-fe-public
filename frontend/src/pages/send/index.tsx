@@ -854,9 +854,6 @@ function Page() {
             </div>
           </div>
 
-          <Separator />
-          <BlurbSection />
-
           {address && Date.now() >= TGE_TIMESTAMP_MS && (
             <>
               <Separator />
@@ -868,6 +865,9 @@ function Page() {
               />
             </>
           )}
+
+          <Separator />
+          <BlurbSection />
 
           <Separator />
           <TokenomicsSection />
