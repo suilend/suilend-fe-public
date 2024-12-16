@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
-import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskItem } from "@mysten/kiosk";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
@@ -48,9 +47,13 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { getCetusCurrentSuiPrice } from "@/lib/cetus";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
-import { formatInteger, formatToken, formatUsd } from "@/lib/format";
+import {
+  formatInteger,
+  formatPercent,
+  formatToken,
+  formatUsd,
+} from "@/lib/format";
 import { DASHBOARD_URL } from "@/lib/navigation";
 import {
   Allocation,
@@ -468,20 +471,6 @@ function ClaimTabContent() {
   const [claimAmount, setClaimAmount] = useState<string>("");
   const useMaxAmount = new BigNumber(claimAmount || 0).eq(mSendBalance);
 
-  // SEND Price
-  const [sendPrice, setSendPrice] = useState<BigNumber | undefined>(undefined);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await getCetusCurrentSuiPrice(initMainnetSDK(rpc.url)); // TODO: Use sendReserve.price
-        setSendPrice(new BigNumber(result.toString()).times(suiReserve.price));
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [rpc.url, suiReserve.price]);
-
   // Penalty
   const claimPenaltyAmountSui = mSendObjectMap[
     selectedMsendCoinType
@@ -492,16 +481,16 @@ function ClaimTabContent() {
   const [flashLoanSlippagePercent, setFlashLoanSlippagePercent] =
     useState<string>(`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`);
 
-  const flashLoanEstimatedDeductionAmountSend =
-    sendPrice !== undefined
-      ? claimPenaltyAmountSui.div(sendPrice.div(suiReserve.price))
-      : undefined;
-  const flashLoanEstimatedProceedsAmountSend =
-    flashLoanEstimatedDeductionAmountSend !== undefined
-      ? new BigNumber(claimAmount || 0).minus(
-          flashLoanEstimatedDeductionAmountSend,
-        )
-      : undefined;
+  const flashLoanDeductionAmountSend = claimPenaltyAmountSui.div(
+    sendReserve.price.div(suiReserve.price),
+  );
+  const flashLoanDeductionPercent = flashLoanDeductionAmountSend
+    .div(claimAmount || 0)
+    .times(100);
+
+  const flashLoanProceedsAmountSend = new BigNumber(claimAmount || 0).minus(
+    flashLoanDeductionAmountSend,
+  );
 
   // Submit
   const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
@@ -767,7 +756,7 @@ function ClaimTabContent() {
           </div>
 
           {/* Flash loan */}
-          <div className="flex w-full flex-row justify-between gap-4">
+          <div className="flex h-5 w-full flex-row items-center justify-between gap-4">
             <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
               <TBodySans
                 className={cn(
@@ -781,19 +770,15 @@ function ClaimTabContent() {
 
             <div
               className={cn(
-                "group h-5 w-10 cursor-pointer rounded-[10px] border p-px transition-colors",
-                isFlashLoan
-                  ? "border-secondary/50 bg-secondary/5"
-                  : "border-muted/50 hover:border-foreground/50",
+                "group h-[22px] w-[38px] cursor-pointer rounded-[11px] p-px transition-colors",
+                isFlashLoan ? "bg-primary" : "bg-muted/25",
               )}
               onClick={() => setIsFlashLoan((is) => !is)}
             >
               <div
                 className={cn(
-                  "h-4 w-4 rounded-full transition-all",
-                  isFlashLoan
-                    ? "ml-5 bg-secondary"
-                    : "bg-muted-foreground group-hover:bg-foreground",
+                  "h-5 w-5 rounded-full bg-foreground transition-all",
+                  isFlashLoan && "ml-[16px]",
                 )}
               />
             </div>
@@ -823,63 +808,54 @@ function ClaimTabContent() {
                 </div>
               </div>
 
-              {flashLoanEstimatedDeductionAmountSend !== undefined &&
-                flashLoanEstimatedProceedsAmountSend !== undefined && (
-                  <>
-                    {/* Estimated deduction */}
-                    <div className="flex flex-row justify-between gap-4">
-                      <TBodySans className="text-muted-foreground">
-                        Estimated deduction
-                      </TBodySans>
+              {/* Approximate deduction */}
+              <div className="flex flex-row justify-between gap-4">
+                <TBodySans className="text-muted-foreground">
+                  Deduction (approx.)
+                </TBodySans>
 
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo />
-                          <TBody>
-                            {formatToken(
-                              flashLoanEstimatedDeductionAmountSend,
-                              { exact: false },
-                            )}
-                            {" SEND"}
-                          </TBody>
-                        </div>
-                        <TLabel>
-                          {formatUsd(
-                            flashLoanEstimatedDeductionAmountSend.times(
-                              sendPrice!,
-                            ),
-                          )}
-                        </TLabel>
-                      </div>
-                    </div>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-row items-center gap-2">
+                    <SendTokenLogo />
+                    <TBody>
+                      {formatToken(flashLoanDeductionAmountSend, {
+                        exact: false,
+                      })}
+                      {" SEND"} (
+                      {formatPercent(flashLoanDeductionPercent, { dp: 0 })})
+                    </TBody>
+                  </div>
+                  <TLabel>
+                    {formatUsd(
+                      flashLoanDeductionAmountSend.times(sendReserve.price),
+                    )}
+                  </TLabel>
+                </div>
+              </div>
 
-                    {/* Estimated proceeds */}
-                    <div className="flex flex-row justify-between gap-4">
-                      <TBodySans className="text-muted-foreground">
-                        Estimated proceeds
-                      </TBodySans>
+              {/* Approximate proceeds */}
+              <div className="flex flex-row justify-between gap-4">
+                <TBodySans className="text-muted-foreground">
+                  Proceeds (approx.)
+                </TBodySans>
 
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo />
-                          <TBody>
-                            {formatToken(flashLoanEstimatedProceedsAmountSend, {
-                              exact: false,
-                            })}
-                            {" SEND"}
-                          </TBody>
-                        </div>
-                        <TLabel>
-                          {formatUsd(
-                            flashLoanEstimatedProceedsAmountSend.times(
-                              sendPrice!,
-                            ),
-                          )}
-                        </TLabel>
-                      </div>
-                    </div>
-                  </>
-                )}
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-row items-center gap-2">
+                    <SendTokenLogo />
+                    <TBody>
+                      {formatToken(flashLoanProceedsAmountSend, {
+                        exact: false,
+                      })}
+                      {" SEND"}
+                    </TBody>
+                  </div>
+                  <TLabel>
+                    {formatUsd(
+                      flashLoanProceedsAmountSend.times(sendReserve.price),
+                    )}
+                  </TLabel>
+                </div>
+              </div>
             </div>
           )}
         </div>
