@@ -136,13 +136,16 @@ export default function TokenSelectionDialog({
   );
 
   const tokensWithBalances = useMemo(
-    () => tokens.filter((t) => getBalance(t.coinType).gt(0)),
+    () =>
+      tokens
+        .filter((t) => getBalance(t.coinType).gt(0))
+        .sort((a, b) => +getBalance(b.coinType) - +getBalance(a.coinType)),
     [tokens, getBalance],
   );
   const reserveTokens = useMemo(
     () =>
       filteredReserves
-        .map((r) => tokens.find((t) => t.symbol === r.symbol))
+        .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
         .filter(Boolean) as SwapToken[],
     [filteredReserves, tokens],
   );
@@ -282,8 +285,8 @@ export default function TokenSelectionDialog({
               tokens: filteredOtherTokens,
             },
           ]
-            .filter(({ tokens: _tokens }) => _tokens.length > 0)
-            .map(({ title, tokens: _tokens }, index) => (
+            .filter((list) => list.tokens.length > 0)
+            .map((list, index) => (
               <Fragment key={index}>
                 <div
                   className={cn(
@@ -291,10 +294,15 @@ export default function TokenSelectionDialog({
                   )}
                   style={{ zIndex: 2 + index }}
                 >
-                  <TLabel className="uppercase text-primary">{title}</TLabel>
+                  <TLabel className="uppercase text-primary">
+                    {list.title}{" "}
+                    <span className="text-muted-foreground">
+                      {list.tokens.length}
+                    </span>
+                  </TLabel>
                 </div>
                 <div className="flex w-full flex-col gap-px">
-                  {_tokens.map((t) => (
+                  {list.tokens.map((t) => (
                     <TokenRow
                       key={t.coinType}
                       token={t}

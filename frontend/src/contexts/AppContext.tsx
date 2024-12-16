@@ -52,6 +52,7 @@ export interface AppData {
 interface AppContext {
   suilendClient: SuilendClient | undefined;
   data: AppData | undefined;
+  rawBalancesMap: Record<string, BigNumber> | undefined;
   balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   getBalance: (coinType: string) => BigNumber;
   refresh: () => Promise<void>;
@@ -72,6 +73,7 @@ type LoadedAppContext = AppContext & {
 const AppContext = createContext<AppContext>({
   suilendClient: undefined,
   data: undefined,
+  rawBalancesMap: undefined,
   balancesCoinMetadataMap: undefined,
   getBalance: () => {
     throw Error("AppContextProvider not initialized");
@@ -193,6 +195,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     () => ({
       suilendClient: appData?.suilendClient,
       data: appData,
+      rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
       refresh,
@@ -205,6 +208,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }),
     [
       appData,
+      rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
       refresh,
