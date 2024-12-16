@@ -4,6 +4,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { ChevronDown, Search, Wallet } from "lucide-react";
 
 import {
+  NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_USDT_COINTYPE,
@@ -127,6 +128,7 @@ export default function TokenSelectionDialog({
         NORMALIZED_SUI_COINTYPE,
         NORMALIZED_USDC_COINTYPE,
         NORMALIZED_USDT_COINTYPE,
+        NORMALIZED_SEND_COINTYPE,
       ]
         .map((coinType) => tokens.find((t) => t.coinType === coinType))
         .filter(Boolean) as SwapToken[],
