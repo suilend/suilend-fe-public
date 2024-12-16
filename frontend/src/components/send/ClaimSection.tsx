@@ -484,9 +484,9 @@ function ClaimTabContent() {
   const flashLoanDeductionAmountSend = claimPenaltyAmountSui.div(
     sendReserve.price.div(suiReserve.price),
   );
-  const flashLoanDeductionPercent = flashLoanDeductionAmountSend
-    .div(claimAmount || 0)
-    .times(100);
+  const flashLoanDeductionPercent = new BigNumber(claimAmount || 0).gt(0)
+    ? flashLoanDeductionAmountSend.div(claimAmount || 0).times(100)
+    : new BigNumber(0);
 
   const flashLoanProceedsAmountSend = new BigNumber(claimAmount || 0).minus(
     flashLoanDeductionAmountSend,
@@ -821,8 +821,9 @@ function ClaimTabContent() {
                       {formatToken(flashLoanDeductionAmountSend, {
                         exact: false,
                       })}
-                      {" SEND"} (
-                      {formatPercent(flashLoanDeductionPercent, { dp: 0 })})
+                      {" SEND"}
+                      {flashLoanDeductionPercent.gt(0) &&
+                        ` (${formatPercent(flashLoanDeductionPercent, { dp: 0 })})`}
                     </TBody>
                   </div>
                   <TLabel>
