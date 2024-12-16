@@ -273,8 +273,6 @@ export const redeemRootletsMsend = async (
     "personalKioskRulePackageId",
   );
 
-  const mSendCoins = [];
-
   let count = 0;
   const maxCount = 25;
   for (const { kiosk, kioskOwnerCap: personalKioskOwnerCap } of ownedKiosks) {
@@ -329,7 +327,12 @@ export const redeemRootletsMsend = async (
           arguments: [item, transaction.object(obj.data?.objectId as string)],
           typeArguments: [`0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`],
         });
-        mSendCoins.push(mSendCoin);
+
+        // Transfer mSEND to user
+        transaction.transferObjects(
+          [mSendCoin],
+          transaction.pure.address(address),
+        );
       }
 
       // Return item to kiosk
@@ -352,20 +355,6 @@ export const redeemRootletsMsend = async (
       });
     }
   }
-
-  // Merge mSEND coins
-  if (mSendCoins.length === 0) return;
-
-  const mergedMsendCoin = mSendCoins[0];
-  if (mSendCoins.length > 1) {
-    transaction.mergeCoins(mergedMsendCoin, mSendCoins.slice(1));
-  }
-
-  // Transfer mSEND to user
-  transaction.transferObjects(
-    [mergedMsendCoin],
-    transaction.pure.address(address),
-  );
 };
 
 // Claim SEND
