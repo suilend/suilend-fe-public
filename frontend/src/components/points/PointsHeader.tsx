@@ -25,7 +25,7 @@ export default function PointsHeader({
 
   return (
     <div className="-mt-4 w-full md:-mt-6">
-      <div className="-mx-4 flex h-[210px] flex-row justify-center md:-mx-10 md:h-[270px]">
+      <div className="-mx-4 flex h-[160px] flex-row justify-center md:-mx-10 md:h-[200px]">
         <div className="relative w-full max-w-[calc(1440px-40px*2)]">
           <div
             className="absolute inset-0 z-[1]"
@@ -39,16 +39,10 @@ export default function PointsHeader({
             }}
           />
 
-          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center gap-8">
-            <div className="flex flex-col items-center gap-2 md:gap-4">
-              <TDisplay className="text-center text-4xl md:text-5xl">
-                SEND Points
-              </TDisplay>
-
-              <TDisplay className="uppercase text-foreground">
-                Leaderboard
-              </TDisplay>
-            </div>
+          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-end gap-8 pb-2">
+            <TDisplay className="text-center text-4xl md:text-5xl">
+              SEND Points
+            </TDisplay>
 
             <Tabs
               tabs={tabs}

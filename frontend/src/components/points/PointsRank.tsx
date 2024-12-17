@@ -9,7 +9,7 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface PointsRankProps {
   season: number;
-  rank?: number | null;
+  rank?: number;
   noTooltip?: boolean;
   isCentered?: boolean;
   isRightAligned?: boolean;
@@ -39,7 +39,7 @@ export default function PointsRank({
         <Tooltip
           title={!noTooltip && <PointsDataLastUpdatedAt season={season} />}
         >
-          {rank === null ? (
+          {rank === -1 ? (
             <TBody
               className={cn(
                 !noTooltip &&

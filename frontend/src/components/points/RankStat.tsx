@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface RankStatProps {
   season: number;
-  rank?: number | null;
+  rank?: number;
   isCentered?: boolean;
   isRightAligned?: boolean;
 }

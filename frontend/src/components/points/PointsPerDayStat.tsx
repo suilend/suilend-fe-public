@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface PointsPerDayStatProps {
   season: number;
-  amount?: BigNumber | null;
+  amount?: BigNumber;
   isCentered?: boolean;
 }
 

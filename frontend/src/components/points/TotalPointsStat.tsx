@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 interface TotalPointsStatProps {
   season: number;
-  amount?: BigNumber | null;
+  amount?: BigNumber;
   isCentered?: boolean;
 }
 

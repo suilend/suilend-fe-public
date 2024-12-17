@@ -21,13 +21,21 @@ import { DASHBOARD_URL } from "@/lib/navigation";
 
 interface PointsLeaderboardTableProps {
   season: number;
+  data?: LeaderboardRowData[];
+  skeletonRows?: number;
+  pageSize?: number;
+  disableSorting?: boolean;
 }
 
 export default function PointsLeaderboardTable({
   season,
+  data,
+  skeletonRows,
+  pageSize,
+  disableSorting,
 }: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
-  const { season: currentSeason, leaderboardRowsMap } = usePointsContext();
+  const { season: currentSeason } = usePointsContext();
 
   // Columns
   const columns = useMemo(() => {
@@ -74,6 +82,7 @@ export default function PointsLeaderboardTable({
     if (season === currentSeason)
       result.push({
         accessorKey: "pointsPerDay",
+        enableSorting: !disableSorting,
         sortingFn: decimalSortingFn("pointsPerDay"),
         header: ({ column }) =>
           tableHeader(column, "Points per day", { isNumerical: true }),
@@ -89,6 +98,7 @@ export default function PointsLeaderboardTable({
       });
     result.push({
       accessorKey: "totalPoints",
+      enableSorting: !disableSorting,
       sortingFn: decimalSortingFn("totalPoints"),
       header: ({ column }) =>
         tableHeader(column, "Total Points", { isNumerical: true }),
@@ -104,17 +114,15 @@ export default function PointsLeaderboardTable({
     });
 
     return result;
-  }, [season, explorer, currentSeason]);
+  }, [season, explorer, currentSeason, disableSorting]);
 
   return (
-    <div className="flex w-full max-w-[960px] flex-col gap-6">
-      <DataTable<LeaderboardRowData>
-        columns={columns}
-        data={leaderboardRowsMap?.[season]}
-        noDataMessage="No users"
-        pageSize={100}
-        tableClassName="border-y"
-      />
-    </div>
+    <DataTable<LeaderboardRowData>
+      columns={columns}
+      data={data}
+      noDataMessage="No users"
+      skeletonRows={skeletonRows}
+      pageSize={pageSize}
+    />
   );
 }

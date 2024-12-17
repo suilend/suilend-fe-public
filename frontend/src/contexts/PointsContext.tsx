@@ -37,7 +37,7 @@ interface PointsContext {
 
   leaderboardRowsMap: Record<number, LeaderboardRowData[]> | undefined;
   updatedAtMap: Record<number, Date> | undefined;
-  addressRowMap: Record<number, LeaderboardRowData | null> | undefined;
+  addressRowMap: Record<number, LeaderboardRowData> | undefined;
   fetchLeaderboardRows: (season: number) => Promise<void>;
 }
 
@@ -132,7 +132,15 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
         if (value === undefined) return acc;
 
         const row = value.find((row) => row.address === address);
-        return { ...acc, [key]: row ?? null };
+        return {
+          ...acc,
+          [key]: row ?? {
+            rank: -1,
+            address,
+            pointsPerDay: new BigNumber(-1),
+            totalPoints: new BigNumber(-1),
+          },
+        };
       }, {}),
     );
   }, [address, leaderboardRowsMap]);

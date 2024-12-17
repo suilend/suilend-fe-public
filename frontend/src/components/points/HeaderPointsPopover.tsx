@@ -86,11 +86,7 @@ export default function PointsCountPopover() {
             <TLabelSans>Rank</TLabelSans>
             <PointsRank
               season={season}
-              rank={
-                addressRowMap?.[season] === null
-                  ? null
-                  : addressRowMap?.[season].rank
-              }
+              rank={addressRowMap?.[season].rank}
               isRightAligned
             />
           </div>

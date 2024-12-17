@@ -4,13 +4,10 @@ import { useEffect, useMemo } from "react";
 
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
 
-import Card from "@/components/dashboard/Card";
 import PointsHeader from "@/components/points/PointsHeader";
 import PointsLeaderboardTable from "@/components/points/PointsLeaderboardTable";
-import PointsPerDayStat from "@/components/points/PointsPerDayStat";
-import RankStat from "@/components/points/RankStat";
-import TotalPointsStat from "@/components/points/TotalPointsStat";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
+import { TBody } from "@/components/shared/Typography";
 import { Tab, usePointsContext } from "@/contexts/PointsContext";
 
 enum QueryParams {
@@ -27,7 +24,7 @@ export default function Points() {
   );
 
   const { address } = useWalletContext();
-  const { season, seasonMap, addressRowMap, fetchLeaderboardRows } =
+  const { season, leaderboardRowsMap, addressRowMap, fetchLeaderboardRows } =
     usePointsContext();
 
   // Tabs
@@ -60,7 +57,7 @@ export default function Points() {
         <title>Suilend | SEND Points</title>
       </Head>
 
-      <div className="flex w-full flex-col items-center gap-6">
+      <div className="flex w-full flex-col items-center gap-8">
         <div className="flex w-full flex-col items-center gap-6">
           <PointsHeader
             selectedTab={selectedTab}
@@ -68,33 +65,26 @@ export default function Points() {
           />
           <ImpersonationModeBanner />
         </div>
-
         {address && (
-          <Card
-            className="max-w-[960px] p-4"
-            style={{ borderColor: seasonMap[+selectedTab].color }}
-          >
-            <div className="flex flex-row items-center justify-between gap-4">
-              <TotalPointsStat
-                season={+selectedTab}
-                amount={addressRow === null ? null : addressRow?.totalPoints}
-              />
-              {+selectedTab === season && (
-                <PointsPerDayStat
-                  season={+selectedTab}
-                  amount={addressRow === null ? null : addressRow?.pointsPerDay}
-                />
-              )}
-              <RankStat
-                season={+selectedTab}
-                rank={addressRow === null ? null : addressRow?.rank}
-                isRightAligned
-              />
-            </div>
-          </Card>
+          <div className="flex w-full max-w-[960px] flex-col gap-4">
+            <TBody className="px-4 text-[16px] uppercase">Your position</TBody>
+            <PointsLeaderboardTable
+              season={+selectedTab}
+              data={addressRow !== undefined ? [addressRow] : undefined}
+              skeletonRows={1}
+              disableSorting
+            />
+          </div>
         )}
 
-        <PointsLeaderboardTable season={+selectedTab} />
+        <div className="flex w-full max-w-[960px] flex-col gap-4">
+          <TBody className="px-4 text-[16px] uppercase">Leaderboard</TBody>
+          <PointsLeaderboardTable
+            season={+selectedTab}
+            data={leaderboardRowsMap?.[season]}
+            pageSize={100}
+          />
+        </div>
       </div>
     </>
   );

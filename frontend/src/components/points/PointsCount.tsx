@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 interface PointsCountProps {
   labelClassName?: ClassValue;
   season: number;
-  amount?: BigNumber | null;
+  amount?: BigNumber;
 }
 
 export default function PointsCount({
@@ -32,7 +32,7 @@ export default function PointsCount({
 
       {amount === undefined ? (
         <Skeleton className="h-5 w-10" />
-      ) : amount === null ? (
+      ) : amount.eq(-1) ? (
         <TBody className={cn(labelClassName)}>N/A</TBody>
       ) : (
         <Tooltip

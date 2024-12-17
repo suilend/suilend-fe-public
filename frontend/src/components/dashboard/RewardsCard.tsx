@@ -200,11 +200,7 @@ export default function RewardsCard() {
               />
               <RankStat
                 season={season}
-                rank={
-                  addressRowMap?.[season] === null
-                    ? null
-                    : addressRowMap?.[season].rank
-                }
+                rank={addressRowMap?.[season].rank}
                 isRightAligned
               />
             </div>
@@ -229,11 +225,7 @@ export default function RewardsCard() {
               />
               <RankStat
                 season={season}
-                rank={
-                  addressRowMap?.[season] === null
-                    ? null
-                    : addressRowMap?.[season].rank
-                }
+                rank={addressRowMap?.[season].rank}
                 isCentered
               />
             </div>
