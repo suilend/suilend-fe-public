@@ -3,6 +3,7 @@ import { CSSProperties, PropsWithChildren, useRef, useState } from "react";
 
 import { useResizeObserver } from "usehooks-ts";
 
+import WormholeConnect from "@/components/bridge/WormholeConnect";
 import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import AppHeader from "@/components/layout/AppHeader";
 import Footer from "@/components/layout/Footer";
@@ -11,15 +12,17 @@ import Container from "@/components/shared/Container";
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
-import { ROOT_URL } from "@/lib/navigation";
+import { useWormholeConnectContext } from "@/contexts/WormholeConnectContext";
+import { BRIDGE_URL, ROOT_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: PropsWithChildren) {
   const router = useRouter();
 
   const { suilendClient, data } = useAppContext();
+  const { isLoading: isWormholeConnectLoading } = useWormholeConnectContext();
 
-  // LaunchDarkly banner
+  // Launch Darkly banner
   const launchDarklyBannerRef = useRef<HTMLDivElement>(null);
   const [launchDarklyBannerHeight, setLaunchDarklyBannerHeight] = useState<
     number | null
@@ -35,9 +38,14 @@ export default function Layout({ children }: PropsWithChildren) {
 
   // Loading
   const isOnLandingPage = router.asPath === ROOT_URL;
+  const isOnBridgePage = router.asPath.startsWith(BRIDGE_URL);
 
   const isDataLoading = !suilendClient || !data;
-  const isPageLoading = isOnLandingPage ? false : isDataLoading;
+  const isPageLoading = isOnLandingPage
+    ? false
+    : !isOnBridgePage
+      ? isDataLoading
+      : isDataLoading || isWormholeConnectLoading;
 
   return (
     <div
@@ -55,6 +63,7 @@ export default function Layout({ children }: PropsWithChildren) {
       />
       {!isOnLandingPage && <AppHeader />}
 
+      {isPageLoading && <FullPageSpinner />}
       <div
         className={cn(
           "relative z-[1] flex-1",
@@ -62,10 +71,8 @@ export default function Layout({ children }: PropsWithChildren) {
         )}
       >
         {!isOnLandingPage ? (
-          <Container className="flex-1">
-            {isPageLoading ? (
-              <FullPageSpinner />
-            ) : (
+          <Container className={cn(!isOnBridgePage && "flex-1")}>
+            {!isPageLoading && (
               <ReserveAssetDataEventsContextProvider>
                 {children}
                 <AccountOverviewDialog />
@@ -75,6 +82,7 @@ export default function Layout({ children }: PropsWithChildren) {
         ) : (
           children
         )}
+        <WormholeConnect isHidden={!isOnBridgePage || isPageLoading} />
       </div>
 
       {!isOnLandingPage && <Footer />}

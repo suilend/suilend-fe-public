@@ -14,7 +14,6 @@
     "lint": "bun eslint && bun prettier && bun tsc --noEmit"
   },
   "dependencies": {
-    "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.6",
     "@dagrejs/dagre": "^1.1.4",
     "@launchdarkly/node-server-sdk": "^9.7.2",
     "@mysten/kiosk": "0.9.33",
@@ -22,6 +21,7 @@
     "@mysten/sui.js": "0.54.1",
     "@mysten/wallet-standard": "0.13.19",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
+    "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.6",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
     "@radix-ui/react-collapsible": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -42,7 +42,6 @@
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
     "@vercel/speed-insights": "^1.1.0",
-    "@wormhole-foundation/wormhole-connect": "1.1.8-beta.1-development",
     "aftermath-ts-sdk": "^1.2.3",
     "bignumber.js": "^9.1.2",
     "class-variance-authority": "^0.7.0",
