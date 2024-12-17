@@ -4,7 +4,6 @@ module.exports = {
   experimental: {
     externalDir: true,
   },
-  swcMinify: false,
   transpilePackages: ["geist", "@suilend/frontend-sui-next"],
   images: {
     remotePatterns: [
