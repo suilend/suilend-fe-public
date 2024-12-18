@@ -54,7 +54,7 @@ import {
   formatToken,
   formatUsd,
 } from "@/lib/format";
-import { DASHBOARD_URL } from "@/lib/navigation";
+import { ROOT_URL } from "@/lib/navigation";
 import {
   Allocation,
   AllocationId,
@@ -639,7 +639,7 @@ function ClaimTabContent() {
           </TBodySans>
         </div>
 
-        <Link href={`${DASHBOARD_URL}?asset=sSUI`}>
+        <Link href={`${ROOT_URL}?asset=sSUI`}>
           <Button labelClassName="uppercase" endIcon={<ArrowUpRight />}>
             Deposit
           </Button>

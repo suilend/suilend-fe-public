@@ -21,7 +21,9 @@ export default function BlurbSection() {
   return (
     <div className="flex w-full flex-col items-center gap-12 py-16 md:gap-16 md:py-20">
       <div className="flex w-full max-w-[600px] flex-col gap-4 rounded-md border border-secondary bg-secondary/5 p-4">
-        <TDisplay className="uppercase text-secondary">About Suilend</TDisplay>
+        <TDisplay className="uppercase text-primary-foreground">
+          About Suilend
+        </TDisplay>
 
         <TBodySans className="leading-5">
           {

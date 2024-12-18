@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 
+import { ClassValue } from "clsx";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
@@ -18,7 +19,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatAddress } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-export default function ImpersonationModeBanner() {
+interface ImpersonationModeBannerProps {
+  className?: ClassValue;
+}
+
+export default function ImpersonationModeBanner({
+  className,
+}: ImpersonationModeBannerProps) {
   const router = useRouter();
 
   const { isImpersonating, address } = useWalletContext();
@@ -33,7 +40,10 @@ export default function ImpersonationModeBanner() {
     isImpersonating &&
     address && (
       <Alert
-        className="w-full max-w-[960px] cursor-pointer rounded-sm transition-colors hover:bg-muted/10"
+        className={cn(
+          "w-full cursor-pointer rounded-sm transition-colors hover:bg-muted/10",
+          className,
+        )}
         onClick={onClick}
       >
         <div className="flex flex-row items-center gap-4">

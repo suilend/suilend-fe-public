@@ -1,4 +1,3 @@
-import { intervalToDuration } from "date-fns";
 import { ExternalLink } from "lucide-react";
 
 import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
@@ -10,39 +9,26 @@ import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import {
+  ABOUT_URL,
   ADMIN_URL,
   BRIDGE_URL,
-  DASHBOARD_URL,
   POINTS_URL,
+  ROOT_URL,
   SEND_URL,
   SPRINGSUI_URL,
   SWAP_URL,
 } from "@/lib/navigation";
-import { TGE_TIMESTAMP_MS } from "@/lib/send";
 
 export default function NavigationLinks() {
   const { address } = useWalletContext();
   const { data } = useAppContext();
   const { season } = usePointsContext();
 
-  const getSendLabel = () => {
-    if (Date.now() >= TGE_TIMESTAMP_MS) return "TGE";
-
-    const interval = intervalToDuration({
-      start: Date.now(),
-      end: new Date(TGE_TIMESTAMP_MS),
-    });
-
-    if (interval.hours) return `${interval.hours}h to TGE`;
-    if (interval.minutes) return `${interval.minutes}m to TGE`;
-    if (interval.seconds) return `${interval.seconds}s to TGE`;
-    return "TGE";
-  };
-
   return (
     <>
-      <Link href={DASHBOARD_URL}>Dashboard</Link>
-      <Link href={SEND_URL} label={getSendLabel()}>
+      {/* Internal */}
+      <Link href={ROOT_URL}>Dashboard</Link>
+      <Link href={SEND_URL} label="TGE">
         SEND
       </Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
@@ -57,16 +43,17 @@ export default function NavigationLinks() {
         )}
       </div>
       {!isInMsafeApp() && (
-        <>
-          <Link href={getSwapUrl()} activeHref={SWAP_URL}>
-            Swap
-          </Link>
-          <Link href={BRIDGE_URL}>Bridge</Link>
-          {!!data?.lendingMarketOwnerCapId && (
-            <Link href={ADMIN_URL}>Admin</Link>
-          )}
-        </>
+        <Link href={getSwapUrl()} startsWithHref={SWAP_URL}>
+          Swap
+        </Link>
       )}
+      {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
+      <Link href={ABOUT_URL}>About</Link>
+      {!!data?.lendingMarketOwnerCapId && !isInMsafeApp() && (
+        <Link href={ADMIN_URL}>Admin</Link>
+      )}
+
+      {/* External */}
       <Link
         href={
           !isInMsafeApp() ? SPRINGSUI_URL : getMsafeAppStoreUrl("SpringSui")

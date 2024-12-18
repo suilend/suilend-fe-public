@@ -5,7 +5,7 @@ import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import Container from "@/components/shared/Container";
-import { DASHBOARD_URL } from "@/lib/navigation";
+import { ROOT_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface WormholeConnectProps {
@@ -128,7 +128,7 @@ export default function WormholeConnect({ isHidden }: WormholeConnectProps) {
             sui: rpc.url,
           },
           tokens: ["WETH", "USDCeth", "USDT", "WSOL", "SOL"],
-          cta: { text: "Deposit", link: DASHBOARD_URL },
+          cta: { text: "Deposit", link: ROOT_URL },
           bridgeDefaults: { toNetwork: "sui", requiredNetwork: "sui" },
           pageHeader: "Bridge",
           networks: ["ethereum", "solana", "sui"],

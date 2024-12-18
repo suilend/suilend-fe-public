@@ -17,7 +17,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { LeaderboardRowData, usePointsContext } from "@/contexts/PointsContext";
 import { formatAddress } from "@/lib/format";
-import { DASHBOARD_URL } from "@/lib/navigation";
+import { ROOT_URL } from "@/lib/navigation";
 
 interface PointsLeaderboardTableProps {
   season: number;
@@ -68,7 +68,7 @@ export default function PointsLeaderboardTable({
                 <CopyToClipboardButton value={address} />
                 <OpenURLButton url={explorer.buildAddressUrl(address)} />
                 <OpenURLButton
-                  url={`${DASHBOARD_URL}?wallet=${address}`}
+                  url={`${ROOT_URL}?wallet=${address}`}
                   icon={<VenetianMask />}
                 >
                   View Dashboard as this user

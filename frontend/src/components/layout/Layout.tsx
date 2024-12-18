@@ -13,7 +13,7 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
 import { useWormholeConnectContext } from "@/contexts/WormholeConnectContext";
-import { BRIDGE_URL, ROOT_URL } from "@/lib/navigation";
+import { BRIDGE_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -37,15 +37,12 @@ export default function Layout({ children }: PropsWithChildren) {
   });
 
   // Loading
-  const isOnLandingPage = router.asPath === ROOT_URL;
   const isOnBridgePage = router.asPath.startsWith(BRIDGE_URL);
 
   const isDataLoading = !suilendClient || !data;
-  const isPageLoading = isOnLandingPage
-    ? false
-    : !isOnBridgePage
-      ? isDataLoading
-      : isDataLoading || isWormholeConnectLoading;
+  const isPageLoading = isOnBridgePage
+    ? isDataLoading || isWormholeConnectLoading
+    : isDataLoading;
 
   return (
     <div
@@ -57,35 +54,31 @@ export default function Layout({ children }: PropsWithChildren) {
         } as CSSProperties
       }
     >
+      {/* Header */}
       <LaunchDarklyBanner
         ref={launchDarklyBannerRef}
         height={launchDarklyBannerHeight}
       />
-      {!isOnLandingPage && <AppHeader />}
+      <AppHeader />
 
-      {isPageLoading && <FullPageSpinner />}
-      <div
-        className={cn(
-          "relative z-[1] flex-1",
-          !isOnLandingPage && "flex flex-col justify-stretch py-4 md:py-6",
-        )}
-      >
-        {!isOnLandingPage ? (
-          <Container className={cn(!isOnBridgePage && "flex-1")}>
-            {!isPageLoading && (
-              <ReserveAssetDataEventsContextProvider>
-                {children}
-                <AccountOverviewDialog />
-              </ReserveAssetDataEventsContextProvider>
-            )}
-          </Container>
-        ) : (
-          children
-        )}
+      {/* Content */}
+      <div className="relative z-[1] flex flex-1 flex-col justify-stretch py-4 md:py-6">
+        <Container className={cn(!isOnBridgePage && "flex-1")}>
+          {isPageLoading ? (
+            <FullPageSpinner />
+          ) : (
+            <ReserveAssetDataEventsContextProvider>
+              {children}
+              <AccountOverviewDialog />
+            </ReserveAssetDataEventsContextProvider>
+          )}
+        </Container>
+
         <WormholeConnect isHidden={!isOnBridgePage || isPageLoading} />
       </div>
 
-      {!isOnLandingPage && <Footer />}
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

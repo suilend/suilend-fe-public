@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 interface LinkProps extends PropsWithChildren, NextLinkProps {
   href: string;
-  activeHref?: string;
+  startsWithHref?: string;
   className?: ClassValue;
   isExternal?: boolean;
   startIcon?: ReactNode;
@@ -22,7 +22,7 @@ interface LinkProps extends PropsWithChildren, NextLinkProps {
 
 export default function Link({
   href,
-  activeHref,
+  startsWithHref,
   className,
   isExternal,
   startIcon,
@@ -32,7 +32,9 @@ export default function Link({
   ...props
 }: LinkProps) {
   const router = useRouter();
-  const isActive = router.asPath.startsWith(activeHref ?? href);
+  const isActive = startsWithHref
+    ? router.asPath.startsWith(startsWithHref)
+    : router.asPath === href;
 
   const Component = isExternal ? "a" : NextLink;
 
