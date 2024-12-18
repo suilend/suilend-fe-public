@@ -1,9 +1,6 @@
 import { useState } from "react";
 
-import { NORMALIZED_mSEND_3M_COINTYPE } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
-
-import { getOwnedObjectsOfType } from "@/lib/transactions";
 
 export default function RootletsTemp() {
   const { suiClient } = useSettingsContext();
@@ -11,13 +8,22 @@ export default function RootletsTemp() {
   const [objectId, setObjectId] = useState<string>("");
 
   const onCheck = async () => {
-    const objs = await getOwnedObjectsOfType(
-      suiClient,
-      objectId,
-      `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
-    );
+    const allObjs = [];
+    let cursor = null;
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const objs = await suiClient.getOwnedObjects({
+        owner: objectId,
+        cursor,
+        options: { showContent: true },
+      });
 
-    console.log("Rootlets NFT owned mSEND:", objs);
+      allObjs.push(...objs.data);
+      cursor = objs.nextCursor;
+      hasNextPage = objs.hasNextPage;
+    }
+
+    console.log("Rootlets NFT owned objects:", allObjs);
   };
 
   return (
