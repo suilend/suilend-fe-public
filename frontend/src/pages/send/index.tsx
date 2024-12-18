@@ -3,8 +3,6 @@ import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { useWalletContext } from "@suilend/frontend-sui-next";
-
 import AllocationCard from "@/components/send/AllocationCard";
 import BlurbSection from "@/components/send/BlurbSection";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -32,8 +30,6 @@ import {
 import { cn } from "@/lib/utils";
 
 function Page() {
-  const { address } = useWalletContext();
-
   const { userAllocations } = useLoadedSendContext();
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
@@ -854,7 +850,7 @@ function Page() {
             </div>
           </div>
 
-          {address && Date.now() >= TGE_TIMESTAMP_MS && (
+          {Date.now() >= TGE_TIMESTAMP_MS && (
             <>
               <Separator />
               <ClaimSection

@@ -80,6 +80,7 @@ interface SubmitButtonProps {
   className?: ClassValue;
   labelClassName?: ClassValue;
   variant?: ButtonProps["variant"];
+  spinnerSize?: "sm" | "md";
   state: SubmitButtonState;
   submit: () => Promise<void>;
 }
@@ -88,6 +89,7 @@ function SubmitButton({
   className,
   labelClassName,
   variant,
+  spinnerSize,
   state,
   submit,
 }: SubmitButtonProps) {
@@ -100,7 +102,7 @@ function SubmitButton({
       disabled={state.isDisabled}
       onClick={submit}
     >
-      {state.isLoading ? <Spinner size="md" /> : state.title}
+      {state.isLoading ? <Spinner size={spinnerSize ?? "md"} /> : state.title}
     </Button>
   );
 }
@@ -469,7 +471,9 @@ function ClaimTabContent() {
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
-  const useMaxAmount = new BigNumber(claimAmount || 0).eq(mSendBalance);
+  const useMaxAmount = address
+    ? new BigNumber(claimAmount || 0).eq(mSendBalance)
+    : false;
 
   // Penalty
   const claimPenaltyAmountSui = mSendObjectMap[
@@ -872,8 +876,10 @@ function ClaimTabContent() {
 
           {/* Claim and deposit */}
           <SubmitButton
-            className="min-h-9 rounded-t-none py-1"
+            className="min-h-8 rounded-t-none"
+            labelClassName="text-xs"
             variant="secondary"
+            spinnerSize="sm"
             state={submitButtonState_claimAndDeposit}
             submit={() => submit(true)}
           />
@@ -894,6 +900,7 @@ export default function ClaimSection({
   allocations,
   totalAllocationBreakdownMaps,
 }: ClaimSectionProps) {
+  const { address } = useWalletContext();
   const { data } = useLoadedAppContext();
 
   const {
@@ -957,7 +964,7 @@ export default function ClaimSection({
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim">Claim</SectionHeading>
 
-      {userAllocations === undefined ? (
+      {address && userAllocations === undefined ? (
         <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
       ) : (
         <>
