@@ -32,7 +32,14 @@ export default function NavigationLinks() {
         SEND
       </Link>
       <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
-        <Link className="flex-1" href={POINTS_URL} label={`S${season}`}>
+        <Link
+          className="flex-1 hover:text-[var(--points-season)]"
+          activeClassName="text-[var(--points-season)]"
+          href={POINTS_URL}
+          label={`S${season}`}
+          labelClassName="group-hover:bg-[var(--points-season)]"
+          labelActiveClassName="bg-[var(--points-season)]"
+        >
           Points
         </Link>
 

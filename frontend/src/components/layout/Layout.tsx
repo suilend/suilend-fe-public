@@ -11,6 +11,7 @@ import LaunchDarklyBanner from "@/components/layout/LaunchDarklyBanner";
 import Container from "@/components/shared/Container";
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
+import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
 import { useWormholeConnectContext } from "@/contexts/WormholeConnectContext";
 import { BRIDGE_URL } from "@/lib/navigation";
@@ -20,6 +21,7 @@ export default function Layout({ children }: PropsWithChildren) {
   const router = useRouter();
 
   const { suilendClient, data } = useAppContext();
+  const { season, seasonMap } = usePointsContext();
   const { isLoading: isWormholeConnectLoading } = useWormholeConnectContext();
 
   // Launch Darkly banner
@@ -51,6 +53,14 @@ export default function Layout({ children }: PropsWithChildren) {
         {
           background: "url('/assets/footer.svg') bottom no-repeat",
           "--header-top": `${launchDarklyBannerHeight ?? 0}px`,
+          "--points-season": seasonMap[season].color,
+          ...Object.entries(seasonMap).reduce(
+            (acc, [_season, { color }]) => ({
+              ...acc,
+              [`--points-season-${_season}`]: color,
+            }),
+            {},
+          ),
         } as CSSProperties
       }
     >

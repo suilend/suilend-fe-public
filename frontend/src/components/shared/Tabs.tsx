@@ -21,7 +21,6 @@ interface TabsProps extends PropsWithChildren {
   selectedTab: string;
   onTabChange: (tab: string) => void;
   listClassName?: ClassValue;
-  listStyle?: CSSProperties;
   triggerClassName?: (tab: Tab) => ClassValue;
 }
 
@@ -30,7 +29,6 @@ export default function Tabs({
   selectedTab,
   onTabChange,
   listClassName,
-  listStyle,
   triggerClassName,
 
   children,
@@ -42,7 +40,6 @@ export default function Tabs({
           "mb-4 flex h-fit w-full flex-row rounded-[5px] bg-card p-[1px]",
           listClassName,
         )}
-        style={listStyle}
       >
         {tabs.map((tab) => (
           <TabsTrigger
