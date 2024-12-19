@@ -19,11 +19,7 @@ import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
-import { WormholeConnectContextProvider } from "@/contexts/WormholeConnectContext";
 import { TITLE } from "@/lib/constants";
-import { fontClassNames } from "@/lib/fonts";
-import { cn } from "@/lib/utils";
-
 import "@/styles/globals.scss";
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -50,7 +46,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
       </Head>
 
-      <main id="__app_main" className={cn("relative", ...fontClassNames)}>
+      <main id="__app_main">
         <LDProvider
           clientSideID={
             process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string
@@ -60,14 +56,12 @@ export default function App({ Component, pageProps }: AppProps) {
             <WalletContextProvider appName="Suilend">
               <AppContextProvider>
                 <PointsContextProvider>
-                  <WormholeConnectContextProvider>
-                    <TooltipProvider>
-                      <Layout>
-                        <Component {...pageProps} />
-                      </Layout>
-                      <Toaster />
-                    </TooltipProvider>
-                  </WormholeConnectContextProvider>
+                  <TooltipProvider>
+                    <Layout>
+                      <Component {...pageProps} />
+                    </Layout>
+                    <Toaster />
+                  </TooltipProvider>
                 </PointsContextProvider>
               </AppContextProvider>
             </WalletContextProvider>

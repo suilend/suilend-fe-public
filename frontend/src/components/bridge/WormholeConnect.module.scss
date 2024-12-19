@@ -1,45 +1,41 @@
-.root div[class$="appContent"] {
-  padding: 0;
-  margin-top: 0;
-  margin-bottom: 0;
+.root {
+  div[class$="appContent"] {
+    padding: 0;
+    margin: 0;
+    max-width: none;
 
-  div[class$="connectWallet"],
-  div[class*="button"][class*="elevated"],
-  div[class*="button"][class*="action"] {
-    border-radius: calc(var(--radius) - 4px);
-    color: hsl(var(--primary-foreground));
-    font-size: 0.875rem;
-    font-family: var(--supply-mono);
-    height: 32px;
-    letter-spacing: 0;
-    text-transform: uppercase;
-
-    transition-property: background-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-
-    &:hover {
-      background-color: hsl(var(--primary) / 90%);
+    button[class*="swapButton"] {
+      display: flex;
     }
 
-    svg {
-      color: hsl(var(--primary-foreground));
-    }
-  }
-  div[class*="button"][class*="elevated"],
-  div[class*="button"][class*="action"] {
-    height: 40px;
+    button[class*="MuiButton-containedPrimary"] {
+      border-radius: 6px;
 
-    svg {
-      color: hsl(var(--foreground));
-    }
-  }
+      span,
+      p {
+        font-family: var(--supply-mono);
+        text-transform: uppercase;
+      }
 
-  div[class$="secondaryText"],
-  div[class$="routeAmt"],
-  span[class$="rowTitle"],
-  div[class$="chainHeader"] {
-    opacity: 1;
-    color: hsl(var(--muted-foreground));
+      &:not([class*="claimButton"]) {
+        span,
+        p {
+          color: hsl(var(--primary-foreground));
+        }
+      }
+    }
+
+    svg[class*="MuiSvgIcon-root-fastestBadge"] {
+      top: 0;
+    }
+
+    div[class*="connectWallet"] p {
+      font-family: var(--supply-mono);
+      text-transform: uppercase;
+    }
+
+    span[class*="MuiSlider-rail"] {
+      background-color: currentColor;
+    }
   }
 }

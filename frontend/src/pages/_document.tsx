@@ -1,6 +1,8 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
 import { DESCRIPTION, TITLE, TWITTER } from "@/lib/constants";
+import { fontClassNames } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
 
 export default function Document() {
   return (
@@ -37,14 +39,8 @@ export default function Document() {
         />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#020A19" />
-
-        {/* Wormhole Connect */}
-        <link
-          rel="stylesheet"
-          href="https://suilend.fi/wormhole-connect@0.3.22-beta.6-development/main.css"
-        />
       </Head>
-      <body>
+      <body className={cn(fontClassNames)}>
         <Main />
         <NextScript />
       </body>
