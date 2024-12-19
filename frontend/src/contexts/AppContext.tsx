@@ -178,7 +178,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
           return (
             (reserve.coinType === NORMALIZED_upSUI_COINTYPE
-              ? Date.now() >= 9733396400000 // TBC
+              ? Date.now() >= 1734609600000 // 2024-12-19 12:00:00 UTC
               : isDeprecated(reserve.coinType) // Always show deprecated reserves
                 ? true
                 : reserve.config.depositLimit.gt(0)) ||
