@@ -12,7 +12,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_trevinSUI_COINTYPE,
+  NORMALIZED_upSUI_COINTYPE,
   RewardMap,
   isDeprecated,
   isInMsafeApp,
@@ -177,8 +177,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
             borrowPosition?.borrowedAmount ?? new BigNumber(0);
 
           return (
-            (reserve.coinType === NORMALIZED_trevinSUI_COINTYPE
-              ? Date.now() >= 1733396400000 // 2024-12-05 11:00:00 UTC
+            (reserve.coinType === NORMALIZED_upSUI_COINTYPE
+              ? Date.now() >= 9733396400000 // TBC
               : isDeprecated(reserve.coinType) // Always show deprecated reserves
                 ? true
                 : reserve.config.depositLimit.gt(0)) ||
