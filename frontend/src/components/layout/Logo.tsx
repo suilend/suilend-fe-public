@@ -1,13 +1,13 @@
 import Image from "next/image";
 
 import { TBodySans } from "@/components/shared/Typography";
-import suilendLogo from "@/public/assets/suilend.svg";
+import { ASSETS_URL } from "@/lib/constants";
 
 export default function Logo() {
   return (
     <div className="flex flex-row items-center gap-2">
       <Image
-        src={suilendLogo}
+        src={`${ASSETS_URL}/Suilend.svg`}
         alt="Suilend logo"
         width={24}
         height={24}

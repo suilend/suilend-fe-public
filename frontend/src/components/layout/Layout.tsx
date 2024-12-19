@@ -10,7 +10,9 @@ import LaunchDarklyBanner from "@/components/layout/LaunchDarklyBanner";
 import Container from "@/components/shared/Container";
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
+import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
+import { ASSETS_URL } from "@/lib/constants";
 import { ROOT_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +20,7 @@ export default function Layout({ children }: PropsWithChildren) {
   const router = useRouter();
 
   const { suilendClient, data } = useAppContext();
+  const { season, seasonMap } = usePointsContext();
 
   // LaunchDarkly banner
   const launchDarklyBannerRef = useRef<HTMLDivElement>(null);
@@ -44,40 +47,42 @@ export default function Layout({ children }: PropsWithChildren) {
       className="relative z-[1] flex min-h-dvh flex-col"
       style={
         {
-          background: "url('/assets/footer.svg') bottom no-repeat",
+          background: `url('${ASSETS_URL}/background.svg') bottom no-repeat`,
           "--header-top": `${launchDarklyBannerHeight ?? 0}px`,
+          "--points-season": seasonMap[season].color,
+          ...Object.entries(seasonMap).reduce(
+            (acc, [_season, { color }]) => ({
+              ...acc,
+              [`--points-season-${_season}`]: color,
+            }),
+            {},
+          ),
         } as CSSProperties
       }
     >
+      {/* Header */}
       <LaunchDarklyBanner
         ref={launchDarklyBannerRef}
         height={launchDarklyBannerHeight}
       />
-      {!isOnLandingPage && <AppHeader />}
+      <AppHeader />
 
-      <div
-        className={cn(
-          "relative z-[1] flex-1",
-          !isOnLandingPage && "flex flex-col justify-stretch py-4 md:py-6",
-        )}
-      >
-        {!isOnLandingPage ? (
-          <Container className="flex-1">
-            {isPageLoading ? (
-              <FullPageSpinner />
-            ) : (
-              <ReserveAssetDataEventsContextProvider>
-                {children}
-                <AccountOverviewDialog />
-              </ReserveAssetDataEventsContextProvider>
-            )}
-          </Container>
-        ) : (
-          children
-        )}
+      {/* Content */}
+      <div className="relative z-[1] flex flex-1 flex-col justify-stretch py-4 md:py-6">
+        <Container className="flex-1">
+          {isPageLoading ? (
+            <FullPageSpinner />
+          ) : (
+            <ReserveAssetDataEventsContextProvider>
+              {children}
+              <AccountOverviewDialog />
+            </ReserveAssetDataEventsContextProvider>
+          )}
+        </Container>
       </div>
 
-      {!isOnLandingPage && <Footer />}
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

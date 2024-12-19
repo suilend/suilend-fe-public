@@ -276,14 +276,14 @@ export const redeemRootletsMsend = async (
   let count = 0;
   const maxCount = 25;
   for (const { kiosk, kioskOwnerCap: personalKioskOwnerCap } of ownedKiosks) {
-    if (count > maxCount) break;
+    if (count >= maxCount) break;
 
     const kioskItems = kiosk.items.filter(
       (item) => item.type === ROOTLETS_TYPE && !item.listing,
     );
 
     for (const kioskItem of kioskItems) {
-      if (count > maxCount) break; // Redeem max `maxCount` Rootlets NFTs at a time
+      if (count >= maxCount) break; // Redeem max `maxCount` Rootlets NFTs at a time
 
       // Get mSEND coins owned by the Rootlets NFT
       const objs = await getOwnedObjectsOfType(

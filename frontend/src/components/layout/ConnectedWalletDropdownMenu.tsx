@@ -58,7 +58,7 @@ export default function ConnectedWalletDropdownMenu({
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
         <Button
-          className="min-w-0"
+          className="min-w-20"
           labelClassName="uppercase text-ellipsis overflow-hidden"
           startIcon={
             isImpersonating ? (

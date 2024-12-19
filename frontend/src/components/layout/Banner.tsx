@@ -3,6 +3,8 @@ import { CSSProperties, PropsWithChildren, forwardRef } from "react";
 
 import { ArrowLeftRight, Info, LucideIcon } from "lucide-react";
 
+import track from "@suilend/frontend-sui/lib/track";
+
 import Container from "@/components/shared/Container";
 import { TBody, TBodySans } from "@/components/shared/Typography";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,7 @@ function LinkWrapper({ isLinkRelative, link, children }: LinkWrapperProps) {
       className="block"
       target={isLinkRelative ? undefined : "_blank"}
       href={link}
+      onClick={() => track("banner_click", { link })}
     >
       {children}
     </Link>
@@ -65,7 +68,7 @@ const Banner = forwardRef<HTMLDivElement, BannerProps>(
         >
           <Container>
             <LinkWrapper isLinkRelative={isLinkRelative} link={link}>
-              <div className="flex min-h-10 w-full flex-col items-center justify-center gap-2 py-2 md:flex-row md:gap-4">
+              <div className="flex min-h-10 w-full flex-col items-center justify-center gap-1 py-2 md:flex-row md:gap-4">
                 <div className="flex flex-row gap-2">
                   {Icon && (
                     <Icon className="my-0.5 h-4 w-4 shrink-0 text-secondary-foreground" />

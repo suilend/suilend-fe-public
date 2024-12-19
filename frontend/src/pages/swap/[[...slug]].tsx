@@ -527,7 +527,7 @@ function Page() {
       );
     }
 
-    return timestampsS.map((timestampS) => ({
+    const result = timestampsS.map((timestampS) => ({
       timestampS,
       ratio: +new BigNumber(
         (!isInverted
@@ -541,7 +541,19 @@ function Page() {
         ).find((item) => item.timestampS === timestampS)?.priceUsd ?? 1,
       ),
     }));
-  }, [tokenInHistoricalUsdPrices, tokenOutHistoricalUsdPrices, isInverted]);
+    if (currentTokenRatio)
+      result.push({
+        timestampS: Math.floor(Date.now() / 1000),
+        ratio: +currentTokenRatio,
+      });
+
+    return result;
+  }, [
+    tokenInHistoricalUsdPrices,
+    tokenOutHistoricalUsdPrices,
+    isInverted,
+    currentTokenRatio,
+  ]);
 
   const tokenRatio24hAgo = useMemo(
     () =>

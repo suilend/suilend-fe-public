@@ -1,4 +1,3 @@
-import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -15,7 +14,6 @@ import SettingsDialog from "@/components/layout/SettingsDialog";
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Button from "@/components/shared/Button";
 import { useAppContext } from "@/contexts/AppContext";
-import { ROOT_URL } from "@/lib/navigation";
 
 export default function AppHeader() {
   const router = useRouter();
@@ -48,10 +46,7 @@ export default function AppHeader() {
     <HeaderBase>
       {/* Start */}
       <div className="flex shrink-0 flex-row items-center gap-12">
-        {/* Logo */}
-        <NextLink href={ROOT_URL}>
-          <Logo />
-        </NextLink>
+        <Logo />
 
         {/* Links */}
         <div className="hidden flex-row gap-8 lg:flex">

@@ -18,6 +18,11 @@ module.exports = {
   async redirects() {
     return [
       {
+        source: "/dashboard/:path*",
+        destination: "https://suilend.fi/:path*",
+        permanent: true,
+      },
+      {
         source: "/:path*",
         has: [
           {

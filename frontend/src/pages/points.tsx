@@ -59,12 +59,14 @@ export default function Points() {
 
       <div className="flex w-full flex-col items-center gap-8">
         <div className="flex w-full flex-col items-center gap-6">
+          <ImpersonationModeBanner className="max-w-[960px]" />
+
           <PointsHeader
             selectedTab={selectedTab}
             onSelectedTabChange={onSelectedTabChange}
           />
-          <ImpersonationModeBanner />
         </div>
+
         {address && (
           <div className="flex w-full max-w-[960px] flex-col gap-4">
             <TBody className="px-4 text-[16px] uppercase">Your position</TBody>

@@ -1,8 +1,6 @@
-import { CSSProperties } from "react";
-
 import Tabs from "@/components/shared/Tabs";
 import { TDisplay } from "@/components/shared/Typography";
-import { Tab, usePointsContext } from "@/contexts/PointsContext";
+import { Tab } from "@/contexts/PointsContext";
 import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +13,6 @@ export default function PointsHeader({
   selectedTab,
   onSelectedTabChange,
 }: PointsHeaderProps) {
-  const { seasonMap } = usePointsContext();
-
   // Tabs
   const tabs = [
     { id: Tab.SEASON_1, title: "Season 1" },
@@ -49,20 +45,13 @@ export default function PointsHeader({
               selectedTab={selectedTab}
               onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
               listClassName="mb-0 w-[200px] md:w-[240px] bg-border rounded-sm p-0"
-              listStyle={Object.entries(seasonMap).reduce(
-                (acc, [season, { color }]) => ({
-                  ...acc,
-                  [`--active-bg-season-${season}`]: color,
-                }),
-                {} as CSSProperties,
-              )}
               triggerClassName={(tab) =>
                 cn(
                   "h-8 md:h-9 text-muted-foreground",
                   tab.id === Tab.SEASON_1 &&
-                    "data-[state=active]:bg-[var(--active-bg-season-1)] data-[state=active]:text-primary-foreground",
+                    "data-[state=active]:bg-[var(--points-season-1)] data-[state=active]:text-primary-foreground",
                   tab.id === Tab.SEASON_2 &&
-                    "data-[state=active]:bg-[var(--active-bg-season-2)] data-[state=active]:text-background",
+                    "data-[state=active]:bg-[var(--points-season-2)] data-[state=active]:text-background",
                 )
               }
             />

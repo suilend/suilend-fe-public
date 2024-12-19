@@ -70,7 +70,7 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
       },
       2: {
         coinType: NORMALIZED_SEND_POINTS_S2_COINTYPE,
-        color: "#B697FF",
+        color: "#C6ADFF",
       },
     }),
     [],
