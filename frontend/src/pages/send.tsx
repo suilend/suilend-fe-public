@@ -338,9 +338,11 @@ function Page() {
       userEligibleSend:
         userAllocations !== undefined
           ? new BigNumber(
-              userAllocations.suilendCapsules.ownedMap[
-                SuilendCapsuleRarity.COMMON
-              ].times(
+              new BigNumber(
+                userAllocations.suilendCapsules.ownedObjectsMap[
+                  SuilendCapsuleRarity.COMMON
+                ].length,
+              ).times(
                 suilendCapsules.totalAllocationBreakdownMap[
                   SuilendCapsuleRarity.COMMON
                 ].percent
@@ -349,9 +351,11 @@ function Page() {
               ),
             )
               .plus(
-                userAllocations.suilendCapsules.ownedMap[
-                  SuilendCapsuleRarity.UNCOMMON
-                ].times(
+                new BigNumber(
+                  userAllocations.suilendCapsules.ownedObjectsMap[
+                    SuilendCapsuleRarity.UNCOMMON
+                  ].length,
+                ).times(
                   suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.UNCOMMON
                   ].percent
@@ -360,9 +364,11 @@ function Page() {
                 ),
               )
               .plus(
-                userAllocations.suilendCapsules.ownedMap[
-                  SuilendCapsuleRarity.RARE
-                ].times(
+                new BigNumber(
+                  userAllocations.suilendCapsules.ownedObjectsMap[
+                    SuilendCapsuleRarity.RARE
+                  ].length,
+                ).times(
                   suilendCapsules.totalAllocationBreakdownMap[
                     SuilendCapsuleRarity.RARE
                   ].percent
@@ -427,7 +433,11 @@ function Page() {
       userEligibleSend:
         userAllocations !== undefined
           ? (Date.now() >= TGE_TIMESTAMP_MS
-              ? userAllocations.rootlets.msendOwning
+              ? new BigNumber(
+                  Object.keys(
+                    userAllocations.rootlets.ownedMsendObjectsMap,
+                  ).length,
+                )
               : userAllocations.rootlets.owned
             ).times(
               rootlets.totalAllocationBreakdownMap.one.percent
