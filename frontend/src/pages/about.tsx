@@ -14,8 +14,8 @@ import {
   TPrimaryTitle,
   TTitle,
 } from "@/components/shared/Typography";
+import { ASSETS_URL } from "@/lib/constants";
 import { DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
-import suilendLogo from "@/public/assets/suilend.svg";
 
 export default function About() {
   return (
@@ -37,11 +37,12 @@ export default function About() {
       >
         <div className="flex w-full flex-col gap-12 md:flex-1 md:flex-row md:items-stretch md:justify-between">
           {/* Left */}
-          <div className="relative z-[2] flex flex-col gap-8 pt-6 md:flex-1 md:justify-between md:gap-12">
+          <div className="relative z-[2] flex flex-col gap-8 pt-4 md:flex-1 md:justify-between md:gap-12 md:pt-6">
             {/* Top */}
             <div className="flex w-full flex-col gap-6">
               <Image
-                src={suilendLogo}
+                className="h-12 w-12 md:h-16 md:w-16"
+                src={`${ASSETS_URL}/Suilend.svg`}
                 alt="Suilend logo"
                 width={64}
                 height={64}

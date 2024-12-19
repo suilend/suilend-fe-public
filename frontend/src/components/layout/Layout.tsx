@@ -14,6 +14,7 @@ import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
 import { useWormholeConnectContext } from "@/contexts/WormholeConnectContext";
+import { ASSETS_URL } from "@/lib/constants";
 import { BRIDGE_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export default function Layout({ children }: PropsWithChildren) {
       className="relative z-[1] flex min-h-dvh flex-col"
       style={
         {
-          background: "url('/assets/footer.svg') bottom no-repeat",
+          background: `url('${ASSETS_URL}/background.svg') bottom no-repeat`,
           "--header-top": `${launchDarklyBannerHeight ?? 0}px`,
           "--points-season": seasonMap[season].color,
           ...Object.entries(seasonMap).reduce(

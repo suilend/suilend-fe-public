@@ -13,10 +13,10 @@ import {
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { ASSETS_URL } from "@/lib/constants";
 import { DOCS_BRIDGE_LEARN_MORE_URL } from "@/lib/navigation";
 import { Token } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import wormholeLogo from "@/public/assets/wormhole.png";
 
 interface TokenLogoProps {
   showTooltip?: boolean;
@@ -35,13 +35,13 @@ export default function TokenLogo({
 }: TokenLogoProps) {
   const { className: imageClassName, ...restImageProps } = imageProps || {};
 
-  const nativeAssetMap: Record<string, string> = {
+  const wormholeAssetMap: Record<string, string> = {
     [NORMALIZED_wUSDC_COINTYPE]: "Wormhole Wrapped Ethereum-native USDC",
     [NORMALIZED_USDT_COINTYPE]: "Wormhole Wrapped Ethereum-native USDT",
     [NORMALIZED_WETH_COINTYPE]: "Wormhole Wrapped Ethereum-native WETH",
     [NORMALIZED_SOL_COINTYPE]: "Wormhole Wrapped Solana-native SOL",
   };
-  const nativeAsset = nativeAssetMap[token.coinType];
+  const wormholeAsset = wormholeAssetMap[token.coinType];
 
   const isSmall = className
     ? className.toString().includes("h-4") ||
@@ -53,9 +53,9 @@ export default function TokenLogo({
   return (
     <Tooltip
       title={
-        showTooltip && nativeAsset ? (
+        showTooltip && wormholeAsset ? (
           <>
-            {`${nativeAsset}. `}
+            {`${wormholeAsset}. `}
             <TextLink href={DOCS_BRIDGE_LEARN_MORE_URL}>Learn more</TextLink>
           </>
         ) : undefined
@@ -78,10 +78,10 @@ export default function TokenLogo({
           )}
         </AspectRatio>
 
-        {nativeAsset && (
+        {wormholeAsset && (
           <div className="absolute -bottom-0.5 -right-0.5 z-[2] rounded-full border border-[black] bg-[black]">
             <Image
-              src={wormholeLogo}
+              src={`${ASSETS_URL}/partners/Wormhole.png`}
               alt="Wormhole logo"
               width={wormholeLogoSize}
               height={wormholeLogoSize}
