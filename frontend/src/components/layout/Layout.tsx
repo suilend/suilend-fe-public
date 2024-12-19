@@ -1,4 +1,3 @@
-import { useRouter } from "next/router";
 import { CSSProperties, PropsWithChildren, useRef, useState } from "react";
 
 import { useResizeObserver } from "usehooks-ts";
@@ -13,12 +12,8 @@ import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
 import { ASSETS_URL } from "@/lib/constants";
-import { ROOT_URL } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const router = useRouter();
-
   const { suilendClient, data } = useAppContext();
   const { season, seasonMap } = usePointsContext();
 
@@ -35,12 +30,6 @@ export default function Layout({ children }: PropsWithChildren) {
       setLaunchDarklyBannerHeight(height);
     },
   });
-
-  // Loading
-  const isOnLandingPage = router.asPath === ROOT_URL;
-
-  const isDataLoading = !suilendClient || !data;
-  const isPageLoading = isOnLandingPage ? false : isDataLoading;
 
   return (
     <div
@@ -70,7 +59,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col justify-stretch py-4 md:py-6">
         <Container className="flex-1">
-          {isPageLoading ? (
+          {!suilendClient || !data ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>
