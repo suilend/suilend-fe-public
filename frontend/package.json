@@ -42,7 +42,7 @@
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
     "@vercel/speed-insights": "^1.1.0",
-    "@wormhole-foundation/wormhole-connect": "file:wormhole-foundation-wormhole-connect-1.0.0.tgz",
+    "@wormhole-foundation/wormhole-connect": "1.1.10-beta.0-development",
     "aftermath-ts-sdk": "^1.2.3",
     "bignumber.js": "^9.1.2",
     "class-variance-authority": "^0.7.0",
