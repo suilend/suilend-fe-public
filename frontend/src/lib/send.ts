@@ -1,6 +1,6 @@
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
-import { SuiClient } from "@mysten/sui/client";
+import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -25,7 +25,6 @@ import {
   getCetusClosestSqrtPriceFromPrice,
   getCetusCurrentSuiPrice,
 } from "@/lib/cetus";
-import { getOwnedObjectsOfType } from "@/lib/transactions";
 
 export const SEND_TOTAL_SUPPLY = 100_000_000;
 
@@ -155,7 +154,7 @@ export type Allocation = {
 };
 
 // Redeem mSEND
-export const redeemSendPointsMsend = async (
+export const redeemSendPointsMsend = (
   suilendClient: SuilendClient,
   data: AppData,
   address: string,
@@ -214,22 +213,18 @@ export const redeemSendPointsMsend = async (
   transaction.transferObjects([mSendCoin], transaction.pure.address(address));
 };
 
-export const redeemSuilendCapsulesMsend = async (
-  suiClient: SuiClient,
+export const redeemSuilendCapsulesMsend = (
+  objs: SuiObjectResponse[],
   address: string,
   transaction: Transaction,
 ) => {
-  // Get Suilend Capsules owned by user
-  const objs = await getOwnedObjectsOfType(
-    suiClient,
-    address,
-    SUILEND_CAPSULE_TYPE,
-  );
-
   // Burn Suilend Capsules for mSEND
+  const maxCount = 250;
   const mSendCoins = [];
 
   for (const obj of objs) {
+    if (mSendCoins.length >= maxCount) break;
+
     const mSendCoin = transaction.moveCall({
       target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
       typeArguments: [NORMALIZED_mSEND_3M_COINTYPE],
@@ -260,7 +255,7 @@ export const redeemSuilendCapsulesMsend = async (
 };
 
 export const redeemRootletsMsend = async (
-  suiClient: SuiClient,
+  rootletsOwnedMsendObjectsMap: Record<string, SuiObjectResponse[]>,
   kioskClient: KioskClient,
   ownedKiosks: {
     kiosk: KioskData;
@@ -283,22 +278,7 @@ export const redeemRootletsMsend = async (
     );
 
     for (const kioskItem of kioskItems) {
-      if (count >= maxCount) break; // Redeem max `maxCount` Rootlets NFTs at a time
-
-      // Get mSEND coins owned by the Rootlets NFT
-      const objs = await getOwnedObjectsOfType(
-        suiClient,
-        kioskItem.objectId,
-        `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
-      );
-      const ownedMsendRaw = objs.reduce(
-        (acc, obj) =>
-          acc.plus(new BigNumber((obj.data?.content as any).fields.balance)),
-        new BigNumber(0),
-      );
-      if (ownedMsendRaw.eq(0)) continue;
-
-      count++;
+      if (count >= maxCount) break;
 
       // Borrow item from personal kiosk
       const [kioskOwnerCap, borrow] = transaction.moveCall({
@@ -317,7 +297,7 @@ export const redeemRootletsMsend = async (
         typeArguments: [ROOTLETS_TYPE],
       });
 
-      for (const obj of objs) {
+      for (const obj of rootletsOwnedMsendObjectsMap[kioskItem.objectId]) {
         if ((obj.data?.content as any).fields.balance === "0") continue;
 
         // Take mSEND coin out of Rootlets NFT
@@ -353,6 +333,8 @@ export const redeemRootletsMsend = async (
           borrow,
         ],
       });
+
+      count++;
     }
   }
 };

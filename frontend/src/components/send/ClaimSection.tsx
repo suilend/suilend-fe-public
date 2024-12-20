@@ -128,7 +128,7 @@ function RedeemTabContent({
   totalRedeemableMsend,
   totalAllocationBreakdownMaps,
 }: RedeemTabContentProps) {
-  const { explorer, suiClient } = useSettingsContext();
+  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, getBalance } = useLoadedAppContext();
 
@@ -178,12 +178,16 @@ function RedeemTabContent({
     const transaction = new Transaction();
     try {
       if (hasSendPointsToRedeem)
-        await redeemSendPointsMsend(suilendClient, data, address, transaction);
+        redeemSendPointsMsend(suilendClient, data, address, transaction);
       if (hasSuilendCapsulesToRedeem)
-        await redeemSuilendCapsulesMsend(suiClient, address, transaction);
+        redeemSuilendCapsulesMsend(
+          Object.values(userAllocations.suilendCapsules.ownedObjectsMap).flat(),
+          address,
+          transaction,
+        );
       if (hasRootletsToRedeem)
-        await redeemRootletsMsend(
-          suiClient,
+        redeemRootletsMsend(
+          userAllocations.rootlets.ownedMsendObjectsMap,
           kioskClient,
           ownedKiosks,
           address,
@@ -277,9 +281,9 @@ function RedeemTabContent({
             {/* Suilend Capsules */}
             {hasSuilendCapsulesToRedeem && (
               <>
-                {Object.entries(userAllocations.suilendCapsules.ownedMap)
-                  .filter(([rarity, owned]) => owned.gt(0))
-                  .map(([rarity, owned], index, array) => (
+                {Object.entries(userAllocations.suilendCapsules.ownedObjectsMap)
+                  .filter(([rarity, ownedObjects]) => ownedObjects.length > 0)
+                  .map(([rarity, ownedObjects], index, array) => (
                     <Fragment key={rarity}>
                       <div className="flex w-full flex-row items-center justify-between gap-4">
                         <div className="flex flex-row items-center gap-3">
@@ -290,8 +294,9 @@ function RedeemTabContent({
                             height={24}
                           />
                           <TBody>
-                            {formatInteger(+owned)} {capitalize(rarity)} Suilend
-                            Capsule{!owned.eq(1) && "s"}
+                            {formatInteger(ownedObjects.length)}{" "}
+                            {capitalize(rarity)} Suilend Capsule
+                            {ownedObjects.length !== 1 && "s"}
                           </TBody>
                         </div>
 
@@ -302,7 +307,7 @@ function RedeemTabContent({
                           />
                           <TBody>
                             {formatToken(
-                              owned.times(
+                              new BigNumber(ownedObjects.length).times(
                                 totalAllocationBreakdownMaps.suilendCapsules[
                                   rarity as SuilendCapsuleRarity
                                 ].percent
@@ -336,9 +341,15 @@ function RedeemTabContent({
                     />
                     <div className="flex flex-col gap-1">
                       <TBody>
-                        {formatInteger(+userAllocations.rootlets.msendOwning)}{" "}
+                        {formatInteger(
+                          Object.keys(
+                            userAllocations.rootlets.ownedMsendObjectsMap,
+                          ).length,
+                        )}{" "}
                         Rootlets NFT
-                        {!userAllocations.rootlets.msendOwning.eq(1) && "s"}
+                        {Object.keys(
+                          userAllocations.rootlets.ownedMsendObjectsMap,
+                        ).length !== 1 && "s"}
                       </TBody>
                       {(ownedKiosks ?? []).reduce(
                         (acc, { kiosk }) => [

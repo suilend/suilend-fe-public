@@ -19,6 +19,7 @@ import {
 import {
   CoinMetadata,
   SuiClient,
+  SuiObjectResponse,
   SuiTransactionBlockResponse,
   getFullnodeUrl,
 } from "@mysten/sui/client";
@@ -87,13 +88,13 @@ interface SendContext {
         earlyUsers: { isInSnapshot: boolean };
         sendPoints: { owned: BigNumber; redeemedMsend: BigNumber | undefined };
         suilendCapsules: {
-          ownedMap: Record<SuilendCapsuleRarity, BigNumber>;
+          ownedObjectsMap: Record<SuilendCapsuleRarity, SuiObjectResponse[]>;
           redeemedMsend: BigNumber | undefined;
         };
         save: { bridgedMsend: BigNumber | undefined };
         rootlets: {
           owned: BigNumber;
-          msendOwning: BigNumber;
+          ownedMsendObjectsMap: Record<string, SuiObjectResponse[]>;
           redeemedMsend: BigNumber | undefined;
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
@@ -388,13 +389,16 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   );
 
   // User - Suilend Capsules
-  const [ownedSuilendCapsulesMapMap, setOwnedSuilendCapsulesMapMap] = useState<
-    Record<string, Record<SuilendCapsuleRarity, BigNumber>>
+  const [
+    ownedSuilendCapsulesObjectsMapMap,
+    setOwnedSuilendCapsulesObjectsMapMap,
+  ] = useState<
+    Record<string, Record<SuilendCapsuleRarity, SuiObjectResponse[]>>
   >({});
 
-  const fetchOwnedSuilendCapsulesMap = useCallback(
+  const fetchOwnedSuilendCapsulesObjectsMap = useCallback(
     async (_address: string) => {
-      console.log("Fetching ownedSuilendCapsulesMap", _address);
+      console.log("Fetching ownedSuilendCapsulesObjectsMap", _address);
 
       try {
         const objs = await getOwnedObjectsOfType(
@@ -404,62 +408,56 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         );
 
         const result = {
-          [SuilendCapsuleRarity.COMMON]: new BigNumber(
-            objs.filter(
-              (obj) =>
-                (obj.data?.content as any).fields.rarity ===
-                SuilendCapsuleRarity.COMMON,
-            ).length,
+          [SuilendCapsuleRarity.COMMON]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleRarity.COMMON,
           ),
-          [SuilendCapsuleRarity.UNCOMMON]: new BigNumber(
-            objs.filter(
-              (obj) =>
-                (obj.data?.content as any).fields.rarity ===
-                SuilendCapsuleRarity.UNCOMMON,
-            ).length,
+          [SuilendCapsuleRarity.UNCOMMON]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleRarity.UNCOMMON,
           ),
-          [SuilendCapsuleRarity.RARE]: new BigNumber(
-            objs.filter(
-              (obj) =>
-                (obj.data?.content as any).fields.rarity ===
-                SuilendCapsuleRarity.RARE,
-            ).length,
+          [SuilendCapsuleRarity.RARE]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleRarity.RARE,
           ),
         };
 
-        setOwnedSuilendCapsulesMapMap((prev) => ({
+        setOwnedSuilendCapsulesObjectsMapMap((prev) => ({
           ...prev,
           [_address]: result,
         }));
-        console.log("Fetched ownedSuilendCapsulesMap", _address, result);
+        console.log("Fetched ownedSuilendCapsulesObjectsMap", _address, result);
       } catch (err) {
-        console.error("Failed to fetch ownedSuilendCapsulesMap", err);
+        console.error("Failed to fetch ownedSuilendCapsulesObjectsMap", err);
       }
     },
     [suiClient],
   );
 
-  const isFetchingOwnedSuilendCapsulesMapRef = useRef<string[]>([]);
+  const isFetchingOwnedSuilendCapsulesObjectsMapRef = useRef<string[]>([]);
   useEffect(() => {
     if (!address) return;
 
-    if (isFetchingOwnedSuilendCapsulesMapRef.current.includes(address)) return;
-    isFetchingOwnedSuilendCapsulesMapRef.current.push(address);
+    if (isFetchingOwnedSuilendCapsulesObjectsMapRef.current.includes(address))
+      return;
+    isFetchingOwnedSuilendCapsulesObjectsMapRef.current.push(address);
 
-    fetchOwnedSuilendCapsulesMap(address);
-  }, [address, fetchOwnedSuilendCapsulesMap]);
+    fetchOwnedSuilendCapsulesObjectsMap(address);
+  }, [address, fetchOwnedSuilendCapsulesObjectsMap]);
 
-  const ownedSuilendCapsulesMap = useMemo(
-    () => (!address ? undefined : ownedSuilendCapsulesMapMap[address]),
-    [address, ownedSuilendCapsulesMapMap],
+  const ownedSuilendCapsulesObjectsMap = useMemo(
+    () => (!address ? undefined : ownedSuilendCapsulesObjectsMapMap[address]),
+    [address, ownedSuilendCapsulesObjectsMapMap],
   );
 
   // User - Rootlets
-  const [mSendOwningRootletsMap, setMsendOwningRootletsMap] = useState<
-    Record<string, BigNumber>
-  >({});
+  const [rootletsOwnedMsendObjectsMapMap, setRootletsOwnedMsendObjectsMapMap] =
+    useState<Record<string, Record<string, SuiObjectResponse[]>>>({});
 
-  const fetchMsendOwningRootlets = useCallback(
+  const fetchRootletsOwnedMsendObjectsMap = useCallback(
     async (
       _address: string,
       _mSendCoinMetadataMap: Record<string, CoinMetadata>,
@@ -468,7 +466,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         kioskOwnerCap: KioskOwnerCap;
       }[],
     ) => {
-      console.log("Fetching mSendOwningRootlets", _address);
+      console.log("Fetching rootletsOwnedMsendObjectsMap", _address);
 
       try {
         const rootletsObjectIds = _ownedKiosks
@@ -481,53 +479,63 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           )
           .map((item) => item.objectId);
 
-        let result = new BigNumber(0);
+        const result: Record<string, SuiObjectResponse[]> = {};
         for (const rootletsObjectId of rootletsObjectIds) {
           const objs = await getOwnedObjectsOfType(
             suiClient,
             rootletsObjectId,
             `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
           );
-
-          const ownedMsend = objs.reduce(
+          const ownedMsendRaw = objs.reduce(
             (acc, obj) =>
               acc.plus(
-                new BigNumber((obj.data?.content as any).fields.balance).div(
-                  10 **
-                    _mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
-                      .decimals,
-                ),
+                new BigNumber((obj.data?.content as any).fields.balance),
               ),
             new BigNumber(0),
           );
-          if (ownedMsend.gt(0)) result = result.plus(1);
+          if (ownedMsendRaw.eq(0)) continue;
+
+          result[rootletsObjectId] = objs;
         }
 
-        setMsendOwningRootletsMap((prev) => ({ ...prev, [_address]: result }));
-        console.log("Fetched mSendOwningRootlets", _address, result);
+        setRootletsOwnedMsendObjectsMapMap((prev) => ({
+          ...prev,
+          [_address]: result,
+        }));
+        console.log("Fetched rootletsOwnedMsendObjectsMap", _address, result);
       } catch (err) {
-        console.error("Failed to fetch mSendOwningRootlets", err);
+        console.error("Failed to fetch rootletsOwnedMsendObjectsMap", err);
       }
     },
     [suiClient],
   );
 
-  const isFetchingMsendOwningRootletsRef = useRef<string[]>([]);
+  const isFetchingRootletsOwnedMsendObjectsMapRef = useRef<string[]>([]);
   useEffect(() => {
     if (!address) return;
 
     if (!mSendCoinMetadataMap) return;
     if (!ownedKiosks) return;
 
-    if (isFetchingMsendOwningRootletsRef.current.includes(address)) return;
-    isFetchingMsendOwningRootletsRef.current.push(address);
+    if (isFetchingRootletsOwnedMsendObjectsMapRef.current.includes(address))
+      return;
+    isFetchingRootletsOwnedMsendObjectsMapRef.current.push(address);
 
-    fetchMsendOwningRootlets(address, mSendCoinMetadataMap, ownedKiosks);
-  }, [address, mSendCoinMetadataMap, ownedKiosks, fetchMsendOwningRootlets]);
+    fetchRootletsOwnedMsendObjectsMap(
+      address,
+      mSendCoinMetadataMap,
+      ownedKiosks,
+    );
+  }, [
+    address,
+    mSendCoinMetadataMap,
+    ownedKiosks,
+    fetchRootletsOwnedMsendObjectsMap,
+  ]);
 
-  const mSendOwningRootlets = useMemo(
-    () => (!address ? undefined : mSendOwningRootletsMap[address]),
-    [address, mSendOwningRootletsMap],
+  const rootletsOwnedMsendObjectsMap = useMemo(
+    () => (!address ? undefined : rootletsOwnedMsendObjectsMapMap[address]),
+    [address, rootletsOwnedMsendObjectsMapMap],
   );
 
   // User - Allocations
@@ -536,8 +544,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     if (!mSendCoinMetadataMap) return undefined;
     if (ownedKiosks === undefined) return undefined;
-    if (ownedSuilendCapsulesMap === undefined) return undefined;
-    if (mSendOwningRootlets === undefined) return undefined;
+    if (ownedSuilendCapsulesObjectsMap === undefined) return undefined;
+    if (rootletsOwnedMsendObjectsMap === undefined) return undefined;
 
     // Early Users
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
@@ -764,13 +772,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
         redeemedMsend: redeemedSendPointsMsend,
       },
       suilendCapsules: {
-        ownedMap: ownedSuilendCapsulesMap,
+        ownedObjectsMap: ownedSuilendCapsulesObjectsMap,
         redeemedMsend: redeemedSuilendCapsulesMsend,
       },
       save: { bridgedMsend: bridgedSaveMsend },
       rootlets: {
         owned: ownedRootlets,
-        msendOwning: mSendOwningRootlets,
+        ownedMsendObjectsMap: rootletsOwnedMsendObjectsMap,
         redeemedMsend: redeemedRootletsMsend,
       },
       bluefinLeagues: { isInSnapshot: isInBluefinLeaguesSnapshot },
@@ -795,8 +803,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     ownedKiosks,
     data.rewardMap,
     data.obligations,
-    ownedSuilendCapsulesMap,
-    mSendOwningRootlets,
+    ownedSuilendCapsulesObjectsMap,
+    rootletsOwnedMsendObjectsMap,
   ]);
 
   const refreshUserAllocations = useCallback(async () => {
@@ -807,15 +815,19 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     fetchTransactionsSinceTge(address);
     const newOwnedKiosks = await fetchOwnedKiosks(address);
 
-    fetchOwnedSuilendCapsulesMap(address);
-    fetchMsendOwningRootlets(address, mSendCoinMetadataMap, newOwnedKiosks!);
+    fetchOwnedSuilendCapsulesObjectsMap(address);
+    fetchRootletsOwnedMsendObjectsMap(
+      address,
+      mSendCoinMetadataMap,
+      newOwnedKiosks!,
+    );
   }, [
     address,
     mSendCoinMetadataMap,
     fetchTransactionsSinceTge,
-    fetchOwnedSuilendCapsulesMap,
+    fetchOwnedSuilendCapsulesObjectsMap,
     fetchOwnedKiosks,
-    fetchMsendOwningRootlets,
+    fetchRootletsOwnedMsendObjectsMap,
   ]);
 
   // Selected mSEND
