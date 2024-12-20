@@ -1,9 +1,7 @@
-import { useRouter } from "next/router";
 import { CSSProperties, PropsWithChildren, useRef, useState } from "react";
 
 import { useResizeObserver } from "usehooks-ts";
 
-import WormholeConnect from "@/components/bridge/WormholeConnect";
 import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import AppHeader from "@/components/layout/AppHeader";
 import Footer from "@/components/layout/Footer";
@@ -13,19 +11,13 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
-import { useWormholeConnectContext } from "@/contexts/WormholeConnectContext";
 import { ASSETS_URL } from "@/lib/constants";
-import { BRIDGE_URL } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const router = useRouter();
-
   const { suilendClient, data } = useAppContext();
   const { season, seasonMap } = usePointsContext();
-  const { isLoading: isWormholeConnectLoading } = useWormholeConnectContext();
 
-  // Launch Darkly banner
+  // LaunchDarkly banner
   const launchDarklyBannerRef = useRef<HTMLDivElement>(null);
   const [launchDarklyBannerHeight, setLaunchDarklyBannerHeight] = useState<
     number | null
@@ -38,14 +30,6 @@ export default function Layout({ children }: PropsWithChildren) {
       setLaunchDarklyBannerHeight(height);
     },
   });
-
-  // Loading
-  const isOnBridgePage = router.asPath.startsWith(BRIDGE_URL);
-
-  const isDataLoading = !suilendClient || !data;
-  const isPageLoading = isOnBridgePage
-    ? isDataLoading || isWormholeConnectLoading
-    : isDataLoading;
 
   return (
     <div
@@ -74,8 +58,8 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col justify-stretch py-4 md:py-6">
-        <Container className={cn(!isOnBridgePage && "flex-1")}>
-          {isPageLoading ? (
+        <Container className="flex-1">
+          {!suilendClient || !data ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>
@@ -84,8 +68,6 @@ export default function Layout({ children }: PropsWithChildren) {
             </ReserveAssetDataEventsContextProvider>
           )}
         </Container>
-
-        <WormholeConnect isHidden={!isOnBridgePage || isPageLoading} />
       </div>
 
       {/* Footer */}
