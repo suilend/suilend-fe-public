@@ -186,12 +186,12 @@ function Page() {
   const kumo = {
     snapshotTaken: true,
     airdropSent: false,
-    eligibleWallets: formatInteger(508),
+    eligibleWallets: formatInteger(998),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
       one: {
         title: "Per Kumo",
-        percent: new BigNumber(0.05).div(1251), // Linear
+        percent: new BigNumber(26).div(SEND_TOTAL_SUPPLY).times(100), // Linear
       },
     },
   };
