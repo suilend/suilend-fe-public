@@ -23,7 +23,15 @@ export default function WormholeConnectWrapper() {
             Sui: rpc.url,
           },
           chains: ["Ethereum", "Solana", "Sui"],
-          tokens: ["WETH", "USDCeth", "USDT", "WSOL", "SOL"],
+          tokens: [
+            "USDCeth",
+            "USDCsol",
+            "USDCsui",
+            "USDT",
+            "WETH",
+            "WSOL",
+            "SOL",
+          ],
           eventHandler: (event) => {
             if (event.type === "transfer.initiate") {
               track("bridge_submit");
