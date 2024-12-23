@@ -72,7 +72,7 @@ export interface ReservesRowData {
   isIsolated: boolean;
 
   openLtvPercent: BigNumber;
-  borrowWeight: BigNumber;
+  borrowWeightBps: BigNumber;
   depositedAmount: BigNumber;
   depositedAmountUsd: BigNumber;
   depositedAmountTooltip: string | undefined;
@@ -266,9 +266,7 @@ export default function MarketTable() {
       const isIsolated = reserve.config.isolated;
 
       const openLtvPercent = new BigNumber(reserve.config.openLtvPct);
-      const borrowWeight = new BigNumber(reserve.config.borrowWeightBps).div(
-        10000,
-      );
+      const borrowWeightBps = reserve.config.borrowWeightBps;
       const depositedAmount = reserve.depositedAmount;
       const depositedAmountUsd = reserve.depositedAmountUsd;
       const borrowedAmount = reserve.borrowedAmount;
@@ -384,7 +382,7 @@ export default function MarketTable() {
         isIsolated,
 
         openLtvPercent,
-        borrowWeight,
+        borrowWeightBps,
         depositedAmount,
         depositedAmountUsd,
         depositedAmountTooltip,

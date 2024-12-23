@@ -1,10 +1,10 @@
 import { useState } from "react";
 
 import BigNumber from "bignumber.js";
-import { Minus, Plus } from "lucide-react";
+import { Infinity, Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-import { ParsedReserve } from "@suilend/sdk";
+import { ParsedReserve, maxU64 } from "@suilend/sdk";
 import { CreateReserveConfigArgs } from "@suilend/sdk/_generated/suilend/reserve-config/functions";
 
 import AprLineChart from "@/components/shared/AprLineChart";
@@ -191,14 +191,29 @@ export default function ReserveConfig({
         }}
         endDecorator="%"
       />
-      <Input
-        label="borrowWeightBps"
-        id="borrowWeightBps"
-        type="number"
-        value={configState.borrowWeightBps}
-        onChange={setConfigStateKeyValue("borrowWeightBps")}
-        endDecorator="bps"
-      />
+      <div className="flex flex-row items-end gap-2">
+        <Input
+          className="flex-1"
+          label="borrowWeightBps"
+          id="borrowWeightBps"
+          type="number"
+          value={configState.borrowWeightBps}
+          onChange={setConfigStateKeyValue("borrowWeightBps")}
+          endDecorator="bps"
+        />
+        <Button
+          className="my-1"
+          tooltip="Set to u64 MAX (2^64 - 1)"
+          icon={<Infinity />}
+          variant="secondary"
+          size="icon"
+          onClick={() =>
+            setConfigStateKeyValue("borrowWeightBps")(maxU64.toString())
+          }
+        >
+          Max Borrow Weight
+        </Button>
+      </div>
       <Input
         label="depositLimit"
         id="depositLimit"

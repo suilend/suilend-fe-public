@@ -45,25 +45,19 @@ export default function RateLimiterConfig({
   return (
     <>
       <div className="flex flex-row items-end gap-2">
-        <div className="flex-1">
-          <Input
-            label="maxOutflow"
-            id="maxOutflow"
-            type="number"
-            value={configState.maxOutflow}
-            onChange={setConfigStateKeyValue("maxOutflow")}
-          />
-        </div>
-
+        <Input
+          className="flex-1"
+          label="maxOutflow"
+          id="maxOutflow"
+          type="number"
+          value={configState.maxOutflow}
+          onChange={setConfigStateKeyValue("maxOutflow")}
+        />
         <Button
           className="my-1"
-          tooltip="Set to 2^64 - 1, the maximum possible value to allow unlimited outflow"
+          tooltip="Set to u64 MAX (2^64 - 1), allowing unlimited outflows"
           icon={<Infinity />}
-          variant={
-            configState.maxOutflow === maxU64.toString()
-              ? "secondary"
-              : "secondaryOutline"
-          }
+          variant="secondary"
           size="icon"
           onClick={() =>
             setConfigStateKeyValue("maxOutflow")(maxU64.toString())

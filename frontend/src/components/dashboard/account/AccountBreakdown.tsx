@@ -202,9 +202,7 @@ export default function AccountBreakdown() {
                 title: "BW",
                 titleTooltip: BORROW_WEIGHT_TOOLTIP,
                 data: sortedBorrows.map((b) =>
-                  formatBorrowWeight(
-                    new BigNumber(b.reserve.config.borrowWeightBps / 10000),
-                  ),
+                  formatBorrowWeight(b.reserve.config.borrowWeightBps),
                 ),
               },
               { title: "=", data: [], isSymbol: true },
@@ -214,7 +212,7 @@ export default function AccountBreakdown() {
                   formatUsd(
                     b.borrowedAmount
                       .times(b.reserve.maxPrice)
-                      .times(b.reserve.config.borrowWeightBps / 10000),
+                      .times(b.reserve.config.borrowWeightBps.div(10000)),
                   ),
                 ),
               },
@@ -225,7 +223,7 @@ export default function AccountBreakdown() {
                   acc.plus(
                     b.borrowedAmount
                       .times(b.reserve.maxPrice)
-                      .times(b.reserve.config.borrowWeightBps / 10000),
+                      .times(b.reserve.config.borrowWeightBps.div(10000)),
                   ),
                 new BigNumber(0),
               ),

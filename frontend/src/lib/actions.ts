@@ -116,7 +116,7 @@ const getMaxCalculations = (
                 .minus(obligation.maxPriceWeightedBorrowsUsd)
                 .div(
                   reserve.maxPrice.times(
-                    reserve.config.borrowWeightBps / 10000,
+                    reserve.config.borrowWeightBps.div(10000),
                   ),
                 )
                 .div(1 + borrowFee),
@@ -126,7 +126,7 @@ const getMaxCalculations = (
         isDisabled: true,
         value: data.lendingMarket.rateLimiter.remainingOutflow
           .div(reserve.maxPrice)
-          .div(reserve.config.borrowWeightBps / 10000)
+          .div(reserve.config.borrowWeightBps.div(10000))
           .div(1 + borrowFee),
       },
     ];

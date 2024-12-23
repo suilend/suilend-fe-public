@@ -136,9 +136,7 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       <LabelWithValue
         labelTooltip={BORROW_WEIGHT_TOOLTIP}
         label="Borrow weight (BW)"
-        value={formatBorrowWeight(
-          new BigNumber(reserve.config.borrowWeightBps / 10000),
-        )}
+        value={formatBorrowWeight(reserve.config.borrowWeightBps)}
         horizontal
       />
 

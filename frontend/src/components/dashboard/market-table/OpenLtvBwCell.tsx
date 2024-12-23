@@ -6,18 +6,18 @@ import { formatBorrowWeight, formatLtvPercent } from "@/lib/format";
 
 interface OpenLtvBwCellProps {
   openLtvPercent: ReservesRowData["openLtvPercent"];
-  borrowWeight: ReservesRowData["borrowWeight"];
+  borrowWeightBps: ReservesRowData["borrowWeightBps"];
 }
 
 export default function OpenLtvBwCell({
   openLtvPercent,
-  borrowWeight,
+  borrowWeightBps,
 }: OpenLtvBwCellProps) {
   return (
     <div className="flex flex-row items-center justify-end gap-2">
       <TBody>{formatLtvPercent(new BigNumber(openLtvPercent))}</TBody>
       <TLabel>/</TLabel>
-      <TBody>{formatBorrowWeight(borrowWeight)}</TBody>
+      <TBody>{formatBorrowWeight(borrowWeightBps)}</TBody>
     </div>
   );
 }

@@ -126,7 +126,7 @@ export default function ActionsModal() {
           obligation.maxPriceWeightedBorrowsUsd.plus(
             new BigNumber(value)
               .times(reserve.maxPrice)
-              .times(reserve.config.borrowWeightBps / 10000),
+              .times(reserve.config.borrowWeightBps.div(10000)),
           ),
         )
           .div(obligation.minPriceBorrowLimitUsd)
@@ -226,7 +226,7 @@ export default function ActionsModal() {
           obligation.maxPriceWeightedBorrowsUsd.minus(
             new BigNumber(value)
               .times(reserve.maxPrice)
-              .times(reserve.config.borrowWeightBps / 10000),
+              .times(reserve.config.borrowWeightBps.div(10000)),
           ),
         )
           .div(obligation.minPriceBorrowLimitUsd)

@@ -1,5 +1,7 @@
 import BigNumber from "bignumber.js";
 
+import { maxU64 } from "@suilend/sdk";
+
 const shorten = (value: string, start: number, end: number) => {
   return value.length > start + end
     ? `${value.slice(0, start)}...${value.slice(-end)}`
@@ -222,8 +224,10 @@ export const formatToken = (
 export const formatLtvPercent = (value: BigNumber) =>
   formatPercent(value, { dp: 0 });
 
-export const formatBorrowWeight = (value: BigNumber) => {
-  const [integers, decimals] = value.toFixed(1).split(".");
+export const formatBorrowWeight = (valueBps: BigNumber) => {
+  if (valueBps.eq(maxU64)) return "∞";
+
+  const [integers, decimals] = valueBps.div(10000).toFixed(1).split(".");
   const integersFormatted = formatInteger(parseInt(integers));
   const decimalsFormatted = ![undefined, "0"].includes(decimals)
     ? `.${decimals}`
