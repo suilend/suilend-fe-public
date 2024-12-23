@@ -147,7 +147,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                       )}
                     >
                       {/* Title */}
-                      <div
+                      <button
                         className="flex flex-row items-center gap-3"
                         onClick={() =>
                           setCollapsibleRowIsExpandedMap((prev) => ({
@@ -171,7 +171,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                             tokens={subRows.map((subRow) => subRow.token)}
                           />
                         </div>
-                      </div>
+                      </button>
 
                       {/* Cards */}
                       {isExpanded && (
