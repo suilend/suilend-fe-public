@@ -64,7 +64,10 @@ export default function WalletBalancesCard() {
             .filter(([coinType]) => coinTypes.includes(coinType))
             .map(([coinType, coinMetadata]) => {
               const reserve = data.reserveMap[coinType];
-              const price = reserve?.price ?? data.rewardPriceMap[coinType];
+
+              let price: BigNumber | undefined =
+                reserve?.price ?? data.rewardPriceMap[coinType];
+              if (price.isNaN()) price = undefined;
 
               return {
                 reserve,
