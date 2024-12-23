@@ -110,7 +110,7 @@ export class SuilendClient {
     this.lendingMarket = lendingMarket;
     this.client = client;
     this.pythClient = new SuiPythClient(
-      client as SuiClient,
+      client,
       PYTH_STATE_ID,
       WORMHOLE_STATE_ID,
     );
