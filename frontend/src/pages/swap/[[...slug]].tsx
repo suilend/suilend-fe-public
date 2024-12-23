@@ -25,6 +25,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
   SUI_GAS_MIN,
+  createObligationIfNoneExists,
   getBalanceChange,
   getFilteredRewards,
   getHistoryPrice,
@@ -32,6 +33,7 @@ import {
   getStakingYieldAprPercent,
   getTotalAprPercent,
   isSui,
+  sendObligationToUser,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import {
@@ -780,13 +782,20 @@ function Page() {
       if (isDepositing) {
         if (!outputCoin) throw new Error("Missing coin to deposit");
 
-        suilendClient.depositCoin(
-          address,
+        const { obligationOwnerCapId, didCreate } =
+          createObligationIfNoneExists(
+            suilendClient,
+            transaction,
+            obligationOwnerCap,
+          );
+        suilendClient.deposit(
           outputCoin,
           tokenOutReserve.coinType,
+          obligationOwnerCapId,
           transaction,
-          obligationOwnerCap?.id,
         );
+        if (didCreate)
+          sendObligationToUser(obligationOwnerCapId, address, transaction);
       }
     } catch (err) {
       Sentry.captureException(err);

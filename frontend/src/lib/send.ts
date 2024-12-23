@@ -472,7 +472,7 @@ export const claimSend = async (
   flashLoanSlippagePercent: number,
   isDepositing: boolean,
   transaction: Transaction,
-  obligationOwnerCapId?: string,
+  obligationOwnerCapId: string,
 ) => {
   // Get mSEND coins
   const mSendCoins = (
@@ -560,12 +560,11 @@ export const claimSend = async (
 
   if (isDepositing) {
     // Deposit SEND
-    suilendClient.depositCoin(
-      address,
+    suilendClient.deposit(
       finalSendCoin,
       NORMALIZED_SEND_COINTYPE,
-      transaction,
       obligationOwnerCapId,
+      transaction,
     );
   } else {
     // Transfer SEND to user

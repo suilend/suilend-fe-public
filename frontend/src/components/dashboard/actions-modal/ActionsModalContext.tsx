@@ -17,6 +17,10 @@ import * as Sentry from "@sentry/nextjs";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
+import {
+  createObligationIfNoneExists,
+  sendObligationToUser,
+} from "@suilend/frontend-sui";
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
@@ -221,13 +225,21 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
       const transaction = new Transaction();
       try {
+        const { obligationOwnerCapId, didCreate } =
+          createObligationIfNoneExists(
+            suilendClient,
+            transaction,
+            obligationOwnerCap,
+          );
         await suilendClient.depositIntoObligation(
           address,
           coinType,
           value,
           transaction,
-          obligationOwnerCap?.id,
+          obligationOwnerCapId,
         );
+        if (didCreate)
+          sendObligationToUser(obligationOwnerCapId, address, transaction);
       } catch (err) {
         Sentry.captureException(err);
         console.error(err);

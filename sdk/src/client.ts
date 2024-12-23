@@ -1,5 +1,9 @@
 import { CoinStruct, SuiClient } from "@mysten/sui/client";
-import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
+import {
+  Transaction,
+  TransactionObjectInput,
+  TransactionResult,
+} from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
   SUI_SYSTEM_STATE_OBJECT_ID,
@@ -106,7 +110,7 @@ export class SuilendClient {
     this.lendingMarket = lendingMarket;
     this.client = client;
     this.pythClient = new SuiPythClient(
-      client as any,
+      client,
       PYTH_STATE_ID,
       WORMHOLE_STATE_ID,
     );
@@ -289,7 +293,7 @@ export class SuilendClient {
     ]);
 
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       [pythPriceId],
     );
@@ -492,12 +496,11 @@ export class SuilendClient {
           transaction.pure.address(ownerId),
         );
       } else {
-        this.depositCoin(
-          ownerId,
+        this.deposit(
           mergeCoin,
           rewardCoinType,
-          transaction,
           obligationOwnerCapId,
+          transaction,
         );
       }
     }
@@ -618,7 +621,7 @@ export class SuilendClient {
       pythPriceId,
     ]);
     const priceInfoObjectIds = await this.pythClient.updatePriceFeeds(
-      transaction as any,
+      transaction,
       priceUpdateData,
       [pythPriceId],
     );
@@ -720,7 +723,7 @@ export class SuilendClient {
           stalePriceIdentifiers,
         );
       await this.pythClient.updatePriceFeeds(
-        transaction as any,
+        transaction,
         stalePriceUpdateData,
         stalePriceIdentifiers,
       );
@@ -786,40 +789,12 @@ export class SuilendClient {
     );
   }
 
-  depositCoin(
-    ownerId: string,
-    sendCoin: TransactionObjectInput,
-    coinType: string,
-    transaction: Transaction,
-    obligationOwnerCapId?: string,
-  ) {
-    let createdObligationOwnerCap;
-    if (!obligationOwnerCapId) {
-      createdObligationOwnerCap = this.createObligation(transaction)[0];
-    }
-
-    this.deposit(
-      sendCoin,
-      coinType,
-      (obligationOwnerCapId ??
-        createdObligationOwnerCap) as TransactionObjectInput,
-      transaction,
-    );
-
-    if (createdObligationOwnerCap) {
-      transaction.transferObjects(
-        [createdObligationOwnerCap],
-        transaction.pure.address(ownerId),
-      );
-    }
-  }
-
   async depositIntoObligation(
     ownerId: string,
     coinType: string,
     value: string,
     transaction: Transaction,
-    obligationOwnerCapId?: string,
+    obligationOwnerCapId: string | TransactionResult,
   ) {
     const coins = (
       await this.client.getCoins({
@@ -843,13 +818,7 @@ export class SuilendClient {
       [value],
     );
 
-    this.depositCoin(
-      ownerId,
-      sendCoin,
-      coinType,
-      transaction,
-      obligationOwnerCapId,
-    );
+    this.deposit(sendCoin, coinType, obligationOwnerCapId, transaction);
   }
 
   async depositLiquidityAndGetCTokens(
