@@ -102,15 +102,16 @@ export const parseObligation = (
 
     const borrowedAmount = borrowedAmountInitial.times(borrowInterestIndex);
     const borrowedAmountUsd = borrowedAmount.times(reserve.price);
-    const borrowWeight = reserve.config.borrowWeightBps / 10000;
 
     totalBorrowedAmountUsd = totalBorrowedAmountUsd.plus(borrowedAmountUsd);
 
     weightedBorrowsUsd = weightedBorrowsUsd.plus(
-      borrowedAmountUsd.times(borrowWeight),
+      borrowedAmountUsd.times(reserve.config.borrowWeightBps.div(10000)),
     );
     maxPriceWeightedBorrowsUsd = maxPriceWeightedBorrowsUsd.plus(
-      borrowedAmount.times(reserve.maxPrice).times(borrowWeight),
+      borrowedAmount
+        .times(reserve.maxPrice)
+        .times(reserve.config.borrowWeightBps.div(10000)),
     );
 
     const reserveArrayIndex = borrow.reserveArrayIndex;

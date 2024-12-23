@@ -162,7 +162,7 @@ export const parseReserveConfig = (reserve: Reserve<string>) => {
   const openLtvPct = config.openLtvPct;
   const closeLtvPct = config.closeLtvPct;
   const maxCloseLtvPct = config.maxCloseLtvPct;
-  const borrowWeightBps = Number(config.borrowWeightBps.toString());
+  const borrowWeightBps = BigNumber(config.borrowWeightBps.toString());
   const depositLimit = new BigNumber(config.depositLimit.toString()).div(
     10 ** mintDecimals,
   );
