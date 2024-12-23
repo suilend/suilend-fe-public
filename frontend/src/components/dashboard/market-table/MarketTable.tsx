@@ -131,7 +131,11 @@ export default function MarketTable() {
                 </div>
 
                 <div className="flex min-w-max flex-col gap-1">
-                  <TBody>{title}</TBody>
+                  <div className="flex flex-row items-center gap-2">
+                    <TBody>{title}</TBody>
+                    <TLabel>{subRows.length}</TLabel>
+                  </div>
+
                   <TokenLogos
                     className="h-4 w-4"
                     tokens={subRows.map((subRow) => subRow.token)}

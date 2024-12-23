@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useState } from "react";
+
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
@@ -15,8 +17,14 @@ import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
+import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TLabelSans, TTitle } from "@/components/shared/Typography";
+import {
+  TBody,
+  TLabel,
+  TLabelSans,
+  TTitle,
+} from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import {
   ISOLATED_TOOLTIP,
@@ -32,6 +40,7 @@ interface MarketCardProps {
   rowData: ReservesRowData;
   onClick: () => void;
 }
+
 function MarketCard({ rowData, onClick }: MarketCardProps) {
   return (
     <Card
@@ -82,77 +91,120 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
     </Card>
   );
 }
+
 interface MarketCardListProps {
   rows: HeaderRowData[];
 }
+
 export default function MarketCardList({ rows }: MarketCardListProps) {
   const { open: openActionsModal } = useActionsModalContext();
 
-  const mainRows = useMemo(() => {
-    const result: ReservesRowData[] = [];
-    if (!rows[0]) return result;
-
-    for (const subRow of rows[0].subRows) {
-      if ((subRow as CollapsibleRowData).isCollapsibleRow)
-        result.push(...(subRow as CollapsibleRowData).subRows);
-      else result.push(subRow as ReservesRowData);
-    }
-
-    return result;
-  }, [rows]);
-  const isolatedRows = useMemo(() => {
-    const result: ReservesRowData[] = [];
-    if (!rows[1]) return result;
-
-    for (const subRow of rows[1].subRows) {
-      if ((subRow as CollapsibleRowData).isCollapsibleRow)
-        result.push(...(subRow as CollapsibleRowData).subRows);
-      else result.push(subRow as ReservesRowData);
-    }
-
-    return result;
-  }, [rows]);
+  const [collapsibleRowIsExpandedMap, setCollapsibleRowIsExpandedMap] =
+    useState<Record<string, boolean>>({});
 
   return (
-    <div className="flex flex-col gap-6">
-      {mainRows.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <TTitle className="uppercase">Main assets</TTitle>
-          <div className="flex w-full flex-col gap-2">
-            {mainRows.map((rowData) => (
-              <MarketCard
-                key={rowData.token.coinType}
-                rowData={rowData}
-                onClick={() => openActionsModal(rowData.token.symbol)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="flex w-full flex-col gap-6">
+      {rows.map((row, index) => {
+        const { isIsolated, count } = row;
 
-      {isolatedRows.length > 0 && (
-        <div className="flex flex-col gap-4">
-          <Tooltip title={ISOLATED_TOOLTIP}>
-            <TTitle
-              className={cn(
-                "w-max uppercase decoration-primary/50",
-                hoverUnderlineClassName,
-              )}
-            >
-              Isolated assets
-            </TTitle>
-          </Tooltip>
-          <div className="flex w-full flex-col gap-2">
-            {isolatedRows.map((rowData) => (
-              <MarketCard
-                key={rowData.token.coinType}
-                rowData={rowData}
-                onClick={() => openActionsModal(rowData.token.symbol)}
-              />
-            ))}
+        return (
+          <div key={index} className="flex w-full flex-col gap-4">
+            {/* Heading */}
+            <div className="flex flex-row items-center gap-2">
+              <Tooltip title={isIsolated ? ISOLATED_TOOLTIP : undefined}>
+                <TTitle
+                  className={cn(
+                    "w-max uppercase",
+                    isIsolated &&
+                      cn("decoration-primary/50", hoverUnderlineClassName),
+                  )}
+                >
+                  {isIsolated ? "Isolated" : "Main"} assets
+                </TTitle>
+              </Tooltip>
+              <TLabel>{count}</TLabel>
+            </div>
+
+            {/* Cards */}
+            <div className="flex w-full flex-col gap-2">
+              {row.subRows.map((subRow, index2) => {
+                if ((subRow as CollapsibleRowData).isCollapsibleRow) {
+                  const { title, subRows } = subRow as CollapsibleRowData;
+
+                  const isExpanded = collapsibleRowIsExpandedMap[title];
+                  const Icon = isExpanded ? ChevronUp : ChevronDown;
+
+                  return (
+                    <div
+                      key={title}
+                      className={cn(
+                        "-mx-4 flex flex-col gap-4 px-4",
+                        (index2 !== 0 || isExpanded) && "pt-2",
+                        (index2 !== row.subRows.length - 1 || isExpanded) &&
+                          "pb-2",
+                        isExpanded &&
+                          "bg-gradient-to-r from-muted/5 to-muted/0 shadow-[inset_2px_0_0_0px_hsl(var(--primary))]",
+                      )}
+                    >
+                      {/* Title */}
+                      <div
+                        className="flex flex-row items-center gap-3"
+                        onClick={() =>
+                          setCollapsibleRowIsExpandedMap((prev) => ({
+                            ...prev,
+                            [title]: !prev[title],
+                          }))
+                        }
+                      >
+                        <div className="flex h-7 w-7 flex-row items-center justify-center rounded-md bg-muted/15">
+                          <Icon className="h-5 w-5 text-foreground" />
+                        </div>
+
+                        <div className="flex min-w-max flex-col gap-1">
+                          <div className="flex flex-row items-center gap-2">
+                            <TBody>{title}</TBody>
+                            <TLabel>{subRows.length}</TLabel>
+                          </div>
+
+                          <TokenLogos
+                            className="h-4 w-4"
+                            tokens={subRows.map((subRow) => subRow.token)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Cards */}
+                      {isExpanded && (
+                        <div className="flex w-full flex-col gap-2">
+                          {subRows.map((subSubRow) => (
+                            <MarketCard
+                              key={subSubRow.token.coinType}
+                              rowData={subSubRow}
+                              onClick={() =>
+                                openActionsModal(subSubRow.token.symbol)
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <MarketCard
+                    key={(subRow as ReservesRowData).token.coinType}
+                    rowData={subRow as ReservesRowData}
+                    onClick={() =>
+                      openActionsModal((subRow as ReservesRowData).token.symbol)
+                    }
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })}
     </div>
   );
 }

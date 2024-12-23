@@ -4,7 +4,10 @@ import { SuiClient } from "@mysten/sui/client";
 
 import { NORMALIZED_sSUI_COINTYPE } from "@suilend/frontend-sui";
 
-import { getBorrowAddresses, getStakeSuiForLstAndDepositAddresses } from "./utils";
+import {
+  getBorrowAddresses,
+  getStakeSuiForLstAndDepositAddresses,
+} from "./utils";
 
 const minTimestampMs = 1731898800000; // 18 Nov 11AM GMT+8
 const maxTimestampMs = 1733436000000; // 5 Dec 5PM EST
