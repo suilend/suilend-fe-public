@@ -67,7 +67,7 @@ export default function WalletBalancesCard() {
 
               let price: BigNumber | undefined =
                 reserve?.price ?? data.rewardPriceMap[coinType];
-              if (price.isNaN()) price = undefined;
+              if (price !== undefined && price.isNaN()) price = undefined;
 
               return {
                 reserve,
