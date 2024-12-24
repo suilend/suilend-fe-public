@@ -147,15 +147,15 @@ export default function HistoryTabContent({
           } else if (eventType === EventType.LIQUIDATE) {
             const liquidateEvent = event as ApiLiquidateEvent;
 
-            const repayReserve = data.lendingMarket.reserves.find(
-              (reserve) => reserve.id === liquidateEvent.repayReserveId,
-            );
             const withdrawReserve = data.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.withdrawReserveId,
             );
+            const repayReserve = data.lendingMarket.reserves.find(
+              (reserve) => reserve.id === liquidateEvent.repayReserveId,
+            );
 
             return (
-              [repayReserve?.coinType, withdrawReserve?.coinType].filter(
+              [withdrawReserve?.coinType, repayReserve?.coinType].filter(
                 Boolean,
               ) as string[]
             ).reduce((acc, coinType) => acc || value.includes(coinType), false);
@@ -273,13 +273,13 @@ export default function HistoryTabContent({
           } else if (eventType === EventType.LIQUIDATE) {
             const liquidateEvent = event as ApiLiquidateEvent;
 
-            const repayReserve = data.lendingMarket.reserves.find(
-              (reserve) => reserve.id === liquidateEvent.repayReserveId,
-            );
             const withdrawReserve = data.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.withdrawReserveId,
             );
-            if (!repayReserve || !withdrawReserve)
+            const repayReserve = data.lendingMarket.reserves.find(
+              (reserve) => reserve.id === liquidateEvent.repayReserveId,
+            );
+            if (!withdrawReserve || !repayReserve)
               return (
                 <TLabelSans className="w-max">
                   {isGroupRow ? "N/A" : "See txn for details"}
@@ -474,17 +474,17 @@ export default function HistoryTabContent({
               ].map((event) => event.coinType),
               ...eventsData.liquidate
                 .map((liquidateEvent) => {
-                  const repayReserve = data.lendingMarket.reserves.find(
-                    (reserve) => reserve.id === liquidateEvent.repayReserveId,
-                  );
                   const withdrawReserve = data.lendingMarket.reserves.find(
                     (reserve) =>
                       reserve.id === liquidateEvent.withdrawReserveId,
                   );
+                  const repayReserve = data.lendingMarket.reserves.find(
+                    (reserve) => reserve.id === liquidateEvent.repayReserveId,
+                  );
 
                   return [
-                    repayReserve?.coinType,
                     withdrawReserve?.coinType,
+                    repayReserve?.coinType,
                   ].filter(Boolean) as string[];
                 })
                 .flat(),

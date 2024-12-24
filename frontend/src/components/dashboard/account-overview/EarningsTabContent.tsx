@@ -82,15 +82,16 @@ export default function EarningsTabContent({
     [coinType: string]: BigNumber;
   };
 
-  type CumRewardsEarnedMap = {
-    [side: string]: {
+  type CumRewardsEarnedMap = Record<
+    Side,
+    {
       [coinType: string]: {
         [rewardCoinType: string]: {
           [timestampS: number]: BigNumber;
         };
       };
-    };
-  };
+    }
+  >;
 
   type CumLiquidationsMap = {
     [coinType: string]: BigNumber;
@@ -250,7 +251,10 @@ export default function EarningsTabContent({
   const rewardsEarnedMap = useMemo(() => {
     if (eventsData === undefined) return undefined;
 
-    const resultMap: CumRewardsEarnedMap = {};
+    const resultMap: CumRewardsEarnedMap = {
+      [Side.DEPOSIT]: {},
+      [Side.BORROW]: {},
+    };
 
     eventsData.claimReward.forEach((claimRewardEvent) => {
       const reserve = data.lendingMarket.reserves.find(
@@ -270,7 +274,6 @@ export default function EarningsTabContent({
         ? Side.DEPOSIT
         : Side.BORROW;
 
-      resultMap[side] = resultMap[side] ?? {};
       resultMap[side][reserve.coinType] =
         resultMap[side][reserve.coinType] ?? {};
       resultMap[side][reserve.coinType][claimRewardEvent.coinType] =
@@ -297,7 +300,6 @@ export default function EarningsTabContent({
 
         const side = reward.stats.side;
 
-        resultMap[side] = resultMap[side] ?? {};
         resultMap[side][coinType] = resultMap[side][coinType] ?? {};
         resultMap[side][coinType][reward.stats.rewardCoinType] =
           resultMap[side][coinType][reward.stats.rewardCoinType] ?? {};
@@ -354,7 +356,7 @@ export default function EarningsTabContent({
     return resultMap;
   }, [eventsData, data.coinMetadataMap]);
 
-  // Minus -Interest paid
+  // Minus - Interest paid
   const getInterestPaid = useCallback(
     (
       timestampS: number,
@@ -504,7 +506,7 @@ export default function EarningsTabContent({
     nowS,
   ]);
 
-  // Minus -Liquidations
+  // Minus - Liquidations
   const cumLiquidationsMap = useMemo(() => {
     if (eventsData === undefined) return undefined;
 
@@ -523,21 +525,25 @@ export default function EarningsTabContent({
       );
       if (!withdrawReserve) return;
 
-      const coinMetadata = data.coinMetadataMap[withdrawReserve.coinType];
-      if (!coinMetadata) return;
+      const withdrawCoinMetadata =
+        data.coinMetadataMap[withdrawReserve.coinType];
+      if (!withdrawCoinMetadata) return;
 
       const reserveAssetDataEvent = eventsData.reserveAssetData.find(
         (e) => e.digest === event.digest,
       );
       if (!reserveAssetDataEvent) return;
 
-      const withdrawAmount = new BigNumber(event.withdrawAmount)
+      const liquidatorBonusAmount = new BigNumber(event.liquidatorBonusAmount)
+        .times(getCtokenExchangeRate(reserveAssetDataEvent))
+        .div(10 ** withdrawReserve.mintDecimals);
+      const protocolFeeAmount = new BigNumber(event.protocolFeeAmount)
         .times(getCtokenExchangeRate(reserveAssetDataEvent))
         .div(10 ** withdrawReserve.mintDecimals);
 
       resultMap[withdrawReserve.coinType] = (
         resultMap[withdrawReserve.coinType] ?? new BigNumber(0)
-      ).plus(withdrawAmount);
+      ).plus(liquidatorBonusAmount.plus(protocolFeeAmount));
     });
 
     return resultMap;
@@ -897,8 +903,8 @@ export default function EarningsTabContent({
       new Set([
         ...Object.keys(cumInterestEarnedMap),
         ...Object.keys({
-          ...(rewardsEarnedMap?.deposit ?? {}),
-          ...(rewardsEarnedMap?.norrow ?? {}),
+          ...(rewardsEarnedMap?.[Side.DEPOSIT] ?? {}),
+          ...(rewardsEarnedMap?.[Side.BORROW] ?? {}),
         }),
         ...Object.keys(cumBorrowFeesMap),
         ...Object.keys(cumInterestPaidMap),
@@ -916,7 +922,10 @@ export default function EarningsTabContent({
               cumInterestEarnedMap[coinType]?.find((d) => d.timestampS === nowS)
                 ?.cumInterest ?? 0,
             ),
-            rewardsEarned: rewardsEarnedMap?.deposit?.[coinType] ?? {},
+            rewardsEarned: {
+              ...(rewardsEarnedMap?.[Side.DEPOSIT]?.[coinType] ?? {}),
+              ...(rewardsEarnedMap?.[Side.BORROW]?.[coinType] ?? {}),
+            },
             borrowFees: cumBorrowFeesMap[coinType] ?? new BigNumber(0),
             interestPaid: new BigNumber(
               cumInterestPaidMap[coinType]?.find((d) => d.timestampS === nowS)
@@ -964,7 +973,7 @@ export default function EarningsTabContent({
                 </TBody>
               </Tooltip>
             ) : (
-              <Skeleton className="h-5 w-10" />
+              <Skeleton className="h-5 w-16" />
             )}
           </div>
 
@@ -982,7 +991,7 @@ export default function EarningsTabContent({
                   </TBody>
                 </Tooltip>
               ) : (
-                <Skeleton className="h-5 w-10" />
+                <Skeleton className="h-5 w-16" />
               )}
             </div>
 
@@ -998,7 +1007,7 @@ export default function EarningsTabContent({
                   </TBody>
                 </Tooltip>
               ) : (
-                <Skeleton className="h-5 w-10" />
+                <Skeleton className="h-5 w-16" />
               )}
             </div>
           </div>
@@ -1015,7 +1024,7 @@ export default function EarningsTabContent({
                   </TBody>
                 </Tooltip>
               ) : (
-                <Skeleton className="h-5 w-10" />
+                <Skeleton className="h-5 w-16" />
               )}
             </div>
 
@@ -1029,7 +1038,7 @@ export default function EarningsTabContent({
                   </TBody>
                 </Tooltip>
               ) : (
-                <Skeleton className="h-5 w-10" />
+                <Skeleton className="h-5 w-16" />
               )}
             </div>
 
@@ -1043,7 +1052,7 @@ export default function EarningsTabContent({
                   </TBody>
                 </Tooltip>
               ) : (
-                <Skeleton className="h-5 w-10" />
+                <Skeleton className="h-5 w-16" />
               )}
             </div>
           </div>
@@ -1072,7 +1081,7 @@ export default function EarningsTabContent({
         />
       </div>
 
-      <div className="flex w-full flex-row">
+      <div className="relative flex w-full flex-col max-md:gap-6 md:flex-row">
         {interpolatedCumInterestEarnedData === undefined ||
         interpolatedCumInterestPaidData === undefined ? (
           <div className="w-full px-4">
@@ -1081,7 +1090,7 @@ export default function EarningsTabContent({
         ) : (
           <>
             {interpolatedCumInterestEarnedData.length > 0 && (
-              <div className="flex-1">
+              <div className="relative z-[2] max-md:w-full md:flex-1">
                 <EarningsChart
                   side={Side.DEPOSIT}
                   data={interpolatedCumInterestEarnedData}
@@ -1089,7 +1098,7 @@ export default function EarningsTabContent({
               </div>
             )}
             {interpolatedCumInterestPaidData.length > 0 && (
-              <div className="flex-1">
+              <div className="relative z-[1] max-md:w-full md:flex-1">
                 <EarningsChart
                   side={Side.BORROW}
                   data={interpolatedCumInterestPaidData}
