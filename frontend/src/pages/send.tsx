@@ -185,7 +185,7 @@ function Page() {
   };
   const kumo = {
     snapshotTaken: true,
-    airdropSent: false,
+    airdropSent: true,
     eligibleWallets: formatInteger(998),
     totalAllocationPercent: new BigNumber(0.05),
     totalAllocationBreakdownMap: {
