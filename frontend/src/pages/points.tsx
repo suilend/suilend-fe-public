@@ -83,7 +83,7 @@ export default function Points() {
           <TBody className="px-4 text-[16px] uppercase">Leaderboard</TBody>
           <PointsLeaderboardTable
             season={+selectedTab}
-            data={leaderboardRowsMap?.[season]}
+            data={leaderboardRowsMap?.[+selectedTab]}
             pageSize={100}
           />
         </div>
