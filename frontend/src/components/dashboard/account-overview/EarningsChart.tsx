@@ -110,7 +110,7 @@ function TooltipContent({
 
 interface EarningsChartProps {
   side: Side;
-  isLoading: boolean;
+  isLoading?: boolean;
   data: ChartData[];
 }
 

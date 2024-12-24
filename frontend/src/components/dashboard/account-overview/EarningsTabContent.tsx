@@ -26,26 +26,26 @@ import EarningsChart, {
   ChartData,
 } from "@/components/dashboard/account-overview/EarningsChart";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
-import TitleWithIcon from "@/components/shared/TitleWithIcon";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface RowData {
   coinType: string;
-  borrowFees: BigNumber;
-  interest: BigNumber;
-  rewards: {
+  interestEarned: BigNumber;
+  rewardsEarned: {
     [rewardCoinType: string]: {
       [timestampS: number]: BigNumber;
     };
   };
+  borrowFees: BigNumber;
+  interestPaid: BigNumber;
+  liquidations: BigNumber;
 }
 
 interface EarningsTabContentProps {
@@ -59,12 +59,22 @@ export default function EarningsTabContent({
 }: EarningsTabContentProps) {
   const { data, ...restAppContext } = useLoadedAppContext();
   const obligation = restAppContext.obligation as ParsedObligation;
-  const { reserveAssetDataEventsMap } = useReserveAssetDataEventsContext();
 
-  type CumInterestMap = {
+  type CumInterestEarnedMap = {
     [coinType: string]: {
       timestampS: number;
-      cumInterest: number;
+      ctokenExchangeRate: BigNumber;
+      depositedCtokenAmount: BigNumber;
+      cumInterest: BigNumber;
+    }[];
+  };
+
+  type CumInterestPaidMap = {
+    [coinType: string]: {
+      timestampS: number;
+      cumulativeBorrowRate: BigNumber;
+      borrowedAmount: BigNumber;
+      cumInterest: BigNumber;
     }[];
   };
 
@@ -72,7 +82,21 @@ export default function EarningsTabContent({
     [coinType: string]: BigNumber;
   };
 
-  // Interest earned
+  type CumRewardsEarnedMap = {
+    [side: string]: {
+      [coinType: string]: {
+        [rewardCoinType: string]: {
+          [timestampS: number]: BigNumber;
+        };
+      };
+    };
+  };
+
+  type CumLiquidationsMap = {
+    [coinType: string]: BigNumber;
+  };
+
+  // Plus - Interest earned
   const getInterestEarned = useCallback(
     (
       timestampS: number,
@@ -105,14 +129,6 @@ export default function EarningsTabContent({
   const cumInterestEarnedMap = useMemo(() => {
     if (eventsData === undefined) return undefined;
 
-    type CumInterestEarnedMap = {
-      [coinType: string]: {
-        timestampS: number;
-        ctokenExchangeRate: BigNumber;
-        depositedCtokenAmount: BigNumber;
-        cumInterest: number;
-      }[];
-    };
     const resultMap: CumInterestEarnedMap = {};
 
     const events = [
@@ -181,7 +197,7 @@ export default function EarningsTabContent({
         ctokenExchangeRate,
         depositedCtokenAmount,
         cumInterest: prev
-          ? +new BigNumber(prev.cumInterest).plus(
+          ? prev.cumInterest.plus(
               getInterestEarned(
                 timestampS,
                 ctokenExchangeRate,
@@ -190,7 +206,7 @@ export default function EarningsTabContent({
                 prev.depositedCtokenAmount,
               ),
             )
-          : 0,
+          : new BigNumber(0),
       });
     });
 
@@ -208,7 +224,7 @@ export default function EarningsTabContent({
         timestampS,
         ctokenExchangeRate,
         depositedCtokenAmount: new BigNumber(-1),
-        cumInterest: +new BigNumber(prev.cumInterest).plus(
+        cumInterest: prev.cumInterest.plus(
           getInterestEarned(
             timestampS,
             ctokenExchangeRate,
@@ -218,45 +234,6 @@ export default function EarningsTabContent({
           ),
         ),
       });
-
-      // Increase resolution
-      const reserveAssetDataEvents =
-        reserveAssetDataEventsMap?.[reserve.id]?.[30]; // The last 30 days will be higher resolution
-      if (reserveAssetDataEvents === undefined) return undefined;
-
-      for (let i = 0; i < reserveAssetDataEvents.length; i++) {
-        const r = reserveAssetDataEvents[i];
-        const timestampS = r.timestampS;
-        const ctokenExchangeRate = new BigNumber(r.ctokenSupply).eq(0)
-          ? new BigNumber(1)
-          : new BigNumber(r.depositedAmount).div(r.ctokenSupply);
-        if (
-          timestampS <= resultMap[coinType][0].timestampS ||
-          timestampS >=
-            resultMap[coinType][resultMap[coinType].length - 1].timestampS
-        )
-          continue;
-        const prev = resultMap[coinType].findLast(
-          (d) => d.timestampS < timestampS,
-        );
-        if (!prev) continue;
-        const interestEarned = getInterestEarned(
-          timestampS,
-          ctokenExchangeRate,
-          prev.timestampS,
-          prev.ctokenExchangeRate,
-          prev.depositedCtokenAmount,
-        );
-        resultMap[coinType].push({
-          timestampS,
-          ctokenExchangeRate,
-          depositedCtokenAmount: prev.depositedCtokenAmount.plus(
-            interestEarned.div(prev.ctokenExchangeRate),
-          ),
-          cumInterest: +new BigNumber(prev.cumInterest).plus(interestEarned),
-        });
-        resultMap[coinType].sort((a, b) => a.timestampS - b.timestampS);
-      }
     }
 
     return resultMap;
@@ -267,248 +244,13 @@ export default function EarningsTabContent({
     getInterestEarned,
     data.reserveMap,
     nowS,
-    reserveAssetDataEventsMap,
   ]);
 
-  // Borrow fees
-  const cumBorrowFeesMap = useMemo(() => {
+  // Plus - Rewards earned
+  const rewardsEarnedMap = useMemo(() => {
     if (eventsData === undefined) return undefined;
 
-    const resultMap: CumBorrowFeesMap = {};
-
-    const events = [
-      ...eventsData.borrow.map((event) => ({
-        ...event,
-        eventType: EventType.BORROW,
-      })),
-    ].sort(eventSortAsc);
-
-    events.forEach((event) => {
-      const coinType = (event as ApiBorrowEvent).coinType;
-      if (!coinType) return;
-
-      const coinMetadata = data.coinMetadataMap[coinType];
-      if (!coinMetadata) return;
-
-      const feesAmount = new BigNumber(event.originationFeeAmount).div(
-        10 ** coinMetadata.decimals,
-      );
-
-      resultMap[coinType] = (resultMap[coinType] ?? new BigNumber(0)).plus(
-        feesAmount,
-      );
-    });
-
-    return resultMap;
-  }, [eventsData, data.coinMetadataMap]);
-
-  // Interest paid
-  const getInterestPaid = useCallback(
-    (
-      timestampS: number,
-      cumulativeBorrowRate: BigNumber,
-      prevTimestampS: number,
-      prevCumulativeBorrowRate: BigNumber,
-      prevBorrowedAmount: BigNumber,
-    ) => {
-      const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
-        msPerYear / 1000,
-      );
-      const annualizedInterestRate = proportionOfYear.gt(0)
-        ? new BigNumber(cumulativeBorrowRate)
-            .div(prevCumulativeBorrowRate)
-            .minus(1)
-            .div(proportionOfYear)
-        : new BigNumber(0);
-
-      const interestPaid = prevBorrowedAmount
-        .times(annualizedInterestRate)
-        .times(proportionOfYear);
-
-      return interestPaid;
-    },
-    [],
-  );
-
-  const cumInterestPaidMap = useMemo(() => {
-    if (eventsData === undefined) return undefined;
-
-    type CumInterestPaidMap = {
-      [coinType: string]: {
-        timestampS: number;
-        cumulativeBorrowRate: BigNumber;
-        borrowedAmount: BigNumber;
-        cumInterest: number;
-      }[];
-    };
-    const resultMap: CumInterestPaidMap = {};
-
-    const events = [
-      ...eventsData.borrow.map((event) => ({
-        ...event,
-        eventType: EventType.BORROW,
-      })),
-      ...eventsData.repay.map((event) => ({
-        ...event,
-        eventType: EventType.REPAY,
-      })),
-      ...eventsData.liquidate.map((event) => ({
-        ...event,
-        eventType: EventType.LIQUIDATE,
-      })),
-    ].sort(eventSortAsc);
-
-    events.forEach((event) => {
-      const obligationDataEvent = eventsData.obligationData.find(
-        (e) => e.digest === event.digest,
-      );
-      if (!obligationDataEvent) return;
-
-      let coinType;
-      if (event.eventType === EventType.BORROW) {
-        coinType = (event as unknown as ApiBorrowEvent).coinType;
-      } else if (event.eventType === EventType.REPAY) {
-        coinType = (event as ApiRepayEvent).coinType;
-      } else if (event.eventType === EventType.LIQUIDATE) {
-        const repayReserve = data.lendingMarket.reserves.find(
-          (reserve) =>
-            reserve.id === (event as ApiLiquidateEvent).repayReserveId,
-        );
-        if (!repayReserve) return;
-
-        coinType = repayReserve.coinType;
-      }
-      if (!coinType) return;
-
-      const coinMetadata = data.coinMetadataMap[coinType];
-      if (!coinMetadata) return;
-
-      const reserveAssetDataEvent = eventsData.reserveAssetData.find(
-        (e) => e.digest === event.digest && e.coinType === coinType,
-      );
-      if (!reserveAssetDataEvent) return;
-
-      const timestampS = reserveAssetDataEvent.timestamp;
-      const cumulativeBorrowRate = new BigNumber(
-        reserveAssetDataEvent.cumulativeBorrowRate,
-      ).div(WAD);
-
-      const position = JSON.parse(obligationDataEvent.borrowsJson).find(
-        (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
-      );
-      const borrowedAmount = new BigNumber(position?.borrowed_amount.value ?? 0)
-        .div(WAD)
-        .div(10 ** coinMetadata.decimals);
-
-      const prev =
-        resultMap[coinType] && resultMap[coinType].length > 0
-          ? resultMap[coinType][resultMap[coinType].length - 1]
-          : undefined;
-
-      resultMap[coinType] = resultMap[coinType] ?? [];
-      resultMap[coinType].push({
-        timestampS,
-        cumulativeBorrowRate,
-        borrowedAmount,
-        cumInterest: prev
-          ? +new BigNumber(prev.cumInterest).plus(
-              getInterestPaid(
-                timestampS,
-                cumulativeBorrowRate,
-                prev.timestampS,
-                prev.cumulativeBorrowRate,
-                prev.borrowedAmount,
-              ),
-            )
-          : 0,
-      });
-    });
-
-    for (const coinType of Object.keys(resultMap)) {
-      // Add current timestamp
-      const reserve = data.reserveMap[coinType];
-      if (!reserve) continue;
-
-      const timestampS = nowS;
-      const cumulativeBorrowRate = reserve.cumulativeBorrowRate;
-
-      const prev = resultMap[coinType][resultMap[coinType].length - 1];
-
-      resultMap[coinType].push({
-        timestampS,
-        cumulativeBorrowRate,
-        borrowedAmount: new BigNumber(-1),
-        cumInterest: +new BigNumber(prev.cumInterest).plus(
-          getInterestPaid(
-            timestampS,
-            cumulativeBorrowRate,
-            prev.timestampS,
-            prev.cumulativeBorrowRate,
-            prev.borrowedAmount,
-          ),
-        ),
-      });
-
-      // Increase resolution
-      const reserveAssetDataEvents =
-        reserveAssetDataEventsMap?.[reserve.id]?.[30]; // The last 30 days will be higher resolution
-      if (reserveAssetDataEvents === undefined) return undefined;
-
-      for (let i = 0; i < reserveAssetDataEvents.length; i++) {
-        const r = reserveAssetDataEvents[i];
-        const timestampS = r.timestampS;
-        const cumulativeBorrowRate = r.cumulativeBorrowRate;
-        if (
-          timestampS <= resultMap[coinType][0].timestampS ||
-          timestampS >=
-            resultMap[coinType][resultMap[coinType].length - 1].timestampS
-        )
-          continue;
-        const prev = resultMap[coinType].findLast(
-          (d) => d.timestampS < timestampS,
-        );
-        if (!prev) continue;
-        const interestPaid = getInterestPaid(
-          timestampS,
-          cumulativeBorrowRate,
-          prev.timestampS,
-          prev.cumulativeBorrowRate,
-          prev.borrowedAmount,
-        );
-        resultMap[coinType].push({
-          timestampS,
-          cumulativeBorrowRate,
-          borrowedAmount: prev.borrowedAmount.plus(interestPaid),
-          cumInterest: +new BigNumber(prev.cumInterest).plus(interestPaid),
-        });
-        resultMap[coinType].sort((a, b) => a.timestampS - b.timestampS);
-      }
-    }
-
-    return resultMap;
-  }, [
-    eventsData,
-    data.lendingMarket.reserves,
-    data.coinMetadataMap,
-    getInterestPaid,
-    data.reserveMap,
-    nowS,
-    reserveAssetDataEventsMap,
-  ]);
-
-  // Rewards
-  const rewardsMap = useMemo(() => {
-    if (eventsData === undefined) return undefined;
-
-    const resultMap: {
-      [side: string]: {
-        [coinType: string]: {
-          [rewardCoinType: string]: {
-            [timestampS: number]: BigNumber;
-          };
-        };
-      };
-    } = {};
+    const resultMap: CumRewardsEarnedMap = {};
 
     eventsData.claimReward.forEach((claimRewardEvent) => {
       const reserve = data.lendingMarket.reserves.find(
@@ -579,6 +321,227 @@ export default function EarningsTabContent({
     data.rewardMap,
     obligation.id,
   ]);
+
+  // Minus - Borrow fees
+  const cumBorrowFeesMap = useMemo(() => {
+    if (eventsData === undefined) return undefined;
+
+    const resultMap: CumBorrowFeesMap = {};
+
+    const events = [
+      ...eventsData.borrow.map((event) => ({
+        ...event,
+        eventType: EventType.BORROW,
+      })),
+    ].sort(eventSortAsc);
+
+    events.forEach((event) => {
+      const coinType = (event as ApiBorrowEvent).coinType;
+      if (!coinType) return;
+
+      const coinMetadata = data.coinMetadataMap[coinType];
+      if (!coinMetadata) return;
+
+      const feesAmount = new BigNumber(event.originationFeeAmount).div(
+        10 ** coinMetadata.decimals,
+      );
+
+      resultMap[coinType] = (resultMap[coinType] ?? new BigNumber(0)).plus(
+        feesAmount,
+      );
+    });
+
+    return resultMap;
+  }, [eventsData, data.coinMetadataMap]);
+
+  // Minus -Interest paid
+  const getInterestPaid = useCallback(
+    (
+      timestampS: number,
+      cumulativeBorrowRate: BigNumber,
+      prevTimestampS: number,
+      prevCumulativeBorrowRate: BigNumber,
+      prevBorrowedAmount: BigNumber,
+    ) => {
+      const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
+        msPerYear / 1000,
+      );
+      const annualizedInterestRate = proportionOfYear.gt(0)
+        ? new BigNumber(cumulativeBorrowRate)
+            .div(prevCumulativeBorrowRate)
+            .minus(1)
+            .div(proportionOfYear)
+        : new BigNumber(0);
+
+      const interestPaid = prevBorrowedAmount
+        .times(annualizedInterestRate)
+        .times(proportionOfYear);
+
+      return interestPaid;
+    },
+    [],
+  );
+
+  const cumInterestPaidMap = useMemo(() => {
+    if (eventsData === undefined) return undefined;
+
+    const resultMap: CumInterestPaidMap = {};
+
+    const events = [
+      ...eventsData.borrow.map((event) => ({
+        ...event,
+        eventType: EventType.BORROW,
+      })),
+      ...eventsData.repay.map((event) => ({
+        ...event,
+        eventType: EventType.REPAY,
+      })),
+      ...eventsData.liquidate.map((event) => ({
+        ...event,
+        eventType: EventType.LIQUIDATE,
+      })),
+    ].sort(eventSortAsc);
+
+    events.forEach((event) => {
+      const obligationDataEvent = eventsData.obligationData.find(
+        (e) => e.digest === event.digest,
+      );
+      if (!obligationDataEvent) return;
+
+      let coinType;
+      if (event.eventType === EventType.BORROW) {
+        coinType = (event as unknown as ApiBorrowEvent).coinType;
+      } else if (event.eventType === EventType.REPAY) {
+        coinType = (event as ApiRepayEvent).coinType;
+      } else if (event.eventType === EventType.LIQUIDATE) {
+        const repayReserve = data.lendingMarket.reserves.find(
+          (reserve) =>
+            reserve.id === (event as ApiLiquidateEvent).repayReserveId,
+        );
+        if (!repayReserve) return;
+
+        coinType = repayReserve.coinType;
+      }
+      if (!coinType) return;
+
+      const coinMetadata = data.coinMetadataMap[coinType];
+      if (!coinMetadata) return;
+
+      const reserveAssetDataEvent = eventsData.reserveAssetData.find(
+        (e) => e.digest === event.digest && e.coinType === coinType,
+      );
+      if (!reserveAssetDataEvent) return;
+
+      const timestampS = reserveAssetDataEvent.timestamp;
+      const cumulativeBorrowRate = new BigNumber(
+        reserveAssetDataEvent.cumulativeBorrowRate,
+      ).div(WAD);
+
+      const position = JSON.parse(obligationDataEvent.borrowsJson).find(
+        (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
+      );
+      const borrowedAmount = new BigNumber(position?.borrowed_amount.value ?? 0)
+        .div(WAD)
+        .div(10 ** coinMetadata.decimals);
+
+      const prev =
+        resultMap[coinType] && resultMap[coinType].length > 0
+          ? resultMap[coinType][resultMap[coinType].length - 1]
+          : undefined;
+
+      resultMap[coinType] = resultMap[coinType] ?? [];
+      resultMap[coinType].push({
+        timestampS,
+        cumulativeBorrowRate,
+        borrowedAmount,
+        cumInterest: prev
+          ? prev.cumInterest.plus(
+              getInterestPaid(
+                timestampS,
+                cumulativeBorrowRate,
+                prev.timestampS,
+                prev.cumulativeBorrowRate,
+                prev.borrowedAmount,
+              ),
+            )
+          : new BigNumber(0),
+      });
+    });
+
+    for (const coinType of Object.keys(resultMap)) {
+      // Add current timestamp
+      const reserve = data.reserveMap[coinType];
+      if (!reserve) continue;
+
+      const timestampS = nowS;
+      const cumulativeBorrowRate = reserve.cumulativeBorrowRate;
+
+      const prev = resultMap[coinType][resultMap[coinType].length - 1];
+
+      resultMap[coinType].push({
+        timestampS,
+        cumulativeBorrowRate,
+        borrowedAmount: new BigNumber(-1),
+        cumInterest: prev.cumInterest.plus(
+          getInterestPaid(
+            timestampS,
+            cumulativeBorrowRate,
+            prev.timestampS,
+            prev.cumulativeBorrowRate,
+            prev.borrowedAmount,
+          ),
+        ),
+      });
+    }
+
+    return resultMap;
+  }, [
+    eventsData,
+    data.lendingMarket.reserves,
+    data.coinMetadataMap,
+    getInterestPaid,
+    data.reserveMap,
+    nowS,
+  ]);
+
+  // Minus -Liquidations
+  const cumLiquidationsMap = useMemo(() => {
+    if (eventsData === undefined) return undefined;
+
+    const resultMap: CumLiquidationsMap = {};
+
+    const events = [
+      ...eventsData.liquidate.map((event) => ({
+        ...event,
+        eventType: EventType.LIQUIDATE,
+      })),
+    ].sort(eventSortAsc);
+
+    events.forEach((event) => {
+      const withdrawReserve = data.lendingMarket.reserves.find(
+        (reserve) => reserve.id === event.withdrawReserveId,
+      );
+      if (!withdrawReserve) return;
+
+      const coinMetadata = data.coinMetadataMap[withdrawReserve.coinType];
+      if (!coinMetadata) return;
+
+      const reserveAssetDataEvent = eventsData.reserveAssetData.find(
+        (e) => e.digest === event.digest,
+      );
+      if (!reserveAssetDataEvent) return;
+
+      const withdrawAmount = new BigNumber(event.withdrawAmount)
+        .times(getCtokenExchangeRate(reserveAssetDataEvent))
+        .div(10 ** withdrawReserve.mintDecimals);
+
+      resultMap[withdrawReserve.coinType] = (
+        resultMap[withdrawReserve.coinType] ?? new BigNumber(0)
+      ).plus(withdrawAmount);
+    });
+
+    return resultMap;
+  }, [eventsData, data.lendingMarket.reserves, data.coinMetadataMap]);
 
   // Chart
   const getInterpolatedCumInterestData = useCallback(
@@ -672,6 +635,13 @@ export default function EarningsTabContent({
   );
 
   // Usd
+  type CumInterestMap = {
+    [coinType: string]: {
+      timestampS: number;
+      cumInterest: BigNumber;
+    }[];
+  };
+
   const getCumInterestUsd = useCallback(
     (cumInterestMap?: CumInterestMap) => {
       if (cumInterestMap === undefined) return undefined;
@@ -692,40 +662,16 @@ export default function EarningsTabContent({
     [data.reserveMap, nowS],
   );
 
-  const getCumBorrowFeesUsd = useCallback(
-    (cumBorrowFeesMap?: CumBorrowFeesMap) => {
-      if (cumBorrowFeesMap === undefined) return undefined;
-
-      return Object.keys(cumBorrowFeesMap).reduce((acc, coinType) => {
-        const reserve = data.reserveMap[coinType];
-        if (!reserve) return acc;
-
-        return acc.plus(cumBorrowFeesMap[coinType].times(reserve.price));
-      }, new BigNumber(0));
-    },
-    [data.reserveMap],
-  );
-
   const cumInterestEarnedUsd = useMemo(
     () => getCumInterestUsd(cumInterestEarnedMap),
     [getCumInterestUsd, cumInterestEarnedMap],
   );
 
-  const cumBorrowFeesUsd = useMemo(
-    () => getCumBorrowFeesUsd(cumBorrowFeesMap),
-    [getCumBorrowFeesUsd, cumBorrowFeesMap],
-  );
-
-  const cumInterestPaidUsd = useMemo(
-    () => getCumInterestUsd(cumInterestPaidMap),
-    [getCumInterestUsd, cumInterestPaidMap],
-  );
-
-  const totalRewardsEarnedUsd = useMemo(() => {
-    if (rewardsMap === undefined) return undefined;
+  const cumRewardsEarnedUsd = useMemo(() => {
+    if (rewardsEarnedMap === undefined) return undefined;
 
     let result = new BigNumber(0);
-    Object.entries(rewardsMap).forEach(([side, sideRewards]) => {
+    Object.entries(rewardsEarnedMap).forEach(([side, sideRewards]) => {
       Object.entries(sideRewards).forEach(
         ([reserveCoinType, reserveRewards]) => {
           Object.keys(reserveRewards).forEach((rewardCoinType) => {
@@ -742,33 +688,62 @@ export default function EarningsTabContent({
     });
 
     return result;
-  }, [rewardsMap, nowS, data.rewardPriceMap]);
+  }, [rewardsEarnedMap, nowS, data.rewardPriceMap]);
+
+  const cumBorrowFeesUsd = useMemo(() => {
+    if (cumBorrowFeesMap === undefined) return undefined;
+
+    return Object.keys(cumBorrowFeesMap).reduce((acc, coinType) => {
+      const reserve = data.reserveMap[coinType];
+      if (!reserve) return acc;
+
+      return acc.plus(cumBorrowFeesMap[coinType].times(reserve.price));
+    }, new BigNumber(0));
+  }, [cumBorrowFeesMap, data.reserveMap]);
+
+  const cumInterestPaidUsd = useMemo(
+    () => getCumInterestUsd(cumInterestPaidMap),
+    [getCumInterestUsd, cumInterestPaidMap],
+  );
+
+  const cumLiquidationsUsd = useMemo(() => {
+    if (cumLiquidationsMap === undefined) return undefined;
+
+    return Object.keys(cumLiquidationsMap).reduce((acc, coinType) => {
+      const reserve = data.reserveMap[coinType];
+      if (!reserve) return acc;
+
+      return acc.plus(cumLiquidationsMap[coinType].times(reserve.price));
+    }, new BigNumber(0));
+  }, [cumLiquidationsMap, data.reserveMap]);
 
   const totalEarningsUsd = useMemo(() => {
     if (
       cumInterestEarnedUsd === undefined ||
-      totalRewardsEarnedUsd === undefined ||
+      cumRewardsEarnedUsd === undefined ||
       cumBorrowFeesUsd === undefined ||
-      cumInterestPaidUsd === undefined
+      cumInterestPaidUsd === undefined ||
+      cumLiquidationsUsd === undefined
     )
       return undefined;
 
-    return new BigNumber(
-      cumInterestEarnedUsd.plus(totalRewardsEarnedUsd),
-    ).minus(cumBorrowFeesUsd.plus(cumInterestPaidUsd));
+    return new BigNumber(cumInterestEarnedUsd.plus(cumRewardsEarnedUsd)).minus(
+      cumBorrowFeesUsd.plus(cumInterestPaidUsd).plus(cumLiquidationsUsd),
+    );
   }, [
     cumInterestEarnedUsd,
-    totalRewardsEarnedUsd,
+    cumRewardsEarnedUsd,
     cumBorrowFeesUsd,
     cumInterestPaidUsd,
+    cumLiquidationsUsd,
   ]);
 
   // Columns
-  const getColumns = useCallback(
-    (side: Side) => {
-      const result: ColumnDef<RowData>[] = [];
+  const columns = useMemo(() => {
+    const result: ColumnDef<RowData>[] = [];
 
-      result.push({
+    result.push(
+      {
         accessorKey: "coinType",
         sortingFn: "text",
         header: ({ column }) => tableHeader(column, "Asset name"),
@@ -792,67 +767,46 @@ export default function EarningsTabContent({
             </div>
           );
         },
-      });
+      },
+      {
+        accessorKey: "interestEarned",
+        enableSorting: false,
+        header: ({ column }) => tableHeader(column, "Interest earned"),
+        cell: ({ row }) => {
+          const { coinType, interestEarned } = row.original;
 
-      if (side === Side.BORROW)
-        result.push({
-          accessorKey: "borrowFees",
-          enableSorting: false,
-          header: ({ column }) => tableHeader(column, "Borrow fees"),
-          cell: ({ row }) => {
-            const { coinType, borrowFees } = row.original;
+          const coinMetadata = data.coinMetadataMap[coinType];
 
-            const coinMetadata = data.coinMetadataMap[coinType];
-
-            return (
-              <TBody className="w-max">
-                {formatToken(borrowFees, { dp: coinMetadata.decimals })}{" "}
-                {coinMetadata.symbol}
-              </TBody>
-            );
-          },
-        });
-
-      result.push(
-        {
-          accessorKey: "interest",
-          enableSorting: false,
-          header: ({ column }) =>
-            tableHeader(
-              column,
-              side === Side.DEPOSIT ? "Interest earned" : "Interest paid",
-            ),
-          cell: ({ row }) => {
-            const { coinType, interest } = row.original;
-
-            const coinMetadata = data.coinMetadataMap[coinType];
-
-            return (
-              <TBody className="w-max">
-                {formatToken(interest, { dp: coinMetadata.decimals })}{" "}
-                {coinMetadata.symbol}
-              </TBody>
-            );
-          },
+          if (interestEarned.eq(0))
+            return <TLabelSans className="w-max">--</TLabelSans>;
+          return (
+            <TBody className="w-max">
+              {formatToken(interestEarned, { dp: coinMetadata.decimals })}{" "}
+              {coinMetadata.symbol}
+            </TBody>
+          );
         },
-        {
-          accessorKey: "rewards",
-          enableSorting: false,
-          header: ({ column }) => tableHeader(column, "Rewards earned"),
-          cell: ({ row }) => {
-            const { rewards } = row.original;
+      },
+      {
+        accessorKey: "rewardsEarned",
+        enableSorting: false,
+        header: ({ column }) => tableHeader(column, "Rewards earned"),
+        cell: ({ row }) => {
+          const { rewardsEarned } = row.original;
 
-            if (Object.entries(rewards).length === 0)
-              return <TLabelSans className="w-max">N/A</TLabelSans>;
-            return (
-              <div className="flex w-max flex-col gap-1">
-                {Object.keys(rewards).map((coinType) => {
+          if (Object.entries(rewardsEarned).length === 0)
+            return <TLabelSans className="w-max">--</TLabelSans>;
+          return (
+            <div className="flex w-max flex-col gap-1">
+              {Object.keys(rewardsEarned)
+                .sort((a, b) => reserveSort(data.lendingMarket.reserves, a, b))
+                .map((coinType) => {
                   const coinMetadata = data.coinMetadataMap[coinType];
 
                   return (
                     <TokenAmount
                       key={coinType}
-                      amount={rewards[coinType][nowS]}
+                      amount={rewardsEarned[coinType][nowS]}
                       token={{
                         coinType,
                         symbol: coinMetadata.symbol,
@@ -862,76 +816,113 @@ export default function EarningsTabContent({
                     />
                   );
                 })}
-              </div>
-            );
-          },
+            </div>
+          );
         },
-      );
+      },
+      {
+        accessorKey: "borrowFees",
+        enableSorting: false,
+        header: ({ column }) => tableHeader(column, "Borrow fees"),
+        cell: ({ row }) => {
+          const { coinType, borrowFees } = row.original;
 
-      return result;
-    },
-    [data.coinMetadataMap, nowS],
-  );
+          const coinMetadata = data.coinMetadataMap[coinType];
 
-  const depositColumns = getColumns(Side.DEPOSIT);
-  const borrowColumns = getColumns(Side.BORROW);
+          if (borrowFees.eq(0))
+            return <TLabelSans className="w-max">--</TLabelSans>;
+          return (
+            <TBody className="w-max">
+              {formatToken(borrowFees, { dp: coinMetadata.decimals })}{" "}
+              {coinMetadata.symbol}
+            </TBody>
+          );
+        },
+      },
+      {
+        accessorKey: "interestPaid",
+        enableSorting: false,
+        header: ({ column }) => tableHeader(column, "Interest paid"),
+        cell: ({ row }) => {
+          const { coinType, interestPaid } = row.original;
+
+          const coinMetadata = data.coinMetadataMap[coinType];
+
+          if (interestPaid.eq(0))
+            return <TLabelSans className="w-max">--</TLabelSans>;
+          return (
+            <TBody className="w-max">
+              {formatToken(interestPaid, { dp: coinMetadata.decimals })}{" "}
+              {coinMetadata.symbol}
+            </TBody>
+          );
+        },
+      },
+      {
+        accessorKey: "liquidations",
+        enableSorting: false,
+        header: ({ column }) => tableHeader(column, "Liquidations"),
+        cell: ({ row }) => {
+          const { coinType, liquidations } = row.original;
+
+          const coinMetadata = data.coinMetadataMap[coinType];
+
+          if (liquidations.eq(0))
+            return <TLabelSans className="w-max">--</TLabelSans>;
+          return (
+            <TBody className="w-max">
+              {formatToken(liquidations, { dp: coinMetadata.decimals })}{" "}
+              {coinMetadata.symbol}
+            </TBody>
+          );
+        },
+      },
+    );
+
+    return result;
+  }, [data.coinMetadataMap, data.lendingMarket.reserves, nowS]);
 
   // Rows
   const rows = useMemo(() => {
     if (
       cumInterestEarnedMap === undefined ||
-      rewardsMap === undefined ||
+      rewardsEarnedMap === undefined ||
       cumBorrowFeesMap === undefined ||
-      cumInterestPaidMap === undefined
+      cumInterestPaidMap === undefined ||
+      cumLiquidationsMap === undefined
     )
       return undefined;
 
-    const depositKeys = Array.from(
+    const coinTypes = Array.from(
       new Set([
         ...Object.keys(cumInterestEarnedMap),
-        ...Object.keys(rewardsMap?.deposit ?? {}),
-      ]),
-    );
-    const borrowKeys = Array.from(
-      new Set([
+        ...Object.keys({
+          ...(rewardsEarnedMap?.deposit ?? {}),
+          ...(rewardsEarnedMap?.norrow ?? {}),
+        }),
         ...Object.keys(cumBorrowFeesMap),
         ...Object.keys(cumInterestPaidMap),
-        ...Object.keys(rewardsMap?.borrow ?? {}),
+        ...Object.keys(cumLiquidationsMap),
       ]),
     );
 
-    const depositRows = depositKeys
+    return coinTypes
       .reduce(
         (acc: RowData[], coinType) => [
           ...acc,
           {
             coinType,
-            borrowFees: new BigNumber(0),
-            interest: new BigNumber(
+            interestEarned: new BigNumber(
               cumInterestEarnedMap[coinType]?.find((d) => d.timestampS === nowS)
                 ?.cumInterest ?? 0,
             ),
-            rewards: rewardsMap?.deposit?.[coinType] ?? {},
-          } as RowData,
-        ],
-        [],
-      )
-      .sort((a, b) =>
-        reserveSort(data.lendingMarket.reserves, a.coinType, b.coinType),
-      );
-
-    const borrowRows = borrowKeys
-      .reduce(
-        (acc: RowData[], coinType) => [
-          ...acc,
-          {
-            coinType,
-            borrowFees: cumBorrowFeesMap[coinType],
-            interest: new BigNumber(
+            rewardsEarned: rewardsEarnedMap?.deposit?.[coinType] ?? {},
+            borrowFees: cumBorrowFeesMap[coinType] ?? new BigNumber(0),
+            interestPaid: new BigNumber(
               cumInterestPaidMap[coinType]?.find((d) => d.timestampS === nowS)
                 ?.cumInterest ?? 0,
             ),
-            rewards: rewardsMap?.borrow?.[coinType] ?? {},
+            liquidations: cumLiquidationsMap[coinType] ?? new BigNumber(0),
           } as RowData,
         ],
         [],
@@ -939,37 +930,55 @@ export default function EarningsTabContent({
       .sort((a, b) =>
         reserveSort(data.lendingMarket.reserves, a.coinType, b.coinType),
       );
-
-    return { deposit: depositRows, borrow: borrowRows };
   }, [
     cumInterestEarnedMap,
-    rewardsMap,
+    rewardsEarnedMap,
     cumBorrowFeesMap,
     cumInterestPaidMap,
+    cumLiquidationsMap,
     nowS,
     data.lendingMarket.reserves,
   ]);
 
   return (
-    <div className="relative flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden pt-4">
+    <div className="relative flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden py-4">
       <div className="flex flex-col gap-3 px-4">
-        <div className="relative w-full">
-          <div className="absolute bottom-0 left-0 right-3/4 top-0 z-[1] rounded-l-sm bg-gradient-to-r from-primary/20 to-transparent" />
+        <div className="flex w-full flex-col items-center gap-0.5 md:flex-row md:gap-4">
+          {/* Total */}
+          <div
+            className={cn(
+              "flex flex-col items-center gap-1 rounded-sm bg-muted/15 py-3 transition-colors max-md:w-full md:flex-1",
+              totalEarningsUsd !== undefined &&
+                cn(
+                  totalEarningsUsd.gt(0) && "bg-success/15",
+                  totalEarningsUsd.lt(0) && "bg-destructive/15",
+                ),
+            )}
+          >
+            <TLabelSans className="text-center">Net earnings</TLabelSans>
+            {totalEarningsUsd !== undefined ? (
+              <Tooltip title={formatUsd(totalEarningsUsd, { exact: true })}>
+                <TBody className="text-center">
+                  {totalEarningsUsd.lt(0) && "-"}
+                  {formatUsd(totalEarningsUsd.abs())}
+                </TBody>
+              </Tooltip>
+            ) : (
+              <Skeleton className="h-5 w-10" />
+            )}
+          </div>
 
-          <div className="relative z-[2] flex flex-row items-center justify-around rounded-sm border border-primary/5 px-2 py-3 md:px-4">
+          {/* Plus */}
+          <div className="flex flex-row items-center justify-around rounded-sm bg-success/5 py-3 max-md:w-full md:flex-[2] md:gap-4">
+            {/* Interest earned */}
             <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Net earnings</TLabelSans>
-              {totalEarningsUsd !== undefined ? (
-                <Tooltip title={formatUsd(totalEarningsUsd, { exact: true })}>
-                  <TBody
-                    className={cn(
-                      "text-center",
-                      totalEarningsUsd.gt(0) && "text-success",
-                      totalEarningsUsd.lt(0) && "text-destructive",
-                    )}
-                  >
-                    {totalEarningsUsd.lt(0) && "-"}
-                    {formatUsd(totalEarningsUsd.abs())}
+              <TLabelSans className="text-center">Interest earned</TLabelSans>
+              {cumInterestEarnedUsd !== undefined ? (
+                <Tooltip
+                  title={formatUsd(cumInterestEarnedUsd, { exact: true })}
+                >
+                  <TBody className="text-center">
+                    {formatUsd(cumInterestEarnedUsd)}
                   </TBody>
                 </Tooltip>
               ) : (
@@ -977,76 +986,65 @@ export default function EarningsTabContent({
               )}
             </div>
 
-            <TLabelSans>=</TLabelSans>
+            {/* Rewards earned */}
+            <div className="flex flex-col items-center gap-1">
+              <TLabelSans className="text-center">Rewards earned</TLabelSans>
+              {cumRewardsEarnedUsd !== undefined ? (
+                <Tooltip
+                  title={formatUsd(cumRewardsEarnedUsd, { exact: true })}
+                >
+                  <TBody className="text-center">
+                    {formatUsd(cumRewardsEarnedUsd)}
+                  </TBody>
+                </Tooltip>
+              ) : (
+                <Skeleton className="h-5 w-10" />
+              )}
+            </div>
+          </div>
 
-            {/* Plus */}
-            <div className="flex flex-col items-center gap-4">
-              {/* Interest earned */}
-              <div className="flex flex-col items-center gap-1">
-                <TLabelSans className="text-center">Interest earned</TLabelSans>
-                {cumInterestEarnedUsd !== undefined ? (
-                  <Tooltip
-                    title={formatUsd(cumInterestEarnedUsd, { exact: true })}
-                  >
-                    <TBody className="text-center">
-                      {formatUsd(cumInterestEarnedUsd)}
-                    </TBody>
-                  </Tooltip>
-                ) : (
-                  <Skeleton className="h-5 w-10" />
-                )}
-              </div>
-
-              {/* Rewards earned */}
-              <div className="flex flex-col items-center gap-1">
-                <TLabelSans className="text-center">Rewards earned</TLabelSans>
-                {totalRewardsEarnedUsd !== undefined ? (
-                  <Tooltip
-                    title={formatUsd(totalRewardsEarnedUsd, { exact: true })}
-                  >
-                    <TBody className="text-center">
-                      {formatUsd(totalRewardsEarnedUsd)}
-                    </TBody>
-                  </Tooltip>
-                ) : (
-                  <Skeleton className="h-5 w-10" />
-                )}
-              </div>
+          {/* Minus */}
+          <div className="flex flex-row items-center justify-around rounded-sm bg-destructive/5 py-3 max-md:w-full md:flex-[3] md:gap-4">
+            {/* Borrow fees */}
+            <div className="flex flex-col items-center gap-1">
+              <TLabelSans className="text-center">Borrow fees</TLabelSans>
+              {cumBorrowFeesUsd ? (
+                <Tooltip title={formatUsd(cumBorrowFeesUsd, { exact: true })}>
+                  <TBody className="text-center">
+                    {formatUsd(cumBorrowFeesUsd)}
+                  </TBody>
+                </Tooltip>
+              ) : (
+                <Skeleton className="h-5 w-10" />
+              )}
             </div>
 
-            <TLabelSans>-</TLabelSans>
+            {/* Interest paid */}
+            <div className="flex flex-col items-center gap-1">
+              <TLabelSans className="text-center">Interest paid</TLabelSans>
+              {cumInterestPaidUsd ? (
+                <Tooltip title={formatUsd(cumInterestPaidUsd, { exact: true })}>
+                  <TBody className="text-center">
+                    {formatUsd(cumInterestPaidUsd)}
+                  </TBody>
+                </Tooltip>
+              ) : (
+                <Skeleton className="h-5 w-10" />
+              )}
+            </div>
 
-            {/* - */}
-            <div className="flex flex-col items-center gap-4">
-              {/* Borrow fees */}
-              <div className="flex flex-col items-center gap-1">
-                <TLabelSans className="text-center">Borrow fees</TLabelSans>
-                {cumBorrowFeesUsd ? (
-                  <Tooltip title={formatUsd(cumBorrowFeesUsd, { exact: true })}>
-                    <TBody className="text-center">
-                      {formatUsd(cumBorrowFeesUsd)}
-                    </TBody>
-                  </Tooltip>
-                ) : (
-                  <Skeleton className="h-5 w-10" />
-                )}
-              </div>
-
-              {/* Interest paid */}
-              <div className="flex flex-col items-center gap-1">
-                <TLabelSans className="text-center">Interest paid</TLabelSans>
-                {cumInterestPaidUsd ? (
-                  <Tooltip
-                    title={formatUsd(cumInterestPaidUsd, { exact: true })}
-                  >
-                    <TBody className="text-center">
-                      {formatUsd(cumInterestPaidUsd)}
-                    </TBody>
-                  </Tooltip>
-                ) : (
-                  <Skeleton className="h-5 w-10" />
-                )}
-              </div>
+            {/* Liquidations */}
+            <div className="flex flex-col items-center gap-1">
+              <TLabelSans className="text-center">Liquidations</TLabelSans>
+              {cumLiquidationsUsd ? (
+                <Tooltip title={formatUsd(cumLiquidationsUsd, { exact: true })}>
+                  <TBody className="text-center">
+                    {formatUsd(cumLiquidationsUsd)}
+                  </TBody>
+                </Tooltip>
+              ) : (
+                <Skeleton className="h-5 w-10" />
+              )}
             </div>
           </div>
         </div>
@@ -1057,71 +1055,50 @@ export default function EarningsTabContent({
         </TLabelSans>
       </div>
 
-      {[
-        {
-          side: Side.DEPOSIT,
-          title: "Deposits",
-          columns: depositColumns,
-          data: rows?.deposit,
-          noDataMessage: "No deposits",
-        },
-        {
-          side: Side.BORROW,
-          title: "Borrows",
-          columns: borrowColumns,
-          data: rows?.borrow,
-          noDataMessage: "No borrows",
-        },
-      ].map((table, index, array) => {
-        const chartData =
-          table.side === Side.DEPOSIT
-            ? interpolatedCumInterestEarnedData
-            : interpolatedCumInterestPaidData;
+      <div className="w-full">
+        <DataTable<RowData>
+          columns={columns}
+          data={rows}
+          container={{
+            className: "overflow-y-visible overflow-x-auto",
+          }}
+          tableCellClassName={(cell) =>
+            cn(
+              cell && Object.entries(cell.row.original.rewardsEarned).length > 1
+                ? "py-2 h-auto"
+                : "py-0 h-12",
+            )
+          }
+        />
+      </div>
 
-        return (
-          <div
-            key={table.title}
-            className="relative flex flex-col gap-4"
-            style={{ zIndex: array.length - index }}
-          >
-            <TitleWithIcon className="px-4">{table.title}</TitleWithIcon>
-
-            <div key={table.title} className="flex flex-col gap-4">
-              <div className="w-full">
-                <DataTable<RowData>
-                  columns={table.columns}
-                  data={table.data}
-                  noDataMessage={table.noDataMessage}
-                  skeletonRows={data.lendingMarket.reserves.length}
-                  container={{
-                    className: "overflow-y-visible overflow-x-auto",
-                  }}
-                  tableCellClassName={(cell) =>
-                    cn(
-                      cell &&
-                        Object.entries(cell.row.original.rewards).length > 1
-                        ? "py-2 h-auto"
-                        : "py-0 h-12",
-                    )
-                  }
+      <div className="flex w-full flex-row">
+        {interpolatedCumInterestEarnedData === undefined ||
+        interpolatedCumInterestPaidData === undefined ? (
+          <div className="w-full px-4">
+            <Skeleton className="h-[200px] w-full" />
+          </div>
+        ) : (
+          <>
+            {interpolatedCumInterestEarnedData.length > 0 && (
+              <div className="flex-1">
+                <EarningsChart
+                  side={Side.DEPOSIT}
+                  data={interpolatedCumInterestEarnedData}
                 />
               </div>
-
-              {(chartData === undefined || chartData.length > 0) && (
-                <div
-                  className={cn("w-full", index === array.length - 1 && "pb-4")}
-                >
-                  <EarningsChart
-                    side={table.side}
-                    isLoading={chartData === undefined}
-                    data={chartData ?? []}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+            )}
+            {interpolatedCumInterestPaidData.length > 0 && (
+              <div className="flex-1">
+                <EarningsChart
+                  side={Side.BORROW}
+                  data={interpolatedCumInterestPaidData}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
