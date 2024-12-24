@@ -111,18 +111,28 @@ function Page() {
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
   const tokenInBalance = getBalance(tokenIn.coinType);
 
-  // Positions
-  const tokenOutDepositPosition = obligation?.deposits?.find(
-    (d) => d.coinType === tokenOut.coinType,
+  // Reserves
+  const tokenInReserve = data.lendingMarket.reserves.find(
+    (reserve) => reserve.coinType === tokenIn.coinType,
   );
-  const tokenOutDepositPositionAmount =
-    tokenOutDepositPosition?.depositedAmount ?? new BigNumber(0);
-
-  // Deposit
   const tokenOutReserve = data.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenOut.coinType,
   );
 
+  // Positions
+  const tokenInDepositPosition = obligation?.deposits?.find(
+    (d) => d.coinType === tokenIn.coinType,
+  );
+  const tokenOutDepositPosition = obligation?.deposits?.find(
+    (d) => d.coinType === tokenOut.coinType,
+  );
+
+  const tokenInDepositPositionAmount =
+    tokenInDepositPosition?.depositedAmount ?? new BigNumber(0);
+  const tokenOutDepositPositionAmount =
+    tokenOutDepositPosition?.depositedAmount ?? new BigNumber(0);
+
+  // Deposit
   const tokenOutStakingYieldAprPercent = tokenOutReserve
     ? getStakingYieldAprPercent(
         Side.DEPOSIT,
@@ -146,7 +156,7 @@ function Page() {
   const tokenInMaxCalculations = (() => {
     const result = [
       {
-        reason: `Insufficient ${tokenIn.symbol} balance`,
+        reason: `Insufficient ${tokenIn.symbol}`,
         isDisabled: true,
         value: tokenInBalance,
       },
@@ -925,19 +935,35 @@ function Page() {
 
             {/* In */}
             <div className="relative z-[1]">
-              <SwapInput
-                ref={inputRef}
-                title="You're paying"
-                autoFocus
-                value={value}
-                onChange={onValueChange}
-                usdValue={tokenInUsdValue}
-                token={tokenIn}
-                onSelectToken={(t: SwapToken) =>
-                  onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
-                }
-                onBalanceClick={useMaxValueWrapper}
-              />
+              <div className="relative z-[2] w-full">
+                <SwapInput
+                  ref={inputRef}
+                  title="Sell"
+                  autoFocus
+                  value={value}
+                  onChange={onValueChange}
+                  usdValue={tokenInUsdValue}
+                  token={tokenIn}
+                  onSelectToken={(t: SwapToken) =>
+                    onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
+                  }
+                  onBalanceClick={useMaxValueWrapper}
+                />
+              </div>
+
+              {!!tokenInReserve && (
+                <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
+                  <div className="flex flex-row items-center gap-2">
+                    <TLabelSans>Deposited</TLabelSans>
+                    <TBody className="text-xs">
+                      {formatToken(tokenInDepositPositionAmount, {
+                        exact: false,
+                      })}{" "}
+                      {tokenIn.symbol}
+                    </TBody>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Reverse */}
@@ -957,7 +983,7 @@ function Page() {
             <div className="relative z-[1]">
               <div className="relative z-[2] w-full">
                 <SwapInput
-                  title="To receive"
+                  title="Buy"
                   value={
                     new BigNumber(value || 0).gt(0) &&
                     quoteAmountOut !== undefined

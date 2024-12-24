@@ -518,7 +518,7 @@ function ClaimTabContent() {
     if (new BigNumber(claimAmount || 0).lte(0))
       return { title: "ENTER AN AMOUNT", isDisabled: true };
     if (new BigNumber(claimAmount).gt(mSendBalance))
-      return { title: "INSUFFICIENT mSEND BALANCE", isDisabled: true };
+      return { title: "INSUFFICIENT mSEND", isDisabled: true };
 
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
@@ -527,7 +527,7 @@ function ClaimTabContent() {
       };
     if (!isFlashLoan && suiBalance.lt(claimPenaltyAmountSui))
       return {
-        title: "INSUFFICIENT SUI BALANCE TO PAY PENALTY",
+        title: "INSUFFICIENT SUI TO PAY PENALTY",
         isDisabled: true,
       };
 

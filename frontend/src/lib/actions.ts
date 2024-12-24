@@ -46,7 +46,7 @@ const getMaxCalculations = (
 
     const result = [
       {
-        reason: `Insufficient ${reserve.symbol} balance`,
+        reason: `Insufficient ${reserve.token.symbol}`,
         isDisabled: true,
         value: balance,
       },
@@ -180,7 +180,7 @@ const getMaxCalculations = (
 
     const result = [
       {
-        reason: `Insufficient ${reserve.symbol} balance`,
+        reason: `Insufficient ${reserve.token.symbol}`,
         isDisabled: true,
         value: balance,
       },
