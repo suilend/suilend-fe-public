@@ -133,6 +133,7 @@ export default function PenaltyLineChart({
               fontSize: 12,
               fontFamily: "var(--font-mono)",
               fill: "hsl(var(--muted-foreground))",
+              width: undefined,
             }}
             axisLine={{
               stroke: "transparent",
@@ -152,7 +153,7 @@ export default function PenaltyLineChart({
               fontSize: 12,
               fontFamily: "var(--font-mono)",
               fill: "hsl(var(--muted-foreground))",
-              style: { whiteSpace: "nowrap" },
+              width: undefined,
             }}
             axisLine={{
               stroke: "transparent",
