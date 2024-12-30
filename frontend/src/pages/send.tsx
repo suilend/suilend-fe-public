@@ -658,7 +658,7 @@ function Page() {
       hoverSrc: `${ASSETS_URL}/send/nft/anima-hover.mp4`,
       title: "Anima",
       description:
-        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, December 31st.",
+        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, 1 Jan 2025.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
