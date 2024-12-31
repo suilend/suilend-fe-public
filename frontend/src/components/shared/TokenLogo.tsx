@@ -5,9 +5,9 @@ import { ClassValue } from "clsx";
 
 import {
   NORMALIZED_SOL_COINTYPE,
-  NORMALIZED_USDT_COINTYPE,
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
+  NORMALIZED_wUSDT_COINTYPE,
 } from "@suilend/frontend-sui";
 
 import TextLink from "@/components/shared/TextLink";
@@ -37,7 +37,7 @@ export default function TokenLogo({
 
   const wormholeAssetMap: Record<string, string> = {
     [NORMALIZED_wUSDC_COINTYPE]: "Wormhole Wrapped Ethereum-native USDC",
-    [NORMALIZED_USDT_COINTYPE]: "Wormhole Wrapped Ethereum-native USDT",
+    [NORMALIZED_wUSDT_COINTYPE]: "Wormhole Wrapped Ethereum-native USDT",
     [NORMALIZED_WETH_COINTYPE]: "Wormhole Wrapped Ethereum-native WETH",
     [NORMALIZED_SOL_COINTYPE]: "Wormhole Wrapped Solana-native SOL",
   };
