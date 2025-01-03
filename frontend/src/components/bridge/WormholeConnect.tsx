@@ -1,15 +1,31 @@
 import WormholeConnect from "@wormhole-foundation/wormhole-connect";
 import BigNumber from "bignumber.js";
 
+import {
+  NORMALIZED_SOL_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
+  NORMALIZED_WETH_COINTYPE,
+  NORMALIZED_wUSDT_COINTYPE,
+} from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DISCORD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function WormholeConnectWrapper() {
+  const { data } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
+
+  const assetUsdPriceMap: Record<string, BigNumber> = {
+    USDC: data.reserveMap[NORMALIZED_USDC_COINTYPE].price,
+    USDT: data.reserveMap[NORMALIZED_wUSDT_COINTYPE].price,
+    WETH: data.reserveMap[NORMALIZED_WETH_COINTYPE].price,
+    WSOL: data.reserveMap[NORMALIZED_SOL_COINTYPE].price,
+    SOL: data.reserveMap[NORMALIZED_SOL_COINTYPE].price,
+  };
 
   return (
     <div className={cn("w-full", styles.root)}>
@@ -39,15 +55,21 @@ export default function WormholeConnectWrapper() {
               track("bridge_claim");
             } else if (event.type === "transfer.success") {
               const { details } = event;
+
+              const amount = details.amount
+                ? new BigNumber(details.amount.amount).div(
+                    10 ** details.amount.decimals,
+                  )
+                : new BigNumber(0);
+              const amountUsd = amount.times(
+                assetUsdPriceMap[details.fromToken.symbol] ?? 0,
+              );
+
               track("bridge_complete", {
                 fromNetwork: details.fromChain,
                 toNetwork: details.toChain,
-                amount: details.amount
-                  ? +new BigNumber(details.amount.amount).div(
-                      10 ** details.amount.decimals,
-                    )
-                  : 0,
-                amountUsd: details.USDAmount ?? 0,
+                amount: amount.toFixed(2, BigNumber.ROUND_DOWN),
+                amountUsd: amountUsd.toFixed(2, BigNumber.ROUND_DOWN),
                 asset: details.fromToken.symbol,
               });
             }
