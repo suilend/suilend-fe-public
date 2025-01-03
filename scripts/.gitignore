@@ -41,3 +41,4 @@ dist
 node_modules
 .next
 .env
+json
