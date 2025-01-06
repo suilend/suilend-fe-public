@@ -11,7 +11,7 @@ interface LabelProps extends Recharts.LabelProps, PropsWithChildren {
   fill: string;
 }
 
-export function Label({ fill, children, ...props }: LabelProps) {
+export function Label({ fill, children, textAnchor, ...props }: LabelProps) {
   return (
     <text
       offset={props.offset}
@@ -21,7 +21,7 @@ export function Label({ fill, children, ...props }: LabelProps) {
       fontFamily="var(--font-mono)"
       fill={fill}
     >
-      <tspan text-anchor="middle">{children}</tspan>
+      <tspan text-anchor={textAnchor ?? "middle"}>{children}</tspan>
     </text>
   );
 }
@@ -194,7 +194,7 @@ export default function PenaltyLineChart({
             stroke="#7CE3CB"
             strokeWidth={2}
             label={(props) => (
-              <Label fill="#7CE3CB" {...props}>
+              <Label fill="#7CE3CB" textAnchor="start" {...props}>
                 NO PENALTY
               </Label>
             )}

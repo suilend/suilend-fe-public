@@ -56,6 +56,7 @@ interface SwapContext {
   aftermathSdk?: Aftermath;
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
+  verifiedCoinTypes: string[];
   tokenIn?: SwapToken;
   tokenOut?: SwapToken;
   setTokenSymbol: (newTokenSymbol: string, direction: TokenDirection) => void;
@@ -68,6 +69,7 @@ const defaultContextValue: SwapContext = {
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
   },
+  verifiedCoinTypes: [],
   tokenIn: undefined,
   tokenOut: undefined,
   setTokenSymbol: () => {
@@ -164,6 +166,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   );
 
   // Tokens - Verified coinTypes
+  const [verifiedCoinTypes, setVerifiedCoinTypes] = useState<string[]>([]);
+
   const isFetchingVerifiedCoinTypesRef = useRef<boolean>(false);
   useEffect(() => {
     (async () => {
@@ -171,11 +175,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const verifiedCoinTypes = (
-          await aftermathSdk.Coin().getVerifiedCoins()
-        ).map(normalizeStructTag);
+        const result = (await aftermathSdk.Coin().getVerifiedCoins()).map(
+          normalizeStructTag,
+        );
+        setVerifiedCoinTypes(result);
 
-        fetchTokensMetadata(verifiedCoinTypes);
+        fetchTokensMetadata(result);
       } catch (err) {}
     })();
   }, [aftermathSdk, fetchTokensMetadata]);
@@ -267,6 +272,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       aftermathSdk,
       tokens,
       fetchTokensMetadata,
+      verifiedCoinTypes,
       tokenIn,
       tokenOut,
       setTokenSymbol,
@@ -276,6 +282,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       aftermathSdk,
       tokens,
       fetchTokensMetadata,
+      verifiedCoinTypes,
       tokenIn,
       tokenOut,
       setTokenSymbol,

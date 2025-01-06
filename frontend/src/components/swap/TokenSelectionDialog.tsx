@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
-import { ChevronDown, Search, Wallet } from "lucide-react";
+import { BadgeCheck, ChevronDown, Search, Wallet } from "lucide-react";
 
 import {
   NORMALIZED_SEND_COINTYPE,
@@ -36,6 +36,8 @@ interface TokenRowProps {
 function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   const { getBalance } = useLoadedAppContext();
 
+  const { verifiedCoinTypes } = useSwapContext();
+
   const tokenBalance = getBalance(token.coinType);
 
   return (
@@ -57,11 +59,19 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
         />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {/* Top */}
           <div className="flex w-full flex-row items-center justify-between gap-4">
+            {/* Top left */}
             <div className="flex min-w-0 flex-row items-center gap-1">
               <TBody className="overflow-hidden text-ellipsis text-nowrap">
                 {token.symbol}
               </TBody>
+              {verifiedCoinTypes.includes(token.coinType) && (
+                <Tooltip title="This asset appears on the list of verified assets from Aftermath.">
+                  <BadgeCheck className="h-4 w-4 text-success" />
+                </Tooltip>
+              )}
+
               <CopyToClipboardButton
                 className="-my-0.5 h-6 w-6 hover:bg-transparent"
                 iconClassName="w-3 h-3"
@@ -69,6 +79,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
               />
             </div>
 
+            {/* Top right */}
             <div className="flex min-w-0 flex-row items-center gap-1.5">
               <Wallet className="h-3 w-3 shrink-0 text-foreground" />
               <Tooltip
@@ -85,13 +96,12 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
             </div>
           </div>
 
+          {/* Bottom */}
           {token.name && (
             <div className="flex flex-row items-center gap-2">
-              {token.name && (
-                <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
-                  {token.name}
-                </TLabelSans>
-              )}
+              <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
+                {token.name}
+              </TLabelSans>
             </div>
           )}
         </div>
@@ -111,7 +121,8 @@ export default function TokenSelectionDialog({
 }: TokenSelectionDialogProps) {
   const { getBalance, filteredReserves } = useLoadedAppContext();
 
-  const { fetchTokensMetadata, ...restSwapContext } = useSwapContext();
+  const { fetchTokensMetadata, verifiedCoinTypes, ...restSwapContext } =
+    useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];
 
   // State
@@ -135,13 +146,16 @@ export default function TokenSelectionDialog({
     [tokens],
   );
 
-  const tokensWithBalances = useMemo(
-    () =>
-      tokens
-        .filter((t) => getBalance(t.coinType).gt(0))
-        .sort((a, b) => +getBalance(b.coinType) - +getBalance(a.coinType)),
-    [tokens, getBalance],
-  );
+  const tokensWithBalances = useMemo(() => {
+    const sortedTokens = tokens
+      .filter((t) => getBalance(t.coinType).gt(0))
+      .sort((a, b) => +getBalance(b.coinType) - +getBalance(a.coinType));
+
+    return [
+      ...sortedTokens.filter((t) => verifiedCoinTypes.includes(t.coinType)),
+      ...sortedTokens.filter((t) => !verifiedCoinTypes.includes(t.coinType)),
+    ];
+  }, [tokens, getBalance, verifiedCoinTypes]);
   const reserveTokens = useMemo(
     () =>
       filteredReserves
@@ -281,7 +295,7 @@ export default function TokenSelectionDialog({
               tokens: filteredReserveTokens,
             },
             {
-              title: "Other assets",
+              title: "Other known assets",
               tokens: filteredOtherTokens,
             },
           ]
