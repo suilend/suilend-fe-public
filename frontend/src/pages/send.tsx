@@ -197,7 +197,7 @@ function Page() {
   };
 
   const anima = {
-    snapshotTaken: false,
+    snapshotTaken: true,
     airdropSent: false,
     eligibleWallets: undefined, //animaJson.length > 0 ? animaJson.length : undefined,
     totalAllocationPercent: new BigNumber(0.05),
@@ -658,7 +658,7 @@ function Page() {
       hoverSrc: `${ASSETS_URL}/send/nft/anima-hover.mp4`,
       title: "Anima",
       description:
-        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui. Anima X Rootlets snapshot, 1 Jan 2025.",
+        "Anima's game-ready Genesis Avatars: the first-ever dNFT collection on Sui.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.NFT,
       cta: {
