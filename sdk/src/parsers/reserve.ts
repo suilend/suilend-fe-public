@@ -73,9 +73,7 @@ export const parseReserve = (
   const availableAmountUsd = availableAmount.times(price);
   const borrowedAmountUsd = borrowedAmount.times(price);
 
-  const depositedAmount = borrowedAmount
-    .plus(availableAmount)
-    .minus(unclaimedSpreadFees);
+  const depositedAmount = borrowedAmount.plus(availableAmount);
   const depositedAmountUsd = depositedAmount.times(price);
 
   const cTokenExchangeRate = simulate.cTokenRatio(reserve);
