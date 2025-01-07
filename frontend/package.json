@@ -35,7 +35,7 @@
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@sentry/nextjs": "^8.38.0",
-    "@suilend/frontend-sui": "^0.2.21",
+    "@suilend/frontend-sui": "^0.2.22",
     "@suilend/frontend-sui-next": "^0.1.12",
     "@suilend/springsui-sdk": "^1.0.16",
     "@tanstack/react-query": "^5.60.2",
