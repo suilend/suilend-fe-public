@@ -34,15 +34,8 @@ export const calculateUtilizationRate = (reserve: Reserve<string>) => {
   const borrowedAmount = new BigNumber(reserve.borrowedAmount.value.toString())
     .div(WAD)
     .div(10 ** mintDecimals);
-  const unclaimedSpreadFees = new BigNumber(
-    reserve.unclaimedSpreadFees.value.toString(),
-  )
-    .div(WAD)
-    .div(10 ** mintDecimals);
 
-  const depositedAmount = borrowedAmount
-    .plus(availableAmount)
-    .minus(unclaimedSpreadFees);
+  const depositedAmount = borrowedAmount.plus(availableAmount);
 
   return depositedAmount.eq(0)
     ? new BigNumber(0)
