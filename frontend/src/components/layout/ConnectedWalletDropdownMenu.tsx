@@ -1,7 +1,10 @@
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useSignPersonalMessage } from "@mysten/dapp-kit";
+import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   useSettingsContext,
@@ -20,6 +23,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatAddress, formatUsd } from "@/lib/format";
+import { API_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface ConnectedWalletDropdownMenuProps {
@@ -46,12 +50,73 @@ export default function ConnectedWalletDropdownMenu({
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const Icon = isOpen ? ChevronUp : ChevronDown;
 
-  const hasDisconnect = !isImpersonating;
+  // VIP - eligibility
+  const [isEligibleForVipProgramMap, setIsEligibleForVipProgramMap] = useState<
+    Record<string, boolean>
+  >({});
+  const isEligibleForVipProgram = isEligibleForVipProgramMap[address];
+
+  useEffect(() => {
+    (async () => {
+      if (isEligibleForVipProgramMap[address] !== undefined) return;
+
+      try {
+        const url = `${API_URL}/vip/eligibility/?${new URLSearchParams({
+          wallet: address,
+        })}`;
+        const res = await fetch(url);
+        const json = await res.json();
+
+        setIsEligibleForVipProgramMap((prev) => ({
+          ...prev,
+          [address]: json.eligible,
+        }));
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [isEligibleForVipProgramMap, address]);
+
+  // VIP - join
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+
+  const joinVipGroup = async () => {
+    if (!account?.publicKey) return;
+    const timestampS = Math.floor(Date.now() / 1000);
+
+    try {
+      const message = Buffer.from(`suilend-vip-verification-${timestampS}`);
+      const { signature } = await signPersonalMessage({
+        message,
+        account,
+      });
+
+      const url = `${API_URL}/vip/info/?${new URLSearchParams({
+        publicKey: toBase64(account.publicKey as Uint8Array),
+        signature,
+        timestampS: `${timestampS}`,
+      })}`;
+      const res = await fetch(url);
+      const json = await res.json();
+
+      window.open(json.telegramLink, "_blank");
+    } catch (err) {
+      toast.error("Failed to join VIP Group on Telegram", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  };
+
+  // Items
+  const hasVipItem = isEligibleForVipProgram;
+  const hasDisconnectItem = !isImpersonating;
+
   const hasSubaccounts =
     data && data.obligations && data.obligations.length > 1 && obligation;
   const hasWallets = !isImpersonating && accounts.length > 1;
 
-  const noItems = !hasDisconnect && !hasSubaccounts && !hasWallets;
+  const noItems =
+    !hasVipItem && !hasDisconnectItem && !hasSubaccounts && !hasWallets;
 
   return (
     <DropdownMenu
@@ -103,14 +168,22 @@ export default function ConnectedWalletDropdownMenu({
       noItems={noItems}
       items={
         <>
-          {hasDisconnect && (
+          {hasVipItem && (
+            <DropdownMenuItem onClick={joinVipGroup}>
+              Join VIP Group on Telegram
+            </DropdownMenuItem>
+          )}
+          {hasDisconnectItem && (
             <DropdownMenuItem onClick={disconnectWallet}>
               Disconnect
             </DropdownMenuItem>
           )}
+
           {hasSubaccounts && (
             <>
-              <TLabelSans className={cn(hasDisconnect && "mt-2")}>
+              <TLabelSans
+                className={cn((hasVipItem || hasDisconnectItem) && "mt-2")}
+              >
                 Subaccounts
               </TLabelSans>
 
@@ -151,10 +224,13 @@ export default function ConnectedWalletDropdownMenu({
               )}
             </>
           )}
+
           {hasWallets && (
             <>
               <TLabelSans
-                className={cn((hasDisconnect || hasSubaccounts) && "mt-2")}
+                className={cn(
+                  (hasVipItem || hasDisconnectItem || hasSubaccounts) && "mt-2",
+                )}
               >
                 Wallets
               </TLabelSans>

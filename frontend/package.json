@@ -17,6 +17,7 @@
     "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.6",
     "@dagrejs/dagre": "^1.1.4",
     "@launchdarkly/node-server-sdk": "^9.7.2",
+    "@mysten/dapp-kit": "0.14.43",
     "@mysten/kiosk": "0.9.33",
     "@mysten/sui": "1.17.0",
     "@mysten/sui.js": "0.54.1",
