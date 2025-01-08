@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+import { CoinStruct, SuiClient } from "@mysten/sui/client";
+import { Transaction, TransactionResult } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
@@ -47,6 +48,22 @@ import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 
+const getAllCoins = async (
+  client: SuiClient,
+  owner: string,
+): Promise<CoinStruct[]> => {
+  let cursor = null;
+  const allCoins = [];
+  while (true) {
+    const coins = await client.getAllCoins({ owner, cursor });
+    cursor = coins.nextCursor;
+    allCoins.push(...coins.data);
+    if (!coins.hasNextPage) {
+      return allCoins;
+    }
+  }
+};
+
 interface RowData {
   symbol: string;
   quantity: BigNumber;
@@ -63,7 +80,7 @@ export default function LiquidateDialog({
 }: LiquidateDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, getBalance } = useLoadedAppContext();
+  const { suilendClient, data } = useLoadedAppContext();
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);
@@ -139,28 +156,6 @@ export default function LiquidateDialog({
     setObligationHistory([...obligationHistory, ...historyPage.history]);
   };
 
-  // Liquidate
-  const [liquidateAmount, setLiquidateAmount] = useState<string>("");
-
-  const onMaxClick = () => {
-    if (!parsedObligation) return;
-    if (!selectedRepayAsset) return;
-
-    const borrow = parsedObligation.borrows.find(
-      (b) => b.reserve.token.symbol === selectedRepayAsset,
-    );
-    if (!borrow) return;
-
-    const repayCoinBalance = getBalance(borrow.reserve.coinType);
-
-    setLiquidateAmount(
-      repayCoinBalance.toFixed(
-        borrow.reserve.mintDecimals,
-        BigNumber.ROUND_DOWN,
-      ),
-    );
-  };
-
   async function liquidateObligation(
     obligation: ParsedObligation,
     repayAssetSymbol: string,
@@ -169,39 +164,46 @@ export default function LiquidateDialog({
     if (!address) throw new Error("Wallet not connected");
 
     const transaction = new Transaction();
+
     try {
-      const deposit = obligation.deposits.find(
-        (d) => d.reserve.token.symbol === withdrawAssetSymbol,
-      );
-      const borrow = obligation.borrows.find(
-        (b) => b.reserve.token.symbol === repayAssetSymbol,
-      );
-      if (!deposit || !borrow) return;
+      const repayCoinType = obligation.borrows.find(
+        (b) => b.reserve.symbol === repayAssetSymbol,
+      )?.coinType as string;
+      const repayCoin = (await getAllCoins(suiClient, address))
+        .filter((coin) => {
+          return (
+            coin.coinType === repayCoinType ||
+            (isSui(coin.coinType) && isSui(repayCoinType))
+          );
+        })
+        .sort((a, b) => {
+          return parseInt(b.balance) - parseInt(a.balance);
+        })[0];
+      let repayCoinId: TransactionResult[0] | string = repayCoin.coinObjectId;
 
-      const submitAmount = new BigNumber(liquidateAmount)
-        .times(10 ** borrow.reserve.mintDecimals)
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString();
-
-      const repayCoin = coinWithBalance({
-        balance: BigInt(submitAmount),
-        type: borrow.coinType,
-        useGasCoin: isSui(borrow.coinType),
-      })(transaction);
-
+      if (isSui(repayCoinType)) {
+        const [splitSui] = transaction.splitCoins(transaction.gas, [
+          parseInt(repayCoin.balance) - 1000000000,
+        ]);
+        repayCoinId = splitSui;
+      }
       const [withdrawn] = await suilendClient.liquidateAndRedeem(
         transaction,
         obligation.original,
-        borrow.coinType,
-        deposit.coinType,
-        repayCoin,
+        repayCoinType,
+        obligation.deposits.find(
+          (d) => d.reserve.symbol === withdrawAssetSymbol,
+        )?.coinType as string,
+        repayCoinId,
       );
       transaction.transferObjects([withdrawn], address);
+      if (isSui(repayCoinType)) {
+        transaction.transferObjects([repayCoinId], address);
+      }
 
       await signExecuteAndWaitForTransaction(transaction);
 
       toast.success("Liquidated");
-      setLiquidateAmount("");
     } catch (err) {
       toast.error("Failed to liquidate", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -218,7 +220,6 @@ export default function LiquidateDialog({
       ? parseObligation(refreshedObligation, data.reserveMap)
       : null;
   }
-
   return (
     <Grid>
       {!fixedObligation && (
@@ -321,25 +322,8 @@ export default function LiquidateDialog({
               }}
             />
           </div>
-
           <div className="col-span-2 flex flex-row items-end gap-2">
-            <div className="flex flex-row gap-1">
-              <Input
-                id="liquidateAmount"
-                value={liquidateAmount}
-                onChange={setLiquidateAmount}
-              />
-              <Button
-                className="h-10"
-                variant="secondaryOutline"
-                onClick={onMaxClick}
-              >
-                MAX
-              </Button>
-            </div>
-
             <Button
-              className="h-10"
               tooltip="Liquidate this obligation"
               onClick={() =>
                 liquidateObligation(
@@ -355,7 +339,6 @@ export default function LiquidateDialog({
               Liquidate
             </Button>
           </div>
-
           <div className="col-span-2 flex flex-row items-end gap-2">
             <DataTable<FormattedObligationHistory>
               columns={historyColumnDefinition(data.lendingMarket.reserves)}
