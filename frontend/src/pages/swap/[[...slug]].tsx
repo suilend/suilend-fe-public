@@ -650,6 +650,8 @@ function Page() {
       );
       if (historicalUsdPricesMap[_token.coinType] === undefined)
         fetchTokenHistoricalUsdPrices(_token);
+      if (usdPricesMap[_token.coinType] === undefined)
+        fetchTokenUsdPrice(_token);
     }
 
     inputRef.current?.focus();
