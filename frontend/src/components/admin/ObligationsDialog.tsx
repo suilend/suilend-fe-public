@@ -23,7 +23,7 @@ import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import Switch from "@/components/shared/Switch";
-import { TBody } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
@@ -77,36 +77,46 @@ export default function ObligationsDialog() {
 
   return (
     <Grid>
-      <div className="col-span-1 flex flex-row items-end gap-2">
-        {data.lendingMarket.reserves.map((reserve, index) => (
-          <Switch
-            key={"deposit-switch-" + reserve.symbol}
-            label={index === 0 ? "Deposit " + reserve.symbol : reserve.symbol}
-            id={"deposit-switch-" + reserve.symbol}
-            value={depositFilters[reserve.symbol]}
-            onChange={() => {
-              const newState = { ...depositFilters };
-              newState[reserve.symbol] = !newState[reserve.symbol];
-              setDepositFilters(newState);
-            }}
-          />
-        ))}
+      <div className="col-span-1 flex flex-col gap-2">
+        <TLabelSans>Deposits</TLabelSans>
+
+        <div className="flex flex-row flex-wrap items-end gap-2">
+          {data.lendingMarket.reserves.map((reserve) => (
+            <Switch
+              key={"deposit-switch-" + reserve.symbol}
+              id={"deposit-switch-" + reserve.symbol}
+              label={reserve.symbol}
+              value={depositFilters[reserve.symbol]}
+              onChange={() => {
+                const newState = { ...depositFilters };
+                newState[reserve.symbol] = !newState[reserve.symbol];
+                setDepositFilters(newState);
+              }}
+            />
+          ))}
+        </div>
       </div>
-      <div className="col-span-1 flex flex-row items-end gap-2">
-        {data.lendingMarket.reserves.map((reserve, index) => (
-          <Switch
-            key={"borrow-switch-" + reserve.symbol}
-            label={index === 0 ? "Borrow " + reserve.symbol : reserve.symbol}
-            id={"borrow-switch-" + reserve.symbol}
-            value={borrowFilters[reserve.symbol]}
-            onChange={() => {
-              const newState = { ...borrowFilters };
-              newState[reserve.symbol] = !newState[reserve.symbol];
-              setBorrowFilters(newState);
-            }}
-          />
-        ))}
+
+      <div className="col-span-1 flex flex-col gap-2">
+        <TLabelSans>Borrows</TLabelSans>
+
+        <div className="flex flex-row flex-wrap items-end gap-2">
+          {data.lendingMarket.reserves.map((reserve) => (
+            <Switch
+              key={"borrow-switch-" + reserve.symbol}
+              id={"borrow-switch-" + reserve.symbol}
+              label={reserve.symbol}
+              value={borrowFilters[reserve.symbol]}
+              onChange={() => {
+                const newState = { ...borrowFilters };
+                newState[reserve.symbol] = !newState[reserve.symbol];
+                setBorrowFilters(newState);
+              }}
+            />
+          ))}
+        </div>
       </div>
+
       <div className="col-span-2 flex flex-row items-end gap-2">
         <Input
           label="minDepositValue"

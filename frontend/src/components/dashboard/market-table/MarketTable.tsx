@@ -36,10 +36,30 @@ import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import {
-  ISOLATED_TOOLTIP,
+  DEPRECATED_ASSETS_TOOLTIP,
+  ISOLATED_ASSETS_TOOLTIP,
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,
 } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
+
+const getExceedsLimit = (limit: BigNumber, total: BigNumber) =>
+  limit.eq(0) || total.gte(limit);
+const getExceedsLimitTooltip = (side: Side) => `Asset ${side} limit reached.`;
+const getExceedsLimitUsdTooltip = (side: Side) =>
+  `Asset USD ${side} limit reached.`;
+
+const getAlmostExceedsLimit = (limit: BigNumber, total: BigNumber) =>
+  !limit.eq(0) &&
+  total.gte(limit.times(Math.min(0.9999, 1 - 1 / limit.toNumber())));
+const getAlmostExceedsLimitTooltip = (
+  side: Side,
+  remaining: BigNumber,
+  symbol: string,
+  decimals: number,
+) =>
+  `Asset ${side} limit almost reached. Capacity remaining: ${formatToken(remaining, { dp: decimals })} ${symbol}`;
+const getAlmostExceedsLimitUsdTooltip = (side: Side, remaining: BigNumber) =>
+  `Asset USD ${side} limit almost reached. Capacity remaining: ${formatUsd(remaining)}`;
 
 export enum MarketTableType {
   MARKET = "market",
@@ -47,7 +67,10 @@ export enum MarketTableType {
 
 export interface HeaderRowData {
   isHeader: boolean;
-  isIsolated: boolean;
+  isIsolated?: boolean;
+  isDeprecated?: boolean;
+  title: string;
+  tooltip?: string;
   count: number;
 
   subRows: (CollapsibleRowData | ReservesRowData)[];
@@ -66,10 +89,12 @@ export interface CollapsibleRowData {
 }
 
 export interface ReservesRowData {
+  isIsolated: boolean;
+  isDeprecated: boolean;
+
   reserve: ParsedReserve;
   token: Token;
   price: BigNumber;
-  isIsolated: boolean;
 
   openLtvPercent: BigNumber;
   borrowWeightBps: BigNumber;
@@ -100,19 +125,26 @@ export default function MarketTable() {
         header: ({ column }) => tableHeader(column, "Asset name"),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) {
-            const { isIsolated, count } = row.original as HeaderRowData;
+            const { isDeprecated, title, tooltip, count } =
+              row.original as HeaderRowData;
+
+            const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
             return (
-              <div className="flex flex-row items-center gap-2">
-                <Tooltip title={isIsolated ? ISOLATED_TOOLTIP : undefined}>
+              <div className="group flex flex-row items-center gap-2">
+                {isDeprecated && (
+                  <Icon className="-mr-1 h-4 w-4 text-primary" />
+                )}
+
+                <Tooltip title={tooltip}>
                   <TTitle
                     className={cn(
                       "w-max uppercase",
-                      isIsolated &&
+                      !!tooltip &&
                         cn("decoration-primary/50", hoverUnderlineClassName),
                     )}
                   >
-                    {isIsolated ? "Isolated" : "Main"} assets
+                    {title}
                   </TTitle>
                 </Tooltip>
                 <TLabel>{count}</TLabel>
@@ -261,85 +293,53 @@ export default function MarketTable() {
   // Rows
   const rows: HeaderRowData[] = useMemo(() => {
     const reserveRows: ReservesRowData[] = filteredReserves.map((reserve) => {
-      const token = reserve.token;
-      const price = reserve.price;
-      const isIsolated = reserve.config.isolated;
-
-      const openLtvPercent = new BigNumber(reserve.config.openLtvPct);
-      const borrowWeightBps = reserve.config.borrowWeightBps;
-      const depositedAmount = reserve.depositedAmount;
-      const depositedAmountUsd = reserve.depositedAmountUsd;
-      const borrowedAmount = reserve.borrowedAmount;
-      const borrowedAmountUsd = reserve.borrowedAmountUsd;
-      const depositAprPercent = reserve.depositAprPercent;
       const totalDepositAprPercent = getTotalAprPercent(
         Side.DEPOSIT,
         reserve.depositAprPercent,
         getFilteredRewards(data.rewardMap[reserve.coinType].deposit),
         getStakingYieldAprPercent(Side.DEPOSIT, reserve, data.lstAprPercentMap),
       );
-      const borrowAprPercent = reserve.borrowAprPercent;
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,
         reserve.borrowAprPercent,
         getFilteredRewards(data.rewardMap[reserve.coinType].borrow),
       );
 
-      const getAlmostExceedsLimit = (limit: BigNumber, total: BigNumber) =>
-        !limit.eq(0) &&
-        total.gte(limit.times(Math.min(0.9999, 1 - 1 / limit.toNumber())));
-      const getExceedsLimit = (limit: BigNumber, total: BigNumber) =>
-        limit.eq(0) || total.gte(limit);
-
       const almostExceedsDepositLimit = getAlmostExceedsLimit(
         reserve.config.depositLimit,
-        depositedAmount,
+        reserve.depositedAmount,
       );
       const almostExceedsDepositLimitUsd = getAlmostExceedsLimit(
         reserve.config.depositLimitUsd,
-        depositedAmountUsd,
+        reserve.depositedAmountUsd,
       );
 
       const exceedsDepositLimit = getExceedsLimit(
         reserve.config.depositLimit,
-        depositedAmount,
+        reserve.depositedAmount,
       );
       const exceedsDepositLimitUsd = getExceedsLimit(
         reserve.config.depositLimitUsd,
-        depositedAmountUsd,
+        reserve.depositedAmountUsd,
       );
 
       const almostExceedsBorrowLimit = getAlmostExceedsLimit(
         reserve.config.borrowLimit,
-        borrowedAmount,
+        reserve.borrowedAmount,
       );
       const almostExceedsBorrowLimitUsd = getAlmostExceedsLimit(
         reserve.config.borrowLimitUsd,
-        borrowedAmountUsd,
+        reserve.borrowedAmountUsd,
       );
 
       const exceedsBorrowLimit = getExceedsLimit(
         reserve.config.borrowLimit,
-        borrowedAmount,
+        reserve.borrowedAmount,
       );
       const exceedsBorrowLimitUsd = getExceedsLimit(
         reserve.config.borrowLimitUsd,
-        borrowedAmountUsd,
+        reserve.borrowedAmountUsd,
       );
-
-      const getAlmostExceedsLimitTooltip = (
-        side: Side,
-        remaining: BigNumber,
-        symbol: string,
-      ) =>
-        `Asset ${side} limit almost reached. Capacity remaining: ${formatToken(remaining, { dp: reserve.mintDecimals })} ${symbol}`;
-      const getAlmostExceedsLimitUsd = (side: Side, remaining: BigNumber) =>
-        `Asset USD ${side} limit almost reached. Capacity remaining: ${formatUsd(remaining)}`;
-
-      const getExceedsLimitTooltip = (side: Side) =>
-        `Asset ${side} limit reached.`;
-      const getExceedsLimitUsdTooltip = (side: Side) =>
-        `Asset USD ${side} limit reached.`;
 
       const depositedAmountTooltip = exceedsDepositLimit
         ? getExceedsLimitTooltip(Side.DEPOSIT)
@@ -348,13 +348,16 @@ export default function MarketTable() {
           : almostExceedsDepositLimit
             ? getAlmostExceedsLimitTooltip(
                 Side.DEPOSIT,
-                reserve.config.depositLimit.minus(depositedAmount),
-                token.symbol,
+                reserve.config.depositLimit.minus(reserve.depositedAmount),
+                reserve.token.symbol,
+                reserve.token.decimals,
               )
             : almostExceedsDepositLimitUsd
-              ? getAlmostExceedsLimitUsd(
+              ? getAlmostExceedsLimitUsdTooltip(
                   Side.DEPOSIT,
-                  reserve.config.depositLimitUsd.minus(depositedAmountUsd),
+                  reserve.config.depositLimitUsd.minus(
+                    reserve.depositedAmountUsd,
+                  ),
                 )
               : undefined;
 
@@ -365,49 +368,59 @@ export default function MarketTable() {
           : almostExceedsBorrowLimit
             ? getAlmostExceedsLimitTooltip(
                 Side.BORROW,
-                reserve.config.borrowLimit.minus(borrowedAmount),
-                token.symbol,
+                reserve.config.borrowLimit.minus(reserve.borrowedAmount),
+                reserve.token.symbol,
+                reserve.token.decimals,
               )
             : almostExceedsBorrowLimitUsd
-              ? getAlmostExceedsLimitUsd(
+              ? getAlmostExceedsLimitUsdTooltip(
                   Side.BORROW,
-                  reserve.config.borrowLimitUsd.minus(borrowedAmountUsd),
+                  reserve.config.borrowLimitUsd.minus(
+                    reserve.borrowedAmountUsd,
+                  ),
                 )
               : undefined;
 
       return {
-        reserve,
-        token,
-        price,
-        isIsolated,
+        isIsolated: reserve.config.isolated,
+        isDeprecated: isDeprecated(reserve.token.coinType),
 
-        openLtvPercent,
-        borrowWeightBps,
-        depositedAmount,
-        depositedAmountUsd,
+        reserve,
+        token: reserve.token,
+        price: reserve.price,
+
+        openLtvPercent: new BigNumber(reserve.config.openLtvPct),
+        borrowWeightBps: reserve.config.borrowWeightBps,
+        depositedAmount: reserve.depositedAmount,
+        depositedAmountUsd: reserve.depositedAmountUsd,
         depositedAmountTooltip,
-        borrowedAmount,
-        borrowedAmountUsd,
+        borrowedAmount: reserve.borrowedAmount,
+        borrowedAmountUsd: reserve.borrowedAmountUsd,
         borrowedAmountTooltip,
-        depositAprPercent,
+        depositAprPercent: reserve.depositAprPercent,
         totalDepositAprPercent,
-        borrowAprPercent,
+        borrowAprPercent: reserve.borrowAprPercent,
         totalBorrowAprPercent,
       };
     });
 
     const mainReserveRows = reserveRows.filter(
-      (reserveRow) => !reserveRow.isIsolated,
+      (reserveRow) => !reserveRow.isIsolated && !reserveRow.isDeprecated,
     );
     const isolatedReserveRows = reserveRows.filter(
-      (reserveRow) => reserveRow.isIsolated,
+      (reserveRow) => reserveRow.isIsolated && !reserveRow.isDeprecated,
+    );
+    const deprecatedReserveRows = reserveRows.filter(
+      (reserveRow) => reserveRow.isDeprecated,
     );
 
     const result: HeaderRowData[] = [];
+
+    // Main assets
     if (mainReserveRows.length > 0) {
       const mainAssetsRow: HeaderRowData = {
         isHeader: true,
-        isIsolated: false,
+        title: "Main assets",
         count: 0,
 
         subRows: [],
@@ -416,18 +429,6 @@ export default function MarketTable() {
       const ecosystemLstsRow: CollapsibleRowData = {
         isCollapsibleRow: true,
         title: "ECOSYSTEM LSTs",
-
-        depositedAmount: new BigNumber(0),
-        depositedAmountUsd: new BigNumber(0),
-        borrowedAmount: new BigNumber(0),
-        borrowedAmountUsd: new BigNumber(0),
-
-        subRows: [],
-      };
-
-      const deprecatedRow: CollapsibleRowData = {
-        isCollapsibleRow: true,
-        title: "DEPRECATED",
 
         depositedAmount: new BigNumber(0),
         depositedAmountUsd: new BigNumber(0),
@@ -453,21 +454,6 @@ export default function MarketTable() {
             );
 
           ecosystemLstsRow.subRows.push(reserveRow);
-        } else if (isDeprecated(reserveRow.token.coinType)) {
-          deprecatedRow.depositedAmount = deprecatedRow.depositedAmount.plus(
-            reserveRow.depositedAmount,
-          );
-          deprecatedRow.depositedAmountUsd =
-            deprecatedRow.depositedAmountUsd.plus(
-              reserveRow.depositedAmountUsd,
-            );
-          deprecatedRow.borrowedAmount = deprecatedRow.borrowedAmount.plus(
-            reserveRow.borrowedAmount,
-          );
-          deprecatedRow.borrowedAmountUsd =
-            deprecatedRow.borrowedAmountUsd.plus(reserveRow.borrowedAmountUsd);
-
-          deprecatedRow.subRows.push(reserveRow);
         } else mainAssetsRow.subRows.push(reserveRow);
       }
 
@@ -482,17 +468,17 @@ export default function MarketTable() {
         ];
       }
 
-      if (deprecatedRow.subRows.length > 0)
-        mainAssetsRow.subRows = [...mainAssetsRow.subRows, deprecatedRow];
-
       mainAssetsRow.count = mainReserveRows.length;
       result.push(mainAssetsRow);
     }
 
+    // Isolated assets
     if (isolatedReserveRows.length > 0) {
       const isolatedAssetsRow: HeaderRowData = {
         isHeader: true,
         isIsolated: true,
+        title: "Isolated assets",
+        tooltip: ISOLATED_ASSETS_TOOLTIP,
         count: 0,
 
         subRows: [],
@@ -538,6 +524,26 @@ export default function MarketTable() {
       result.push(isolatedAssetsRow);
     }
 
+    // Deprecated assets
+    if (deprecatedReserveRows.length > 0) {
+      const deprecatedAssetsRow: HeaderRowData = {
+        isHeader: true,
+        isDeprecated: true,
+        title: "Deprecated assets",
+        tooltip: DEPRECATED_ASSETS_TOOLTIP,
+        count: 0,
+
+        subRows: [],
+      };
+
+      for (const reserveRow of deprecatedReserveRows) {
+        deprecatedAssetsRow.subRows.push(reserveRow);
+      }
+
+      deprecatedAssetsRow.count = deprecatedReserveRows.length;
+      result.push(deprecatedAssetsRow);
+    }
+
     return result;
   }, [filteredReserves, data.rewardMap, data.lstAprPercentMap]);
 
@@ -548,7 +554,7 @@ export default function MarketTable() {
           columns={columns}
           data={rows}
           container={{ className: "border rounded-sm" }}
-          initialExpandedState={{ "0": true, "1": true }} // Expand main and isolated assets rows
+          initialExpandedState={{ "0": true, "1": true, "2": false }} // Expand main and isolated assets rows, do not expand deprecated assets row
           tableRowClassName={(row) => {
             if (!row) return cn(styles.tableRow);
 
@@ -572,31 +578,28 @@ export default function MarketTable() {
                   : "p-0 h-0",
               );
             if ((cell.row.original as CollapsibleRowData).isCollapsibleRow)
-              return cn(
-                cell.row.getIsExpanded() &&
-                  cell.column.getIsFirstColumn() &&
-                  "shadow-[inset_2px_0_0_0px_hsl(var(--primary))]",
-              );
+              return cell.column.getIsFirstColumn() && cell.row.getIsExpanded()
+                ? cn("shadow-[inset_2px_0_0_0px_hsl(var(--primary))]")
+                : undefined;
 
-            if (cell.row.getParentRows().length === 2)
-              return cn(
-                cell.column.getIsFirstColumn() &&
-                  "shadow-[inset_2px_0_0_0px_hsl(var(--primary))]",
-              );
-
-            return undefined;
+            return cell.row.getParentRows().length === 2 &&
+              cell.column.getIsFirstColumn()
+              ? cn("shadow-[inset_2px_0_0_0px_hsl(var(--primary))]")
+              : undefined;
           }}
           tableCellColSpan={(cell) => {
-            if (
-              (cell.row.original as HeaderRowData).isHeader &&
-              cell.column.getIsFirstColumn()
-            )
-              return columns.length;
+            if ((cell.row.original as HeaderRowData).isHeader)
+              return cell.column.getIsFirstColumn()
+                ? columns.length
+                : undefined;
 
             return undefined;
           }}
           onRowClick={(row) => {
-            if ((row.original as HeaderRowData).isHeader) return undefined;
+            if ((row.original as HeaderRowData).isHeader)
+              return (row.original as HeaderRowData).isDeprecated
+                ? row.getToggleExpandedHandler()
+                : undefined;
             if ((row.original as CollapsibleRowData).isCollapsibleRow)
               return row.getToggleExpandedHandler();
 

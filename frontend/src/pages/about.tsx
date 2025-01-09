@@ -2,12 +2,9 @@ import Image from "next/image";
 
 import { Droplet, Server } from "lucide-react";
 
-import DiscordIcon from "@/components/assets/DiscordIcon";
-import XIcon from "@/components/assets/XIcon";
 import { FOOTER_HEIGHT } from "@/components/layout/Footer";
 import { HEADER_HEIGHT } from "@/components/layout/HeaderBase";
 import Lava from "@/components/public/Lava";
-import Button from "@/components/shared/Button";
 import {
   TBody,
   TDisplay,
@@ -15,7 +12,6 @@ import {
   TTitle,
 } from "@/components/shared/Typography";
 import { ASSETS_URL } from "@/lib/constants";
-import { DISCORD_URL, TWITTER_URL } from "@/lib/navigation";
 
 export default function About() {
   return (
@@ -101,27 +97,6 @@ export default function About() {
               <TDisplay className="uppercase text-primary-foreground">
                 Money market built on the best chain for developers.
               </TDisplay>
-
-              <div className="flex w-full flex-row gap-3 md:justify-end">
-                <a href={TWITTER_URL} target="_blank">
-                  <Button
-                    icon={<XIcon />}
-                    variant="secondaryOutline"
-                    size="icon"
-                  >
-                    X
-                  </Button>
-                </a>
-                <a href={DISCORD_URL} target="_blank">
-                  <Button
-                    icon={<DiscordIcon />}
-                    variant="secondaryOutline"
-                    size="icon"
-                  >
-                    Discord
-                  </Button>
-                </a>
-              </div>
             </div>
           </div>
         </div>
