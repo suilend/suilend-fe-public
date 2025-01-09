@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   ArrowUpDown,
+  Info,
   RotateCw,
 } from "lucide-react";
 import { ReactFlowProvider } from "reactflow";
@@ -79,7 +80,7 @@ type SubmitButtonState = {
 };
 
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 1;
-const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 10;
+const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
 
 const HISTORICAL_USD_PRICES_INTERVAL = "5m";
 const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
@@ -609,6 +610,11 @@ function Page() {
         : undefined,
     [quoteRatio, currentTokenRatio, isInverted],
   );
+  const PriceDifferenceIcon = priceDifferencePercent?.gte(
+    PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+  )
+    ? AlertTriangle
+    : Info;
 
   // Reverse tokens
   const reverseTokens = () => {
@@ -1052,36 +1058,35 @@ function Page() {
                       <RoutingDialog quote={quote} />
                     </ReactFlowProvider>
                   ) : (
-                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-12" />
                   )}
                 </div>
 
                 {/* Price difference */}
-                {priceDifferencePercent !== undefined &&
-                  priceDifferencePercent.gte(
-                    PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
-                  ) && (
-                    <div className="w-max">
-                      <TLabelSans
-                        className={cn(
+                {priceDifferencePercent !== undefined ? (
+                  <div className="w-max">
+                    <TLabelSans
+                      className={cn(
+                        "text-foreground",
+                        priceDifferencePercent.gte(
+                          PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+                        ) &&
                           cn(
-                            "font-medium",
+                            "font-medium text-warning",
                             priceDifferencePercent.gte(
                               PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD,
-                            )
-                              ? "text-destructive"
-                              : "text-warning",
+                            ) && "text-destructive",
                           ),
-                        )}
-                      >
-                        <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                        {formatPercent(
-                          BigNumber.max(0, priceDifferencePercent),
-                        )}{" "}
-                        Price difference (Birdeye)
-                      </TLabelSans>
-                    </div>
-                  )}
+                      )}
+                    >
+                      <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
+                      {formatPercent(BigNumber.max(0, priceDifferencePercent))}{" "}
+                      Price difference (Birdeye)
+                    </TLabelSans>
+                  </div>
+                ) : (
+                  <Skeleton className="h-4 w-48" />
+                )}
               </div>
             )}
           </div>
