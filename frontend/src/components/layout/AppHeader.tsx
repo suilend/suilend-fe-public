@@ -56,15 +56,19 @@ export default function AppHeader() {
 
       {/* End */}
       <div className="flex min-w-0 flex-row items-center gap-2">
-        <Button
-          className="shrink-0 text-muted-foreground"
-          icon={<RotateCw />}
-          variant="ghost"
-          size="icon"
-          onClick={refresh}
-        >
-          Refresh
-        </Button>
+        <div className="flex shrink-0 flex-row items-center">
+          <Button
+            className="text-muted-foreground"
+            icon={<RotateCw />}
+            variant="ghost"
+            size="icon"
+            onClick={refresh}
+          >
+            Refresh
+          </Button>
+
+          <SettingsDialog />
+        </div>
 
         {address && (
           <div className="hidden shrink-0 sm:flex">
@@ -73,10 +77,6 @@ export default function AppHeader() {
         )}
 
         <ConnectWalletButton />
-
-        <div className="-mr-1 shrink-0">
-          <SettingsDialog />
-        </div>
 
         <Button
           className="shrink-0 lg:hidden"

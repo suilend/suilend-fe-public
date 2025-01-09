@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
-import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
+import { ChevronDown, ChevronUp, Crown, VenetianMask } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -128,6 +128,8 @@ export default function ConnectedWalletDropdownMenu({
           startIcon={
             isImpersonating ? (
               <VenetianMask />
+            ) : isEligibleForVipProgram ? (
+              <Crown />
             ) : wallet?.iconUrl ? (
               <Image
                 className="h-4 w-4 min-w-4 shrink-0"
@@ -169,7 +171,11 @@ export default function ConnectedWalletDropdownMenu({
       items={
         <>
           {hasVipItem && (
-            <DropdownMenuItem onClick={joinVipGroup}>
+            <DropdownMenuItem
+              className="flex flex-row items-center gap-2 border-secondary bg-secondary/5 font-medium text-secondary focus:border-foreground"
+              onClick={joinVipGroup}
+            >
+              <Crown className="h-4 w-4" />
               Join VIP Group on Telegram
             </DropdownMenuItem>
           )}

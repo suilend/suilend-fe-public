@@ -39,7 +39,12 @@ export default function SettingsDialog() {
     <Dialog
       rootProps={{ open: isOpen, onOpenChange }}
       trigger={
-        <Button icon={<Settings />} variant="ghost" size="icon">
+        <Button
+          className="text-muted-foreground"
+          icon={<Settings />}
+          variant="ghost"
+          size="icon"
+        >
           Settings
         </Button>
       }
