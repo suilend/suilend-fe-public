@@ -10,10 +10,15 @@ import {
   useState,
 } from "react";
 
+import {
+  RouterData as CetusQuote,
+  AggregatorClient as CetusSdk,
+  Env,
+} from "@cetusprotocol/aggregator-sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import {
-  Aftermath,
-  RouterCompleteTradeRoute as AftermathRouterCompleteTradeRoute,
+  RouterCompleteTradeRoute as AftermathQuote,
+  Aftermath as AftermathSdk,
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
@@ -27,6 +32,7 @@ import { SwapToken } from "@/lib/types";
 
 export enum StandardizedQuoteType {
   AFTERMATH = "aftermath",
+  CETUS = "cetus",
 }
 export type StandardizedQuote = {
   id: string;
@@ -34,10 +40,16 @@ export type StandardizedQuote = {
   amount_out: BigNumber;
   coin_type_in: string;
   coin_type_out: string;
-} & {
-  type: StandardizedQuoteType.AFTERMATH;
-  quote: AftermathRouterCompleteTradeRoute;
-};
+} & (
+  | {
+      type: StandardizedQuoteType.AFTERMATH;
+      quote: AftermathQuote;
+    }
+  | {
+      type: StandardizedQuoteType.CETUS;
+      quote: CetusQuote;
+    }
+);
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_OUT_SYMBOL = "USDC";
@@ -53,7 +65,8 @@ export enum TokenDirection {
 }
 
 interface SwapContext {
-  aftermathSdk?: Aftermath;
+  aftermathSdk?: AftermathSdk;
+  cetusSdk?: CetusSdk;
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
@@ -65,6 +78,7 @@ interface SwapContext {
 
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
+  cetusSdk: undefined,
   tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
@@ -94,10 +108,21 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {
-    const afSdk = new Aftermath("MAINNET");
-    afSdk.init();
-    return afSdk;
+    const sdk = new AftermathSdk("MAINNET");
+    sdk.init();
+    return sdk;
   }, []);
+
+  // Cetus SDK
+  const cetusSdk = useMemo(() => {
+    const sdk = new CetusSdk(
+      "https://api-sui.cetus.zone/router_v2/find_routes",
+      undefined,
+      suiClient,
+      Env.Mainnet,
+    );
+    return sdk;
+  }, [suiClient]);
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
@@ -270,6 +295,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const contextValue: SwapContext = useMemo(
     () => ({
       aftermathSdk,
+      cetusSdk,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -280,6 +306,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     }),
     [
       aftermathSdk,
+      cetusSdk,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -292,7 +319,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SwapContext.Provider value={contextValue}>
-      {aftermathSdk && tokenIn && tokenOut ? children : <FullPageSpinner />}
+      {aftermathSdk && cetusSdk && tokenIn && tokenOut ? (
+        children
+      ) : (
+        <FullPageSpinner />
+      )}
     </SwapContext.Provider>
   );
 }

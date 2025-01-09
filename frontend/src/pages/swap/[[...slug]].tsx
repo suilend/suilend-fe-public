@@ -2,14 +2,16 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
-import { Aftermath } from "aftermath-ts-sdk";
+import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
+import { BN } from "bn.js";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -104,7 +106,8 @@ function Page() {
 
   const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
-  const aftermathSdk = restSwapContext.aftermathSdk as Aftermath;
+  const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
+  const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
 
@@ -257,16 +260,10 @@ function Page() {
       setQuotesMap((o) => ({ ...o, [_timestamp]: undefined }));
 
       try {
-        const params = {
-          token_in: _tokenIn.coinType,
-          token_out: _tokenOut.coinType,
-          amount_in: BigInt(
-            new BigNumber(_value)
-              .times(10 ** _tokenIn.decimals)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
-          ),
-        };
+        const amountIn = new BigNumber(_value)
+          .times(10 ** _tokenIn.decimals)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString();
 
         // Fetch quotes in parallel
         // Aftermath
@@ -277,9 +274,9 @@ function Page() {
             const quote = await aftermathSdk
               .Router()
               .getCompleteTradeRouteGivenAmountIn({
-                coinInType: params.token_in,
-                coinOutType: params.token_out,
-                coinInAmount: params.amount_in,
+                coinInType: _tokenIn.coinType,
+                coinOutType: _tokenOut.coinType,
+                coinInAmount: BigInt(amountIn),
               });
 
             quote.coinIn.type = normalizeStructTag(quote.coinIn.type);
@@ -302,8 +299,8 @@ function Page() {
               amount_out: new BigNumber(quote.coinOut.amount.toString()).div(
                 10 ** _tokenOut.decimals,
               ),
-              coin_type_in: quote.coinIn.type,
-              coin_type_out: quote.coinOut.type,
+              coin_type_in: _tokenIn.coinType,
+              coin_type_out: _tokenOut.coinType,
               type: StandardizedQuoteType.AFTERMATH,
               quote,
             } as StandardizedQuote;
@@ -314,6 +311,53 @@ function Page() {
             }));
             console.log(
               "Swap - set Aftermath quote",
+              +standardizedQuote.amount_out,
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+
+        // Cetus
+        (async () => {
+          console.log("Swap - fetching Cetus quote");
+
+          try {
+            const quote = await cetusSdk.findRouters({
+              from: _tokenIn.coinType,
+              target: _tokenOut.coinType,
+              amount: new BN(amountIn),
+              byAmountIn: true,
+            });
+            if (!quote) return;
+
+            for (const route of quote.routes) {
+              for (const path of route.path) {
+                path.from = normalizeStructTag(path.from);
+                path.target = normalizeStructTag(path.target);
+              }
+            }
+
+            const standardizedQuote = {
+              id: uuidv4(),
+              amount_in: new BigNumber(quote.amountIn.toString()).div(
+                10 ** _tokenIn.decimals,
+              ),
+              amount_out: new BigNumber(quote.amountOut.toString()).div(
+                10 ** _tokenOut.decimals,
+              ),
+              coin_type_in: _tokenIn.coinType,
+              coin_type_out: _tokenOut.coinType,
+              type: StandardizedQuoteType.CETUS,
+              quote,
+            } as StandardizedQuote;
+
+            setQuotesMap((o) => ({
+              ...o,
+              [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
+            }));
+            console.log(
+              "Swap - set Cetus quote",
               +standardizedQuote.amount_out,
             );
           } catch (err) {
@@ -335,7 +379,7 @@ function Page() {
         });
       }
     },
-    [aftermathSdk],
+    [aftermathSdk, cetusSdk],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);

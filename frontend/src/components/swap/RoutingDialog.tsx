@@ -1,11 +1,9 @@
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
+import { Path as CetusRoutePath } from "@cetusprotocol/aggregator-sdk";
 import Dagre from "@dagrejs/dagre";
 import { CoinMetadata } from "@mysten/sui/client";
-import {
-  RouterProtocolName as AftermathRouterProtocolName,
-  RouterTradePath as AftermathRouterTradePath,
-} from "aftermath-ts-sdk";
+import { RouterTradePath as AftermathRoutePath } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import { Route } from "lucide-react";
 import ReactFlow, { Edge, Handle, Node, Position } from "reactflow";
@@ -20,7 +18,7 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import {
   StandardizedQuote,
   StandardizedQuoteType,
@@ -28,7 +26,7 @@ import {
 } from "@/contexts/SwapContext";
 import { formatId, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 import "reactflow/dist/style.css";
 
@@ -85,10 +83,12 @@ const useGetCoinMetadataMap = (coinTypes: string[]) => {
 };
 
 type QuoteNodeWithTokens = {
-  object_id: string;
-  amount_in: { amount: bigint } & SwapToken;
-  amount_out: { amount: bigint } & SwapToken;
-} & { protocolName: AftermathRouterProtocolName };
+  id: string;
+  routeIndex: number;
+  provider: string;
+  amount_in: { amount: string } & SwapToken;
+  amount_out: { amount: string } & SwapToken;
+};
 
 const START_END_NODE_WIDTH = 200; // px
 const START_END_NODE_HEIGHT = 36; // px
@@ -128,7 +128,12 @@ function StartEndNode({ data }: StartEndNodeProps) {
                 token={token}
               />
 
-              <TBody>
+              <TBody
+                className={cn(
+                  "decoration-foreground/50",
+                  hoverUnderlineClassName,
+                )}
+              >
                 {formatToken(amount, { exact: false })} {token.symbol}
               </TBody>
             </div>
@@ -141,7 +146,7 @@ function StartEndNode({ data }: StartEndNodeProps) {
 }
 
 const EXCHANGE_NODE_WIDTH = 160; // px
-const EXCHANGE_NODE_HEIGHT = 12 + 16 + 4 + 20 + 12; // px
+const EXCHANGE_NODE_HEIGHT = (3 + 5 + 1.5 + 5 + 3) * 4; // px
 
 interface ExchangeNodeProps {
   data: QuoteNodeWithTokens;
@@ -169,31 +174,49 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
       >
         <Tooltip
           content={
-            <TextLink
-              className="block font-mono text-xs"
-              href={explorer.buildObjectUrl(data.object_id)}
-            >
-              {formatId(data.object_id)}
-            </TextLink>
+            <TLabelSans className="text-xs">
+              <TextLink
+                className="font-normal"
+                href={explorer.buildObjectUrl(data.id)}
+                noIcon
+              >
+                {formatId(data.id)}
+              </TextLink>
+            </TLabelSans>
           }
         >
-          <TLabelSans>{data.protocolName}</TLabelSans>
+          <TBodySans
+            className={cn(
+              "text-muted-foreground decoration-muted-foreground/50",
+              hoverUnderlineClassName,
+            )}
+          >
+            {data.provider}
+          </TBodySans>
         </Tooltip>
 
         <Tooltip
           contentProps={{ style: { maxWidth: "none" } }}
           content={
-            <TBody className="text-xs">
+            <TBodySans className="text-xs">
               {formatToken(amountIn, { dp: data.amount_in.decimals })}{" "}
-              <TextLink href={explorer.buildCoinUrl(data.amount_in.coinType)}>
+              <TextLink
+                className="font-normal"
+                href={explorer.buildCoinUrl(data.amount_in.coinType)}
+                noIcon
+              >
                 {data.amount_in.symbol}
               </TextLink>
               {" → "}
               {formatToken(amountOut, { dp: data.amount_out.decimals })}{" "}
-              <TextLink href={explorer.buildCoinUrl(data.amount_out.coinType)}>
+              <TextLink
+                className="font-normal"
+                href={explorer.buildCoinUrl(data.amount_out.coinType)}
+                noIcon
+              >
                 {data.amount_out.symbol}
               </TextLink>
-            </TBody>
+            </TBodySans>
           }
         >
           <div
@@ -209,7 +232,12 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
               tokens={[data.amount_in, data.amount_out]}
             />
 
-            <TBody>
+            <TBody
+              className={cn(
+                "text-foreground decoration-foreground/50",
+                hoverUnderlineClassName,
+              )}
+            >
               {data.amount_in.symbol}
               <span className="font-sans">/</span>
               {data.amount_out.symbol}
@@ -251,11 +279,9 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
         amount: quoteAmountIn,
       },
     });
-    quoteNodesWithTokens.forEach((node, index) => {
+    quoteNodesWithTokens.forEach((node) => {
       initialNodes.push({
-        id:
-          // Aftermath
-          `${node.object_id}_${index}`,
+        id: `${node.id}-${node.routeIndex}`,
         type: "exchange",
         position: { x: 0, y: 0 },
         width: EXCHANGE_NODE_WIDTH,
@@ -277,92 +303,70 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
 
     // Edges
     const initialEdges: Edge[] = [];
-    quoteNodesWithTokens.forEach((node, nodeIndex) => {
-      if (quote.type === StandardizedQuoteType.AFTERMATH) {
-        if (
-          !quote.quote.routes
-            .reduce(
-              (acc, route) => [
-                ...acc,
-                ...route.paths.map((path, index) => ({
-                  ...path,
-                  isFirst: index === 0,
-                })),
-              ],
-              [] as (AftermathRouterTradePath & { isFirst: boolean })[],
-            )
-            .some(
-              (data, index) =>
-                data.isFirst &&
-                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
-            )
-        )
-          return;
-      }
-
-      initialEdges.push({
-        id:
-          // Aftermath
-          `start-${node.object_id}_${nodeIndex}`,
-        source: "start",
-        target:
-          // Aftermath
-          `${node.object_id}_${nodeIndex}`,
-      });
-    });
 
     if (quote.type === StandardizedQuoteType.AFTERMATH) {
-      let indexCount = 0;
-      for (const route of quote.quote.routes) {
-        route.paths.forEach((path, index) => {
-          if (index > 0) {
-            const sourcePath = route.paths[index - 1];
+      quote.quote.routes.forEach((route, routeIndex) => {
+        for (let i = 0; i < route.paths.length + 1; i++) {
+          if (i === 0) {
+            const path = route.paths[i];
+
             initialEdges.push({
-              id: `${sourcePath.poolId}_${indexCount - 1}-${path.poolId}_${indexCount}`,
-              source: `${sourcePath.poolId}_${indexCount - 1}`,
-              target: `${path.poolId}_${indexCount}`,
+              id: `start_${path.poolId}-${routeIndex}`,
+              source: "start",
+              target: `${path.poolId}-${routeIndex}`,
+            });
+          } else if (i === route.paths.length) {
+            const sourcePath = route.paths[i - 1];
+
+            initialEdges.push({
+              id: `${sourcePath.poolId}-${routeIndex}_end`,
+              source: `${sourcePath.poolId}-${routeIndex}`,
+              target: "end",
+            });
+          } else {
+            const sourcePath = route.paths[i - 1];
+            const path = route.paths[i];
+
+            initialEdges.push({
+              id: `${sourcePath.poolId}-${routeIndex}_${path.poolId}-${routeIndex}`,
+              source: `${sourcePath.poolId}-${routeIndex}`,
+              target: `${path.poolId}-${routeIndex}`,
             });
           }
-          indexCount += 1;
-        });
-      }
-    }
-
-    quoteNodesWithTokens.forEach((node, nodeIndex) => {
-      if (quote.type === StandardizedQuoteType.AFTERMATH) {
-        if (
-          !quote.quote.routes
-            .reduce(
-              (acc, route) => [
-                ...acc,
-                ...route.paths.map((path, index) => ({
-                  ...path,
-                  isLast: index === route.paths.length - 1,
-                })),
-              ],
-              [] as (AftermathRouterTradePath & {
-                isLast: boolean;
-              })[],
-            )
-            .some(
-              (data, index) =>
-                data.isLast &&
-                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
-            )
-        )
-          return;
-      }
-
-      initialEdges.push({
-        id:
-          // Aftermath
-          `end-${node.object_id}_${nodeIndex}`,
-        source:
-          // Aftermath
-          `${node.object_id}_${nodeIndex}`,
-        target: "end",
+        }
       });
-    });
+    } else if (quote.type === StandardizedQuoteType.CETUS) {
+      quote.quote.routes.forEach((route, routeIndex) => {
+        for (let i = 0; i < route.path.length + 1; i++) {
+          if (i === 0) {
+            const path = route.path[i];
+
+            initialEdges.push({
+              id: `start_${path.id}-${routeIndex}`,
+              source: "start",
+              target: `${path.id}_${routeIndex}`,
+            });
+          } else if (i === route.path.length) {
+            const sourcePath = route.path[i - 1];
+
+            initialEdges.push({
+              id: `${sourcePath.id}-${routeIndex}_end`,
+              source: `${sourcePath.id}_${routeIndex}`,
+              target: "end",
+            });
+          } else {
+            const sourcePath = route.path[i - 1];
+            const path = route.path[i];
+
+            initialEdges.push({
+              id: `${sourcePath.id}-${routeIndex}_${path.id}-${routeIndex}`,
+              source: `${sourcePath.id}_${routeIndex}`,
+              target: `${path.id}_${routeIndex}`,
+            });
+          }
+        }
+      });
+    }
 
     // Layout
     const layouted = getLayoutedElements(initialNodes, initialEdges, {
@@ -411,13 +415,24 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
     const coinTypes: string[] = [];
 
     if (quote.type === StandardizedQuoteType.AFTERMATH) {
-      for (const path of quote.quote.routes.reduce(
+      const paths = quote.quote.routes.reduce(
         (acc, route) => [...acc, ...route.paths],
-        [] as AftermathRouterTradePath[],
-      )) {
-        for (const coinType of [path.coinIn.type, path.coinOut.type]) {
+        [] as AftermathRoutePath[],
+      );
+
+      for (const path of paths) {
+        for (const coinType of [path.coinIn.type, path.coinOut.type])
           if (!coinTypes.includes(coinType)) coinTypes.push(coinType);
-        }
+      }
+    } else if (quote.type === StandardizedQuoteType.CETUS) {
+      const paths = quote.quote.routes.reduce(
+        (acc, route) => [...acc, ...route.path],
+        [] as CetusRoutePath[],
+      );
+
+      for (const path of paths) {
+        for (const coinType of [path.from, path.target])
+          if (!coinTypes.includes(coinType)) coinTypes.push(coinType);
       }
     }
 
@@ -427,15 +442,12 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
   const coinMetadataMap = useGetCoinMetadataMap(nodeTokenCoinTypes);
 
   // Quote
-  const quoteNodesWithTokens = useMemo(
-    () =>
-      // Aftermath
-      quote.quote.routes
-        .reduce(
-          (acc, route) => [...acc, ...route.paths],
-          [] as AftermathRouterTradePath[],
-        )
-        .map((path) => {
+  const quoteNodesWithTokens = useMemo(() => {
+    const result: QuoteNodeWithTokens[] = [];
+
+    if (quote.type === StandardizedQuoteType.AFTERMATH) {
+      quote.quote.routes.forEach((route, index) => {
+        route.paths.forEach((path) => {
           const inToken = tokens?.find((t) => t.coinType === path.coinIn.type);
           const outToken = tokens?.find(
             (t) => t.coinType === path.coinOut.type,
@@ -446,11 +458,13 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
 
           if (!(inToken || inCoinMetadata) || !(outToken || outCoinMetadata))
             return undefined;
-          return {
-            object_id: path.poolId,
-            protocolName: path.protocolName,
+
+          result.push({
+            id: path.poolId,
+            routeIndex: index,
+            provider: path.protocolName,
             amount_in: {
-              amount: path.coinIn.amount,
+              amount: path.coinIn.amount.toString(),
               ...({
                 coinType: path.coinIn.type,
                 decimals: inToken?.decimals ?? inCoinMetadata?.decimals,
@@ -460,7 +474,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
               } as SwapToken),
             },
             amount_out: {
-              amount: path.coinOut.amount,
+              amount: path.coinOut.amount.toString(),
               ...({
                 coinType: path.coinOut.type,
                 decimals: outToken?.decimals ?? outCoinMetadata?.decimals,
@@ -469,15 +483,72 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
                 iconUrl: outToken?.iconUrl ?? outCoinMetadata?.iconUrl,
               } as SwapToken),
             },
-          };
-        })
-        .filter(Boolean) as QuoteNodeWithTokens[],
-    [quote, tokens, coinMetadataMap],
-  );
+          });
+        });
+      });
 
-  const hopsCount =
-    // Aftermath
-    quote.quote.routes.reduce((acc, route) => acc + route.paths.length, 0);
+      return result.filter(Boolean) as QuoteNodeWithTokens[];
+    } else if (quote.type === StandardizedQuoteType.CETUS) {
+      quote.quote.routes.forEach((route, index) => {
+        route.path.forEach((path) => {
+          const inToken = tokens?.find((t) => t.coinType === path.from);
+          const outToken = tokens?.find((t) => t.coinType === path.target);
+
+          const inCoinMetadata = coinMetadataMap[path.from];
+          const outCoinMetadata = coinMetadataMap[path.target];
+
+          if (!(inToken || inCoinMetadata) || !(outToken || outCoinMetadata))
+            return undefined;
+
+          result.push({
+            id: path.id,
+            routeIndex: index,
+            provider: path.provider,
+            amount_in: {
+              amount: path.amountIn.toString(),
+              ...({
+                coinType: path.from,
+                decimals: inToken?.decimals ?? inCoinMetadata?.decimals,
+                symbol: inToken?.symbol ?? inCoinMetadata?.symbol,
+                name: inToken?.name ?? inCoinMetadata?.name,
+                iconUrl: inToken?.iconUrl ?? inCoinMetadata?.iconUrl,
+              } as SwapToken),
+            },
+            amount_out: {
+              amount: path.amountOut.toString(),
+              ...({
+                coinType: path.target,
+                decimals: outToken?.decimals ?? outCoinMetadata?.decimals,
+                symbol: outToken?.symbol ?? outCoinMetadata?.symbol,
+                name: outToken?.name ?? outCoinMetadata?.name,
+                iconUrl: outToken?.iconUrl ?? outCoinMetadata?.iconUrl,
+              } as SwapToken),
+            },
+          });
+        });
+      });
+
+      return result.filter(Boolean) as QuoteNodeWithTokens[];
+    }
+
+    return [];
+  }, [quote, tokens, coinMetadataMap]);
+
+  const hopsCount = useMemo(() => {
+    if (quote.type === StandardizedQuoteType.AFTERMATH) {
+      return quote.quote.routes.reduce(
+        (acc, route) => acc + route.paths.length,
+        0,
+      );
+    } else if (quote.type === StandardizedQuoteType.CETUS) {
+      return quote.quote.routes.reduce(
+        (acc, route) => acc + route.path.length,
+        0,
+      );
+    }
+
+    return 0;
+  }, [quote]);
   const isLoading = quoteNodesWithTokens.length !== hopsCount;
 
   return (
@@ -490,7 +561,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           variant="ghost"
           size="sm"
         >
-          {hopsCount} hop{hopsCount !== 1 && "s"}
+          {hopsCount} hop{hopsCount !== 1 && "s"} ({quote.type})
         </Button>
       }
       dialogContentProps={{ className: "h-[600px]" }}
