@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { isSui } from "@suilend/frontend-sui";
+import { SUI_GAS_MIN, isSui } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -151,13 +151,12 @@ export default function LiquidateDialog({
     );
     if (!borrow) return;
 
-    const repayCoinBalance = getBalance(borrow.reserve.coinType);
+    const repayCoinBalance = getBalance(borrow.coinType);
 
     setLiquidateAmount(
-      repayCoinBalance.toFixed(
-        borrow.reserve.mintDecimals,
-        BigNumber.ROUND_DOWN,
-      ),
+      repayCoinBalance
+        .minus(isSui(borrow.coinType) ? SUI_GAS_MIN : 0)
+        .toFixed(borrow.reserve.mintDecimals, BigNumber.ROUND_DOWN),
     );
   };
 
@@ -189,14 +188,22 @@ export default function LiquidateDialog({
         useGasCoin: isSui(borrow.coinType),
       })(transaction);
 
-      const [withdrawn] = await suilendClient.liquidateAndRedeem(
+      const [redeemCoin] = await suilendClient.liquidateAndRedeem(
         transaction,
         obligation.original,
         borrow.coinType,
         deposit.coinType,
         repayCoin,
       );
-      transaction.transferObjects([withdrawn], address);
+
+      transaction.transferObjects(
+        [redeemCoin],
+        transaction.pure.address(address),
+      );
+      transaction.transferObjects(
+        [repayCoin],
+        transaction.pure.address(address),
+      );
 
       await signExecuteAndWaitForTransaction(transaction);
 
