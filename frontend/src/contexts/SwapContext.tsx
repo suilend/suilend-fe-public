@@ -30,25 +30,49 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
-export enum StandardizedQuoteType {
+export enum QuoteType {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
 }
+
+export type StandardizedRoutePath = {
+  id: string;
+  routeIndex: number;
+  provider: string;
+  in: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  out: {
+    coinType: string;
+    amount: BigNumber;
+  };
+};
+export type StandardizedPathWithToken = StandardizedRoutePath & {
+  in: StandardizedRoutePath["in"] & {
+    token: SwapToken;
+  };
+  out: StandardizedRoutePath["out"] & {
+    token: SwapToken;
+  };
+};
+
 export type StandardizedQuote = {
   id: string;
-  amount_in: BigNumber;
-  amount_out: BigNumber;
-  coin_type_in: string;
-  coin_type_out: string;
+  in: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  out: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  routes: {
+    path: StandardizedRoutePath[];
+  }[];
 } & (
-  | {
-      type: StandardizedQuoteType.AFTERMATH;
-      quote: AftermathQuote;
-    }
-  | {
-      type: StandardizedQuoteType.CETUS;
-      quote: CetusQuote;
-    }
+  | { type: QuoteType.AFTERMATH; quote: AftermathQuote }
+  | { type: QuoteType.CETUS; quote: CetusQuote }
 );
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
