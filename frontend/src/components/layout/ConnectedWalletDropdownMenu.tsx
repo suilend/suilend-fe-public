@@ -129,7 +129,9 @@ export default function ConnectedWalletDropdownMenu({
             isImpersonating ? (
               <VenetianMask />
             ) : isEligibleForVipProgram ? (
-              <Crown />
+              <div className="flex h-3 w-4 flex-col justify-center rounded-[3px] outline outline-1 outline-secondary">
+                <TLabel className="text-[8px] text-inherit">VIP</TLabel>
+              </div>
             ) : wallet?.iconUrl ? (
               <Image
                 className="h-4 w-4 min-w-4 shrink-0"
@@ -172,10 +174,9 @@ export default function ConnectedWalletDropdownMenu({
         <>
           {hasVipItem && (
             <DropdownMenuItem
-              className="flex flex-row items-center gap-2 border-secondary bg-secondary/5 font-medium text-secondary focus:border-foreground"
+              className="border-secondary bg-secondary/5 font-medium text-secondary focus:border-foreground"
               onClick={joinVipGroup}
             >
-              <Crown className="h-4 w-4" />
               Join VIP Group on Telegram
             </DropdownMenuItem>
           )}
