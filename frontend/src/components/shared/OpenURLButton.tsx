@@ -20,10 +20,6 @@ export default function OpenURLButton({
   icon,
   children,
 }: OpenURLButtonProps) {
-  const openUrl = () => {
-    window.open(url, "_blank");
-  };
-
   const tooltip = (children as string) ?? "Open URL";
 
   return (
@@ -33,7 +29,10 @@ export default function OpenURLButton({
       icon={icon || <ExternalLink className={cn(iconClassName)} />}
       variant="ghost"
       size="icon"
-      onClick={openUrl}
+      onClick={(e) => {
+        window.open(url, "_blank");
+        e.stopPropagation();
+      }}
     >
       {tooltip}
     </Button>
