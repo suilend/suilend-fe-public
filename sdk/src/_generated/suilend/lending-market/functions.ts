@@ -34,13 +34,6 @@ export function borrow(
   });
 }
 
-export function init(tx: Transaction, otw: TransactionObjectInput) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::lending_market::init`,
-    arguments: [obj(tx, otw)],
-  });
-}
-
 export interface MigrateArgs {
   lendingMarketOwnerCap: TransactionObjectInput;
   lendingMarket: TransactionObjectInput;
@@ -54,6 +47,13 @@ export function migrate(tx: Transaction, typeArg: string, args: MigrateArgs) {
       obj(tx, args.lendingMarketOwnerCap),
       obj(tx, args.lendingMarket),
     ],
+  });
+}
+
+export function init(tx: Transaction, otw: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::init`,
+    arguments: [obj(tx, otw)],
   });
 }
 
@@ -260,12 +260,12 @@ export interface InitStakerArgs {
 
 export function initStaker(
   tx: Transaction,
-  typeArg: string,
+  typeArgs: [string, string],
   args: InitStakerArgs,
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::lending_market::init_staker`,
-    typeArguments: [typeArg],
+    typeArguments: typeArgs,
     arguments: [
       obj(tx, args.lendingMarket),
       obj(tx, args.lendingMarketOwnerCap),
@@ -883,6 +883,30 @@ export function refreshReservePrice(
       pure(tx, args.reserveArrayIndex, `u64`),
       obj(tx, args.clock),
       obj(tx, args.priceInfo),
+    ],
+  });
+}
+
+export interface SetFeeReceiversArgs {
+  lendingMarketOwnerCap: TransactionObjectInput;
+  lendingMarket: TransactionObjectInput;
+  receivers: Array<string | TransactionArgument> | TransactionArgument;
+  weights: Array<bigint | TransactionArgument> | TransactionArgument;
+}
+
+export function setFeeReceivers(
+  tx: Transaction,
+  typeArg: string,
+  args: SetFeeReceiversArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::set_fee_receivers`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.lendingMarketOwnerCap),
+      obj(tx, args.lendingMarket),
+      pure(tx, args.receivers, `vector<address>`),
+      pure(tx, args.weights, `vector<u64>`),
     ],
   });
 }

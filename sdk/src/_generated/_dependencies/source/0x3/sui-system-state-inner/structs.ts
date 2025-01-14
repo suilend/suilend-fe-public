@@ -21,7 +21,7 @@ import { Balance } from "../../0x2/balance/structs";
 import { SUI } from "../../0x2/sui/structs";
 import { VecMap } from "../../0x2/vec-map/structs";
 import { VecSet } from "../../0x2/vec-set/structs";
-import { PKG_V17 } from "../index";
+import { PKG_V18 } from "../index";
 import { StakeSubsidy } from "../stake-subsidy/structs";
 import { StorageFund } from "../storage-fund/structs";
 import { ValidatorSet } from "../validator-set/structs";
@@ -33,7 +33,7 @@ import { fromB64, fromHEX, toHEX } from "@mysten/sui/utils";
 
 export function isSuiSystemStateInner(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::sui_system_state_inner::SuiSystemStateInner`;
+  return type === `${PKG_V18}::sui_system_state_inner::SuiSystemStateInner`;
 }
 
 export interface SuiSystemStateInnerFields {
@@ -63,12 +63,12 @@ export type SuiSystemStateInnerReified = Reified<
 export class SuiSystemStateInner implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::sui_system_state_inner::SuiSystemStateInner`;
+  static readonly $typeName = `${PKG_V18}::sui_system_state_inner::SuiSystemStateInner`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = SuiSystemStateInner.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInner`;
+  readonly $fullTypeName: `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInner`;
   readonly $typeArgs: [];
   readonly $isPhantom = SuiSystemStateInner.$isPhantom;
 
@@ -95,7 +95,7 @@ export class SuiSystemStateInner implements StructClass {
     this.$fullTypeName = composeSuiType(
       SuiSystemStateInner.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInner`;
+    ) as `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInner`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -123,7 +123,7 @@ export class SuiSystemStateInner implements StructClass {
       fullTypeName: composeSuiType(
         SuiSystemStateInner.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInner`,
+      ) as `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInner`,
       typeArgs: [] as [],
       isPhantom: SuiSystemStateInner.$isPhantom,
       reifiedTypeArgs: [],
@@ -454,7 +454,7 @@ export class SuiSystemStateInner implements StructClass {
 
 export function isSuiSystemStateInnerV2(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::sui_system_state_inner::SuiSystemStateInnerV2`;
+  return type === `${PKG_V18}::sui_system_state_inner::SuiSystemStateInnerV2`;
 }
 
 export interface SuiSystemStateInnerV2Fields {
@@ -484,12 +484,12 @@ export type SuiSystemStateInnerV2Reified = Reified<
 export class SuiSystemStateInnerV2 implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::sui_system_state_inner::SuiSystemStateInnerV2`;
+  static readonly $typeName = `${PKG_V18}::sui_system_state_inner::SuiSystemStateInnerV2`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = SuiSystemStateInnerV2.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInnerV2`;
+  readonly $fullTypeName: `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInnerV2`;
   readonly $typeArgs: [];
   readonly $isPhantom = SuiSystemStateInnerV2.$isPhantom;
 
@@ -516,7 +516,7 @@ export class SuiSystemStateInnerV2 implements StructClass {
     this.$fullTypeName = composeSuiType(
       SuiSystemStateInnerV2.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInnerV2`;
+    ) as `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInnerV2`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -544,7 +544,7 @@ export class SuiSystemStateInnerV2 implements StructClass {
       fullTypeName: composeSuiType(
         SuiSystemStateInnerV2.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::sui_system_state_inner::SuiSystemStateInnerV2`,
+      ) as `${typeof PKG_V18}::sui_system_state_inner::SuiSystemStateInnerV2`,
       typeArgs: [] as [],
       isPhantom: SuiSystemStateInnerV2.$isPhantom,
       reifiedTypeArgs: [],
@@ -879,7 +879,7 @@ export class SuiSystemStateInnerV2 implements StructClass {
 
 export function isSystemEpochInfoEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::sui_system_state_inner::SystemEpochInfoEvent`;
+  return type === `${PKG_V18}::sui_system_state_inner::SystemEpochInfoEvent`;
 }
 
 export interface SystemEpochInfoEventFields {
@@ -905,12 +905,12 @@ export type SystemEpochInfoEventReified = Reified<
 export class SystemEpochInfoEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::sui_system_state_inner::SystemEpochInfoEvent`;
+  static readonly $typeName = `${PKG_V18}::sui_system_state_inner::SystemEpochInfoEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = SystemEpochInfoEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::sui_system_state_inner::SystemEpochInfoEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::sui_system_state_inner::SystemEpochInfoEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = SystemEpochInfoEvent.$isPhantom;
 
@@ -931,7 +931,7 @@ export class SystemEpochInfoEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       SystemEpochInfoEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::sui_system_state_inner::SystemEpochInfoEvent`;
+    ) as `${typeof PKG_V18}::sui_system_state_inner::SystemEpochInfoEvent`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -954,7 +954,7 @@ export class SystemEpochInfoEvent implements StructClass {
       fullTypeName: composeSuiType(
         SystemEpochInfoEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::sui_system_state_inner::SystemEpochInfoEvent`,
+      ) as `${typeof PKG_V18}::sui_system_state_inner::SystemEpochInfoEvent`,
       typeArgs: [] as [],
       isPhantom: SystemEpochInfoEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -1209,7 +1209,7 @@ export class SystemEpochInfoEvent implements StructClass {
 
 export function isSystemParameters(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::sui_system_state_inner::SystemParameters`;
+  return type === `${PKG_V18}::sui_system_state_inner::SystemParameters`;
 }
 
 export interface SystemParametersFields {
@@ -1231,12 +1231,12 @@ export type SystemParametersReified = Reified<
 export class SystemParameters implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::sui_system_state_inner::SystemParameters`;
+  static readonly $typeName = `${PKG_V18}::sui_system_state_inner::SystemParameters`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = SystemParameters.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::sui_system_state_inner::SystemParameters`;
+  readonly $fullTypeName: `${typeof PKG_V18}::sui_system_state_inner::SystemParameters`;
   readonly $typeArgs: [];
   readonly $isPhantom = SystemParameters.$isPhantom;
 
@@ -1253,7 +1253,7 @@ export class SystemParameters implements StructClass {
     this.$fullTypeName = composeSuiType(
       SystemParameters.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::sui_system_state_inner::SystemParameters`;
+    ) as `${typeof PKG_V18}::sui_system_state_inner::SystemParameters`;
     this.$typeArgs = typeArgs;
 
     this.epochDurationMs = fields.epochDurationMs;
@@ -1272,7 +1272,7 @@ export class SystemParameters implements StructClass {
       fullTypeName: composeSuiType(
         SystemParameters.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::sui_system_state_inner::SystemParameters`,
+      ) as `${typeof PKG_V18}::sui_system_state_inner::SystemParameters`,
       typeArgs: [] as [],
       isPhantom: SystemParameters.$isPhantom,
       reifiedTypeArgs: [],
@@ -1506,7 +1506,7 @@ export class SystemParameters implements StructClass {
 
 export function isSystemParametersV2(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::sui_system_state_inner::SystemParametersV2`;
+  return type === `${PKG_V18}::sui_system_state_inner::SystemParametersV2`;
 }
 
 export interface SystemParametersV2Fields {
@@ -1529,12 +1529,12 @@ export type SystemParametersV2Reified = Reified<
 export class SystemParametersV2 implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::sui_system_state_inner::SystemParametersV2`;
+  static readonly $typeName = `${PKG_V18}::sui_system_state_inner::SystemParametersV2`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = SystemParametersV2.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::sui_system_state_inner::SystemParametersV2`;
+  readonly $fullTypeName: `${typeof PKG_V18}::sui_system_state_inner::SystemParametersV2`;
   readonly $typeArgs: [];
   readonly $isPhantom = SystemParametersV2.$isPhantom;
 
@@ -1552,7 +1552,7 @@ export class SystemParametersV2 implements StructClass {
     this.$fullTypeName = composeSuiType(
       SystemParametersV2.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::sui_system_state_inner::SystemParametersV2`;
+    ) as `${typeof PKG_V18}::sui_system_state_inner::SystemParametersV2`;
     this.$typeArgs = typeArgs;
 
     this.epochDurationMs = fields.epochDurationMs;
@@ -1572,7 +1572,7 @@ export class SystemParametersV2 implements StructClass {
       fullTypeName: composeSuiType(
         SystemParametersV2.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::sui_system_state_inner::SystemParametersV2`,
+      ) as `${typeof PKG_V18}::sui_system_state_inner::SystemParametersV2`,
       typeArgs: [] as [],
       isPhantom: SystemParametersV2.$isPhantom,
       reifiedTypeArgs: [],

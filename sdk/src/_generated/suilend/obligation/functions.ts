@@ -28,24 +28,6 @@ export function borrow(tx: Transaction, typeArg: string, args: BorrowArgs) {
   });
 }
 
-export interface RefreshArgs {
-  obligation: TransactionObjectInput;
-  reserves: Array<TransactionObjectInput> | TransactionArgument;
-  clock: TransactionObjectInput;
-}
-
-export function refresh(tx: Transaction, typeArg: string, args: RefreshArgs) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::obligation::refresh`,
-    typeArguments: [typeArg],
-    arguments: [
-      obj(tx, args.obligation),
-      vector(tx, `${Reserve.$typeName}<${typeArg}>`, args.reserves),
-      obj(tx, args.clock),
-    ],
-  });
-}
-
 export interface WithdrawArgs {
   obligation: TransactionObjectInput;
   reserve: TransactionObjectInput;
@@ -82,6 +64,24 @@ export function deposit(tx: Transaction, typeArg: string, args: DepositArgs) {
       obj(tx, args.reserve),
       obj(tx, args.clock),
       pure(tx, args.ctokenAmount, `u64`),
+    ],
+  });
+}
+
+export interface RefreshArgs {
+  obligation: TransactionObjectInput;
+  reserves: Array<TransactionObjectInput> | TransactionArgument;
+  clock: TransactionObjectInput;
+}
+
+export function refresh(tx: Transaction, typeArg: string, args: RefreshArgs) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::refresh`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.obligation),
+      vector(tx, `${Reserve.$typeName}<${typeArg}>`, args.reserves),
+      obj(tx, args.clock),
     ],
   });
 }

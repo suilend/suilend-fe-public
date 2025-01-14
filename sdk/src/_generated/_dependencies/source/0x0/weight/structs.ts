@@ -318,12 +318,10 @@ export class WeightHook<P extends PhantomTypeArgument> implements StructClass {
     return bcs.struct("WeightHook", {
       id: UID.bcs,
       validator_addresses_and_weights: VecMap.bcs(
-        bcs
-          .bytes(32)
-          .transform({
-            input: (val: string) => fromHEX(val),
-            output: (val: Uint8Array) => toHEX(val),
-          }),
+        bcs.bytes(32).transform({
+          input: (val: string) => fromHEX(val),
+          output: (val: Uint8Array) => toHEX(val),
+        }),
         bcs.u64(),
       ),
       total_weight: bcs.u64(),

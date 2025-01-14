@@ -57,12 +57,12 @@ export function priceIdentifier(
 
 export function staker(
   tx: Transaction,
-  typeArg: string,
+  typeArgs: [string, string],
   reserve: TransactionObjectInput,
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve::staker`,
-    typeArguments: [typeArg],
+    typeArguments: typeArgs,
     arguments: [obj(tx, reserve)],
   });
 }
@@ -544,13 +544,30 @@ export interface InitStakerArgs {
 
 export function initStaker(
   tx: Transaction,
-  typeArg: string,
+  typeArgs: [string, string],
   args: InitStakerArgs,
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve::init_staker`,
-    typeArguments: [typeArg],
+    typeArguments: typeArgs,
     arguments: [obj(tx, args.reserve), obj(tx, args.treasuryCap)],
+  });
+}
+
+export interface JoinFeesArgs {
+  reserve: TransactionObjectInput;
+  fees: TransactionObjectInput;
+}
+
+export function joinFees(
+  tx: Transaction,
+  typeArgs: [string, string],
+  args: JoinFeesArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::join_fees`,
+    typeArguments: typeArgs,
+    arguments: [obj(tx, args.reserve), obj(tx, args.fees)],
   });
 }
 

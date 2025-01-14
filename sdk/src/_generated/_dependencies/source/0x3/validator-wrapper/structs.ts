@@ -15,7 +15,7 @@ import {
   compressSuiType,
 } from "../../../../_framework/util";
 import { Versioned } from "../../0x2/versioned/structs";
-import { PKG_V17 } from "../index";
+import { PKG_V18 } from "../index";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
 import { fromB64 } from "@mysten/sui/utils";
@@ -24,7 +24,7 @@ import { fromB64 } from "@mysten/sui/utils";
 
 export function isValidatorWrapper(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_wrapper::ValidatorWrapper`;
+  return type === `${PKG_V18}::validator_wrapper::ValidatorWrapper`;
 }
 
 export interface ValidatorWrapperFields {
@@ -39,12 +39,12 @@ export type ValidatorWrapperReified = Reified<
 export class ValidatorWrapper implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_wrapper::ValidatorWrapper`;
+  static readonly $typeName = `${PKG_V18}::validator_wrapper::ValidatorWrapper`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorWrapper.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_wrapper::ValidatorWrapper`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_wrapper::ValidatorWrapper`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorWrapper.$isPhantom;
 
@@ -54,7 +54,7 @@ export class ValidatorWrapper implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorWrapper.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_wrapper::ValidatorWrapper`;
+    ) as `${typeof PKG_V18}::validator_wrapper::ValidatorWrapper`;
     this.$typeArgs = typeArgs;
 
     this.inner = fields.inner;
@@ -66,7 +66,7 @@ export class ValidatorWrapper implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorWrapper.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_wrapper::ValidatorWrapper`,
+      ) as `${typeof PKG_V18}::validator_wrapper::ValidatorWrapper`,
       typeArgs: [] as [],
       isPhantom: ValidatorWrapper.$isPhantom,
       reifiedTypeArgs: [],
