@@ -40,6 +40,7 @@ import {
   redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
   repay,
+  setFeeReceivers,
   unstakeSuiFromStaker,
   updateRateLimiterConfig,
   updateReserveConfig,
@@ -1163,6 +1164,20 @@ export class SuilendClient {
       reserveArrayIndex: transaction.pure.u64(
         this.findReserveArrayIndex(coinType),
       ),
+    });
+  }
+
+  setFeeReceiversAndWeights(
+    transaction: Transaction,
+    lendingMarketOwnerCapId: string,
+    receivers: string[],
+    weights: bigint[],
+  ) {
+    return setFeeReceivers(transaction, this.lendingMarket.$typeArgs[0], {
+      lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+      lendingMarket: transaction.object(this.lendingMarket.id),
+      receivers,
+      weights,
     });
   }
 
