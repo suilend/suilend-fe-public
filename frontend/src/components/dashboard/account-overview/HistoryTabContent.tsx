@@ -27,7 +27,7 @@ import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
 import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   EventType,
@@ -81,18 +81,18 @@ export default function HistoryTabContent({
           tableHeader(column, "Date", { isDate: true, borderBottom: true }),
         cell: ({ row }) => {
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          const { timestamp } = row.original;
+          const { timestamp, eventType } = row.original;
 
-          if (isGroupRow)
+          if (isGroupRow && eventType === EventType.LIQUIDATE)
             return (
-              <TBody className="w-max uppercase text-muted-foreground">
+              <TBodySans className="w-max text-muted-foreground">
                 Multiple
-              </TBody>
+              </TBodySans>
             );
           return (
-            <TBody className="w-max">
+            <TBodySans className="w-max">
               {formatDate(new Date(timestamp * 1000), "yyyy-MM-dd HH:mm:ss")}
-            </TBody>
+            </TBodySans>
           );
         },
       },
@@ -109,12 +109,14 @@ export default function HistoryTabContent({
           const { eventType } = row.original;
 
           return (
-            <TBody className="w-max uppercase">
+            <TBodySans className="w-max">
               {EventTypeNameMap[eventType]}
-              {isGroupRow && (
-                <span className="text-muted-foreground">{` (${row.subRows.length})`}</span>
+              {isGroupRow && eventType === EventType.LIQUIDATE && (
+                <span className="ml-1.5 text-muted-foreground">
+                  ({row.subRows.length})
+                </span>
               )}
-            </TBody>
+            </TBodySans>
           );
         },
       },
@@ -131,7 +133,6 @@ export default function HistoryTabContent({
               EventType.BORROW,
               EventType.WITHDRAW,
               EventType.REPAY,
-              EventType.CLAIM_REWARD,
             ].includes(eventType)
           ) {
             return value.includes(
@@ -158,7 +159,19 @@ export default function HistoryTabContent({
               [withdrawReserve?.coinType, repayReserve?.coinType].filter(
                 Boolean,
               ) as string[]
-            ).reduce((acc, coinType) => acc || value.includes(coinType), false);
+            ).some((coinType) => value.includes(coinType));
+          } else if (eventType === EventType.CLAIM_REWARD) {
+            if (row.subRows.length > 0) {
+              const coinTypes = row.subRows.reduce(
+                (acc, subRow) => [
+                  ...acc,
+                  (subRow.original.event as ApiClaimRewardEvent).coinType,
+                ],
+                [] as string[],
+              );
+
+              return coinTypes.some((coinType) => value.includes(coinType));
+            } else return true;
           }
 
           return false;
@@ -282,60 +295,58 @@ export default function HistoryTabContent({
             if (!withdrawReserve || !repayReserve)
               return (
                 <TLabelSans className="w-max">
-                  {isGroupRow ? "N/A" : "See txn for details"}
+                  {isGroupRow ? "N/A" : "See transaction for details"}
                 </TLabelSans>
               );
 
             let withdrawAmount = new BigNumber(0);
             let repayAmount = new BigNumber(0);
 
-            if (isGroupRow) {
-              for (const subRow of row.subRows) {
-                const subRowLiquidateEvent = subRow.original
-                  .event as ApiLiquidateEvent;
+            let liquidatorBonusAmount = new BigNumber(0);
+            let protocolFeeAmount = new BigNumber(0);
 
-                const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-                  (e) => e.digest === subRowLiquidateEvent.digest,
-                );
-                if (!reserveAssetDataEvent)
-                  return <TLabelSans className="w-max">N/A</TLabelSans>;
+            const subRows = isGroupRow ? row.subRows : [row];
+            for (const subRow of subRows) {
+              const subRowLiquidateEvent = subRow.original
+                .event as ApiLiquidateEvent;
 
-                withdrawAmount = withdrawAmount.plus(
-                  new BigNumber(subRowLiquidateEvent.withdrawAmount)
-                    .times(getCtokenExchangeRate(reserveAssetDataEvent))
-                    .div(10 ** withdrawReserve.mintDecimals),
-                );
-                repayAmount = repayAmount.plus(
-                  new BigNumber(subRowLiquidateEvent.repayAmount).div(
-                    10 ** repayReserve.mintDecimals,
-                  ),
-                );
-              }
-            } else {
               const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-                (e) => e.digest === liquidateEvent.digest,
+                (e) => e.digest === subRowLiquidateEvent.digest,
               );
               if (!reserveAssetDataEvent)
-                return (
-                  <TLabelSans className="w-max">See txn for details</TLabelSans>
-                );
+                return <TLabelSans className="w-max">N/A</TLabelSans>;
 
               withdrawAmount = withdrawAmount.plus(
-                new BigNumber(liquidateEvent.withdrawAmount)
+                new BigNumber(subRowLiquidateEvent.withdrawAmount)
                   .times(getCtokenExchangeRate(reserveAssetDataEvent))
                   .div(10 ** withdrawReserve.mintDecimals),
               );
               repayAmount = repayAmount.plus(
-                new BigNumber(liquidateEvent.repayAmount).div(
+                new BigNumber(subRowLiquidateEvent.repayAmount).div(
                   10 ** repayReserve.mintDecimals,
                 ),
+              );
+
+              liquidatorBonusAmount = liquidatorBonusAmount.plus(
+                new BigNumber(subRowLiquidateEvent.liquidatorBonusAmount)
+                  .times(getCtokenExchangeRate(reserveAssetDataEvent))
+                  .div(10 ** withdrawReserve.mintDecimals),
+              );
+              protocolFeeAmount = protocolFeeAmount.plus(
+                new BigNumber(subRowLiquidateEvent.protocolFeeAmount)
+                  .times(getCtokenExchangeRate(reserveAssetDataEvent))
+                  .div(10 ** withdrawReserve.mintDecimals),
               );
             }
 
             return (
-              <div className="flex w-max flex-col">
+              <div className="flex w-max flex-col gap-1">
                 <div className="flex w-max flex-row items-center gap-2">
-                  <TLabelSans>Deposits liquidated</TLabelSans>
+                  <TLabelSans>
+                    {isGroupRow
+                      ? "Total deposits liquidated"
+                      : "Deposits liquidated"}
+                  </TLabelSans>
                   <TokenAmount
                     amount={withdrawAmount}
                     token={{
@@ -346,8 +357,11 @@ export default function HistoryTabContent({
                     decimals={withdrawReserve.mintDecimals}
                   />
                 </div>
+
                 <div className="flex w-max flex-row items-center gap-2">
-                  <TLabelSans>Borrows repaid</TLabelSans>
+                  <TLabelSans>
+                    {isGroupRow ? "Total borrows repaid" : "Borrows repaid"}
+                  </TLabelSans>
                   <TokenAmount
                     amount={repayAmount}
                     token={{
@@ -358,27 +372,61 @@ export default function HistoryTabContent({
                     decimals={repayReserve.mintDecimals}
                   />
                 </div>
+
+                <TLabelSans className="w-max">
+                  Liquidation penalty:{" "}
+                  {formatToken(liquidatorBonusAmount, {
+                    dp: withdrawReserve.mintDecimals,
+                  })}{" "}
+                  {withdrawReserve.token.symbol}
+                </TLabelSans>
+                <TLabelSans className="w-max">
+                  Protocol liquidation fee:{" "}
+                  {formatToken(protocolFeeAmount, {
+                    dp: withdrawReserve.mintDecimals,
+                  })}{" "}
+                  {withdrawReserve.token.symbol}
+                </TLabelSans>
               </div>
             );
           } else if (eventType === EventType.CLAIM_REWARD) {
-            const claimRewardEvent = event as ApiClaimRewardEvent;
-            const coinMetadata =
-              data.coinMetadataMap[claimRewardEvent.coinType];
+            const claimedAmountMap: Record<string, BigNumber> = {};
 
-            const claimedAmount = new BigNumber(
-              claimRewardEvent.liquidityAmount,
-            ).div(10 ** coinMetadata.decimals);
+            for (const subRow of row.subRows) {
+              const subRowClaimRewardEvent = subRow.original
+                .event as ApiClaimRewardEvent;
+              const coinMetadata =
+                data.coinMetadataMap[subRowClaimRewardEvent.coinType];
+
+              claimedAmountMap[subRowClaimRewardEvent.coinType] = (
+                claimedAmountMap[subRowClaimRewardEvent.coinType] ??
+                new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowClaimRewardEvent.liquidityAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
 
             return (
-              <TokenAmount
-                amount={claimedAmount}
-                token={{
-                  coinType: claimRewardEvent.coinType,
-                  symbol: coinMetadata.symbol,
-                  iconUrl: coinMetadata.iconUrl,
-                }}
-                decimals={coinMetadata.decimals}
-              />
+              <div className="flex w-max flex-col gap-1">
+                {Object.entries(claimedAmountMap).map(([coinType, value]) => {
+                  const coinMetadata = data.coinMetadataMap[coinType];
+
+                  return (
+                    <TokenAmount
+                      key={coinType}
+                      amount={value}
+                      token={{
+                        coinType,
+                        symbol: coinMetadata.symbol,
+                        iconUrl: coinMetadata.iconUrl,
+                      }}
+                      decimals={coinMetadata.decimals}
+                    />
+                  );
+                })}
+              </div>
             );
           }
 
@@ -393,9 +441,9 @@ export default function HistoryTabContent({
           tableHeader(column, "Txn", { borderBottom: true }),
         cell: ({ row }) => {
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          const { event } = row.original;
+          const { eventType, event } = row.original;
 
-          if (isGroupRow) {
+          if (isGroupRow && eventType === EventType.LIQUIDATE) {
             const isExpanded = row.getIsExpanded();
             const Icon = isExpanded ? ChevronUp : ChevronDown;
 
@@ -528,31 +576,21 @@ export default function HistoryTabContent({
       const row = sortedRows[i];
 
       switch (row.eventType) {
-        // Dedupe CLAIM_REWARD events
+        // Group CLAIM_REWARD events
         case EventType.CLAIM_REWARD: {
           const claimRewardEvent = row.event as ApiClaimRewardEvent;
 
           const lastRow = finalRows[finalRows.length - 1];
           if (!lastRow || lastRow.eventType !== EventType.CLAIM_REWARD)
-            finalRows.push(cloneDeep(row));
+            finalRows.push({ ...row, subRows: [row] });
           else {
             const lastClaimRewardEvent = lastRow.event as ApiClaimRewardEvent;
 
-            if (
-              lastClaimRewardEvent.coinType === claimRewardEvent.coinType &&
-              lastClaimRewardEvent.isDepositReward ===
-                claimRewardEvent.isDepositReward &&
-              lastClaimRewardEvent.timestamp === claimRewardEvent.timestamp &&
-              lastClaimRewardEvent.digest === claimRewardEvent.digest
-            ) {
-              (
-                finalRows[finalRows.length - 1].event as ApiClaimRewardEvent
-              ).liquidityAmount = new BigNumber(
-                lastClaimRewardEvent.liquidityAmount,
-              )
-                .plus(claimRewardEvent.liquidityAmount)
-                .toString();
-            } else finalRows.push(row);
+            if (lastClaimRewardEvent.digest !== claimRewardEvent.digest) {
+              finalRows.push({ ...row, subRows: [row] });
+            } else {
+              (lastRow.subRows as RowData[]).push(row);
+            }
           }
 
           break;
@@ -562,10 +600,6 @@ export default function HistoryTabContent({
         case EventType.LIQUIDATE: {
           const liquidateEvent = row.event as ApiLiquidateEvent;
 
-          finalRows.push({ ...row, subRows: [row] });
-          break;
-
-          // TODO: Group consecutive liquidations for the same asset pair
           const lastRow = finalRows[finalRows.length - 1];
           if (!lastRow || lastRow.eventType !== EventType.LIQUIDATE)
             finalRows.push({ ...row, subRows: [row] });
@@ -573,13 +607,13 @@ export default function HistoryTabContent({
             const lastLiquidateEvent = lastRow.event as ApiLiquidateEvent;
 
             if (
-              lastLiquidateEvent.repayReserveId ===
-                liquidateEvent.repayReserveId &&
-              lastLiquidateEvent.withdrawReserveId ===
+              lastLiquidateEvent.repayReserveId !==
+                liquidateEvent.repayReserveId ||
+              lastLiquidateEvent.withdrawReserveId !==
                 liquidateEvent.withdrawReserveId
             )
-              (lastRow.subRows as RowData[]).push(row);
-            else finalRows.push({ ...row, subRows: [row] });
+              finalRows.push({ ...row, subRows: [row] });
+            else (lastRow.subRows as RowData[]).push(row);
           }
 
           break;
@@ -690,24 +724,30 @@ export default function HistoryTabContent({
           const isNested = !!row.getParentRow();
 
           return cn(
-            isGroupRow && row.getIsExpanded() && "!bg-muted/10",
-            isNested && "!bg-card",
+            isGroupRow &&
+              row.original.eventType === EventType.LIQUIDATE &&
+              row.getIsExpanded() &&
+              "!bg-muted/15",
+            isNested && "!bg-muted/10",
           );
         }}
         tableCellClassName={(cell) =>
           cn(
             "relative z-[1]",
             cell &&
-              [EventType.BORROW, EventType.LIQUIDATE].includes(
-                cell.row.original.eventType,
-              )
+              [
+                EventType.BORROW,
+                EventType.LIQUIDATE,
+                EventType.CLAIM_REWARD,
+              ].includes(cell.row.original.eventType)
               ? "py-2 h-auto"
               : "py-0 h-12",
           )
         }
         onRowClick={(row) => {
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          if (isGroupRow) return row.getToggleExpandedHandler();
+          if (isGroupRow && row.original.eventType === EventType.LIQUIDATE)
+            return row.getToggleExpandedHandler();
         }}
       />
     </>

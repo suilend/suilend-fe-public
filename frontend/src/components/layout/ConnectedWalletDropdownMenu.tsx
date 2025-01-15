@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
-import { ChevronDown, ChevronUp, Crown, VenetianMask } from "lucide-react";
+import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import UtilizationBar from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";
@@ -21,6 +20,7 @@ import DropdownMenu, {
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatAddress, formatUsd } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
@@ -111,12 +111,11 @@ export default function ConnectedWalletDropdownMenu({
   const hasVipItem = isEligibleForVipProgram;
   const hasDisconnectItem = !isImpersonating;
 
-  const hasSubaccounts =
-    data && data.obligations && data.obligations.length > 1 && obligation;
-  const hasWallets = !isImpersonating && accounts.length > 1;
+  const hasAccounts = true;
+  const hasWallets = !isImpersonating;
 
   const noItems =
-    !hasVipItem && !hasDisconnectItem && !hasSubaccounts && !hasWallets;
+    !hasVipItem && !hasDisconnectItem && !hasAccounts && !hasWallets;
 
   return (
     <DropdownMenu
@@ -186,33 +185,44 @@ export default function ConnectedWalletDropdownMenu({
             </DropdownMenuItem>
           )}
 
-          {hasSubaccounts && (
+          {hasAccounts && (
             <>
               <TLabelSans
                 className={cn((hasVipItem || hasDisconnectItem) && "mt-2")}
               >
-                Subaccounts
+                Accounts
               </TLabelSans>
 
-              {(data.obligations as ParsedObligation[]).map(
-                (o, index, array) => (
+              {!data?.obligations ? (
+                <Skeleton className="h-[70px] w-full rounded-sm" />
+              ) : (
+                data.obligations.map((o, index, array) => (
                   <DropdownMenuItem
                     key={o.id}
                     className="flex flex-col items-start gap-1"
-                    isSelected={o.id === obligation.id}
+                    isSelected={o.id === obligation?.id}
                     onClick={() => setObligationId(o.id)}
                   >
-                    <div className="flex w-full justify-between">
-                      <TLabelSans className="text-foreground">
-                        Subaccount {array.findIndex((_o) => _o.id === o.id) + 1}
-                      </TLabelSans>
+                    <div className="flex w-full flex-row justify-between">
+                      <div className="flex flex-row items-center gap-1">
+                        <TLabelSans className="text-foreground">
+                          Account {array.findIndex((_o) => _o.id === o.id) + 1}
+                        </TLabelSans>
+
+                        <OpenOnExplorerButton
+                          className="h-4 w-4 hover:bg-transparent"
+                          iconClassName="w-3 h-3"
+                          url={explorer.buildObjectUrl(o.id)}
+                        />
+                      </div>
+
                       <TLabelSans>
                         {o.positionCount} position
                         {o.positionCount !== 1 ? "s" : ""}
                       </TLabelSans>
                     </div>
 
-                    <div className="flex w-full justify-between">
+                    <div className="flex w-full flex-row justify-between">
                       <TLabelSans>
                         {formatUsd(o.depositedAmountUsd)} deposited
                       </TLabelSans>
@@ -221,13 +231,9 @@ export default function ConnectedWalletDropdownMenu({
                       </TLabelSans>
                     </div>
 
-                    <UtilizationBar
-                      className="mt-2 h-1"
-                      obligation={o}
-                      noTooltip
-                    />
+                    <UtilizationBar className="mt-2" obligation={o} noTooltip />
                   </DropdownMenuItem>
-                ),
+                ))
               )}
             </>
           )}
@@ -236,7 +242,7 @@ export default function ConnectedWalletDropdownMenu({
             <>
               <TLabelSans
                 className={cn(
-                  (hasVipItem || hasDisconnectItem || hasSubaccounts) && "mt-2",
+                  (hasVipItem || hasDisconnectItem || hasAccounts) && "mt-2",
                 )}
               >
                 Wallets

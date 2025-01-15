@@ -251,7 +251,7 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
 
 function ObjectsTabContent({ side, reserve }: TabContentProps) {
   const { explorer } = useSettingsContext();
-  const { suilendClient, obligation } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
 
   const pythOracleUrl = getPythOracleUrl(reserve.coinType);
 
@@ -312,17 +312,6 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         isExplorerUrl
         horizontal
       />
-
-      {obligation?.id && (
-        <LabelWithValue
-          label="Obligation"
-          value={obligation.id}
-          isId
-          url={explorer.buildObjectUrl(obligation.id)}
-          isExplorerUrl
-          horizontal
-        />
-      )}
     </>
   );
 }
