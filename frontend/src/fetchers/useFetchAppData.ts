@@ -5,7 +5,6 @@ import {
   LIQUID_STAKING_INFO_MAP,
   NORMALIZED_LST_COINTYPES,
   initializeSuilendRewards,
-  initializeSuilendSdk,
 } from "@suilend/frontend-sui";
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
 import {
@@ -16,15 +15,20 @@ import {
 import { LstClient } from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
+import { initializeSuilend } from "@/lib/suilend";
 
 export default function useFetchAppData(address?: string) {
   const { suiClient } = useSettingsContext();
 
   // Data
   const dataFetcher = async () => {
-    const {
-      suilendClient,
+    const suilendClient = await SuilendClient.initialize(
+      LENDING_MARKET_ID,
+      LENDING_MARKET_TYPE,
+      suiClient,
+    );
 
+    const {
       lendingMarket,
       reserveMap,
 
@@ -36,12 +40,8 @@ export default function useFetchAppData(address?: string) {
 
       obligationOwnerCaps,
       obligations,
-    } = await initializeSuilendSdk(
-      LENDING_MARKET_ID,
-      LENDING_MARKET_TYPE,
-      suiClient,
-      address,
-    );
+    } = await initializeSuilend(suiClient, suilendClient, address);
+
     const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
       reserveMap,
       rewardCoinTypes,
