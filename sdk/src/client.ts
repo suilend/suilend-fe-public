@@ -141,20 +141,6 @@ export class SuilendClient {
     return new SuilendClient(lendingMarket, client);
   }
 
-  static async initializeWithLendingMarket(
-    lendingMarket: LendingMarket<string>,
-    client: SuiClient,
-  ) {
-    const latestPackageId = await getLatestPackageId(
-      client,
-      SUILEND_UPGRADE_CAP_ID,
-    );
-    console.log("latestPackageId", latestPackageId);
-    setPublishedAt(latestPackageId);
-
-    return new SuilendClient(lendingMarket, client);
-  }
-
   static createNewLendingMarket(
     registryId: string,
     lendingMarketType: string,
