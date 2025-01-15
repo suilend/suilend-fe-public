@@ -23,7 +23,10 @@ import {
 import BigNumber from "bignumber.js";
 
 import { getCoinMetadataMap, isCoinType } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -127,6 +130,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
   const { data, rawBalancesMap, balancesCoinMetadataMap } =
     useLoadedAppContext();
 
@@ -141,12 +145,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const cetusSdk = useMemo(() => {
     const sdk = new CetusSdk(
       "https://api-sui.cetus.zone/router_v2/find_routes",
-      undefined,
+      address,
       suiClient,
       Env.Mainnet,
     );
     return sdk;
-  }, [suiClient]);
+  }, [address, suiClient]);
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
@@ -224,15 +228,23 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const result = (await aftermathSdk.Coin().getVerifiedCoins()).map(
-          normalizeStructTag,
+        const res = await fetch(
+          "https://api-sui.cetus.zone/v2/sui/coins_info?is_verified_coin=true",
         );
-        setVerifiedCoinTypes(result);
+        const json = await res.json();
+        const coinTypes =
+          json.msg === "OK"
+            ? json.data.list.map((coin: any) =>
+                normalizeStructTag(coin.coin_type),
+              )
+            : [];
 
-        fetchTokensMetadata(result);
+        setVerifiedCoinTypes(coinTypes);
+
+        fetchTokensMetadata(coinTypes);
       } catch (err) {}
     })();
-  }, [aftermathSdk, fetchTokensMetadata]);
+  }, [fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {

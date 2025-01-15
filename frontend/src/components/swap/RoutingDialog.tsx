@@ -410,7 +410,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           variant="ghost"
           size="sm"
         >
-          {hopsCount} hop{hopsCount !== 1 && "s"} ({quote.type})
+          {hopsCount} hop{hopsCount !== 1 && "s"}
         </Button>
       }
       dialogContentProps={{ className: "h-[600px]" }}
