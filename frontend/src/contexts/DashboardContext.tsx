@@ -65,6 +65,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw Error("Obligation not found");
 
       const transaction = new Transaction();
+
       try {
         const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
           .flat()

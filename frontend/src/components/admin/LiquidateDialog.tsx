@@ -168,6 +168,7 @@ export default function LiquidateDialog({
     if (!address) throw new Error("Wallet not connected");
 
     const transaction = new Transaction();
+
     try {
       const deposit = obligation.deposits.find(
         (d) => d.reserve.token.symbol === withdrawAssetSymbol,

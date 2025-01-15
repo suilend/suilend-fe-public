@@ -176,6 +176,7 @@ function RedeemTabContent({
     setIsSubmitting(true);
 
     const transaction = new Transaction();
+
     try {
       if (hasSendPointsToRedeem)
         redeemSendPointsMsend(suilendClient, data, address, transaction);
@@ -575,6 +576,7 @@ function ClaimTabContent() {
     setIsSubmitting(true);
 
     const transaction = new Transaction();
+
     try {
       await claimSend(
         rpc,

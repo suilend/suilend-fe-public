@@ -224,6 +224,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       if (!address) throw Error("Wallet not connected");
 
       const transaction = new Transaction();
+
       try {
         const { obligationOwnerCapId, didCreate } =
           createObligationIfNoneExists(
@@ -264,6 +265,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw Error("Obligation not found");
 
       const transaction = new Transaction();
+
       try {
         await suilendClient.borrowAndSendToUser(
           address,
@@ -298,6 +300,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw Error("Obligation not found");
 
       const transaction = new Transaction();
+
       try {
         await suilendClient.withdrawAndSendToUser(
           address,
@@ -331,6 +334,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       if (!obligation) throw Error("Obligation not found");
 
       const transaction = new Transaction();
+
       try {
         await suilendClient.repayIntoObligation(
           address,
