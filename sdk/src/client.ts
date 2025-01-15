@@ -36,6 +36,7 @@ import {
   liquidate,
   migrate,
   newObligationOwnerCap,
+  rebalanceStaker,
   redeemCtokensAndWithdrawLiquidity,
   redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
@@ -792,6 +793,16 @@ export class SuilendClient {
         deposit: ctokens,
       },
     );
+
+    if (isSui(coinType)) {
+      rebalanceStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
   }
 
   async depositIntoObligation(
