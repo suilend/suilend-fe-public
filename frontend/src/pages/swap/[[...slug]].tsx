@@ -2,14 +2,17 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import {
   Transaction,
   TransactionObjectArgument,
+  coinWithBalance,
 } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
-import { Aftermath } from "aftermath-ts-sdk";
+import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
+import { BN } from "bn.js";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -58,8 +61,8 @@ import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
+  QuoteType,
   StandardizedQuote,
-  StandardizedQuoteType,
   SwapContextProvider,
   TokenDirection,
   useSwapContext,
@@ -104,7 +107,8 @@ function Page() {
 
   const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
     useSwapContext();
-  const aftermathSdk = restSwapContext.aftermathSdk as Aftermath;
+  const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
+  const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
 
@@ -230,7 +234,7 @@ function Page() {
 
     const sortedQuotes = quotes
       .slice()
-      .sort((a, b) => +b.amount_out.minus(a.amount_out));
+      .sort((a, b) => +b.out.amount.minus(a.out.amount));
     return sortedQuotes;
   })();
   const quote = quotes?.[0];
@@ -257,69 +261,143 @@ function Page() {
       setQuotesMap((o) => ({ ...o, [_timestamp]: undefined }));
 
       try {
-        const params = {
-          token_in: _tokenIn.coinType,
-          token_out: _tokenOut.coinType,
-          amount_in: BigInt(
-            new BigNumber(_value)
-              .times(10 ** _tokenIn.decimals)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
-          ),
-        };
+        const amountIn = new BigNumber(_value)
+          .times(10 ** _tokenIn.decimals)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString();
 
         // Fetch quotes in parallel
         // Aftermath
-        (async () => {
-          console.log("Swap - fetching Aftermath quote");
+        const fetchAftermath = false;
+        if (fetchAftermath) {
+          (async () => {
+            console.log("Swap - fetching Aftermath quote");
 
-          try {
-            const quote = await aftermathSdk
-              .Router()
-              .getCompleteTradeRouteGivenAmountIn({
-                coinInType: params.token_in,
-                coinOutType: params.token_out,
-                coinInAmount: params.amount_in,
-              });
+            try {
+              const quote = await aftermathSdk
+                .Router()
+                .getCompleteTradeRouteGivenAmountIn({
+                  coinInType: _tokenIn.coinType,
+                  coinOutType: _tokenOut.coinType,
+                  coinInAmount: BigInt(amountIn),
+                });
 
-            quote.coinIn.type = normalizeStructTag(quote.coinIn.type);
-            quote.coinOut.type = normalizeStructTag(quote.coinOut.type);
-            for (const route of quote.routes) {
-              route.coinIn.type = normalizeStructTag(route.coinIn.type);
-              route.coinOut.type = normalizeStructTag(route.coinOut.type);
+              const standardizedQuote: StandardizedQuote = {
+                id: uuidv4(),
+                type: QuoteType.AFTERMATH,
+                in: {
+                  coinType: _tokenIn.coinType,
+                  amount: new BigNumber(quote.coinIn.amount.toString()).div(
+                    10 ** _tokenIn.decimals,
+                  ),
+                },
+                out: {
+                  coinType: _tokenOut.coinType,
+                  amount: new BigNumber(quote.coinOut.amount.toString()).div(
+                    10 ** _tokenOut.decimals,
+                  ),
+                },
+                routes: quote.routes.map((route, routeIndex) => ({
+                  path: route.paths.map((path) => ({
+                    id: path.poolId,
+                    routeIndex,
+                    provider: path.protocolName,
+                    in: {
+                      coinType: normalizeStructTag(path.coinIn.type),
+                      amount: new BigNumber(path.coinIn.amount.toString()).div(
+                        10 ** _tokenIn.decimals,
+                      ),
+                    },
+                    out: {
+                      coinType: normalizeStructTag(path.coinOut.type),
+                      amount: new BigNumber(path.coinOut.amount.toString()).div(
+                        10 ** _tokenOut.decimals,
+                      ),
+                    },
+                  })),
+                })),
+                quote,
+              };
 
-              for (const path of route.paths) {
-                path.coinIn.type = normalizeStructTag(path.coinIn.type);
-                path.coinOut.type = normalizeStructTag(path.coinOut.type);
-              }
+              setQuotesMap((o) => ({
+                ...o,
+                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
+              }));
+              console.log(
+                "Swap - set Aftermath quote",
+                +standardizedQuote.out.amount,
+              );
+            } catch (err) {
+              console.error(err);
             }
+          })();
+        }
 
-            const standardizedQuote = {
-              id: uuidv4(),
-              amount_in: new BigNumber(quote.coinIn.amount.toString()).div(
-                10 ** _tokenIn.decimals,
-              ),
-              amount_out: new BigNumber(quote.coinOut.amount.toString()).div(
-                10 ** _tokenOut.decimals,
-              ),
-              coin_type_in: quote.coinIn.type,
-              coin_type_out: quote.coinOut.type,
-              type: StandardizedQuoteType.AFTERMATH,
-              quote,
-            } as StandardizedQuote;
+        // Cetus
+        const fetchCetus = true;
+        if (fetchCetus) {
+          (async () => {
+            console.log("Swap - fetching Cetus quote");
 
-            setQuotesMap((o) => ({
-              ...o,
-              [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
-            }));
-            console.log(
-              "Swap - set Aftermath quote",
-              +standardizedQuote.amount_out,
-            );
-          } catch (err) {
-            console.error(err);
-          }
-        })();
+            try {
+              const quote = await cetusSdk.findRouters({
+                from: _tokenIn.coinType,
+                target: _tokenOut.coinType,
+                amount: new BN(amountIn),
+                byAmountIn: true,
+              });
+              if (!quote) return;
+
+              const standardizedQuote: StandardizedQuote = {
+                id: uuidv4(),
+                type: QuoteType.CETUS,
+                in: {
+                  coinType: _tokenIn.coinType,
+                  amount: new BigNumber(quote.amountIn.toString()).div(
+                    10 ** _tokenIn.decimals,
+                  ),
+                },
+                out: {
+                  coinType: _tokenOut.coinType,
+                  amount: new BigNumber(quote.amountOut.toString()).div(
+                    10 ** _tokenOut.decimals,
+                  ),
+                },
+                routes: quote.routes.map((route, routeIndex) => ({
+                  path: route.path.map((path) => ({
+                    id: path.id,
+                    routeIndex,
+                    provider: path.provider,
+                    in: {
+                      coinType: normalizeStructTag(path.from),
+                      amount: new BigNumber(path.amountIn.toString()).div(
+                        10 ** _tokenIn.decimals,
+                      ),
+                    },
+                    out: {
+                      coinType: normalizeStructTag(path.target),
+                      amount: new BigNumber(path.amountOut.toString()).div(
+                        10 ** _tokenOut.decimals,
+                      ),
+                    },
+                  })),
+                })),
+                quote,
+              };
+
+              setQuotesMap((o) => ({
+                ...o,
+                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
+              }));
+              console.log(
+                "Swap - set Cetus quote",
+                +standardizedQuote.out.amount,
+              );
+            } catch (err) {
+              console.error(err);
+            }
+          })();
+        }
       } catch (err) {
         toast.error("Failed to get quote", {
           description:
@@ -335,7 +413,7 @@ function Page() {
         });
       }
     },
-    [aftermathSdk],
+    [aftermathSdk, cetusSdk],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -352,10 +430,10 @@ function Page() {
   }, [fetchQuote, tokenIn, tokenOut, value]);
 
   const quoteAmountIn = quote
-    ? BigNumber(quote.amount_in.toString())
+    ? BigNumber(quote.in.amount.toString())
     : undefined;
   const quoteAmountOut = quote
-    ? BigNumber(quote.amount_out.toString())
+    ? BigNumber(quote.out.amount.toString())
     : undefined;
 
   // Value
@@ -754,7 +832,7 @@ function Page() {
     transaction: Transaction;
     outputCoin?: TransactionObjectArgument;
   }> => {
-    if (_quote.type === StandardizedQuoteType.AFTERMATH) {
+    if (_quote.type === QuoteType.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
       if (isDepositing) {
@@ -776,6 +854,38 @@ function Page() {
             completeRoute: _quote.quote,
             slippage: +slippagePercent / 100,
           });
+
+        return { transaction };
+      }
+    } else if (_quote.type === QuoteType.CETUS) {
+      console.log("Swap - fetching transaction for Cetus quote");
+
+      if (isDepositing) {
+        const transaction = new Transaction();
+
+        const inputCoin = coinWithBalance({
+          balance: BigInt(_quote.quote.amountIn.toString()),
+          type: _quote.in.coinType,
+          useGasCoin: isSui(_quote.in.coinType),
+        })(transaction);
+
+        const outputCoin = await cetusSdk.routerSwap({
+          routers: _quote.quote,
+          inputCoin,
+          slippage: +slippagePercent / 100,
+          txb: transaction,
+        });
+
+        return { transaction, outputCoin };
+      } else {
+        const transaction = new Transaction();
+
+        await cetusSdk.fastRouterSwap({
+          routers: _quote.quote,
+          slippage: +slippagePercent / 100,
+          txb: transaction,
+          refreshAllCoins: true,
+        });
 
         return { transaction };
       }
@@ -1204,11 +1314,10 @@ function Page() {
         <TLabelSans className="opacity-50">
           {"Powered by "}
           <TextLink
-            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
-            href="https://aftermath.finance/trade"
-            noIcon
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+            href="https://cetus.zone"
           >
-            Aftermath
+            Cetus
           </TextLink>
         </TLabelSans>
       </div>

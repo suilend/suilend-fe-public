@@ -67,7 +67,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
                 {token.symbol}
               </TBody>
               {verifiedCoinTypes.includes(token.coinType) && (
-                <Tooltip title="This asset appears on the list of verified assets from Aftermath.">
+                <Tooltip title="This asset appears on the list of Cetus verified assets.">
                   <BadgeCheck className="h-4 w-4 text-success" />
                 </Tooltip>
               )}

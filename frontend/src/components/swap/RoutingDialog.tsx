@@ -1,17 +1,13 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useMemo, useState } from "react";
 
 import Dagre from "@dagrejs/dagre";
-import { CoinMetadata } from "@mysten/sui/client";
-import {
-  RouterProtocolName as AftermathRouterProtocolName,
-  RouterTradePath as AftermathRouterTradePath,
-} from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import { Route } from "lucide-react";
 import ReactFlow, { Edge, Handle, Node, Position } from "reactflow";
 
-import { getCoinMetadataMap } from "@suilend/frontend-sui";
+import { getToken } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
+import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
 import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
@@ -20,15 +16,16 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import {
+  StandardizedPathWithToken,
   StandardizedQuote,
-  StandardizedQuoteType,
+  StandardizedRoutePath,
   useSwapContext,
 } from "@/contexts/SwapContext";
 import { formatId, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 import "reactflow/dist/style.css";
 
@@ -54,41 +51,6 @@ const getLayoutedElements = (nodes: any[], edges: any[], options: any) => {
     edges,
   };
 };
-
-const useGetCoinMetadataMap = (coinTypes: string[]) => {
-  const { suiClient } = useSettingsContext();
-
-  const fetchingCoinTypesRef = useRef<string[]>([]);
-  const [coinMetadataMap, setCoinMetadataMap] = useState<
-    Record<string, CoinMetadata>
-  >({});
-  useEffect(() => {
-    (async () => {
-      const filteredCoinTypes = coinTypes.filter(
-        (coinType) =>
-          !coinMetadataMap[coinType] &&
-          !fetchingCoinTypesRef.current.includes(coinType),
-      );
-      if (filteredCoinTypes.length === 0) return;
-
-      fetchingCoinTypesRef.current.push(...filteredCoinTypes);
-
-      const result = await getCoinMetadataMap(suiClient, coinTypes);
-      setCoinMetadataMap(result);
-      fetchingCoinTypesRef.current = fetchingCoinTypesRef.current.filter(
-        (coinType) => !filteredCoinTypes.includes(coinType),
-      );
-    })();
-  }, [coinTypes, coinMetadataMap, suiClient]);
-
-  return coinMetadataMap;
-};
-
-type QuoteNodeWithTokens = {
-  object_id: string;
-  amount_in: { amount: bigint } & SwapToken;
-  amount_out: { amount: bigint } & SwapToken;
-} & { protocolName: AftermathRouterProtocolName };
 
 const START_END_NODE_WIDTH = 200; // px
 const START_END_NODE_HEIGHT = 36; // px
@@ -128,7 +90,12 @@ function StartEndNode({ data }: StartEndNodeProps) {
                 token={token}
               />
 
-              <TBody>
+              <TBody
+                className={cn(
+                  "decoration-foreground/50",
+                  hoverUnderlineClassName,
+                )}
+              >
                 {formatToken(amount, { exact: false })} {token.symbol}
               </TBody>
             </div>
@@ -141,21 +108,14 @@ function StartEndNode({ data }: StartEndNodeProps) {
 }
 
 const EXCHANGE_NODE_WIDTH = 160; // px
-const EXCHANGE_NODE_HEIGHT = 12 + 16 + 4 + 20 + 12; // px
+const EXCHANGE_NODE_HEIGHT = (3 + 5 + 1.5 + 5 + 3) * 4; // px
 
 interface ExchangeNodeProps {
-  data: QuoteNodeWithTokens;
+  data: StandardizedPathWithToken;
 }
 
 function ExchangeNode({ data }: ExchangeNodeProps) {
   const { explorer } = useSettingsContext();
-
-  const amountIn = BigNumber(data.amount_in.amount.toString()).div(
-    10 ** data.amount_in.decimals,
-  );
-  const amountOut = BigNumber(data.amount_out.amount.toString()).div(
-    10 ** data.amount_out.decimals,
-  );
 
   return (
     <>
@@ -169,50 +129,77 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
       >
         <Tooltip
           content={
-            <TextLink
-              className="block font-mono text-xs"
-              href={explorer.buildObjectUrl(data.object_id)}
-            >
-              {formatId(data.object_id)}
-            </TextLink>
+            <TLabelSans className="text-xs">
+              <TextLink
+                className="font-normal"
+                href={explorer.buildObjectUrl(data.id)}
+                noIcon
+              >
+                {formatId(data.id)}
+              </TextLink>
+            </TLabelSans>
           }
         >
-          <TLabelSans>{data.protocolName}</TLabelSans>
+          <TBodySans
+            className={cn(
+              "text-muted-foreground decoration-muted-foreground/50",
+              hoverUnderlineClassName,
+            )}
+          >
+            {data.provider}
+          </TBodySans>
         </Tooltip>
 
         <Tooltip
           contentProps={{ style: { maxWidth: "none" } }}
           content={
-            <TBody className="text-xs">
-              {formatToken(amountIn, { dp: data.amount_in.decimals })}{" "}
-              <TextLink href={explorer.buildCoinUrl(data.amount_in.coinType)}>
-                {data.amount_in.symbol}
+            <TBodySans className="text-xs">
+              {formatToken(data.in.amount, {
+                dp: data.in.token.decimals,
+              })}{" "}
+              <TextLink
+                className="font-normal"
+                href={explorer.buildCoinUrl(data.in.coinType)}
+                noIcon
+              >
+                {data.in.token.symbol}
               </TextLink>
               {" → "}
-              {formatToken(amountOut, { dp: data.amount_out.decimals })}{" "}
-              <TextLink href={explorer.buildCoinUrl(data.amount_out.coinType)}>
-                {data.amount_out.symbol}
+              {formatToken(data.out.amount, {
+                dp: data.out.token.decimals,
+              })}{" "}
+              <TextLink
+                className="font-normal"
+                href={explorer.buildCoinUrl(data.out.coinType)}
+                noIcon
+              >
+                {data.out.token.symbol}
               </TextLink>
-            </TBody>
+            </TBodySans>
           }
         >
           <div
             className="flex flex-row items-center gap-2"
             style={
               {
-                "--bg-color": "hsl(var(--popover))",
+                "--bg-color": "hsl(var(--card))",
               } as CSSProperties
             }
           >
             <TokenLogos
               className="h-4 w-4"
-              tokens={[data.amount_in, data.amount_out]}
+              tokens={[data.in.token, data.out.token]}
             />
 
-            <TBody>
-              {data.amount_in.symbol}
+            <TBody
+              className={cn(
+                "text-foreground decoration-foreground/50",
+                hoverUnderlineClassName,
+              )}
+            >
+              {data.in.token.symbol}
               <span className="font-sans">/</span>
-              {data.amount_out.symbol}
+              {data.out.token.symbol}
             </TBody>
           </div>
         </Tooltip>
@@ -224,10 +211,10 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
 
 interface NodeChartProps {
   quote: StandardizedQuote;
-  quoteNodesWithTokens: QuoteNodeWithTokens[];
+  pathsWithTokens: StandardizedPathWithToken[];
 }
 
-function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
+function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
   const swapContext = useSwapContext();
   const tokenIn = swapContext.tokenIn as SwapToken;
   const tokenOut = swapContext.tokenOut as SwapToken;
@@ -235,10 +222,8 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
   // Layout
   const initialNodesEdges = (() => {
     // Nodes
-    const quoteAmountIn = BigNumber(quote.amount_in.toString());
-    const quoteAmountOut = BigNumber(quote.amount_out.toString());
-
     const initialNodes: Node[] = [];
+
     initialNodes.push({
       id: "start",
       type: "startEnd",
@@ -248,19 +233,17 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
       data: {
         isStart: true,
         token: tokenIn,
-        amount: quoteAmountIn,
+        amount: quote.in.amount,
       },
     });
-    quoteNodesWithTokens.forEach((node, index) => {
+    pathsWithTokens.forEach((pathWithToken) => {
       initialNodes.push({
-        id:
-          // Aftermath
-          `${node.object_id}_${index}`,
+        id: `${pathWithToken.id}-${pathWithToken.routeIndex}`,
         type: "exchange",
         position: { x: 0, y: 0 },
         width: EXCHANGE_NODE_WIDTH,
         height: EXCHANGE_NODE_HEIGHT,
-        data: node,
+        data: pathWithToken,
       });
     });
     initialNodes.push({
@@ -271,97 +254,42 @@ function NodeChart({ quote, quoteNodesWithTokens }: NodeChartProps) {
       height: START_END_NODE_HEIGHT,
       data: {
         token: tokenOut,
-        amount: quoteAmountOut,
+        amount: quote.out.amount,
       },
     });
 
     // Edges
     const initialEdges: Edge[] = [];
-    quoteNodesWithTokens.forEach((node, nodeIndex) => {
-      if (quote.type === StandardizedQuoteType.AFTERMATH) {
-        if (
-          !quote.quote.routes
-            .reduce(
-              (acc, route) => [
-                ...acc,
-                ...route.paths.map((path, index) => ({
-                  ...path,
-                  isFirst: index === 0,
-                })),
-              ],
-              [] as (AftermathRouterTradePath & { isFirst: boolean })[],
-            )
-            .some(
-              (data, index) =>
-                data.isFirst &&
-                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
-            )
-        )
-          return;
+
+    quote.routes.forEach((route) => {
+      for (let i = 0; i < route.path.length + 1; i++) {
+        if (i === 0) {
+          const path = route.path[i];
+
+          initialEdges.push({
+            id: `start_${path.id}-${path.routeIndex}`,
+            source: "start",
+            target: `${path.id}-${path.routeIndex}`,
+          });
+        } else if (i === route.path.length) {
+          const sourcePath = route.path[i - 1];
+
+          initialEdges.push({
+            id: `${sourcePath.id}-${sourcePath.routeIndex}_end`,
+            source: `${sourcePath.id}-${sourcePath.routeIndex}`,
+            target: "end",
+          });
+        } else {
+          const sourcePath = route.path[i - 1];
+          const path = route.path[i];
+
+          initialEdges.push({
+            id: `${sourcePath.id}-${sourcePath.routeIndex}_${path.id}-${path.routeIndex}`,
+            source: `${sourcePath.id}-${sourcePath.routeIndex}`,
+            target: `${path.id}-${path.routeIndex}`,
+          });
+        }
       }
-
-      initialEdges.push({
-        id:
-          // Aftermath
-          `start-${node.object_id}_${nodeIndex}`,
-        source: "start",
-        target:
-          // Aftermath
-          `${node.object_id}_${nodeIndex}`,
-      });
-    });
-
-    if (quote.type === StandardizedQuoteType.AFTERMATH) {
-      let indexCount = 0;
-      for (const route of quote.quote.routes) {
-        route.paths.forEach((path, index) => {
-          if (index > 0) {
-            const sourcePath = route.paths[index - 1];
-            initialEdges.push({
-              id: `${sourcePath.poolId}_${indexCount - 1}-${path.poolId}_${indexCount}`,
-              source: `${sourcePath.poolId}_${indexCount - 1}`,
-              target: `${path.poolId}_${indexCount}`,
-            });
-          }
-          indexCount += 1;
-        });
-      }
-    }
-
-    quoteNodesWithTokens.forEach((node, nodeIndex) => {
-      if (quote.type === StandardizedQuoteType.AFTERMATH) {
-        if (
-          !quote.quote.routes
-            .reduce(
-              (acc, route) => [
-                ...acc,
-                ...route.paths.map((path, index) => ({
-                  ...path,
-                  isLast: index === route.paths.length - 1,
-                })),
-              ],
-              [] as (AftermathRouterTradePath & {
-                isLast: boolean;
-              })[],
-            )
-            .some(
-              (data, index) =>
-                data.isLast &&
-                `${data.poolId}_${index}` === `${node.object_id}_${nodeIndex}`,
-            )
-        )
-          return;
-      }
-
-      initialEdges.push({
-        id:
-          // Aftermath
-          `end-${node.object_id}_${nodeIndex}`,
-        source:
-          // Aftermath
-          `${node.object_id}_${nodeIndex}`,
-        target: "end",
-      });
     });
 
     // Layout
@@ -406,79 +334,71 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
     setIsOpen(_isOpen);
   };
 
-  // Coin metadata
-  const nodeTokenCoinTypes = useMemo(() => {
+  // Paths
+  const paths = useMemo(
+    () =>
+      quote.routes.reduce(
+        (acc, route) => [...acc, ...route.path],
+        [] as StandardizedRoutePath[],
+      ),
+    [quote.routes],
+  );
+
+  // Paths - coin metadata
+  const pathCoinTypes = useMemo(() => {
     const coinTypes: string[] = [];
 
-    if (quote.type === StandardizedQuoteType.AFTERMATH) {
-      for (const path of quote.quote.routes.reduce(
-        (acc, route) => [...acc, ...route.paths],
-        [] as AftermathRouterTradePath[],
-      )) {
-        for (const coinType of [path.coinIn.type, path.coinOut.type]) {
-          if (!coinTypes.includes(coinType)) coinTypes.push(coinType);
-        }
-      }
+    for (const path of paths) {
+      for (const coinType of [path.in.coinType, path.out.coinType])
+        if (!coinTypes.includes(coinType)) coinTypes.push(coinType);
     }
 
     return coinTypes;
-  }, [quote]);
+  }, [paths]);
 
-  const coinMetadataMap = useGetCoinMetadataMap(nodeTokenCoinTypes);
+  const coinMetadataMap = useCoinMetadataMap(pathCoinTypes);
 
-  // Quote
-  const quoteNodesWithTokens = useMemo(
-    () =>
-      // Aftermath
-      quote.quote.routes
-        .reduce(
-          (acc, route) => [...acc, ...route.paths],
-          [] as AftermathRouterTradePath[],
-        )
-        .map((path) => {
-          const inToken = tokens?.find((t) => t.coinType === path.coinIn.type);
-          const outToken = tokens?.find(
-            (t) => t.coinType === path.coinOut.type,
-          );
+  // Paths - add tokens
+  const pathsWithTokens = useMemo(() => {
+    const result: StandardizedPathWithToken[] = [];
 
-          const inCoinMetadata = coinMetadataMap[path.coinIn.type];
-          const outCoinMetadata = coinMetadataMap[path.coinOut.type];
+    quote.routes.forEach((route) => {
+      route.path.forEach((path) => {
+        const inTokenCoinMetadata = coinMetadataMap?.[path.in.coinType];
+        const outTokenCoinMetadata = coinMetadataMap?.[path.out.coinType];
 
-          if (!(inToken || inCoinMetadata) || !(outToken || outCoinMetadata))
-            return undefined;
-          return {
-            object_id: path.poolId,
-            protocolName: path.protocolName,
-            amount_in: {
-              amount: path.coinIn.amount,
-              ...({
-                coinType: path.coinIn.type,
-                decimals: inToken?.decimals ?? inCoinMetadata?.decimals,
-                symbol: inToken?.symbol ?? inCoinMetadata?.symbol,
-                name: inToken?.name ?? inCoinMetadata?.name,
-                iconUrl: inToken?.iconUrl ?? inCoinMetadata?.iconUrl,
-              } as SwapToken),
-            },
-            amount_out: {
-              amount: path.coinOut.amount,
-              ...({
-                coinType: path.coinOut.type,
-                decimals: outToken?.decimals ?? outCoinMetadata?.decimals,
-                symbol: outToken?.symbol ?? outCoinMetadata?.symbol,
-                name: outToken?.name ?? outCoinMetadata?.name,
-                iconUrl: outToken?.iconUrl ?? outCoinMetadata?.iconUrl,
-              } as SwapToken),
-            },
-          };
-        })
-        .filter(Boolean) as QuoteNodeWithTokens[],
-    [quote, tokens, coinMetadataMap],
-  );
+        const inToken =
+          tokens?.find((t) => t.coinType === path.in.coinType) ||
+          (inTokenCoinMetadata
+            ? getToken(path.in.coinType, inTokenCoinMetadata)
+            : undefined);
+        const outToken =
+          tokens?.find((t) => t.coinType === path.out.coinType) ||
+          (outTokenCoinMetadata
+            ? getToken(path.out.coinType, outTokenCoinMetadata)
+            : undefined);
 
-  const hopsCount =
-    // Aftermath
-    quote.quote.routes.reduce((acc, route) => acc + route.paths.length, 0);
-  const isLoading = quoteNodesWithTokens.length !== hopsCount;
+        if (!inToken || !outToken) return undefined;
+
+        result.push({
+          ...path,
+          in: {
+            ...path.in,
+            token: inToken,
+          },
+          out: {
+            ...path.out,
+            token: outToken,
+          },
+        });
+      });
+    });
+
+    return result;
+  }, [quote.routes, tokens, coinMetadataMap]);
+
+  const hopsCount = paths.length;
+  const isLoading = pathsWithTokens.length !== hopsCount;
 
   return (
     <Dialog
@@ -506,12 +426,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           <Spinner size="md" />
         </div>
       ) : (
-        isOpen && (
-          <NodeChart
-            quote={quote}
-            quoteNodesWithTokens={quoteNodesWithTokens}
-          />
-        )
+        isOpen && <NodeChart quote={quote} pathsWithTokens={pathsWithTokens} />
       )}
     </Dialog>
   );
