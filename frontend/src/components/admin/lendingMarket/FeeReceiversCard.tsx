@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { Eraser, Minus, Plus } from "lucide-react";
@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { SuilendClient } from "@suilend/sdk";
+import { PUBLISHED_AT } from "@suilend/sdk/_generated/suilend";
 
 import Button from "@/components/shared/Button";
 import Input, { getInputId } from "@/components/shared/Input";
@@ -24,11 +26,40 @@ export default function FeeReceiversCard() {
   const { suilendClient, data } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
+  const [reset, setReset] = useState(true);
 
   // State
   const [feeReceiverRows, setFeeReceiverRows] = useState<FeeReceiverRow[]>([
     { id: uuidv4(), address: "", weight: "" },
   ]);
+
+  // Load initial fee receivers
+  useEffect(() => {
+    const loadFeeReceivers = async () => {
+      try {
+        const feeReceivers = await SuilendClient.getFeeReceivers(
+          suilendClient.client,
+          suilendClient.lendingMarket.id,
+        );
+
+        const rows = feeReceivers.receivers.map((receiver, i) => ({
+          id: uuidv4(),
+          address: receiver,
+          weight: feeReceivers.weights[i].toString(),
+        }));
+
+        setFeeReceiverRows(rows);
+      } catch (err) {
+        console.error("Failed to load fee receivers:", err);
+        toast.error("Failed to load fee receivers");
+      }
+    };
+
+    if (reset) {
+      loadFeeReceivers();
+      setReset(false);
+    }
+  }, [suilendClient.client, suilendClient.lendingMarket.id, reset]);
 
   const onValueChange =
     (id: string, key: keyof FeeReceiverRow) => (value: string) =>
@@ -53,8 +84,6 @@ export default function FeeReceiversCard() {
   };
 
   // Submit
-  const reset = () => {};
-
   const submit = async () => {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
@@ -149,7 +178,7 @@ export default function FeeReceiversCard() {
               icon={<Eraser />}
               variant="ghost"
               size="icon"
-              onClick={reset}
+              onClick={() => setReset(true)}
             >
               Clear
             </Button>
