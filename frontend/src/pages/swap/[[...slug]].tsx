@@ -860,6 +860,9 @@ function Page() {
     } else if (_quote.type === QuoteType.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
 
+      const CETUS_PARTNER_ID =
+        "0x73d10d84520e640f58254a30474478333dd3f08fa7ed2f28cfabdcc9504dc248";
+
       if (isDepositing) {
         const transaction = new Transaction();
 
@@ -874,6 +877,7 @@ function Page() {
           inputCoin,
           slippage: +slippagePercent / 100,
           txb: transaction,
+          partner: CETUS_PARTNER_ID,
         });
 
         return { transaction, outputCoin };
@@ -884,6 +888,7 @@ function Page() {
           routers: _quote.quote,
           slippage: +slippagePercent / 100,
           txb: transaction,
+          partner: CETUS_PARTNER_ID,
           refreshAllCoins: true,
         });
 

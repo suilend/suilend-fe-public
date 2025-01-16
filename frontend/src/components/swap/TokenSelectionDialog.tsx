@@ -34,10 +34,11 @@ interface TokenRowProps {
 }
 
 function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
-  const { getBalance } = useLoadedAppContext();
+  const { data, getBalance } = useLoadedAppContext();
 
   const { verifiedCoinTypes } = useSwapContext();
 
+  const suilendCoinTypes = Object.keys(data.reserveMap);
   const tokenBalance = getBalance(token.coinType);
 
   return (
@@ -66,8 +67,17 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
               <TBody className="overflow-hidden text-ellipsis text-nowrap">
                 {token.symbol}
               </TBody>
-              {verifiedCoinTypes.includes(token.coinType) && (
-                <Tooltip title="This asset appears on the list of Cetus verified assets.">
+              {(suilendCoinTypes.includes(token.coinType) ||
+                verifiedCoinTypes.includes(token.coinType)) && (
+                <Tooltip
+                  title={
+                    suilendCoinTypes.includes(token.coinType)
+                      ? "This asset is listed on Suilend"
+                      : verifiedCoinTypes.includes(token.coinType)
+                        ? "This asset appears on the list of Cetus verified assets"
+                        : ""
+                  }
+                >
                   <BadgeCheck className="h-4 w-4 text-success" />
                 </Tooltip>
               )}
