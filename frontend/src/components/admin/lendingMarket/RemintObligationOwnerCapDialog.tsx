@@ -103,6 +103,7 @@ export default function RemintObligationOwnerCapDialog() {
         id="obligationId"
         value={obligationId}
         onChange={setObligationId}
+        inputProps={{ autoFocus: true }}
       />
     </Dialog>
   );

@@ -16,7 +16,7 @@ import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obli
 import * as simulate from "@suilend/sdk/utils/simulate";
 
 import Dialog from "@/components/admin/Dialog";
-import LiquidateDialog from "@/components/admin/LiquidateDialog";
+import LiquidateDialog from "@/components/admin/liquidate/LiquidateDialog";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
 import UtilizationBar from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";

@@ -27,7 +27,7 @@ interface FeeReceiverRow {
 export default function FeeReceiversCard() {
   const { suiClient } = useSettingsContext();
   const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data } = useLoadedAppContext();
+  const { suilendClient, data, refresh } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
@@ -110,6 +110,8 @@ export default function FeeReceiversCard() {
       toast.error("Failed to set fee receivers", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
+    } finally {
+      await refresh();
     }
   };
 

@@ -12,9 +12,9 @@ import {
 } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import AddRewardDialog from "@/components/admin/AddRewardDialog";
 import Dialog from "@/components/admin/Dialog";
-import PoolRewardsTable from "@/components/admin/PoolRewardsTable";
+import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";
+import PoolRewardsTable from "@/components/admin/reserves/PoolRewardsTable";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";

@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 
 import { maxU64 } from "@suilend/sdk";
 
-import { ConfigState as ReserveConfigState } from "@/components/admin/ReserveConfig";
+import { ConfigState as ReserveConfigState } from "@/components/admin/reserves/ReserveConfig";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 

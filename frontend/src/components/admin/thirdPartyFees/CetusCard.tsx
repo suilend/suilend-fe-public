@@ -1,0 +1,153 @@
+import { useEffect, useMemo, useState } from "react";
+
+import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
+import { CoinMetadata } from "@mysten/sui/client";
+import { normalizeStructTag } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
+import { Coins } from "lucide-react";
+import { toast } from "sonner";
+
+import { getCoinMetadataMap } from "@suilend/frontend-sui";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
+
+import { TokenAmount } from "@/components/dashboard/account-overview/AccountOverviewDialog";
+import Button from "@/components/shared/Button";
+import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
+import { TTitle } from "@/components/shared/Typography";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
+import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
+
+const CAP_OWNER =
+  "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";
+
+export default function CetusCard() {
+  const { rpc, explorer, suiClient } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refresh } = useLoadedAppContext();
+
+  const isEditable = address === CAP_OWNER;
+
+  // Cetus SDK
+  const cetusSdk = useMemo(() => initMainnetSDK(rpc.url), [rpc.url]);
+
+  // Fees
+  type FeesMap = Record<
+    string,
+    { amount: BigNumber; coinMetadata: CoinMetadata }
+  >;
+
+  const [feesMap, setFeesMap] = useState<FeesMap | undefined>(undefined);
+  useEffect(() => {
+    (async () => {
+      const refFees =
+        await cetusSdk.Pool.getPartnerRefFeeAmount(CETUS_PARTNER_ID);
+
+      const coinTypes = refFees.map((refFee) =>
+        normalizeStructTag(refFee.coinAddress),
+      );
+      const coinMetadataMap = await getCoinMetadataMap(suiClient, coinTypes);
+
+      setFeesMap(
+        refFees.reduce((acc, refFee) => {
+          const coinType = normalizeStructTag(refFee.coinAddress);
+          const coinMetadata = coinMetadataMap[coinType];
+
+          return {
+            ...acc,
+            [normalizeStructTag(refFee.coinAddress)]: {
+              amount: new BigNumber(refFee.balance.toString()).div(
+                10 ** coinMetadata.decimals,
+              ),
+              coinMetadata,
+            },
+          };
+        }, {} as FeesMap),
+      );
+    })();
+  }, [cetusSdk, suiClient]);
+
+  // Submit
+  const submit = async () => {
+    if (!feesMap) return;
+    if (!address) throw new Error("Wallet not connected");
+
+    try {
+      for (const coinType of Object.keys(feesMap)) {
+        const transaction = await cetusSdk.Pool.claimPartnerRefFeePayload(
+          CETUS_PARTNER_CAP_ID,
+          CETUS_PARTNER_ID,
+          coinType,
+        );
+
+        await signExecuteAndWaitForTransaction(transaction);
+      }
+
+      toast.success("Claimed partner referral fees");
+    } catch (err) {
+      toast.error("Failed to claim partner referral fees", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    } finally {
+      refresh();
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <TTitle className="uppercase">Cetus</TTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid w-full grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
+          {feesMap === undefined ? (
+            <>
+              {Array.from({ length: 10 }).map((_, index) => (
+                <Skeleton key={index} className="h-4 w-full" />
+              ))}
+            </>
+          ) : (
+            Object.entries(feesMap).map(
+              ([coinType, { amount, coinMetadata }]) => (
+                <div
+                  key={coinType}
+                  className="flex w-full flex-row items-center gap-1"
+                >
+                  <TokenAmount
+                    amount={amount}
+                    token={{
+                      coinType,
+                      symbol: coinMetadata.symbol,
+                      iconUrl: coinMetadata.iconUrl,
+                    }}
+                    decimals={coinMetadata.decimals}
+                  />
+                  <OpenOnExplorerButton
+                    className="h-5 w-5 hover:bg-transparent"
+                    iconClassName="w-3 h-3"
+                    url={explorer.buildCoinUrl(coinType)}
+                  />
+                </div>
+              ),
+            )
+          )}
+        </div>
+
+        <Button
+          className="w-max"
+          labelClassName="uppercase text-xs"
+          startIcon={<Coins />}
+          variant="secondaryOutline"
+          onClick={submit}
+          disabled={!isEditable}
+        >
+          Claim partner referral fees
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

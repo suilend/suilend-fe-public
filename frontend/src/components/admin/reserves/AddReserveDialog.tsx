@@ -13,7 +13,7 @@ import ReserveConfig, {
   ConfigState,
   parseConfigState,
   useReserveConfigState,
-} from "@/components/admin/ReserveConfig";
+} from "@/components/admin/reserves/ReserveConfig";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";

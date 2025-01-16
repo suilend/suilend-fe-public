@@ -25,7 +25,8 @@ export default function RootletsCard() {
 
   const isEditable = address === CAP_OWNER;
 
-  const collectRoyalties = async () => {
+  // Submit
+  const submit = async () => {
     const nullOption = bcs.option(bcs.u64()).serialize(null);
 
     const transaction = new Transaction();
@@ -47,9 +48,9 @@ export default function RootletsCard() {
 
       await signExecuteAndWaitForTransaction(transaction);
 
-      toast.success("Collected royalties");
+      toast.success("Claim royalties");
     } catch (err) {
-      toast.error("Failed to collect royalties", {
+      toast.error("Failed to claim royalties", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
@@ -67,10 +68,10 @@ export default function RootletsCard() {
           labelClassName="uppercase text-xs"
           startIcon={<Coins />}
           variant="secondaryOutline"
-          onClick={collectRoyalties}
+          onClick={submit}
           disabled={!isEditable}
         >
-          Collect royalties
+          Claim royalties
         </Button>
       </CardContent>
     </Card>

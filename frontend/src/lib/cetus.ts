@@ -6,6 +6,11 @@ import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 
+export const CETUS_PARTNER_ID =
+  "0x73d10d84520e640f58254a30474478333dd3f08fa7ed2f28cfabdcc9504dc248";
+export const CETUS_PARTNER_CAP_ID =
+  "0x5b50f2419faedef118cd175e74349ff6972babf436240bfc66b86ad96396bdc8";
+
 export const CETUS_CONTRACT_PACKAGE_ID =
   "0xdc67d6de3f00051c505da10d8f6fbab3b3ec21ec65f0dc22a2f36c13fc102110";
 export const CETUS_GLOBAL_CONFIG_OBJECT_ID =
@@ -14,9 +19,9 @@ export const CETUS_POOL_OBJECT_ID =
   "0xfd444d112caeb75011316785548093781b3b9032ceccb5f4817103bc5f1b9f55";
 
 export const getCetusCurrentSuiPrice = async (
-  cetusSDK: CetusClmmSDK,
+  cetusSdk: CetusClmmSDK,
 ): Promise<Decimal> => {
-  const poolModule = new PoolModule(cetusSDK);
+  const poolModule = new PoolModule(cetusSdk);
   const pool = await poolModule.getPool(CETUS_POOL_OBJECT_ID, true);
 
   return TickMath.sqrtPriceX64ToPrice(

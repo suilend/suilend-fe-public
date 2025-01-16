@@ -15,7 +15,8 @@ export default function MigrateCard() {
 
   const isEditable = !!data.lendingMarketOwnerCapId;
 
-  const onMigrate = async () => {
+  // Submit
+  const submit = async () => {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
@@ -46,7 +47,7 @@ export default function MigrateCard() {
           labelClassName="uppercase text-xs"
           startIcon={<Package />}
           variant="secondaryOutline"
-          onClick={onMigrate}
+          onClick={submit}
           disabled={!isEditable}
         >
           Migrate

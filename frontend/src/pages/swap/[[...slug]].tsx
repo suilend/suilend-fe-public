@@ -71,6 +71,7 @@ import {
   getSubmitButtonNoValueState,
   getSubmitButtonState,
 } from "@/lib/actions";
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
@@ -859,9 +860,6 @@ function Page() {
       }
     } else if (_quote.type === QuoteType.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
-
-      const CETUS_PARTNER_ID =
-        "0x73d10d84520e640f58254a30474478333dd3f08fa7ed2f28cfabdcc9504dc248";
 
       if (isDepositing) {
         const transaction = new Transaction();

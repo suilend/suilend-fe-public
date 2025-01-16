@@ -506,7 +506,9 @@ export const claimSend = async (
   let suiPenaltyCoin = transaction.gas;
   const flashLoanArgs: Record<string, any> = {};
   if (isFlashLoan) {
-    const sendPrice = await getCetusCurrentSuiPrice(initMainnetSDK(rpc.url));
+    const cetusSdk = initMainnetSDK(rpc.url);
+
+    const sendPrice = await getCetusCurrentSuiPrice(cetusSdk);
     const minSendPrice = sendPrice
       .mul(1 - flashLoanSlippagePercent / 100)
       .toNumber();

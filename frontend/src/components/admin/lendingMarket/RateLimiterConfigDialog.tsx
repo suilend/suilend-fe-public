@@ -14,7 +14,7 @@ import RateLimiterConfig, {
   ConfigState,
   parseConfigState,
   useRateLimiterConfigState,
-} from "@/components/admin/RateLimiterConfig";
+} from "@/components/admin/lendingMarket/RateLimiterConfig";
 import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -64,8 +64,8 @@ export default function RateLimiterConfigDialog() {
   );
   const { configState, resetConfigState } = rateLimiterConfigState;
 
-  // Save
-  const saveChanges = async () => {
+  // Submit
+  const submit = async () => {
     if (!data.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
@@ -120,7 +120,7 @@ export default function RateLimiterConfigDialog() {
             className="flex-1"
             labelClassName="uppercase"
             size="lg"
-            onClick={saveChanges}
+            onClick={submit}
             disabled={!isEditable}
           >
             Save changes
