@@ -87,9 +87,9 @@ export default function CetusCard() {
         await signExecuteAndWaitForTransaction(transaction);
       }
 
-      toast.success("Claimed partner referral fees");
+      toast.success("Claimed referral fees");
     } catch (err) {
-      toast.error("Failed to claim partner referral fees", {
+      toast.error("Failed to claim referral fees", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
@@ -145,7 +145,7 @@ export default function CetusCard() {
           onClick={submit}
           disabled={!isEditable}
         >
-          Claim partner referral fees
+          Claim referral fees
         </Button>
       </CardContent>
     </Card>
