@@ -22,7 +22,7 @@ import {
   parseTypeName,
 } from "../../../../_framework/util";
 import { String } from "../../0x1/string/structs";
-import { PKG_V28 } from "../index";
+import { PKG_V30 } from "../index";
 import { ID, UID } from "../object/structs";
 import { VecMap } from "../vec-map/structs";
 import { bcs } from "@mysten/sui/bcs";
@@ -33,7 +33,7 @@ import { fromB64 } from "@mysten/sui/utils";
 
 export function isDisplay(type: string): boolean {
   type = compressSuiType(type);
-  return type.startsWith(`${PKG_V28}::display::Display` + "<");
+  return type.startsWith(`${PKG_V30}::display::Display` + "<");
 }
 
 export interface DisplayFields<T extends PhantomTypeArgument> {
@@ -50,12 +50,12 @@ export type DisplayReified<T extends PhantomTypeArgument> = Reified<
 export class Display<T extends PhantomTypeArgument> implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V28}::display::Display`;
+  static readonly $typeName = `${PKG_V30}::display::Display`;
   static readonly $numTypeParams = 1;
   static readonly $isPhantom = [true] as const;
 
   readonly $typeName = Display.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V28}::display::Display<${PhantomToTypeStr<T>}>`;
+  readonly $fullTypeName: `${typeof PKG_V30}::display::Display<${PhantomToTypeStr<T>}>`;
   readonly $typeArgs: [PhantomToTypeStr<T>];
   readonly $isPhantom = Display.$isPhantom;
 
@@ -70,7 +70,7 @@ export class Display<T extends PhantomTypeArgument> implements StructClass {
     this.$fullTypeName = composeSuiType(
       Display.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V28}::display::Display<${PhantomToTypeStr<T>}>`;
+    ) as `${typeof PKG_V30}::display::Display<${PhantomToTypeStr<T>}>`;
     this.$typeArgs = typeArgs;
 
     this.id = fields.id;
@@ -86,7 +86,7 @@ export class Display<T extends PhantomTypeArgument> implements StructClass {
       fullTypeName: composeSuiType(
         Display.$typeName,
         ...[extractType(T)],
-      ) as `${typeof PKG_V28}::display::Display<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
+      ) as `${typeof PKG_V30}::display::Display<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
       typeArgs: [extractType(T)] as [
         PhantomToTypeStr<ToPhantomTypeArgument<T>>,
       ],
@@ -294,7 +294,7 @@ export class Display<T extends PhantomTypeArgument> implements StructClass {
 
 export function isDisplayCreated(type: string): boolean {
   type = compressSuiType(type);
-  return type.startsWith(`${PKG_V28}::display::DisplayCreated` + "<");
+  return type.startsWith(`${PKG_V30}::display::DisplayCreated` + "<");
 }
 
 export interface DisplayCreatedFields<T extends PhantomTypeArgument> {
@@ -311,12 +311,12 @@ export class DisplayCreated<T extends PhantomTypeArgument>
 {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V28}::display::DisplayCreated`;
+  static readonly $typeName = `${PKG_V30}::display::DisplayCreated`;
   static readonly $numTypeParams = 1;
   static readonly $isPhantom = [true] as const;
 
   readonly $typeName = DisplayCreated.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V28}::display::DisplayCreated<${PhantomToTypeStr<T>}>`;
+  readonly $fullTypeName: `${typeof PKG_V30}::display::DisplayCreated<${PhantomToTypeStr<T>}>`;
   readonly $typeArgs: [PhantomToTypeStr<T>];
   readonly $isPhantom = DisplayCreated.$isPhantom;
 
@@ -329,7 +329,7 @@ export class DisplayCreated<T extends PhantomTypeArgument>
     this.$fullTypeName = composeSuiType(
       DisplayCreated.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V28}::display::DisplayCreated<${PhantomToTypeStr<T>}>`;
+    ) as `${typeof PKG_V30}::display::DisplayCreated<${PhantomToTypeStr<T>}>`;
     this.$typeArgs = typeArgs;
 
     this.id = fields.id;
@@ -343,7 +343,7 @@ export class DisplayCreated<T extends PhantomTypeArgument>
       fullTypeName: composeSuiType(
         DisplayCreated.$typeName,
         ...[extractType(T)],
-      ) as `${typeof PKG_V28}::display::DisplayCreated<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
+      ) as `${typeof PKG_V30}::display::DisplayCreated<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
       typeArgs: [extractType(T)] as [
         PhantomToTypeStr<ToPhantomTypeArgument<T>>,
       ],
@@ -535,7 +535,7 @@ export class DisplayCreated<T extends PhantomTypeArgument>
 
 export function isVersionUpdated(type: string): boolean {
   type = compressSuiType(type);
-  return type.startsWith(`${PKG_V28}::display::VersionUpdated` + "<");
+  return type.startsWith(`${PKG_V30}::display::VersionUpdated` + "<");
 }
 
 export interface VersionUpdatedFields<T extends PhantomTypeArgument> {
@@ -554,12 +554,12 @@ export class VersionUpdated<T extends PhantomTypeArgument>
 {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V28}::display::VersionUpdated`;
+  static readonly $typeName = `${PKG_V30}::display::VersionUpdated`;
   static readonly $numTypeParams = 1;
   static readonly $isPhantom = [true] as const;
 
   readonly $typeName = VersionUpdated.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V28}::display::VersionUpdated<${PhantomToTypeStr<T>}>`;
+  readonly $fullTypeName: `${typeof PKG_V30}::display::VersionUpdated<${PhantomToTypeStr<T>}>`;
   readonly $typeArgs: [PhantomToTypeStr<T>];
   readonly $isPhantom = VersionUpdated.$isPhantom;
 
@@ -574,7 +574,7 @@ export class VersionUpdated<T extends PhantomTypeArgument>
     this.$fullTypeName = composeSuiType(
       VersionUpdated.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V28}::display::VersionUpdated<${PhantomToTypeStr<T>}>`;
+    ) as `${typeof PKG_V30}::display::VersionUpdated<${PhantomToTypeStr<T>}>`;
     this.$typeArgs = typeArgs;
 
     this.id = fields.id;
@@ -590,7 +590,7 @@ export class VersionUpdated<T extends PhantomTypeArgument>
       fullTypeName: composeSuiType(
         VersionUpdated.$typeName,
         ...[extractType(T)],
-      ) as `${typeof PKG_V28}::display::VersionUpdated<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
+      ) as `${typeof PKG_V30}::display::VersionUpdated<${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
       typeArgs: [extractType(T)] as [
         PhantomToTypeStr<ToPhantomTypeArgument<T>>,
       ],

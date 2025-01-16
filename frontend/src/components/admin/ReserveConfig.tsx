@@ -316,8 +316,9 @@ export default function ReserveConfig({
       <div className="flex flex-col gap-2 md:col-span-2">
         <TLabelSans>interestRate</TLabelSans>
         <div className="flex flex-col gap-2 rounded-md border p-4">
+          {/* Table */}
           {configState.interestRate.map((row, index) => (
-            <div key={row.id} className="flex w-full flex-row items-end gap-2">
+            <div key={row.id} className="flex w-full flex-row gap-2">
               <div className="flex-1">
                 <Input
                   label={index === 0 ? "utilization" : undefined}
@@ -344,30 +345,37 @@ export default function ReserveConfig({
                 />
               </div>
 
-              <Button
-                className="my-1"
-                tooltip="Remove row"
-                icon={<Minus />}
-                variant="secondary"
-                size="icon"
-                disabled={configState.interestRate.length < 2}
-                onClick={() => interestRate.removeRow(row.id)}
-              >
-                Remove row
-              </Button>
+              <div className="flex flex-col gap-2">
+                {index === 0 && (
+                  <TLabelSans className="opacity-0">-</TLabelSans>
+                )}
+                <Button
+                  className="my-1"
+                  tooltip="Remove row"
+                  icon={<Minus />}
+                  variant="secondary"
+                  size="icon"
+                  disabled={configState.interestRate.length < 2}
+                  onClick={() => interestRate.removeRow(row.id)}
+                >
+                  Remove row
+                </Button>
+              </div>
             </div>
           ))}
 
-          <Button
-            className="w-full"
-            labelClassName="uppercase"
-            startIcon={<Plus />}
-            variant="secondary"
-            size="lg"
-            onClick={() => interestRate.addRow()}
-          >
-            Add row
-          </Button>
+          {/* Add row */}
+          <div className="w-full pr-10">
+            <Button
+              className="w-full"
+              labelClassName="uppercase"
+              startIcon={<Plus />}
+              variant="secondary"
+              onClick={() => interestRate.addRow()}
+            >
+              Add row
+            </Button>
+          </div>
 
           <div className="mt-4 w-full">
             <AprLineChart

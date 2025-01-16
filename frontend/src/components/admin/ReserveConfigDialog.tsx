@@ -117,7 +117,7 @@ export default function ReserveConfigDialog({
   );
   const { configState, resetConfigState } = reserveConfigState;
 
-  const reset = () => {
+  const revert = () => {
     setPythPriceId(reserve.priceIdentifier);
 
     resetConfigState();
@@ -220,7 +220,7 @@ export default function ReserveConfigDialog({
             icon={<Undo2 />}
             variant="ghost"
             size="icon"
-            onClick={reset}
+            onClick={revert}
           >
             Revert changes
           </Button>

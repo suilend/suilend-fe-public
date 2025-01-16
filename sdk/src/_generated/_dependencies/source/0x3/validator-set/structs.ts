@@ -23,7 +23,7 @@ import { ID } from "../../0x2/object/structs";
 import { TableVec } from "../../0x2/table-vec/structs";
 import { Table } from "../../0x2/table/structs";
 import { VecMap } from "../../0x2/vec-map/structs";
-import { PKG_V17 } from "../index";
+import { PKG_V18 } from "../index";
 import { PoolTokenExchangeRate } from "../staking-pool/structs";
 import { ValidatorWrapper } from "../validator-wrapper/structs";
 import { Validator } from "../validator/structs";
@@ -35,7 +35,7 @@ import { fromB64, fromHEX, toHEX } from "@mysten/sui/utils";
 
 export function isValidatorEpochInfoEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_set::ValidatorEpochInfoEvent`;
+  return type === `${PKG_V18}::validator_set::ValidatorEpochInfoEvent`;
 }
 
 export interface ValidatorEpochInfoEventFields {
@@ -59,12 +59,12 @@ export type ValidatorEpochInfoEventReified = Reified<
 export class ValidatorEpochInfoEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_set::ValidatorEpochInfoEvent`;
+  static readonly $typeName = `${PKG_V18}::validator_set::ValidatorEpochInfoEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorEpochInfoEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorEpochInfoEvent.$isPhantom;
 
@@ -83,7 +83,7 @@ export class ValidatorEpochInfoEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorEpochInfoEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEvent`;
+    ) as `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEvent`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -104,7 +104,7 @@ export class ValidatorEpochInfoEvent implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorEpochInfoEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEvent`,
+      ) as `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEvent`,
       typeArgs: [] as [],
       isPhantom: ValidatorEpochInfoEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -370,7 +370,7 @@ export class ValidatorEpochInfoEvent implements StructClass {
 
 export function isValidatorEpochInfoEventV2(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_set::ValidatorEpochInfoEventV2`;
+  return type === `${PKG_V18}::validator_set::ValidatorEpochInfoEventV2`;
 }
 
 export interface ValidatorEpochInfoEventV2Fields {
@@ -395,12 +395,12 @@ export type ValidatorEpochInfoEventV2Reified = Reified<
 export class ValidatorEpochInfoEventV2 implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_set::ValidatorEpochInfoEventV2`;
+  static readonly $typeName = `${PKG_V18}::validator_set::ValidatorEpochInfoEventV2`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorEpochInfoEventV2.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEventV2`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEventV2`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorEpochInfoEventV2.$isPhantom;
 
@@ -420,7 +420,7 @@ export class ValidatorEpochInfoEventV2 implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorEpochInfoEventV2.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEventV2`;
+    ) as `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEventV2`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -442,7 +442,7 @@ export class ValidatorEpochInfoEventV2 implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorEpochInfoEventV2.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_set::ValidatorEpochInfoEventV2`,
+      ) as `${typeof PKG_V18}::validator_set::ValidatorEpochInfoEventV2`,
       typeArgs: [] as [],
       isPhantom: ValidatorEpochInfoEventV2.$isPhantom,
       reifiedTypeArgs: [],
@@ -713,7 +713,7 @@ export class ValidatorEpochInfoEventV2 implements StructClass {
 
 export function isValidatorJoinEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_set::ValidatorJoinEvent`;
+  return type === `${PKG_V18}::validator_set::ValidatorJoinEvent`;
 }
 
 export interface ValidatorJoinEventFields {
@@ -730,12 +730,12 @@ export type ValidatorJoinEventReified = Reified<
 export class ValidatorJoinEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_set::ValidatorJoinEvent`;
+  static readonly $typeName = `${PKG_V18}::validator_set::ValidatorJoinEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorJoinEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_set::ValidatorJoinEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_set::ValidatorJoinEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorJoinEvent.$isPhantom;
 
@@ -747,7 +747,7 @@ export class ValidatorJoinEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorJoinEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_set::ValidatorJoinEvent`;
+    ) as `${typeof PKG_V18}::validator_set::ValidatorJoinEvent`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -761,7 +761,7 @@ export class ValidatorJoinEvent implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorJoinEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_set::ValidatorJoinEvent`,
+      ) as `${typeof PKG_V18}::validator_set::ValidatorJoinEvent`,
       typeArgs: [] as [],
       isPhantom: ValidatorJoinEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -929,7 +929,7 @@ export class ValidatorJoinEvent implements StructClass {
 
 export function isValidatorLeaveEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_set::ValidatorLeaveEvent`;
+  return type === `${PKG_V18}::validator_set::ValidatorLeaveEvent`;
 }
 
 export interface ValidatorLeaveEventFields {
@@ -947,12 +947,12 @@ export type ValidatorLeaveEventReified = Reified<
 export class ValidatorLeaveEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_set::ValidatorLeaveEvent`;
+  static readonly $typeName = `${PKG_V18}::validator_set::ValidatorLeaveEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorLeaveEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_set::ValidatorLeaveEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_set::ValidatorLeaveEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorLeaveEvent.$isPhantom;
 
@@ -965,7 +965,7 @@ export class ValidatorLeaveEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorLeaveEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_set::ValidatorLeaveEvent`;
+    ) as `${typeof PKG_V18}::validator_set::ValidatorLeaveEvent`;
     this.$typeArgs = typeArgs;
 
     this.epoch = fields.epoch;
@@ -980,7 +980,7 @@ export class ValidatorLeaveEvent implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorLeaveEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_set::ValidatorLeaveEvent`,
+      ) as `${typeof PKG_V18}::validator_set::ValidatorLeaveEvent`,
       typeArgs: [] as [],
       isPhantom: ValidatorLeaveEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -1153,7 +1153,7 @@ export class ValidatorLeaveEvent implements StructClass {
 
 export function isValidatorSet(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator_set::ValidatorSet`;
+  return type === `${PKG_V18}::validator_set::ValidatorSet`;
 }
 
 export interface ValidatorSetFields {
@@ -1175,12 +1175,12 @@ export type ValidatorSetReified = Reified<ValidatorSet, ValidatorSetFields>;
 export class ValidatorSet implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator_set::ValidatorSet`;
+  static readonly $typeName = `${PKG_V18}::validator_set::ValidatorSet`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorSet.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator_set::ValidatorSet`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator_set::ValidatorSet`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorSet.$isPhantom;
 
@@ -1202,7 +1202,7 @@ export class ValidatorSet implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorSet.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator_set::ValidatorSet`;
+    ) as `${typeof PKG_V18}::validator_set::ValidatorSet`;
     this.$typeArgs = typeArgs;
 
     this.totalStake = fields.totalStake;
@@ -1222,7 +1222,7 @@ export class ValidatorSet implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorSet.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator_set::ValidatorSet`,
+      ) as `${typeof PKG_V18}::validator_set::ValidatorSet`,
       typeArgs: [] as [],
       isPhantom: ValidatorSet.$isPhantom,
       reifiedTypeArgs: [],

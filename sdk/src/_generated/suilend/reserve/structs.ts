@@ -32,7 +32,7 @@ import {
 } from "../../_framework/util";
 import { Cell } from "../cell/structs";
 import { Decimal } from "../decimal/structs";
-import { PKG_V1 } from "../index";
+import { PKG_V1, PKG_V8 } from "../index";
 import { PoolRewardManager } from "../liquidity-mining/structs";
 import { ReserveConfig } from "../reserve-config/structs";
 import { bcs } from "@mysten/sui/bcs";
@@ -881,7 +881,7 @@ export class CToken<
 
 export function isClaimStakingRewardsEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V1}::reserve::ClaimStakingRewardsEvent`;
+  return type === `${PKG_V8}::reserve::ClaimStakingRewardsEvent`;
 }
 
 export interface ClaimStakingRewardsEventFields {
@@ -899,12 +899,12 @@ export type ClaimStakingRewardsEventReified = Reified<
 export class ClaimStakingRewardsEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V1}::reserve::ClaimStakingRewardsEvent`;
+  static readonly $typeName = `${PKG_V8}::reserve::ClaimStakingRewardsEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ClaimStakingRewardsEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V1}::reserve::ClaimStakingRewardsEvent`;
+  readonly $fullTypeName: `${typeof PKG_V8}::reserve::ClaimStakingRewardsEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = ClaimStakingRewardsEvent.$isPhantom;
 
@@ -917,7 +917,7 @@ export class ClaimStakingRewardsEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       ClaimStakingRewardsEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V1}::reserve::ClaimStakingRewardsEvent`;
+    ) as `${typeof PKG_V8}::reserve::ClaimStakingRewardsEvent`;
     this.$typeArgs = typeArgs;
 
     this.lendingMarketId = fields.lendingMarketId;
@@ -932,7 +932,7 @@ export class ClaimStakingRewardsEvent implements StructClass {
       fullTypeName: composeSuiType(
         ClaimStakingRewardsEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V1}::reserve::ClaimStakingRewardsEvent`,
+      ) as `${typeof PKG_V8}::reserve::ClaimStakingRewardsEvent`,
       typeArgs: [] as [],
       isPhantom: ClaimStakingRewardsEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -1505,7 +1505,7 @@ export class InterestUpdateEvent implements StructClass {
 
 export function isLiquidityRequest(type: string): boolean {
   type = compressSuiType(type);
-  return type.startsWith(`${PKG_V1}::reserve::LiquidityRequest` + "<");
+  return type.startsWith(`${PKG_V8}::reserve::LiquidityRequest` + "<");
 }
 
 export interface LiquidityRequestFields<
@@ -1528,12 +1528,12 @@ export class LiquidityRequest<
 {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V1}::reserve::LiquidityRequest`;
+  static readonly $typeName = `${PKG_V8}::reserve::LiquidityRequest`;
   static readonly $numTypeParams = 2;
   static readonly $isPhantom = [true, true] as const;
 
   readonly $typeName = LiquidityRequest.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V1}::reserve::LiquidityRequest<${PhantomToTypeStr<P>}, ${PhantomToTypeStr<T>}>`;
+  readonly $fullTypeName: `${typeof PKG_V8}::reserve::LiquidityRequest<${PhantomToTypeStr<P>}, ${PhantomToTypeStr<T>}>`;
   readonly $typeArgs: [PhantomToTypeStr<P>, PhantomToTypeStr<T>];
   readonly $isPhantom = LiquidityRequest.$isPhantom;
 
@@ -1547,7 +1547,7 @@ export class LiquidityRequest<
     this.$fullTypeName = composeSuiType(
       LiquidityRequest.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V1}::reserve::LiquidityRequest<${PhantomToTypeStr<P>}, ${PhantomToTypeStr<T>}>`;
+    ) as `${typeof PKG_V8}::reserve::LiquidityRequest<${PhantomToTypeStr<P>}, ${PhantomToTypeStr<T>}>`;
     this.$typeArgs = typeArgs;
 
     this.amount = fields.amount;
@@ -1569,7 +1569,7 @@ export class LiquidityRequest<
       fullTypeName: composeSuiType(
         LiquidityRequest.$typeName,
         ...[extractType(P), extractType(T)],
-      ) as `${typeof PKG_V1}::reserve::LiquidityRequest<${PhantomToTypeStr<ToPhantomTypeArgument<P>>}, ${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
+      ) as `${typeof PKG_V8}::reserve::LiquidityRequest<${PhantomToTypeStr<ToPhantomTypeArgument<P>>}, ${PhantomToTypeStr<ToPhantomTypeArgument<T>>}>`,
       typeArgs: [extractType(P), extractType(T)] as [
         PhantomToTypeStr<ToPhantomTypeArgument<P>>,
         PhantomToTypeStr<ToPhantomTypeArgument<T>>,
@@ -2706,7 +2706,7 @@ export class ReserveAssetDataEvent implements StructClass {
 
 export function isStakerKey(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V1}::reserve::StakerKey`;
+  return type === `${PKG_V8}::reserve::StakerKey`;
 }
 
 export interface StakerKeyFields {
@@ -2718,12 +2718,12 @@ export type StakerKeyReified = Reified<StakerKey, StakerKeyFields>;
 export class StakerKey implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V1}::reserve::StakerKey`;
+  static readonly $typeName = `${PKG_V8}::reserve::StakerKey`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = StakerKey.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V1}::reserve::StakerKey`;
+  readonly $fullTypeName: `${typeof PKG_V8}::reserve::StakerKey`;
   readonly $typeArgs: [];
   readonly $isPhantom = StakerKey.$isPhantom;
 
@@ -2733,7 +2733,7 @@ export class StakerKey implements StructClass {
     this.$fullTypeName = composeSuiType(
       StakerKey.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V1}::reserve::StakerKey`;
+    ) as `${typeof PKG_V8}::reserve::StakerKey`;
     this.$typeArgs = typeArgs;
 
     this.dummyField = fields.dummyField;
@@ -2745,7 +2745,7 @@ export class StakerKey implements StructClass {
       fullTypeName: composeSuiType(
         StakerKey.$typeName,
         ...[],
-      ) as `${typeof PKG_V1}::reserve::StakerKey`,
+      ) as `${typeof PKG_V8}::reserve::StakerKey`,
       typeArgs: [] as [],
       isPhantom: StakerKey.$isPhantom,
       reifiedTypeArgs: [],

@@ -6,13 +6,6 @@ import {
   TransactionObjectInput,
 } from "@mysten/sui/transactions";
 
-export function destroy(tx: Transaction, config: TransactionObjectInput) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve_config::destroy`,
-    arguments: [obj(tx, config)],
-  });
-}
-
 export interface SetArgs {
   builder: TransactionObjectInput;
   field: GenericArg;
@@ -35,6 +28,20 @@ export function set(
   });
 }
 
+export function destroy(tx: Transaction, config: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve_config::destroy`,
+    arguments: [obj(tx, config)],
+  });
+}
+
+export function from(tx: Transaction, config: TransactionObjectInput) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve_config::from`,
+    arguments: [obj(tx, config)],
+  });
+}
+
 export interface SetSpreadFeeBpsArgs {
   builder: TransactionObjectInput;
   spreadFeeBps: bigint | TransactionArgument;
@@ -50,13 +57,6 @@ export function setSpreadFeeBps(tx: Transaction, args: SetSpreadFeeBpsArgs) {
 export function spreadFee(tx: Transaction, config: TransactionObjectInput) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve_config::spread_fee`,
-    arguments: [obj(tx, config)],
-  });
-}
-
-export function from(tx: Transaction, config: TransactionObjectInput) {
-  return tx.moveCall({
-    target: `${PUBLISHED_AT}::reserve_config::from`,
     arguments: [obj(tx, config)],
   });
 }

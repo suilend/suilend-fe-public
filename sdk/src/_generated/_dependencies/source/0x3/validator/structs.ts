@@ -22,7 +22,7 @@ import { String } from "../../0x1/string/structs";
 import { Bag } from "../../0x2/bag/structs";
 import { ID } from "../../0x2/object/structs";
 import { Url } from "../../0x2/url/structs";
-import { PKG_V17 } from "../index";
+import { PKG_V18 } from "../index";
 import { StakingPool } from "../staking-pool/structs";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
@@ -32,7 +32,7 @@ import { fromB64, fromHEX, toHEX } from "@mysten/sui/utils";
 
 export function isConvertingToFungibleStakedSuiEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::ConvertingToFungibleStakedSuiEvent`;
+  return type === `${PKG_V18}::validator::ConvertingToFungibleStakedSuiEvent`;
 }
 
 export interface ConvertingToFungibleStakedSuiEventFields {
@@ -50,12 +50,12 @@ export type ConvertingToFungibleStakedSuiEventReified = Reified<
 export class ConvertingToFungibleStakedSuiEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::ConvertingToFungibleStakedSuiEvent`;
+  static readonly $typeName = `${PKG_V18}::validator::ConvertingToFungibleStakedSuiEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ConvertingToFungibleStakedSuiEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::ConvertingToFungibleStakedSuiEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::ConvertingToFungibleStakedSuiEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = ConvertingToFungibleStakedSuiEvent.$isPhantom;
 
@@ -71,7 +71,7 @@ export class ConvertingToFungibleStakedSuiEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       ConvertingToFungibleStakedSuiEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::ConvertingToFungibleStakedSuiEvent`;
+    ) as `${typeof PKG_V18}::validator::ConvertingToFungibleStakedSuiEvent`;
     this.$typeArgs = typeArgs;
 
     this.poolId = fields.poolId;
@@ -86,7 +86,7 @@ export class ConvertingToFungibleStakedSuiEvent implements StructClass {
       fullTypeName: composeSuiType(
         ConvertingToFungibleStakedSuiEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::ConvertingToFungibleStakedSuiEvent`,
+      ) as `${typeof PKG_V18}::validator::ConvertingToFungibleStakedSuiEvent`,
       typeArgs: [] as [],
       isPhantom: ConvertingToFungibleStakedSuiEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -297,7 +297,7 @@ export class ConvertingToFungibleStakedSuiEvent implements StructClass {
 
 export function isRedeemingFungibleStakedSuiEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::RedeemingFungibleStakedSuiEvent`;
+  return type === `${PKG_V18}::validator::RedeemingFungibleStakedSuiEvent`;
 }
 
 export interface RedeemingFungibleStakedSuiEventFields {
@@ -314,12 +314,12 @@ export type RedeemingFungibleStakedSuiEventReified = Reified<
 export class RedeemingFungibleStakedSuiEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::RedeemingFungibleStakedSuiEvent`;
+  static readonly $typeName = `${PKG_V18}::validator::RedeemingFungibleStakedSuiEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = RedeemingFungibleStakedSuiEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::RedeemingFungibleStakedSuiEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::RedeemingFungibleStakedSuiEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = RedeemingFungibleStakedSuiEvent.$isPhantom;
 
@@ -334,7 +334,7 @@ export class RedeemingFungibleStakedSuiEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       RedeemingFungibleStakedSuiEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::RedeemingFungibleStakedSuiEvent`;
+    ) as `${typeof PKG_V18}::validator::RedeemingFungibleStakedSuiEvent`;
     this.$typeArgs = typeArgs;
 
     this.poolId = fields.poolId;
@@ -348,7 +348,7 @@ export class RedeemingFungibleStakedSuiEvent implements StructClass {
       fullTypeName: composeSuiType(
         RedeemingFungibleStakedSuiEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::RedeemingFungibleStakedSuiEvent`,
+      ) as `${typeof PKG_V18}::validator::RedeemingFungibleStakedSuiEvent`,
       typeArgs: [] as [],
       isPhantom: RedeemingFungibleStakedSuiEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -532,7 +532,7 @@ export class RedeemingFungibleStakedSuiEvent implements StructClass {
 
 export function isStakingRequestEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::StakingRequestEvent`;
+  return type === `${PKG_V18}::validator::StakingRequestEvent`;
 }
 
 export interface StakingRequestEventFields {
@@ -551,12 +551,12 @@ export type StakingRequestEventReified = Reified<
 export class StakingRequestEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::StakingRequestEvent`;
+  static readonly $typeName = `${PKG_V18}::validator::StakingRequestEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = StakingRequestEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::StakingRequestEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::StakingRequestEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = StakingRequestEvent.$isPhantom;
 
@@ -570,7 +570,7 @@ export class StakingRequestEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       StakingRequestEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::StakingRequestEvent`;
+    ) as `${typeof PKG_V18}::validator::StakingRequestEvent`;
     this.$typeArgs = typeArgs;
 
     this.poolId = fields.poolId;
@@ -586,7 +586,7 @@ export class StakingRequestEvent implements StructClass {
       fullTypeName: composeSuiType(
         StakingRequestEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::StakingRequestEvent`,
+      ) as `${typeof PKG_V18}::validator::StakingRequestEvent`,
       typeArgs: [] as [],
       isPhantom: StakingRequestEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -769,7 +769,7 @@ export class StakingRequestEvent implements StructClass {
 
 export function isUnstakingRequestEvent(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::UnstakingRequestEvent`;
+  return type === `${PKG_V18}::validator::UnstakingRequestEvent`;
 }
 
 export interface UnstakingRequestEventFields {
@@ -790,12 +790,12 @@ export type UnstakingRequestEventReified = Reified<
 export class UnstakingRequestEvent implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::UnstakingRequestEvent`;
+  static readonly $typeName = `${PKG_V18}::validator::UnstakingRequestEvent`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = UnstakingRequestEvent.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::UnstakingRequestEvent`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::UnstakingRequestEvent`;
   readonly $typeArgs: [];
   readonly $isPhantom = UnstakingRequestEvent.$isPhantom;
 
@@ -811,7 +811,7 @@ export class UnstakingRequestEvent implements StructClass {
     this.$fullTypeName = composeSuiType(
       UnstakingRequestEvent.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::UnstakingRequestEvent`;
+    ) as `${typeof PKG_V18}::validator::UnstakingRequestEvent`;
     this.$typeArgs = typeArgs;
 
     this.poolId = fields.poolId;
@@ -829,7 +829,7 @@ export class UnstakingRequestEvent implements StructClass {
       fullTypeName: composeSuiType(
         UnstakingRequestEvent.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::UnstakingRequestEvent`,
+      ) as `${typeof PKG_V18}::validator::UnstakingRequestEvent`,
       typeArgs: [] as [],
       isPhantom: UnstakingRequestEvent.$isPhantom,
       reifiedTypeArgs: [],
@@ -1041,7 +1041,7 @@ export class UnstakingRequestEvent implements StructClass {
 
 export function isValidator(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::Validator`;
+  return type === `${PKG_V18}::validator::Validator`;
 }
 
 export interface ValidatorFields {
@@ -1062,12 +1062,12 @@ export type ValidatorReified = Reified<Validator, ValidatorFields>;
 export class Validator implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::Validator`;
+  static readonly $typeName = `${PKG_V18}::validator::Validator`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = Validator.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::Validator`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::Validator`;
   readonly $typeArgs: [];
   readonly $isPhantom = Validator.$isPhantom;
 
@@ -1086,7 +1086,7 @@ export class Validator implements StructClass {
     this.$fullTypeName = composeSuiType(
       Validator.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::Validator`;
+    ) as `${typeof PKG_V18}::validator::Validator`;
     this.$typeArgs = typeArgs;
 
     this.metadata = fields.metadata;
@@ -1107,7 +1107,7 @@ export class Validator implements StructClass {
       fullTypeName: composeSuiType(
         Validator.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::Validator`,
+      ) as `${typeof PKG_V18}::validator::Validator`,
       typeArgs: [] as [],
       isPhantom: Validator.$isPhantom,
       reifiedTypeArgs: [],
@@ -1327,7 +1327,7 @@ export class Validator implements StructClass {
 
 export function isValidatorMetadata(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V17}::validator::ValidatorMetadata`;
+  return type === `${PKG_V18}::validator::ValidatorMetadata`;
 }
 
 export interface ValidatorMetadataFields {
@@ -1363,12 +1363,12 @@ export type ValidatorMetadataReified = Reified<
 export class ValidatorMetadata implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V17}::validator::ValidatorMetadata`;
+  static readonly $typeName = `${PKG_V18}::validator::ValidatorMetadata`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = ValidatorMetadata.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V17}::validator::ValidatorMetadata`;
+  readonly $fullTypeName: `${typeof PKG_V18}::validator::ValidatorMetadata`;
   readonly $typeArgs: [];
   readonly $isPhantom = ValidatorMetadata.$isPhantom;
 
@@ -1399,7 +1399,7 @@ export class ValidatorMetadata implements StructClass {
     this.$fullTypeName = composeSuiType(
       ValidatorMetadata.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V17}::validator::ValidatorMetadata`;
+    ) as `${typeof PKG_V18}::validator::ValidatorMetadata`;
     this.$typeArgs = typeArgs;
 
     this.suiAddress = fields.suiAddress;
@@ -1432,7 +1432,7 @@ export class ValidatorMetadata implements StructClass {
       fullTypeName: composeSuiType(
         ValidatorMetadata.$typeName,
         ...[],
-      ) as `${typeof PKG_V17}::validator::ValidatorMetadata`,
+      ) as `${typeof PKG_V18}::validator::ValidatorMetadata`,
       typeArgs: [] as [],
       isPhantom: ValidatorMetadata.$isPhantom,
       reifiedTypeArgs: [],

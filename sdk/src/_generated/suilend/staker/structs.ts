@@ -1,19 +1,25 @@
 import * as reified from "../../_framework/reified";
-import {
-  AdminCap,
-  LiquidStakingInfo,
-} from "../../_dependencies/source/0x0/liquid-staking/structs";
 import { Balance } from "../../_dependencies/source/0x2/balance/structs";
 import { SUI } from "../../_dependencies/source/0x2/sui/structs";
 import {
+  AdminCap,
+  LiquidStakingInfo,
+} from "../../_dependencies/source/0xb0575765166030556a6eafd3b1b970eba8183ff748860680245b9edd41c716e7/liquid-staking/structs";
+import {
   PhantomReified,
+  PhantomToTypeStr,
+  PhantomTypeArgument,
   Reified,
   StructClass,
   ToField,
+  ToPhantomTypeArgument,
   ToTypeStr,
+  assertFieldsWithTypesArgsMatch,
+  assertReifiedTypeArgsMatch,
   decodeFromFields,
   decodeFromFieldsWithTypes,
   decodeFromJSONField,
+  extractType,
   phantom,
   ToTypeStr as ToPhantom,
 } from "../../_framework/reified";
@@ -21,229 +27,59 @@ import {
   FieldsWithTypes,
   composeSuiType,
   compressSuiType,
+  parseTypeName,
 } from "../../_framework/util";
-import { PKG_V1 } from "../index";
+import { PKG_V8 } from "../index";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
 import { fromB64 } from "@mysten/sui/utils";
-
-/* ============================== STAKER =============================== */
-
-export function isSTAKER(type: string): boolean {
-  type = compressSuiType(type);
-  return type === `${PKG_V1}::staker::STAKER`;
-}
-
-export interface STAKERFields {
-  dummyField: ToField<"bool">;
-}
-
-export type STAKERReified = Reified<STAKER, STAKERFields>;
-
-export class STAKER implements StructClass {
-  __StructClass = true as const;
-
-  static readonly $typeName = `${PKG_V1}::staker::STAKER`;
-  static readonly $numTypeParams = 0;
-  static readonly $isPhantom = [] as const;
-
-  readonly $typeName = STAKER.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V1}::staker::STAKER`;
-  readonly $typeArgs: [];
-  readonly $isPhantom = STAKER.$isPhantom;
-
-  readonly dummyField: ToField<"bool">;
-
-  private constructor(typeArgs: [], fields: STAKERFields) {
-    this.$fullTypeName = composeSuiType(
-      STAKER.$typeName,
-      ...typeArgs,
-    ) as `${typeof PKG_V1}::staker::STAKER`;
-    this.$typeArgs = typeArgs;
-
-    this.dummyField = fields.dummyField;
-  }
-
-  static reified(): STAKERReified {
-    return {
-      typeName: STAKER.$typeName,
-      fullTypeName: composeSuiType(
-        STAKER.$typeName,
-        ...[],
-      ) as `${typeof PKG_V1}::staker::STAKER`,
-      typeArgs: [] as [],
-      isPhantom: STAKER.$isPhantom,
-      reifiedTypeArgs: [],
-      fromFields: (fields: Record<string, any>) => STAKER.fromFields(fields),
-      fromFieldsWithTypes: (item: FieldsWithTypes) =>
-        STAKER.fromFieldsWithTypes(item),
-      fromBcs: (data: Uint8Array) => STAKER.fromBcs(data),
-      bcs: STAKER.bcs,
-      fromJSONField: (field: any) => STAKER.fromJSONField(field),
-      fromJSON: (json: Record<string, any>) => STAKER.fromJSON(json),
-      fromSuiParsedData: (content: SuiParsedData) =>
-        STAKER.fromSuiParsedData(content),
-      fromSuiObjectData: (content: SuiObjectData) =>
-        STAKER.fromSuiObjectData(content),
-      fetch: async (client: SuiClient, id: string) => STAKER.fetch(client, id),
-      new: (fields: STAKERFields) => {
-        return new STAKER([], fields);
-      },
-      kind: "StructClassReified",
-    };
-  }
-
-  static get r() {
-    return STAKER.reified();
-  }
-
-  static phantom(): PhantomReified<ToTypeStr<STAKER>> {
-    return phantom(STAKER.reified());
-  }
-  static get p() {
-    return STAKER.phantom();
-  }
-
-  static get bcs() {
-    return bcs.struct("STAKER", {
-      dummy_field: bcs.bool(),
-    });
-  }
-
-  static fromFields(fields: Record<string, any>): STAKER {
-    return STAKER.reified().new({
-      dummyField: decodeFromFields("bool", fields.dummy_field),
-    });
-  }
-
-  static fromFieldsWithTypes(item: FieldsWithTypes): STAKER {
-    if (!isSTAKER(item.type)) {
-      throw new Error("not a STAKER type");
-    }
-
-    return STAKER.reified().new({
-      dummyField: decodeFromFieldsWithTypes("bool", item.fields.dummy_field),
-    });
-  }
-
-  static fromBcs(data: Uint8Array): STAKER {
-    return STAKER.fromFields(STAKER.bcs.parse(data));
-  }
-
-  toJSONField() {
-    return {
-      dummyField: this.dummyField,
-    };
-  }
-
-  toJSON() {
-    return {
-      $typeName: this.$typeName,
-      $typeArgs: this.$typeArgs,
-      ...this.toJSONField(),
-    };
-  }
-
-  static fromJSONField(field: any): STAKER {
-    return STAKER.reified().new({
-      dummyField: decodeFromJSONField("bool", field.dummyField),
-    });
-  }
-
-  static fromJSON(json: Record<string, any>): STAKER {
-    if (json.$typeName !== STAKER.$typeName) {
-      throw new Error("not a WithTwoGenerics json object");
-    }
-
-    return STAKER.fromJSONField(json);
-  }
-
-  static fromSuiParsedData(content: SuiParsedData): STAKER {
-    if (content.dataType !== "moveObject") {
-      throw new Error("not an object");
-    }
-    if (!isSTAKER(content.type)) {
-      throw new Error(
-        `object at ${(content.fields as any).id} is not a STAKER object`,
-      );
-    }
-    return STAKER.fromFieldsWithTypes(content);
-  }
-
-  static fromSuiObjectData(data: SuiObjectData): STAKER {
-    if (data.bcs) {
-      if (data.bcs.dataType !== "moveObject" || !isSTAKER(data.bcs.type)) {
-        throw new Error(`object at is not a STAKER object`);
-      }
-
-      return STAKER.fromBcs(fromB64(data.bcs.bcsBytes));
-    }
-    if (data.content) {
-      return STAKER.fromSuiParsedData(data.content);
-    }
-    throw new Error(
-      "Both `bcs` and `content` fields are missing from the data. Include `showBcs` or `showContent` in the request.",
-    );
-  }
-
-  static async fetch(client: SuiClient, id: string): Promise<STAKER> {
-    const res = await client.getObject({ id, options: { showBcs: true } });
-    if (res.error) {
-      throw new Error(
-        `error fetching STAKER object at id ${id}: ${res.error.code}`,
-      );
-    }
-    if (
-      res.data?.bcs?.dataType !== "moveObject" ||
-      !isSTAKER(res.data.bcs.type)
-    ) {
-      throw new Error(`object at id ${id} is not a STAKER object`);
-    }
-
-    return STAKER.fromSuiObjectData(res.data);
-  }
-}
 
 /* ============================== Staker =============================== */
 
 export function isStaker(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V1}::staker::Staker`;
+  return type.startsWith(`${PKG_V8}::staker::Staker` + "<");
 }
 
-export interface StakerFields {
-  admin: ToField<AdminCap<ToPhantom<STAKER>>>;
-  liquidStakingInfo: ToField<LiquidStakingInfo<ToPhantom<STAKER>>>;
-  lstBalance: ToField<Balance<ToPhantom<STAKER>>>;
+export interface StakerFields<P extends PhantomTypeArgument> {
+  admin: ToField<AdminCap<P>>;
+  liquidStakingInfo: ToField<LiquidStakingInfo<P>>;
+  lstBalance: ToField<Balance<P>>;
   suiBalance: ToField<Balance<ToPhantom<SUI>>>;
   liabilities: ToField<"u64">;
 }
 
-export type StakerReified = Reified<Staker, StakerFields>;
+export type StakerReified<P extends PhantomTypeArgument> = Reified<
+  Staker<P>,
+  StakerFields<P>
+>;
 
-export class Staker implements StructClass {
+export class Staker<P extends PhantomTypeArgument> implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V1}::staker::Staker`;
-  static readonly $numTypeParams = 0;
-  static readonly $isPhantom = [] as const;
+  static readonly $typeName = `${PKG_V8}::staker::Staker`;
+  static readonly $numTypeParams = 1;
+  static readonly $isPhantom = [true] as const;
 
   readonly $typeName = Staker.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V1}::staker::Staker`;
-  readonly $typeArgs: [];
+  readonly $fullTypeName: `${typeof PKG_V8}::staker::Staker<${PhantomToTypeStr<P>}>`;
+  readonly $typeArgs: [PhantomToTypeStr<P>];
   readonly $isPhantom = Staker.$isPhantom;
 
-  readonly admin: ToField<AdminCap<ToPhantom<STAKER>>>;
-  readonly liquidStakingInfo: ToField<LiquidStakingInfo<ToPhantom<STAKER>>>;
-  readonly lstBalance: ToField<Balance<ToPhantom<STAKER>>>;
+  readonly admin: ToField<AdminCap<P>>;
+  readonly liquidStakingInfo: ToField<LiquidStakingInfo<P>>;
+  readonly lstBalance: ToField<Balance<P>>;
   readonly suiBalance: ToField<Balance<ToPhantom<SUI>>>;
   readonly liabilities: ToField<"u64">;
 
-  private constructor(typeArgs: [], fields: StakerFields) {
+  private constructor(
+    typeArgs: [PhantomToTypeStr<P>],
+    fields: StakerFields<P>,
+  ) {
     this.$fullTypeName = composeSuiType(
       Staker.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V1}::staker::Staker`;
+    ) as `${typeof PKG_V8}::staker::Staker<${PhantomToTypeStr<P>}>`;
     this.$typeArgs = typeArgs;
 
     this.admin = fields.admin;
@@ -253,44 +89,51 @@ export class Staker implements StructClass {
     this.liabilities = fields.liabilities;
   }
 
-  static reified(): StakerReified {
+  static reified<P extends PhantomReified<PhantomTypeArgument>>(
+    P: P,
+  ): StakerReified<ToPhantomTypeArgument<P>> {
     return {
       typeName: Staker.$typeName,
       fullTypeName: composeSuiType(
         Staker.$typeName,
-        ...[],
-      ) as `${typeof PKG_V1}::staker::Staker`,
-      typeArgs: [] as [],
+        ...[extractType(P)],
+      ) as `${typeof PKG_V8}::staker::Staker<${PhantomToTypeStr<ToPhantomTypeArgument<P>>}>`,
+      typeArgs: [extractType(P)] as [
+        PhantomToTypeStr<ToPhantomTypeArgument<P>>,
+      ],
       isPhantom: Staker.$isPhantom,
-      reifiedTypeArgs: [],
-      fromFields: (fields: Record<string, any>) => Staker.fromFields(fields),
+      reifiedTypeArgs: [P],
+      fromFields: (fields: Record<string, any>) => Staker.fromFields(P, fields),
       fromFieldsWithTypes: (item: FieldsWithTypes) =>
-        Staker.fromFieldsWithTypes(item),
-      fromBcs: (data: Uint8Array) => Staker.fromBcs(data),
+        Staker.fromFieldsWithTypes(P, item),
+      fromBcs: (data: Uint8Array) => Staker.fromBcs(P, data),
       bcs: Staker.bcs,
-      fromJSONField: (field: any) => Staker.fromJSONField(field),
-      fromJSON: (json: Record<string, any>) => Staker.fromJSON(json),
+      fromJSONField: (field: any) => Staker.fromJSONField(P, field),
+      fromJSON: (json: Record<string, any>) => Staker.fromJSON(P, json),
       fromSuiParsedData: (content: SuiParsedData) =>
-        Staker.fromSuiParsedData(content),
+        Staker.fromSuiParsedData(P, content),
       fromSuiObjectData: (content: SuiObjectData) =>
-        Staker.fromSuiObjectData(content),
-      fetch: async (client: SuiClient, id: string) => Staker.fetch(client, id),
-      new: (fields: StakerFields) => {
-        return new Staker([], fields);
+        Staker.fromSuiObjectData(P, content),
+      fetch: async (client: SuiClient, id: string) =>
+        Staker.fetch(client, P, id),
+      new: (fields: StakerFields<ToPhantomTypeArgument<P>>) => {
+        return new Staker([extractType(P)], fields);
       },
       kind: "StructClassReified",
     };
   }
 
   static get r() {
-    return Staker.reified();
+    return Staker.reified;
   }
 
-  static phantom(): PhantomReified<ToTypeStr<Staker>> {
-    return phantom(Staker.reified());
+  static phantom<P extends PhantomReified<PhantomTypeArgument>>(
+    P: P,
+  ): PhantomReified<ToTypeStr<Staker<ToPhantomTypeArgument<P>>>> {
+    return phantom(Staker.reified(P));
   }
   static get p() {
-    return Staker.phantom();
+    return Staker.phantom;
   }
 
   static get bcs() {
@@ -303,18 +146,18 @@ export class Staker implements StructClass {
     });
   }
 
-  static fromFields(fields: Record<string, any>): Staker {
-    return Staker.reified().new({
-      admin: decodeFromFields(
-        AdminCap.reified(reified.phantom(STAKER.reified())),
-        fields.admin,
-      ),
+  static fromFields<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    fields: Record<string, any>,
+  ): Staker<ToPhantomTypeArgument<P>> {
+    return Staker.reified(typeArg).new({
+      admin: decodeFromFields(AdminCap.reified(typeArg), fields.admin),
       liquidStakingInfo: decodeFromFields(
-        LiquidStakingInfo.reified(reified.phantom(STAKER.reified())),
+        LiquidStakingInfo.reified(typeArg),
         fields.liquid_staking_info,
       ),
       lstBalance: decodeFromFields(
-        Balance.reified(reified.phantom(STAKER.reified())),
+        Balance.reified(typeArg),
         fields.lst_balance,
       ),
       suiBalance: decodeFromFields(
@@ -325,22 +168,26 @@ export class Staker implements StructClass {
     });
   }
 
-  static fromFieldsWithTypes(item: FieldsWithTypes): Staker {
+  static fromFieldsWithTypes<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    item: FieldsWithTypes,
+  ): Staker<ToPhantomTypeArgument<P>> {
     if (!isStaker(item.type)) {
       throw new Error("not a Staker type");
     }
+    assertFieldsWithTypesArgsMatch(item, [typeArg]);
 
-    return Staker.reified().new({
+    return Staker.reified(typeArg).new({
       admin: decodeFromFieldsWithTypes(
-        AdminCap.reified(reified.phantom(STAKER.reified())),
+        AdminCap.reified(typeArg),
         item.fields.admin,
       ),
       liquidStakingInfo: decodeFromFieldsWithTypes(
-        LiquidStakingInfo.reified(reified.phantom(STAKER.reified())),
+        LiquidStakingInfo.reified(typeArg),
         item.fields.liquid_staking_info,
       ),
       lstBalance: decodeFromFieldsWithTypes(
-        Balance.reified(reified.phantom(STAKER.reified())),
+        Balance.reified(typeArg),
         item.fields.lst_balance,
       ),
       suiBalance: decodeFromFieldsWithTypes(
@@ -351,8 +198,11 @@ export class Staker implements StructClass {
     });
   }
 
-  static fromBcs(data: Uint8Array): Staker {
-    return Staker.fromFields(Staker.bcs.parse(data));
+  static fromBcs<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    data: Uint8Array,
+  ): Staker<ToPhantomTypeArgument<P>> {
+    return Staker.fromFields(typeArg, Staker.bcs.parse(data));
   }
 
   toJSONField() {
@@ -373,18 +223,18 @@ export class Staker implements StructClass {
     };
   }
 
-  static fromJSONField(field: any): Staker {
-    return Staker.reified().new({
-      admin: decodeFromJSONField(
-        AdminCap.reified(reified.phantom(STAKER.reified())),
-        field.admin,
-      ),
+  static fromJSONField<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    field: any,
+  ): Staker<ToPhantomTypeArgument<P>> {
+    return Staker.reified(typeArg).new({
+      admin: decodeFromJSONField(AdminCap.reified(typeArg), field.admin),
       liquidStakingInfo: decodeFromJSONField(
-        LiquidStakingInfo.reified(reified.phantom(STAKER.reified())),
+        LiquidStakingInfo.reified(typeArg),
         field.liquidStakingInfo,
       ),
       lstBalance: decodeFromJSONField(
-        Balance.reified(reified.phantom(STAKER.reified())),
+        Balance.reified(typeArg),
         field.lstBalance,
       ),
       suiBalance: decodeFromJSONField(
@@ -395,15 +245,26 @@ export class Staker implements StructClass {
     });
   }
 
-  static fromJSON(json: Record<string, any>): Staker {
+  static fromJSON<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    json: Record<string, any>,
+  ): Staker<ToPhantomTypeArgument<P>> {
     if (json.$typeName !== Staker.$typeName) {
       throw new Error("not a WithTwoGenerics json object");
     }
+    assertReifiedTypeArgsMatch(
+      composeSuiType(Staker.$typeName, extractType(typeArg)),
+      json.$typeArgs,
+      [typeArg],
+    );
 
-    return Staker.fromJSONField(json);
+    return Staker.fromJSONField(typeArg, json);
   }
 
-  static fromSuiParsedData(content: SuiParsedData): Staker {
+  static fromSuiParsedData<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    content: SuiParsedData,
+  ): Staker<ToPhantomTypeArgument<P>> {
     if (content.dataType !== "moveObject") {
       throw new Error("not an object");
     }
@@ -412,26 +273,47 @@ export class Staker implements StructClass {
         `object at ${(content.fields as any).id} is not a Staker object`,
       );
     }
-    return Staker.fromFieldsWithTypes(content);
+    return Staker.fromFieldsWithTypes(typeArg, content);
   }
 
-  static fromSuiObjectData(data: SuiObjectData): Staker {
+  static fromSuiObjectData<P extends PhantomReified<PhantomTypeArgument>>(
+    typeArg: P,
+    data: SuiObjectData,
+  ): Staker<ToPhantomTypeArgument<P>> {
     if (data.bcs) {
       if (data.bcs.dataType !== "moveObject" || !isStaker(data.bcs.type)) {
         throw new Error(`object at is not a Staker object`);
       }
 
-      return Staker.fromBcs(fromB64(data.bcs.bcsBytes));
+      const gotTypeArgs = parseTypeName(data.bcs.type).typeArgs;
+      if (gotTypeArgs.length !== 1) {
+        throw new Error(
+          `type argument mismatch: expected 1 type argument but got '${gotTypeArgs.length}'`,
+        );
+      }
+      const gotTypeArg = compressSuiType(gotTypeArgs[0]);
+      const expectedTypeArg = compressSuiType(extractType(typeArg));
+      if (gotTypeArg !== compressSuiType(extractType(typeArg))) {
+        throw new Error(
+          `type argument mismatch: expected '${expectedTypeArg}' but got '${gotTypeArg}'`,
+        );
+      }
+
+      return Staker.fromBcs(typeArg, fromB64(data.bcs.bcsBytes));
     }
     if (data.content) {
-      return Staker.fromSuiParsedData(data.content);
+      return Staker.fromSuiParsedData(typeArg, data.content);
     }
     throw new Error(
       "Both `bcs` and `content` fields are missing from the data. Include `showBcs` or `showContent` in the request.",
     );
   }
 
-  static async fetch(client: SuiClient, id: string): Promise<Staker> {
+  static async fetch<P extends PhantomReified<PhantomTypeArgument>>(
+    client: SuiClient,
+    typeArg: P,
+    id: string,
+  ): Promise<Staker<ToPhantomTypeArgument<P>>> {
     const res = await client.getObject({ id, options: { showBcs: true } });
     if (res.error) {
       throw new Error(
@@ -445,6 +327,6 @@ export class Staker implements StructClass {
       throw new Error(`object at id ${id} is not a Staker object`);
     }
 
-    return Staker.fromSuiObjectData(res.data);
+    return Staker.fromSuiObjectData(typeArg, res.data);
   }
 }

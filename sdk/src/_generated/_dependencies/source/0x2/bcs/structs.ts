@@ -17,7 +17,7 @@ import {
   compressSuiType,
 } from "../../../../_framework/util";
 import { Vector } from "../../../../_framework/vector";
-import { PKG_V28 } from "../index";
+import { PKG_V30 } from "../index";
 import { bcs } from "@mysten/sui/bcs";
 import { SuiClient, SuiObjectData, SuiParsedData } from "@mysten/sui/client";
 import { fromB64 } from "@mysten/sui/utils";
@@ -26,7 +26,7 @@ import { fromB64 } from "@mysten/sui/utils";
 
 export function isBCS(type: string): boolean {
   type = compressSuiType(type);
-  return type === `${PKG_V28}::bcs::BCS`;
+  return type === `${PKG_V30}::bcs::BCS`;
 }
 
 export interface BCSFields {
@@ -38,12 +38,12 @@ export type BCSReified = Reified<BCS, BCSFields>;
 export class BCS implements StructClass {
   __StructClass = true as const;
 
-  static readonly $typeName = `${PKG_V28}::bcs::BCS`;
+  static readonly $typeName = `${PKG_V30}::bcs::BCS`;
   static readonly $numTypeParams = 0;
   static readonly $isPhantom = [] as const;
 
   readonly $typeName = BCS.$typeName;
-  readonly $fullTypeName: `${typeof PKG_V28}::bcs::BCS`;
+  readonly $fullTypeName: `${typeof PKG_V30}::bcs::BCS`;
   readonly $typeArgs: [];
   readonly $isPhantom = BCS.$isPhantom;
 
@@ -53,7 +53,7 @@ export class BCS implements StructClass {
     this.$fullTypeName = composeSuiType(
       BCS.$typeName,
       ...typeArgs,
-    ) as `${typeof PKG_V28}::bcs::BCS`;
+    ) as `${typeof PKG_V30}::bcs::BCS`;
     this.$typeArgs = typeArgs;
 
     this.bytes = fields.bytes;
@@ -65,7 +65,7 @@ export class BCS implements StructClass {
       fullTypeName: composeSuiType(
         BCS.$typeName,
         ...[],
-      ) as `${typeof PKG_V28}::bcs::BCS`,
+      ) as `${typeof PKG_V30}::bcs::BCS`,
       typeArgs: [] as [],
       isPhantom: BCS.$isPhantom,
       reifiedTypeArgs: [],

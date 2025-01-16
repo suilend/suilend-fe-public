@@ -372,12 +372,10 @@ export class ValidatorInfo implements StructClass {
   static get bcs() {
     return bcs.struct("ValidatorInfo", {
       staking_pool_id: ID.bcs,
-      validator_address: bcs
-        .bytes(32)
-        .transform({
-          input: (val: string) => fromHEX(val),
-          output: (val: Uint8Array) => toHEX(val),
-        }),
+      validator_address: bcs.bytes(32).transform({
+        input: (val: string) => fromHEX(val),
+        output: (val: Uint8Array) => toHEX(val),
+      }),
       active_stake: Option.bcs(FungibleStakedSui.bcs),
       inactive_stake: Option.bcs(StakedSui.bcs),
       exchange_rate: PoolTokenExchangeRate.bcs,

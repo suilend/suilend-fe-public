@@ -14,11 +14,10 @@ import { StructClassLoader } from "../_framework/loader";
 export function registerClasses(loader: StructClassLoader) {
   loader.register(suilend.MAIN_POOL);
   loader.register(cell.Cell);
-  loader.register(staker.STAKER);
-  loader.register(staker.Staker);
   loader.register(decimal.Decimal);
   loader.register(reserveConfig.ReserveConfig);
   loader.register(reserveConfig.ReserveConfigBuilder);
+  loader.register(staker.Staker);
   loader.register(liquidityMining.PoolReward);
   loader.register(liquidityMining.PoolRewardManager);
   loader.register(liquidityMining.RewardBalance);
@@ -46,6 +45,8 @@ export function registerClasses(loader: StructClassLoader) {
   loader.register(lendingMarket.BorrowEvent);
   loader.register(lendingMarket.ClaimRewardEvent);
   loader.register(lendingMarket.DepositEvent);
+  loader.register(lendingMarket.FeeReceivers);
+  loader.register(lendingMarket.FeeReceiversKey);
   loader.register(lendingMarket.ForgiveEvent);
   loader.register(lendingMarket.LENDING_MARKET);
   loader.register(lendingMarket.LendingMarket);

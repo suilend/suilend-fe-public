@@ -18,7 +18,7 @@ import {
 
 import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import { phantom } from "./_generated/_framework/reified";
-import { setPublishedAt } from "./_generated/suilend";
+import { PKG_V10, setPublishedAt } from "./_generated/suilend";
 import { PACKAGE_ID, PUBLISHED_AT } from "./_generated/suilend";
 import {
   addPoolReward,
@@ -36,16 +36,19 @@ import {
   liquidate,
   migrate,
   newObligationOwnerCap,
+  rebalanceStaker,
   redeemCtokensAndWithdrawLiquidity,
   redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
   repay,
+  setFeeReceivers,
   unstakeSuiFromStaker,
   updateRateLimiterConfig,
   updateReserveConfig,
   withdrawCtokens,
 } from "./_generated/suilend/lending-market/functions";
 import {
+  FeeReceivers,
   LendingMarket,
   ObligationOwnerCap,
 } from "./_generated/suilend/lending-market/structs";
@@ -138,6 +141,23 @@ export class SuilendClient {
     setPublishedAt(latestPackageId);
 
     return new SuilendClient(lendingMarket, client);
+  }
+
+  static async getFeeReceivers(client: SuiClient, lendingMarketId: string) {
+    const feeReceiver = await client.getDynamicFieldObject({
+      parentId: lendingMarketId,
+      name: {
+        type: `${PKG_V10}::lending_market::FeeReceiversKey`,
+        value: {
+          dummy_field: false,
+        },
+      },
+    });
+
+    const data = (feeReceiver.data?.content as any).fields.value.fields;
+    const feeReceivers = FeeReceivers.fromFields(data);
+
+    return feeReceivers;
   }
 
   static createNewLendingMarket(
@@ -773,6 +793,16 @@ export class SuilendClient {
         deposit: ctokens,
       },
     );
+
+    if (isSui(coinType)) {
+      rebalanceStaker(transaction, this.lendingMarket.$typeArgs[0], {
+        lendingMarket: transaction.object(this.lendingMarket.id),
+        suiReserveArrayIndex: transaction.pure.u64(
+          this.findReserveArrayIndex(coinType),
+        ),
+        systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
+      });
+    }
   }
 
   async depositIntoObligation(
@@ -1149,6 +1179,20 @@ export class SuilendClient {
       reserveArrayIndex: transaction.pure.u64(
         this.findReserveArrayIndex(coinType),
       ),
+    });
+  }
+
+  setFeeReceiversAndWeights(
+    transaction: Transaction,
+    lendingMarketOwnerCapId: string,
+    receivers: string[],
+    weights: bigint[],
+  ) {
+    return setFeeReceivers(transaction, this.lendingMarket.$typeArgs[0], {
+      lendingMarketOwnerCap: transaction.object(lendingMarketOwnerCapId),
+      lendingMarket: transaction.object(this.lendingMarket.id),
+      receivers,
+      weights,
     });
   }
 
