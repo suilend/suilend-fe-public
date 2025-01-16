@@ -10,34 +10,73 @@ import {
   useState,
 } from "react";
 
+import {
+  RouterData as CetusQuote,
+  AggregatorClient as CetusSdk,
+  Env,
+} from "@cetusprotocol/aggregator-sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import {
-  Aftermath,
-  RouterCompleteTradeRoute as AftermathRouterCompleteTradeRoute,
+  RouterCompleteTradeRoute as AftermathQuote,
+  Aftermath as AftermathSdk,
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
 import { getCoinMetadataMap, isCoinType } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
-export enum StandardizedQuoteType {
+export enum QuoteType {
   AFTERMATH = "aftermath",
+  CETUS = "cetus",
 }
+
+export type StandardizedRoutePath = {
+  id: string;
+  routeIndex: number;
+  provider: string;
+  in: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  out: {
+    coinType: string;
+    amount: BigNumber;
+  };
+};
+export type StandardizedPathWithToken = StandardizedRoutePath & {
+  in: StandardizedRoutePath["in"] & {
+    token: SwapToken;
+  };
+  out: StandardizedRoutePath["out"] & {
+    token: SwapToken;
+  };
+};
+
 export type StandardizedQuote = {
   id: string;
-  amount_in: BigNumber;
-  amount_out: BigNumber;
-  coin_type_in: string;
-  coin_type_out: string;
-} & {
-  type: StandardizedQuoteType.AFTERMATH;
-  quote: AftermathRouterCompleteTradeRoute;
-};
+  in: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  out: {
+    coinType: string;
+    amount: BigNumber;
+  };
+  routes: {
+    path: StandardizedRoutePath[];
+  }[];
+} & (
+  | { type: QuoteType.AFTERMATH; quote: AftermathQuote }
+  | { type: QuoteType.CETUS; quote: CetusQuote }
+);
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_OUT_SYMBOL = "USDC";
@@ -53,7 +92,8 @@ export enum TokenDirection {
 }
 
 interface SwapContext {
-  aftermathSdk?: Aftermath;
+  aftermathSdk?: AftermathSdk;
+  cetusSdk?: CetusSdk;
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
@@ -65,6 +105,7 @@ interface SwapContext {
 
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
+  cetusSdk: undefined,
   tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
@@ -89,15 +130,27 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
   const { data, rawBalancesMap, balancesCoinMetadataMap } =
     useLoadedAppContext();
 
   // Aftermath SDK
   const aftermathSdk = useMemo(() => {
-    const afSdk = new Aftermath("MAINNET");
-    afSdk.init();
-    return afSdk;
+    const sdk = new AftermathSdk("MAINNET");
+    sdk.init();
+    return sdk;
   }, []);
+
+  // Cetus SDK
+  const cetusSdk = useMemo(() => {
+    const sdk = new CetusSdk(
+      "https://api-sui.cetus.zone/router_v2/find_routes",
+      address,
+      suiClient,
+      Env.Mainnet,
+    );
+    return sdk;
+  }, [address, suiClient]);
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
@@ -175,15 +228,23 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const result = (await aftermathSdk.Coin().getVerifiedCoins()).map(
-          normalizeStructTag,
+        const res = await fetch(
+          "https://api-sui.cetus.zone/v2/sui/coins_info?is_verified_coin=true",
         );
-        setVerifiedCoinTypes(result);
+        const json = await res.json();
+        const coinTypes =
+          json.msg === "OK"
+            ? json.data.list.map((coin: any) =>
+                normalizeStructTag(coin.coin_type),
+              )
+            : [];
 
-        fetchTokensMetadata(result);
+        setVerifiedCoinTypes(coinTypes);
+
+        fetchTokensMetadata(coinTypes);
       } catch (err) {}
     })();
-  }, [aftermathSdk, fetchTokensMetadata]);
+  }, [fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {
@@ -270,6 +331,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const contextValue: SwapContext = useMemo(
     () => ({
       aftermathSdk,
+      cetusSdk,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -280,6 +342,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     }),
     [
       aftermathSdk,
+      cetusSdk,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -292,7 +355,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SwapContext.Provider value={contextValue}>
-      {aftermathSdk && tokenIn && tokenOut ? children : <FullPageSpinner />}
+      {aftermathSdk && cetusSdk && tokenIn && tokenOut ? (
+        children
+      ) : (
+        <FullPageSpinner />
+      )}
     </SwapContext.Provider>
   );
 }

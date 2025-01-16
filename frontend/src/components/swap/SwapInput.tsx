@@ -6,7 +6,6 @@ import { mergeRefs } from "react-merge-refs";
 
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
-import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
@@ -126,17 +125,9 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 onClick={onBalanceClick}
               >
                 <Wallet className="h-3 w-3 text-muted-foreground" />
-                <Tooltip
-                  title={
-                    !isTouchscreen && tokenBalance.gt(0)
-                      ? `${formatToken(tokenBalance, { dp: token.decimals })} ${token.symbol}`
-                      : undefined
-                  }
-                >
-                  <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
-                    {formatToken(tokenBalance)} {token.symbol}
-                  </TLabel>
-                </Tooltip>
+                <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
+                  {formatToken(tokenBalance)} {token.symbol}
+                </TLabel>
               </div>
             </div>
           </div>
