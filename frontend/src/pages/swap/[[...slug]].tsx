@@ -2,6 +2,10 @@ import Head from "next/head";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  buildTx as build7kTransaction,
+  getQuote as get7kQuote,
+} from "@7kprotocol/sdk-ts/cjs";
 import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import {
   Transaction,
@@ -67,6 +71,7 @@ import {
   TokenDirection,
   useSwapContext,
 } from "@/contexts/SwapContext";
+import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
   getSubmitButtonNoValueState,
   getSubmitButtonState,
@@ -238,7 +243,18 @@ function Page() {
       .sort((a, b) => +b.out.amount.minus(a.out.amount));
     return sortedQuotes;
   })();
-  const quote = quotes?.[0];
+  const quote = quotes?.[0]; // Best quote by amount out
+
+  const activeProvidersMap = useMemo(
+    () => ({
+      [QuoteType.AFTERMATH]: false,
+      [QuoteType.CETUS]: true,
+      [QuoteType._7K]: true,
+    }),
+    [],
+  );
+  const numActiveProviders =
+    Object.values(activeProvidersMap).filter(Boolean).length;
 
   const isFetchingQuote = (() => {
     const timestampsS = Object.keys(quotesMap).map((timestampS) => +timestampS);
@@ -246,7 +262,7 @@ function Page() {
 
     const maxTimestampS = Math.max(...timestampsS);
     const quotes = quotesMap[maxTimestampS];
-    return quotes === undefined;
+    return quotes === undefined || quotes.length < numActiveProviders;
   })();
 
   const fetchQuote = useCallback(
@@ -269,8 +285,7 @@ function Page() {
 
         // Fetch quotes in parallel
         // Aftermath
-        const fetchAftermath = false;
-        if (fetchAftermath) {
+        if (activeProvidersMap[QuoteType.AFTERMATH]) {
           (async () => {
             console.log("Swap - fetching Aftermath quote");
 
@@ -335,8 +350,7 @@ function Page() {
         }
 
         // Cetus
-        const fetchCetus = true;
-        if (fetchCetus) {
+        if (activeProvidersMap[QuoteType.CETUS]) {
           (async () => {
             console.log("Swap - fetching Cetus quote");
 
@@ -399,6 +413,58 @@ function Page() {
             }
           })();
         }
+
+        // 7K
+        if (activeProvidersMap[QuoteType._7K]) {
+          (async () => {
+            console.log("Swap - fetching 7K quote");
+
+            try {
+              const quote = await get7kQuote({
+                tokenIn: _tokenIn.coinType,
+                tokenOut: _tokenOut.coinType,
+                amountIn,
+              });
+
+              const standardizedQuote: StandardizedQuote = {
+                id: uuidv4(),
+                type: QuoteType._7K,
+                in: {
+                  coinType: _tokenIn.coinType,
+                  amount: new BigNumber(quote.swapAmount),
+                },
+                out: {
+                  coinType: _tokenOut.coinType,
+                  amount: new BigNumber(quote.returnAmount),
+                },
+                routes: (quote.routes ?? []).map((route, routeIndex) => ({
+                  path: route.hops.map((hop) => ({
+                    id: hop.poolId,
+                    routeIndex,
+                    provider: hop.pool.type,
+                    in: {
+                      coinType: normalizeStructTag(hop.tokenIn),
+                      amount: new BigNumber(hop.tokenInAmount),
+                    },
+                    out: {
+                      coinType: normalizeStructTag(hop.tokenOut),
+                      amount: new BigNumber(hop.tokenOutAmount),
+                    },
+                  })),
+                })),
+                quote,
+              };
+
+              setQuotesMap((o) => ({
+                ...o,
+                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
+              }));
+              console.log("Swap - set 7K quote", +standardizedQuote.out.amount);
+            } catch (err) {
+              console.error(err);
+            }
+          })();
+        }
       } catch (err) {
         toast.error("Failed to get quote", {
           description:
@@ -414,7 +480,7 @@ function Page() {
         });
       }
     },
-    [aftermathSdk, cetusSdk],
+    [activeProvidersMap, aftermathSdk, cetusSdk],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -773,7 +839,7 @@ function Page() {
         dp: tokenIn.decimals,
         trimTrailingZeros: true,
       })} ${tokenIn.symbol}`,
-      isDisabled: !quote || isSwappingAndDepositing,
+      isDisabled: !quote || isFetchingQuote || isSwappingAndDepositing,
     };
   })();
 
@@ -892,6 +958,21 @@ function Page() {
 
         return { transaction };
       }
+    } else if (_quote.type === QuoteType._7K) {
+      const { tx: transaction, coinOut: outputCoin } = await build7kTransaction(
+        {
+          quoteResponse: _quote.quote,
+          accountAddress: address,
+          slippage: +slippagePercent / 100,
+          commission: {
+            partner: _7K_PARTNER_ADDRESS,
+            commissionBps: 0,
+          },
+        },
+      );
+
+      if (isDepositing) return { transaction, outputCoin };
+      else return { transaction };
     } else throw new Error("Unknown quote type");
   };
 

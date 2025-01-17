@@ -25,7 +25,7 @@ export default function TextLink({
       target={isRelative ? undefined : "_blank"}
       href={href}
       className={cn(
-        "inline font-medium text-foreground underline decoration-foreground/50 transition-colors hover:text-primary-foreground hover:decoration-primary-foreground",
+        "inline font-medium text-foreground underline decoration-foreground/50 transition-colors hover:text-primary-foreground hover:decoration-primary-foreground/50",
         className,
       )}
       onClick={(e) => e.stopPropagation()}

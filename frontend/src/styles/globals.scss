@@ -390,3 +390,9 @@ body {
     text-decoration-color: hsla(var(--muted-foreground) / 50%) !important;
   }
 }
+.react-flow__pane,
+.react-flow__node,
+.react-flow__edge,
+.react-flow__handle.connectionindicator {
+  cursor: auto !important;
+}

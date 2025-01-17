@@ -11,6 +11,10 @@ import {
 } from "react";
 
 import {
+  QuoteResponse as _7kQuote,
+  setSuiClient as set7kSdkSuiClient,
+} from "@7kprotocol/sdk-ts/cjs";
+import {
   RouterData as CetusQuote,
   AggregatorClient as CetusSdk,
   Env,
@@ -36,6 +40,7 @@ import { SwapToken } from "@/lib/types";
 export enum QuoteType {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
+  _7K = "7k",
 }
 
 export type StandardizedRoutePath = {
@@ -76,6 +81,7 @@ export type StandardizedQuote = {
 } & (
   | { type: QuoteType.AFTERMATH; quote: AftermathQuote }
   | { type: QuoteType.CETUS; quote: CetusQuote }
+  | { type: QuoteType._7K; quote: _7kQuote }
 );
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
@@ -151,6 +157,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     );
     return sdk;
   }, [address, suiClient]);
+
+  // 7K
+  useEffect(() => {
+    set7kSdkSuiClient(suiClient);
+  }, [suiClient]);
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
