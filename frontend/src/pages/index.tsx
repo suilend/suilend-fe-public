@@ -35,7 +35,7 @@ export default function Home() {
         <title>Suilend | Dashboard</title>
       </Head>
 
-      <div className="flex w-full flex-col gap-6">
+      <div className="flex w-full flex-1 flex-col gap-6">
         <ImpersonationModeBanner />
 
         {!lg ? (

@@ -57,7 +57,7 @@ export default function Layout({ children }: PropsWithChildren) {
       <AppHeader />
 
       {/* Content */}
-      <div className="relative z-[1] flex flex-1 flex-col justify-stretch py-4 md:py-6">
+      <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
           {!suilendClient || !data ? (
             <FullPageSpinner />

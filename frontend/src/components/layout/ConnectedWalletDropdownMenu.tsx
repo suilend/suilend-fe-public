@@ -128,8 +128,10 @@ export default function ConnectedWalletDropdownMenu({
             isImpersonating ? (
               <VenetianMask />
             ) : isEligibleForVipProgram ? (
-              <div className="flex h-3 w-4 flex-col justify-center rounded-[3px] outline outline-1 outline-secondary">
-                <TLabel className="text-[8px] text-inherit">VIP</TLabel>
+              <div className="flex h-3 w-4 flex-col justify-center rounded-[2px] pt-[1px] outline outline-1 outline-secondary">
+                <TLabelSans className="text-[8px] font-medium text-inherit">
+                  VIP
+                </TLabelSans>
               </div>
             ) : wallet?.iconUrl ? (
               <Image
