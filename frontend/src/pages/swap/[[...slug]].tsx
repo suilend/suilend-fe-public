@@ -1399,9 +1399,18 @@ function Page() {
           {"Powered by "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
-            href="https://cetus.zone"
+            href="https://app.cetus.zone"
+            noIcon
           >
             Cetus
+          </TextLink>
+          {" and "}
+          <TextLink
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+            href="https://7k.ag"
+            noIcon
+          >
+            7K
           </TextLink>
         </TLabelSans>
       </div>
