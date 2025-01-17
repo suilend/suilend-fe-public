@@ -247,7 +247,7 @@ function Page() {
 
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteType.AFTERMATH]: false,
+      [QuoteType.AFTERMATH]: true,
       [QuoteType.CETUS]: true,
       [QuoteType._7K]: true,
     }),
@@ -839,7 +839,7 @@ function Page() {
         dp: tokenIn.decimals,
         trimTrailingZeros: true,
       })} ${tokenIn.symbol}`,
-      isDisabled: !quote || isFetchingQuote || isSwappingAndDepositing,
+      isDisabled: !quote || isSwappingAndDepositing,
     };
   })();
 
@@ -1398,13 +1398,21 @@ function Page() {
         <TLabelSans className="opacity-50">
           {"Powered by "}
           <TextLink
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
+            href="https://aftermath.finance/trade"
+            noIcon
+          >
+            Aftermath
+          </TextLink>
+          {", "}
+          <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
             noIcon
           >
             Cetus
           </TextLink>
-          {" and "}
+          {", and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
