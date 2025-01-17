@@ -59,26 +59,35 @@ export default function useFetchAppData(address?: string) {
     }
 
     // LSTs
-    const lstAprPercentMap: Record<string, BigNumber> = {};
-    for (const lstCoinType of NORMALIZED_LST_COINTYPES) {
-      const reserve = reserveMap[lstCoinType];
-      if (!reserve) continue;
+    const lstAprPercentMapEntries: [string, BigNumber][] = await Promise.all(
+      NORMALIZED_LST_COINTYPES.filter(
+        (lstCoinType) =>
+          !!reserveMap[lstCoinType] &&
+          !!Object.values(LIQUID_STAKING_INFO_MAP).find(
+            (info) => info.type === lstCoinType,
+          ),
+      )
+        .map(
+          (lstCoinType) =>
+            Object.values(LIQUID_STAKING_INFO_MAP).find(
+              (info) => info.type === lstCoinType,
+            )!,
+        )
+        .map((LIQUID_STAKING_INFO) =>
+          (async () => {
+            const lstClient = await LstClient.initialize(
+              suiClient,
+              LIQUID_STAKING_INFO,
+            );
 
-      const LIQUID_STAKING_INFO = Object.values(LIQUID_STAKING_INFO_MAP).find(
-        (info) => info.type === lstCoinType,
-      );
-      if (!LIQUID_STAKING_INFO) continue;
+            const apr = await lstClient.getSpringSuiApy(); // TODO: Use APR
+            const aprPercent = new BigNumber(apr).times(100);
 
-      const lstClient = await LstClient.initialize(
-        suiClient,
-        LIQUID_STAKING_INFO,
-      );
-
-      const apr = await lstClient.getSpringSuiApy(); // TODO: Use APR
-      const aprPercent = new BigNumber(apr).times(100);
-
-      lstAprPercentMap[lstCoinType] = aprPercent;
-    }
+            return [LIQUID_STAKING_INFO.type, aprPercent];
+          })(),
+        ),
+    );
+    const lstAprPercentMap = Object.fromEntries(lstAprPercentMapEntries);
 
     return {
       suilendClient,
