@@ -950,164 +950,173 @@ export default function EarningsTabContent({
   ]);
 
   return (
-    <div className="relative flex flex-1 flex-col gap-6 overflow-y-auto overflow-x-hidden py-4">
-      <div className="flex flex-col gap-3 px-4">
-        <div className="flex w-full flex-col items-center gap-0.5 md:flex-row md:gap-4">
-          {/* Total */}
-          <div
-            className={cn(
-              "flex flex-col items-center gap-1 rounded-sm bg-muted/15 py-3 transition-colors max-md:w-full md:flex-1",
-              totalEarningsUsd !== undefined &&
-                cn(
-                  totalEarningsUsd.gt(0) && "bg-success/15",
-                  totalEarningsUsd.lt(0) && "bg-destructive/15",
-                ),
-            )}
-          >
-            <TLabelSans className="text-center">Net earnings</TLabelSans>
-            {totalEarningsUsd !== undefined ? (
-              <Tooltip title={formatUsd(totalEarningsUsd, { exact: true })}>
-                <TBody className="text-center">
-                  {totalEarningsUsd.lt(0) && "-"}
-                  {formatUsd(totalEarningsUsd.abs())}
-                </TBody>
-              </Tooltip>
-            ) : (
-              <Skeleton className="h-5 w-16" />
-            )}
+    <>
+      <div className="-mx-4 -mb-4 flex flex-col gap-4 overflow-y-auto">
+        {/* Summary */}
+        <div className="flex flex-col gap-3 px-4">
+          <div className="flex w-full flex-col items-center gap-0.5 md:flex-row">
+            {/* Total */}
+            <div
+              className={cn(
+                "flex flex-col items-center gap-1 rounded-sm bg-muted/15 py-3 transition-colors max-md:w-full md:flex-1",
+                totalEarningsUsd !== undefined &&
+                  cn(
+                    totalEarningsUsd.gt(0) && "bg-success/15",
+                    totalEarningsUsd.lt(0) && "bg-destructive/15",
+                  ),
+              )}
+            >
+              <TLabelSans className="text-center">Net earnings</TLabelSans>
+              {totalEarningsUsd !== undefined ? (
+                <Tooltip title={formatUsd(totalEarningsUsd, { exact: true })}>
+                  <TBody className="text-center">
+                    {totalEarningsUsd.lt(0) && "-"}
+                    {formatUsd(totalEarningsUsd.abs())}
+                  </TBody>
+                </Tooltip>
+              ) : (
+                <Skeleton className="h-5 w-16" />
+              )}
+            </div>
+
+            {/* Plus */}
+            <div className="flex flex-row items-center justify-around rounded-sm bg-success/5 py-3 max-md:w-full md:flex-[2] md:gap-4">
+              {/* Interest earned */}
+              <div className="flex flex-col items-center gap-1">
+                <TLabelSans className="text-center">Interest earned</TLabelSans>
+                {cumInterestEarnedUsd !== undefined ? (
+                  <Tooltip
+                    title={formatUsd(cumInterestEarnedUsd, { exact: true })}
+                  >
+                    <TBody className="text-center">
+                      {formatUsd(cumInterestEarnedUsd)}
+                    </TBody>
+                  </Tooltip>
+                ) : (
+                  <Skeleton className="h-5 w-16" />
+                )}
+              </div>
+
+              {/* Rewards earned */}
+              <div className="flex flex-col items-center gap-1">
+                <TLabelSans className="text-center">Rewards earned</TLabelSans>
+                {cumRewardsEarnedUsd !== undefined ? (
+                  <Tooltip
+                    title={formatUsd(cumRewardsEarnedUsd, { exact: true })}
+                  >
+                    <TBody className="text-center">
+                      {formatUsd(cumRewardsEarnedUsd)}
+                    </TBody>
+                  </Tooltip>
+                ) : (
+                  <Skeleton className="h-5 w-16" />
+                )}
+              </div>
+            </div>
+
+            {/* Minus */}
+            <div className="flex flex-row items-center justify-around rounded-sm bg-destructive/5 py-3 max-md:w-full md:flex-[3] md:gap-4">
+              {/* Borrow fees */}
+              <div className="flex flex-col items-center gap-1">
+                <TLabelSans className="text-center">Borrow fees</TLabelSans>
+                {cumBorrowFeesUsd ? (
+                  <Tooltip title={formatUsd(cumBorrowFeesUsd, { exact: true })}>
+                    <TBody className="text-center">
+                      {formatUsd(cumBorrowFeesUsd)}
+                    </TBody>
+                  </Tooltip>
+                ) : (
+                  <Skeleton className="h-5 w-16" />
+                )}
+              </div>
+
+              {/* Interest paid */}
+              <div className="flex flex-col items-center gap-1">
+                <TLabelSans className="text-center">Interest paid</TLabelSans>
+                {cumInterestPaidUsd ? (
+                  <Tooltip
+                    title={formatUsd(cumInterestPaidUsd, { exact: true })}
+                  >
+                    <TBody className="text-center">
+                      {formatUsd(cumInterestPaidUsd)}
+                    </TBody>
+                  </Tooltip>
+                ) : (
+                  <Skeleton className="h-5 w-16" />
+                )}
+              </div>
+
+              {/* Liquidations */}
+              <div className="flex flex-col items-center gap-1">
+                <TLabelSans className="text-center">Liquidations</TLabelSans>
+                {cumLiquidationsUsd ? (
+                  <Tooltip
+                    title={formatUsd(cumLiquidationsUsd, { exact: true })}
+                  >
+                    <TBody className="text-center">
+                      {formatUsd(cumLiquidationsUsd)}
+                    </TBody>
+                  </Tooltip>
+                ) : (
+                  <Skeleton className="h-5 w-16" />
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Plus */}
-          <div className="flex flex-row items-center justify-around rounded-sm bg-success/5 py-3 max-md:w-full md:flex-[2] md:gap-4">
-            {/* Interest earned */}
-            <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Interest earned</TLabelSans>
-              {cumInterestEarnedUsd !== undefined ? (
-                <Tooltip
-                  title={formatUsd(cumInterestEarnedUsd, { exact: true })}
-                >
-                  <TBody className="text-center">
-                    {formatUsd(cumInterestEarnedUsd)}
-                  </TBody>
-                </Tooltip>
-              ) : (
-                <Skeleton className="h-5 w-16" />
-              )}
-            </div>
-
-            {/* Rewards earned */}
-            <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Rewards earned</TLabelSans>
-              {cumRewardsEarnedUsd !== undefined ? (
-                <Tooltip
-                  title={formatUsd(cumRewardsEarnedUsd, { exact: true })}
-                >
-                  <TBody className="text-center">
-                    {formatUsd(cumRewardsEarnedUsd)}
-                  </TBody>
-                </Tooltip>
-              ) : (
-                <Skeleton className="h-5 w-16" />
-              )}
-            </div>
-          </div>
-
-          {/* Minus */}
-          <div className="flex flex-row items-center justify-around rounded-sm bg-destructive/5 py-3 max-md:w-full md:flex-[3] md:gap-4">
-            {/* Borrow fees */}
-            <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Borrow fees</TLabelSans>
-              {cumBorrowFeesUsd ? (
-                <Tooltip title={formatUsd(cumBorrowFeesUsd, { exact: true })}>
-                  <TBody className="text-center">
-                    {formatUsd(cumBorrowFeesUsd)}
-                  </TBody>
-                </Tooltip>
-              ) : (
-                <Skeleton className="h-5 w-16" />
-              )}
-            </div>
-
-            {/* Interest paid */}
-            <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Interest paid</TLabelSans>
-              {cumInterestPaidUsd ? (
-                <Tooltip title={formatUsd(cumInterestPaidUsd, { exact: true })}>
-                  <TBody className="text-center">
-                    {formatUsd(cumInterestPaidUsd)}
-                  </TBody>
-                </Tooltip>
-              ) : (
-                <Skeleton className="h-5 w-16" />
-              )}
-            </div>
-
-            {/* Liquidations */}
-            <div className="flex flex-col items-center gap-1">
-              <TLabelSans className="text-center">Liquidations</TLabelSans>
-              {cumLiquidationsUsd ? (
-                <Tooltip title={formatUsd(cumLiquidationsUsd, { exact: true })}>
-                  <TBody className="text-center">
-                    {formatUsd(cumLiquidationsUsd)}
-                  </TBody>
-                </Tooltip>
-              ) : (
-                <Skeleton className="h-5 w-16" />
-              )}
-            </div>
-          </div>
+          <TLabelSans>
+            Note: The above are estimates calculated using current prices.
+            Interest earned does not include LST (e.g. sSUI) staking yield.
+          </TLabelSans>
         </div>
 
-        <TLabelSans>
-          Note: The above are estimates calculated using current prices.
-          Interest earned does not include LST (e.g. sSUI) staking yield.
-        </TLabelSans>
-      </div>
-
-      <div className="w-full">
-        <DataTable<RowData>
-          columns={columns}
-          data={rows}
-          container={{
-            className: "overflow-y-visible overflow-x-auto",
-          }}
-          tableCellClassName={(cell) =>
-            cn(
-              cell && Object.entries(cell.row.original.rewardsEarned).length > 1
-                ? "py-2 h-auto"
-                : "py-0 h-12",
-            )
-          }
-        />
-      </div>
-
-      <div className="relative flex w-full flex-col max-md:gap-6 md:flex-row">
-        {interpolatedCumInterestEarnedData === undefined ||
-        interpolatedCumInterestPaidData === undefined ? (
-          <div className="w-full px-4">
-            <Skeleton className="h-[200px] w-full" />
+        <div className="flex flex-col gap-6 pb-4">
+          {/* Table */}
+          <div className="w-full">
+            <DataTable<RowData>
+              columns={columns}
+              data={rows}
+              tableCellClassName={(cell) =>
+                cn(
+                  cell &&
+                    Object.entries(cell.row.original.rewardsEarned).length > 1
+                    ? "py-2 h-auto"
+                    : "py-0 h-12",
+                )
+              }
+            />
           </div>
-        ) : (
-          <>
-            {interpolatedCumInterestEarnedData.length > 0 && (
-              <div className="relative z-[2] max-md:w-full md:flex-1">
-                <EarningsChart
-                  side={Side.DEPOSIT}
-                  data={interpolatedCumInterestEarnedData}
-                />
+
+          {/* Charts */}
+          <div className="relative flex w-full flex-col max-md:gap-6 md:flex-row">
+            {interpolatedCumInterestEarnedData === undefined ||
+            interpolatedCumInterestPaidData === undefined ? (
+              <div className="w-full px-4">
+                <Skeleton className="h-[200px] w-full" />
               </div>
+            ) : (
+              <>
+                {interpolatedCumInterestEarnedData.length > 0 && (
+                  <div className="relative z-[2] max-md:w-full md:flex-1">
+                    <EarningsChart
+                      side={Side.DEPOSIT}
+                      data={interpolatedCumInterestEarnedData}
+                    />
+                  </div>
+                )}
+                {interpolatedCumInterestPaidData.length > 0 && (
+                  <div className="relative z-[1] max-md:w-full md:flex-1">
+                    <EarningsChart
+                      side={Side.BORROW}
+                      data={interpolatedCumInterestPaidData}
+                    />
+                  </div>
+                )}
+              </>
             )}
-            {interpolatedCumInterestPaidData.length > 0 && (
-              <div className="relative z-[1] max-md:w-full md:flex-1">
-                <EarningsChart
-                  side={Side.BORROW}
-                  data={interpolatedCumInterestPaidData}
-                />
-              </div>
-            )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

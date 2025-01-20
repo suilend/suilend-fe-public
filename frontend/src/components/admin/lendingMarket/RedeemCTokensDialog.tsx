@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
@@ -8,8 +8,8 @@ import { getToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { isCTokenCoinType } from "@suilend/sdk/utils";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -27,9 +27,6 @@ export default function RedeemCTokensDialog() {
       ),
     [balancesCoinMetadataMap, getBalance],
   );
-
-  // State
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   // Submit
   const submit = async () => {
@@ -66,8 +63,6 @@ export default function RedeemCTokensDialog() {
 
   return (
     <Dialog
-      rootProps={{ open: isDialogOpen, onOpenChange: setIsDialogOpen }}
-      contentProps={{ className: "sm:max-w-md" }}
       trigger={
         <Button
           className="w-fit"
@@ -78,21 +73,25 @@ export default function RedeemCTokensDialog() {
           Redeem
         </Button>
       }
-      titleIcon={<Coins />}
-      title="Redeem CTokens"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={coinTypes.length === 0}
-          >
-            Redeem
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Coins />, children: "Redeem CTokens" },
+      }}
+      dialogContentInnerClassName="max-w-md"
+      footerProps={{
+        children: (
+          <>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={coinTypes.length === 0}
+            >
+              Redeem
+            </Button>
+          </>
+        ),
+      }}
     >
       <div className="flex w-full flex-col gap-2">
         {coinTypes.length > 0 ? (

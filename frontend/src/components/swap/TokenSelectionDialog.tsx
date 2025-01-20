@@ -14,9 +14,9 @@ import {
   isSui,
 } from "@suilend/frontend-sui";
 
-import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
+import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -250,29 +250,31 @@ export default function TokenSelectionDialog({
           {token.symbol.slice(0, 10)}
         </Button>
       }
-      dialogContentProps={{ className: "max-w-lg max-h-[800px]" }}
-      headerProps={{ title: "Select token" }}
+      headerProps={{
+        title: { children: "Select token" },
+      }}
+      dialogContentInnerClassName="max-w-lg h-[800px]"
     >
-      <div className="w-full px-4 pb-4">
-        <div className="flex flex-row items-center gap-3 rounded-md bg-muted/5 px-3">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <div className="flex-1">
-            <Input
-              id="searchString"
-              type="text"
-              placeholder="Search by token symbol, name or address"
-              value={searchString}
-              onChange={setSearchString}
-              inputProps={{
-                autoFocus: true,
-                className: "font-sans bg-transparent border-0 px-0",
-              }}
-            />
-          </div>
+      {/* Search */}
+      <div className="flex flex-row items-center gap-3 rounded-md bg-muted/5 px-3">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <div className="flex-1">
+          <Input
+            id="searchString"
+            type="text"
+            placeholder="Search by token symbol, name or address"
+            value={searchString}
+            onChange={setSearchString}
+            inputProps={{
+              autoFocus: true,
+              className: "font-sans bg-transparent border-0 px-0",
+            }}
+          />
         </div>
       </div>
 
-      <div className="flex flex-row flex-wrap gap-2 px-4 pb-4">
+      {/* Top tokens */}
+      <div className="flex flex-row flex-wrap gap-2">
         {topTokens.map((t) => (
           <Button
             key={t.coinType}
@@ -293,7 +295,8 @@ export default function TokenSelectionDialog({
         ))}
       </div>
 
-      <div className="relative flex w-full flex-col overflow-auto">
+      {/* Tokens */}
+      <div className="relative -mx-4 -mb-4 flex flex-col overflow-y-auto">
         {filteredTokens.length > 0 ? (
           [
             {

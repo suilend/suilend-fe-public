@@ -9,8 +9,8 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 import { Side } from "@suilend/sdk/types";
 
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
@@ -146,30 +146,33 @@ export default function AddRewardsDialog() {
           Add rewards
         </Button>
       }
-      titleIcon={<Sparkle />}
-      title="Add Rewards"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Clear"
-            icon={<Eraser />}
-            variant="ghost"
-            size="icon"
-            onClick={reset}
-          >
-            Clear
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={!isEditable}
-          >
-            Add
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Sparkle />, children: "Add Rewards" },
+      }}
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Clear"
+              icon={<Eraser />}
+              variant="ghost"
+              size="icon"
+              onClick={reset}
+            >
+              Clear
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={!isEditable}
+            >
+              Add
+            </Button>
+          </>
+        ),
+      }}
     >
       <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
         <CoinDropdownMenu

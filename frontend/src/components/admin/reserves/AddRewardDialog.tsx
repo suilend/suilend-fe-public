@@ -9,8 +9,8 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -134,31 +134,34 @@ export default function AddRewardDialog({
           Add reward
         </Button>
       }
-      contentProps={{ className: "sm:max-w-xl" }}
-      titleIcon={<Plus />}
-      title="Add Reward"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Clear"
-            icon={<Eraser />}
-            variant="ghost"
-            size="icon"
-            onClick={reset}
-          >
-            Clear
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={!isEditable}
-          >
-            Add
-          </Button>
-        </div>
-      }
+      dialogContentInnerClassName="max-w-xl"
+      headerProps={{
+        title: { icon: <Plus />, children: "Add Reward" },
+      }}
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Clear"
+              icon={<Eraser />}
+              variant="ghost"
+              size="icon"
+              onClick={reset}
+            >
+              Clear
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={!isEditable}
+            >
+              Add
+            </Button>
+          </>
+        ),
+      }}
     >
       <Grid>
         <CoinDropdownMenu

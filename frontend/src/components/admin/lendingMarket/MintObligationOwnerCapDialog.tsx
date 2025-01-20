@@ -1,21 +1,17 @@
-import { useState } from "react";
-
 import { Transaction } from "@mysten/sui/transactions";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
+import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function MintObligationOwnerCapDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, refresh } = useLoadedAppContext();
-
-  // State
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   // Submit
   const submit = async () => {
@@ -46,8 +42,6 @@ export default function MintObligationOwnerCapDialog() {
 
   return (
     <Dialog
-      rootProps={{ open: isDialogOpen, onOpenChange: setIsDialogOpen }}
-      contentProps={{ className: "sm:max-w-md" }}
       trigger={
         <Button
           className="w-fit"
@@ -58,20 +52,26 @@ export default function MintObligationOwnerCapDialog() {
           Mint owner cap
         </Button>
       }
-      titleIcon={<Plus />}
-      title="Mint owner cap"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-          >
-            Mint
-          </Button>
-        </div>
-      }
-    />
+      headerProps={{
+        title: { icon: <Plus />, children: "Mint owner cap" },
+      }}
+      dialogContentInnerClassName="max-w-md"
+      footerProps={{
+        children: (
+          <>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+            >
+              Mint
+            </Button>
+          </>
+        ),
+      }}
+    >
+      <TLabelSans>Mint a new ObligationOwnerCap object.</TLabelSans>
+    </Dialog>
   );
 }

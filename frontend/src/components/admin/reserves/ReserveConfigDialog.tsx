@@ -11,7 +11,6 @@ import {
 } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import Dialog from "@/components/admin/Dialog";
 import DiffLine, { InterestRateDiffLine } from "@/components/admin/DiffLine";
 import ReserveConfig, {
   ConfigState,
@@ -20,11 +19,10 @@ import ReserveConfig, {
   useReserveConfigState,
 } from "@/components/admin/reserves/ReserveConfig";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { TBody } from "@/components/shared/Typography";
-import Value from "@/components/shared/Value";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface DiffProps {
@@ -199,42 +197,33 @@ export default function ReserveConfigDialog({
           Config
         </Button>
       }
-      titleIcon={<Bolt />}
-      title="Config"
-      description={
-        <div className="flex flex-row gap-2">
-          <TBody>{reserve.symbol}</TBody>
-          <Value
-            value={reserve.id}
-            isId
-            url={explorer.buildObjectUrl(reserve.id)}
-            isExplorerUrl
-          />
-        </div>
-      }
-      descriptionAsChild
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Revert changes"
-            icon={<Undo2 />}
-            variant="ghost"
-            size="icon"
-            onClick={revert}
-          >
-            Revert changes
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={saveChanges}
-            disabled={!isEditable}
-          >
-            Save changes
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Bolt />, children: `${reserve.token.symbol} Config` },
+      }}
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Revert changes"
+              icon={<Undo2 />}
+              variant="ghost"
+              size="icon"
+              onClick={revert}
+            >
+              Revert changes
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={saveChanges}
+              disabled={!isEditable}
+            >
+              Save changes
+            </Button>
+          </>
+        ),
+      }}
     >
       <Grid>
         <LabelWithValue

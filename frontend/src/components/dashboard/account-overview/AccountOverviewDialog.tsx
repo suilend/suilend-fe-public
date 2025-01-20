@@ -22,8 +22,8 @@ import {
 
 import EarningsTabContent from "@/components/dashboard/account-overview/EarningsTabContent";
 import HistoryTabContent from "@/components/dashboard/account-overview/HistoryTabContent";
-import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Tabs from "@/components/shared/Tabs";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -230,12 +230,9 @@ export default function AccountOverviewDialog() {
   return (
     <Dialog
       rootProps={{ open: isOpen, onOpenChange }}
-      dialogContentProps={{ className: "max-w-6xl" }}
       headerProps={{
-        className: "border-b-0",
-        titleIcon: <FileClock />,
-        title: "Account overview",
-        endContent: (
+        title: { icon: <FileClock />, children: "Account overview" },
+        titleEndContent: (
           <Button
             className="text-muted-foreground"
             icon={<RotateCw />}
@@ -247,15 +244,14 @@ export default function AccountOverviewDialog() {
           </Button>
         ),
       }}
+      dialogContentInnerClassName="max-w-6xl"
     >
-      <div className="px-4">
-        <Tabs
-          tabs={tabs}
-          selectedTab={selectedTab}
-          onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
-          listClassName="mb-0"
-        />
-      </div>
+      <Tabs
+        tabs={tabs}
+        selectedTab={selectedTab}
+        onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
+        listClassName="mb-0"
+      />
 
       {selectedTab === Tab.EARNINGS && (
         <EarningsTabContent eventsData={eventsData} nowS={nowS} />

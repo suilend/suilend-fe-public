@@ -11,8 +11,8 @@ import {
 } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Spinner from "@/components/shared/Spinner";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
@@ -29,9 +29,6 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, refresh } = useLoadedAppContext();
-
-  // State
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   // Reserves
   const reserves = useMemo(
@@ -112,8 +109,6 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
 
   return (
     <Dialog
-      rootProps={{ open: isDialogOpen, onOpenChange: setIsDialogOpen }}
-      contentProps={{ className: "sm:max-w-md" }}
       trigger={
         <Button
           className="w-fit"
@@ -124,43 +119,52 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
           Claim fees
         </Button>
       }
-      titleIcon={<Grab />}
-      title={
-        <>
-          Claim fees
-          {!reserve && (
-            <span className="text-primary">
-              {formatUsd(
-                reserves.reduce(
-                  (acc, r) =>
-                    acc.plus(
-                      feesMap[r.coinType]
-                        ? new BigNumber(
-                            feesMap[r.coinType].fees
-                              .plus(feesMap[r.coinType].ctokenFees)
-                              .plus(feesMap[r.coinType].unclaimedSpreadFees),
-                          ).times(r.price)
-                        : new BigNumber(0),
+      headerProps={{
+        title: {
+          icon: <Grab />,
+          children: (
+            <>
+              Claim fees
+              {!reserve && (
+                <span className="text-primary">
+                  {formatUsd(
+                    reserves.reduce(
+                      (acc, r) =>
+                        acc.plus(
+                          feesMap[r.coinType]
+                            ? new BigNumber(
+                                feesMap[r.coinType].fees
+                                  .plus(feesMap[r.coinType].ctokenFees)
+                                  .plus(
+                                    feesMap[r.coinType].unclaimedSpreadFees,
+                                  ),
+                              ).times(r.price)
+                            : new BigNumber(0),
+                        ),
+                      new BigNumber(0),
                     ),
-                  new BigNumber(0),
-                ),
+                  )}
+                </span>
               )}
-            </span>
-          )}
-        </>
-      }
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-          >
-            Claim
-          </Button>
-        </div>
-      }
+            </>
+          ),
+        },
+      }}
+      dialogContentInnerClassName="max-w-md"
+      footerProps={{
+        children: (
+          <>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+            >
+              Claim
+            </Button>
+          </>
+        ),
+      }}
     >
       <div className="flex w-full flex-col gap-4">
         {reserves.map((r, index) => (

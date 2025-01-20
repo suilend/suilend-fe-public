@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
-import Dialog from "@/components/admin/Dialog";
 import DiffLine from "@/components/admin/DiffLine";
 import RateLimiterConfig, {
   ConfigState,
@@ -16,6 +15,7 @@ import RateLimiterConfig, {
   useRateLimiterConfigState,
 } from "@/components/admin/lendingMarket/RateLimiterConfig";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
@@ -103,30 +103,33 @@ export default function RateLimiterConfigDialog() {
           Config
         </Button>
       }
-      titleIcon={<Bolt />}
-      title="Config"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Revert changes"
-            icon={<Undo2 />}
-            variant="ghost"
-            size="icon"
-            onClick={resetConfigState}
-          >
-            Revert changes
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={!isEditable}
-          >
-            Save changes
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Bolt />, children: "Config" },
+      }}
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Revert changes"
+              icon={<Undo2 />}
+              variant="ghost"
+              size="icon"
+              onClick={resetConfigState}
+            >
+              Revert changes
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={!isEditable}
+            >
+              Save changes
+            </Button>
+          </>
+        ),
+      }}
     >
       <Grid>
         <RateLimiterConfig {...rateLimiterConfigState} />

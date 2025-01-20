@@ -1,8 +1,8 @@
 import { formatISO } from "date-fns";
 import { TableProperties } from "lucide-react";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -23,8 +23,9 @@ export default function RateLimiterPropertiesDialog() {
           Properties
         </Button>
       }
-      titleIcon={<TableProperties />}
-      title="Properties"
+      headerProps={{
+        title: { icon: <TableProperties />, children: "Properties" },
+      }}
     >
       <Grid>
         <LabelWithValue

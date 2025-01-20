@@ -2,7 +2,7 @@ import { PartyPopper } from "lucide-react";
 
 import { ApiDepositEvent } from "@suilend/sdk/types";
 
-import Dialog from "@/components/dashboard/Dialog";
+import Dialog from "@/components/shared/Dialog";
 import { TBodySans } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useDashboardContext } from "@/contexts/DashboardContext";
@@ -22,46 +22,43 @@ export default function FirstDepositDialog() {
         open: isFirstDepositDialogOpen,
         onOpenChange: setIsFirstDepositDialogOpen,
       }}
-      dialogContentProps={{ className: "max-w-md border-success/50" }}
-      drawerContentProps={{ className: "border-success/50" }}
       headerProps={{
-        className: "pb-0",
-        titleClassName: "text-success",
-        titleIcon: <PartyPopper />,
-        title: "Congrats on your deposit!",
+        title: {
+          className: "text-success",
+          icon: <PartyPopper />,
+          children: "Congrats on your deposit!",
+        },
       }}
-      isDialogAutoHeight
-      isDrawerAutoHeight
+      drawerContentProps={{ className: "border-success/50" }}
+      dialogContentInnerClassName="max-w-md border-success/50"
     >
-      <div className="flex flex-col gap-4 p-4">
-        <TBodySans>
-          {
-            "Your account is represented as an NFT, which can be viewed from your wallet's NFT section. Remember, do not burn!"
-          }
-        </TBodySans>
+      <TBodySans>
+        {
+          "Your account is represented as an NFT, which can be viewed in your wallet's NFT section. Remember, do not burn!"
+        }
+      </TBodySans>
 
-        <AspectRatio
-          className="overflow-hidden rounded-sm bg-muted/10"
-          ratio={1240 / 720}
+      <AspectRatio
+        className="overflow-hidden rounded-sm bg-muted/10"
+        ratio={1240 / 720}
+      >
+        <video
+          autoPlay
+          controls={false}
+          loop
+          muted
+          playsInline
+          disablePictureInPicture
+          disableRemotePlayback
+          width="100%"
+          height="auto"
         >
-          <video
-            autoPlay
-            controls={false}
-            loop
-            muted
-            playsInline
-            disablePictureInPicture
-            disableRemotePlayback
-            width="100%"
-            height="auto"
-          >
-            <source
-              src={`${ASSETS_URL}/dashboard/account-nft-explainer.mp4`}
-              type="video/mp4"
-            />
-          </video>
-        </AspectRatio>
-      </div>
+          <source
+            src={`${ASSETS_URL}/dashboard/account-nft-explainer.mp4`}
+            type="video/mp4"
+          />
+        </video>
+      </AspectRatio>
     </Dialog>
   );
 }

@@ -4,12 +4,10 @@ import { TableProperties } from "lucide-react";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { TBody } from "@/components/shared/Typography";
-import Value from "@/components/shared/Value";
 
 interface ReservePropertiesDialogProps {
   reserve: ParsedReserve;
@@ -31,20 +29,12 @@ export default function ReservePropertiesDialog({
           Properties
         </Button>
       }
-      titleIcon={<TableProperties />}
-      title="Properties"
-      description={
-        <div className="flex flex-row gap-2">
-          <TBody>{reserve.symbol}</TBody>
-          <Value
-            value={reserve.id}
-            isId
-            url={explorer.buildObjectUrl(reserve.id)}
-            isExplorerUrl
-          />
-        </div>
-      }
-      descriptionAsChild
+      headerProps={{
+        title: {
+          icon: <TableProperties />,
+          children: `${reserve.token.symbol} Properties`,
+        },
+      }}
     >
       <Grid>
         <LabelWithValue label="$typeName" value={reserve.$typeName} isType />

@@ -8,13 +8,13 @@ import { v4 as uuidv4 } from "uuid";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
-import Dialog from "@/components/admin/Dialog";
 import ReserveConfig, {
   ConfigState,
   parseConfigState,
   useReserveConfigState,
 } from "@/components/admin/reserves/ReserveConfig";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -183,30 +183,33 @@ export default function AddReserveDialog() {
           Add reserve
         </Button>
       }
-      titleIcon={<Plus />}
-      title="Add reserve"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Clear"
-            icon={<Eraser />}
-            variant="ghost"
-            size="icon"
-            onClick={reset}
-          >
-            Clear
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={!isEditable}
-          >
-            Add
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Plus />, children: "Add Reserve" },
+      }}
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Clear"
+              icon={<Eraser />}
+              variant="ghost"
+              size="icon"
+              onClick={reset}
+            >
+              Clear
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={!isEditable}
+            >
+              Add
+            </Button>
+          </>
+        ),
+      }}
     >
       <Grid>
         <CoinDropdownMenu

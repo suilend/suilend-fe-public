@@ -28,6 +28,7 @@ import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   EventType,
@@ -628,128 +629,139 @@ export default function HistoryTabContent({
 
   return (
     <>
-      {eventTypes.length > 0 || coinTypes.length > 0 ? (
-        <div className="flex flex-row gap-4 p-4">
-          <TLabelSans className="my-1">Filters</TLabelSans>
+      <div className="flex w-full flex-row gap-4">
+        <TLabelSans className="my-1">Filters</TLabelSans>
 
-          <div className="flex flex-row flex-wrap gap-2">
-            {eventTypes.map((eventType) => {
-              const isSelected = isNotFilteredOutEventType(eventType);
+        <div className="flex flex-row flex-wrap gap-2">
+          {eventTypes.length > 0 || coinTypes.length > 0 ? (
+            <>
+              {eventTypes.map((eventType) => {
+                const isSelected = isNotFilteredOutEventType(eventType);
 
-              return (
-                <Button
-                  key={eventType}
-                  className={cn(
-                    "rounded-full border hover:border-transparent",
-                    isSelected && "border-transparent !bg-muted/20",
-                  )}
-                  labelClassName="text-xs font-sans"
-                  startIcon={isSelected ? <Check /> : undefined}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleEventTypeFilter(eventType)}
-                >
-                  {EventTypeNameMap[eventType]}
-                </Button>
-              );
-            })}
-            {coinTypes.map((coinType) => {
-              const coinMetadata = data.coinMetadataMap[coinType];
-              const isSelected = isNotFilteredOutCoinType(coinType);
+                return (
+                  <Button
+                    key={eventType}
+                    className={cn(
+                      "rounded-full border hover:border-transparent",
+                      isSelected && "border-transparent !bg-muted/20",
+                    )}
+                    labelClassName="text-xs font-sans"
+                    startIcon={isSelected ? <Check /> : undefined}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleEventTypeFilter(eventType)}
+                  >
+                    {EventTypeNameMap[eventType]}
+                  </Button>
+                );
+              })}
+              {coinTypes.map((coinType) => {
+                const coinMetadata = data.coinMetadataMap[coinType];
+                const isSelected = isNotFilteredOutCoinType(coinType);
 
-              return (
-                <Button
-                  key={coinType}
-                  className={cn(
-                    "h-6 rounded-full border px-2 hover:border-transparent",
-                    isSelected && "border-transparent !bg-muted/20",
-                  )}
-                  startIcon={isSelected ? <Check /> : undefined}
-                  icon={
-                    <TokenLogo
-                      token={{
-                        coinType,
-                        symbol: coinMetadata.symbol,
-                        iconUrl: coinMetadata.iconUrl,
-                      }}
-                    />
-                  }
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleCoinTypeFilter(coinType)}
-                >
-                  {coinMetadata.symbol}
-                </Button>
-              );
-            })}
-          </div>
+                return (
+                  <Button
+                    key={coinType}
+                    className={cn(
+                      "h-6 rounded-full border px-2 hover:border-transparent",
+                      isSelected && "border-transparent !bg-muted/20",
+                    )}
+                    startIcon={isSelected ? <Check /> : undefined}
+                    icon={
+                      <TokenLogo
+                        token={{
+                          coinType,
+                          symbol: coinMetadata.symbol,
+                          iconUrl: coinMetadata.iconUrl,
+                        }}
+                      />
+                    }
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleCoinTypeFilter(coinType)}
+                  >
+                    {coinMetadata.symbol}
+                  </Button>
+                );
+              })}
+            </>
+          ) : (
+            <>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton key={index} className="h-6 w-20 rounded-[12px]" />
+              ))}
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-6 w-12 rounded-[12px]" />
+              ))}
+            </>
+          )}
         </div>
-      ) : (
-        <div className="h-4 w-full shrink-0" />
-      )}
+      </div>
 
-      <DataTable<RowData>
-        columns={columns}
-        data={rows}
-        noDataMessage={
-          eventTypes.length + coinTypes.length === 0
-            ? "No history"
-            : "No history for the active filters"
-        }
-        columnFilters={[
-          {
-            id: ColumnId.EVENT_TYPE,
-            value: eventTypes.filter(isNotFilteredOutEventType),
-          },
-          {
-            id: ColumnId.DETAILS,
-            value: coinTypes.filter(isNotFilteredOutCoinType),
-          },
-        ]}
-        skeletonRows={20}
-        container={{
-          className: cn(rows === undefined && "overflow-y-hidden"),
-        }}
-        tableClassName="relative"
-        tableHeaderRowClassName="border-none"
-        tableHeadClassName={(header) =>
-          cn(
-            "sticky bg-popover top-0 z-[2]",
-            header.id === ColumnId.DIGEST ? "w-16" : "w-auto",
-          )
-        }
-        tableRowClassName={(row) => {
-          if (!row) return;
-          const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          const isNested = !!row.getParentRow();
+      {/* Table */}
+      <div className="-mx-4 -mb-4 overflow-y-auto">
+        <div className="w-full">
+          <DataTable<RowData>
+            columns={columns}
+            data={rows}
+            noDataMessage={
+              eventTypes.length + coinTypes.length === 0
+                ? "No history"
+                : "No history for the active filters"
+            }
+            columnFilters={[
+              {
+                id: ColumnId.EVENT_TYPE,
+                value: eventTypes.filter(isNotFilteredOutEventType),
+              },
+              {
+                id: ColumnId.DETAILS,
+                value: coinTypes.filter(isNotFilteredOutCoinType),
+              },
+            ]}
+            skeletonRows={20}
+            tableClassName="relative"
+            tableHeaderRowClassName="border-none"
+            tableHeadClassName={(header) =>
+              cn(
+                "sticky bg-popover top-0 z-[2]",
+                header.id === ColumnId.DIGEST ? "w-16" : "w-auto",
+              )
+            }
+            tableRowClassName={(row) => {
+              if (!row) return;
+              const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
+              const isNested = !!row.getParentRow();
 
-          return cn(
-            isGroupRow &&
-              row.original.eventType === EventType.LIQUIDATE &&
-              row.getIsExpanded() &&
-              "!bg-muted/15",
-            isNested && "!bg-muted/10",
-          );
-        }}
-        tableCellClassName={(cell) =>
-          cn(
-            "relative z-[1]",
-            cell &&
-              [
-                EventType.BORROW,
-                EventType.LIQUIDATE,
-                EventType.CLAIM_REWARD,
-              ].includes(cell.row.original.eventType)
-              ? "py-2 h-auto"
-              : "py-0 h-12",
-          )
-        }
-        onRowClick={(row) => {
-          const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          if (isGroupRow && row.original.eventType === EventType.LIQUIDATE)
-            return row.getToggleExpandedHandler();
-        }}
-      />
+              return cn(
+                isGroupRow &&
+                  row.original.eventType === EventType.LIQUIDATE &&
+                  row.getIsExpanded() &&
+                  "!bg-muted/15",
+                isNested && "!bg-muted/10",
+              );
+            }}
+            tableCellClassName={(cell) =>
+              cn(
+                "relative z-[1]",
+                cell &&
+                  [
+                    EventType.BORROW,
+                    EventType.LIQUIDATE,
+                    EventType.CLAIM_REWARD,
+                  ].includes(cell.row.original.eventType)
+                  ? "py-2 h-auto"
+                  : "py-0 h-12",
+              )
+            }
+            onRowClick={(row) => {
+              const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
+              if (isGroupRow && row.original.eventType === EventType.LIQUIDATE)
+                return row.getToggleExpandedHandler();
+            }}
+          />
+        </div>
+      </div>
     </>
   );
 }

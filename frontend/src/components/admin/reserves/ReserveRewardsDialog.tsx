@@ -12,15 +12,14 @@ import {
 } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import Dialog from "@/components/admin/Dialog";
 import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";
 import PoolRewardsTable from "@/components/admin/reserves/PoolRewardsTable";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tabs from "@/components/shared/Tabs";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
-import Value from "@/components/shared/Value";
+import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
@@ -150,21 +149,13 @@ export default function ReserveRewardsDialog({
           Rewards
         </Button>
       }
-      contentProps={{ className: "sm:max-w-max" }}
-      titleIcon={<Sparkle />}
-      title="Rewards"
-      description={
-        <div className="flex flex-row gap-2">
-          <TBody>{reserve.symbol}</TBody>
-          <Value
-            value={reserve.id}
-            isId
-            url={explorer.buildObjectUrl(reserve.id)}
-            isExplorerUrl
-          />
-        </div>
-      }
-      descriptionAsChild
+      dialogContentInnerClassName="max-w-max"
+      headerProps={{
+        title: {
+          icon: <Sparkle />,
+          children: `${reserve.token.symbol} Rewards`,
+        },
+      }}
     >
       <Tabs
         tabs={tabs}

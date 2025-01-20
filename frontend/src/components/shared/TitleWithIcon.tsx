@@ -10,7 +10,7 @@ import { ClassValue } from "clsx";
 import { TTitle } from "@/components/shared/Typography";
 import { cn } from "@/lib/utils";
 
-interface TitleWithIconProps extends PropsWithChildren {
+export interface TitleWithIconProps extends PropsWithChildren {
   className?: ClassValue;
   style?: CSSProperties;
   icon?: ReactElement;

@@ -20,9 +20,8 @@ import { getToken } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
-import Dialog from "@/components/dashboard/Dialog";
 import Button from "@/components/shared/Button";
-import Spinner from "@/components/shared/Spinner";
+import Dialog from "@/components/shared/Dialog";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
@@ -91,15 +90,13 @@ type StartEndNodeData = {
 
 const getStartEndNodeWidth = (data: StartEndNodeData) =>
   Math.ceil(
-    ((data.isStart ? 4 : 0) +
-      2.5 +
+    (2.5 +
       4 +
       1.5 +
       (8.4 / 4) *
         `${formatToken(data.amount, { exact: false })} ${data.token.symbol}`
           .length +
-      2.5 +
-      (!data.isStart ? 4 : 0)) *
+      2.5) *
       4,
   ); // px
 const START_END_NODE_HEIGHT = (2 + 5 + 2) * 4; // px
@@ -114,28 +111,27 @@ function StartEndNode({ data }: StartEndNodeProps) {
   return (
     <>
       {!isStart && <CustomHandle type="target" position={Position.Left} />}
-      <div className={cn(isStart ? "pl-4" : "pr-4")}>
-        <div className="flex flex-row items-center gap-1.5 rounded-md bg-border px-2.5 py-2">
-          <TokenLogo
-            className="h-4 w-4"
-            imageProps={{ className: "rounded-full" }}
-            token={token}
-          />
 
-          <TBody>
-            <Tooltip title={formatToken(amount, { dp: token.decimals })}>
-              <span
-                className={cn(
-                  "decoration-foreground/50",
-                  hoverUnderlineClassName,
-                )}
-              >
-                {formatToken(amount, { exact: false })}
-              </span>
-            </Tooltip>{" "}
-            {token.symbol}
-          </TBody>
-        </div>
+      <div className="flex flex-row items-center gap-1.5 rounded-md bg-border px-2.5 py-2">
+        <TokenLogo
+          className="h-4 w-4"
+          imageProps={{ className: "rounded-full" }}
+          token={token}
+        />
+
+        <TBody>
+          <Tooltip title={formatToken(amount, { dp: token.decimals })}>
+            <span
+              className={cn(
+                "decoration-foreground/50",
+                hoverUnderlineClassName,
+              )}
+            >
+              {formatToken(amount, { exact: false })}
+            </span>
+          </Tooltip>{" "}
+          {token.symbol}
+        </TBody>
       </div>
       {isStart && <CustomHandle type="source" position={Position.Right} />}
     </>
@@ -452,20 +448,18 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           {hopsCount} hop{hopsCount !== 1 && "s"}
         </Button>
       }
-      dialogContentProps={{ className: "h-[600px]" }}
       headerProps={{
-        className: "pb-0",
-        titleIcon: <Route />,
-        title: "Routing",
+        title: {
+          icon: <Route />,
+          children: "Routing",
+        },
       }}
-      isDialogAutoHeight
+      drawerContentProps={{ className: "h-dvh" }}
+      dialogContentInnerClassName="h-[800px]"
+      dialogContentInnerChildrenWrapperClassName="w-full h-full overflow-hidden"
     >
-      {isLoading ? (
-        <div className="flex h-full w-full flex-row items-center justify-center">
-          <Spinner size="md" />
-        </div>
-      ) : (
-        isOpen && <NodeChart quote={quote} pathsWithTokens={pathsWithTokens} />
+      {!isLoading && isOpen && (
+        <NodeChart quote={quote} pathsWithTokens={pathsWithTokens} />
       )}
     </Dialog>
   );

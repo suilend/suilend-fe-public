@@ -13,14 +13,15 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 
-import { TokenAmount } from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import Button from "@/components/shared/Button";
-import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
-import { TTitle } from "@/components/shared/Typography";
+import TextLink from "@/components/shared/TextLink";
+import TokenLogo from "@/components/shared/TokenLogo";
+import { TBody, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
+import { formatToken } from "@/lib/format";
 
 const CAP_OWNER =
   "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";
@@ -115,22 +116,27 @@ export default function CetusCard() {
               ([coinType, { amount, coinMetadata }]) => (
                 <div
                   key={coinType}
-                  className="flex w-full flex-row items-center gap-1"
+                  className="flex w-full flex-row items-center gap-2"
                 >
-                  <TokenAmount
-                    amount={amount}
+                  <TokenLogo
+                    className="h-4 w-4 shrink-0"
                     token={{
                       coinType,
                       symbol: coinMetadata.symbol,
                       iconUrl: coinMetadata.iconUrl,
                     }}
-                    decimals={coinMetadata.decimals}
                   />
-                  <OpenOnExplorerButton
-                    className="h-5 w-5 hover:bg-transparent"
-                    iconClassName="w-3 h-3"
-                    url={explorer.buildCoinUrl(coinType)}
-                  />
+
+                  <TBody className="overflow-hidden text-ellipsis text-nowrap">
+                    {formatToken(amount, { dp: coinMetadata.decimals })}{" "}
+                    <TextLink
+                      className="font-normal"
+                      href={explorer.buildCoinUrl(coinType)}
+                      noIcon
+                    >
+                      {coinMetadata.symbol}
+                    </TextLink>
+                  </TBody>
                 </div>
               ),
             )

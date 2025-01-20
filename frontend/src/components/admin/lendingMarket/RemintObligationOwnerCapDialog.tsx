@@ -6,8 +6,8 @@ import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
-import Dialog from "@/components/admin/Dialog";
 import Button from "@/components/shared/Button";
+import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
@@ -50,6 +50,8 @@ export default function RemintObligationOwnerCapDialog() {
       await signExecuteAndWaitForTransaction(transaction);
 
       toast.success("Reminted obligation owner cap");
+      setIsDialogOpen(false);
+      reset();
     } catch (err) {
       toast.error("Failed to remint obligation owner cap", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -62,7 +64,6 @@ export default function RemintObligationOwnerCapDialog() {
   return (
     <Dialog
       rootProps={{ open: isDialogOpen, onOpenChange: setIsDialogOpen }}
-      contentProps={{ className: "sm:max-w-md" }}
       trigger={
         <Button
           className="w-fit"
@@ -73,30 +74,34 @@ export default function RemintObligationOwnerCapDialog() {
           Remint owner cap
         </Button>
       }
-      titleIcon={<Replace />}
-      title="Remint owner cap"
-      footer={
-        <div className="flex w-full flex-row items-center gap-2">
-          <Button
-            tooltip="Clear"
-            icon={<Eraser />}
-            variant="ghost"
-            size="icon"
-            onClick={reset}
-          >
-            Clear
-          </Button>
-          <Button
-            className="flex-1"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={submit}
-            disabled={!isEditable}
-          >
-            Remint
-          </Button>
-        </div>
-      }
+      headerProps={{
+        title: { icon: <Replace />, children: "Remint owner cap" },
+      }}
+      dialogContentInnerClassName="max-w-md"
+      footerProps={{
+        children: (
+          <>
+            <Button
+              tooltip="Clear"
+              icon={<Eraser />}
+              variant="ghost"
+              size="icon"
+              onClick={reset}
+            >
+              Clear
+            </Button>
+            <Button
+              className="flex-1"
+              labelClassName="uppercase"
+              size="lg"
+              onClick={submit}
+              disabled={!isEditable}
+            >
+              Remint
+            </Button>
+          </>
+        ),
+      }}
     >
       <Input
         label="obligationId"
