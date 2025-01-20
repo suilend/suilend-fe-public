@@ -3,6 +3,7 @@ import { capitalize } from "lodash";
 
 import {
   AprRewardSummary,
+  NORMALIZED_TREATS_COINTYPE,
   PerDayRewardSummary,
   getDedupedAprRewards,
   getDedupedPerDayRewards,
@@ -21,7 +22,12 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatPercent, formatPoints, formatToken } from "@/lib/format";
+import {
+  formatPercent,
+  formatPoints,
+  formatPrice,
+  formatToken,
+} from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 const calculateUtilizationPercent = (reserve: ParsedReserve) =>
@@ -310,17 +316,31 @@ export default function AprWithRewardsBreakdown({
                 <AprRewardsBreakdownRow
                   key={index}
                   isLast={index === aprRewards.length - 1}
-                  value={formatAprPercent(
-                    showChange,
-                    reward.stats.aprPercent.times(
-                      side === Side.DEPOSIT ? 1 : -1,
-                    ),
-                    newAprRewards[index].stats.aprPercent !== undefined
-                      ? newAprRewards[index].stats.aprPercent.times(
+                  value={
+                    <>
+                      {formatAprPercent(
+                        showChange,
+                        reward.stats.aprPercent.times(
                           side === Side.DEPOSIT ? 1 : -1,
-                        )
-                      : undefined,
-                  )}
+                        ),
+                        newAprRewards[index].stats.aprPercent !== undefined
+                          ? newAprRewards[index].stats.aprPercent.times(
+                              side === Side.DEPOSIT ? 1 : -1,
+                            )
+                          : undefined,
+                      )}
+                      {reward.stats.rewardCoinType ===
+                        NORMALIZED_TREATS_COINTYPE && (
+                        <>
+                          <br />
+                          <span className="font-sans text-muted-foreground">
+                            at {formatPrice(reward.stats.price)}/
+                            {reward.stats.symbol}
+                          </span>
+                        </>
+                      )}
+                    </>
+                  }
                 >
                   <TLabelSans>Rewards in</TLabelSans>
                   <TokenLogo

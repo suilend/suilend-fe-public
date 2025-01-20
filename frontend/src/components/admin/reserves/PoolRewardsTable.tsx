@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
 
 import DataTable, {
@@ -10,6 +11,7 @@ import DataTable, {
   tableHeader,
 } from "@/components/dashboard/DataTable";
 import Button from "@/components/shared/Button";
+import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -19,6 +21,7 @@ import { cn } from "@/lib/utils";
 interface RowData {
   startTime: Date;
   endTime: Date;
+  coinType: string;
   totalRewards: BigNumber;
   allocatedRewards: BigNumber;
   cumulativeRewardsPerShare: BigNumber;
@@ -40,6 +43,7 @@ export default function PoolRewardsTable({
   onCancelReward,
   onCloseReward,
 }: PoolRewardsTableProps) {
+  const { explorer } = useSettingsContext();
   const { data } = useLoadedAppContext();
 
   const isEditable = !!data.lendingMarketOwnerCapId;
@@ -50,11 +54,17 @@ export default function PoolRewardsTable({
       sortingFn: "text",
       header: ({ column }) => tableHeader(column, "Asset"),
       cell: ({ row }) => {
-        const { endTime, symbol } = row.original;
+        const { coinType, endTime, symbol } = row.original;
 
         return (
           <TBody className={cn(endTime.getTime() < Date.now() && "opacity-25")}>
-            {symbol}
+            <TextLink
+              className="font-normal"
+              href={explorer.buildCoinUrl(coinType)}
+              noIcon
+            >
+              {symbol}
+            </TextLink>
           </TBody>
         );
       },

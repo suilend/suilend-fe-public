@@ -189,6 +189,7 @@ export default function ReserveRewardsDialog({
                   .map((pr) => ({
                     startTime: new Date(pr.startTimeMs),
                     endTime: new Date(pr.endTimeMs),
+                    coinType: pr.coinType,
                     totalRewards: pr.totalRewards,
                     allocatedRewards: pr.allocatedRewards,
                     cumulativeRewardsPerShare: pr.cumulativeRewardsPerShare,
