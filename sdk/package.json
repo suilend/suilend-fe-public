@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.30",
+  "version": "1.1.31",
   "private": true,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -25,8 +25,8 @@
     "url": "https://github.com/solendprotocol/suilend-public/issues"
   },
   "dependencies": {
-    "@mysten/bcs": "1.2.0",
-    "@mysten/sui": "1.17.0",
+    "@mysten/bcs": "1.2.1",
+    "@mysten/sui": "1.20.0",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "bignumber.js": "^9.1.2",
     "p-limit": "3.1.0",
