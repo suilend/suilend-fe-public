@@ -87,7 +87,7 @@ const DialogHeader = ({
   const { className: titleClassName, ...restTitleProps } = title;
 
   return (
-    <div className="flex w-full flex-col gap-1 border-b p-4">
+    <div className="flex w-full flex-col gap-2 border-b p-4">
       {/* Title */}
       <div
         className={cn(

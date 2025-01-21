@@ -42,6 +42,11 @@ export enum QuoteType {
   CETUS = "cetus",
   _7K = "7k",
 }
+export const QUOTE_TYPE_NAME_MAP = {
+  [QuoteType.AFTERMATH]: "Aftermath",
+  [QuoteType.CETUS]: "Cetus",
+  [QuoteType._7K]: "7K",
+};
 
 export type StandardizedRoutePath = {
   id: string;

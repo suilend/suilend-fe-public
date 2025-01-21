@@ -28,6 +28,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans } from "@/components/shared/Typography";
 import {
+  QUOTE_TYPE_NAME_MAP,
   StandardizedPathWithToken,
   StandardizedQuote,
   StandardizedRoutePath,
@@ -338,7 +339,7 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
   );
 
   return (
-    <div className="h-full w-full md:pb-4">
+    <div className="h-full w-full">
       <ReactFlow
         panOnDrag={false}
         nodes={nodes}
@@ -442,10 +443,13 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
         <Button
           className="h-4 p-0 text-muted-foreground hover:bg-transparent"
           labelClassName="font-sans text-xs"
+          startIcon={<Route />}
           variant="ghost"
           size="sm"
         >
           {hopsCount} hop{hopsCount !== 1 && "s"}
+          {" | "}
+          {QUOTE_TYPE_NAME_MAP[quote.type]}
         </Button>
       }
       headerProps={{
@@ -453,6 +457,13 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           icon: <Route />,
           children: "Routing",
         },
+        description: (
+          <>
+            {hopsCount} hop{hopsCount !== 1 && "s"}
+            {" | "}
+            {QUOTE_TYPE_NAME_MAP[quote.type]}
+          </>
+        ),
       }}
       drawerContentProps={{ className: "h-dvh" }}
       dialogContentInnerClassName="h-[800px]"
