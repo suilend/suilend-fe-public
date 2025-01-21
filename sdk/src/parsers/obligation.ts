@@ -2,7 +2,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import { Obligation } from "../_generated/suilend/obligation/structs";
-import { WAD } from "../constants";
+import { WAD } from "../lib/constants";
 
 import { ParsedReserve } from "./reserve";
 

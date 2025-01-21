@@ -18,7 +18,7 @@ import {
 } from "../_generated/suilend/obligation/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
 import { ReserveConfig } from "../_generated/suilend/reserve-config/structs";
-import { WAD } from "../constants";
+import { WAD } from "../lib/constants";
 import { linearlyInterpolate } from "../utils";
 
 /**

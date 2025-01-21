@@ -1,4 +1,4 @@
-import { DownsampledApiReserveAssetDataEvent } from "../types";
+import { DownsampledApiReserveAssetDataEvent } from "../lib/types";
 
 /**
  * Note: This SDK function is experimental and may change or require authentication in the future.

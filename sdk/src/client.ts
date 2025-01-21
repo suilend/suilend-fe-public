@@ -16,6 +16,8 @@ import {
   SuiPythClient,
 } from "@pythnetwork/pyth-sui-js";
 
+import { extractCTokenCoinType } from "@suilend/frontend-sui";
+
 import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import { phantom } from "./_generated/_framework/reified";
 import { PKG_V10, setPublishedAt } from "./_generated/suilend";
@@ -62,8 +64,7 @@ import {
   CreateReserveConfigArgs,
   createReserveConfig,
 } from "./_generated/suilend/reserve-config/functions";
-import { Side } from "./types";
-import { extractCTokenCoinType } from "./utils";
+import { Side } from "./lib/types";
 
 const SUI_COINTYPE = "0x2::sui::SUI";
 const NORMALIZED_SUI_COINTYPE = normalizeStructTag(SUI_COINTYPE);

@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
 import { RateLimiter } from "../_generated/suilend/rate-limiter/structs";
-import { WAD } from "../constants";
+import { WAD } from "../lib/constants";
 
 export type ParsedRateLimiter = ReturnType<typeof parseRateLimiter>;
 export type ParsedRateLimiterConfig = ReturnType<typeof parseRateLimiterConfig>;

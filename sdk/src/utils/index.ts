@@ -1,4 +1,3 @@
-import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import { ParsedReserve } from "../parsers/reserve";
@@ -54,15 +53,4 @@ export const linearlyInterpolate = (
 
   // Should never reach here
   return new BigNumber(0);
-};
-
-export const isCTokenCoinType = (coinType: string) =>
-  coinType.includes("::reserve::CToken<") && coinType.endsWith(">");
-
-export const extractCTokenCoinType = (coinType: string) => {
-  if (!isCTokenCoinType(coinType)) throw new Error("Not a CToken");
-
-  return normalizeStructTag(
-    coinType.split("::reserve::CToken")[1].split(",")[1].slice(0, -1),
-  );
 };
