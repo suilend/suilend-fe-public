@@ -8,7 +8,7 @@ import {
   LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
-import { Side } from "@suilend/sdk/types";
+import { Side } from "@suilend/sdk/lib/types";
 
 const keypair = Ed25519Keypair.fromSecretKey(
   fromBase64(process.env.SUI_SECRET_KEY!),

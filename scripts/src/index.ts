@@ -13,7 +13,7 @@ import {
   LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
-import { Side } from "@suilend/sdk/types";
+import { Side } from "@suilend/sdk/lib/types";
 import { fetchAllObligationsForMarket } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
