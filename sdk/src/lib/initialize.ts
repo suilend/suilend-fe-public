@@ -35,7 +35,6 @@ import {
 } from "@suilend/frontend-sui";
 
 import { SuilendClient } from "../client";
-import { WAD } from "../constants";
 import {
   ParsedObligation,
   ParsedReserve,
@@ -44,6 +43,7 @@ import {
 } from "../parsers";
 import * as simulate from "../utils/simulate";
 
+import { WAD } from "./constants";
 import { formatRewards } from "./liquidityMining";
 
 export const RESERVES_CUSTOM_ORDER = [
