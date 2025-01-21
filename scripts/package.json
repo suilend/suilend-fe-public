@@ -11,10 +11,10 @@
     "lint": "bun eslint && bun prettier && bun tsc --noEmit"
   },
   "dependencies": {
-    "@mysten/sui": "1.17.0",
+    "@mysten/sui": "1.20.0",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
-    "@suilend/frontend-sui": "^0.2.21",
-    "@suilend/sdk": "^1.1.29",
+    "@suilend/frontend-sui": "^0.2.32",
+    "@suilend/sdk": "^1.1.31",
     "bignumber.js": "^9.1.2"
   },
   "devDependencies": {
