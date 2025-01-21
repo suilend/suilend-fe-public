@@ -8,6 +8,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  NORMALIZED_suiUSDT_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
   SUI_COINTYPE,
   isCoinType,
@@ -147,7 +148,7 @@ export default function TokenSelectionDialog({
         NORMALIZED_sSUI_COINTYPE,
         NORMALIZED_SUI_COINTYPE,
         NORMALIZED_USDC_COINTYPE,
-        NORMALIZED_wUSDT_COINTYPE,
+        NORMALIZED_suiUSDT_COINTYPE,
         NORMALIZED_SEND_COINTYPE,
       ]
         .map((coinType) => tokens.find((t) => t.coinType === coinType))
