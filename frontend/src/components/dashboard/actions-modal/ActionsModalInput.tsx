@@ -4,8 +4,8 @@ import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
 import { TEMPORARY_PYTH_PRICE_FEED_COINTYPES } from "@suilend/frontend-sui";
+import { Action } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Action } from "@suilend/sdk/types";
 
 import Button from "@/components/shared/Button";
 import { TBody, TLabel } from "@/components/shared/Typography";

@@ -4,7 +4,7 @@ import * as Recharts from "recharts";
 
 import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
-import { Side } from "@suilend/sdk/types";
+import { Side } from "@suilend/sdk/lib/types";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";

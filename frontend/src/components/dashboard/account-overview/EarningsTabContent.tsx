@@ -4,9 +4,8 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import { isSendPoints, msPerYear } from "@suilend/frontend-sui";
-import { WAD } from "@suilend/sdk/constants";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { isSendPoints } from "@suilend/frontend-sui";
+import { WAD, msPerYear } from "@suilend/sdk/lib/constants";
 import {
   ApiBorrowEvent,
   ApiDepositEvent,
@@ -14,7 +13,8 @@ import {
   ApiRepayEvent,
   ApiWithdrawEvent,
   Side,
-} from "@suilend/sdk/types";
+} from "@suilend/sdk/lib/types";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { linearlyInterpolate, reserveSort } from "@suilend/sdk/utils";
 
 import {

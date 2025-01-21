@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js";
 
-import { msPerYear } from "@suilend/frontend-sui";
+import { msPerYear } from "@suilend/sdk";
+import { Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Side } from "@suilend/sdk/types";
 
 export enum EventType {
   INTEREST_UPDATE = "interestUpdate",

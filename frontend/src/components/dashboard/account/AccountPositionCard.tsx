@@ -2,8 +2,8 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { getNetAprPercent } from "@suilend/frontend-sui";
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
+import { getNetAprPercent } from "@suilend/sdk";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";

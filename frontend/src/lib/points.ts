@@ -1,10 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import {
-  RewardMap,
-  getBorrowShare,
-  getDepositShare,
-} from "@suilend/frontend-sui";
+import { RewardMap, getBorrowShare, getDepositShare } from "@suilend/sdk";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 export const getPointsStats = (

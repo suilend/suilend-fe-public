@@ -2,8 +2,9 @@ import NextLink from "next/link";
 
 import BigNumber from "bignumber.js";
 
-import { RewardSummary, isSendPoints } from "@suilend/frontend-sui";
+import { isSendPoints } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { RewardSummary } from "@suilend/sdk";
 
 import Card from "@/components/dashboard/Card";
 import ClaimRewardsPopover from "@/components/dashboard/ClaimRewardsPopover";

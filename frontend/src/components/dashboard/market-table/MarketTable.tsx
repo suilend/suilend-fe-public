@@ -4,18 +4,15 @@ import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { Token, isDeprecated, isMemecoin, issSui } from "@suilend/frontend-sui";
 import {
-  Token,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
-  isDeprecated,
-  isEcosystemLst,
-  isMemecoin,
-  issSui,
-} from "@suilend/frontend-sui";
+} from "@suilend/sdk";
+import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Side } from "@suilend/sdk/types";
+import { isEcosystemLst } from "@suilend/springsui-sdk";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import DataTable, {

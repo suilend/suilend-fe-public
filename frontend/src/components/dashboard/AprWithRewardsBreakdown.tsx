@@ -2,18 +2,20 @@ import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
 import {
-  AprRewardSummary,
   NORMALIZED_TREATS_COINTYPE,
+  isSendPoints,
+} from "@suilend/frontend-sui";
+import {
+  AprRewardSummary,
   PerDayRewardSummary,
   getDedupedAprRewards,
   getDedupedPerDayRewards,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
-  isSendPoints,
-} from "@suilend/frontend-sui";
+} from "@suilend/sdk";
+import { Action, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Action, Side } from "@suilend/sdk/types";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";

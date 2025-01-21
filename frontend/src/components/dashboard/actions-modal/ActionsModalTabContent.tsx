@@ -19,9 +19,9 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
-import { maxU64 } from "@suilend/sdk/constants";
+import { maxU64 } from "@suilend/sdk/lib/constants";
+import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Action, ApiDepositEvent, Side } from "@suilend/sdk/types";
 
 import {
   ActionSignature,

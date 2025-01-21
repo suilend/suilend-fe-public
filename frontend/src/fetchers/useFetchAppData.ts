@@ -1,21 +1,20 @@
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
-import {
-  LIQUID_STAKING_INFO_MAP,
-  NORMALIZED_LST_COINTYPES,
-  initializeSuilendRewards,
-} from "@suilend/frontend-sui";
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
+import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
 import {
   LENDING_MARKET_ID,
   LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
-import { LstClient } from "@suilend/springsui-sdk";
+import {
+  LIQUID_STAKING_INFO_MAP,
+  LstClient,
+  NORMALIZED_LST_COINTYPES,
+} from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
-import { initializeSuilend } from "@/lib/suilend";
 
 export default function useFetchAppData(address?: string) {
   const { suiClient } = useSettingsContext();

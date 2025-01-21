@@ -15,7 +15,7 @@ import {
   ApiLiquidateEvent,
   ApiRepayEvent,
   ApiWithdrawEvent,
-} from "@suilend/sdk/types";
+} from "@suilend/sdk/lib/types";
 import { reserveSort } from "@suilend/sdk/utils";
 
 import {

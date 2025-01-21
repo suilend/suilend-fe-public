@@ -33,22 +33,24 @@ import {
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
   SUI_GAS_MIN,
-  createObligationIfNoneExists,
   getBalanceChange,
-  getFilteredRewards,
   getHistoryPrice,
   getPrice,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
   isSui,
-  sendObligationToUser,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import { Action, Side } from "@suilend/sdk/types";
+import {
+  createObligationIfNoneExists,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+  sendObligationToUser,
+} from "@suilend/sdk";
+import { Action, Side } from "@suilend/sdk/lib/types";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";

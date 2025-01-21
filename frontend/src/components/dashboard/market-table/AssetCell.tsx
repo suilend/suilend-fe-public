@@ -8,10 +8,10 @@ import {
   Token,
   getMsafeAppStoreUrl,
   isInMsafeApp,
-  isLst,
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
+import { isLst } from "@suilend/springsui-sdk";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
 import { MarketCardListType } from "@/components/dashboard/market-table/MarketCardList";

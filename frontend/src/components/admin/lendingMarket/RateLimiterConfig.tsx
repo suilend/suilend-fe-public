@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Infinity } from "lucide-react";
 
 import { NewConfigArgs as NewRateLimitedConfigArgs } from "@suilend/sdk/_generated/suilend/rate-limiter/functions";
-import { maxU64 } from "@suilend/sdk/constants";
+import { maxU64 } from "@suilend/sdk/lib/constants";
 
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";

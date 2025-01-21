@@ -1,6 +1,6 @@
 import { PartyPopper } from "lucide-react";
 
-import { ApiDepositEvent } from "@suilend/sdk/types";
+import { ApiDepositEvent } from "@suilend/sdk/lib/types";
 
 import Dialog from "@/components/shared/Dialog";
 import { TBodySans } from "@/components/shared/Typography";

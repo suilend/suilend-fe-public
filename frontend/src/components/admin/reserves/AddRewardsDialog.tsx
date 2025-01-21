@@ -6,7 +6,7 @@ import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import { Side } from "@suilend/sdk/types";
+import { Side } from "@suilend/sdk/lib/types";
 
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Button from "@/components/shared/Button";

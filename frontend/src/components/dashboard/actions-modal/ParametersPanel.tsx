@@ -9,8 +9,8 @@ import {
   getPythOracleUrl,
 } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { Side } from "@suilend/sdk/types";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";
