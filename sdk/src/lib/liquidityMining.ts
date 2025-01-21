@@ -2,9 +2,9 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 
+import { WAD, msPerYear } from "../constants";
 import { ParsedObligation, ParsedPoolReward, ParsedReserve } from "../parsers";
 
-import { WAD, msPerYear } from "./constants";
 import { Side } from "./types";
 
 export type RewardMap = {

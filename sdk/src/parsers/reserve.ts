@@ -8,7 +8,7 @@ import {
   PoolRewardManager,
 } from "../_generated/suilend/liquidity-mining/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { WAD } from "../lib/constants";
+import { WAD } from "../constants";
 import { toHexString } from "../utils";
 import * as simulate from "../utils/simulate";
 
