@@ -81,6 +81,7 @@ export type StandardizedQuote = {
     amount: BigNumber;
   };
   routes: {
+    percent: BigNumber;
     path: StandardizedRoutePath[];
   }[];
 } & (

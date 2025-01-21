@@ -44,6 +44,7 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import {
+  WAD,
   createObligationIfNoneExists,
   getFilteredRewards,
   getStakingYieldAprPercent,
@@ -316,6 +317,9 @@ function Page() {
                   ),
                 },
                 routes: quote.routes.map((route, routeIndex) => ({
+                  percent: new BigNumber(route.portion.toString())
+                    .div(WAD)
+                    .times(100),
                   path: route.paths.map((path) => ({
                     id: path.poolId,
                     routeIndex,
@@ -381,6 +385,9 @@ function Page() {
                   ),
                 },
                 routes: quote.routes.map((route, routeIndex) => ({
+                  percent: new BigNumber(route.amountIn.toString())
+                    .div(quote.amountIn.toString())
+                    .times(100),
                   path: route.path.map((path) => ({
                     id: path.id,
                     routeIndex,
@@ -440,6 +447,9 @@ function Page() {
                   amount: new BigNumber(quote.returnAmount),
                 },
                 routes: (quote.routes ?? []).map((route, routeIndex) => ({
+                  percent: new BigNumber(route.tokenInAmount)
+                    .div(quote.swapAmount)
+                    .times(100),
                   path: route.hops.map((hop) => ({
                     id: hop.poolId,
                     routeIndex,

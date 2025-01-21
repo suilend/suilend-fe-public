@@ -67,31 +67,34 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
               <TBody className="overflow-hidden text-ellipsis text-nowrap">
                 {token.symbol}
               </TBody>
-              {(suilendCoinTypes.includes(token.coinType) ||
-                verifiedCoinTypes.includes(token.coinType)) && (
-                <Tooltip
-                  title={
-                    suilendCoinTypes.includes(token.coinType)
-                      ? "This asset is listed on Suilend"
-                      : verifiedCoinTypes.includes(token.coinType)
-                        ? "This asset appears on the list of Cetus verified assets"
-                        : ""
-                  }
-                >
-                  <BadgeCheck className="h-4 w-4 text-success" />
-                </Tooltip>
-              )}
 
-              <CopyToClipboardButton
-                className="-my-0.5 h-6 w-6 hover:bg-transparent"
-                iconClassName="w-3 h-3"
-                value={isSui(token.coinType) ? SUI_COINTYPE : token.coinType}
-              />
+              <div className="flex shrink-0 flex-row items-center gap-1">
+                {(suilendCoinTypes.includes(token.coinType) ||
+                  verifiedCoinTypes.includes(token.coinType)) && (
+                  <Tooltip
+                    title={
+                      suilendCoinTypes.includes(token.coinType)
+                        ? "This asset is listed on Suilend"
+                        : verifiedCoinTypes.includes(token.coinType)
+                          ? "This asset appears on the list of Cetus verified assets"
+                          : ""
+                    }
+                  >
+                    <BadgeCheck className="h-4 w-4 text-success" />
+                  </Tooltip>
+                )}
+
+                <CopyToClipboardButton
+                  className="h-6 w-6 hover:bg-transparent"
+                  iconClassName="w-3 h-3"
+                  value={isSui(token.coinType) ? SUI_COINTYPE : token.coinType}
+                />
+              </div>
             </div>
 
             {/* Top right */}
-            <div className="flex min-w-0 flex-row items-center gap-1.5">
-              <Wallet className="h-3 w-3 shrink-0 text-foreground" />
+            <div className="flex shrink-0 flex-row items-center gap-1.5">
+              <Wallet className="h-3 w-3 text-foreground" />
               <Tooltip
                 title={
                   tokenBalance.gt(0)
@@ -99,20 +102,16 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
                     : undefined
                 }
               >
-                <TBody className="overflow-hidden text-ellipsis text-nowrap">
-                  {formatToken(tokenBalance, { exact: false })}
-                </TBody>
+                <TBody>{formatToken(tokenBalance, { exact: false })}</TBody>
               </Tooltip>
             </div>
           </div>
 
           {/* Bottom */}
           {token.name && (
-            <div className="flex flex-row items-center gap-2">
-              <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
-                {token.name}
-              </TLabelSans>
-            </div>
+            <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
+              {token.name}
+            </TLabelSans>
           )}
         </div>
       </div>

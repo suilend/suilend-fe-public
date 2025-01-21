@@ -6,11 +6,17 @@ import ELK, {
 } from "elkjs/lib/elk.bundled.js";
 import { Route } from "lucide-react";
 import ReactFlow, {
+  BaseEdge,
   Edge,
+  EdgeLabelRenderer,
+  EdgeProps,
+  EdgeTypes,
   Handle,
   HandleProps,
   Node,
+  NodeTypes,
   Position,
+  getBezierPath,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -26,7 +32,7 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TBodySans } from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import {
   QUOTE_TYPE_NAME_MAP,
   StandardizedPathWithToken,
@@ -34,14 +40,13 @@ import {
   StandardizedRoutePath,
   useSwapContext,
 } from "@/contexts/SwapContext";
-import { formatToken } from "@/lib/format";
+import { formatPercent, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 import "reactflow/dist/style.css";
 
 const elk = new ELK();
-
 const getLayoutedElements = async (
   nodes: Node[],
   edges: Edge[],
@@ -73,12 +78,54 @@ function CustomHandle(props: HandleProps) {
   return (
     <Handle
       className={cn(
-        "!h-1 !min-h-px !w-1 !min-w-px !border-0 !bg-white",
+        "!h-1 !min-h-px !w-1 !min-w-px !border-0 !bg-foreground",
         props.position === Position.Left && "!-left-[2px]",
         props.position === Position.Right && "!-right-[2px]",
       )}
       {...props}
     />
+  );
+}
+
+function CustomEdge(props: EdgeProps) {
+  const {
+    id,
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+    label,
+  } = props;
+
+  const [path, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        style={{ stroke: "hsla(var(--foreground) / 50%)" }}
+      />
+      {label && (
+        <EdgeLabelRenderer>
+          <TLabelSans
+            className="absolute -translate-x-1/2 -translate-y-1/2 bg-popover px-1 text-foreground/50"
+            style={{ left: labelX, top: labelY }}
+          >
+            {label}
+          </TLabelSans>
+        </EdgeLabelRenderer>
+      )}
+    </>
   );
 }
 
@@ -283,14 +330,20 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
 
             initialEdges.push({
               id: `start_${path.id}-${path.routeIndex}`,
+              type: "custom",
               source: "start",
               target: `${path.id}-${path.routeIndex}`,
+              label:
+                quote.routes.length > 1
+                  ? formatPercent(route.percent, { dp: 0 })
+                  : undefined,
             });
           } else if (i === route.path.length) {
             const sourcePath = route.path[i - 1];
 
             initialEdges.push({
               id: `${sourcePath.id}-${sourcePath.routeIndex}_end`,
+              type: "custom",
               source: `${sourcePath.id}-${sourcePath.routeIndex}`,
               target: "end",
             });
@@ -300,6 +353,7 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
 
             initialEdges.push({
               id: `${sourcePath.id}-${sourcePath.routeIndex}_${path.id}-${path.routeIndex}`,
+              type: "custom",
               source: `${sourcePath.id}-${sourcePath.routeIndex}`,
               target: `${path.id}-${path.routeIndex}`,
             });
@@ -313,6 +367,7 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
         "elk.algorithm": "layered",
         "elk.layered.spacing.nodeNodeBetweenLayers": "60",
         "elk.spacing.nodeNode": "60",
+        "elk.layered.layering.strategy": "LONGEST_PATH_SOURCE",
       });
 
       setNodes(layouted.nodes as any);
@@ -333,15 +388,15 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
     fitView,
   ]);
 
-  const nodeTypes = useMemo(
+  const nodeTypes: NodeTypes = useMemo(
     () => ({ startEnd: StartEndNode, exchange: ExchangeNode }),
     [],
   );
+  const edgeTypes: EdgeTypes = useMemo(() => ({ custom: CustomEdge }), []);
 
   return (
     <div className="h-full w-full">
       <ReactFlow
-        panOnDrag={false}
         nodes={nodes}
         nodesConnectable={false}
         nodesDraggable={false}
@@ -350,6 +405,7 @@ function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
         edgesFocusable={false}
         edgesUpdatable={false}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0, minZoom: 0.25, maxZoom: 1 }}
       />
