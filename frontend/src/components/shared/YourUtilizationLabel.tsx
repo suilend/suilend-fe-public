@@ -24,7 +24,7 @@ export default function YourUtilizationLabel({
           <TBody>N/A</TBody>
         ) : (
           <div className="flex flex-row items-center">
-            <div className="flex flex-row items-center gap-3">
+            <div className="flex flex-row items-center gap-2">
               <TBody>
                 {formatPercent(
                   obligation.weightedConservativeBorrowUtilizationPercent,
@@ -41,7 +41,7 @@ export default function YourUtilizationLabel({
             {newObligation && (
               <>
                 <FromToArrow className="ml-2.5 block" />
-                <div className="flex flex-row items-center gap-3">
+                <div className="flex flex-row items-center gap-2">
                   <TBody>
                     {formatPercent(
                       newObligation.weightedConservativeBorrowUtilizationPercent,
