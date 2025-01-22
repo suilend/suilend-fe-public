@@ -1,22 +1,28 @@
+import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
+import { TLabelSans } from "@/components/shared/Typography";
+import { formatUsd } from "@/lib/format";
 import { BORROW_LIMIT_TOOLTIP } from "@/lib/tooltips";
 
 interface BorrowLimitTitleProps {
-  labelClassName?: ClassValue;
+  className?: ClassValue;
   noTooltip?: boolean;
+  amount?: BigNumber;
 }
 
 export default function BorrowLimitTitle({
-  labelClassName,
+  className,
   noTooltip,
+  amount,
 }: BorrowLimitTitleProps) {
   return (
     <SectionTitle
       barSegmentClassName="bg-primary"
-      labelClassName={labelClassName}
+      labelClassName={className}
       tooltip={!noTooltip ? BORROW_LIMIT_TOOLTIP : undefined}
+      labelEndDecorator={amount && <TLabelSans>{formatUsd(amount)}</TLabelSans>}
     >
       Borrow limit
     </SectionTitle>

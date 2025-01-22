@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 interface ValueProps {
   className?: ClassValue;
   valueStartDecorator?: ReactNode;
-  value: string | number | BigNumber;
+  value: string | number | BigNumber | ReactNode;
   valueEndDecorator?: ReactNode;
   isId?: boolean;
   isType?: boolean;
@@ -43,21 +43,21 @@ export default function Value({
         <>
           <Tooltip title={value as string}>
             <TBody className="w-fit break-all uppercase">
-              {(isId ? formatId : formatType)(value.toString())}
+              {(isId ? formatId : formatType)((value as string).toString())}
             </TBody>
           </Tooltip>
         </>
       ) : isUsd ? (
         <TBody>{formatUsd(value as BigNumber)}</TBody>
       ) : (
-        <TBody>{value as string | number}</TBody>
+        <TBody>{value as string | number | ReactNode}</TBody>
       )}
       {valueEndDecorator}
 
       {(isId || isType || url) && (
         <div className="-my-1.5 flex flex-row">
           {(isId || isType) && (
-            <CopyToClipboardButton value={value.toString()} />
+            <CopyToClipboardButton value={(value as string).toString()} />
           )}
 
           {url &&

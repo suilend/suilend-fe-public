@@ -37,6 +37,8 @@ import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import YourBorrowLimitlabel from "@/components/shared/YourBorrowLimitLabel";
+import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
@@ -46,22 +48,10 @@ import {
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";
-import {
-  formatInteger,
-  formatPercent,
-  formatPrice,
-  formatToken,
-  formatUsd,
-} from "@/lib/format";
+import { formatInteger, formatPrice, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
+import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-export type SubmitButtonState = {
-  isLoading?: boolean;
-  isDisabled?: boolean;
-  title?: string;
-  description?: string;
-};
 
 interface ActionsModalTabContentProps {
   side: Side;
@@ -69,14 +59,18 @@ interface ActionsModalTabContentProps {
   action: Action;
   actionPastTense: string;
   getMaxValue: () => BigNumber;
-  getNewCalculations: (value: string) =>
+  getNewBorrowUtilizationCalculations: (value: BigNumber) =>
     | {
-        newBorrowLimitUsd?: BigNumber;
-        newBorrowUtilizationPercent?: BigNumber;
+        depositedAmountUsd: BigNumber;
+        weightedBorrowsUsd: BigNumber;
+        maxPriceWeightedBorrowsUsd: BigNumber;
+        minPriceBorrowLimitUsd: BigNumber;
+        unhealthyBorrowValueUsd: BigNumber;
+        weightedConservativeBorrowUtilizationPercent: BigNumber;
       }
     | undefined;
   getSubmitButtonNoValueState?: () => SubmitButtonState | undefined;
-  getSubmitButtonState: (value: string) => SubmitButtonState | undefined;
+  getSubmitButtonState: (value: BigNumber) => SubmitButtonState | undefined;
   getSubmitWarningMessages?: () => string[];
   submit: ActionSignature;
 }
@@ -87,7 +81,7 @@ export default function ActionsModalTabContent({
   action,
   actionPastTense,
   getMaxValue,
-  getNewCalculations,
+  getNewBorrowUtilizationCalculations,
   getSubmitButtonNoValueState,
   getSubmitButtonState,
   getSubmitWarningMessages,
@@ -208,8 +202,15 @@ export default function ActionsModalTabContent({
       );
   }, [useMaxAmount, maxAmount, formatAndSetValue, reserve.mintDecimals]);
 
-  const { newBorrowLimitUsd, newBorrowUtilizationPercent } =
-    getNewCalculations(value) || {};
+  // Utilization
+  const newObligation =
+    obligation && new BigNumber(value || 0).gt(0)
+      ? {
+          ...obligation,
+          ...(getNewBorrowUtilizationCalculations(new BigNumber(value || 0)) ??
+            {}),
+        }
+      : undefined;
 
   // Borrow fee
   const borrowFee = new BigNumber(value || 0)
@@ -235,8 +236,8 @@ export default function ActionsModalTabContent({
     if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
       return { isDisabled: true, title: "Enter a non-zero amount" };
 
-    if (getSubmitButtonState(value) !== undefined)
-      return getSubmitButtonState(value) as SubmitButtonState;
+    if (getSubmitButtonState(new BigNumber(value)))
+      return getSubmitButtonState(new BigNumber(value)) as SubmitButtonState;
 
     return {
       title: `${capitalize(action)} ${formatToken(new BigNumber(value), {
@@ -425,29 +426,13 @@ export default function ActionsModalTabContent({
             horizontal
             value="0"
           />
-          <LabelWithValue
-            label="Your borrow limit"
-            value={
-              !obligation
-                ? "N/A"
-                : newBorrowLimitUsd
-                  ? `${formatUsd(obligation.minPriceBorrowLimitUsd)} → ${formatUsd(newBorrowLimitUsd)}`
-                  : formatUsd(obligation.minPriceBorrowLimitUsd)
-            }
-            horizontal
+          <YourBorrowLimitlabel
+            obligation={obligation}
+            newObligation={newObligation}
           />
-          <LabelWithValue
-            label="Your utilization"
-            value={
-              !obligation
-                ? "N/A"
-                : newBorrowUtilizationPercent
-                  ? `${formatPercent(obligation.weightedConservativeBorrowUtilizationPercent)} → ${formatPercent(newBorrowUtilizationPercent)}`
-                  : formatPercent(
-                      obligation.weightedConservativeBorrowUtilizationPercent,
-                    )
-            }
-            horizontal
+          <YourUtilizationLabel
+            obligation={obligation}
+            newObligation={newObligation}
           />
           {action === Action.BORROW ? (
             <LabelWithValue
@@ -480,38 +465,35 @@ export default function ActionsModalTabContent({
           />
         )}
 
-        <Button
-          className="h-auto min-h-14 w-full rounded-md py-2"
-          labelClassName="text-wrap uppercase"
-          style={{ overflowWrap: "anywhere" }}
-          disabled={submitButtonState.isDisabled}
-          onClick={onSubmitClick}
-        >
-          {submitButtonState.isLoading ? (
-            <Spinner size="md" />
-          ) : (
-            submitButtonState.title
-          )}
-          {submitButtonState.description && (
-            <span className="mt-0.5 block font-sans text-xs normal-case">
-              {submitButtonState.description}
-            </span>
-          )}
-        </Button>
+        <div className="flex w-full flex-col gap-3">
+          <Button
+            className="h-auto min-h-14 w-full rounded-md py-2"
+            labelClassName="text-wrap uppercase"
+            style={{ overflowWrap: "anywhere" }}
+            disabled={submitButtonState.isDisabled}
+            onClick={onSubmitClick}
+          >
+            {submitButtonState.isLoading ? (
+              <Spinner size="md" />
+            ) : (
+              submitButtonState.title
+            )}
+            {submitButtonState.description && (
+              <span className="mt-0.5 block font-sans text-xs normal-case">
+                {submitButtonState.description}
+              </span>
+            )}
+          </Button>
 
-        {getSubmitWarningMessages &&
-          getSubmitWarningMessages().length > 0 &&
-          getSubmitWarningMessages().map((warningMessage) => (
-            <div key={warningMessage} className="rounded-md bg-warning/10 p-2">
-              <TLabelSans className="text-warning">
-                <span className="mr-2 font-medium">
-                  <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                  Warning
-                </span>
+          {getSubmitWarningMessages &&
+            getSubmitWarningMessages().length > 0 &&
+            getSubmitWarningMessages().map((warningMessage) => (
+              <TLabelSans key={warningMessage} className="text-warning">
+                <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
                 {warningMessage}
               </TLabelSans>
-            </div>
-          ))}
+            ))}
+        </div>
       </div>
     </>
   );

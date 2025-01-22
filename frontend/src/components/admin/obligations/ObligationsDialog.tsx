@@ -17,13 +17,13 @@ import * as simulate from "@suilend/sdk/utils/simulate";
 
 import LiquidateDialog from "@/components/admin/liquidate/LiquidateDialog";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
-import UtilizationBar from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import Switch from "@/components/shared/Switch";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import UtilizationBar from "@/components/shared/UtilizationBar";
 import Value from "@/components/shared/Value";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 

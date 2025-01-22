@@ -19,6 +19,7 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
+import FromToArrow from "@/components/shared/FromToArrow";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
@@ -72,29 +73,43 @@ const formatPerDay = (
       ? formatPoints(_value, { dp: 3 })
       : formatToken(_value, { exact: false });
 
-  return showChange && (newValue === undefined || !newValue.eq(value))
-    ? [
-        formatter(value),
-        "→",
-        newValue === undefined ? "N/A" : formatter(newValue),
-      ].join(" ")
-    : formatter(value);
+  return showChange && (newValue === undefined || !newValue.eq(value)) ? (
+    <>
+      {formatter(value)}
+      <FromToArrow />
+      {newValue === undefined ? "N/A" : formatter(newValue)}
+    </>
+  ) : (
+    formatter(value)
+  );
 };
 
 const formatAprPercent = (
   showChange: boolean,
   value: BigNumber,
   newValue?: BigNumber,
+  stakingYieldAprPercent?: BigNumber,
 ) =>
-  showChange && (newValue === undefined || !newValue.eq(value))
-    ? [
-        formatPercent(value, { useAccountingSign: true }),
-        "→",
-        newValue === undefined
-          ? "N/A"
-          : formatPercent(newValue, { useAccountingSign: true }),
-      ].join(" ")
-    : formatPercent(value, { useAccountingSign: true });
+  showChange && (newValue === undefined || !newValue.eq(value)) ? (
+    <>
+      {formatPercent(value, { useAccountingSign: true })}
+      {stakingYieldAprPercent ? "*" : ""}
+      <FromToArrow />
+      {newValue === undefined ? (
+        "N/A"
+      ) : (
+        <>
+          {formatPercent(newValue, { useAccountingSign: true })}
+          {stakingYieldAprPercent ? "*" : ""}
+        </>
+      )}
+    </>
+  ) : (
+    <>
+      {formatPercent(value, { useAccountingSign: true })}
+      {stakingYieldAprPercent ? "*" : ""}
+    </>
+  );
 
 interface AprWithRewardsBreakdownProps {
   side: Side;
@@ -376,8 +391,12 @@ export default function AprWithRewardsBreakdown({
               hoverUnderlineClassName,
             )}
           >
-            {formatAprPercent(showChange, totalAprPercent, newTotalAprPercent)}
-            {stakingYieldAprPercent && "*"}
+            {formatAprPercent(
+              showChange,
+              totalAprPercent,
+              newTotalAprPercent,
+              stakingYieldAprPercent,
+            )}
           </TBody>
         </div>
       </Tooltip>

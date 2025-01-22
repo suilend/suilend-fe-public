@@ -15,13 +15,13 @@ import {
   Tab as AccountOverviewTab,
 } from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import Card from "@/components/dashboard/Card";
-import UtilizationBar, {
-  getWeightedBorrowsUsd,
-} from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import UtilizationBar, {
+  getWeightedBorrowsUsd,
+} from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";

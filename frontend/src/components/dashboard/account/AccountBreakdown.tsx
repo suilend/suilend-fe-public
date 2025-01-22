@@ -10,10 +10,10 @@ import { reserveSort } from "@suilend/sdk/utils";
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";
 import LiquidationThresholdTitle from "@/components/dashboard/account/LiquidationThresholdTitle";
 import WeightedBorrowsTitle from "@/components/dashboard/account/WeightedBorrowsTitle";
-import { getWeightedBorrowsColor } from "@/components/dashboard/UtilizationBar";
 import Collapsible from "@/components/shared/Collapsible";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import { TBody } from "@/components/shared/Typography";
+import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {

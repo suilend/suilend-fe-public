@@ -11,7 +11,6 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 
-import UtilizationBar from "@/components/dashboard/UtilizationBar";
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import DropdownMenu, {
@@ -20,6 +19,7 @@ import DropdownMenu, {
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
+import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { formatAddress, formatUsd } from "@/lib/format";
@@ -233,7 +233,9 @@ export default function ConnectedWalletDropdownMenu({
                       </TLabelSans>
                     </div>
 
-                    <UtilizationBar className="mt-2" obligation={o} noTooltip />
+                    <div className="mt-2 w-full">
+                      <UtilizationBar obligation={o} noTooltip />
+                    </div>
                   </DropdownMenuItem>
                 ))
               )}

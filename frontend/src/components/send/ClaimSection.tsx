@@ -68,13 +68,8 @@ import {
   redeemSendPointsMsend,
   redeemSuilendCapsulesMsend,
 } from "@/lib/send";
+import { SubmitButtonState } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
-
-type SubmitButtonState = {
-  isLoading?: boolean;
-  isDisabled?: boolean;
-  title?: string;
-};
 
 interface SubmitButtonProps {
   className?: ClassValue;

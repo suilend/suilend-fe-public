@@ -28,6 +28,7 @@ import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadata
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
+import FromToArrow from "@/components/shared/FromToArrow";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
@@ -223,7 +224,7 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
               >
                 {data.in.token.symbol}
               </TextLink>
-              {" → "}
+              <FromToArrow />
               {formatToken(data.out.amount, {
                 dp: data.out.token.decimals,
               })}{" "}

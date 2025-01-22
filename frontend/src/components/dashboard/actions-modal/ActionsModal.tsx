@@ -1,7 +1,5 @@
 import { useMemo } from "react";
 
-import BigNumber from "bignumber.js";
-
 import { Action, Side } from "@suilend/sdk/lib/types";
 
 import ActionsModalContainer from "@/components/dashboard/actions-modal/ActionsModalContainer";
@@ -16,6 +14,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   getMaxValue,
+  getNewBorrowUtilizationCalculations,
   getSubmitButtonNoValueState,
   getSubmitButtonState,
   getSubmitWarningMessages,
@@ -61,26 +60,6 @@ export default function ActionsModal() {
     const coinBalanceForReserve = getBalance(reserve.coinType);
 
     if (selectedTab === Tab.DEPOSIT) {
-      const getNewCalculations = (value: string) => {
-        if (!obligation || !new BigNumber(value || "0").gt(0)) return undefined;
-
-        const newBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.plus(
-          new BigNumber(value)
-            .times(reserve.minPrice)
-            .times(reserve.config.openLtvPct / 100),
-        );
-        const newBorrowUtilizationPercent = !newBorrowLimitUsd.eq(0)
-          ? obligation.borrowedAmountUsd.div(newBorrowLimitUsd).times(100)
-          : undefined;
-
-        return {
-          newBorrowLimitUsd,
-          newBorrowUtilizationPercent: newBorrowUtilizationPercent
-            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
-            : undefined,
-        };
-      };
-
       return {
         action: Action.DEPOSIT,
         actionPastTense: "deposited",
@@ -91,7 +70,12 @@ export default function ActionsModal() {
           data,
           obligation,
         ),
-        getNewCalculations,
+        getNewBorrowUtilizationCalculations:
+          getNewBorrowUtilizationCalculations(
+            Action.DEPOSIT,
+            reserve,
+            obligation,
+          ),
         getSubmitButtonNoValueState: getSubmitButtonNoValueState(
           Action.DEPOSIT,
           data.lendingMarket.reserves,
@@ -114,32 +98,6 @@ export default function ActionsModal() {
         submit: deposit,
       };
     } else if (selectedTab === Tab.BORROW) {
-      const getNewCalculations = (value: string) => {
-        if (
-          !obligation ||
-          obligation.minPriceBorrowLimitUsd.eq(0) ||
-          !new BigNumber(value || "0").gt(0)
-        )
-          return undefined;
-
-        const newBorrowUtilizationPercent = new BigNumber(
-          obligation.maxPriceWeightedBorrowsUsd.plus(
-            new BigNumber(value)
-              .times(reserve.maxPrice)
-              .times(reserve.config.borrowWeightBps.div(10000)),
-          ),
-        )
-          .div(obligation.minPriceBorrowLimitUsd)
-          .times(100);
-
-        return {
-          newBorrowLimitUsd: undefined,
-          newBorrowUtilizationPercent: newBorrowUtilizationPercent
-            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
-            : undefined,
-        };
-      };
-
       return {
         action: Action.BORROW,
         actionPastTense: "borrowed",
@@ -150,7 +108,12 @@ export default function ActionsModal() {
           data,
           obligation,
         ),
-        getNewCalculations,
+        getNewBorrowUtilizationCalculations:
+          getNewBorrowUtilizationCalculations(
+            Action.BORROW,
+            reserve,
+            obligation,
+          ),
         getSubmitButtonNoValueState: getSubmitButtonNoValueState(
           Action.BORROW,
           data.lendingMarket.reserves,
@@ -173,26 +136,6 @@ export default function ActionsModal() {
         submit: borrow,
       };
     } else if (selectedTab === Tab.WITHDRAW) {
-      const getNewCalculations = (value: string) => {
-        if (!obligation || !new BigNumber(value || "0").gt(0)) return undefined;
-
-        const newBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.minus(
-          new BigNumber(value)
-            .times(reserve.minPrice)
-            .times(reserve.config.openLtvPct / 100),
-        );
-        const newBorrowUtilizationPercent = !newBorrowLimitUsd.eq(0)
-          ? obligation.borrowedAmountUsd.div(newBorrowLimitUsd).times(100)
-          : undefined;
-
-        return {
-          newBorrowLimitUsd,
-          newBorrowUtilizationPercent: newBorrowUtilizationPercent
-            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
-            : undefined,
-        };
-      };
-
       return {
         action: Action.WITHDRAW,
         actionPastTense: "withdrew",
@@ -203,7 +146,12 @@ export default function ActionsModal() {
           data,
           obligation,
         ),
-        getNewCalculations,
+        getNewBorrowUtilizationCalculations:
+          getNewBorrowUtilizationCalculations(
+            Action.WITHDRAW,
+            reserve,
+            obligation,
+          ),
         getSubmitButtonState: getSubmitButtonState(
           Action.WITHDRAW,
           reserve,
@@ -214,32 +162,6 @@ export default function ActionsModal() {
         submit: withdraw,
       };
     } else if (selectedTab === Tab.REPAY) {
-      const getNewCalculations = (value: string) => {
-        if (
-          !obligation ||
-          obligation.minPriceBorrowLimitUsd.eq(0) ||
-          !new BigNumber(value || "0").gt(0)
-        )
-          return undefined;
-
-        const newBorrowUtilizationPercent = new BigNumber(
-          obligation.maxPriceWeightedBorrowsUsd.minus(
-            new BigNumber(value)
-              .times(reserve.maxPrice)
-              .times(reserve.config.borrowWeightBps.div(10000)),
-          ),
-        )
-          .div(obligation.minPriceBorrowLimitUsd)
-          .times(100);
-
-        return {
-          newBorrowLimitUsd: undefined,
-          newBorrowUtilizationPercent: newBorrowUtilizationPercent
-            ? BigNumber.max(BigNumber.min(100, newBorrowUtilizationPercent), 0)
-            : undefined,
-        };
-      };
-
       return {
         action: Action.REPAY,
         actionPastTense: "repaid",
@@ -250,7 +172,12 @@ export default function ActionsModal() {
           data,
           obligation,
         ),
-        getNewCalculations,
+        getNewBorrowUtilizationCalculations:
+          getNewBorrowUtilizationCalculations(
+            Action.REPAY,
+            reserve,
+            obligation,
+          ),
         getSubmitButtonState: getSubmitButtonState(
           Action.REPAY,
           reserve,

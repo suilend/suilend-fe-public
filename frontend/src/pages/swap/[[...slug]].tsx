@@ -49,16 +49,20 @@ import {
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
+  maxU64,
   sendObligationToUser,
 } from "@suilend/sdk";
 import { Action, Side } from "@suilend/sdk/lib/types";
 
+import AprWithRewardsBreakdown from "@/components/dashboard/AprWithRewardsBreakdown";
 import Button from "@/components/shared/Button";
+import LabelWithValue from "@/components/shared/LabelWithValue";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import YourBorrowLimitlabel from "@/components/shared/YourBorrowLimitLabel";
+import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import RoutingDialog from "@/components/swap/RoutingDialog";
 import SwapInput from "@/components/swap/SwapInput";
 import SwapSlippagePopover, {
@@ -76,20 +80,16 @@ import {
 } from "@/contexts/SwapContext";
 import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
+  getNewBorrowUtilizationCalculations,
   getSubmitButtonNoValueState,
   getSubmitButtonState,
+  getSubmitWarningMessages,
 } from "@/lib/actions";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { formatInteger, formatPercent, formatToken } from "@/lib/format";
-import { SwapToken } from "@/lib/types";
+import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type SubmitButtonState = {
-  isLoading?: boolean;
-  isDisabled?: boolean;
-  title?: string;
-};
 
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 1;
 const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
@@ -227,27 +227,6 @@ function Page() {
   const [value, setValue] = useState<string>("");
 
   // Quote
-  const [quotesMap, setQuotesMap] = useState<
-    Record<number, StandardizedQuote[] | undefined>
-  >({});
-
-  const quotes = (() => {
-    const timestampsS = Object.entries(quotesMap)
-      .filter(([, quotes]) => quotes !== undefined)
-      .map(([timestampS]) => +timestampS);
-    if (timestampsS.length === 0) return undefined;
-
-    const maxTimestampS = Math.max(...timestampsS);
-    const quotes = quotesMap[maxTimestampS];
-    if (quotes === undefined) return undefined;
-
-    const sortedQuotes = quotes
-      .slice()
-      .sort((a, b) => +b.out.amount.minus(a.out.amount));
-    return sortedQuotes;
-  })();
-  const quote = quotes?.[0]; // Best quote by amount out
-
   const activeProvidersMap = useMemo(
     () => ({
       [QuoteType.AFTERMATH]: true,
@@ -256,19 +235,43 @@ function Page() {
     }),
     [],
   );
-  const numActiveProviders =
-    Object.values(activeProvidersMap).filter(Boolean).length;
 
-  const isFetchingQuote = (() => {
+  const [quotesMap, setQuotesMap] = useState<
+    Record<number, StandardizedQuote[]>
+  >({});
+
+  const quotes = useMemo(() => {
+    const timestampsS = Object.entries(quotesMap)
+      .filter(([, value]) => value.length > 0)
+      .map(([timestampS]) => +timestampS);
+    if (timestampsS.length === 0) return undefined;
+
+    const maxTimestampS = Math.max(...timestampsS);
+    if (quotesMap[maxTimestampS].length === 0) return undefined;
+
+    const sortedQuotes = quotesMap[maxTimestampS]
+      .slice()
+      .sort((a, b) => +b.out.amount.minus(a.out.amount));
+    return sortedQuotes;
+  }, [quotesMap]);
+
+  const quote = quotes?.[0]; // Best quote by amount out
+  const quoteAmountIn = useMemo(() => quote?.in.amount, [quote?.in.amount]);
+  const quoteAmountOut = useMemo(() => quote?.out.amount, [quote?.out.amount]);
+
+  const isFetchingQuotes = useMemo(() => {
     const timestampsS = Object.keys(quotesMap).map((timestampS) => +timestampS);
     if (timestampsS.length === 0) return false;
 
     const maxTimestampS = Math.max(...timestampsS);
-    const quotes = quotesMap[maxTimestampS];
-    return quotes === undefined || quotes.length < numActiveProviders;
-  })();
+    if (quotesMap[maxTimestampS].length === 0) return undefined;
 
-  const fetchQuote = useCallback(
+    const numActiveProviders =
+      Object.values(activeProvidersMap).filter(Boolean).length;
+    return quotesMap[maxTimestampS].length < numActiveProviders;
+  }, [quotesMap, activeProvidersMap]);
+
+  const fetchQuotes = useCallback(
     async (
       _tokenIn: SwapToken,
       _tokenOut: SwapToken,
@@ -278,218 +281,215 @@ function Page() {
       if (_tokenIn.coinType === _tokenOut.coinType) return;
       if (new BigNumber(_value || 0).lte(0)) return;
 
-      setQuotesMap((o) => ({ ...o, [_timestamp]: undefined }));
+      setQuotesMap((o) => ({ ...o, [_timestamp]: [] }));
 
-      try {
-        const amountIn = new BigNumber(_value)
-          .times(10 ** _tokenIn.decimals)
-          .integerValue(BigNumber.ROUND_DOWN)
-          .toString();
+      const amountIn = new BigNumber(_value)
+        .times(10 ** _tokenIn.decimals)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString();
 
-        // Fetch quotes in parallel
-        // Aftermath
-        if (activeProvidersMap[QuoteType.AFTERMATH]) {
-          (async () => {
-            console.log("Swap - fetching Aftermath quote");
+      // Fetch quotes in parallel
+      // Aftermath
+      if (activeProvidersMap[QuoteType.AFTERMATH]) {
+        (async () => {
+          console.log("Swap - fetching Aftermath quote");
 
-            try {
-              const quote = await aftermathSdk
-                .Router()
-                .getCompleteTradeRouteGivenAmountIn({
-                  coinInType: _tokenIn.coinType,
-                  coinOutType: _tokenOut.coinType,
-                  coinInAmount: BigInt(amountIn),
-                });
-
-              const standardizedQuote: StandardizedQuote = {
-                id: uuidv4(),
-                type: QuoteType.AFTERMATH,
-                in: {
-                  coinType: _tokenIn.coinType,
-                  amount: new BigNumber(quote.coinIn.amount.toString()).div(
-                    10 ** _tokenIn.decimals,
-                  ),
-                },
-                out: {
-                  coinType: _tokenOut.coinType,
-                  amount: new BigNumber(quote.coinOut.amount.toString()).div(
-                    10 ** _tokenOut.decimals,
-                  ),
-                },
-                routes: quote.routes.map((route, routeIndex) => ({
-                  percent: new BigNumber(route.portion.toString())
-                    .div(WAD)
-                    .times(100),
-                  path: route.paths.map((path) => ({
-                    id: path.poolId,
-                    routeIndex,
-                    provider: path.protocolName,
-                    in: {
-                      coinType: normalizeStructTag(path.coinIn.type),
-                      amount: new BigNumber(path.coinIn.amount.toString()).div(
-                        10 ** _tokenIn.decimals,
-                      ),
-                    },
-                    out: {
-                      coinType: normalizeStructTag(path.coinOut.type),
-                      amount: new BigNumber(path.coinOut.amount.toString()).div(
-                        10 ** _tokenOut.decimals,
-                      ),
-                    },
-                  })),
-                })),
-                quote,
-              };
-
-              setQuotesMap((o) => ({
-                ...o,
-                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
-              }));
-              console.log(
-                "Swap - set Aftermath quote",
-                +standardizedQuote.out.amount,
-              );
-            } catch (err) {
-              console.error(err);
-            }
-          })();
-        }
-
-        // Cetus
-        if (activeProvidersMap[QuoteType.CETUS]) {
-          (async () => {
-            console.log("Swap - fetching Cetus quote");
-
-            try {
-              const quote = await cetusSdk.findRouters({
-                from: _tokenIn.coinType,
-                target: _tokenOut.coinType,
-                amount: new BN(amountIn),
-                byAmountIn: true,
-              });
-              if (!quote) return;
-
-              const standardizedQuote: StandardizedQuote = {
-                id: uuidv4(),
-                type: QuoteType.CETUS,
-                in: {
-                  coinType: _tokenIn.coinType,
-                  amount: new BigNumber(quote.amountIn.toString()).div(
-                    10 ** _tokenIn.decimals,
-                  ),
-                },
-                out: {
-                  coinType: _tokenOut.coinType,
-                  amount: new BigNumber(quote.amountOut.toString()).div(
-                    10 ** _tokenOut.decimals,
-                  ),
-                },
-                routes: quote.routes.map((route, routeIndex) => ({
-                  percent: new BigNumber(route.amountIn.toString())
-                    .div(quote.amountIn.toString())
-                    .times(100),
-                  path: route.path.map((path) => ({
-                    id: path.id,
-                    routeIndex,
-                    provider: path.provider,
-                    in: {
-                      coinType: normalizeStructTag(path.from),
-                      amount: new BigNumber(path.amountIn.toString()).div(
-                        10 ** _tokenIn.decimals,
-                      ),
-                    },
-                    out: {
-                      coinType: normalizeStructTag(path.target),
-                      amount: new BigNumber(path.amountOut.toString()).div(
-                        10 ** _tokenOut.decimals,
-                      ),
-                    },
-                  })),
-                })),
-                quote,
-              };
-
-              setQuotesMap((o) => ({
-                ...o,
-                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
-              }));
-              console.log(
-                "Swap - set Cetus quote",
-                +standardizedQuote.out.amount,
-              );
-            } catch (err) {
-              console.error(err);
-            }
-          })();
-        }
-
-        // 7K
-        if (activeProvidersMap[QuoteType._7K]) {
-          (async () => {
-            console.log("Swap - fetching 7K quote");
-
-            try {
-              const quote = await get7kQuote({
-                tokenIn: _tokenIn.coinType,
-                tokenOut: _tokenOut.coinType,
-                amountIn,
+          try {
+            const quote = await aftermathSdk
+              .Router()
+              .getCompleteTradeRouteGivenAmountIn({
+                coinInType: _tokenIn.coinType,
+                coinOutType: _tokenOut.coinType,
+                coinInAmount: BigInt(amountIn),
               });
 
-              const standardizedQuote: StandardizedQuote = {
-                id: uuidv4(),
-                type: QuoteType._7K,
-                in: {
-                  coinType: _tokenIn.coinType,
-                  amount: new BigNumber(quote.swapAmount),
-                },
-                out: {
-                  coinType: _tokenOut.coinType,
-                  amount: new BigNumber(quote.returnAmount),
-                },
-                routes: (quote.routes ?? []).map((route, routeIndex) => ({
-                  percent: new BigNumber(route.tokenInAmount)
-                    .div(quote.swapAmount)
-                    .times(100),
-                  path: route.hops.map((hop) => ({
-                    id: hop.poolId,
-                    routeIndex,
-                    provider: hop.pool.type,
-                    in: {
-                      coinType: normalizeStructTag(hop.tokenIn),
-                      amount: new BigNumber(hop.tokenInAmount),
-                    },
-                    out: {
-                      coinType: normalizeStructTag(hop.tokenOut),
-                      amount: new BigNumber(hop.tokenOutAmount),
-                    },
-                  })),
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              type: QuoteType.AFTERMATH,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.coinIn.amount.toString()).div(
+                  10 ** _tokenIn.decimals,
+                ),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.coinOut.amount.toString()).div(
+                  10 ** _tokenOut.decimals,
+                ),
+              },
+              routes: quote.routes.map((route, routeIndex) => ({
+                percent: new BigNumber(route.portion.toString())
+                  .div(WAD)
+                  .times(100),
+                path: route.paths.map((path) => ({
+                  id: path.poolId,
+                  routeIndex,
+                  provider: path.protocolName,
+                  in: {
+                    coinType: normalizeStructTag(path.coinIn.type),
+                    amount: new BigNumber(path.coinIn.amount.toString()).div(
+                      10 ** _tokenIn.decimals,
+                    ),
+                  },
+                  out: {
+                    coinType: normalizeStructTag(path.coinOut.type),
+                    amount: new BigNumber(path.coinOut.amount.toString()).div(
+                      10 ** _tokenOut.decimals,
+                    ),
+                  },
                 })),
-                quote,
-              };
+              })),
+              quote,
+            };
 
-              setQuotesMap((o) => ({
-                ...o,
-                [_timestamp]: [...(o[_timestamp] ?? []), standardizedQuote],
-              }));
-              console.log("Swap - set 7K quote", +standardizedQuote.out.amount);
-            } catch (err) {
-              console.error(err);
-            }
-          })();
-        }
-      } catch (err) {
-        toast.error("Failed to get quote", {
-          description:
-            err instanceof AggregateError
-              ? "No route found"
-              : (err as Error)?.message || "An unknown error occurred",
-        });
-        console.error(err);
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log(
+              "Swap - set Aftermath quote",
+              +standardizedQuote.out.amount,
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+      }
 
-        setQuotesMap((o) => {
-          delete o[_timestamp];
-          return o;
-        });
+      // Cetus
+      if (activeProvidersMap[QuoteType.CETUS]) {
+        (async () => {
+          console.log("Swap - fetching Cetus quote");
+
+          try {
+            const quote = await cetusSdk.findRouters({
+              from: _tokenIn.coinType,
+              target: _tokenOut.coinType,
+              amount: new BN(amountIn),
+              byAmountIn: true,
+            });
+            if (!quote) return;
+
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              type: QuoteType.CETUS,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.amountIn.toString()).div(
+                  10 ** _tokenIn.decimals,
+                ),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.amountOut.toString()).div(
+                  10 ** _tokenOut.decimals,
+                ),
+              },
+              routes: quote.routes.map((route, routeIndex) => ({
+                percent: new BigNumber(route.amountIn.toString())
+                  .div(quote.amountIn.toString())
+                  .times(100),
+                path: route.path.map((path) => ({
+                  id: path.id,
+                  routeIndex,
+                  provider: path.provider,
+                  in: {
+                    coinType: normalizeStructTag(path.from),
+                    amount: new BigNumber(path.amountIn.toString()).div(
+                      10 ** _tokenIn.decimals,
+                    ),
+                  },
+                  out: {
+                    coinType: normalizeStructTag(path.target),
+                    amount: new BigNumber(path.amountOut.toString()).div(
+                      10 ** _tokenOut.decimals,
+                    ),
+                  },
+                })),
+              })),
+              quote,
+            };
+
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log(
+              "Swap - set Cetus quote",
+              +standardizedQuote.out.amount,
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+      }
+
+      // 7K
+      if (activeProvidersMap[QuoteType._7K]) {
+        (async () => {
+          console.log("Swap - fetching 7K quote");
+
+          try {
+            const quote = await get7kQuote({
+              tokenIn: _tokenIn.coinType,
+              tokenOut: _tokenOut.coinType,
+              amountIn,
+            });
+
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              type: QuoteType._7K,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.swapAmount),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.returnAmount),
+              },
+              routes: (quote.routes ?? []).map((route, routeIndex) => ({
+                percent: new BigNumber(route.tokenInAmount)
+                  .div(quote.swapAmount)
+                  .times(100),
+                path: route.hops.map((hop) => ({
+                  id: hop.poolId,
+                  routeIndex,
+                  provider: hop.pool.type,
+                  in: {
+                    coinType: normalizeStructTag(hop.tokenIn),
+                    amount: new BigNumber(hop.tokenInAmount),
+                  },
+                  out: {
+                    coinType: normalizeStructTag(hop.tokenOut),
+                    amount: new BigNumber(hop.tokenOutAmount),
+                  },
+                })),
+              })),
+              quote,
+            };
+
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log("Swap - set 7K quote", +standardizedQuote.out.amount);
+          } catch (err) {
+            console.error(err);
+          }
+        })();
       }
     },
     [activeProvidersMap, aftermathSdk, cetusSdk],
@@ -499,21 +499,14 @@ function Page() {
   useEffect(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     refreshIntervalRef.current = setInterval(
-      () => fetchQuote(tokenIn, tokenOut, value),
+      () => fetchQuotes(tokenIn, tokenOut, value),
       30 * 1000,
     );
 
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [fetchQuote, tokenIn, tokenOut, value]);
-
-  const quoteAmountIn = quote
-    ? BigNumber(quote.in.amount.toString())
-    : undefined;
-  const quoteAmountOut = quote
-    ? BigNumber(quote.out.amount.toString())
-    : undefined;
+  }, [fetchQuotes, tokenIn, tokenOut, value]);
 
   // Value
   const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
@@ -539,7 +532,8 @@ function Page() {
   const onValueChange = (_value: string) => {
     formatAndSetValue(_value, tokenIn);
 
-    if (new BigNumber(_value || 0).gt(0)) fetchQuote(tokenIn, tokenOut, _value);
+    if (new BigNumber(_value || 0).gt(0))
+      fetchQuotes(tokenIn, tokenOut, _value);
     else setQuotesMap({});
   };
 
@@ -547,11 +541,24 @@ function Page() {
     formatAndSetValue(tokenInMaxAmount, tokenIn);
 
     if (new BigNumber(tokenInMaxAmount).gt(0))
-      fetchQuote(tokenIn, tokenOut, tokenInMaxAmount);
+      fetchQuotes(tokenIn, tokenOut, tokenInMaxAmount);
     else setQuotesMap({});
 
     inputRef.current?.focus();
   };
+
+  // Utilization
+  const newObligation =
+    obligation && tokenOutReserve && quoteAmountOut
+      ? {
+          ...obligation,
+          ...(getNewBorrowUtilizationCalculations(
+            Action.DEPOSIT,
+            tokenOutReserve,
+            obligation,
+          )(quoteAmountOut) ?? {}),
+        }
+      : undefined;
 
   // USD prices - historical
   const [historicalUsdPricesMap, setHistoricalUsdPriceMap] = useState<
@@ -778,7 +785,7 @@ function Page() {
     formatAndSetValue(value, tokenOut);
     setQuotesMap({});
 
-    if (new BigNumber(value || 0).gt(0)) fetchQuote(tokenOut, tokenIn, value);
+    if (new BigNumber(value || 0).gt(0)) fetchQuotes(tokenOut, tokenIn, value);
 
     reverseTokenSymbols();
 
@@ -806,7 +813,7 @@ function Page() {
       );
       setTokenSymbol(isReserve ? _token.symbol : _token.coinType, direction);
 
-      fetchQuote(
+      fetchQuotes(
         direction === TokenDirection.IN ? _token : tokenIn,
         direction === TokenDirection.IN ? tokenOut : _token,
         value,
@@ -847,62 +854,53 @@ function Page() {
     }
 
     return {
-      title: `Swap ${formatToken(new BigNumber(value), {
-        dp: tokenIn.decimals,
-        trimTrailingZeros: true,
-      })} ${tokenIn.symbol}`,
+      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
       isDisabled: !quote || isSwappingAndDepositing,
     };
   })();
 
-  const swapAndDepositButtonDisabledTooltip = (() => {
-    if (!hasTokenOutReserve || quoteAmountOut === undefined) return;
+  // Swap and deposit
+  const swapAndDepositButtonState: SubmitButtonState = (() => {
+    if (!hasTokenOutReserve)
+      return { isDisabled: true, title: "Cannot deposit this token" };
 
-    const depositSubmitButtonNoValueState = getSubmitButtonNoValueState(
+    if (isSwappingAndDepositing) return { isDisabled: true, isLoading: true };
+
+    const swapAndDepositButtonNoValueState = getSubmitButtonNoValueState(
       Action.DEPOSIT,
       data.lendingMarket.reserves,
       tokenOutReserve,
       obligation,
     )();
-    const depositSubmitButtonState = getSubmitButtonState(
+    if (swapAndDepositButtonNoValueState !== undefined)
+      return swapAndDepositButtonNoValueState;
+
+    const swapAndDepositButtonState = getSubmitButtonState(
       Action.DEPOSIT,
       tokenOutReserve,
-      quoteAmountOut.plus(isSui(tokenOutReserve.coinType) ? SUI_GAS_MIN : 0),
+      maxU64,
       data,
       obligation,
-    )(quoteAmountOut.toString());
-
-    if (
-      depositSubmitButtonNoValueState !== undefined &&
-      depositSubmitButtonNoValueState.isDisabled
-    )
-      return [
-        depositSubmitButtonNoValueState.title,
-        depositSubmitButtonNoValueState.description,
-      ]
-        .filter(Boolean)
-        .join(" - ");
-    if (
-      depositSubmitButtonState !== undefined &&
-      depositSubmitButtonState.isDisabled
-    )
-      return depositSubmitButtonState.title;
-  })();
-
-  const swapAndDepositButtonState: SubmitButtonState = (() => {
-    if (!hasTokenOutReserve)
-      return { isDisabled: true, title: "Cannot deposit this token" };
-    if (isSwappingAndDepositing) return { isDisabled: true, isLoading: true };
+    )(quoteAmountOut ?? new BigNumber(0));
+    if (swapAndDepositButtonState !== undefined)
+      return swapAndDepositButtonState;
 
     return {
-      title: `Swap and deposit for ${formatPercent(tokenOutReserveDepositAprPercent)}${tokenOutStakingYieldAprPercent ? "*" : ""} APR`,
-      isDisabled:
-        !!swapAndDepositButtonDisabledTooltip ||
-        swapButtonState.isDisabled ||
-        isSwapping,
+      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
+      isDisabled: swapButtonState.isDisabled || isSwapping,
     };
   })();
 
+  const swapAndDepositWarningMessages = tokenOutReserve
+    ? getSubmitWarningMessages(
+        Action.DEPOSIT,
+        data.lendingMarket.reserves,
+        tokenOutReserve,
+        obligation,
+      )()
+    : undefined;
+
+  // Submit
   const getTransactionForStandardizedQuote = async (
     address: string,
     _quote: StandardizedQuote,
@@ -1039,7 +1037,7 @@ function Page() {
     } else {
       if (swapButtonState.isDisabled) return;
     }
-    if (quoteAmountOut === undefined || isFetchingQuote) return;
+    if (quoteAmountOut === undefined || isFetchingQuotes) return;
 
     (deposit ? setIsSwappingAndDepositing : setIsSwapping)(true);
 
@@ -1085,6 +1083,7 @@ function Page() {
         },
       );
       formatAndSetValue("", tokenIn);
+      setQuotesMap({});
 
       const properties: Record<string, string | number> = {
         assetIn: tokenIn.symbol,
@@ -1136,7 +1135,7 @@ function Page() {
                 tooltip="Refresh"
                 icon={<RotateCw className="h-3 w-3" />}
                 variant="ghost"
-                onClick={() => fetchQuote(tokenIn, tokenOut, value)}
+                onClick={() => fetchQuotes(tokenIn, tokenOut, value)}
               >
                 Refresh
               </Button>
@@ -1207,7 +1206,7 @@ function Page() {
                         )
                       : ""
                   }
-                  isValueLoading={isFetchingQuote}
+                  isValueLoading={isFetchingQuotes}
                   usdValue={tokenOutUsdValue}
                   token={tokenOut}
                   onSelectToken={(t: SwapToken) =>
@@ -1239,8 +1238,8 @@ function Page() {
                   {/* Quote */}
                   {quoteRatio !== undefined ? (
                     <Button
-                      className="h-4 gap-2 p-0 text-muted-foreground hover:bg-transparent"
-                      labelClassName="text-xs"
+                      className="h-4 p-0 text-muted-foreground hover:bg-transparent"
+                      labelClassName="text-xs font-sans"
                       endIcon={<ArrowRightLeft />}
                       variant="ghost"
                       size="sm"
@@ -1278,7 +1277,7 @@ function Page() {
                           PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
                         ) &&
                           cn(
-                            "font-medium text-warning",
+                            "text-warning",
                             priceDifferencePercent.gte(
                               PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD,
                             ) && "text-destructive",
@@ -1297,16 +1296,13 @@ function Page() {
             )}
           </div>
 
-          {/* Submit */}
-          <div className="flex w-full flex-col gap-px">
-            {/* Swap */}
+          {/* Submit & swap and deposit */}
+          <div className="flex w-full flex-col gap-2">
+            {/* Submit */}
             <Button
-              className={cn(
-                "h-auto min-h-14 w-full py-2",
-                hasTokenOutReserve && "rounded-b-none",
-              )}
+              className="h-auto min-h-14 w-full"
               labelClassName="text-wrap uppercase"
-              style={{ overflowWrap: "anywhere" }}
+              size="lg"
               disabled={swapButtonState.isDisabled}
               onClick={() => onSwapClick()}
             >
@@ -1315,32 +1311,80 @@ function Page() {
               ) : (
                 swapButtonState.title
               )}
+              {swapButtonState.description && (
+                <span className="mt-0.5 block font-sans text-xs normal-case">
+                  {swapButtonState.description}
+                </span>
+              )}
             </Button>
 
             {/* Swap and deposit */}
             {hasTokenOutReserve && (
-              <Tooltip title={swapAndDepositButtonDisabledTooltip}>
-                <Button
-                  className={cn(
-                    "rounded-t-none",
-                    swapAndDepositButtonState.isDisabled &&
-                      "!cursor-default !bg-secondary opacity-50",
+              <div className="flex w-full flex-col gap-4 rounded-md bg-secondary/10 p-4">
+                {/* Parameters */}
+                <div className="flex w-full flex-col gap-3">
+                  <LabelWithValue
+                    label="Deposit APR"
+                    customChild={
+                      <AprWithRewardsBreakdown
+                        side={Side.DEPOSIT}
+                        reserve={tokenOutReserve}
+                        action={Action.DEPOSIT}
+                        changeAmount={quoteAmountOut}
+                      />
+                    }
+                    horizontal
+                    value="0"
+                  />
+                  <YourBorrowLimitlabel
+                    obligation={obligation}
+                    newObligation={newObligation}
+                  />
+                  <YourUtilizationLabel
+                    obligation={obligation}
+                    newObligation={newObligation}
+                  />
+                </div>
+
+                {/* Submit */}
+                <div className="flex w-full flex-col gap-3">
+                  <Button
+                    className="h-auto min-h-12 w-full"
+                    labelClassName={cn(
+                      "uppercase text-wrap",
+                      swapAndDepositButtonState.description && "text-xs",
+                    )}
+                    variant="secondary"
+                    size="lg"
+                    disabled={swapAndDepositButtonState.isDisabled}
+                    onClick={
+                      swapAndDepositButtonState.isDisabled
+                        ? undefined
+                        : () => onSwapClick(true)
+                    }
+                  >
+                    {swapAndDepositButtonState.isLoading ? (
+                      <Spinner size="md" />
+                    ) : (
+                      swapAndDepositButtonState.title
+                    )}
+                    {swapAndDepositButtonState.description && (
+                      <span className="block font-sans text-xs normal-case">
+                        {swapAndDepositButtonState.description}
+                      </span>
+                    )}
+                  </Button>
+
+                  {(swapAndDepositWarningMessages ?? []).map(
+                    (warningMessage) => (
+                      <TLabelSans key={warningMessage} className="text-warning">
+                        <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                        {warningMessage}
+                      </TLabelSans>
+                    ),
                   )}
-                  labelClassName="uppercase text-xs"
-                  variant="secondary"
-                  onClick={
-                    swapAndDepositButtonState.isDisabled
-                      ? undefined
-                      : () => onSwapClick(true)
-                  }
-                >
-                  {swapAndDepositButtonState.isLoading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    swapAndDepositButtonState.title
-                  )}
-                </Button>
-              </Tooltip>
+                </div>
+              </div>
             )}
           </div>
 

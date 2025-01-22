@@ -16,7 +16,7 @@ interface LabelWithValueProps {
   label: string;
   valueClassName?: ClassValue;
   valueStartDecorator?: ReactNode;
-  value: string | number | BigNumber;
+  value: string | number | BigNumber | ReactNode;
   valueEndDecorator?: ReactNode;
   isId?: boolean;
   isType?: boolean;
@@ -54,8 +54,8 @@ export default function LabelWithValue({
     <div
       className={cn(
         "flex w-full justify-between",
-        className,
         horizontal ? "flex-row items-center gap-2" : "h-min flex-col gap-1",
+        className,
       )}
     >
       <LabelWithTooltip

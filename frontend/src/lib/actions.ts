@@ -13,10 +13,10 @@ import { Action } from "@suilend/sdk/lib/types";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
-import { SubmitButtonState } from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import { AppData } from "@/contexts/AppContext";
 import { formatList } from "@/lib/format";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
+import { SubmitButtonState } from "@/lib/types";
 
 const getMaxCalculations = (
   action: Action,
@@ -241,6 +241,143 @@ const getObligationBorrowedAmount = (
   obligation?.borrows.find((b) => b.coinType === coinType)?.borrowedAmount ??
   new BigNumber(0);
 
+export const getNewBorrowUtilizationCalculations =
+  (action: Action, reserve: ParsedReserve, obligation?: ParsedObligation) =>
+  (
+    value: BigNumber,
+  ):
+    | {
+        depositedAmountUsd: BigNumber;
+        weightedBorrowsUsd: BigNumber;
+        maxPriceWeightedBorrowsUsd: BigNumber;
+        minPriceBorrowLimitUsd: BigNumber;
+        unhealthyBorrowValueUsd: BigNumber;
+        weightedConservativeBorrowUtilizationPercent: BigNumber;
+      }
+    | undefined => {
+    if (!obligation || !value.gt(0)) return undefined;
+
+    if (action === Action.DEPOSIT) {
+      const depositedAmountUsd = obligation.depositedAmountUsd.plus(
+        value.times(reserve.price),
+      );
+      const weightedBorrowsUsd = obligation.weightedBorrowsUsd;
+      const maxPriceWeightedBorrowsUsd = obligation.maxPriceWeightedBorrowsUsd;
+      const minPriceBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.plus(
+        value.times(reserve.minPrice).times(reserve.config.openLtvPct / 100),
+      );
+      const unhealthyBorrowValueUsd = obligation.unhealthyBorrowValueUsd.plus(
+        value.times(reserve.price).times(reserve.config.closeLtvPct / 100),
+      );
+      const weightedConservativeBorrowUtilizationPercent =
+        minPriceBorrowLimitUsd.eq(0)
+          ? new BigNumber(0)
+          : maxPriceWeightedBorrowsUsd.div(minPriceBorrowLimitUsd).times(100);
+
+      return {
+        depositedAmountUsd,
+        weightedBorrowsUsd,
+        maxPriceWeightedBorrowsUsd,
+        minPriceBorrowLimitUsd,
+        unhealthyBorrowValueUsd,
+        weightedConservativeBorrowUtilizationPercent: BigNumber.max(
+          BigNumber.min(100, weightedConservativeBorrowUtilizationPercent),
+          0,
+        ),
+      };
+    } else if (action === Action.BORROW) {
+      if (obligation.minPriceBorrowLimitUsd.eq(0)) return undefined;
+
+      const depositedAmountUsd = obligation.depositedAmountUsd;
+      const weightedBorrowsUsd = obligation.weightedBorrowsUsd.plus(
+        value
+          .times(reserve.price)
+          .times(reserve.config.borrowWeightBps.div(10000)),
+      );
+      const maxPriceWeightedBorrowsUsd =
+        obligation.maxPriceWeightedBorrowsUsd.plus(
+          value
+            .times(reserve.maxPrice)
+            .times(reserve.config.borrowWeightBps.div(10000)),
+        );
+      const minPriceBorrowLimitUsd = obligation.minPriceBorrowLimitUsd;
+      const unhealthyBorrowValueUsd = obligation.unhealthyBorrowValueUsd;
+      const weightedConservativeBorrowUtilizationPercent =
+        maxPriceWeightedBorrowsUsd.div(minPriceBorrowLimitUsd).times(100);
+
+      return {
+        depositedAmountUsd,
+        weightedBorrowsUsd,
+        maxPriceWeightedBorrowsUsd,
+        minPriceBorrowLimitUsd,
+        unhealthyBorrowValueUsd,
+        weightedConservativeBorrowUtilizationPercent: BigNumber.max(
+          BigNumber.min(100, weightedConservativeBorrowUtilizationPercent),
+          0,
+        ),
+      };
+    } else if (action === Action.WITHDRAW) {
+      const depositedAmountUsd = obligation.depositedAmountUsd.minus(
+        value.times(reserve.price),
+      );
+      const weightedBorrowsUsd = obligation.weightedBorrowsUsd;
+      const maxPriceWeightedBorrowsUsd = obligation.maxPriceWeightedBorrowsUsd;
+      const minPriceBorrowLimitUsd = obligation.minPriceBorrowLimitUsd.minus(
+        value.times(reserve.minPrice).times(reserve.config.openLtvPct / 100),
+      );
+      const unhealthyBorrowValueUsd = obligation.unhealthyBorrowValueUsd.minus(
+        value.times(reserve.price).times(reserve.config.closeLtvPct / 100),
+      );
+      const weightedConservativeBorrowUtilizationPercent =
+        minPriceBorrowLimitUsd.eq(0)
+          ? new BigNumber(0)
+          : maxPriceWeightedBorrowsUsd.div(minPriceBorrowLimitUsd).times(100);
+
+      return {
+        depositedAmountUsd,
+        weightedBorrowsUsd,
+        maxPriceWeightedBorrowsUsd,
+        minPriceBorrowLimitUsd,
+        unhealthyBorrowValueUsd,
+        weightedConservativeBorrowUtilizationPercent: BigNumber.max(
+          BigNumber.min(100, weightedConservativeBorrowUtilizationPercent),
+          0,
+        ),
+      };
+    } else if (action === Action.REPAY) {
+      if (obligation.minPriceBorrowLimitUsd.eq(0)) return undefined;
+
+      const depositedAmountUsd = obligation.depositedAmountUsd;
+      const weightedBorrowsUsd = obligation.weightedBorrowsUsd.minus(
+        value
+          .times(reserve.price)
+          .times(reserve.config.borrowWeightBps.div(10000)),
+      );
+      const maxPriceWeightedBorrowsUsd =
+        obligation.maxPriceWeightedBorrowsUsd.minus(
+          value
+            .times(reserve.maxPrice)
+            .times(reserve.config.borrowWeightBps.div(10000)),
+        );
+      const minPriceBorrowLimitUsd = obligation.minPriceBorrowLimitUsd;
+      const unhealthyBorrowValueUsd = obligation.unhealthyBorrowValueUsd;
+      const weightedConservativeBorrowUtilizationPercent =
+        maxPriceWeightedBorrowsUsd.div(minPriceBorrowLimitUsd).times(100);
+
+      return {
+        depositedAmountUsd,
+        weightedBorrowsUsd,
+        maxPriceWeightedBorrowsUsd,
+        minPriceBorrowLimitUsd,
+        unhealthyBorrowValueUsd,
+        weightedConservativeBorrowUtilizationPercent: BigNumber.max(
+          BigNumber.min(100, weightedConservativeBorrowUtilizationPercent),
+          0,
+        ),
+      };
+    }
+  };
+
 export const getSubmitButtonNoValueState =
   (
     action: Action,
@@ -274,7 +411,7 @@ export const getSubmitButtonNoValueState =
         return {
           isDisabled: true,
           title: "Max 5 deposit positions",
-          description: "Cannot have more than 5 unique deposits at a time",
+          description: "Cannot deposit more than 5 different assets at once",
         };
       return undefined;
     } else if (action === Action.BORROW) {
@@ -302,7 +439,7 @@ export const getSubmitButtonNoValueState =
         return {
           isDisabled: true,
           title: "Max 5 borrow positions",
-          description: "Cannot have more than 5 unique borrows at a time",
+          description: "Cannot borrow more than 5 different assets at once",
         };
 
       // Isolated
@@ -332,7 +469,7 @@ export const getSubmitButtonState =
     data: AppData,
     obligation?: ParsedObligation,
   ) =>
-  (value: string): SubmitButtonState | undefined => {
+  (value: BigNumber): SubmitButtonState | undefined => {
     const maxCalculations = getMaxCalculations(
       action,
       reserve,
@@ -342,7 +479,7 @@ export const getSubmitButtonState =
     );
 
     for (const calc of maxCalculations) {
-      if (new BigNumber(value).gt(calc.value))
+      if (value.gt(calc.value))
         return { isDisabled: calc.isDisabled, title: calc.reason };
     }
     return undefined;

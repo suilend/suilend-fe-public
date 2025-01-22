@@ -406,7 +406,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                   {allocation.totalAllocationBreakdown.map((breakdown) => (
                     <LabelWithValue
                       key={breakdown.title}
-                      labelClassName="text-sm pl-1 items-center gap-2"
+                      labelClassName="text-sm pl-1 gap-2"
                       labelStartDecorator={
                         <div className="h-1 w-1 rounded-[50%] bg-muted" />
                       }
