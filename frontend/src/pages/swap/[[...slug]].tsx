@@ -1297,7 +1297,7 @@ function Page() {
           </div>
 
           {/* Submit & swap and deposit */}
-          <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full flex-col gap-0.5">
             {/* Submit */}
             <Button
               className="h-auto min-h-14 w-full"
@@ -1320,7 +1320,7 @@ function Page() {
 
             {/* Swap and deposit */}
             {hasTokenOutReserve && (
-              <div className="flex w-full flex-col gap-4 rounded-md bg-secondary/10 p-4">
+              <div className="flex w-full flex-col gap-4 rounded-md border border-secondary/25 p-4">
                 {/* Parameters */}
                 <div className="flex w-full flex-col gap-3">
                   <LabelWithValue
@@ -1336,26 +1336,27 @@ function Page() {
                     horizontal
                     value="0"
                   />
-                  <YourBorrowLimitlabel
-                    obligation={obligation}
-                    newObligation={newObligation}
-                  />
-                  <YourUtilizationLabel
-                    obligation={obligation}
-                    newObligation={newObligation}
-                  />
+                  {obligation && (
+                    <YourUtilizationLabel
+                      obligation={obligation}
+                      newObligation={newObligation}
+                    />
+                  )}
                 </div>
 
                 {/* Submit */}
                 <div className="flex w-full flex-col gap-3">
                   <Button
-                    className="h-auto min-h-12 w-full"
-                    labelClassName={cn(
-                      "uppercase text-wrap",
-                      swapAndDepositButtonState.description && "text-xs",
+                    className={cn(
+                      "w-full",
+                      swapAndDepositButtonState.description &&
+                        "h-auto min-h-12",
                     )}
+                    labelClassName="uppercase text-wrap text-xs"
                     variant="secondary"
-                    size="lg"
+                    size={
+                      swapAndDepositButtonState.description ? "lg" : undefined
+                    }
                     disabled={swapAndDepositButtonState.isDisabled}
                     onClick={
                       swapAndDepositButtonState.isDisabled

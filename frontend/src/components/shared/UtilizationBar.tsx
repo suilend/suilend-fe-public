@@ -302,7 +302,12 @@ export default function UtilizationBar({
         )
       }
     >
-      <div className="-mb-[3px] border-b border-dotted border-b-muted/40 pb-[2px]">
+      <div
+        className={cn(
+          !noTooltip &&
+            "-mb-[3px] border-b border-dotted border-b-muted/40 pb-[2px]",
+        )}
+      >
         <div className="relative flex h-3 w-full flex-row">
           {segments.map((segment, index) => (
             <Segment key={index} {...segment} />
