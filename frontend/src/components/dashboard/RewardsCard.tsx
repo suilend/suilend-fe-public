@@ -194,10 +194,12 @@ export default function RewardsCard() {
               <TotalPointsStat
                 season={season}
                 amount={pointsStats.totalPoints.total}
+                isCentered
               />
               <PointsPerDayStat
                 season={season}
                 amount={pointsStats.pointsPerDay.total}
+                isCentered
               />
               <RankStat
                 season={season}

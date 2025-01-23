@@ -28,7 +28,6 @@ import UtilizationBar, {
   getWeightedBorrowsUsd,
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatPercent, formatUsd } from "@/lib/format";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
@@ -117,8 +116,6 @@ function AccountPositionCardContent() {
 
       {obligation.positionCount > 0 && (
         <>
-          <Separator />
-
           <div className="flex flex-row justify-between gap-2">
             <div className="flex flex-col gap-1">
               <WeightedBorrowsTitle />
@@ -133,35 +130,34 @@ function AccountPositionCardContent() {
               </Tooltip>
             </div>
 
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-center gap-1">
               <BorrowLimitTitle />
               <Tooltip
                 title={formatUsd(obligation.minPriceBorrowLimitUsd, {
                   exact: true,
                 })}
               >
-                <TBody className="w-max text-right">
+                <TBody className="w-max text-center">
                   {formatUsd(obligation.minPriceBorrowLimitUsd)}
+                </TBody>
+              </Tooltip>
+            </div>
+
+            <div className="flex flex-col items-end gap-1">
+              <LiquidationThresholdTitle />
+              <Tooltip
+                title={formatUsd(obligation.unhealthyBorrowValueUsd, {
+                  exact: true,
+                })}
+              >
+                <TBody className="w-max text-right">
+                  {formatUsd(obligation.unhealthyBorrowValueUsd)}
                 </TBody>
               </Tooltip>
             </div>
           </div>
 
           <UtilizationBar />
-
-          <div className="flex flex-row items-center justify-between gap-2">
-            <LiquidationThresholdTitle />
-            <Tooltip
-              title={formatUsd(obligation.unhealthyBorrowValueUsd, {
-                exact: true,
-              })}
-            >
-              <TBody className="w-max text-right">
-                {formatUsd(obligation.unhealthyBorrowValueUsd)}
-              </TBody>
-            </Tooltip>
-          </div>
-
           <AccountBreakdown />
         </>
       )}
