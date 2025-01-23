@@ -1297,10 +1297,13 @@ function Page() {
           </div>
 
           {/* Submit & swap and deposit */}
-          <div className="flex w-full flex-col gap-0.5">
+          <div className="flex w-full flex-col gap-px">
             {/* Submit */}
             <Button
-              className="h-auto min-h-14 w-full"
+              className={cn(
+                "h-auto min-h-14 w-full",
+                hasTokenOutReserve && "rounded-b-none",
+              )}
               labelClassName="text-wrap uppercase"
               size="lg"
               disabled={swapButtonState.isDisabled}
@@ -1320,71 +1323,39 @@ function Page() {
 
             {/* Swap and deposit */}
             {hasTokenOutReserve && (
-              <div className="flex w-full flex-col gap-4 rounded-md border border-secondary/25 p-4">
-                {/* Parameters */}
-                <div className="flex w-full flex-col gap-3">
-                  <LabelWithValue
-                    label="Deposit APR"
-                    customChild={
-                      <AprWithRewardsBreakdown
-                        side={Side.DEPOSIT}
-                        reserve={tokenOutReserve}
-                        action={Action.DEPOSIT}
-                        changeAmount={quoteAmountOut}
-                      />
-                    }
-                    horizontal
-                    value="0"
-                  />
-                  {obligation && (
-                    <YourUtilizationLabel
-                      obligation={obligation}
-                      newObligation={newObligation}
-                    />
+              <div className="flex w-full flex-col gap-2">
+                <Button
+                  className="h-auto min-h-8 w-full rounded-t-none py-1"
+                  labelClassName="uppercase text-wrap text-xs"
+                  variant="secondary"
+                  disabled={swapAndDepositButtonState.isDisabled}
+                  onClick={
+                    swapAndDepositButtonState.isDisabled
+                      ? undefined
+                      : () => onSwapClick(true)
+                  }
+                >
+                  {swapAndDepositButtonState.isLoading ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    swapAndDepositButtonState.title
                   )}
-                </div>
+                  {swapAndDepositButtonState.description && (
+                    <span className="block font-sans text-xs normal-case">
+                      {swapAndDepositButtonState.description}
+                    </span>
+                  )}
+                </Button>
 
-                {/* Submit */}
-                <div className="flex w-full flex-col gap-3">
-                  <Button
-                    className={cn(
-                      "w-full",
-                      swapAndDepositButtonState.description &&
-                        "h-auto min-h-12",
-                    )}
-                    labelClassName="uppercase text-wrap text-xs"
-                    variant="secondary"
-                    size={
-                      swapAndDepositButtonState.description ? "lg" : undefined
-                    }
-                    disabled={swapAndDepositButtonState.isDisabled}
-                    onClick={
-                      swapAndDepositButtonState.isDisabled
-                        ? undefined
-                        : () => onSwapClick(true)
-                    }
+                {(swapAndDepositWarningMessages ?? []).map((warningMessage) => (
+                  <TLabelSans
+                    key={warningMessage}
+                    className="text-[10px] text-warning"
                   >
-                    {swapAndDepositButtonState.isLoading ? (
-                      <Spinner size="md" />
-                    ) : (
-                      swapAndDepositButtonState.title
-                    )}
-                    {swapAndDepositButtonState.description && (
-                      <span className="block font-sans text-xs normal-case">
-                        {swapAndDepositButtonState.description}
-                      </span>
-                    )}
-                  </Button>
-
-                  {(swapAndDepositWarningMessages ?? []).map(
-                    (warningMessage) => (
-                      <TLabelSans key={warningMessage} className="text-warning">
-                        <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                        {warningMessage}
-                      </TLabelSans>
-                    ),
-                  )}
-                </div>
+                    <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                    {warningMessage}
+                  </TLabelSans>
+                ))}
               </div>
             )}
           </div>

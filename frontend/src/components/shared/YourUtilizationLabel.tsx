@@ -30,7 +30,7 @@ export default function YourUtilizationLabel({
                   obligation.weightedConservativeBorrowUtilizationPercent,
                 )}
               </TBody>
-              <div className="w-[35px] md:w-[60px]">
+              <div className="w-[35px] md:w-[50px]">
                 <UtilizationBar
                   thresholdClassName="w-0.5"
                   obligation={obligation}
@@ -47,7 +47,7 @@ export default function YourUtilizationLabel({
                       newObligation.weightedConservativeBorrowUtilizationPercent,
                     )}
                   </TBody>
-                  <div className="w-[35px] md:w-[60px]">
+                  <div className="w-[35px] md:w-[50px]">
                     <UtilizationBar
                       thresholdClassName="w-0.5"
                       obligation={newObligation}
