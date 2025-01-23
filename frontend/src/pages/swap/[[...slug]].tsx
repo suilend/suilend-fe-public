@@ -1325,7 +1325,7 @@ function Page() {
             {hasTokenOutReserve && (
               <div className="flex w-full flex-col gap-2">
                 <Button
-                  className="h-auto min-h-8 w-full rounded-t-none py-1"
+                  className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
                   labelClassName="uppercase text-wrap text-xs"
                   variant="secondary"
                   disabled={swapAndDepositButtonState.isDisabled}
