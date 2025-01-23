@@ -474,6 +474,13 @@ export class SuilendClient {
   ) {
     const mergeCoinsMap: Record<string, any[]> = {};
     for (const reward of rewards) {
+      if (isDepositing) {
+        const depositReserveArrayIndex = this.findReserveArrayIndex(
+          reward.rewardCoinType,
+        );
+        if (Number(depositReserveArrayIndex) === -1) continue;
+      }
+
       const [claimedCoin] = this.claimReward(
         obligationOwnerCapId,
         reward.reserveArrayIndex,
@@ -494,20 +501,17 @@ export class SuilendClient {
         transaction.mergeCoins(mergeCoin, coins.slice(1));
       }
 
-      const depositReserveArrayIndex =
-        this.findReserveArrayIndex(rewardCoinType);
-
-      if (!isDepositing || Number(depositReserveArrayIndex) === -1) {
-        transaction.transferObjects(
-          [mergeCoin],
-          transaction.pure.address(ownerId),
-        );
-      } else {
+      if (isDepositing) {
         this.deposit(
           mergeCoin,
           rewardCoinType,
           obligationOwnerCapId,
           transaction,
+        );
+      } else {
+        transaction.transferObjects(
+          [mergeCoin],
+          transaction.pure.address(ownerId),
         );
       }
     }
