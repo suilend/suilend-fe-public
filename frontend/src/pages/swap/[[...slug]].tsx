@@ -46,16 +46,14 @@ import {
 import {
   WAD,
   createObligationIfNoneExists,
-  getFilteredRewards,
-  getStakingYieldAprPercent,
-  getTotalAprPercent,
   maxU64,
   sendObligationToUser,
 } from "@suilend/sdk";
-import { Action, Side } from "@suilend/sdk/lib/types";
+import { Action } from "@suilend/sdk/lib/types";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
+import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
@@ -76,7 +74,7 @@ import {
 } from "@/contexts/SwapContext";
 import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
-  getNewBorrowUtilizationCalculations,
+  getMaxValue,
   getSubmitButtonNoValueState,
   getSubmitButtonState,
   getSubmitWarningMessages,
@@ -110,8 +108,14 @@ function Page() {
     obligationOwnerCap,
   } = useLoadedAppContext();
 
-  const { tokens, setTokenSymbol, reverseTokenSymbols, ...restSwapContext } =
-    useSwapContext();
+  const {
+    isUsingDeposits,
+    setIsUsingDeposits,
+    tokens,
+    setTokenSymbol,
+    reverseTokenSymbols,
+    ...restSwapContext
+  } = useSwapContext();
   const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
   const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
@@ -142,36 +146,24 @@ function Page() {
   const tokenOutDepositPositionAmount =
     tokenOutDepositPosition?.depositedAmount ?? new BigNumber(0);
 
-  // Deposit
-  const tokenOutStakingYieldAprPercent = tokenOutReserve
-    ? getStakingYieldAprPercent(
-        Side.DEPOSIT,
-        tokenOutReserve,
-        data.lstAprPercentMap,
-      )
-    : undefined;
-  const tokenOutReserveDepositAprPercent = tokenOutReserve
-    ? getTotalAprPercent(
-        Side.DEPOSIT,
-        tokenOutReserve.depositAprPercent,
-        getFilteredRewards(data.rewardMap[tokenOutReserve.coinType].deposit),
-        tokenOutStakingYieldAprPercent,
-      )
-    : undefined;
-
-  const hasTokenOutReserve =
-    !!tokenOutReserve && tokenOutReserveDepositAprPercent !== undefined;
-
   // Max
   const tokenInMaxCalculations = (() => {
     const result = [
       {
         reason: `Insufficient ${tokenIn.symbol}`,
         isDisabled: true,
-        value: tokenInBalance,
+        value: isUsingDeposits
+          ? getMaxValue(
+              Action.WITHDRAW,
+              tokenInReserve!,
+              tokenInDepositPositionAmount,
+              data,
+              obligation,
+            )()
+          : tokenInBalance,
       },
     ];
-    if (isSui(tokenIn.coinType))
+    if (isSui(tokenIn.coinType) && !isUsingDeposits)
       result.push({
         reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
         isDisabled: true,
@@ -543,19 +535,6 @@ function Page() {
     inputRef.current?.focus();
   };
 
-  // Utilization
-  const newObligation =
-    obligation && tokenOutReserve && quoteAmountOut
-      ? {
-          ...obligation,
-          ...(getNewBorrowUtilizationCalculations(
-            Action.DEPOSIT,
-            tokenOutReserve,
-            obligation,
-          )(quoteAmountOut) ?? {}),
-        }
-      : undefined;
-
   // USD prices - historical
   const [historicalUsdPricesMap, setHistoricalUsdPriceMap] = useState<
     Record<string, HistoricalUsdPriceData[]>
@@ -857,7 +836,7 @@ function Page() {
 
   // Swap and deposit
   const swapAndDepositButtonState: SubmitButtonState = (() => {
-    if (!hasTokenOutReserve)
+    if (!tokenOutReserve)
       return { isDisabled: true, title: "Cannot deposit this token" };
 
     if (isSwappingAndDepositing) return { isDisabled: true, isLoading: true };
@@ -982,13 +961,9 @@ function Page() {
     } else throw new Error("Unknown quote type");
   };
 
-  const swap = async (deposit?: boolean) => {
+  const swap = async (isDepositing: boolean) => {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
-    if (deposit && !hasTokenOutReserve)
-      throw new Error("Cannot deposit this token");
-
-    const isDepositing = !!(deposit && hasTokenOutReserve);
 
     let transaction: Transaction;
     try {
@@ -998,6 +973,7 @@ function Page() {
       transaction.setGasBudget(SUI_GAS_MIN * 10 ** SUI_DECIMALS);
 
       if (isDepositing) {
+        if (!tokenOutReserve) throw new Error("Cannot deposit this token");
         if (!outputCoin) throw new Error("Missing coin to deposit");
 
         const { obligationOwnerCapId, didCreate } =
@@ -1027,18 +1003,18 @@ function Page() {
     return res;
   };
 
-  const onSwapClick = async (deposit?: boolean) => {
-    if (deposit) {
+  const onSwapClick = async (isDepositing: boolean) => {
+    if (isDepositing) {
       if (swapAndDepositButtonState.isDisabled) return;
     } else {
       if (swapButtonState.isDisabled) return;
     }
     if (quoteAmountOut === undefined || isFetchingQuotes) return;
 
-    (deposit ? setIsSwappingAndDepositing : setIsSwapping)(true);
+    (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(true);
 
     try {
-      const res = await swap(deposit);
+      const res = await swap(isDepositing);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChangeIn = getBalanceChange(
@@ -1057,7 +1033,7 @@ function Page() {
         description: "",
       });
       const balanceChangeOutFormatted = formatToken(
-        !deposit && balanceChangeOut !== undefined
+        !isDepositing && balanceChangeOut !== undefined
           ? balanceChangeOut
           : quoteAmountOut, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
         { dp: tokenOut.decimals, trimTrailingZeros: true },
@@ -1066,7 +1042,7 @@ function Page() {
       toast.success(
         `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
         {
-          description: deposit
+          description: isDepositing
             ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`
             : undefined,
           icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
@@ -1089,7 +1065,7 @@ function Page() {
           tokenOut.decimals,
           BigNumber.ROUND_DOWN,
         ),
-        deposit: deposit ? "true" : "false",
+        deposit: isDepositing ? "true" : "false",
       };
       if (tokenInUsdValue !== undefined)
         properties.amountInUsd = tokenInUsdValue.toFixed(
@@ -1104,12 +1080,12 @@ function Page() {
 
       track("swap_success", properties);
     } catch (err) {
-      toast.error(`Failed to ${deposit ? "swap and deposit" : "swap"}`, {
+      toast.error(`Failed to ${isDepositing ? "swap and deposit" : "swap"}`, {
         description: (err as Error)?.message || "An unknown error occurred",
         duration: TX_TOAST_DURATION,
       });
     } finally {
-      (deposit ? setIsSwappingAndDepositing : setIsSwapping)(false);
+      (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(false);
       inputRef.current?.focus();
       await refresh();
     }
@@ -1125,7 +1101,8 @@ function Page() {
         <div className="flex w-full flex-col gap-6">
           <div className="relative flex w-full flex-col gap-4">
             {/* Settings */}
-            <div className="flex flex-row items-center justify-between gap-2">
+            <div className="flex flex-row items-center justify-between gap-4">
+              {/* Left */}
               <Button
                 className="h-7 w-7 rounded-full bg-muted/15 px-0"
                 tooltip="Refresh"
@@ -1136,10 +1113,21 @@ function Page() {
                 Refresh
               </Button>
 
-              <SwapSlippagePopover
-                slippagePercent={slippagePercent}
-                onSlippagePercentChange={formatAndSetSlippagePercent}
-              />
+              {/* Right */}
+              <div className="flex flex-row items-center gap-4">
+                <Switch
+                  id="isUsingDeposits"
+                  label="Use deposits"
+                  horizontal
+                  isChecked={isUsingDeposits}
+                  onToggle={setIsUsingDeposits}
+                />
+
+                <SwapSlippagePopover
+                  slippagePercent={slippagePercent}
+                  onSlippagePercentChange={formatAndSetSlippagePercent}
+                />
+              </div>
             </div>
 
             {/* In */}
@@ -1152,6 +1140,7 @@ function Page() {
                   value={value}
                   onChange={onValueChange}
                   usdValue={tokenInUsdValue}
+                  direction={TokenDirection.IN}
                   token={tokenIn}
                   onSelectToken={(t: SwapToken) =>
                     onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
@@ -1204,6 +1193,7 @@ function Page() {
                   }
                   isValueLoading={isFetchingQuotes}
                   usdValue={tokenOutUsdValue}
+                  direction={TokenDirection.OUT}
                   token={tokenOut}
                   onSelectToken={(t: SwapToken) =>
                     onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
@@ -1211,7 +1201,7 @@ function Page() {
                 />
               </div>
 
-              {hasTokenOutReserve && (
+              {tokenOutReserve && (
                 <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-border px-3 pb-2 pt-4">
                   <div className="flex flex-row items-center gap-2">
                     <TLabelSans>Deposited</TLabelSans>
@@ -1298,12 +1288,12 @@ function Page() {
             <Button
               className={cn(
                 "h-auto min-h-14 w-full",
-                hasTokenOutReserve && "rounded-b-none",
+                tokenOutReserve && "rounded-b-none",
               )}
               labelClassName="text-wrap uppercase"
               size="lg"
               disabled={swapButtonState.isDisabled}
-              onClick={() => onSwapClick()}
+              onClick={() => onSwapClick(false)}
             >
               {swapButtonState.isLoading ? (
                 <Spinner size="md" />
@@ -1318,7 +1308,7 @@ function Page() {
             </Button>
 
             {/* Swap and deposit */}
-            {hasTokenOutReserve && (
+            {tokenOutReserve && (
               <div className="flex w-full flex-col gap-2">
                 <Button
                   className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"

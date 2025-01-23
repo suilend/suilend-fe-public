@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { BadgeCheck, ChevronDown, Search, Wallet } from "lucide-react";
 
 import {
@@ -9,7 +10,6 @@ import {
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
-  NORMALIZED_wUSDT_COINTYPE,
   SUI_COINTYPE,
   isCoinType,
   isSui,
@@ -23,24 +23,36 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useSwapContext } from "@/contexts/SwapContext";
+import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
 import { formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenRowProps {
+  isUsingDeposits: boolean;
   token: SwapToken;
   isSelected: boolean;
   onClick: () => void;
 }
 
-function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
-  const { data, getBalance } = useLoadedAppContext();
+function TokenRow({
+  isUsingDeposits,
+  token,
+  isSelected,
+  onClick,
+}: TokenRowProps) {
+  const { data, getBalance, obligation } = useLoadedAppContext();
 
   const { verifiedCoinTypes } = useSwapContext();
 
   const suilendCoinTypes = Object.keys(data.reserveMap);
   const tokenBalance = getBalance(token.coinType);
+
+  const tokenDepositPosition = obligation?.deposits?.find(
+    (d) => d.coinType === token.coinType,
+  );
+  const tokenDepositedAmount =
+    tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
 
   return (
     <div
@@ -95,15 +107,25 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
 
             {/* Top right */}
             <div className="flex shrink-0 flex-row items-center gap-1.5">
-              <Wallet className="h-3 w-3 text-foreground" />
+              {!isUsingDeposits ? (
+                <Wallet className="h-3 w-3 text-foreground" />
+              ) : (
+                <TLabelSans>Deposited</TLabelSans>
+              )}
+
               <Tooltip
                 title={
-                  tokenBalance.gt(0)
-                    ? `${formatToken(tokenBalance, { dp: token.decimals })} ${token.symbol}`
+                  (!isUsingDeposits ? tokenBalance : tokenDepositedAmount).gt(0)
+                    ? `${formatToken(!isUsingDeposits ? tokenBalance : tokenDepositedAmount, { dp: token.decimals })} ${token.symbol}`
                     : undefined
                 }
               >
-                <TBody>{formatToken(tokenBalance, { exact: false })}</TBody>
+                <TBody>
+                  {formatToken(
+                    !isUsingDeposits ? tokenBalance : tokenDepositedAmount,
+                    { exact: false },
+                  )}
+                </TBody>
               </Tooltip>
             </div>
           </div>
@@ -121,42 +143,39 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
 }
 
 interface TokenSelectionDialogProps {
+  direction: TokenDirection;
   token: SwapToken;
   onSelectToken: (token: SwapToken) => void;
 }
 
 export default function TokenSelectionDialog({
+  direction,
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { getBalance, filteredReserves } = useLoadedAppContext();
+  const { getBalance, obligation, filteredReserves } = useLoadedAppContext();
 
-  const { fetchTokensMetadata, verifiedCoinTypes, ...restSwapContext } =
-    useSwapContext();
+  const {
+    isUsingDeposits: _isUsingDeposits,
+    fetchTokensMetadata,
+    verifiedCoinTypes,
+    ...restSwapContext
+  } = useSwapContext();
   const tokens = restSwapContext.tokens as SwapToken[];
 
   // State
+  const isUsingDeposits = useMemo(
+    () => direction === TokenDirection.IN && _isUsingDeposits,
+    [direction, _isUsingDeposits],
+  );
+
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const onOpenChange = (_isOpen: boolean) => {
     setIsOpen(_isOpen);
   };
 
-  // Tokens
-  const topTokens = useMemo(
-    () =>
-      [
-        NORMALIZED_sSUI_COINTYPE,
-        NORMALIZED_SUI_COINTYPE,
-        NORMALIZED_USDC_COINTYPE,
-        NORMALIZED_suiUSDT_COINTYPE,
-        NORMALIZED_SEND_COINTYPE,
-      ]
-        .map((coinType) => tokens.find((t) => t.coinType === coinType))
-        .filter(Boolean) as SwapToken[],
-    [tokens],
-  );
-
-  const tokensWithBalances = useMemo(() => {
+  // Tokens - categories
+  const balanceTokens = useMemo(() => {
     const sortedTokens = tokens
       .filter((t) => getBalance(t.coinType).gt(0))
       .sort((a, b) => +getBalance(b.coinType) - +getBalance(a.coinType));
@@ -166,6 +185,7 @@ export default function TokenSelectionDialog({
       ...sortedTokens.filter((t) => !verifiedCoinTypes.includes(t.coinType)),
     ];
   }, [tokens, getBalance, verifiedCoinTypes]);
+
   const reserveTokens = useMemo(
     () =>
       filteredReserves
@@ -173,14 +193,44 @@ export default function TokenSelectionDialog({
         .filter(Boolean) as SwapToken[],
     [filteredReserves, tokens],
   );
+
   const otherTokens = useMemo(
     () =>
       tokens.filter(
         (t) =>
-          !tokensWithBalances.find((_t) => _t.coinType === t.coinType) &&
+          !balanceTokens.find((_t) => _t.coinType === t.coinType) &&
           !reserveTokens.find((_t) => _t.coinType === t.coinType),
       ),
-    [tokens, tokensWithBalances, reserveTokens],
+    [tokens, balanceTokens, reserveTokens],
+  );
+
+  const depositTokens = useMemo(() => {
+    return filteredReserves
+      .filter((r) =>
+        obligation?.deposits.find((d) => d.coinType === r.coinType),
+      )
+      .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
+      .filter(Boolean) as SwapToken[];
+  }, [filteredReserves, obligation, tokens]);
+
+  // Tokens - top
+  const topTokens = useMemo(
+    () =>
+      [
+        NORMALIZED_sSUI_COINTYPE,
+        NORMALIZED_SUI_COINTYPE,
+        NORMALIZED_USDC_COINTYPE,
+        NORMALIZED_suiUSDT_COINTYPE,
+        NORMALIZED_SEND_COINTYPE,
+      ]
+        .filter((coinType) =>
+          isUsingDeposits
+            ? depositTokens.find((dt) => dt.coinType === coinType)
+            : true,
+        )
+        .map((coinType) => tokens.find((t) => t.coinType === coinType))
+        .filter(Boolean) as SwapToken[],
+    [isUsingDeposits, depositTokens, tokens],
   );
 
   // Filter
@@ -196,9 +246,9 @@ export default function TokenSelectionDialog({
     [searchString],
   );
 
-  const filteredTokensWithBalances = useMemo(
-    () => filterTokens(tokensWithBalances),
-    [filterTokens, tokensWithBalances],
+  const filteredBalanceTokens = useMemo(
+    () => filterTokens(balanceTokens),
+    [filterTokens, balanceTokens],
   );
   const filteredReserveTokens = useMemo(
     () => filterTokens(reserveTokens),
@@ -209,19 +259,54 @@ export default function TokenSelectionDialog({
     [filterTokens, otherTokens],
   );
 
+  const filteredDepositTokens = useMemo(
+    () => filterTokens(depositTokens),
+    [filterTokens, depositTokens],
+  );
+
   const filteredTokens = useMemo(
-    () => [
-      ...filteredTokensWithBalances,
-      ...filteredReserveTokens,
-      ...filteredOtherTokens,
+    () =>
+      !isUsingDeposits
+        ? [
+            ...filteredBalanceTokens,
+            ...filteredReserveTokens,
+            ...filteredOtherTokens,
+          ]
+        : filteredDepositTokens,
+    [
+      isUsingDeposits,
+      filteredBalanceTokens,
+      filteredReserveTokens,
+      filteredOtherTokens,
+      filteredDepositTokens,
     ],
-    [filteredTokensWithBalances, filteredReserveTokens, filteredOtherTokens],
   );
 
   useEffect(() => {
     if (filteredTokens.length === 0 && isCoinType(searchString))
       fetchTokensMetadata([normalizeStructTag(searchString)]);
   }, [filteredTokens, searchString, fetchTokensMetadata]);
+
+  const filteredTokensMap = useMemo(() => {
+    const result: Record<string, { title: string; tokens: SwapToken[] }> =
+      !isUsingDeposits
+        ? {
+            balance: { title: "Your assets", tokens: filteredBalanceTokens },
+            suilend: { title: "Suilend assets", tokens: filteredReserveTokens },
+            other: { title: "Other known assets", tokens: filteredOtherTokens },
+          }
+        : {
+            deposit: { title: "Your deposits", tokens: filteredDepositTokens },
+          };
+
+    return result;
+  }, [
+    isUsingDeposits,
+    filteredReserveTokens,
+    filteredBalanceTokens,
+    filteredOtherTokens,
+    filteredDepositTokens,
+  ]);
 
   // Select token
   const onTokenClick = (t: SwapToken) => {
@@ -298,20 +383,7 @@ export default function TokenSelectionDialog({
       {/* Tokens */}
       <div className="relative -mx-4 -mb-4 flex flex-col overflow-y-auto">
         {filteredTokens.length > 0 ? (
-          [
-            {
-              title: "Your assets",
-              tokens: filteredTokensWithBalances,
-            },
-            {
-              title: "Suilend assets",
-              tokens: filteredReserveTokens,
-            },
-            {
-              title: "Other known assets",
-              tokens: filteredOtherTokens,
-            },
-          ]
+          Object.values(filteredTokensMap)
             .filter((list) => list.tokens.length > 0)
             .map((list, index) => (
               <Fragment key={index}>
@@ -332,6 +404,7 @@ export default function TokenSelectionDialog({
                   {list.tokens.map((t) => (
                     <TokenRow
                       key={t.coinType}
+                      isUsingDeposits={isUsingDeposits}
                       token={t}
                       isSelected={t.coinType === token.coinType}
                       onClick={() => onTokenClick(t)}
@@ -342,9 +415,13 @@ export default function TokenSelectionDialog({
             ))
         ) : (
           <TLabelSans className="py-4 text-center">
-            {isCoinType(searchString)
-              ? "Fetching token metadata..."
-              : `No tokens matching "${searchString}"`}
+            {searchString
+              ? isCoinType(searchString)
+                ? "Fetching token metadata..."
+                : `No tokens matching "${searchString}"`
+              : !isUsingDeposits
+                ? "No tokens"
+                : "No deposits"}
           </TLabelSans>
         )}
       </div>

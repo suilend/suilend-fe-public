@@ -1,6 +1,8 @@
 import { useRouter } from "next/router";
 import {
+  Dispatch,
   PropsWithChildren,
+  SetStateAction,
   createContext,
   useCallback,
   useContext,
@@ -106,6 +108,8 @@ export enum TokenDirection {
 interface SwapContext {
   aftermathSdk?: AftermathSdk;
   cetusSdk?: CetusSdk;
+  isUsingDeposits: boolean;
+  setIsUsingDeposits: Dispatch<SetStateAction<boolean>>;
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
@@ -118,6 +122,10 @@ interface SwapContext {
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
   cetusSdk: undefined,
+  isUsingDeposits: false,
+  setIsUsingDeposits: () => {
+    throw Error("SwapContextProvider not initialized");
+  },
   tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
@@ -168,6 +176,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     set7kSdkSuiClient(suiClient);
   }, [suiClient]);
+
+  // Use deposits
+  const [isUsingDeposits, setIsUsingDeposits] = useState<boolean>(false);
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
@@ -314,7 +325,19 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       slug[0].split("-")[0] === slug[0].split("-")[1]
     )
       router.replace({ pathname: getSwapUrl() }, undefined, { shallow: true });
-  }, [slug, router]);
+    else {
+      if (
+        tokenIn?.coinType &&
+        !data.reserveCoinTypes.includes(tokenIn.coinType)
+      ) {
+        router.replace(
+          { pathname: getSwapUrl(undefined, tokenOutSymbol) },
+          undefined,
+          { shallow: true },
+        );
+      }
+    }
+  }, [slug, router, tokenIn?.coinType, data.reserveCoinTypes, tokenOutSymbol]);
 
   const setTokenSymbol = useCallback(
     (newTokenSymbol: string, direction: TokenDirection) => {
@@ -349,6 +372,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     () => ({
       aftermathSdk,
       cetusSdk,
+      isUsingDeposits,
+      setIsUsingDeposits,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -360,6 +385,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     [
       aftermathSdk,
       cetusSdk,
+      isUsingDeposits,
+      setIsUsingDeposits,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,

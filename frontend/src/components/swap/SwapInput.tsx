@@ -4,12 +4,11 @@ import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
-
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { TokenDirection } from "@/contexts/SwapContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +24,7 @@ interface SwapInputProps {
   isValueLoading?: boolean;
   onChange?: (value: string) => void;
   usdValue?: BigNumber;
+  direction: TokenDirection;
   token: SwapToken;
   onSelectToken: (token: SwapToken) => void;
   onBalanceClick?: () => void;
@@ -39,6 +39,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       isValueLoading,
       onChange,
       usdValue,
+      direction,
       token,
       onSelectToken,
       onBalanceClick,
@@ -46,8 +47,6 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     ref,
   ) => {
     const { getBalance } = useLoadedAppContext();
-
-    const isTouchscreen = useIsTouchscreen();
 
     const tokenBalance = getBalance(token.coinType);
 
@@ -113,6 +112,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               style={{ top: `${INPUT_PADDING_Y}px` }}
             >
               <TokenSelectionDialog
+                direction={direction}
                 token={token}
                 onSelectToken={onSelectToken}
               />
