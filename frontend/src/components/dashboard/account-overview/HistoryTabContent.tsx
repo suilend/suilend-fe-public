@@ -129,23 +129,26 @@ export default function HistoryTabContent({
           const { eventType, event } = row.original;
 
           if (
-            [
-              EventType.DEPOSIT,
-              EventType.BORROW,
-              EventType.WITHDRAW,
-              EventType.REPAY,
-            ].includes(eventType)
+            [EventType.BORROW, EventType.WITHDRAW, EventType.REPAY].includes(
+              eventType,
+            )
           ) {
             return value.includes(
-              (
-                event as
-                  | ApiDepositEvent
-                  | ApiBorrowEvent
-                  | ApiWithdrawEvent
-                  | ApiRepayEvent
-                  | ApiClaimRewardEvent
-              ).coinType,
+              (event as ApiBorrowEvent | ApiWithdrawEvent | ApiRepayEvent)
+                .coinType,
             );
+          } else if (eventType === EventType.DEPOSIT) {
+            if (row.subRows.length > 0) {
+              const coinTypes = row.subRows.reduce(
+                (acc, subRow) => [
+                  ...acc,
+                  (subRow.original.event as ApiDepositEvent).coinType,
+                ],
+                [] as string[],
+              );
+
+              return coinTypes.some((coinType) => value.includes(coinType));
+            } else return true;
           } else if (eventType === EventType.LIQUIDATE) {
             const liquidateEvent = event as ApiLiquidateEvent;
 
@@ -184,30 +187,51 @@ export default function HistoryTabContent({
           const { eventType, event } = row.original;
 
           if (eventType === EventType.DEPOSIT) {
-            const depositEvent = event as ApiDepositEvent;
-            const coinMetadata = data.coinMetadataMap[depositEvent.coinType];
+            const depositedAmountMap: Record<string, BigNumber> = {};
 
-            const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-              (e) => e.digest === depositEvent.digest,
-            );
+            for (const subRow of row.subRows) {
+              const subRowDepositEvent = subRow.original
+                .event as ApiDepositEvent;
+              const coinMetadata =
+                data.coinMetadataMap[subRowDepositEvent.coinType];
 
-            let amount;
-            if (reserveAssetDataEvent) {
-              amount = new BigNumber(depositEvent.ctokenAmount)
-                .times(getCtokenExchangeRate(reserveAssetDataEvent))
-                .div(10 ** coinMetadata.decimals);
+              const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
+                (e) =>
+                  e.digest === subRowDepositEvent.digest &&
+                  e.coinType === subRowDepositEvent.coinType,
+              );
+              if (!reserveAssetDataEvent)
+                return <TLabelSans className="w-max">N/A</TLabelSans>;
+
+              depositedAmountMap[subRowDepositEvent.coinType] = (
+                depositedAmountMap[subRowDepositEvent.coinType] ??
+                new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowDepositEvent.ctokenAmount)
+                  .times(getCtokenExchangeRate(reserveAssetDataEvent))
+                  .div(10 ** coinMetadata.decimals),
+              );
             }
 
             return (
-              <TokenAmount
-                amount={amount}
-                token={{
-                  coinType: depositEvent.coinType,
-                  symbol: coinMetadata.symbol,
-                  iconUrl: coinMetadata.iconUrl,
-                }}
-                decimals={coinMetadata.decimals}
-              />
+              <div className="flex w-max flex-col gap-1">
+                {Object.entries(depositedAmountMap).map(([coinType, value]) => {
+                  const coinMetadata = data.coinMetadataMap[coinType];
+
+                  return (
+                    <TokenAmount
+                      key={coinType}
+                      amount={value}
+                      token={{
+                        coinType,
+                        symbol: coinMetadata.symbol,
+                        iconUrl: coinMetadata.iconUrl,
+                      }}
+                      decimals={coinMetadata.decimals}
+                    />
+                  );
+                })}
+              </div>
             );
           } else if (eventType === EventType.BORROW) {
             const borrowEvent = event as ApiBorrowEvent;
@@ -244,15 +268,16 @@ export default function HistoryTabContent({
             const coinMetadata = data.coinMetadataMap[withdrawEvent.coinType];
 
             const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-              (e) => e.digest === withdrawEvent.digest,
+              (e) =>
+                e.digest === withdrawEvent.digest &&
+                e.coinType === withdrawEvent.coinType,
             );
+            if (!reserveAssetDataEvent)
+              return <TLabelSans className="w-max">N/A</TLabelSans>;
 
-            let amount;
-            if (reserveAssetDataEvent) {
-              amount = new BigNumber(withdrawEvent.ctokenAmount)
-                .times(getCtokenExchangeRate(reserveAssetDataEvent))
-                .div(10 ** coinMetadata.decimals);
-            }
+            const amount = new BigNumber(withdrawEvent.ctokenAmount)
+              .times(getCtokenExchangeRate(reserveAssetDataEvent))
+              .div(10 ** coinMetadata.decimals);
 
             return (
               <TokenAmount
@@ -312,7 +337,9 @@ export default function HistoryTabContent({
                 .event as ApiLiquidateEvent;
 
               const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-                (e) => e.digest === subRowLiquidateEvent.digest,
+                (e) =>
+                  e.digest === subRowLiquidateEvent.digest &&
+                  e.coinType === withdrawReserve.coinType,
               );
               if (!reserveAssetDataEvent)
                 return <TLabelSans className="w-max">N/A</TLabelSans>;
@@ -577,17 +604,17 @@ export default function HistoryTabContent({
       const row = sortedRows[i];
 
       switch (row.eventType) {
-        // Group CLAIM_REWARD events
-        case EventType.CLAIM_REWARD: {
-          const claimRewardEvent = row.event as ApiClaimRewardEvent;
+        // Group DEPOSIT events by digest
+        case EventType.DEPOSIT: {
+          const depositEvent = row.event as ApiDepositEvent;
 
           const lastRow = finalRows[finalRows.length - 1];
-          if (!lastRow || lastRow.eventType !== EventType.CLAIM_REWARD)
+          if (!lastRow || lastRow.eventType !== EventType.DEPOSIT)
             finalRows.push({ ...row, subRows: [row] });
           else {
-            const lastClaimRewardEvent = lastRow.event as ApiClaimRewardEvent;
+            const lastDepositEvent = lastRow.event as ApiDepositEvent;
 
-            if (lastClaimRewardEvent.digest !== claimRewardEvent.digest) {
+            if (lastDepositEvent.digest !== depositEvent.digest) {
               finalRows.push({ ...row, subRows: [row] });
             } else {
               (lastRow.subRows as RowData[]).push(row);
@@ -597,7 +624,7 @@ export default function HistoryTabContent({
           break;
         }
 
-        // Group LIQUIDATE events
+        // Group LIQUIDATE events by repayReserveId and withdrawReserveId
         case EventType.LIQUIDATE: {
           const liquidateEvent = row.event as ApiLiquidateEvent;
 
@@ -615,6 +642,26 @@ export default function HistoryTabContent({
             )
               finalRows.push({ ...row, subRows: [row] });
             else (lastRow.subRows as RowData[]).push(row);
+          }
+
+          break;
+        }
+
+        // Group CLAIM_REWARD events by digest
+        case EventType.CLAIM_REWARD: {
+          const claimRewardEvent = row.event as ApiClaimRewardEvent;
+
+          const lastRow = finalRows[finalRows.length - 1];
+          if (!lastRow || lastRow.eventType !== EventType.CLAIM_REWARD)
+            finalRows.push({ ...row, subRows: [row] });
+          else {
+            const lastClaimRewardEvent = lastRow.event as ApiClaimRewardEvent;
+
+            if (lastClaimRewardEvent.digest !== claimRewardEvent.digest) {
+              finalRows.push({ ...row, subRows: [row] });
+            } else {
+              (lastRow.subRows as RowData[]).push(row);
+            }
           }
 
           break;
@@ -746,6 +793,7 @@ export default function HistoryTabContent({
                 "relative z-[1]",
                 cell &&
                   [
+                    EventType.DEPOSIT,
                     EventType.BORROW,
                     EventType.LIQUIDATE,
                     EventType.CLAIM_REWARD,
