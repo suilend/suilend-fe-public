@@ -13,6 +13,7 @@ export default function TokenLogos({ className, tokens }: TokenLogosProps) {
   const marginLeft =
     className && className.toString().includes("h-4") ? -0.5 : -1;
 
+  if (tokens.length === 0) return null;
   return (
     <div className="relative flex w-max flex-row">
       {tokens.map((token, index) => {

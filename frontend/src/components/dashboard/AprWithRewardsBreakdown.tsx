@@ -93,21 +93,21 @@ const formatAprPercent = (
   showChange && (newValue === undefined || !newValue.eq(value)) ? (
     <>
       {formatPercent(value, { useAccountingSign: true })}
-      {stakingYieldAprPercent ? "*" : ""}
+      {stakingYieldAprPercent && "*"}
       <FromToArrow />
       {newValue === undefined ? (
         "N/A"
       ) : (
         <>
           {formatPercent(newValue, { useAccountingSign: true })}
-          {stakingYieldAprPercent ? "*" : ""}
+          {stakingYieldAprPercent && "*"}
         </>
       )}
     </>
   ) : (
     <>
       {formatPercent(value, { useAccountingSign: true })}
-      {stakingYieldAprPercent ? "*" : ""}
+      {stakingYieldAprPercent && "*"}
     </>
   );
 
@@ -233,12 +233,6 @@ export default function AprWithRewardsBreakdown({
           stakingYieldAprPercent,
         );
 
-  if (filteredRewards.length === 0 && !stakingYieldAprPercent)
-    return (
-      <TBody>
-        {formatAprPercent(showChange, totalAprPercent, newTotalAprPercent)}
-      </TBody>
-    );
   return (
     <div>
       <Tooltip
@@ -247,43 +241,133 @@ export default function AprWithRewardsBreakdown({
           style: { maxWidth: "max-content" },
         }}
         content={
-          <>
-            {filteredRewards.length > 0 && (
-              <TLabelSans>
-                {capitalize(side)} {reserve.symbol}
-                {" and earn "}
-                {perDayRewards.length > 0 && (
-                  <>points{aprRewards.length > 0 && " & "}</>
-                )}
-                {aprRewards.length > 0 && "rewards"}
-              </TLabelSans>
-            )}
+          filteredRewards.length > 0 || stakingYieldAprPercent ? (
+            <>
+              {/* Title */}
+              {filteredRewards.length > 0 && (
+                <TLabelSans>
+                  {capitalize(side)} {reserve.symbol}
+                  {" and earn "}
+                  {[
+                    perDayRewards.length > 0 ? "points" : null,
+                    perDayRewards.length > 0 && aprRewards.length > 0
+                      ? "&"
+                      : null,
+                    aprRewards.length > 0 ? "rewards" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                </TLabelSans>
+              )}
 
-            {perDayRewards.length > 0 && (
+              {/* Points */}
+              {perDayRewards.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <TBodySans>Points</TBodySans>
+
+                  {perDayRewards.map((reward, index) => (
+                    <AprRewardsBreakdownRow
+                      key={index}
+                      isLast={index === perDayRewards.length - 1}
+                      value={
+                        <>
+                          {formatPerDay(
+                            reward.stats.rewardCoinType,
+                            showChange,
+                            reward.stats.perDay,
+                            newPerDayRewards[index].stats.perDay,
+                          )}
+                          <br />
+                          <span className="font-sans text-muted-foreground">
+                            {"Per "}
+                            {reserve.symbol}
+                            {" per day"}
+                          </span>
+                        </>
+                      }
+                    >
+                      <TokenLogo
+                        className="h-4 w-4"
+                        token={{
+                          coinType: reward.stats.rewardCoinType,
+                          symbol: reward.stats.symbol,
+                          iconUrl: reward.stats.iconUrl,
+                        }}
+                      />
+                      <TLabelSans>{reward.stats.symbol}</TLabelSans>
+                    </AprRewardsBreakdownRow>
+                  ))}
+                </div>
+              )}
+
+              {/* APR */}
               <div className="flex flex-col gap-2">
-                <TBodySans>Points</TBodySans>
+                {/* Total APR */}
+                <div className="flex flex-row items-center justify-between gap-4">
+                  <TBodySans>{capitalize(side)} APR</TBodySans>
+                  <TBody>
+                    {formatAprPercent(
+                      showChange,
+                      totalAprPercent,
+                      newTotalAprPercent,
+                    )}
+                  </TBody>
+                </div>
 
-                {perDayRewards.map((reward, index) => (
+                {/* Interest */}
+                <AprRewardsBreakdownRow
+                  isLast={!stakingYieldAprPercent && aprRewards.length === 0}
+                  value={formatAprPercent(
+                    showChange,
+                    aprPercent,
+                    newAprPercent,
+                  )}
+                >
+                  <TLabelSans>Interest</TLabelSans>
+                </AprRewardsBreakdownRow>
+
+                {/* Staking yield */}
+                {stakingYieldAprPercent && (
+                  <AprRewardsBreakdownRow
+                    isLast={aprRewards.length === 0}
+                    value={formatAprPercent(false, stakingYieldAprPercent)}
+                  >
+                    <TLabelSans>Staking yield*</TLabelSans>
+                  </AprRewardsBreakdownRow>
+                )}
+
+                {/* Apr rewards */}
+                {aprRewards.map((reward, index) => (
                   <AprRewardsBreakdownRow
                     key={index}
-                    isLast={index === perDayRewards.length - 1}
+                    isLast={index === aprRewards.length - 1}
                     value={
                       <>
-                        {formatPerDay(
-                          reward.stats.rewardCoinType,
+                        {formatAprPercent(
                           showChange,
-                          reward.stats.perDay,
-                          newPerDayRewards[index].stats.perDay,
+                          reward.stats.aprPercent.times(
+                            side === Side.DEPOSIT ? 1 : -1,
+                          ),
+                          newAprRewards[index].stats.aprPercent !== undefined
+                            ? newAprRewards[index].stats.aprPercent.times(
+                                side === Side.DEPOSIT ? 1 : -1,
+                              )
+                            : undefined,
                         )}
-                        <br />
-                        <span className="font-sans text-muted-foreground">
-                          {"Per "}
-                          {reserve.symbol}
-                          {" per day"}
-                        </span>
+                        {reward.stats.rewardCoinType ===
+                          NORMALIZED_TREATS_COINTYPE && (
+                          <>
+                            <br />
+                            <span className="font-sans text-muted-foreground">
+                              at {formatPrice(reward.stats.price)}/
+                              {reward.stats.symbol}
+                            </span>
+                          </>
+                        )}
                       </>
                     }
                   >
+                    <TLabelSans>Rewards in</TLabelSans>
                     <TokenLogo
                       className="h-4 w-4"
                       token={{
@@ -296,86 +380,11 @@ export default function AprWithRewardsBreakdown({
                   </AprRewardsBreakdownRow>
                 ))}
               </div>
-            )}
-
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-row items-center justify-between gap-4">
-                <TBodySans>{capitalize(side)} APR</TBodySans>
-                <TBody>
-                  {formatAprPercent(
-                    showChange,
-                    totalAprPercent,
-                    newTotalAprPercent,
-                  )}
-                </TBody>
-              </div>
-
-              {/* Interest */}
-              <AprRewardsBreakdownRow
-                isLast={aprRewards.length === 0 && !stakingYieldAprPercent}
-                value={formatAprPercent(showChange, aprPercent, newAprPercent)}
-              >
-                <TLabelSans>Interest</TLabelSans>
-              </AprRewardsBreakdownRow>
-
-              {/* Staking yield */}
-              {stakingYieldAprPercent && (
-                <AprRewardsBreakdownRow
-                  isLast={aprRewards.length === 0}
-                  value={formatAprPercent(false, stakingYieldAprPercent)}
-                >
-                  <TLabelSans>Staking yield*</TLabelSans>
-                </AprRewardsBreakdownRow>
-              )}
-
-              {/* Apr rewards */}
-              {aprRewards.map((reward, index) => (
-                <AprRewardsBreakdownRow
-                  key={index}
-                  isLast={index === aprRewards.length - 1}
-                  value={
-                    <>
-                      {formatAprPercent(
-                        showChange,
-                        reward.stats.aprPercent.times(
-                          side === Side.DEPOSIT ? 1 : -1,
-                        ),
-                        newAprRewards[index].stats.aprPercent !== undefined
-                          ? newAprRewards[index].stats.aprPercent.times(
-                              side === Side.DEPOSIT ? 1 : -1,
-                            )
-                          : undefined,
-                      )}
-                      {reward.stats.rewardCoinType ===
-                        NORMALIZED_TREATS_COINTYPE && (
-                        <>
-                          <br />
-                          <span className="font-sans text-muted-foreground">
-                            at {formatPrice(reward.stats.price)}/
-                            {reward.stats.symbol}
-                          </span>
-                        </>
-                      )}
-                    </>
-                  }
-                >
-                  <TLabelSans>Rewards in</TLabelSans>
-                  <TokenLogo
-                    className="h-4 w-4"
-                    token={{
-                      coinType: reward.stats.rewardCoinType,
-                      symbol: reward.stats.symbol,
-                      iconUrl: reward.stats.iconUrl,
-                    }}
-                  />
-                  <TLabelSans>{reward.stats.symbol}</TLabelSans>
-                </AprRewardsBreakdownRow>
-              ))}
-            </div>
-          </>
+            </>
+          ) : undefined
         }
       >
-        <div className="relative flex flex-row items-center">
+        <div className="relative flex flex-row items-center gap-1.5">
           <TokenLogos
             className="h-4 w-4"
             tokens={[...perDayRewards, ...aprRewards].map((reward) => ({
@@ -387,8 +396,17 @@ export default function AprWithRewardsBreakdown({
 
           <TBody
             className={cn(
-              "ml-1.5 text-primary-foreground decoration-primary-foreground/50",
-              hoverUnderlineClassName,
+              filteredRewards.length > 0
+                ? cn(
+                    "text-primary-foreground decoration-primary-foreground/50",
+                    hoverUnderlineClassName,
+                  )
+                : stakingYieldAprPercent
+                  ? cn(
+                      "text-foreground decoration-foreground/50",
+                      hoverUnderlineClassName,
+                    )
+                  : null,
             )}
           >
             {formatAprPercent(

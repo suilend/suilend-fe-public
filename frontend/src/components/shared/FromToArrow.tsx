@@ -10,7 +10,7 @@ export default function FromToArrow({ className }: FromToArrowProps) {
   return (
     <span
       className={cn(
-        "mx-2 inline-block font-sans text-xs opacity-50",
+        "mx-2 inline-block font-sans text-xs text-muted-foreground",
         className,
       )}
     >
