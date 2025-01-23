@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { CSSProperties, useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
@@ -7,45 +7,43 @@ import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { RewardSummary } from "@suilend/sdk";
 
 import Button from "@/components/shared/Button";
-import Popover from "@/components/shared/Popover";
-import Spinner from "@/components/shared/Spinner";
+import DropdownMenu, {
+  DropdownMenuItem,
+} from "@/components/shared/DropdownMenu";
 import TextLink from "@/components/shared/TextLink";
+import TokenLogos from "@/components/shared/TokenLogos";
+import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
+import { Token } from "@/lib/types";
 
-interface ClaimRewardsPopoverProps {
+interface ClaimRewardsDropdownMenuProps {
   rewardsMap: Record<string, RewardSummary[]>;
 }
 
-export default function ClaimRewardsPopover({
+export default function ClaimRewardsDropdownMenu({
   rewardsMap,
-}: ClaimRewardsPopoverProps) {
+}: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { refresh } = useLoadedAppContext();
+  const { data, refresh } = useLoadedAppContext();
   const { claimRewards } = useDashboardContext();
+
+  const tokens: Token[] = Object.values(rewardsMap).map((r) => ({
+    coinType: r[0].stats.rewardCoinType,
+    symbol: r[0].stats.symbol,
+    iconUrl: r[0].stats.iconUrl,
+  }));
+  const tokensWithReserves = tokens.filter((token) =>
+    data.reserveCoinTypes.includes(token.coinType),
+  );
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const Icon = isOpen ? ChevronUp : ChevronDown;
 
   // Claim
-  const [isSubmitting_claim, setIsSubmitting_claim] = useState<boolean>(false);
-  const [isSubmitting_claimAndDeposit, setIsSubmitting_claimAndDeposit] =
-    useState<boolean>(false);
-
   const submit = async (isDepositing: boolean) => {
-    if (isDepositing) {
-      if (isSubmitting_claimAndDeposit) return;
-    } else {
-      if (isSubmitting_claim) return;
-    }
-
-    const setIsSubmitting = isDepositing
-      ? setIsSubmitting_claimAndDeposit
-      : setIsSubmitting_claim;
-    setIsSubmitting(true);
-
     try {
       const res = await claimRewards(rewardsMap, isDepositing);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -70,49 +68,38 @@ export default function ClaimRewardsPopover({
         },
       );
     } finally {
-      setIsSubmitting(false);
       await refresh();
     }
   };
 
   return (
-    <Popover
-      id="claim-rewards"
+    <DropdownMenu
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
         <Button labelClassName="uppercase" endIcon={<Icon />}>
           Claim rewards
         </Button>
       }
-      contentProps={{
-        align: "start",
-        className: "p-0 flex flex-col gap-px",
-        style: {
-          width: "var(--radix-popover-trigger-width)",
-        },
-      }}
-    >
-      <Button
-        className="justify-start text-muted-foreground"
-        labelClassName="text-xs font-sans"
-        variant="ghost"
-        onClick={() => submit(false)}
-      >
-        {isSubmitting_claim ? <Spinner size="sm" /> : "Claim"}
-      </Button>
+      contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
+      items={
+        <>
+          <DropdownMenuItem
+            className="flex flex-row items-center justify-between gap-2"
+            onClick={() => submit(false)}
+          >
+            <TLabelSans>Claim to wallet</TLabelSans>
+            <TokenLogos className="h-4 w-4" tokens={tokens} />
+          </DropdownMenuItem>
 
-      <Button
-        className="justify-start text-muted-foreground"
-        labelClassName="text-xs font-sans"
-        variant="ghost"
-        onClick={() => submit(true)}
-      >
-        {isSubmitting_claimAndDeposit ? (
-          <Spinner size="sm" />
-        ) : (
-          "Claim and deposit"
-        )}
-      </Button>
-    </Popover>
+          <DropdownMenuItem
+            className="flex flex-row items-center justify-between gap-2"
+            onClick={() => submit(true)}
+          >
+            <TLabelSans>Claim and deposit</TLabelSans>
+            <TokenLogos className="h-4 w-4" tokens={tokensWithReserves} />
+          </DropdownMenuItem>
+        </>
+      }
+    />
   );
 }

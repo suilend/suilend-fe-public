@@ -7,7 +7,7 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 import { RewardSummary } from "@suilend/sdk";
 
 import Card from "@/components/dashboard/Card";
-import ClaimRewardsPopover from "@/components/dashboard/ClaimRewardsPopover";
+import ClaimRewardsDropdownMenu from "@/components/dashboard/ClaimRewardsDropdownMenu";
 import PointsPerDayStat from "@/components/points/PointsPerDayStat";
 import RankStat from "@/components/points/RankStat";
 import TotalPointsStat from "@/components/points/TotalPointsStat";
@@ -178,7 +178,7 @@ export default function RewardsCard() {
 
               {hasClaimableRewards && (
                 <div className="flex-1 sm:flex-initial">
-                  <ClaimRewardsPopover rewardsMap={rewardsMap} />
+                  <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
                 </div>
               )}
             </div>
