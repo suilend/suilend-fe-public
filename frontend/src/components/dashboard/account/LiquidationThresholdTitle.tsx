@@ -24,7 +24,7 @@ export default function LiquidationThresholdTitle({
       tooltip={!noTooltip ? LIQUIDATION_THRESHOLD_TOOLTIP : undefined}
       labelEndDecorator={amount && <TLabelSans>{formatUsd(amount)}</TLabelSans>}
     >
-      Liquidation threshold
+      Liq. threshold
     </SectionTitle>
   );
 }
