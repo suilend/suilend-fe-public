@@ -86,8 +86,8 @@ export default function ObligationsDialog() {
               key={"deposit-switch-" + reserve.symbol}
               id={"deposit-switch-" + reserve.symbol}
               label={reserve.symbol}
-              value={depositFilters[reserve.symbol]}
-              onChange={() => {
+              isChecked={depositFilters[reserve.symbol]}
+              onToggle={() => {
                 const newState = { ...depositFilters };
                 newState[reserve.symbol] = !newState[reserve.symbol];
                 setDepositFilters(newState);
@@ -106,8 +106,8 @@ export default function ObligationsDialog() {
               key={"borrow-switch-" + reserve.symbol}
               id={"borrow-switch-" + reserve.symbol}
               label={reserve.symbol}
-              value={borrowFilters[reserve.symbol]}
-              onChange={() => {
+              isChecked={borrowFilters[reserve.symbol]}
+              onToggle={() => {
                 const newState = { ...borrowFilters };
                 newState[reserve.symbol] = !newState[reserve.symbol];
                 setBorrowFilters(newState);

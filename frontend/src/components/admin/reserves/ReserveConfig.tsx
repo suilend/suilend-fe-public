@@ -291,8 +291,8 @@ export default function ReserveConfig({
       <Switch
         label="isolated"
         id="isolated"
-        value={configState.isolated}
-        onChange={setConfigStateKeyValue("isolated")}
+        isChecked={configState.isolated}
+        onToggle={setConfigStateKeyValue("isolated")}
       />
       <Input
         label="openAttributedBorrowLimitUsd"

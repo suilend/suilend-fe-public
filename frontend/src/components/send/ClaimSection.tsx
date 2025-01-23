@@ -33,6 +33,7 @@ import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button, { ButtonProps } from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
+import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -773,7 +774,7 @@ function ClaimTabContent() {
             mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
           ) && (
             <>
-              <div className="flex h-5 w-full flex-row items-center justify-between gap-4">
+              <div className="flex w-full flex-row justify-between gap-4">
                 <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
                   <TBodySans
                     className={cn(
@@ -785,20 +786,11 @@ function ClaimTabContent() {
                   </TBodySans>
                 </Tooltip>
 
-                <div
-                  className={cn(
-                    "group h-[22px] w-[38px] cursor-pointer rounded-[11px] p-px transition-colors",
-                    isFlashLoan ? "bg-primary" : "bg-muted/25",
-                  )}
-                  onClick={() => setIsFlashLoan((is) => !is)}
-                >
-                  <div
-                    className={cn(
-                      "h-5 w-5 rounded-full bg-foreground transition-all",
-                      isFlashLoan && "ml-[16px]",
-                    )}
-                  />
-                </div>
+                <Switch
+                  id="isFlashLoan"
+                  isChecked={isFlashLoan}
+                  onToggle={setIsFlashLoan}
+                />
               </div>
               {isFlashLoan && (
                 <div className="flex flex-col gap-3 rounded-md border p-4">

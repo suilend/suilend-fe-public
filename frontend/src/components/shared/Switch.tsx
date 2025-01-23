@@ -1,30 +1,51 @@
 import { TLabelSans } from "@/components/shared/Typography";
-import { Switch as SwitchComponent } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 export const getSwitchId = (id: string) => `switch.${id}`;
 
 interface SwitchProps {
-  label?: string;
   id: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
+  label?: string;
+  horizontal?: boolean;
+  isChecked: boolean;
+  onToggle: (isChecked: boolean) => void;
 }
 
-export default function Switch({ label, id, value, onChange }: SwitchProps) {
+export default function Switch({
+  id,
+  label,
+  horizontal,
+  isChecked,
+  onToggle,
+}: SwitchProps) {
   const switchId = getSwitchId(id);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div
+      className={cn(
+        "flex cursor-pointer gap-2",
+        horizontal ? "flex-row items-center" : "flex-col",
+      )}
+      onClick={() => onToggle(!isChecked)}
+    >
       {label && (
         <label htmlFor={switchId} className="w-fit">
-          <TLabelSans>{label}</TLabelSans>
+          <TLabelSans className="cursor-pointer">{label}</TLabelSans>
         </label>
       )}
-      <div className="w-full">
-        <SwitchComponent
-          id={switchId}
-          checked={value}
-          onCheckedChange={onChange}
+
+      <div
+        id={switchId}
+        className={cn(
+          "group h-[20px] w-[36px] rounded-[10px] p-px transition-colors",
+          isChecked ? "bg-primary" : "bg-muted/20",
+        )}
+      >
+        <div
+          className={cn(
+            "h-[18px] w-[18px] rounded-full bg-foreground transition-all",
+            isChecked && "ml-[16px]",
+          )}
         />
       </div>
     </div>
