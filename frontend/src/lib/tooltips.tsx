@@ -34,8 +34,9 @@ export const BORROWS_TOOLTIP = "The value of all your borrowed assets.";
 
 export const NET_APR_TOOLTIP = (
   <>
-    If your account is worth $X today, assuming no prices or rates change, in 1
-    year it will be worth $X × (1 + Net APR).
+    {
+      "Assuming prices and rates remain constant, your account will be worth Net APR % more in a year's time."
+    }
     <Separator className="my-2" />
     <span className="text-muted-foreground">
       <Latex>
@@ -60,7 +61,7 @@ export const WEIGHTED_BORROWS_TOOLTIP = (
     The value of all your borrowed assets, adjusted by their borrow weight (BW).
     <Separator className="my-2" />
     <span className="text-muted-foreground">
-      Weighted Borrows = Position × Price × BW
+      Weighted borrows = Position × Price × BW
     </span>
   </>
 );
@@ -71,7 +72,7 @@ export const BORROW_LIMIT_TOOLTIP = (
     assets increases your borrow limit.
     <Separator className="my-2" />
     <span className="text-muted-foreground">
-      Borrow Limit = Position × Price × Open LTV
+      Borrow limit = Position × Price × Open LTV
     </span>
   </>
 );
@@ -83,7 +84,7 @@ export const LIQUIDATION_THRESHOLD_TOOLTIP = (
     liquidation threshold.
     <Separator className="my-2" />
     <span className="text-muted-foreground">
-      Liq. Threshold = Position × Price × Close LTV
+      Liq. threshold = Position × Price × Close LTV
     </span>
   </>
 );
