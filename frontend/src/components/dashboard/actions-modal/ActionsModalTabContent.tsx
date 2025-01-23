@@ -433,6 +433,7 @@ export default function ActionsModalTabContent({
           <YourUtilizationLabel
             obligation={obligation}
             newObligation={newObligation}
+            noUtilizationBar
           />
           {action === Action.BORROW ? (
             <LabelWithValue

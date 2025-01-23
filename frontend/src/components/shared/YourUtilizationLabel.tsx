@@ -9,11 +9,13 @@ import { formatPercent } from "@/lib/format";
 interface YourUtilizationLabelProps {
   obligation?: ParsedObligation;
   newObligation?: ParsedObligation;
+  noUtilizationBar?: boolean;
 }
 
 export default function YourUtilizationLabel({
   obligation,
   newObligation,
+  noUtilizationBar,
 }: YourUtilizationLabelProps) {
   return (
     <LabelWithValue
@@ -30,12 +32,14 @@ export default function YourUtilizationLabel({
                   obligation.weightedConservativeBorrowUtilizationPercent,
                 )}
               </TBody>
-              <div className="w-[35px] md:w-[50px]">
-                <UtilizationBar
-                  thresholdClassName="w-0.5"
-                  obligation={obligation}
-                />
-              </div>
+              {!noUtilizationBar && (
+                <div className="w-[35px] md:w-[50px]">
+                  <UtilizationBar
+                    thresholdClassName="w-0.5"
+                    obligation={obligation}
+                  />
+                </div>
+              )}
             </div>
 
             {newObligation && (
@@ -47,12 +51,14 @@ export default function YourUtilizationLabel({
                       newObligation.weightedConservativeBorrowUtilizationPercent,
                     )}
                   </TBody>
-                  <div className="w-[35px] md:w-[50px]">
-                    <UtilizationBar
-                      thresholdClassName="w-0.5"
-                      obligation={newObligation}
-                    />
-                  </div>
+                  {!noUtilizationBar && (
+                    <div className="w-[35px] md:w-[50px]">
+                      <UtilizationBar
+                        thresholdClassName="w-0.5"
+                        obligation={newObligation}
+                      />
+                    </div>
+                  )}
                 </div>
               </>
             )}

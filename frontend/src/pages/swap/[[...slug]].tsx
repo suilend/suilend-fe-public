@@ -54,15 +54,11 @@ import {
 } from "@suilend/sdk";
 import { Action, Side } from "@suilend/sdk/lib/types";
 
-import AprWithRewardsBreakdown from "@/components/dashboard/AprWithRewardsBreakdown";
 import Button from "@/components/shared/Button";
-import LabelWithValue from "@/components/shared/LabelWithValue";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import YourBorrowLimitlabel from "@/components/shared/YourBorrowLimitLabel";
-import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import RoutingDialog from "@/components/swap/RoutingDialog";
 import SwapInput from "@/components/swap/SwapInput";
 import SwapSlippagePopover, {
