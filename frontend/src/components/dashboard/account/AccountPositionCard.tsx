@@ -2,7 +2,11 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
+import {
+  shallowPushQuery,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 import { getNetAprPercent } from "@suilend/sdk";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
@@ -17,6 +21,7 @@ import {
 import Card from "@/components/dashboard/Card";
 import Button from "@/components/shared/Button";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
+import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar, {
@@ -167,6 +172,7 @@ function AccountPositionCardContent() {
 export default function AccountPositionCard() {
   const router = useRouter();
 
+  const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
   const { obligation } = useLoadedAppContext();
 
@@ -182,6 +188,9 @@ export default function AccountPositionCard() {
       id={address && obligation ? "position" : undefined}
       headerProps={{
         title: "Account",
+        startContent: obligation && (
+          <OpenOnExplorerButton url={explorer.buildObjectUrl(obligation.id)} />
+        ),
         endContent: address && obligation && (
           <>
             <Button
