@@ -91,13 +91,15 @@ export default function ClaimRewardsDropdownMenu({
             <TokenLogos className="h-4 w-4" tokens={tokens} />
           </DropdownMenuItem>
 
-          <DropdownMenuItem
-            className="flex flex-row items-center justify-between gap-2"
-            onClick={() => submit(true)}
-          >
-            <TLabelSans>Claim and deposit</TLabelSans>
-            <TokenLogos className="h-4 w-4" tokens={tokensWithReserves} />
-          </DropdownMenuItem>
+          {tokensWithReserves.length > 0 && (
+            <DropdownMenuItem
+              className="flex flex-row items-center justify-between gap-2"
+              onClick={() => submit(true)}
+            >
+              <TLabelSans>Claim and deposit</TLabelSans>
+              <TokenLogos className="h-4 w-4" tokens={tokensWithReserves} />
+            </DropdownMenuItem>
+          )}
         </>
       }
     />
