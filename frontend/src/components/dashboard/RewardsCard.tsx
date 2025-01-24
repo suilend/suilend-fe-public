@@ -14,14 +14,14 @@ import TotalPointsStat from "@/components/points/TotalPointsStat";
 import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans, TTitle } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { ASSETS_URL } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
-import { cn } from "@/lib/utils";
 
 interface ClaimableRewardProps {
   coinType: string;
@@ -58,22 +58,18 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
 
 interface ClaimableRewardsProps {
   claimableRewardsMap: Record<string, BigNumber>;
-  isCentered?: boolean;
 }
 
-function ClaimableRewards({
-  claimableRewardsMap,
-  isCentered,
-}: ClaimableRewardsProps) {
+function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
   return (
-    <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
-      <TLabelSans className={cn(isCentered && "text-center")}>
-        Claimable rewards
-      </TLabelSans>
+    <div className="flex flex-col gap-1">
+      <TLabelSans>Claimable rewards</TLabelSans>
 
-      {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
-        <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
-      ))}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -147,65 +143,55 @@ export default function RewardsCard() {
       </div>
     </Card>
   ) : (
-    <Card className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]">
-      <div className="rounded-[3px] bg-background p-4">
-        <div className="flex flex-col gap-4">
-          {/* Title */}
-          <div className="flex flex-col gap-1">
-            <TTitle className="uppercase text-primary-foreground">
-              Rewards
-            </TTitle>
-            <TLabelSans>Boost your earnings with bonus rewards.</TLabelSans>
+    <Card
+      id="rewards"
+      headerProps={{
+        title: "Rewards",
+        noSeparator: true,
+      }}
+    >
+      <CardContent className="flex flex-col gap-4">
+        {/* Actions */}
+        <div className="flex flex-row gap-2">
+          <div className="flex-1">
+            <NextLink href={POINTS_URL}>
+              <Button
+                className="w-full border-secondary"
+                labelClassName="uppercase text-primary-foreground"
+                variant="secondaryOutline"
+              >
+                Leaderboard
+              </Button>
+            </NextLink>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-row gap-2">
+          {hasClaimableRewards && (
             <div className="flex-1">
-              <NextLink href={POINTS_URL}>
-                <Button
-                  className="w-full border-secondary"
-                  labelClassName="uppercase text-primary-foreground"
-                  variant="secondaryOutline"
-                >
-                  Leaderboard
-                </Button>
-              </NextLink>
+              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
             </div>
-
-            {hasClaimableRewards && (
-              <div className="flex-1">
-                <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-              </div>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
-            {hasClaimableRewards && (
-              <ClaimableRewards
-                claimableRewardsMap={claimableRewardsMap}
-                isCentered
-              />
-            )}
-            <TotalPointsStat
-              season={season}
-              amount={pointsStats.totalPoints.total}
-              isCentered
-            />
-
-            <PointsPerDayStat
-              season={season}
-              amount={pointsStats.pointsPerDay.total}
-              isCentered
-            />
-            <RankStat
-              season={season}
-              rank={addressRowMap?.[season].rank}
-              isCentered
-            />
-          </div>
+          )}
         </div>
-      </div>
+
+        {hasClaimableRewards && (
+          <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
+        )}
+
+        <div className="flex w-full flex-row justify-between">
+          <RankStat season={season} rank={addressRowMap?.[season].rank} />
+
+          <TotalPointsStat
+            season={season}
+            amount={pointsStats.totalPoints.total}
+            isCentered
+          />
+
+          <PointsPerDayStat
+            season={season}
+            amount={pointsStats.pointsPerDay.total}
+            isRightAligned
+          />
+        </div>
+      </CardContent>
     </Card>
   );
 }
