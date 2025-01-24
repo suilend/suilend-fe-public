@@ -109,10 +109,12 @@ export default function EarningsTabContent({
       const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
         msPerYear / 1000,
       );
-      const annualizedInterestRate = new BigNumber(ctokenExchangeRate)
-        .div(prevCtokenExchangeRate)
-        .minus(1)
-        .div(proportionOfYear);
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : new BigNumber(ctokenExchangeRate)
+            .div(prevCtokenExchangeRate)
+            .minus(1)
+            .div(proportionOfYear);
 
       const prevDepositedAmount = new BigNumber(
         prevDepositedCtokenAmount,
