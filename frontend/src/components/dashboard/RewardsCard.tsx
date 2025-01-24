@@ -15,10 +15,8 @@ import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans, TTitle } from "@/components/shared/Typography";
-import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
-import useBreakpoint from "@/hooks/useBreakpoint";
 import { ASSETS_URL } from "@/lib/constants";
 import { formatToken } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
@@ -85,8 +83,6 @@ export default function RewardsCard() {
   const { data, obligation } = useLoadedAppContext();
   const { season, seasonMap, addressRowMap } = usePointsContext();
 
-  const { md } = useBreakpoint();
-
   // Rewards
   const rewardsMap: Record<string, RewardSummary[]> = {};
   const claimableRewardsMap: Record<string, BigNumber> = {};
@@ -128,19 +124,18 @@ export default function RewardsCard() {
   );
 
   return !address ? (
-    <Card className="bg-background">
-      <div
-        className="flex h-[100px] flex-col items-center justify-center gap-4 sm:h-[110px]"
-        style={{
-          backgroundImage: `url('${ASSETS_URL}/dashboard/rewards-not-connected.png')`,
-          backgroundPosition: "center",
-          backgroundSize: "cover",
-          backgroundRepeat: "no-repeat",
-        }}
-      >
-        <TTitle className="text-center uppercase text-foreground sm:text-[16px]">
+    <Card
+      style={{
+        backgroundImage: `url('${ASSETS_URL}/dashboard/rewards-not-connected.png')`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      <div className="flex flex-col items-center justify-center gap-4 p-4">
+        <TBody className="text-center uppercase text-foreground">
           Start earning SEND Points & rewards
-        </TTitle>
+        </TBody>
 
         <Button
           labelClassName="uppercase"
@@ -155,84 +150,60 @@ export default function RewardsCard() {
     <Card className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]">
       <div className="rounded-[3px] bg-background p-4">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <TTitle className="uppercase text-primary-foreground">
-                Rewards
-              </TTitle>
-              <TLabelSans>Boost your earnings with bonus rewards.</TLabelSans>
-            </div>
-
-            <div className="flex flex-row gap-2">
-              <div className="flex-1 sm:flex-initial">
-                <NextLink href={POINTS_URL}>
-                  <Button
-                    className="w-full border-secondary"
-                    labelClassName="uppercase text-primary-foreground"
-                    variant="secondaryOutline"
-                  >
-                    Leaderboard
-                  </Button>
-                </NextLink>
-              </div>
-
-              {hasClaimableRewards && (
-                <div className="flex-1 sm:flex-initial">
-                  <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-                </div>
-              )}
-            </div>
+          {/* Title */}
+          <div className="flex flex-col gap-1">
+            <TTitle className="uppercase text-primary-foreground">
+              Rewards
+            </TTitle>
+            <TLabelSans>Boost your earnings with bonus rewards.</TLabelSans>
           </div>
 
-          <Separator />
-
-          {md ? (
-            <div className="flex flex-row items-center justify-between gap-4">
-              {hasClaimableRewards && (
-                <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
-              )}
-              <TotalPointsStat
-                season={season}
-                amount={pointsStats.totalPoints.total}
-                isCentered
-              />
-              <PointsPerDayStat
-                season={season}
-                amount={pointsStats.pointsPerDay.total}
-                isCentered
-              />
-              <RankStat
-                season={season}
-                rank={addressRowMap?.[season].rank}
-                isRightAligned
-              />
+          {/* Actions */}
+          <div className="flex flex-row gap-2">
+            <div className="flex-1">
+              <NextLink href={POINTS_URL}>
+                <Button
+                  className="w-full border-secondary"
+                  labelClassName="uppercase text-primary-foreground"
+                  variant="secondaryOutline"
+                >
+                  Leaderboard
+                </Button>
+              </NextLink>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {hasClaimableRewards && (
-                <ClaimableRewards
-                  claimableRewardsMap={claimableRewardsMap}
-                  isCentered
-                />
-              )}
-              <TotalPointsStat
-                season={season}
-                amount={pointsStats.totalPoints.total}
-                isCentered
-              />
 
-              <PointsPerDayStat
-                season={season}
-                amount={pointsStats.pointsPerDay.total}
+            {hasClaimableRewards && (
+              <div className="flex-1">
+                <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+              </div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            {hasClaimableRewards && (
+              <ClaimableRewards
+                claimableRewardsMap={claimableRewardsMap}
                 isCentered
               />
-              <RankStat
-                season={season}
-                rank={addressRowMap?.[season].rank}
-                isCentered
-              />
-            </div>
-          )}
+            )}
+            <TotalPointsStat
+              season={season}
+              amount={pointsStats.totalPoints.total}
+              isCentered
+            />
+
+            <PointsPerDayStat
+              season={season}
+              amount={pointsStats.pointsPerDay.total}
+              isCentered
+            />
+            <RankStat
+              season={season}
+              rank={addressRowMap?.[season].rank}
+              isCentered
+            />
+          </div>
         </div>
       </div>
     </Card>

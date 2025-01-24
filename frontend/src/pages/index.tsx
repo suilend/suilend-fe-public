@@ -19,6 +19,7 @@ function Cards() {
     <>
       <LoopingCard />
       <AccountPositionCard />
+      <RewardsCard />
       <ObligationDepositsCard />
       <ObligationBorrowsCard />
       <WalletAssetsCard />
@@ -47,7 +48,6 @@ export default function Home() {
             </div>
 
             <MarketTable />
-            <RewardsCard />
           </div>
         ) : (
           // Horizontal layout
@@ -58,7 +58,6 @@ export default function Home() {
             >
               <MarketOverview />
               <MarketTable />
-              <RewardsCard />
             </div>
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
               <div className="flex w-full shrink-0 flex-col gap-4">
