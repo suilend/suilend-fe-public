@@ -27,8 +27,14 @@ import {
   Aftermath as AftermathSdk,
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
+import { useLocalStorage } from "usehooks-ts";
 
-import { getCoinMetadataMap, isCoinType } from "@suilend/frontend-sui";
+import {
+  getCoinMetadataMap,
+  getHistoryPrice,
+  getPrice,
+  isCoinType,
+} from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -105,11 +111,26 @@ export enum TokenDirection {
   OUT = "out",
 }
 
+export const HISTORICAL_USD_PRICES_INTERVAL = "5m";
+export const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
+
+type HistoricalUsdPriceData = {
+  timestampS: number;
+  priceUsd: number;
+};
+
 interface SwapContext {
   aftermathSdk?: AftermathSdk;
   cetusSdk?: CetusSdk;
+
+  tokenHistoricalUsdPricesMap: Record<string, HistoricalUsdPriceData[]>;
+  fetchTokenHistoricalUsdPrices: (token: SwapToken) => Promise<void>;
+  tokenUsdPricesMap: Record<string, BigNumber>;
+  fetchTokenUsdPrice: (token: SwapToken) => Promise<void>;
+
   isUsingDeposits: boolean;
   setIsUsingDeposits: Dispatch<SetStateAction<boolean>>;
+
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
@@ -122,10 +143,21 @@ interface SwapContext {
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
   cetusSdk: undefined,
+
+  tokenHistoricalUsdPricesMap: {},
+  fetchTokenHistoricalUsdPrices: async () => {
+    throw Error("SwapContextProvider not initialized");
+  },
+  tokenUsdPricesMap: {},
+  fetchTokenUsdPrice: async () => {
+    throw Error("SwapContextProvider not initialized");
+  },
+
   isUsingDeposits: false,
   setIsUsingDeposits: () => {
     throw Error("SwapContextProvider not initialized");
   },
+
   tokens: undefined,
   fetchTokensMetadata: async () => {
     throw Error("SwapContextProvider not initialized");
@@ -151,17 +183,22 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { data, rawBalancesMap, balancesCoinMetadataMap } =
-    useLoadedAppContext();
+  const {
+    data,
+    rawBalancesMap,
+    balancesCoinMetadataMap,
+    obligation,
+    filteredReserves,
+  } = useLoadedAppContext();
 
-  // Aftermath SDK
+  // SDKs - Aftermath
   const aftermathSdk = useMemo(() => {
     const sdk = new AftermathSdk("MAINNET");
     sdk.init();
     return sdk;
   }, []);
 
-  // Cetus SDK
+  // SDKs - Cetus
   const cetusSdk = useMemo(() => {
     const sdk = new CetusSdk(
       "https://api-sui.cetus.zone/router_v2/find_routes",
@@ -172,13 +209,67 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     return sdk;
   }, [address, suiClient]);
 
-  // 7K
+  // SDKs - 7K
   useEffect(() => {
     set7kSdkSuiClient(suiClient);
   }, [suiClient]);
 
+  // USD prices - Historical
+  const [tokenHistoricalUsdPricesMap, setTokenHistoricalUsdPricesMap] =
+    useState<Record<string, HistoricalUsdPriceData[]>>({});
+
+  const fetchTokenHistoricalUsdPrices = useCallback(
+    async (token: SwapToken) => {
+      console.log("fetchTokenHistoricalUsdPrices", token.symbol);
+
+      try {
+        const currentTimeS = Math.floor(new Date().getTime() / 1000);
+
+        const result = await getHistoryPrice(
+          token.coinType,
+          HISTORICAL_USD_PRICES_INTERVAL,
+          currentTimeS - 24 * 60 * 60,
+          currentTimeS,
+        );
+        if (result === undefined) return;
+
+        setTokenHistoricalUsdPricesMap((o) => ({
+          ...o,
+          [token.coinType]: result,
+        }));
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [],
+  );
+
+  // USD prices - Current
+  const [tokenUsdPricesMap, setTokenUsdPriceMap] = useState<
+    Record<string, BigNumber>
+  >({});
+
+  const fetchTokenUsdPrice = useCallback(async (token: SwapToken) => {
+    console.log("fetchTokenUsdPrice", token.symbol);
+
+    try {
+      const result = await getPrice(token.coinType);
+      if (result === undefined) return;
+
+      setTokenUsdPriceMap((o) => ({
+        ...o,
+        [token.coinType]: BigNumber(result),
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   // Use deposits
-  const [isUsingDeposits, setIsUsingDeposits] = useState<boolean>(false);
+  const [isUsingDeposits, setIsUsingDeposits] = useLocalStorage<boolean>(
+    "swap_isUsingDeposits",
+    false,
+  );
 
   // Tokens
   const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
@@ -303,13 +394,62 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     fetchTokensMetadata(selectedCoinTypes);
   }, [suiClient, tokenInSymbol, tokenOutSymbol, fetchTokensMetadata]);
 
-  const tokenIn = useMemo(
-    () =>
-      tokens?.find(
-        (t) => t.symbol === tokenInSymbol || t.coinType === tokenInSymbol,
-      ),
-    [tokens, tokenInSymbol],
-  );
+  const tokenIn = useMemo(() => {
+    const token = tokens?.find(
+      (t) => t.symbol === tokenInSymbol || t.coinType === tokenInSymbol,
+    );
+
+    if (!isUsingDeposits) return token;
+    else {
+      if (!token) return undefined;
+      if (!obligation?.deposits || obligation.deposits.length === 0) {
+        setIsUsingDeposits(false);
+        return token;
+      }
+      if (!!obligation.deposits.find((d) => d.coinType === token.coinType))
+        return token;
+
+      const depositedToken = filteredReserves.find(
+        (r) => !!obligation.deposits.find((d) => d.coinType === r.coinType),
+      )!.token;
+
+      if (tokenHistoricalUsdPricesMap[depositedToken.coinType] === undefined)
+        fetchTokenHistoricalUsdPrices(depositedToken);
+      if (tokenUsdPricesMap[depositedToken.coinType] === undefined)
+        fetchTokenUsdPrice(depositedToken);
+
+      router.replace(
+        {
+          pathname: getSwapUrl(
+            depositedToken.symbol,
+            tokenOutSymbol !== depositedToken.symbol
+              ? tokenOutSymbol
+              : DEFAULT_TOKEN_OUT_SYMBOL !== depositedToken.symbol
+                ? DEFAULT_TOKEN_OUT_SYMBOL
+                : tokens?.find((t) => t.coinType !== depositedToken.coinType)
+                    ?.coinType,
+          ),
+        },
+        undefined,
+        { shallow: true },
+      );
+
+      return tokens?.find((t) => t.symbol === depositedToken.symbol);
+    }
+  }, [
+    tokens,
+    tokenInSymbol,
+    isUsingDeposits,
+    obligation?.deposits,
+    setIsUsingDeposits,
+    filteredReserves,
+    tokenHistoricalUsdPricesMap,
+    fetchTokenHistoricalUsdPrices,
+    tokenUsdPricesMap,
+    fetchTokenUsdPrice,
+    router,
+    tokenOutSymbol,
+  ]);
   const tokenOut = useMemo(
     () =>
       tokens?.find(
@@ -325,19 +465,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       slug[0].split("-")[0] === slug[0].split("-")[1]
     )
       router.replace({ pathname: getSwapUrl() }, undefined, { shallow: true });
-    else {
-      if (
-        tokenIn?.coinType &&
-        !data.reserveCoinTypes.includes(tokenIn.coinType)
-      ) {
-        router.replace(
-          { pathname: getSwapUrl(undefined, tokenOutSymbol) },
-          undefined,
-          { shallow: true },
-        );
-      }
-    }
-  }, [slug, router, tokenIn?.coinType, data.reserveCoinTypes, tokenOutSymbol]);
+  }, [slug, router]);
 
   const setTokenSymbol = useCallback(
     (newTokenSymbol: string, direction: TokenDirection) => {
@@ -357,6 +485,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     [tokenInSymbol, tokenOutSymbol, router],
   );
 
+  // Tokens - Reverse
   const reverseTokenSymbols = useCallback(() => {
     if (!tokenInSymbol || !tokenOutSymbol) return;
 
@@ -372,8 +501,15 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     () => ({
       aftermathSdk,
       cetusSdk,
+
+      tokenHistoricalUsdPricesMap,
+      fetchTokenHistoricalUsdPrices,
+      tokenUsdPricesMap,
+      fetchTokenUsdPrice,
+
       isUsingDeposits,
       setIsUsingDeposits,
+
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
@@ -385,6 +521,10 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     [
       aftermathSdk,
       cetusSdk,
+      tokenHistoricalUsdPricesMap,
+      fetchTokenHistoricalUsdPrices,
+      tokenUsdPricesMap,
+      fetchTokenUsdPrice,
       isUsingDeposits,
       setIsUsingDeposits,
       tokens,

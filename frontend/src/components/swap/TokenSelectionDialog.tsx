@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import { BadgeCheck, ChevronDown, Search, Wallet } from "lucide-react";
+import { Check, ChevronDown, Download, Search, Wallet } from "lucide-react";
 
 import {
   NORMALIZED_SEND_COINTYPE,
@@ -14,11 +14,13 @@ import {
   isCoinType,
   isSui,
 } from "@suilend/frontend-sui";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
+import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
@@ -41,18 +43,22 @@ function TokenRow({
   isSelected,
   onClick,
 }: TokenRowProps) {
+  const { explorer } = useSettingsContext();
   const { data, getBalance, obligation } = useLoadedAppContext();
 
   const { verifiedCoinTypes } = useSwapContext();
 
-  const suilendCoinTypes = Object.keys(data.reserveMap);
-  const tokenBalance = getBalance(token.coinType);
-
+  // Amount
   const tokenDepositPosition = obligation?.deposits?.find(
     (d) => d.coinType === token.coinType,
   );
   const tokenDepositedAmount =
     tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
+
+  const AmountIcon = isUsingDeposits ? Download : Wallet;
+  const amount = isUsingDeposits
+    ? tokenDepositedAmount
+    : getBalance(token.coinType);
 
   return (
     <div
@@ -76,57 +82,48 @@ function TokenRow({
           {/* Top */}
           <div className="flex w-full flex-row items-center justify-between gap-4">
             {/* Top left */}
-            <div className="flex min-w-0 flex-row items-center gap-1">
-              <TBody className="overflow-hidden text-ellipsis text-nowrap">
-                {token.symbol}
-              </TBody>
+            <div className="flex min-w-0 flex-row items-center gap-1.5">
+              <div className="flex min-w-0 flex-row items-center gap-1">
+                <TBody className="overflow-hidden text-ellipsis text-nowrap">
+                  {token.symbol}
+                </TBody>
 
-              <div className="flex shrink-0 flex-row items-center gap-1">
-                {(suilendCoinTypes.includes(token.coinType) ||
+                {(data.reserveCoinTypes.includes(token.coinType) ||
                   verifiedCoinTypes.includes(token.coinType)) && (
                   <Tooltip
                     title={
-                      suilendCoinTypes.includes(token.coinType)
+                      data.reserveCoinTypes.includes(token.coinType)
                         ? "This asset is listed on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
                           ? "This asset appears on the list of Cetus verified assets"
                           : ""
                     }
                   >
-                    <BadgeCheck className="h-4 w-4 text-success" />
+                    <div className="h-4 w-4 shrink-0 rounded-full bg-success/10 p-0.5">
+                      <Check className="h-3 w-3 text-success" />
+                    </div>
                   </Tooltip>
                 )}
+              </div>
 
+              <div className="flex shrink-0 flex-row">
                 <CopyToClipboardButton
-                  className="h-6 w-6 hover:bg-transparent"
+                  className="h-5 w-5 hover:bg-transparent"
                   iconClassName="w-3 h-3"
                   value={isSui(token.coinType) ? SUI_COINTYPE : token.coinType}
+                />
+                <OpenOnExplorerButton
+                  className="h-5 w-5 hover:bg-transparent"
+                  iconClassName="w-3 h-3"
+                  url={explorer.buildCoinUrl(token.coinType)}
                 />
               </div>
             </div>
 
             {/* Top right */}
             <div className="flex shrink-0 flex-row items-center gap-1.5">
-              {!isUsingDeposits ? (
-                <Wallet className="h-3 w-3 text-foreground" />
-              ) : (
-                <TLabelSans>Deposited</TLabelSans>
-              )}
-
-              <Tooltip
-                title={
-                  (!isUsingDeposits ? tokenBalance : tokenDepositedAmount).gt(0)
-                    ? `${formatToken(!isUsingDeposits ? tokenBalance : tokenDepositedAmount, { dp: token.decimals })} ${token.symbol}`
-                    : undefined
-                }
-              >
-                <TBody>
-                  {formatToken(
-                    !isUsingDeposits ? tokenBalance : tokenDepositedAmount,
-                    { exact: false },
-                  )}
-                </TBody>
-              </Tooltip>
+              <AmountIcon className="h-3 w-3 text-foreground" />
+              <TBody>{formatToken(amount, { exact: false })}</TBody>
             </div>
           </div>
 
@@ -359,26 +356,28 @@ export default function TokenSelectionDialog({
       </div>
 
       {/* Top tokens */}
-      <div className="flex flex-row flex-wrap gap-2">
-        {topTokens.map((t) => (
-          <Button
-            key={t.coinType}
-            className="gap-1.5 rounded-full border hover:border-transparent"
-            startIcon={
-              <TokenLogo
-                className="h-4 w-4"
-                imageProps={{ className: "rounded-full" }}
-                token={t}
-              />
-            }
-            variant="ghost"
-            onClick={() => onTokenClick(t)}
-          >
-            {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
-            {t.symbol}
-          </Button>
-        ))}
-      </div>
+      {topTokens.length > 0 && (
+        <div className="flex flex-row flex-wrap gap-2">
+          {topTokens.map((t) => (
+            <Button
+              key={t.coinType}
+              className="gap-1.5 rounded-full border hover:border-transparent"
+              startIcon={
+                <TokenLogo
+                  className="h-4 w-4"
+                  imageProps={{ className: "rounded-full" }}
+                  token={t}
+                />
+              }
+              variant="ghost"
+              onClick={() => onTokenClick(t)}
+            >
+              {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
+              {t.symbol}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Tokens */}
       <div className="relative -mx-4 -mb-4 flex flex-col overflow-y-auto">

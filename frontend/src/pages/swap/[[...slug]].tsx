@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   ArrowUpDown,
+  Download,
   Info,
   RotateCw,
 } from "lucide-react";
@@ -34,8 +35,6 @@ import {
   SUI_COINTYPE,
   SUI_GAS_MIN,
   getBalanceChange,
-  getHistoryPrice,
-  getPrice,
   isSui,
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
@@ -66,6 +65,7 @@ import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
+  HISTORICAL_USD_PRICES_INTERVAL_S,
   QuoteType,
   StandardizedQuote,
   SwapContextProvider,
@@ -88,14 +88,6 @@ import { cn } from "@/lib/utils";
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 1;
 const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
 
-const HISTORICAL_USD_PRICES_INTERVAL = "5m";
-const HISTORICAL_USD_PRICES_INTERVAL_S = 5 * 60;
-
-type HistoricalUsdPriceData = {
-  timestampS: number;
-  priceUsd: number;
-};
-
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -109,6 +101,10 @@ function Page() {
   } = useLoadedAppContext();
 
   const {
+    tokenHistoricalUsdPricesMap,
+    fetchTokenHistoricalUsdPrices,
+    tokenUsdPricesMap,
+    fetchTokenUsdPrice,
     isUsingDeposits,
     setIsUsingDeposits,
     tokens,
@@ -243,7 +239,11 @@ function Page() {
     return sortedQuotes;
   }, [quotesMap]);
 
-  const quote = quotes?.[0]; // Best quote by amount out
+  const quote = quotes?.find(
+    (q) =>
+      q.in.coinType === tokenIn.coinType &&
+      q.out.coinType === tokenOut.coinType,
+  ); // Best quote by amount out
   const quoteAmountIn = useMemo(() => quote?.in.amount, [quote?.in.amount]);
   const quoteAmountOut = useMemo(() => quote?.out.amount, [quote?.out.amount]);
 
@@ -536,42 +536,13 @@ function Page() {
   };
 
   // USD prices - historical
-  const [historicalUsdPricesMap, setHistoricalUsdPriceMap] = useState<
-    Record<string, HistoricalUsdPriceData[]>
-  >({});
   const tokenInHistoricalUsdPrices = useMemo(
-    () => historicalUsdPricesMap[tokenIn.coinType],
-    [historicalUsdPricesMap, tokenIn.coinType],
+    () => tokenHistoricalUsdPricesMap[tokenIn.coinType],
+    [tokenHistoricalUsdPricesMap, tokenIn.coinType],
   );
   const tokenOutHistoricalUsdPrices = useMemo(
-    () => historicalUsdPricesMap[tokenOut.coinType],
-    [historicalUsdPricesMap, tokenOut.coinType],
-  );
-
-  const fetchTokenHistoricalUsdPrices = useCallback(
-    async (token: SwapToken) => {
-      console.log("fetchTokenHistoricalUsdPrices", token.symbol);
-
-      try {
-        const currentTimeS = Math.floor(new Date().getTime() / 1000);
-
-        const result = await getHistoryPrice(
-          token.coinType,
-          HISTORICAL_USD_PRICES_INTERVAL,
-          currentTimeS - 24 * 60 * 60,
-          currentTimeS,
-        );
-        if (result === undefined) return;
-
-        setHistoricalUsdPriceMap((o) => ({
-          ...o,
-          [token.coinType]: result,
-        }));
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    [],
+    () => tokenHistoricalUsdPricesMap[tokenOut.coinType],
+    [tokenHistoricalUsdPricesMap, tokenOut.coinType],
   );
 
   const fetchedInitialTokenHistoricalUsdPricesRef = useRef<boolean>(false);
@@ -584,33 +555,14 @@ function Page() {
   }, [fetchTokenHistoricalUsdPrices, tokenIn, tokenOut]);
 
   // USD prices - current
-  const [usdPricesMap, setUsdPriceMap] = useState<Record<string, BigNumber>>(
-    {},
-  );
   const tokenInUsdPrice = useMemo(
-    () => usdPricesMap[tokenIn.coinType],
-    [usdPricesMap, tokenIn.coinType],
+    () => tokenUsdPricesMap[tokenIn.coinType],
+    [tokenUsdPricesMap, tokenIn.coinType],
   );
   const tokenOutUsdPrice = useMemo(
-    () => usdPricesMap[tokenOut.coinType],
-    [usdPricesMap, tokenOut.coinType],
+    () => tokenUsdPricesMap[tokenOut.coinType],
+    [tokenUsdPricesMap, tokenOut.coinType],
   );
-
-  const fetchTokenUsdPrice = useCallback(async (token: SwapToken) => {
-    console.log("fetchTokenUsdPrice", token.symbol);
-
-    try {
-      const result = await getPrice(token.coinType);
-      if (result === undefined) return;
-
-      setUsdPriceMap((o) => ({
-        ...o,
-        [token.coinType]: BigNumber(result),
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
 
   const fetchedInitialTokenUsdPricesRef = useRef<boolean>(false);
   useEffect(() => {
@@ -793,9 +745,9 @@ function Page() {
         direction === TokenDirection.IN ? tokenOut : _token,
         value,
       );
-      if (historicalUsdPricesMap[_token.coinType] === undefined)
+      if (tokenHistoricalUsdPricesMap[_token.coinType] === undefined)
         fetchTokenHistoricalUsdPrices(_token);
-      if (usdPricesMap[_token.coinType] === undefined)
+      if (tokenUsdPricesMap[_token.coinType] === undefined)
         fetchTokenUsdPrice(_token);
     }
 
@@ -1115,13 +1067,15 @@ function Page() {
 
               {/* Right */}
               <div className="flex flex-row items-center gap-4">
-                <Switch
-                  id="isUsingDeposits"
-                  label="Use deposits"
-                  horizontal
-                  isChecked={isUsingDeposits}
-                  onToggle={setIsUsingDeposits}
-                />
+                {(obligation?.deposits ?? []).length > 0 && (
+                  <Switch
+                    id="isUsingDeposits"
+                    label="Use deposits"
+                    horizontal
+                    isChecked={isUsingDeposits}
+                    onToggle={setIsUsingDeposits}
+                  />
+                )}
 
                 <SwapSlippagePopover
                   slippagePercent={slippagePercent}
@@ -1132,36 +1086,20 @@ function Page() {
 
             {/* In */}
             <div className="relative z-[1]">
-              <div className="relative z-[2] w-full">
-                <SwapInput
-                  ref={inputRef}
-                  title="Sell"
-                  autoFocus
-                  value={value}
-                  onChange={onValueChange}
-                  usdValue={tokenInUsdValue}
-                  direction={TokenDirection.IN}
-                  token={tokenIn}
-                  onSelectToken={(t: SwapToken) =>
-                    onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
-                  }
-                  onBalanceClick={useMaxValueWrapper}
-                />
-              </div>
-
-              {!!tokenInReserve && (
-                <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
-                  <div className="flex flex-row items-center gap-2">
-                    <TLabelSans>Deposited</TLabelSans>
-                    <TBody className="text-xs">
-                      {formatToken(tokenInDepositPositionAmount, {
-                        exact: false,
-                      })}{" "}
-                      {tokenIn.symbol}
-                    </TBody>
-                  </div>
-                </div>
-              )}
+              <SwapInput
+                ref={inputRef}
+                title={isUsingDeposits ? "Withdraw" : "Sell"}
+                autoFocus
+                value={value}
+                onChange={onValueChange}
+                usdValue={tokenInUsdValue}
+                direction={TokenDirection.IN}
+                token={tokenIn}
+                onSelectToken={(t: SwapToken) =>
+                  onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
+                }
+                onAmountClick={useMaxValueWrapper}
+              />
             </div>
 
             {/* Reverse */}
@@ -1203,13 +1141,12 @@ function Page() {
 
               {tokenOutReserve && (
                 <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-border px-3 pb-2 pt-4">
-                  <div className="flex flex-row items-center gap-2">
-                    <TLabelSans>Deposited</TLabelSans>
+                  <div className="flex flex-row items-center gap-1.5">
+                    <Download className="h-3 w-3 text-foreground" />
                     <TBody className="text-xs">
                       {formatToken(tokenOutDepositPositionAmount, {
                         exact: false,
-                      })}{" "}
-                      {tokenOut.symbol}
+                      })}
                     </TBody>
                   </div>
                 </div>

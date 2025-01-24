@@ -1,14 +1,14 @@
 import { forwardRef, useEffect, useRef } from "react";
 
 import BigNumber from "bignumber.js";
-import { Wallet } from "lucide-react";
+import { Download, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { TokenDirection } from "@/contexts/SwapContext";
+import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ interface SwapInputProps {
   direction: TokenDirection;
   token: SwapToken;
   onSelectToken: (token: SwapToken) => void;
-  onBalanceClick?: () => void;
+  onAmountClick?: () => void;
 }
 
 const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
@@ -42,13 +42,14 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       direction,
       token,
       onSelectToken,
-      onBalanceClick,
+      onAmountClick,
     },
     ref,
   ) => {
-    const { getBalance } = useLoadedAppContext();
+    const { getBalance, obligation } = useLoadedAppContext();
 
-    const tokenBalance = getBalance(token.coinType);
+    const { isUsingDeposits: _isUsingDeposits } = useSwapContext();
+    const isUsingDeposits = direction === TokenDirection.IN && _isUsingDeposits;
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -57,7 +58,20 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       setTimeout(() => localRef.current?.focus());
     }, [autoFocus]);
 
+    // State
     const isReadOnly = !onChange;
+
+    // Amount
+    const tokenDepositPosition = obligation?.deposits?.find(
+      (d) => d.coinType === token.coinType,
+    );
+    const tokenDepositedAmount =
+      tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
+
+    const AmountIcon = isUsingDeposits ? Download : Wallet;
+    const amount = isUsingDeposits
+      ? tokenDepositedAmount
+      : getBalance(token.coinType);
 
     return (
       <div
@@ -120,13 +134,13 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               <div
                 className={cn(
                   "flex flex-row items-center gap-1.5 pr-2",
-                  onBalanceClick && "cursor-pointer",
+                  onAmountClick && "cursor-pointer",
                 )}
-                onClick={onBalanceClick}
+                onClick={onAmountClick}
               >
-                <Wallet className="h-3 w-3 text-muted-foreground" />
+                <AmountIcon className="h-3 w-3 text-muted-foreground" />
                 <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
-                  {formatToken(tokenBalance)} {token.symbol}
+                  {formatToken(amount)}
                 </TLabel>
               </div>
             </div>
