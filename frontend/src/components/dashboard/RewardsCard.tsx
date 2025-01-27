@@ -65,11 +65,9 @@ function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
     <div className="flex flex-col gap-1">
       <TLabelSans>Claimable rewards</TLabelSans>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
-          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
-        ))}
-      </div>
+      {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+        <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
+      ))}
     </div>
   );
 }
@@ -148,34 +146,29 @@ export default function RewardsCard() {
       headerProps={{
         title: "Rewards",
         noSeparator: true,
-      }}
-    >
-      <CardContent className="flex flex-col gap-4">
-        {/* Actions */}
-        <div className="flex flex-row gap-2">
-          <div className="flex-1">
+        endContent: (
+          <>
+            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+
             <NextLink href={POINTS_URL}>
               <Button
-                className="w-full border-secondary"
-                labelClassName="uppercase text-primary-foreground"
+                labelClassName="uppercase text-xs"
                 variant="secondaryOutline"
               >
                 Leaderboard
               </Button>
             </NextLink>
-          </div>
-
-          {hasClaimableRewards && (
-            <div className="flex-1">
-              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-            </div>
-          )}
-        </div>
-
+          </>
+        ),
+      }}
+    >
+      <CardContent className="flex flex-col gap-4">
+        {/* Rewards */}
         {hasClaimableRewards && (
           <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
         )}
 
+        {/* Points */}
         <div className="flex w-full flex-row justify-between">
           <RankStat season={season} rank={addressRowMap?.[season].rank} />
 

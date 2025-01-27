@@ -77,11 +77,11 @@ export default function ClaimRewardsDropdownMenu({
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
         <Button
-          className="w-full"
-          labelClassName="uppercase"
+          labelClassName="text-xs uppercase"
           endIcon={<Icon />}
+          variant="secondaryOutline"
         >
-          Claim rewards
+          Claim
         </Button>
       }
       contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}

@@ -95,8 +95,8 @@ export default function PointsCountPopover() {
         {!router.asPath.startsWith(POINTS_URL) && (
           <NextLink href={POINTS_URL} className="w-full">
             <Button
-              className="w-full border-secondary"
-              labelClassName="uppercase text-primary-foreground"
+              className="w-full border-secondary text-primary-foreground"
+              labelClassName="uppercase"
               variant="secondaryOutline"
               onClick={() => setIsOpen(false)}
             >
