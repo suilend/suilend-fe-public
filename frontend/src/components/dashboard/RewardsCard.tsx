@@ -128,7 +128,7 @@ export default function RewardsCard() {
     >
       <div className="flex flex-col items-center justify-center gap-4 p-4">
         <TBody className="text-center uppercase text-foreground">
-          Start earning SEND Points & rewards
+          Start earning points & rewards
         </TBody>
 
         <Button
