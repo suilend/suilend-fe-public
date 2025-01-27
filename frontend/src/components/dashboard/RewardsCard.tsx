@@ -143,13 +143,17 @@ export default function RewardsCard() {
   ) : (
     <Card
       id="rewards"
+      className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]"
       headerProps={{
+        className: "rounded-t-[3px] bg-card",
         title: "Rewards",
+        titleClassName: "text-primary-foreground",
         noSeparator: true,
         endContent: (
           <>
-            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-
+            {hasClaimableRewards && (
+              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+            )}
             <NextLink href={POINTS_URL}>
               <Button
                 labelClassName="uppercase text-xs"
@@ -162,7 +166,7 @@ export default function RewardsCard() {
         ),
       }}
     >
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 rounded-b-[3px] bg-card">
         {/* Rewards */}
         {hasClaimableRewards && (
           <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />

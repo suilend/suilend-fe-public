@@ -53,7 +53,7 @@ export default function Home() {
           // Horizontal layout
           <div className="relative w-full flex-1">
             <div
-              className="flex w-full min-w-0 flex-col gap-4"
+              className="flex w-full min-w-0 flex-col gap-6"
               style={{ paddingRight: 360 + 6 * 4 }}
             >
               <MarketOverview />
