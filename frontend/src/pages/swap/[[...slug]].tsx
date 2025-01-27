@@ -210,6 +210,10 @@ function Page() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>("");
 
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
+    useState<boolean>(false);
+
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
@@ -218,6 +222,10 @@ function Page() {
       [QuoteType._7K]: true,
     }),
     [],
+  );
+  const numActiveProviders = useMemo(
+    () => Object.values(activeProvidersMap).filter(Boolean).length,
+    [activeProvidersMap],
   );
 
   const [quotesMap, setQuotesMap] = useState<
@@ -252,12 +260,8 @@ function Page() {
     if (timestampsS.length === 0) return false;
 
     const maxTimestampS = Math.max(...timestampsS);
-    if (quotesMap[maxTimestampS].length === 0) return undefined;
-
-    const numActiveProviders =
-      Object.values(activeProvidersMap).filter(Boolean).length;
     return quotesMap[maxTimestampS].length < numActiveProviders;
-  }, [quotesMap, activeProvidersMap]);
+  }, [quotesMap, numActiveProviders]);
 
   const fetchQuotes = useCallback(
     async (
@@ -486,6 +490,8 @@ function Page() {
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+
+    if (isSwapping || isSwappingAndDepositing) return;
     refreshIntervalRef.current = setInterval(
       () => fetchQuotes(tokenIn, tokenOut, value),
       30 * 1000,
@@ -494,7 +500,14 @@ function Page() {
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [fetchQuotes, tokenIn, tokenOut, value]);
+  }, [
+    isSwapping,
+    isSwappingAndDepositing,
+    fetchQuotes,
+    tokenIn,
+    tokenOut,
+    value,
+  ]);
 
   // Value
   const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
@@ -755,10 +768,6 @@ function Page() {
   };
 
   // Swap
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
-    useState<boolean>(false);
-
   const swapButtonState: SubmitButtonState = (() => {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSwapping) return { isDisabled: true, isLoading: true };
@@ -782,7 +791,7 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
-      isDisabled: !quote || isSwappingAndDepositing,
+      isDisabled: !quote || isFetchingQuotes || isSwappingAndDepositing,
     };
   })();
 
@@ -829,87 +838,57 @@ function Page() {
 
   // Submit
   const getTransactionForStandardizedQuote = async (
-    address: string,
-    _quote: StandardizedQuote,
-    isDepositing: boolean,
+    transaction: Transaction,
+    coinIn: TransactionObjectArgument,
   ): Promise<{
     transaction: Transaction;
-    outputCoin?: TransactionObjectArgument;
+    coinOut?: TransactionObjectArgument;
   }> => {
-    if (_quote.type === QuoteType.AFTERMATH) {
+    if (!address) throw new Error("Wallet not connected");
+    if (!quote) throw new Error("Quote not found");
+
+    if (quote.type === QuoteType.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
-      if (isDepositing) {
-        const { tx: transaction, coinOutId: outputCoin } = await aftermathSdk
-          .Router()
-          .addTransactionForCompleteTradeRoute({
-            tx: new Transaction(),
-            walletAddress: address,
-            completeRoute: _quote.quote,
-            slippage: +slippagePercent / 100,
-          });
+      const { tx: transaction2, coinOutId: coinOut } = await aftermathSdk
+        .Router()
+        .addTransactionForCompleteTradeRoute({
+          tx: transaction,
+          walletAddress: address,
+          completeRoute: quote.quote,
+          slippage: +slippagePercent / 100,
+          coinInId: coinIn,
+        });
 
-        return { transaction, outputCoin };
-      } else {
-        const transaction = await aftermathSdk
-          .Router()
-          .getTransactionForCompleteTradeRoute({
-            walletAddress: address,
-            completeRoute: _quote.quote,
-            slippage: +slippagePercent / 100,
-          });
-
-        return { transaction };
-      }
-    } else if (_quote.type === QuoteType.CETUS) {
+      return { transaction: transaction2, coinOut };
+    } else if (quote.type === QuoteType.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
 
-      if (isDepositing) {
-        const transaction = new Transaction();
+      const coinOut = await cetusSdk.routerSwap({
+        routers: quote.quote,
+        inputCoin: coinIn,
+        slippage: +slippagePercent / 100,
+        txb: transaction,
+        partner: CETUS_PARTNER_ID,
+      });
 
-        const inputCoin = coinWithBalance({
-          balance: BigInt(_quote.quote.amountIn.toString()),
-          type: _quote.in.coinType,
-          useGasCoin: isSui(_quote.in.coinType),
-        })(transaction);
-
-        const outputCoin = await cetusSdk.routerSwap({
-          routers: _quote.quote,
-          inputCoin,
-          slippage: +slippagePercent / 100,
-          txb: transaction,
-          partner: CETUS_PARTNER_ID,
-        });
-
-        return { transaction, outputCoin };
-      } else {
-        const transaction = new Transaction();
-
-        await cetusSdk.fastRouterSwap({
-          routers: _quote.quote,
-          slippage: +slippagePercent / 100,
-          txb: transaction,
-          partner: CETUS_PARTNER_ID,
-          refreshAllCoins: true,
-        });
-
-        return { transaction };
-      }
-    } else if (_quote.type === QuoteType._7K) {
-      const { tx: transaction, coinOut: outputCoin } = await build7kTransaction(
-        {
-          quoteResponse: _quote.quote,
-          accountAddress: address,
-          slippage: +slippagePercent / 100,
-          commission: {
-            partner: _7K_PARTNER_ADDRESS,
-            commissionBps: 0,
-          },
+      return { transaction, coinOut };
+    } else if (quote.type === QuoteType._7K) {
+      const { tx: transaction2, coinOut } = await build7kTransaction({
+        quoteResponse: quote.quote,
+        accountAddress: address,
+        slippage: +slippagePercent / 100,
+        commission: {
+          partner: _7K_PARTNER_ADDRESS,
+          commissionBps: 0,
         },
-      );
+        extendTx: {
+          tx: transaction,
+          coinIn,
+        },
+      });
 
-      if (isDepositing) return { transaction, outputCoin };
-      else return { transaction };
+      return { transaction: transaction2, coinOut };
     } else throw new Error("Unknown quote type");
   };
 
@@ -917,16 +896,45 @@ function Page() {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    let transaction: Transaction;
+    const submitAmount = quote.in.amount
+      .times(10 ** tokenIn.decimals)
+      .integerValue(BigNumber.ROUND_DOWN)
+      .toString();
+
+    let transaction = new Transaction();
+
     try {
-      const { transaction: transaction2, outputCoin } =
-        await getTransactionForStandardizedQuote(address, quote, isDepositing);
-      transaction = transaction2;
+      let coinIn: TransactionObjectArgument;
+      if (isUsingDeposits) {
+        if (!obligation || !obligationOwnerCap)
+          throw new Error("Obligation or ObligationOwnerCap not found");
+
+        const [_coinIn] = await suilendClient.withdraw(
+          obligationOwnerCap.id,
+          obligation.id,
+          tokenIn.coinType,
+          submitAmount,
+          transaction,
+        );
+        coinIn = _coinIn;
+      } else {
+        coinIn = coinWithBalance({
+          balance: BigInt(submitAmount),
+          type: quote.in.coinType,
+          useGasCoin: isSui(quote.in.coinType),
+        })(transaction);
+      }
+
+      const { transaction: _transaction, coinOut } =
+        await getTransactionForStandardizedQuote(transaction, coinIn);
+      if (!coinOut)
+        throw new Error("Missing coin to transfer to deposit/transfer to user");
+
+      transaction = _transaction;
       transaction.setGasBudget(SUI_GAS_MIN * 10 ** SUI_DECIMALS);
 
       if (isDepositing) {
         if (!tokenOutReserve) throw new Error("Cannot deposit this token");
-        if (!outputCoin) throw new Error("Missing coin to deposit");
 
         const { obligationOwnerCapId, didCreate } =
           createObligationIfNoneExists(
@@ -935,14 +943,18 @@ function Page() {
             obligationOwnerCap,
           );
         suilendClient.deposit(
-          outputCoin,
+          coinOut,
           tokenOutReserve.coinType,
           obligationOwnerCapId,
           transaction,
         );
         if (didCreate)
           sendObligationToUser(obligationOwnerCapId, address, transaction);
-      }
+      } else
+        transaction.transferObjects(
+          [coinOut],
+          transaction.pure.address(address),
+        );
     } catch (err) {
       Sentry.captureException(err);
       console.error(err);
@@ -956,12 +968,14 @@ function Page() {
   };
 
   const onSwapClick = async (isDepositing: boolean) => {
+    if (!address) throw new Error("Wallet not connected");
+    if (!quote) throw new Error("Quote not found");
+
     if (isDepositing) {
       if (swapAndDepositButtonState.isDisabled) return;
     } else {
       if (swapButtonState.isDisabled) return;
     }
-    if (quoteAmountOut === undefined || isFetchingQuotes) return;
 
     (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(true);
 
@@ -971,23 +985,25 @@ function Page() {
 
       const balanceChangeIn = getBalanceChange(
         res,
-        address!,
+        address,
         { ...tokenIn, description: "" },
         -1,
       );
       const balanceChangeInFormatted = formatToken(
-        balanceChangeIn !== undefined ? balanceChangeIn : new BigNumber(value),
+        !isUsingDeposits && balanceChangeIn !== undefined
+          ? balanceChangeIn
+          : quote.in.amount, // When using deposits, the in asset is not in the wallet
         { dp: tokenIn.decimals, trimTrailingZeros: true },
       );
 
-      const balanceChangeOut = getBalanceChange(res, address!, {
+      const balanceChangeOut = getBalanceChange(res, address, {
         ...tokenOut,
         description: "",
       });
       const balanceChangeOutFormatted = formatToken(
         !isDepositing && balanceChangeOut !== undefined
           ? balanceChangeOut
-          : quoteAmountOut, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
+          : quote.out.amount, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
         { dp: tokenOut.decimals, trimTrailingZeros: true },
       );
 
@@ -1012,8 +1028,11 @@ function Page() {
       const properties: Record<string, string | number> = {
         assetIn: tokenIn.symbol,
         assetOut: tokenOut.symbol,
-        amountIn: value,
-        amountOut: quoteAmountOut.toFixed(
+        amountIn: quote.in.amount.toFixed(
+          tokenIn.decimals,
+          BigNumber.ROUND_DOWN,
+        ),
+        amountOut: quote.out.amount.toFixed(
           tokenOut.decimals,
           BigNumber.ROUND_DOWN,
         ),
@@ -1088,7 +1107,7 @@ function Page() {
             <div className="relative z-[1]">
               <SwapInput
                 ref={inputRef}
-                title={isUsingDeposits ? "Withdraw" : "Sell"}
+                title="Sell"
                 autoFocus
                 value={value}
                 onChange={onValueChange}
@@ -1117,40 +1136,25 @@ function Page() {
 
             {/* Out */}
             <div className="relative z-[1]">
-              <div className="relative z-[2] w-full">
-                <SwapInput
-                  title="Buy"
-                  value={
-                    new BigNumber(value || 0).gt(0) &&
-                    quoteAmountOut !== undefined
-                      ? quoteAmountOut.toFixed(
-                          tokenOut.decimals,
-                          BigNumber.ROUND_DOWN,
-                        )
-                      : ""
-                  }
-                  isValueLoading={isFetchingQuotes}
-                  usdValue={tokenOutUsdValue}
-                  direction={TokenDirection.OUT}
-                  token={tokenOut}
-                  onSelectToken={(t: SwapToken) =>
-                    onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
-                  }
-                />
-              </div>
-
-              {tokenOutReserve && (
-                <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-end gap-x-2 gap-y-1 rounded-b-md bg-border px-3 pb-2 pt-4">
-                  <div className="flex flex-row items-center gap-1.5">
-                    <Download className="h-3 w-3 text-foreground" />
-                    <TBody className="text-xs">
-                      {formatToken(tokenOutDepositPositionAmount, {
-                        exact: false,
-                      })}
-                    </TBody>
-                  </div>
-                </div>
-              )}
+              <SwapInput
+                title="Buy"
+                value={
+                  new BigNumber(value || 0).gt(0) &&
+                  quoteAmountOut !== undefined
+                    ? quoteAmountOut.toFixed(
+                        tokenOut.decimals,
+                        BigNumber.ROUND_DOWN,
+                      )
+                    : ""
+                }
+                isValueLoading={isFetchingQuotes}
+                usdValue={tokenOutUsdValue}
+                direction={TokenDirection.OUT}
+                token={tokenOut}
+                onSelectToken={(t: SwapToken) =>
+                  onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
+                }
+              />
             </div>
 
             {/* Parameters */}

@@ -48,8 +48,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
   ) => {
     const { getBalance, obligation } = useLoadedAppContext();
 
-    const { isUsingDeposits: _isUsingDeposits } = useSwapContext();
-    const isUsingDeposits = direction === TokenDirection.IN && _isUsingDeposits;
+    const { isUsingDeposits } = useSwapContext();
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -62,16 +61,13 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     const isReadOnly = !onChange;
 
     // Amount
+    const tokenBalance = getBalance(token.coinType);
+
     const tokenDepositPosition = obligation?.deposits?.find(
       (d) => d.coinType === token.coinType,
     );
     const tokenDepositedAmount =
       tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
-
-    const AmountIcon = isUsingDeposits ? Download : Wallet;
-    const amount = isUsingDeposits
-      ? tokenDepositedAmount
-      : getBalance(token.coinType);
 
     return (
       <div
@@ -131,17 +127,42 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 onSelectToken={onSelectToken}
               />
 
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-1.5 pr-2",
-                  onAmountClick && "cursor-pointer",
+              <div className="flex flex-row items-center gap-3 pr-2">
+                {/* Balance */}
+                {!(direction === TokenDirection.IN && isUsingDeposits) && (
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5 text-muted-foreground",
+                      onAmountClick && "cursor-pointer",
+                    )}
+                    onClick={onAmountClick}
+                  >
+                    <Wallet className="h-3 w-3 text-inherit" />
+                    <TLabel className="text-inherit">
+                      {tokenBalance.eq(0)
+                        ? "--"
+                        : formatToken(tokenBalance, { exact: false })}
+                    </TLabel>
+                  </div>
                 )}
-                onClick={onAmountClick}
-              >
-                <AmountIcon className="h-3 w-3 text-muted-foreground" />
-                <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
-                  {formatToken(amount)}
-                </TLabel>
+
+                {/* Deposited */}
+                {!(direction === TokenDirection.IN && !isUsingDeposits) && (
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5 text-muted-foreground",
+                      onAmountClick && "cursor-pointer",
+                    )}
+                    onClick={onAmountClick}
+                  >
+                    <Download className="h-3 w-3 text-inherit" />
+                    <TLabel className="text-inherit">
+                      {tokenDepositedAmount.eq(0)
+                        ? "--"
+                        : formatToken(tokenDepositedAmount, { exact: false })}
+                    </TLabel>
+                  </div>
+                )}
               </div>
             </div>
           </div>

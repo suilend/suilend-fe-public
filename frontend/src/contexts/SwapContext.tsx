@@ -30,6 +30,8 @@ import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
+  NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
   getCoinMetadataMap,
   getHistoryPrice,
   getPrice,
@@ -99,7 +101,10 @@ export type StandardizedQuote = {
 );
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
+const DEFAULT_TOKEN_IN_COINTYPE = NORMALIZED_SUI_COINTYPE;
+
 const DEFAULT_TOKEN_OUT_SYMBOL = "USDC";
+const DEFAULT_TOKEN_OUT_COINTYPE = NORMALIZED_USDC_COINTYPE;
 
 export const getSwapUrl = (
   inSymbol: string = DEFAULT_TOKEN_IN_SYMBOL,
@@ -394,69 +399,70 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     fetchTokensMetadata(selectedCoinTypes);
   }, [suiClient, tokenInSymbol, tokenOutSymbol, fetchTokensMetadata]);
 
-  const tokenIn = useMemo(() => {
-    const token = tokens?.find(
+  const [tokenIn, tokenOut] = useMemo(() => {
+    const tokenIn = tokens?.find(
       (t) => t.symbol === tokenInSymbol || t.coinType === tokenInSymbol,
     );
+    const tokenOut = tokens?.find(
+      (t) => t.symbol === tokenOutSymbol || t.coinType === tokenOutSymbol,
+    );
 
-    if (!isUsingDeposits) return token;
+    if (!isUsingDeposits) return [tokenIn, tokenOut];
     else {
-      if (!token) return undefined;
+      if (!tokenIn || !tokenOut) return [undefined, undefined];
       if (!obligation?.deposits || obligation.deposits.length === 0) {
         setIsUsingDeposits(false);
-        return token;
+        return [tokenIn, tokenOut];
       }
-      if (!!obligation.deposits.find((d) => d.coinType === token.coinType))
-        return token;
+      if (!!obligation.deposits.find((d) => d.coinType === tokenIn.coinType))
+        return [tokenIn, tokenOut];
 
-      const depositedToken = filteredReserves.find(
-        (r) => !!obligation.deposits.find((d) => d.coinType === r.coinType),
-      )!.token;
+      const newTokenIn = tokens?.find(
+        (t) => t.coinType === obligation.deposits[0].coinType,
+      );
+      const newTokenOut =
+        tokenOut.coinType !== newTokenIn?.coinType
+          ? tokenOut
+          : tokens?.find(
+              (t) =>
+                t.coinType ===
+                (DEFAULT_TOKEN_OUT_COINTYPE !== newTokenIn?.coinType
+                  ? DEFAULT_TOKEN_OUT_COINTYPE
+                  : DEFAULT_TOKEN_IN_COINTYPE),
+            );
+      if (!newTokenIn || !newTokenOut) return [undefined, undefined];
 
-      if (tokenHistoricalUsdPricesMap[depositedToken.coinType] === undefined)
-        fetchTokenHistoricalUsdPrices(depositedToken);
-      if (tokenUsdPricesMap[depositedToken.coinType] === undefined)
-        fetchTokenUsdPrice(depositedToken);
+      if (tokenHistoricalUsdPricesMap[newTokenIn.coinType] === undefined)
+        fetchTokenHistoricalUsdPrices(newTokenIn);
+      if (tokenUsdPricesMap[newTokenIn.coinType] === undefined)
+        fetchTokenUsdPrice(newTokenIn);
+
+      if (tokenHistoricalUsdPricesMap[newTokenOut.coinType] === undefined)
+        fetchTokenHistoricalUsdPrices(newTokenOut);
+      if (tokenUsdPricesMap[newTokenOut.coinType] === undefined)
+        fetchTokenUsdPrice(newTokenOut);
 
       router.replace(
-        {
-          pathname: getSwapUrl(
-            depositedToken.symbol,
-            tokenOutSymbol !== depositedToken.symbol
-              ? tokenOutSymbol
-              : DEFAULT_TOKEN_OUT_SYMBOL !== depositedToken.symbol
-                ? DEFAULT_TOKEN_OUT_SYMBOL
-                : tokens?.find((t) => t.coinType !== depositedToken.coinType)
-                    ?.coinType,
-          ),
-        },
+        { pathname: getSwapUrl(newTokenIn.symbol, newTokenOut.symbol) },
         undefined,
         { shallow: true },
       );
 
-      return tokens?.find((t) => t.symbol === depositedToken.symbol);
+      return [newTokenIn, newTokenOut];
     }
   }, [
     tokens,
     tokenInSymbol,
+    tokenOutSymbol,
     isUsingDeposits,
     obligation?.deposits,
     setIsUsingDeposits,
-    filteredReserves,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,
     fetchTokenUsdPrice,
     router,
-    tokenOutSymbol,
   ]);
-  const tokenOut = useMemo(
-    () =>
-      tokens?.find(
-        (t) => t.symbol === tokenOutSymbol || t.coinType === tokenOutSymbol,
-      ),
-    [tokens, tokenOutSymbol],
-  );
 
   useEffect(() => {
     if (

@@ -29,33 +29,25 @@ import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenRowProps {
-  isUsingDeposits: boolean;
+  direction: TokenDirection;
   token: SwapToken;
   isSelected: boolean;
   onClick: () => void;
 }
 
-function TokenRow({
-  isUsingDeposits,
-  token,
-  isSelected,
-  onClick,
-}: TokenRowProps) {
+function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
   const { data, getBalance, obligation } = useLoadedAppContext();
 
-  const { verifiedCoinTypes } = useSwapContext();
+  const { isUsingDeposits, verifiedCoinTypes } = useSwapContext();
 
   // Amount
+  const tokenBalance = getBalance(token.coinType);
+
   const tokenDepositPosition = obligation?.deposits?.find(
     (d) => d.coinType === token.coinType,
   );
   const tokenDepositedAmount =
     tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
-
-  const AmountIcon = isUsingDeposits ? Download : Wallet;
-  const amount = isUsingDeposits
-    ? tokenDepositedAmount
-    : getBalance(token.coinType);
 
   return (
     <div
@@ -111,9 +103,44 @@ function TokenRow({
             </div>
 
             {/* Top right */}
-            <div className="flex shrink-0 flex-row items-center gap-1.5">
-              <AmountIcon className="h-3 w-3 text-foreground" />
-              <TBody>{formatToken(amount, { exact: false })}</TBody>
+            <div className="flex flex-shrink-0 flex-row items-center gap-3">
+              {/* Balance */}
+              {!(direction === TokenDirection.IN && isUsingDeposits) && (
+                <div
+                  className={cn(
+                    "flex flex-row items-center gap-1.5",
+                    tokenBalance.gt(0)
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Wallet className="h-3 w-3 text-inherit" />
+                  <TBody className="text-inherit">
+                    {tokenBalance.eq(0)
+                      ? "--"
+                      : formatToken(tokenBalance, { exact: false })}
+                  </TBody>
+                </div>
+              )}
+
+              {/* Deposited */}
+              {!(direction === TokenDirection.IN && !isUsingDeposits) && (
+                <div
+                  className={cn(
+                    "flex flex-row items-center gap-1.5",
+                    tokenDepositedAmount.gt(0)
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Download className="h-3 w-3 text-inherit" />
+                  <TBody className="text-inherit">
+                    {tokenDepositedAmount.eq(0)
+                      ? "--"
+                      : formatToken(tokenDepositedAmount, { exact: false })}
+                  </TBody>
+                </div>
+              )}
             </div>
           </div>
 
@@ -143,7 +170,7 @@ export default function TokenSelectionDialog({
   const { getBalance, obligation, filteredReserves } = useLoadedAppContext();
 
   const {
-    isUsingDeposits: _isUsingDeposits,
+    isUsingDeposits,
     fetchTokensMetadata,
     verifiedCoinTypes,
     ...restSwapContext
@@ -151,11 +178,6 @@ export default function TokenSelectionDialog({
   const tokens = restSwapContext.tokens as SwapToken[];
 
   // State
-  const isUsingDeposits = useMemo(
-    () => direction === TokenDirection.IN && _isUsingDeposits,
-    [direction, _isUsingDeposits],
-  );
-
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const onOpenChange = (_isOpen: boolean) => {
     setIsOpen(_isOpen);
@@ -203,21 +225,19 @@ export default function TokenSelectionDialog({
   // Tokens - top
   const topTokens = useMemo(
     () =>
-      [
-        NORMALIZED_sSUI_COINTYPE,
-        NORMALIZED_SUI_COINTYPE,
-        NORMALIZED_USDC_COINTYPE,
-        NORMALIZED_suiUSDT_COINTYPE,
-        NORMALIZED_SEND_COINTYPE,
-      ]
-        .filter((coinType) =>
-          isUsingDeposits
-            ? depositTokens.find((dt) => dt.coinType === coinType)
-            : true,
-        )
-        .map((coinType) => tokens.find((t) => t.coinType === coinType))
-        .filter(Boolean) as SwapToken[],
-    [isUsingDeposits, depositTokens, tokens],
+      direction === TokenDirection.IN && isUsingDeposits
+        ? []
+        : ([
+            NORMALIZED_sSUI_COINTYPE,
+            NORMALIZED_SUI_COINTYPE,
+            NORMALIZED_USDC_COINTYPE,
+            NORMALIZED_suiUSDT_COINTYPE,
+            NORMALIZED_SEND_COINTYPE,
+          ]
+
+            .map((coinType) => tokens.find((t) => t.coinType === coinType))
+            .filter(Boolean) as SwapToken[]),
+    [direction, isUsingDeposits, tokens],
   );
 
   // Filter
@@ -233,6 +253,10 @@ export default function TokenSelectionDialog({
     [searchString],
   );
 
+  const filteredDepositTokens = useMemo(
+    () => filterTokens(depositTokens),
+    [filterTokens, depositTokens],
+  );
   const filteredBalanceTokens = useMemo(
     () => filterTokens(balanceTokens),
     [filterTokens, balanceTokens],
@@ -246,61 +270,74 @@ export default function TokenSelectionDialog({
     [filterTokens, otherTokens],
   );
 
-  const filteredDepositTokens = useMemo(
-    () => filterTokens(depositTokens),
-    [filterTokens, depositTokens],
-  );
+  const filteredTokens = useMemo(() => {
+    let result = [...filteredDepositTokens];
+    if (direction === TokenDirection.IN && isUsingDeposits) return result;
 
-  const filteredTokens = useMemo(
-    () =>
-      isUsingDeposits
-        ? filteredDepositTokens
-        : [
-            ...filteredBalanceTokens,
-            ...filteredReserveTokens,
-            ...filteredOtherTokens,
-          ],
-    [
-      isUsingDeposits,
-      filteredDepositTokens,
-      filteredBalanceTokens,
-      filteredReserveTokens,
-      filteredOtherTokens,
-    ],
-  );
-
-  useEffect(() => {
-    if (filteredTokens.length === 0 && isCoinType(searchString))
-      fetchTokensMetadata([normalizeStructTag(searchString)]);
-  }, [filteredTokens, searchString, fetchTokensMetadata]);
-
-  const filteredTokensMap = useMemo(() => {
-    const result: Record<string, { title: string; tokens: SwapToken[] }> =
-      isUsingDeposits
-        ? {
-            deposit: {
-              title: "Deposited assets",
-              tokens: filteredDepositTokens,
-            },
-          }
-        : {
-            balance: {
-              title: "Wallet balances",
-              tokens: filteredBalanceTokens,
-            },
-            suilend: {
-              title: "Assets listed on Suilend",
-              tokens: filteredReserveTokens,
-            },
-            other: { title: "Other known assets", tokens: filteredOtherTokens },
-          };
+    result = [
+      ...result,
+      ...filteredBalanceTokens,
+      ...filteredReserveTokens,
+      ...filteredOtherTokens,
+    ];
 
     return result;
   }, [
-    isUsingDeposits,
     filteredDepositTokens,
-    filteredReserveTokens,
+    direction,
+    isUsingDeposits,
     filteredBalanceTokens,
+    filteredReserveTokens,
+    filteredOtherTokens,
+  ]);
+
+  useEffect(() => {
+    if (
+      filteredTokens.length === 0 &&
+      isCoinType(searchString) &&
+      !(direction === TokenDirection.IN && isUsingDeposits)
+    )
+      fetchTokensMetadata([normalizeStructTag(searchString)]);
+  }, [
+    filteredTokens,
+    searchString,
+    direction,
+    isUsingDeposits,
+    fetchTokensMetadata,
+  ]);
+
+  const filteredTokensMap = useMemo(() => {
+    let result: Record<string, { title: string; tokens: SwapToken[] }> = {
+      deposit: {
+        title: "Deposited assets",
+        tokens: filteredDepositTokens,
+      },
+    };
+    if (direction === TokenDirection.IN && isUsingDeposits) return result;
+
+    result = {
+      ...result,
+      balance: {
+        title: "Wallet balances",
+        tokens: filteredBalanceTokens,
+      },
+      suilend: {
+        title: "Assets listed on Suilend",
+        tokens: filteredReserveTokens,
+      },
+      other: {
+        title: "Other known assets",
+        tokens: filteredOtherTokens,
+      },
+    };
+
+    return result;
+  }, [
+    filteredDepositTokens,
+    direction,
+    isUsingDeposits,
+    filteredBalanceTokens,
+    filteredReserveTokens,
     filteredOtherTokens,
   ]);
 
@@ -402,7 +439,7 @@ export default function TokenSelectionDialog({
                   {list.tokens.map((t) => (
                     <TokenRow
                       key={t.coinType}
-                      isUsingDeposits={isUsingDeposits}
+                      direction={direction}
                       token={t}
                       isSelected={t.coinType === token.coinType}
                       onClick={() => onTokenClick(t)}
@@ -414,12 +451,19 @@ export default function TokenSelectionDialog({
         ) : (
           <TLabelSans className="py-4 text-center">
             {searchString
-              ? isCoinType(searchString)
+              ? isCoinType(searchString) &&
+                !(direction === TokenDirection.IN && isUsingDeposits)
                 ? "Fetching token metadata..."
-                : `No tokens matching "${searchString}"`
-              : isUsingDeposits
-                ? "No deposits"
-                : "No tokens"}
+                : `No ${
+                    direction === TokenDirection.IN && isUsingDeposits
+                      ? "deposits"
+                      : "tokens"
+                  } matching "${searchString}"`
+              : `No ${
+                  direction === TokenDirection.IN && isUsingDeposits
+                    ? "deposits"
+                    : "tokens"
+                }`}
           </TLabelSans>
         )}
       </div>
