@@ -80,7 +80,6 @@ export default function WormholeConnectWrapper() {
               toChain: "Sui",
               requiredChain: "Sui",
             },
-            showHamburgerMenu: false,
             getHelpUrl: DISCORD_URL,
             showInProgressWidget: true,
           },
