@@ -54,12 +54,12 @@ export default function Home() {
           <div className="relative w-full flex-1">
             <div
               className="flex w-full min-w-0 flex-col gap-4"
-              style={{ paddingRight: 376 + 6 * 4 }}
+              style={{ paddingRight: 360 + 6 * 4 }}
             >
               <MarketOverview />
               <MarketTable />
             </div>
-            <div className="absolute bottom-0 right-0 top-0 w-[376px] overflow-y-auto">
+            <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
               <div className="flex w-full shrink-0 flex-col gap-4">
                 <Cards />
               </div>
