@@ -49,7 +49,7 @@ export default function WormholeConnectWrapper() {
             "SOL",
           ],
           eventHandler: (event) => {
-            if (event.type === "transfer.initiate") {
+            if (event.type === "transfer.start") {
               track("bridge_submit");
             } else if (event.type === "transfer.redeem.initiate") {
               track("bridge_claim");
