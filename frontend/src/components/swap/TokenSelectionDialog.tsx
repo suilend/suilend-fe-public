@@ -14,13 +14,11 @@ import {
   isCoinType,
   isSui,
 } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
-import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
@@ -43,7 +41,6 @@ function TokenRow({
   isSelected,
   onClick,
 }: TokenRowProps) {
-  const { explorer } = useSettingsContext();
   const { data, getBalance, obligation } = useLoadedAppContext();
 
   const { verifiedCoinTypes } = useSwapContext();
@@ -82,12 +79,12 @@ function TokenRow({
           {/* Top */}
           <div className="flex w-full flex-row items-center justify-between gap-4">
             {/* Top left */}
-            <div className="flex min-w-0 flex-row items-center gap-1.5">
-              <div className="flex min-w-0 flex-row items-center gap-1">
-                <TBody className="overflow-hidden text-ellipsis text-nowrap">
-                  {token.symbol}
-                </TBody>
+            <div className="flex min-w-0 flex-row items-center gap-1">
+              <TBody className="overflow-hidden text-ellipsis text-nowrap">
+                {token.symbol}
+              </TBody>
 
+              <div className="flex shrink-0 flex-row items-center gap-1">
                 {(data.reserveCoinTypes.includes(token.coinType) ||
                   verifiedCoinTypes.includes(token.coinType)) && (
                   <Tooltip
@@ -104,18 +101,11 @@ function TokenRow({
                     </div>
                   </Tooltip>
                 )}
-              </div>
 
-              <div className="flex shrink-0 flex-row">
                 <CopyToClipboardButton
-                  className="h-5 w-5 hover:bg-transparent"
+                  className="h-6 w-6 hover:bg-transparent"
                   iconClassName="w-3 h-3"
                   value={isSui(token.coinType) ? SUI_COINTYPE : token.coinType}
-                />
-                <OpenOnExplorerButton
-                  className="h-5 w-5 hover:bg-transparent"
-                  iconClassName="w-3 h-3"
-                  url={explorer.buildCoinUrl(token.coinType)}
                 />
               </div>
             </div>
@@ -263,19 +253,19 @@ export default function TokenSelectionDialog({
 
   const filteredTokens = useMemo(
     () =>
-      !isUsingDeposits
-        ? [
+      isUsingDeposits
+        ? filteredDepositTokens
+        : [
             ...filteredBalanceTokens,
             ...filteredReserveTokens,
             ...filteredOtherTokens,
-          ]
-        : filteredDepositTokens,
+          ],
     [
       isUsingDeposits,
+      filteredDepositTokens,
       filteredBalanceTokens,
       filteredReserveTokens,
       filteredOtherTokens,
-      filteredDepositTokens,
     ],
   );
 
@@ -286,23 +276,23 @@ export default function TokenSelectionDialog({
 
   const filteredTokensMap = useMemo(() => {
     const result: Record<string, { title: string; tokens: SwapToken[] }> =
-      !isUsingDeposits
+      isUsingDeposits
         ? {
+            deposit: { title: "Your deposits", tokens: filteredDepositTokens },
+          }
+        : {
             balance: { title: "Your assets", tokens: filteredBalanceTokens },
             suilend: { title: "Suilend assets", tokens: filteredReserveTokens },
             other: { title: "Other known assets", tokens: filteredOtherTokens },
-          }
-        : {
-            deposit: { title: "Your deposits", tokens: filteredDepositTokens },
           };
 
     return result;
   }, [
     isUsingDeposits,
+    filteredDepositTokens,
     filteredReserveTokens,
     filteredBalanceTokens,
     filteredOtherTokens,
-    filteredDepositTokens,
   ]);
 
   // Select token
@@ -418,9 +408,9 @@ export default function TokenSelectionDialog({
               ? isCoinType(searchString)
                 ? "Fetching token metadata..."
                 : `No tokens matching "${searchString}"`
-              : !isUsingDeposits
-                ? "No tokens"
-                : "No deposits"}
+              : isUsingDeposits
+                ? "No deposits"
+                : "No tokens"}
           </TLabelSans>
         )}
       </div>
