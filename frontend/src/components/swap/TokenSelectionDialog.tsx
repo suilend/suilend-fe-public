@@ -96,7 +96,7 @@ function TokenRow({
                           : ""
                     }
                   >
-                    <div className="h-4 w-4 shrink-0 rounded-full bg-success/10 p-0.5">
+                    <div className="h-4 w-4 rounded-full bg-success/10 p-0.5">
                       <Check className="h-3 w-3 text-success" />
                     </div>
                   </Tooltip>
@@ -278,11 +278,20 @@ export default function TokenSelectionDialog({
     const result: Record<string, { title: string; tokens: SwapToken[] }> =
       isUsingDeposits
         ? {
-            deposit: { title: "Your deposits", tokens: filteredDepositTokens },
+            deposit: {
+              title: "Deposited assets",
+              tokens: filteredDepositTokens,
+            },
           }
         : {
-            balance: { title: "Your assets", tokens: filteredBalanceTokens },
-            suilend: { title: "Suilend assets", tokens: filteredReserveTokens },
+            balance: {
+              title: "Wallet balances",
+              tokens: filteredBalanceTokens,
+            },
+            suilend: {
+              title: "Assets listed on Suilend",
+              tokens: filteredReserveTokens,
+            },
             other: { title: "Other known assets", tokens: filteredOtherTokens },
           };
 
