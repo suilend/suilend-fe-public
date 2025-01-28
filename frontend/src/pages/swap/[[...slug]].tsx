@@ -217,9 +217,9 @@ function Page() {
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteType.AFTERMATH]: true,
-      [QuoteType.CETUS]: true,
-      [QuoteType._7K]: true,
+      [QuoteType.AFTERMATH]: false,
+      [QuoteType.CETUS]: false, // Wallet -> Wallet, Wallet -> Deposit
+      [QuoteType._7K]: true, // Wallet -> Wallet, Wallet -> Deposit
     }),
     [],
   );
