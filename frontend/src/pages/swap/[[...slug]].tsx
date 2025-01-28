@@ -66,7 +66,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   HISTORICAL_USD_PRICES_INTERVAL_S,
-  QuoteType,
+  QuoteProvider,
   StandardizedQuote,
   SwapContextProvider,
   TokenDirection,
@@ -217,9 +217,9 @@ function Page() {
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteType.AFTERMATH]: false,
-      [QuoteType.CETUS]: false, // Wallet -> Wallet, Wallet -> Deposit
-      [QuoteType._7K]: true, // Wallet -> Wallet, Wallet -> Deposit
+      [QuoteProvider.AFTERMATH]: false, // TEMP
+      [QuoteProvider.CETUS]: false, // Wallet -> Wallet, Wallet -> Deposit
+      [QuoteProvider._7K]: true, // Wallet -> Wallet, Wallet -> Deposit
     }),
     [],
   );
@@ -282,7 +282,7 @@ function Page() {
 
       // Fetch quotes in parallel
       // Aftermath
-      if (activeProvidersMap[QuoteType.AFTERMATH]) {
+      if (activeProvidersMap[QuoteProvider.AFTERMATH]) {
         (async () => {
           console.log("Swap - fetching Aftermath quote");
 
@@ -297,7 +297,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.AFTERMATH,
+              provider: QuoteProvider.AFTERMATH,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.coinIn.amount.toString()).div(
@@ -354,7 +354,7 @@ function Page() {
       }
 
       // Cetus
-      if (activeProvidersMap[QuoteType.CETUS]) {
+      if (activeProvidersMap[QuoteProvider.CETUS]) {
         (async () => {
           console.log("Swap - fetching Cetus quote");
 
@@ -369,7 +369,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.CETUS,
+              provider: QuoteProvider.CETUS,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.amountIn.toString()).div(
@@ -426,7 +426,7 @@ function Page() {
       }
 
       // 7K
-      if (activeProvidersMap[QuoteType._7K]) {
+      if (activeProvidersMap[QuoteProvider._7K]) {
         (async () => {
           console.log("Swap - fetching 7K quote");
 
@@ -439,7 +439,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType._7K,
+              provider: QuoteProvider._7K,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.swapAmount),
@@ -847,7 +847,7 @@ function Page() {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    if (quote.type === QuoteType.AFTERMATH) {
+    if (quote.provider === QuoteProvider.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
       const { tx: transaction2, coinOutId: coinOut } = await aftermathSdk
@@ -861,7 +861,7 @@ function Page() {
         });
 
       return { transaction: transaction2, coinOut };
-    } else if (quote.type === QuoteType.CETUS) {
+    } else if (quote.provider === QuoteProvider.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
 
       const coinOut = await cetusSdk.routerSwap({
@@ -873,7 +873,7 @@ function Page() {
       });
 
       return { transaction, coinOut };
-    } else if (quote.type === QuoteType._7K) {
+    } else if (quote.provider === QuoteProvider._7K) {
       const { tx: transaction2, coinOut } = await build7kTransaction({
         quoteResponse: quote.quote,
         accountAddress: address,
@@ -956,7 +956,7 @@ function Page() {
           transaction.pure.address(address),
         );
     } catch (err) {
-      Sentry.captureException(err);
+      Sentry.captureException(err, { provider: quote.provider } as any);
       console.error(err);
       throw err;
     }
@@ -1359,15 +1359,15 @@ function Page() {
           >
             Aftermath
           </TextLink>
-          {", "}
+          {/* {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
             noIcon
           >
             Cetus
-          </TextLink>
-          {", and "}
+          </TextLink> */}
+          {" and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
