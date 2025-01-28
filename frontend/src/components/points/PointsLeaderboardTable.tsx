@@ -78,6 +78,22 @@ export default function PointsLeaderboardTable({
           );
         },
       },
+      {
+        accessorKey: "totalPoints",
+        enableSorting: !disableSorting,
+        sortingFn: decimalSortingFn("totalPoints"),
+        header: ({ column }) =>
+          tableHeader(column, "Total points", { isNumerical: true }),
+        cell: ({ row }) => {
+          const { totalPoints } = row.original;
+
+          return (
+            <div className="flex flex-row justify-end">
+              <PointsCount season={season} amount={totalPoints} />
+            </div>
+          );
+        },
+      },
     ];
     if (season === currentSeason)
       result.push({
@@ -96,22 +112,6 @@ export default function PointsLeaderboardTable({
           );
         },
       });
-    result.push({
-      accessorKey: "totalPoints",
-      enableSorting: !disableSorting,
-      sortingFn: decimalSortingFn("totalPoints"),
-      header: ({ column }) =>
-        tableHeader(column, "Total Points", { isNumerical: true }),
-      cell: ({ row }) => {
-        const { totalPoints } = row.original;
-
-        return (
-          <div className="flex flex-row justify-end">
-            <PointsCount season={season} amount={totalPoints} />
-          </div>
-        );
-      },
-    });
 
     return result;
   }, [season, explorer, currentSeason, disableSorting]);

@@ -76,11 +76,7 @@ export default function ClaimRewardsDropdownMenu({
     <DropdownMenu
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
-        <Button
-          className="w-full"
-          labelClassName="uppercase"
-          endIcon={<Icon />}
-        >
+        <Button labelClassName="uppercase" endIcon={<Icon />}>
           Claim rewards
         </Button>
       }
