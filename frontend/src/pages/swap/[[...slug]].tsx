@@ -207,12 +207,12 @@ function Page() {
   );
 
   // State
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState<string>("");
-
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
   const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
     useState<boolean>(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState<string>("");
 
   // Quote
   const activeProvidersMap = useMemo(
