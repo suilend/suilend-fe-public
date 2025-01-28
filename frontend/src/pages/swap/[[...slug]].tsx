@@ -68,7 +68,7 @@ import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
-  QuoteType,
+  QuoteProvider,
   StandardizedQuote,
   SwapContextProvider,
   TokenDirection,
@@ -225,9 +225,9 @@ function Page() {
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteType.AFTERMATH]: true,
-      [QuoteType.CETUS]: false,
-      [QuoteType._7K]: true,
+      [QuoteProvider.AFTERMATH]: true,
+      [QuoteProvider.CETUS]: false,
+      [QuoteProvider._7K]: true,
     }),
     [],
   );
@@ -286,7 +286,7 @@ function Page() {
 
       // Fetch quotes in parallel
       // Aftermath
-      if (activeProvidersMap[QuoteType.AFTERMATH]) {
+      if (activeProvidersMap[QuoteProvider.AFTERMATH]) {
         (async () => {
           console.log("Swap - fetching Aftermath quote");
 
@@ -301,7 +301,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.AFTERMATH,
+              provider: QuoteProvider.AFTERMATH,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.coinIn.amount.toString()).div(
@@ -358,7 +358,7 @@ function Page() {
       }
 
       // Cetus
-      if (activeProvidersMap[QuoteType.CETUS]) {
+      if (activeProvidersMap[QuoteProvider.CETUS]) {
         (async () => {
           console.log("Swap - fetching Cetus quote");
 
@@ -373,7 +373,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.CETUS,
+              provider: QuoteProvider.CETUS,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.amountIn.toString()).div(
@@ -430,7 +430,7 @@ function Page() {
       }
 
       // 7K
-      if (activeProvidersMap[QuoteType._7K]) {
+      if (activeProvidersMap[QuoteProvider._7K]) {
         (async () => {
           console.log("Swap - fetching 7K quote");
 
@@ -443,7 +443,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType._7K,
+              provider: QuoteProvider._7K,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.swapAmount),
@@ -905,7 +905,7 @@ function Page() {
     transaction: Transaction;
     outputCoin?: TransactionObjectArgument;
   }> => {
-    if (_quote.type === QuoteType.AFTERMATH) {
+    if (_quote.provider === QuoteProvider.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
       if (isDepositing) {
@@ -930,7 +930,7 @@ function Page() {
 
         return { transaction };
       }
-    } else if (_quote.type === QuoteType.CETUS) {
+    } else if (_quote.provider === QuoteProvider.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
 
       if (isDepositing) {
@@ -964,7 +964,7 @@ function Page() {
 
         return { transaction };
       }
-    } else if (_quote.type === QuoteType._7K) {
+    } else if (_quote.provider === QuoteProvider._7K) {
       const { tx: transaction, coinOut: outputCoin } = await build7kTransaction(
         {
           quoteResponse: _quote.quote,
@@ -1016,7 +1016,7 @@ function Page() {
           sendObligationToUser(obligationOwnerCapId, address, transaction);
       }
     } catch (err) {
-      Sentry.captureException(err);
+      Sentry.captureException(err, { provider: quote.provider } as any);
       console.error(err);
       throw err;
     }

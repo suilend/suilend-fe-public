@@ -37,15 +37,15 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
-export enum QuoteType {
+export enum QuoteProvider {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
   _7K = "7k",
 }
-export const QUOTE_TYPE_NAME_MAP = {
-  [QuoteType.AFTERMATH]: "Aftermath",
-  [QuoteType.CETUS]: "Cetus",
-  [QuoteType._7K]: "7K",
+export const QUOTE_PROVIDER_NAME_MAP = {
+  [QuoteProvider.AFTERMATH]: "Aftermath",
+  [QuoteProvider.CETUS]: "Cetus",
+  [QuoteProvider._7K]: "7K",
 };
 
 export type StandardizedRoutePath = {
@@ -85,9 +85,9 @@ export type StandardizedQuote = {
     path: StandardizedRoutePath[];
   }[];
 } & (
-  | { type: QuoteType.AFTERMATH; quote: AftermathQuote }
-  | { type: QuoteType.CETUS; quote: CetusQuote }
-  | { type: QuoteType._7K; quote: _7kQuote }
+  | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
+  | { provider: QuoteProvider.CETUS; quote: CetusQuote }
+  | { provider: QuoteProvider._7K; quote: _7kQuote }
 );
 
 const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
