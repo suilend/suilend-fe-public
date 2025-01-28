@@ -177,10 +177,10 @@ export default function RewardsCard() {
         </div>
 
         {/* Actions */}
-        <div className="flex flex-row items-center gap-2">
-          <NextLink href={POINTS_URL}>
+        <div className="flex flex-row items-center justify-end gap-2">
+          <NextLink className="flex-1" href={POINTS_URL}>
             <Button
-              className="border-secondary text-primary-foreground"
+              className="w-full border-secondary text-primary-foreground"
               labelClassName="uppercase"
               variant="secondaryOutline"
             >
@@ -188,7 +188,9 @@ export default function RewardsCard() {
             </Button>
           </NextLink>
           {hasClaimableRewards && (
-            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+            <div className="flex-1">
+              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+            </div>
           )}
         </div>
       </CardContent>

@@ -100,7 +100,7 @@ export default function PointsCountPopover() {
               variant="secondaryOutline"
               onClick={() => setIsOpen(false)}
             >
-              View leaderboard
+              Leaderboard
             </Button>
           </NextLink>
         )}
