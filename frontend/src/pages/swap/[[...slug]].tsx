@@ -226,7 +226,7 @@ function Page() {
   const activeProvidersMap = useMemo(
     () => ({
       [QuoteType.AFTERMATH]: true,
-      [QuoteType.CETUS]: true,
+      [QuoteType.CETUS]: false,
       [QuoteType._7K]: true,
     }),
     [],
@@ -1428,15 +1428,15 @@ function Page() {
           >
             Aftermath
           </TextLink>
-          {", "}
+          {/* {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
             noIcon
           >
             Cetus
-          </TextLink>
-          {", and "}
+          </TextLink> */}
+          {" and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
