@@ -35,7 +35,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import {
-  QUOTE_TYPE_NAME_MAP,
+  QUOTE_PROVIDER_NAME_MAP,
   StandardizedPathWithToken,
   StandardizedQuote,
   StandardizedRoutePath,
@@ -506,7 +506,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
         >
           {hopsCount} hop{hopsCount !== 1 && "s"}
           {" | "}
-          {QUOTE_TYPE_NAME_MAP[quote.type]}
+          {QUOTE_PROVIDER_NAME_MAP[quote.provider]}
         </Button>
       }
       headerProps={{
@@ -518,7 +518,7 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           <>
             {hopsCount} hop{hopsCount !== 1 && "s"}
             {" | "}
-            {QUOTE_TYPE_NAME_MAP[quote.type]}
+            {QUOTE_PROVIDER_NAME_MAP[quote.provider]}
           </>
         ),
       }}

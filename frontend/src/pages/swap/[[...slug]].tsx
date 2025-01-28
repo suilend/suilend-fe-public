@@ -68,7 +68,7 @@ import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
-  QuoteType,
+  QuoteProvider,
   StandardizedQuote,
   SwapContextProvider,
   TokenDirection,
@@ -219,15 +219,19 @@ function Page() {
   );
 
   // State
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
+    useState<boolean>(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>("");
 
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteType.AFTERMATH]: true,
-      [QuoteType.CETUS]: true,
-      [QuoteType._7K]: true,
+      [QuoteProvider.AFTERMATH]: true,
+      [QuoteProvider.CETUS]: false,
+      [QuoteProvider._7K]: true,
     }),
     [],
   );
@@ -286,7 +290,7 @@ function Page() {
 
       // Fetch quotes in parallel
       // Aftermath
-      if (activeProvidersMap[QuoteType.AFTERMATH]) {
+      if (activeProvidersMap[QuoteProvider.AFTERMATH]) {
         (async () => {
           console.log("Swap - fetching Aftermath quote");
 
@@ -301,7 +305,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.AFTERMATH,
+              provider: QuoteProvider.AFTERMATH,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.coinIn.amount.toString()).div(
@@ -358,7 +362,7 @@ function Page() {
       }
 
       // Cetus
-      if (activeProvidersMap[QuoteType.CETUS]) {
+      if (activeProvidersMap[QuoteProvider.CETUS]) {
         (async () => {
           console.log("Swap - fetching Cetus quote");
 
@@ -373,7 +377,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType.CETUS,
+              provider: QuoteProvider.CETUS,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.amountIn.toString()).div(
@@ -430,7 +434,7 @@ function Page() {
       }
 
       // 7K
-      if (activeProvidersMap[QuoteType._7K]) {
+      if (activeProvidersMap[QuoteProvider._7K]) {
         (async () => {
           console.log("Swap - fetching 7K quote");
 
@@ -443,7 +447,7 @@ function Page() {
 
             const standardizedQuote: StandardizedQuote = {
               id: uuidv4(),
-              type: QuoteType._7K,
+              provider: QuoteProvider._7K,
               in: {
                 coinType: _tokenIn.coinType,
                 amount: new BigNumber(quote.swapAmount),
@@ -494,6 +498,8 @@ function Page() {
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+
+    if (isSwapping || isSwappingAndDepositing) return;
     refreshIntervalRef.current = setInterval(
       () => fetchQuotes(tokenIn, tokenOut, value),
       30 * 1000,
@@ -502,7 +508,14 @@ function Page() {
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [fetchQuotes, tokenIn, tokenOut, value]);
+  }, [
+    isSwapping,
+    isSwappingAndDepositing,
+    fetchQuotes,
+    tokenIn,
+    tokenOut,
+    value,
+  ]);
 
   // Value
   const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
@@ -824,10 +837,6 @@ function Page() {
   };
 
   // Swap
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
-    useState<boolean>(false);
-
   const swapButtonState: SubmitButtonState = (() => {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSwapping) return { isDisabled: true, isLoading: true };
@@ -851,7 +860,7 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
-      isDisabled: !quote || isSwappingAndDepositing,
+      isDisabled: !quote || isFetchingQuotes || isSwappingAndDepositing,
     };
   })();
 
@@ -905,7 +914,7 @@ function Page() {
     transaction: Transaction;
     outputCoin?: TransactionObjectArgument;
   }> => {
-    if (_quote.type === QuoteType.AFTERMATH) {
+    if (_quote.provider === QuoteProvider.AFTERMATH) {
       console.log("Swap - fetching transaction for Aftermath quote");
 
       if (isDepositing) {
@@ -930,7 +939,7 @@ function Page() {
 
         return { transaction };
       }
-    } else if (_quote.type === QuoteType.CETUS) {
+    } else if (_quote.provider === QuoteProvider.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
 
       if (isDepositing) {
@@ -964,7 +973,7 @@ function Page() {
 
         return { transaction };
       }
-    } else if (_quote.type === QuoteType._7K) {
+    } else if (_quote.provider === QuoteProvider._7K) {
       const { tx: transaction, coinOut: outputCoin } = await build7kTransaction(
         {
           quoteResponse: _quote.quote,
@@ -1016,7 +1025,7 @@ function Page() {
           sendObligationToUser(obligationOwnerCapId, address, transaction);
       }
     } catch (err) {
-      Sentry.captureException(err);
+      Sentry.captureException(err, { provider: quote.provider } as any);
       console.error(err);
       throw err;
     }
@@ -1033,7 +1042,7 @@ function Page() {
     } else {
       if (swapButtonState.isDisabled) return;
     }
-    if (quoteAmountOut === undefined || isFetchingQuotes) return;
+    if (quoteAmountOut === undefined) return;
 
     (deposit ? setIsSwappingAndDepositing : setIsSwapping)(true);
 
@@ -1428,15 +1437,15 @@ function Page() {
           >
             Aftermath
           </TextLink>
-          {", "}
+          {/* {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
             noIcon
           >
             Cetus
-          </TextLink>
-          {", and "}
+          </TextLink> */}
+          {" and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
