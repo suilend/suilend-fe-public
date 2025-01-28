@@ -43,11 +43,13 @@ export default function Home() {
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
             <div className="flex flex-col gap-2">
-              <MarketOverview />
               <Cards />
             </div>
 
-            <MarketTable />
+            <div className="flex w-full flex-col gap-6">
+              <MarketOverview />
+              <MarketTable />
+            </div>
           </div>
         ) : (
           // Horizontal layout
