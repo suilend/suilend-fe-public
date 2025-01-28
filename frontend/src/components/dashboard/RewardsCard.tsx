@@ -65,9 +65,11 @@ function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
     <div className="flex flex-col gap-1">
       <TLabelSans>Claimable rewards</TLabelSans>
 
-      {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
-        <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
-      ))}
+      <div className="grid w-full grid-cols-2 gap-x-4 gap-y-1">
+        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -149,21 +151,6 @@ export default function RewardsCard() {
         title: "Rewards",
         titleClassName: "text-primary-foreground",
         noSeparator: true,
-        endContent: (
-          <>
-            {hasClaimableRewards && (
-              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-            )}
-            <NextLink href={POINTS_URL}>
-              <Button
-                labelClassName="uppercase text-xs"
-                variant="secondaryOutline"
-              >
-                Leaderboard
-              </Button>
-            </NextLink>
-          </>
-        ),
       }}
     >
       <CardContent className="flex flex-col gap-4 rounded-b-[3px] bg-card">
@@ -187,6 +174,22 @@ export default function RewardsCard() {
             amount={pointsStats.pointsPerDay.total}
             isRightAligned
           />
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-row items-center gap-2">
+          <NextLink href={POINTS_URL}>
+            <Button
+              className="border-secondary text-primary-foreground"
+              labelClassName="uppercase"
+              variant="secondaryOutline"
+            >
+              Leaderboard
+            </Button>
+          </NextLink>
+          {hasClaimableRewards && (
+            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+          )}
         </div>
       </CardContent>
     </Card>
