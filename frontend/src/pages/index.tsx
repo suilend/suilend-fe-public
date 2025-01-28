@@ -56,7 +56,7 @@ export default function Home() {
           <div className="relative w-full flex-1">
             <div
               className="flex w-full min-w-0 flex-col gap-6"
-              style={{ paddingRight: 360 + 6 * 4 }}
+              style={{ paddingRight: 360 + 8 * 4 }}
             >
               <MarketOverview />
               <MarketTable />
