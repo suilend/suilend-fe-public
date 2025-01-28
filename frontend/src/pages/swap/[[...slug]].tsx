@@ -219,6 +219,10 @@ function Page() {
   );
 
   // State
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
+    useState<boolean>(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>("");
 
@@ -494,6 +498,8 @@ function Page() {
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+
+    if (isSwapping || isSwappingAndDepositing) return;
     refreshIntervalRef.current = setInterval(
       () => fetchQuotes(tokenIn, tokenOut, value),
       30 * 1000,
@@ -502,7 +508,14 @@ function Page() {
     return () => {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [fetchQuotes, tokenIn, tokenOut, value]);
+  }, [
+    isSwapping,
+    isSwappingAndDepositing,
+    fetchQuotes,
+    tokenIn,
+    tokenOut,
+    value,
+  ]);
 
   // Value
   const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
@@ -824,10 +837,6 @@ function Page() {
   };
 
   // Swap
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
-    useState<boolean>(false);
-
   const swapButtonState: SubmitButtonState = (() => {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSwapping) return { isDisabled: true, isLoading: true };
@@ -851,7 +860,7 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
-      isDisabled: !quote || isSwappingAndDepositing,
+      isDisabled: !quote || isFetchingQuotes || isSwappingAndDepositing,
     };
   })();
 
@@ -1033,7 +1042,7 @@ function Page() {
     } else {
       if (swapButtonState.isDisabled) return;
     }
-    if (quoteAmountOut === undefined || isFetchingQuotes) return;
+    if (quoteAmountOut === undefined) return;
 
     (deposit ? setIsSwappingAndDepositing : setIsSwapping)(true);
 
