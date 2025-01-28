@@ -10,12 +10,14 @@ interface PointsPerDayStatProps {
   season: number;
   amount?: BigNumber;
   isCentered?: boolean;
+  isRightAligned?: boolean;
 }
 
 export default function PointsPerDayStat({
   season,
   amount,
   isCentered,
+  isRightAligned,
 }: PointsPerDayStatProps) {
   const { data, obligation } = useLoadedAppContext();
 
@@ -23,8 +25,19 @@ export default function PointsPerDayStat({
   const wasLooping = getWasLooping(data, obligation);
 
   return (
-    <div className={cn("flex flex-col gap-1", isCentered && "items-center")}>
-      <TLabelSans className={cn(isCentered && "text-center")}>
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        isCentered && "items-center",
+        isRightAligned && "items-end",
+      )}
+    >
+      <TLabelSans
+        className={cn(
+          isCentered && "text-center",
+          isRightAligned && "text-right",
+        )}
+      >
         Points per day
       </TLabelSans>
 

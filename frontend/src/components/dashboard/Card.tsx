@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 interface CardProps extends PropsWithChildren, CardRootProps {
   id?: string;
   headerProps?: {
+    className?: ClassValue;
     titleClassName?: ClassValue;
     titleIcon?: ReactElement;
     title?: string | ReactNode;
@@ -51,7 +52,9 @@ export default function Card({
       {...restProps}
     >
       {headerProps && (
-        <CardHeader className="flex flex-col gap-2 space-y-0">
+        <CardHeader
+          className={cn("flex flex-col gap-2 space-y-0", headerProps.className)}
+        >
           <div className="flex h-5 flex-row items-center justify-between">
             {(headerProps.titleIcon ||
               headerProps.title ||

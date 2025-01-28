@@ -18,6 +18,7 @@ function Cards() {
   return (
     <>
       <LoopingCard />
+      <RewardsCard />
       <AccountPositionCard />
       <ObligationDepositsCard />
       <ObligationBorrowsCard />
@@ -42,23 +43,23 @@ export default function Home() {
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
             <div className="flex flex-col gap-2">
-              <MarketOverview />
               <Cards />
             </div>
 
-            <MarketTable />
-            <RewardsCard />
+            <div className="flex w-full flex-col gap-6">
+              <MarketOverview />
+              <MarketTable />
+            </div>
           </div>
         ) : (
           // Horizontal layout
           <div className="relative w-full flex-1">
             <div
               className="flex w-full min-w-0 flex-col gap-6"
-              style={{ paddingRight: 360 + 10 * 4 }}
+              style={{ paddingRight: 360 + 8 * 4 }}
             >
               <MarketOverview />
               <MarketTable />
-              <RewardsCard />
             </div>
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
               <div className="flex w-full shrink-0 flex-col gap-4">

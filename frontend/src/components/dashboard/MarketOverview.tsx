@@ -10,6 +10,7 @@ export default function MarketOverview() {
 
   return (
     <Card
+      className="max-md:rounded-0 max-md:-mx-4 max-md:w-auto max-md:border-x-0 max-md:bg-transparent"
       headerProps={{
         title: "Pool overview",
         startContent: <MarketOverviewPopover />,

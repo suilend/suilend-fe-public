@@ -161,13 +161,13 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                       <div
                         key={title}
                         className={cn(
-                          "-mx-4 flex flex-col gap-4 px-4",
-                          (index2 !== 0 || isCollapsibleRowExpanded) && "pt-2",
+                          "-mx-4 flex flex-col gap-2 px-4",
+                          (index2 !== 0 || isCollapsibleRowExpanded) && "pt-0",
                           (index2 !== row.subRows.length - 1 ||
                             isCollapsibleRowExpanded) &&
-                            "pb-2",
+                            "pb-0",
                           isCollapsibleRowExpanded &&
-                            "bg-gradient-to-r from-muted/5 to-muted/0 shadow-[inset_2px_0_0_0px_hsl(var(--primary))]",
+                            "shadow-[inset_2px_0_0_0px_hsl(var(--primary))]",
                         )}
                       >
                         {/* Title */}
