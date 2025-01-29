@@ -74,7 +74,7 @@ export default function DropdownMenu({
           {
             maxHeight: "var(--radix-dropdown-menu-content-available-height)",
             overflowY: "auto",
-            minWidth: "280px",
+            minWidth: "300px",
             maxWidth: "300px",
           },
           contentStyle,
