@@ -1370,13 +1370,6 @@ function Page() {
                   )}
                 </Button>
 
-                <div className="mt-2 w-full">
-                  <YourUtilizationLabel
-                    obligation={obligation}
-                    newObligation={newObligation}
-                  />
-                </div>
-
                 {(swapAndDepositWarningMessages ?? []).map((warningMessage) => (
                   <TLabelSans
                     key={warningMessage}
@@ -1386,6 +1379,12 @@ function Page() {
                     {warningMessage}
                   </TLabelSans>
                 ))}
+
+                <YourUtilizationLabel
+                  obligation={obligation}
+                  newObligation={newObligation}
+                  noUtilizationBar
+                />
               </div>
             )}
           </div>
