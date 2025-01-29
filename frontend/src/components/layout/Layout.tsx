@@ -33,7 +33,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
   return (
     <div
-      className="relative z-[1] flex min-h-dvh flex-col"
+      className="relative z-[1] flex min-h-dvh flex-col max-md:pb-10"
       style={
         {
           background: `url('${ASSETS_URL}/background.svg') bottom no-repeat`,
