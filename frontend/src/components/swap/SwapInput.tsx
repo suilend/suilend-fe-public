@@ -127,9 +127,9 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 onSelectToken={onSelectToken}
               />
 
-              <div className="flex flex-row items-center gap-3 pr-2">
+              <div className="flex flex-row items-center gap-3 pr-1">
                 {/* Balance */}
-                {!(direction === TokenDirection.IN && isUsingDeposits) && (
+                {!isUsingDeposits && (
                   <div
                     className={cn(
                       "flex flex-row items-center gap-1.5 text-muted-foreground",
@@ -147,7 +147,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 )}
 
                 {/* Deposited */}
-                {!(direction === TokenDirection.IN && !isUsingDeposits) && (
+                {(isUsingDeposits || direction === TokenDirection.OUT) && (
                   <div
                     className={cn(
                       "flex flex-row items-center gap-1.5 text-muted-foreground",

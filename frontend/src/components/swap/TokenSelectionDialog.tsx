@@ -103,9 +103,9 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
             </div>
 
             {/* Top right */}
-            <div className="flex flex-shrink-0 flex-row items-center gap-3">
+            <div className="flex shrink-0 flex-row items-center gap-3">
               {/* Balance */}
-              {!(direction === TokenDirection.IN && isUsingDeposits) && (
+              {!isUsingDeposits && (
                 <div
                   className={cn(
                     "flex flex-row items-center gap-1.5",
@@ -124,7 +124,7 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
               )}
 
               {/* Deposited */}
-              {!(direction === TokenDirection.IN && !isUsingDeposits) && (
+              {(isUsingDeposits || direction === TokenDirection.OUT) && (
                 <div
                   className={cn(
                     "flex flex-row items-center gap-1.5",
@@ -271,23 +271,26 @@ export default function TokenSelectionDialog({
   );
 
   const filteredTokens = useMemo(() => {
-    let result = [...filteredDepositTokens];
-    if (direction === TokenDirection.IN && isUsingDeposits) return result;
+    let result: SwapToken[];
 
-    result = [
-      ...result,
-      ...filteredBalanceTokens,
-      ...filteredReserveTokens,
-      ...filteredOtherTokens,
-    ];
+    if (isUsingDeposits) {
+      if (direction === TokenDirection.IN) result = [...filteredDepositTokens];
+      else result = [...filteredDepositTokens, ...filteredReserveTokens];
+    } else
+      result = [
+        ...filteredDepositTokens,
+        ...filteredBalanceTokens,
+        ...filteredReserveTokens,
+        ...filteredOtherTokens,
+      ];
 
     return result;
   }, [
-    filteredDepositTokens,
-    direction,
     isUsingDeposits,
-    filteredBalanceTokens,
+    direction,
+    filteredDepositTokens,
     filteredReserveTokens,
+    filteredBalanceTokens,
     filteredOtherTokens,
   ]);
 
@@ -295,49 +298,66 @@ export default function TokenSelectionDialog({
     if (
       filteredTokens.length === 0 &&
       isCoinType(searchString) &&
-      !(direction === TokenDirection.IN && isUsingDeposits)
+      !isUsingDeposits
     )
       fetchTokensMetadata([normalizeStructTag(searchString)]);
-  }, [
-    filteredTokens,
-    searchString,
-    direction,
-    isUsingDeposits,
-    fetchTokensMetadata,
-  ]);
+  }, [filteredTokens, searchString, isUsingDeposits, fetchTokensMetadata]);
 
   const filteredTokensMap = useMemo(() => {
-    let result: Record<string, { title: string; tokens: SwapToken[] }> = {
-      deposit: {
-        title: "Deposited assets",
-        tokens: filteredDepositTokens,
-      },
-    };
-    if (direction === TokenDirection.IN && isUsingDeposits) return result;
+    let result: Record<
+      string,
+      {
+        title: string;
+        tokens: SwapToken[];
+      }
+    >;
 
-    result = {
-      ...result,
-      balance: {
-        title: "Wallet balances",
-        tokens: filteredBalanceTokens,
-      },
-      suilend: {
-        title: "Assets listed on Suilend",
-        tokens: filteredReserveTokens,
-      },
-      other: {
-        title: "Other known assets",
-        tokens: filteredOtherTokens,
-      },
-    };
+    if (isUsingDeposits) {
+      if (direction === TokenDirection.IN)
+        result = {
+          deposit: {
+            title: "Deposited assets",
+            tokens: filteredDepositTokens,
+          },
+        };
+      else
+        result = {
+          deposit: {
+            title: "Deposited assets",
+            tokens: filteredDepositTokens,
+          },
+          suilend: {
+            title: "Assets listed on Suilend",
+            tokens: filteredReserveTokens,
+          },
+        };
+    } else
+      result = {
+        deposit: {
+          title: "Deposited assets",
+          tokens: filteredDepositTokens,
+        },
+        balance: {
+          title: "Wallet balances",
+          tokens: filteredBalanceTokens,
+        },
+        suilend: {
+          title: "Assets listed on Suilend",
+          tokens: filteredReserveTokens,
+        },
+        other: {
+          title: "Other known assets",
+          tokens: filteredOtherTokens,
+        },
+      };
 
     return result;
   }, [
-    filteredDepositTokens,
-    direction,
     isUsingDeposits,
-    filteredBalanceTokens,
+    direction,
+    filteredDepositTokens,
     filteredReserveTokens,
+    filteredBalanceTokens,
     filteredOtherTokens,
   ]);
 
@@ -380,7 +400,11 @@ export default function TokenSelectionDialog({
           <Input
             id="searchString"
             type="text"
-            placeholder="Search by token symbol, name or address"
+            placeholder={
+              isUsingDeposits
+                ? "Search by token symbol or name"
+                : "Search by token symbol, name or address"
+            }
             value={searchString}
             onChange={setSearchString}
             inputProps={{
@@ -451,19 +475,10 @@ export default function TokenSelectionDialog({
         ) : (
           <TLabelSans className="py-4 text-center">
             {searchString
-              ? isCoinType(searchString) &&
-                !(direction === TokenDirection.IN && isUsingDeposits)
+              ? isCoinType(searchString) && !isUsingDeposits
                 ? "Fetching token metadata..."
-                : `No ${
-                    direction === TokenDirection.IN && isUsingDeposits
-                      ? "deposits"
-                      : "tokens"
-                  } matching "${searchString}"`
-              : `No ${
-                  direction === TokenDirection.IN && isUsingDeposits
-                    ? "deposits"
-                    : "tokens"
-                }`}
+                : `No tokens matching "${searchString}"`
+              : "No tokens"}
           </TLabelSans>
         )}
       </div>

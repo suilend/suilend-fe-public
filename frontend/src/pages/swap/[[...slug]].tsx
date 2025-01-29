@@ -56,6 +56,7 @@ import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import RoutingDialog from "@/components/swap/RoutingDialog";
 import SwapInput from "@/components/swap/SwapInput";
 import SwapSlippagePopover, {
@@ -75,6 +76,7 @@ import {
 import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
   getMaxValue,
+  getNewBorrowUtilizationCalculations,
   getSubmitButtonNoValueState,
   getSubmitButtonState,
   getSubmitWarningMessages,
@@ -217,9 +219,9 @@ function Page() {
   // Quote
   const activeProvidersMap = useMemo(
     () => ({
-      [QuoteProvider.AFTERMATH]: false, // TEMP
-      [QuoteProvider.CETUS]: false, // Wallet -> Wallet, Wallet -> Deposit
-      [QuoteProvider._7K]: true, // Wallet -> Wallet, Wallet -> Deposit
+      [QuoteProvider.AFTERMATH]: true, // W->W, W->D, D->D
+      [QuoteProvider.CETUS]: true, // W->W, W->D, D->D
+      [QuoteProvider._7K]: true, // W->W, W->D, D->D
     }),
     [],
   );
@@ -548,6 +550,31 @@ function Page() {
     inputRef.current?.focus();
   };
 
+  // Use deposits - utilization
+  const newObligation = (() => {
+    if (!(obligation && tokenInReserve && tokenOutReserve && quote))
+      return undefined;
+
+    const withdrawObligation = {
+      ...obligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.WITHDRAW,
+        tokenInReserve,
+        obligation,
+      )(quote.in.amount) ?? {}),
+    };
+    const depositObligation = {
+      ...withdrawObligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.DEPOSIT,
+        tokenOutReserve,
+        withdrawObligation,
+      )(quote.out.amount) ?? {}),
+    };
+
+    return depositObligation;
+  })();
+
   // USD prices - historical
   const tokenInHistoricalUsdPrices = useMemo(
     () => tokenHistoricalUsdPricesMap[tokenIn.coinType],
@@ -811,6 +838,25 @@ function Page() {
     if (swapAndDepositButtonNoValueState !== undefined)
       return swapAndDepositButtonNoValueState;
 
+    if (isUsingDeposits) {
+      if (value === "") return { isDisabled: true, title: "Enter an amount" };
+      if (new BigNumber(value).lt(0))
+        return { isDisabled: true, title: "Enter a +ve amount" };
+      if (new BigNumber(value).eq(0))
+        return { isDisabled: true, title: "Enter a non-zero amount" };
+
+      if (suiBalance.lt(SUI_GAS_MIN))
+        return {
+          isDisabled: true,
+          title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        };
+
+      for (const calc of tokenInMaxCalculations) {
+        if (new BigNumber(value).gt(calc.value))
+          return { isDisabled: calc.isDisabled, title: calc.reason };
+      }
+    }
+
     const swapAndDepositButtonState = getSubmitButtonState(
       Action.DEPOSIT,
       tokenOutReserve,
@@ -837,9 +883,10 @@ function Page() {
     : undefined;
 
   // Submit
+  // If `coinIn` is `undefined`, `transaction` is an empty transaction
   const getTransactionForStandardizedQuote = async (
     transaction: Transaction,
-    coinIn: TransactionObjectArgument,
+    coinIn: TransactionObjectArgument | undefined,
   ): Promise<{
     transaction: Transaction;
     coinOut?: TransactionObjectArgument;
@@ -863,6 +910,13 @@ function Page() {
       return { transaction: transaction2, coinOut };
     } else if (quote.provider === QuoteProvider.CETUS) {
       console.log("Swap - fetching transaction for Cetus quote");
+
+      if (!coinIn)
+        coinIn = coinWithBalance({
+          balance: BigInt(quote.quote.amountIn.toString()),
+          type: quote.in.coinType,
+          useGasCoin: isSui(quote.in.coinType),
+        })(transaction);
 
       const coinOut = await cetusSdk.routerSwap({
         routers: quote.quote,
@@ -896,7 +950,7 @@ function Page() {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    const submitAmount = quote.in.amount
+    let submitAmount = quote.in.amount
       .times(10 ** tokenIn.decimals)
       .integerValue(BigNumber.ROUND_DOWN)
       .toString();
@@ -904,11 +958,21 @@ function Page() {
     let transaction = new Transaction();
 
     try {
-      let coinIn: TransactionObjectArgument;
+      let coinIn: TransactionObjectArgument | undefined;
       if (isUsingDeposits) {
         if (!obligation || !obligationOwnerCap)
           throw new Error("Obligation or ObligationOwnerCap not found");
+        if (!tokenInReserve || !tokenInDepositPosition)
+          throw new Error("Cannot withdraw this token");
 
+        submitAmount = BigNumber.min(
+          new BigNumber(submitAmount)
+            .div(tokenInReserve.cTokenExchangeRate)
+            .integerValue(BigNumber.ROUND_UP),
+          tokenInDepositPosition.depositedCtokenAmount,
+        ).toString();
+
+        // TODO: Support MAX
         const [_coinIn] = await suilendClient.withdraw(
           obligationOwnerCap.id,
           obligation.id,
@@ -917,12 +981,6 @@ function Page() {
           transaction,
         );
         coinIn = _coinIn;
-      } else {
-        coinIn = coinWithBalance({
-          balance: BigInt(submitAmount),
-          type: quote.in.coinType,
-          useGasCoin: isSui(quote.in.coinType),
-        })(transaction);
       }
 
       const { transaction: _transaction, coinOut } =
@@ -1223,56 +1281,101 @@ function Page() {
             )}
           </div>
 
-          {/* Submit & swap and deposit */}
+          {/* Submit */}
           <div className="flex w-full flex-col gap-px">
-            {/* Submit */}
-            <Button
-              className={cn(
-                "h-auto min-h-14 w-full",
-                tokenOutReserve && "rounded-b-none",
-              )}
-              labelClassName="text-wrap uppercase"
-              size="lg"
-              disabled={swapButtonState.isDisabled}
-              onClick={() => onSwapClick(false)}
-            >
-              {swapButtonState.isLoading ? (
-                <Spinner size="md" />
-              ) : (
-                swapButtonState.title
-              )}
-              {swapButtonState.description && (
-                <span className="mt-0.5 block font-sans text-xs normal-case">
-                  {swapButtonState.description}
-                </span>
-              )}
-            </Button>
+            {!isUsingDeposits ? (
+              <>
+                {/* Swap */}
+                <Button
+                  className={cn(
+                    "h-auto min-h-14 w-full",
+                    tokenOutReserve && "rounded-b-none",
+                  )}
+                  labelClassName="text-wrap uppercase"
+                  size="lg"
+                  disabled={swapButtonState.isDisabled}
+                  onClick={() => onSwapClick(false)}
+                >
+                  {swapButtonState.isLoading ? (
+                    <Spinner size="md" />
+                  ) : (
+                    swapButtonState.title
+                  )}
+                  {swapButtonState.description && (
+                    <span className="mt-0.5 block font-sans text-xs normal-case">
+                      {swapButtonState.description}
+                    </span>
+                  )}
+                </Button>
 
-            {/* Swap and deposit */}
-            {tokenOutReserve && (
+                {/* Swap and deposit */}
+                {tokenOutReserve && (
+                  <div className="flex w-full flex-col gap-2">
+                    <Button
+                      className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                      labelClassName="uppercase text-wrap text-xs"
+                      variant="secondary"
+                      disabled={swapAndDepositButtonState.isDisabled}
+                      onClick={
+                        swapAndDepositButtonState.isDisabled
+                          ? undefined
+                          : () => onSwapClick(true)
+                      }
+                    >
+                      {swapAndDepositButtonState.isLoading ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        swapAndDepositButtonState.title
+                      )}
+                      {swapAndDepositButtonState.description && (
+                        <span className="block font-sans text-xs normal-case">
+                          {swapAndDepositButtonState.description}
+                        </span>
+                      )}
+                    </Button>
+
+                    {(swapAndDepositWarningMessages ?? []).map(
+                      (warningMessage) => (
+                        <TLabelSans
+                          key={warningMessage}
+                          className="text-[10px] text-warning"
+                        >
+                          <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                          {warningMessage}
+                        </TLabelSans>
+                      ),
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              // Swap and deposit
               <div className="flex w-full flex-col gap-2">
                 <Button
-                  className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
-                  labelClassName="uppercase text-wrap text-xs"
-                  variant="secondary"
+                  className="h-auto min-h-14 w-full"
+                  labelClassName="text-wrap uppercase"
+                  size="lg"
                   disabled={swapAndDepositButtonState.isDisabled}
-                  onClick={
-                    swapAndDepositButtonState.isDisabled
-                      ? undefined
-                      : () => onSwapClick(true)
-                  }
+                  onClick={() => onSwapClick(true)}
                 >
                   {swapAndDepositButtonState.isLoading ? (
-                    <Spinner size="sm" />
+                    <Spinner size="md" />
                   ) : (
                     swapAndDepositButtonState.title
                   )}
                   {swapAndDepositButtonState.description && (
-                    <span className="block font-sans text-xs normal-case">
+                    <span className="mt-0.5 block font-sans text-xs normal-case">
                       {swapAndDepositButtonState.description}
                     </span>
                   )}
                 </Button>
+
+                <div className="mt-2 w-full">
+                  <YourUtilizationLabel
+                    obligation={obligation}
+                    newObligation={newObligation}
+                  />
+                </div>
 
                 {(swapAndDepositWarningMessages ?? []).map((warningMessage) => (
                   <TLabelSans
@@ -1359,15 +1462,15 @@ function Page() {
           >
             Aftermath
           </TextLink>
-          {/* {", "}
+          {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
             noIcon
           >
             Cetus
-          </TextLink> */}
-          {" and "}
+          </TextLink>
+          {", and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
