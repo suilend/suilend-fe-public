@@ -414,22 +414,27 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         setIsUsingDeposits(false);
         return [tokenIn, tokenOut];
       }
-      if (!!obligation.deposits.find((d) => d.coinType === tokenIn.coinType))
-        return [tokenIn, tokenOut];
 
-      const newTokenIn = tokens?.find(
-        (t) => t.coinType === obligation.deposits[0].coinType,
+      const isTokenInValid = !!obligation.deposits.find(
+        (d) => d.coinType === tokenIn.coinType,
       );
-      const newTokenOut =
-        tokenOut.coinType !== newTokenIn?.coinType
-          ? tokenOut
-          : tokens?.find(
-              (t) =>
-                t.coinType ===
-                (DEFAULT_TOKEN_OUT_COINTYPE !== newTokenIn?.coinType
-                  ? DEFAULT_TOKEN_OUT_COINTYPE
-                  : DEFAULT_TOKEN_IN_COINTYPE),
-            );
+      const isTokenOutValid = !!filteredReserves.find(
+        (r) => r.coinType === tokenOut.coinType,
+      );
+      if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
+
+      const newTokenIn = isTokenInValid
+        ? tokenIn
+        : tokens?.find((t) => t.coinType === obligation.deposits[0].coinType);
+      let newTokenOut = isTokenOutValid
+        ? tokenOut
+        : tokens?.find((t) => t.coinType === DEFAULT_TOKEN_OUT_COINTYPE);
+
+      if (newTokenIn?.coinType === newTokenOut?.coinType)
+        newTokenOut = tokens?.find(
+          (t) => t.coinType === DEFAULT_TOKEN_IN_COINTYPE,
+        );
+
       if (!newTokenIn || !newTokenOut) return [undefined, undefined];
 
       if (tokenHistoricalUsdPricesMap[newTokenIn.coinType] === undefined)
@@ -457,6 +462,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     isUsingDeposits,
     obligation?.deposits,
     setIsUsingDeposits,
+    filteredReserves,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,
