@@ -4,7 +4,7 @@ import { maxU64 } from "@suilend/sdk";
 
 const shorten = (value: string, start: number, end: number) => {
   return value.length > start + end
-    ? `${value.slice(0, start)}...${value.slice(-end)}`
+    ? `${value.slice(0, start)}…${value.slice(-end)}`
     : value;
 };
 
