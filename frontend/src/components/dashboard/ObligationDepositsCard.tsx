@@ -1,3 +1,5 @@
+import { Download } from "lucide-react";
+
 import AccountAssetTable, {
   AccountAssetTableType,
 } from "@/components/dashboard/AccountAssetTable";
@@ -13,6 +15,7 @@ export default function ObligationDepositsCard() {
     <Card
       id="assets-deposited"
       headerProps={{
+        titleIcon: <Download />,
         title: (
           <>
             Deposited assets

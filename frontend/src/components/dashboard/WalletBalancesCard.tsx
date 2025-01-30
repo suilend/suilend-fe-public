@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
+import { Wallet } from "lucide-react";
 
 import { getToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
@@ -38,6 +39,7 @@ export default function WalletBalancesCard() {
     <Card
       id="wallet-balances"
       headerProps={{
+        titleIcon: <Wallet />,
         title: (
           <>
             Wallet balances
