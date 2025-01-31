@@ -1,15 +1,14 @@
 import { forwardRef, useEffect, useRef } from "react";
 
 import BigNumber from "bignumber.js";
-import { Wallet } from "lucide-react";
+import { Download, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
-
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
 import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,9 +24,10 @@ interface SwapInputProps {
   isValueLoading?: boolean;
   onChange?: (value: string) => void;
   usdValue?: BigNumber;
+  direction: TokenDirection;
   token: SwapToken;
   onSelectToken: (token: SwapToken) => void;
-  onBalanceClick?: () => void;
+  onAmountClick?: () => void;
 }
 
 const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
@@ -39,17 +39,16 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       isValueLoading,
       onChange,
       usdValue,
+      direction,
       token,
       onSelectToken,
-      onBalanceClick,
+      onAmountClick,
     },
     ref,
   ) => {
-    const { getBalance } = useLoadedAppContext();
+    const { getBalance, obligation } = useLoadedAppContext();
 
-    const isTouchscreen = useIsTouchscreen();
-
-    const tokenBalance = getBalance(token.coinType);
+    const { isUsingDeposits } = useSwapContext();
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -58,7 +57,17 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       setTimeout(() => localRef.current?.focus());
     }, [autoFocus]);
 
+    // State
     const isReadOnly = !onChange;
+
+    // Amount
+    const tokenBalance = getBalance(token.coinType);
+
+    const tokenDepositPosition = obligation?.deposits?.find(
+      (d) => d.coinType === token.coinType,
+    );
+    const tokenDepositedAmount =
+      tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
 
     return (
       <div
@@ -113,21 +122,47 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               style={{ top: `${INPUT_PADDING_Y}px` }}
             >
               <TokenSelectionDialog
+                direction={direction}
                 token={token}
                 onSelectToken={onSelectToken}
               />
 
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-1.5 pr-2",
-                  onBalanceClick && "cursor-pointer",
+              <div className="flex flex-row items-center gap-3 pr-1">
+                {/* Balance */}
+                {!isUsingDeposits && (
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5 text-muted-foreground",
+                      onAmountClick && "cursor-pointer",
+                    )}
+                    onClick={onAmountClick}
+                  >
+                    <Wallet className="h-3 w-3 text-inherit" />
+                    <TLabel className="text-inherit">
+                      {tokenBalance.eq(0)
+                        ? "--"
+                        : formatToken(tokenBalance, { exact: false })}
+                    </TLabel>
+                  </div>
                 )}
-                onClick={onBalanceClick}
-              >
-                <Wallet className="h-3 w-3 text-muted-foreground" />
-                <TLabel className="max-w-[200px] overflow-hidden text-ellipsis text-nowrap">
-                  {formatToken(tokenBalance)} {token.symbol}
-                </TLabel>
+
+                {/* Deposited */}
+                {(isUsingDeposits || direction === TokenDirection.OUT) && (
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5 text-muted-foreground",
+                      onAmountClick && "cursor-pointer",
+                    )}
+                    onClick={onAmountClick}
+                  >
+                    <Download className="h-3 w-3 text-inherit" />
+                    <TLabel className="text-inherit">
+                      {tokenDepositedAmount.eq(0)
+                        ? "--"
+                        : formatToken(tokenDepositedAmount, { exact: false })}
+                    </TLabel>
+                  </div>
+                )}
               </div>
             </div>
           </div>

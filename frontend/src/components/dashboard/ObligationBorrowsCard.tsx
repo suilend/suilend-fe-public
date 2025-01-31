@@ -1,3 +1,5 @@
+import { Upload } from "lucide-react";
+
 import AccountAssetTable, {
   AccountAssetTableType,
 } from "@/components/dashboard/AccountAssetTable";
@@ -13,6 +15,7 @@ export default function ObligationBorrowsCard() {
     <Card
       id="assets-borrowed"
       headerProps={{
+        titleIcon: <Upload />,
         title: (
           <>
             Borrowed assets

@@ -3,6 +3,7 @@ module.exports = {
   reactStrictMode: true,
   experimental: {
     externalDir: true,
+    esmExternals: "loose",
   },
   transpilePackages: ["geist", "@suilend/frontend-sui-next"],
   images: {

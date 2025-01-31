@@ -3,7 +3,7 @@ import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -359,14 +359,14 @@ export default function ActionsModalTabContent({
         <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-between gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
           <div
             className={cn(
-              "flex flex-row items-center gap-2",
+              "flex flex-row items-center gap-1.5",
               [Action.DEPOSIT].includes(action) && "cursor-pointer",
             )}
             onClick={
               [Action.DEPOSIT].includes(action) ? useMaxValueWrapper : undefined
             }
           >
-            <TLabelSans>Balance</TLabelSans>
+            <Wallet className="h-3 w-3 text-foreground" />
             <Tooltip
               title={
                 !isTouchscreen && balance.gt(0)
@@ -380,10 +380,12 @@ export default function ActionsModalTabContent({
             </Tooltip>
           </div>
 
-          <div className="flex flex-row items-center gap-2">
-            <TLabelSans>
-              {side === Side.DEPOSIT ? "Deposited" : "Borrowed"}
-            </TLabelSans>
+          <div className="flex flex-row items-center gap-1.5">
+            {side === Side.DEPOSIT ? (
+              <Download className="h-3 w-3 text-foreground" />
+            ) : (
+              <Upload className="h-3 w-3 text-foreground" />
+            )}
             <Tooltip
               title={
                 !isTouchscreen && positionAmount.gt(0)
