@@ -25,7 +25,7 @@ const SUILEND_CAPSULE_TYPE =
 const CAPSULES_WALLET =
   "0x5d13b1a570fe5765487eaec67e33698c89266954e48aae4fc7e2450db1c429a8";
 
-export default function SuilendCapsulesS2Card() {
+export default function SuilendCapsulesCard() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedAppContext();
 
@@ -67,7 +67,7 @@ export default function SuilendCapsulesS2Card() {
   return (
     <Card>
       <CardHeader>
-        <TTitle className="uppercase">Suilend Capsules S2</TTitle>
+        <TTitle className="uppercase">Suilend Capsules</TTitle>
         <Tooltip title={CAPSULES_WALLET}>
           <TLabel className="w-max uppercase">
             {formatAddress(CAPSULES_WALLET)}
