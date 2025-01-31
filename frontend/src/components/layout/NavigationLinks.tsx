@@ -27,7 +27,7 @@ export default function NavigationLinks() {
   return (
     <>
       {/* Internal */}
-      <Link href={ROOT_URL}>Dashboard</Link>
+      <Link href={ROOT_URL}>Lend</Link>
       <Link href={SEND_URL} label="TGE">
         SEND
       </Link>
