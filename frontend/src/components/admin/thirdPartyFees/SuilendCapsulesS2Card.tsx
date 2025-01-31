@@ -12,10 +12,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { formatAddress } from "@/lib/format";
 
-const COLLECTION_ID = "";
-const ROYALTY_OBJECT_ID = "";
 const NFT_PROTOCOL_PACKAGE_ID =
   "0xbdd1811dd6e8feb2c7311d193bbf92cb45d3d6a8fb2b6ec60dc19adf20c18796";
+const COLLECTION_OBJECT_ID =
+  "0xaf72329cb525301289ba10668b4d25da52516cd75ff485d3669a7b7805f8bc67";
+const ROYALTY_OBJECT_ID =
+  "0xfa48f9adcc1ea9ea1b07d103dde9e9079deddac9807aba5cced6feacd0def8e3";
+
 const SUILEND_CAPSULE_TYPE =
   "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
 
@@ -38,14 +41,14 @@ export default function SuilendCapsulesS2Card() {
       transaction.moveCall({
         target: `${NFT_PROTOCOL_PACKAGE_ID}::royalty_strategy_bps::collect_royalties`,
         arguments: [
-          transaction.object(COLLECTION_ID),
+          transaction.object(COLLECTION_OBJECT_ID),
           transaction.object(ROYALTY_OBJECT_ID),
         ],
         typeArguments: [SUILEND_CAPSULE_TYPE, NORMALIZED_SUI_COINTYPE],
       });
       transaction.moveCall({
         target: `${NFT_PROTOCOL_PACKAGE_ID}::royalty::distribute_royalties`,
-        arguments: [transaction.object(COLLECTION_ID)],
+        arguments: [transaction.object(COLLECTION_OBJECT_ID)],
         typeArguments: [SUILEND_CAPSULE_TYPE, NORMALIZED_SUI_COINTYPE],
       });
 
