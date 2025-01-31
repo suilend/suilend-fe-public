@@ -111,7 +111,7 @@ export default function ConnectedWalletDropdownMenu({
   const hasVipItem = isEligibleForVipProgram;
   const hasDisconnectItem = !isImpersonating;
 
-  const hasAccounts = true;
+  const hasAccounts = (data?.obligationOwnerCaps ?? []).length > 0;
   const hasWallets = !isImpersonating;
 
   const noItems =

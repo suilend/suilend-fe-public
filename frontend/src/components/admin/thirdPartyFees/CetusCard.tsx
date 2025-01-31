@@ -16,12 +16,13 @@ import {
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
-import { TBody, TTitle } from "@/components/shared/Typography";
+import Tooltip from "@/components/shared/Tooltip";
+import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
-import { formatToken } from "@/lib/format";
+import { formatAddress, formatToken } from "@/lib/format";
 
 const CAP_OWNER =
   "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";
@@ -74,8 +75,8 @@ export default function CetusCard() {
 
   // Submit
   const submit = async () => {
-    if (!feesMap) return;
     if (!address) throw new Error("Wallet not connected");
+    if (!feesMap) return;
 
     try {
       for (const coinType of Object.keys(feesMap)) {
@@ -102,6 +103,11 @@ export default function CetusCard() {
     <Card>
       <CardHeader>
         <TTitle className="uppercase">Cetus</TTitle>
+        <Tooltip title={CAP_OWNER}>
+          <TLabel className="w-max uppercase">
+            {formatAddress(CAP_OWNER)}
+          </TLabel>
+        </Tooltip>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="grid w-full grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
