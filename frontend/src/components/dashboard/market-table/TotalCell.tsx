@@ -9,6 +9,7 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 interface TotalCellProps {
   reserve: ReservesRowData["reserve"];
   token: ReservesRowData["token"];
+  limit: ReservesRowData["depositLimit"] | ReservesRowData["borrowLimit"];
   total: ReservesRowData["depositedAmount"] | ReservesRowData["borrowedAmount"];
   totalUsd:
     | ReservesRowData["depositedAmountUsd"]
@@ -21,11 +22,14 @@ interface TotalCellProps {
 export default function TotalCell({
   reserve,
   token,
+  limit,
   total,
   totalUsd,
   tooltip,
   horizontal,
 }: TotalCellProps) {
+  if (limit.eq(0) && total.eq(0) && totalUsd.eq(0))
+    return <TBody className="text-right text-muted-foreground">--</TBody>;
   return (
     <div
       className={cn(

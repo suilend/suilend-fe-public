@@ -4,6 +4,7 @@ import TotalCell from "@/components/dashboard/market-table/TotalCell";
 interface TotalBorrowsCellProps {
   reserve: ReservesRowData["reserve"];
   token: ReservesRowData["token"];
+  borrowLimit: ReservesRowData["borrowLimit"];
   borrowedAmount: ReservesRowData["borrowedAmount"];
   borrowedAmountUsd: ReservesRowData["borrowedAmountUsd"];
   borrowedAmountTooltip: ReservesRowData["borrowedAmountTooltip"];
@@ -13,6 +14,7 @@ interface TotalBorrowsCellProps {
 export default function TotalBorrowsCell({
   reserve,
   token,
+  borrowLimit,
   borrowedAmount,
   borrowedAmountUsd,
   borrowedAmountTooltip,
@@ -22,6 +24,7 @@ export default function TotalBorrowsCell({
     <TotalCell
       reserve={reserve}
       token={token}
+      limit={borrowLimit}
       total={borrowedAmount}
       totalUsd={borrowedAmountUsd}
       tooltip={borrowedAmountTooltip}

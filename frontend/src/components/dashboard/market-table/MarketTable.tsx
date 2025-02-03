@@ -95,9 +95,11 @@ export interface ReservesRowData {
 
   openLtvPercent: BigNumber;
   borrowWeightBps: BigNumber;
+  depositLimit: BigNumber;
   depositedAmount: BigNumber;
   depositedAmountUsd: BigNumber;
   depositedAmountTooltip: string | undefined;
+  borrowLimit: BigNumber;
   borrowedAmount: BigNumber;
   borrowedAmountUsd: BigNumber;
   borrowedAmountTooltip: string | undefined;
@@ -192,6 +194,10 @@ export default function MarketTable() {
           if ((row.original as CollapsibleRowData).isCollapsibleRow) {
             const { depositedAmountUsd } = row.original as CollapsibleRowData;
 
+            if (depositedAmountUsd.eq(0))
+              return (
+                <TBody className="text-right text-muted-foreground">--</TBody>
+              );
             return (
               <div className="flex flex-col items-end gap-1">
                 <TBody>--</TBody>
@@ -217,7 +223,10 @@ export default function MarketTable() {
           if ((row.original as CollapsibleRowData).isCollapsibleRow) {
             const { borrowedAmountUsd } = row.original as CollapsibleRowData;
 
-            if (borrowedAmountUsd.eq(0)) return null;
+            if (borrowedAmountUsd.eq(0))
+              return (
+                <TBody className="text-right text-muted-foreground">--</TBody>
+              );
             return (
               <div className="flex flex-col items-end gap-1">
                 <TBody>--</TBody>
@@ -388,9 +397,11 @@ export default function MarketTable() {
 
         openLtvPercent: new BigNumber(reserve.config.openLtvPct),
         borrowWeightBps: reserve.config.borrowWeightBps,
+        depositLimit: reserve.config.depositLimit,
         depositedAmount: reserve.depositedAmount,
         depositedAmountUsd: reserve.depositedAmountUsd,
         depositedAmountTooltip,
+        borrowLimit: reserve.config.borrowLimit,
         borrowedAmount: reserve.borrowedAmount,
         borrowedAmountUsd: reserve.borrowedAmountUsd,
         borrowedAmountTooltip,
