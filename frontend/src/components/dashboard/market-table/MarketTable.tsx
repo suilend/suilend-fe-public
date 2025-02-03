@@ -194,10 +194,7 @@ export default function MarketTable() {
           if ((row.original as CollapsibleRowData).isCollapsibleRow) {
             const { depositedAmountUsd } = row.original as CollapsibleRowData;
 
-            if (depositedAmountUsd.eq(0))
-              return (
-                <TBody className="text-right text-muted-foreground">--</TBody>
-              );
+            if (depositedAmountUsd.eq(0)) return null;
             return (
               <div className="flex flex-col items-end gap-1">
                 <TBody>--</TBody>
@@ -223,10 +220,7 @@ export default function MarketTable() {
           if ((row.original as CollapsibleRowData).isCollapsibleRow) {
             const { borrowedAmountUsd } = row.original as CollapsibleRowData;
 
-            if (borrowedAmountUsd.eq(0))
-              return (
-                <TBody className="text-right text-muted-foreground">--</TBody>
-              );
+            if (borrowedAmountUsd.eq(0)) return null;
             return (
               <div className="flex flex-col items-end gap-1">
                 <TBody>--</TBody>
