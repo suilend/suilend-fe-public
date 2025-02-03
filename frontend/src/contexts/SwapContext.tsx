@@ -259,7 +259,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
     try {
       const result = await getPrice(token.coinType);
-      if (result === undefined) return;
+      if (result === undefined || isNaN(result)) return;
 
       setTokenUsdPriceMap((o) => ({
         ...o,
