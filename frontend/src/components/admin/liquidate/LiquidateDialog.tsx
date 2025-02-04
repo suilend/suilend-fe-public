@@ -7,7 +7,12 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { SUI_GAS_MIN, isSui } from "@suilend/frontend-sui";
+import {
+  SUI_GAS_MIN,
+  formatToken,
+  formatUsd,
+  isSui,
+} from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -45,7 +50,6 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken, formatUsd } from "@/lib/format";
 
 interface RowData {
   symbol: string;

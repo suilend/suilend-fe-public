@@ -3,6 +3,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
+import { formatAddress } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
@@ -10,7 +11,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatAddress } from "@/lib/format";
 
 const TRANSFER_POLICY =
   "0x43517be5e9399224075d11855e89ef46ad3c3e45276949b2d679f8f79d735f0e";

@@ -3,6 +3,10 @@ import { capitalize } from "lodash";
 
 import {
   NORMALIZED_TREATS_COINTYPE,
+  formatPercent,
+  formatPoints,
+  formatPrice,
+  formatToken,
   isSendPoints,
 } from "@suilend/frontend-sui";
 import {
@@ -25,12 +29,6 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  formatPercent,
-  formatPoints,
-  formatPrice,
-  formatToken,
-} from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 const calculateUtilizationPercent = (reserve: ParsedReserve) =>

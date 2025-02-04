@@ -1,9 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { maxU64 } from "@suilend/sdk/lib/constants";
+import { MAX_U64, formatDuration, formatUsd } from "@suilend/frontend-sui";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
-
-import { formatDuration, formatUsd } from "@/lib/format";
 
 export const getFormattedMaxOutflow = (rateLimiter: ParsedRateLimiter) => {
   const {
@@ -11,7 +9,7 @@ export const getFormattedMaxOutflow = (rateLimiter: ParsedRateLimiter) => {
     remainingOutflow,
   } = rateLimiter;
 
-  const isMax = new BigNumber(maxOutflow.toString()).eq(maxU64);
+  const isMax = new BigNumber(maxOutflow.toString()).eq(MAX_U64);
 
   const formattedMaxOutflow = isMax
     ? "∞"

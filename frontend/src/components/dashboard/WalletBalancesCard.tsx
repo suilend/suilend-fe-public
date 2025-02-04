@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 
-import { getToken } from "@suilend/frontend-sui";
+import { formatUsd, getToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import AccountAssetTable, {
@@ -12,7 +12,6 @@ import AccountAssetTable, {
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatUsd } from "@/lib/format";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();

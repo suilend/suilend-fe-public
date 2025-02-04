@@ -6,6 +6,7 @@ import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 import { toast } from "sonner";
 
+import { formatAddress, formatUsd } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -22,7 +23,6 @@ import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
-import { formatAddress, formatUsd } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 

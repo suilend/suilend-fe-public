@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
+import { formatPercent, formatUsd } from "@suilend/frontend-sui";
 import {
   shallowPushQuery,
   useSettingsContext,
@@ -29,7 +30,6 @@ import UtilizationBar, {
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatPercent, formatUsd } from "@/lib/format";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
   BORROWS_TOOLTIP,

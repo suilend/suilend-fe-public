@@ -2,7 +2,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { NORMALIZED_SUI_COINTYPE } from "@suilend/frontend-sui";
+import { NORMALIZED_SUI_COINTYPE, formatAddress } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
@@ -10,7 +10,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatAddress } from "@/lib/format";
 
 const NFT_PROTOCOL_PACKAGE_ID =
   "0xbdd1811dd6e8feb2c7311d193bbf92cb45d3d6a8fb2b6ec60dc19adf20c18796";

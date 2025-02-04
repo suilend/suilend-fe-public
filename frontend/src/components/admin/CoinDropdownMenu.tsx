@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CoinMetadata } from "@mysten/sui/client";
 import { ChevronsUpDown } from "lucide-react";
 
+import { formatToken } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
@@ -14,7 +15,6 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken } from "@/lib/format";
 
 interface CoinDropdownMenuProps {
   coinMetadataMap?: Record<string, CoinMetadata>;

@@ -1,13 +1,14 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { formatPoints } from "@suilend/frontend-sui";
+
 import PointsLogo from "@/components/points/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
-import { formatPoints } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface PointsCountProps {

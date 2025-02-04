@@ -2,6 +2,8 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+import { formatPoints } from "@suilend/frontend-sui";
+
 import PointsCount from "@/components/points/PointsCount";
 import PointsLogo from "@/components/points/PointsLogo";
 import PointsRank from "@/components/points/PointsRank";
@@ -12,7 +14,6 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
-import { formatPoints } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
 

@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
+import { formatToken, formatUsd } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -18,7 +19,6 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface ClaimFeesDialogProps {

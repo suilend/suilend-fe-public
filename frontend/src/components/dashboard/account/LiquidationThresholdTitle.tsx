@@ -1,9 +1,10 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { formatUsd } from "@suilend/frontend-sui";
+
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { TLabelSans } from "@/components/shared/Typography";
-import { formatUsd } from "@/lib/format";
 import { LIQUIDATION_THRESHOLD_TOOLTIP } from "@/lib/tooltips";
 
 interface LiquidationThresholdTitleProps {

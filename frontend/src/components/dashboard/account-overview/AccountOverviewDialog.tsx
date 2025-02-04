@@ -6,7 +6,7 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import { formatPoints, formatToken, isSendPoints } from "@suilend/frontend-sui";
 import { shallowPushQuery } from "@suilend/frontend-sui-next";
 import { WAD } from "@suilend/sdk/lib/constants";
 import {
@@ -30,7 +30,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { EventType, eventSortAsc } from "@/lib/events";
-import { formatPoints, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
 import { Token } from "@/lib/types";
 

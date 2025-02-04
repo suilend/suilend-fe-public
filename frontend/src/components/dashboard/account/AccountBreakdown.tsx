@@ -4,6 +4,13 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { useLocalStorage } from "usehooks-ts";
 
+import {
+  formatBorrowWeight,
+  formatLtvPercent,
+  formatPrice,
+  formatToken,
+  formatUsd,
+} from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { reserveSort } from "@suilend/sdk/utils";
 
@@ -16,13 +23,6 @@ import { TBody } from "@/components/shared/Typography";
 import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  formatBorrowWeight,
-  formatLtvPercent,
-  formatPrice,
-  formatToken,
-  formatUsd,
-} from "@/lib/format";
 import {
   BORROW_LIMIT_PRICE_TOOLTIP,
   BORROW_WEIGHT_TOOLTIP,

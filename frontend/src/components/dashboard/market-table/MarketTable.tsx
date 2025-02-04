@@ -4,7 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-import { Token, isDeprecated, isMemecoin, issSui } from "@suilend/frontend-sui";
+import {
+  Token,
+  formatToken,
+  formatUsd,
+  isDeprecated,
+  isMemecoin,
+  issSui,
+} from "@suilend/frontend-sui";
 import {
   getFilteredRewards,
   getStakingYieldAprPercent,
@@ -31,7 +38,6 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken, formatUsd } from "@/lib/format";
 import {
   DEPRECATED_ASSETS_TOOLTIP,
   ISOLATED_ASSETS_TOOLTIP,

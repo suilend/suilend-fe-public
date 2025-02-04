@@ -36,6 +36,6 @@
   "peerDependencies": {
     "@mysten/bcs": "1.2.1",
     "@mysten/sui": "1.20.0",
-    "@suilend/frontend-sui": "^0.2.37"
+    "@suilend/frontend-sui": "^0.2.38"
   }
 }

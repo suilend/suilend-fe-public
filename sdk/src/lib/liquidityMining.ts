@@ -2,9 +2,11 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 
+import { MS_PER_YEAR } from "@suilend/frontend-sui";
+
 import { ParsedObligation, ParsedPoolReward, ParsedReserve } from "../parsers";
 
-import { WAD, msPerYear } from "./constants";
+import { WAD } from "./constants";
 import { Side } from "./types";
 
 export type RewardMap = {
@@ -87,7 +89,7 @@ export const formatRewards = (
       ? poolReward.totalRewards
           .times(rewardPrice)
           .times(
-            new BigNumber(msPerYear).div(
+            new BigNumber(MS_PER_YEAR).div(
               poolReward.endTimeMs - poolReward.startTimeMs,
             ),
           )
@@ -112,7 +114,7 @@ export const formatRewards = (
       ? undefined
       : poolReward.totalRewards
           .times(
-            new BigNumber(msPerYear).div(
+            new BigNumber(MS_PER_YEAR).div(
               poolReward.endTimeMs - poolReward.startTimeMs,
             ),
           )

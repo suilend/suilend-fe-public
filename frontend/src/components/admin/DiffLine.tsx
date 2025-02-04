@@ -1,6 +1,6 @@
 import { isEqual } from "lodash";
 
-import { maxU64 } from "@suilend/sdk";
+import { MAX_U64 } from "@suilend/frontend-sui";
 
 import { ConfigState as ReserveConfigState } from "@/components/admin/reserves/ReserveConfig";
 import LabelWithValue from "@/components/shared/LabelWithValue";
@@ -68,7 +68,7 @@ export default function DiffLine({
       className="w-fit"
       valueClassName="break-all"
       label={label}
-      value={`${initialValue} → ${newValue}${newValue.toString() === maxU64.toString() ? " (u64 MAX)" : ""}`}
+      value={`${initialValue} → ${newValue}${newValue.toString() === MAX_U64.toString() ? " (u64 MAX)" : ""}`}
       horizontal
     />
   );

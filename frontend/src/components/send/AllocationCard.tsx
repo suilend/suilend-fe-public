@@ -3,6 +3,7 @@ import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
 import { ArrowUpRight, Info } from "lucide-react";
 
+import { formatToken } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 
 import styles from "@/components/send/AllocationCard.module.scss";
@@ -13,7 +14,6 @@ import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import { formatToken } from "@/lib/format";
 import {
   Allocation,
   AllocationId,

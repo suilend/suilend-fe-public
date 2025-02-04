@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
+import { formatInteger } from "@suilend/frontend-sui";
+
 import AllocationCard from "@/components/send/AllocationCard";
 import BlurbSection from "@/components/send/BlurbSection";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -16,7 +18,6 @@ import {
   useLoadedSendContext,
 } from "@/contexts/SendContext";
 import { ASSETS_URL } from "@/lib/constants";
-import { formatInteger } from "@/lib/format";
 import {
   Allocation,
   AllocationId,

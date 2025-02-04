@@ -4,6 +4,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { AlertTriangle } from "lucide-react";
 
+import { formatPercent } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";
@@ -12,7 +13,6 @@ import WeightedBorrowsTitle from "@/components/dashboard/account/WeightedBorrows
 import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const getWeightedBorrowsUsd = (obligation: ParsedObligation) => {

@@ -3,12 +3,13 @@ import { useState } from "react";
 import BigNumber from "bignumber.js";
 import { Settings2 } from "lucide-react";
 
+import { formatPercent } from "@suilend/frontend-sui";
+
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import Popover from "@/components/shared/Popover";
 import TitleWithIcon from "@/components/shared/TitleWithIcon";
 import { TLabelSans } from "@/components/shared/Typography";
-import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const PRESETS = ["0.3", "1.0", "3.0"];

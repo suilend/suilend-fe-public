@@ -11,6 +11,7 @@ import {
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
   SUI_COINTYPE,
+  formatToken,
   isCoinType,
   isSui,
 } from "@suilend/frontend-sui";
@@ -24,7 +25,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
-import { formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

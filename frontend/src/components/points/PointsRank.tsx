@@ -1,10 +1,11 @@
 import { Trophy } from "lucide-react";
 
+import { formatRank } from "@suilend/frontend-sui";
+
 import PointsDataLastUpdatedAt from "@/components/points/LeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatRank } from "@/lib/format";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface PointsRankProps {

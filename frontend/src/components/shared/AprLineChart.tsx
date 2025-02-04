@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import * as Recharts from "recharts";
 
+import { formatPercent } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
 
@@ -15,7 +16,6 @@ import {
   line,
   tooltip,
 } from "@/lib/chart";
-import { formatPercent } from "@/lib/format";
 
 const transform = (value: number) => Math.pow(value, 1 / 2);
 const inverseTransform = (value: number) => Math.pow(value, 2);

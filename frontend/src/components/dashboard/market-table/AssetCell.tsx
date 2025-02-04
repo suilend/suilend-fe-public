@@ -6,6 +6,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   Token,
+  formatPrice,
   getMsafeAppStoreUrl,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
@@ -20,7 +21,6 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { getSwapUrl } from "@/contexts/SwapContext";
-import { formatPrice } from "@/lib/format";
 import { SPRINGSUI_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 

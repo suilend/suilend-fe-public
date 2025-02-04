@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { formatToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -14,7 +15,6 @@ import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken } from "@/lib/format";
 
 interface AddRewardDialogProps {
   reserve: ParsedReserve;

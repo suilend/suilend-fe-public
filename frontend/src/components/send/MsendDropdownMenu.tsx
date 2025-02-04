@@ -3,6 +3,8 @@ import { useState } from "react";
 import { intervalToDuration } from "date-fns";
 import { ChevronsUpDown } from "lucide-react";
 
+import { formatToken } from "@suilend/frontend-sui";
+
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import Button from "@/components/shared/Button";
 import DropdownMenu, {
@@ -10,8 +12,7 @@ import DropdownMenu, {
 } from "@/components/shared/DropdownMenu";
 import { TBody, TBodySans } from "@/components/shared/Typography";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { formatToken } from "@/lib/format";
-import { formatDuration } from "@/lib/send";
+import { formatCountdownDuration } from "@/lib/send";
 
 export default function MsendDropdownMenu() {
   const {
@@ -81,7 +82,7 @@ export default function MsendDropdownMenu() {
               <TBodySans className="text-muted-foreground">Maturity</TBodySans>
               <TBody>
                 {Date.now() < +mSendObjectMap[coinType].penaltyEndTimeS * 1000
-                  ? formatDuration(
+                  ? formatCountdownDuration(
                       intervalToDuration({
                         start: Date.now(),
                         end: new Date(

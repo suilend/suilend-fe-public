@@ -6,7 +6,7 @@ import { capitalize } from "lodash";
 import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
-import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
+import { COINTYPE_COLOR_MAP, formatPercent } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { getDedupedAprRewards } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
@@ -29,7 +29,6 @@ import {
   RESERVE_EVENT_SAMPLE_INTERVAL_S_MAP,
   calculateRewardAprPercent,
 } from "@/lib/events";
-import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const isBase = (field: string) => field.endsWith("__base");

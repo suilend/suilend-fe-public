@@ -7,7 +7,11 @@ import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { getCoinMetadataMap } from "@suilend/frontend-sui";
+import {
+  formatAddress,
+  formatToken,
+  getCoinMetadataMap,
+} from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -22,7 +26,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
-import { formatAddress, formatToken } from "@/lib/format";
 
 const CAP_OWNER =
   "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";

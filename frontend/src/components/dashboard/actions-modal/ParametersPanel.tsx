@@ -6,6 +6,11 @@ import { capitalize } from "lodash";
 import {
   COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
+  formatBorrowWeight,
+  formatLtvPercent,
+  formatPercent,
+  formatToken,
+  formatUsd,
   getPythOracleUrl,
 } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
@@ -20,13 +25,6 @@ import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  formatBorrowWeight,
-  formatLtvPercent,
-  formatPercent,
-  formatToken,
-  formatUsd,
-} from "@/lib/format";
 import {
   BORROW_WEIGHT_TOOLTIP,
   CLOSE_LTV_TOOLTIP,

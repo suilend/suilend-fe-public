@@ -1,13 +1,13 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { formatUsd } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { TLabelSans } from "@/components/shared/Typography";
 import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatUsd } from "@/lib/format";
 import { WEIGHTED_BORROWS_TOOLTIP } from "@/lib/tooltips";
 
 interface WeightedBorrowsTitleProps {

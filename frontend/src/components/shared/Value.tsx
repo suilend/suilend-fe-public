@@ -3,12 +3,13 @@ import { ReactNode } from "react";
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { formatId, formatType, formatUsd } from "@suilend/frontend-sui";
+
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { formatId, formatType, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface ValueProps {

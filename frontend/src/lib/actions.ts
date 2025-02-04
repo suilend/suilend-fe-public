@@ -1,20 +1,20 @@
 import BigNumber from "bignumber.js";
 
 import {
+  MS_PER_YEAR,
   NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
   SUI_GAS_MIN,
+  formatList,
   isEth,
   isStablecoin,
   isSui,
 } from "@suilend/frontend-sui";
-import { msPerYear } from "@suilend/sdk";
 import { Action } from "@suilend/sdk/lib/types";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { AppData } from "@/contexts/AppContext";
-import { formatList } from "@/lib/format";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 import { SubmitButtonState } from "@/lib/types";
 
@@ -32,7 +32,7 @@ const getMaxCalculations = (
   if (action === Action.DEPOSIT) {
     // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
     const tenMinsDepositAprPercent = reserve.depositAprPercent
-      .div(msPerYear)
+      .div(MS_PER_YEAR)
       .times(10 * 60 * 1000);
 
     const safeDepositLimit = reserve.config.depositLimit.minus(

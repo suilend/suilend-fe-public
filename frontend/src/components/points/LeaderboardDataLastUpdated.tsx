@@ -1,7 +1,8 @@
 import BigNumber from "bignumber.js";
 
+import { formatDuration } from "@suilend/frontend-sui";
+
 import { usePointsContext } from "@/contexts/PointsContext";
-import { formatDuration } from "@/lib/format";
 
 interface LeaderboardDataLastUpdatedProps {
   season: number;

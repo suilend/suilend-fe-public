@@ -3,14 +3,16 @@ import { forwardRef, useEffect, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
-import { TEMPORARY_PYTH_PRICE_FEED_COINTYPES } from "@suilend/frontend-sui";
+import {
+  TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
+  formatUsd,
+} from "@suilend/frontend-sui";
 import { Action } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import Button from "@/components/shared/Button";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { Input as InputComponent } from "@/components/ui/input";
-import { formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const INPUT_HEIGHT = 70; // px

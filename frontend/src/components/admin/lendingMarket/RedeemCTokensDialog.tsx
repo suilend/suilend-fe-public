@@ -4,7 +4,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { getToken, isCTokenCoinType } from "@suilend/frontend-sui";
+import { formatToken, getToken, isCTokenCoinType } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
@@ -12,7 +12,6 @@ import Dialog from "@/components/shared/Dialog";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken } from "@/lib/format";
 
 export default function RedeemCTokensDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();

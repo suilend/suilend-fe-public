@@ -1,10 +1,10 @@
+import { formatPercent } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk";
 
 import FromToArrow from "@/components/shared/FromToArrow";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
-import { formatPercent } from "@/lib/format";
 
 interface YourUtilizationLabelProps {
   obligation?: ParsedObligation;

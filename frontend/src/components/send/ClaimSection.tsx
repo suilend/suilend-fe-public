@@ -17,6 +17,10 @@ import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   SUI_GAS_MIN,
+  formatInteger,
+  formatPercent,
+  formatToken,
+  formatUsd,
   getBalanceChange,
   issSui,
 } from "@suilend/frontend-sui";
@@ -49,12 +53,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
-import {
-  formatInteger,
-  formatPercent,
-  formatToken,
-  formatUsd,
-} from "@/lib/format";
 import { ROOT_URL } from "@/lib/navigation";
 import {
   Allocation,
@@ -63,7 +61,7 @@ import {
   SEND_TOTAL_SUPPLY,
   SuilendCapsuleRarity,
   claimSend,
-  formatDuration,
+  formatCountdownDuration,
   mSEND_REDEMPTION_END_TIMESTAMP_MS,
   redeemRootletsMsend,
   redeemSendPointsMsend,
@@ -423,7 +421,7 @@ function RedeemTabContent({
                     hoverUnderlineClassName,
                   )}
                 >
-                  {formatDuration(redemptionEndsDuration)}
+                  {formatCountdownDuration(redemptionEndsDuration)}
                 </TBody>
               </Tooltip>
             </div>
@@ -1053,7 +1051,7 @@ export default function ClaimSection({
                               hoverUnderlineClassName,
                             )}
                           >
-                            {formatDuration(
+                            {formatCountdownDuration(
                               intervalToDuration({
                                 start: Date.now(),
                                 end: new Date(

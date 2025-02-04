@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import * as Recharts from "recharts";
 
-import { COINTYPE_COLOR_MAP } from "@suilend/frontend-sui";
+import { COINTYPE_COLOR_MAP, formatToken } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { Side } from "@suilend/sdk/lib/types";
 
@@ -25,7 +25,6 @@ import {
   tooltip,
 } from "@/lib/chart";
 import { DAY_S } from "@/lib/events";
-import { formatToken } from "@/lib/format";
 
 export type ChartData = {
   timestampS: number;

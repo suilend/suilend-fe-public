@@ -1,9 +1,10 @@
+import { formatUsd } from "@suilend/frontend-sui";
+
 import Card from "@/components/dashboard/Card";
 import MarketOverviewPopover from "@/components/dashboard/MarketOverviewPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatUsd } from "@/lib/format";
 
 export default function MarketOverview() {
   const { data } = useLoadedAppContext();

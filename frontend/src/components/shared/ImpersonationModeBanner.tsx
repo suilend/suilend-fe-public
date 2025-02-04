@@ -4,6 +4,7 @@ import { ClassValue } from "clsx";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
+import { formatAddress } from "@suilend/frontend-sui";
 import {
   WalletContextQueryParams,
   shallowPushQuery,
@@ -16,7 +17,6 @@ import {
   labelSansClassNames,
 } from "@/components/shared/Typography";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { formatAddress } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface ImpersonationModeBannerProps {

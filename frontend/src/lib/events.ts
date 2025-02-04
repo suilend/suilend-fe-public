@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { msPerYear } from "@suilend/sdk";
+import { MS_PER_YEAR } from "@suilend/frontend-sui";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -95,7 +95,7 @@ export const calculateRewardAprPercent = (
         poolReward.totalRewards
           .times(rewardEvent.price)
           .times(
-            new BigNumber(msPerYear).div(
+            new BigNumber(MS_PER_YEAR).div(
               poolReward.endTimeMs - poolReward.startTimeMs,
             ),
           )

@@ -2,7 +2,7 @@ import NextLink from "next/link";
 
 import BigNumber from "bignumber.js";
 
-import { isSendPoints } from "@suilend/frontend-sui";
+import { formatToken, isSendPoints } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { RewardSummary } from "@suilend/sdk";
 
@@ -19,7 +19,6 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import { ASSETS_URL } from "@/lib/constants";
-import { formatToken } from "@/lib/format";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
 

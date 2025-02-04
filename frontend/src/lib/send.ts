@@ -578,7 +578,7 @@ export const claimSend = async (
 };
 
 // Utils
-export const formatDuration = (duration: Duration) =>
+export const formatCountdownDuration = (duration: Duration) =>
   (duration.years || duration.months
     ? [
         duration.years ? `${duration.years}y` : null,

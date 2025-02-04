@@ -6,6 +6,7 @@ import { intervalToDuration } from "date-fns";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
+import { formatAddress, formatList, formatToken } from "@suilend/frontend-sui";
 import {
   WalletContextQueryParams,
   shallowPushQuery,
@@ -23,7 +24,6 @@ import {
 } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { formatAddress, formatList, formatToken } from "@/lib/format";
 import { Allocation, TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {

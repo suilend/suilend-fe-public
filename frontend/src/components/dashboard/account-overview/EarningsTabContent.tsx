@@ -4,8 +4,13 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import { isSendPoints } from "@suilend/frontend-sui";
-import { WAD, msPerYear } from "@suilend/sdk/lib/constants";
+import {
+  MS_PER_YEAR,
+  formatToken,
+  formatUsd,
+  isSendPoints,
+} from "@suilend/frontend-sui";
+import { WAD } from "@suilend/sdk/lib/constants";
 import {
   ApiBorrowEvent,
   ApiDepositEvent,
@@ -32,7 +37,6 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
-import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface RowData {
@@ -107,7 +111,7 @@ export default function EarningsTabContent({
       prevDepositedCtokenAmount: BigNumber,
     ) => {
       const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
-        msPerYear / 1000,
+        MS_PER_YEAR / 1000,
       );
       const annualizedInterestRate = proportionOfYear.eq(0)
         ? new BigNumber(0)
@@ -368,7 +372,7 @@ export default function EarningsTabContent({
       prevBorrowedAmount: BigNumber,
     ) => {
       const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
-        msPerYear / 1000,
+        MS_PER_YEAR / 1000,
       );
       const annualizedInterestRate = proportionOfYear.gt(0)
         ? new BigNumber(cumulativeBorrowRate)

@@ -7,10 +7,14 @@ import { AlertTriangle, Download, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  MAX_U64,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
   SUI_GAS_MIN,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
+  formatInteger,
+  formatPrice,
+  formatToken,
   getBalanceChange,
   isSui,
 } from "@suilend/frontend-sui";
@@ -19,7 +23,6 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
-import { maxU64 } from "@suilend/sdk/lib/constants";
 import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -48,7 +51,6 @@ import {
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";
-import { formatInteger, formatPrice, formatToken } from "@/lib/format";
 import { API_URL } from "@/lib/navigation";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -270,7 +272,7 @@ export default function ActionsModalTabContent({
           reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
           reserve.coinType !== NORMALIZED_HIPPO_COINTYPE
         )
-          submitAmount = maxU64.toString();
+          submitAmount = MAX_U64.toString();
         else
           submitAmount = BigNumber.min(
             new BigNumber(submitAmount)
@@ -281,7 +283,7 @@ export default function ActionsModalTabContent({
         break;
       }
       case Action.BORROW: {
-        if (useMaxAmount) submitAmount = maxU64.toString();
+        if (useMaxAmount) submitAmount = MAX_U64.toString();
         break;
       }
       case Action.REPAY: {

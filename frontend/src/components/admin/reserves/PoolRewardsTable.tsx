@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
+import { formatNumber } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
 
@@ -15,7 +16,6 @@ import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface RowData {

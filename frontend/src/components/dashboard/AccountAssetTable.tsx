@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import { Token } from "@suilend/frontend-sui";
+import { Token, formatToken, formatUsd } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { reserveSort } from "@suilend/sdk/utils";
 
@@ -16,7 +16,6 @@ import DataTable, {
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { formatToken, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export enum AccountAssetTableType {

@@ -1,8 +1,9 @@
 import BigNumber from "bignumber.js";
 
+import { formatBorrowWeight, formatLtvPercent } from "@suilend/frontend-sui";
+
 import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 import { TBody, TLabel } from "@/components/shared/Typography";
-import { formatBorrowWeight, formatLtvPercent } from "@/lib/format";
 
 interface OpenLtvBwCellProps {
   openLtvPercent: ReservesRowData["openLtvPercent"];

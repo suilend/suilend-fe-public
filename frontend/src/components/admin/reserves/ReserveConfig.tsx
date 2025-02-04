@@ -4,7 +4,8 @@ import BigNumber from "bignumber.js";
 import { Infinity, Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-import { ParsedReserve, maxU64 } from "@suilend/sdk";
+import { MAX_U64 } from "@suilend/frontend-sui";
+import { ParsedReserve } from "@suilend/sdk";
 import { CreateReserveConfigArgs } from "@suilend/sdk/_generated/suilend/reserve-config/functions";
 
 import AprLineChart from "@/components/shared/AprLineChart";
@@ -208,7 +209,7 @@ export default function ReserveConfig({
           variant="secondary"
           size="icon"
           onClick={() =>
-            setConfigStateKeyValue("borrowWeightBps")(maxU64.toString())
+            setConfigStateKeyValue("borrowWeightBps")(MAX_U64.toString())
           }
         >
           Max Borrow Weight

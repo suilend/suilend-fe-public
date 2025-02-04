@@ -22,7 +22,7 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 
-import { getToken } from "@suilend/frontend-sui";
+import { formatPercent, formatToken, getToken } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
@@ -41,7 +41,6 @@ import {
   StandardizedRoutePath,
   useSwapContext,
 } from "@/contexts/SwapContext";
-import { formatPercent, formatToken } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 

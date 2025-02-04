@@ -4,12 +4,13 @@ import BigNumber from "bignumber.js";
 import { Download, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
+import { formatToken, formatUsd } from "@suilend/frontend-sui";
+
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
-import { formatToken, formatUsd } from "@/lib/format";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
+import { formatAddress } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import DataTable, {
@@ -16,7 +17,6 @@ import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { LeaderboardRowData, usePointsContext } from "@/contexts/PointsContext";
-import { formatAddress } from "@/lib/format";
 import { ROOT_URL } from "@/lib/navigation";
 
 interface PointsLeaderboardTableProps {

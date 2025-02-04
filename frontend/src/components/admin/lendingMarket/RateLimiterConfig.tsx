@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { Infinity } from "lucide-react";
 
+import { MAX_U64 } from "@suilend/frontend-sui";
 import { NewConfigArgs as NewRateLimitedConfigArgs } from "@suilend/sdk/_generated/suilend/rate-limiter/functions";
-import { maxU64 } from "@suilend/sdk/lib/constants";
 
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
@@ -60,7 +60,7 @@ export default function RateLimiterConfig({
           variant="secondary"
           size="icon"
           onClick={() =>
-            setConfigStateKeyValue("maxOutflow")(maxU64.toString())
+            setConfigStateKeyValue("maxOutflow")(MAX_U64.toString())
           }
         >
           Unlimited outflow

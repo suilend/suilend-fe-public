@@ -21,7 +21,6 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   ArrowUpDown,
-  Download,
   Info,
   RotateCw,
 } from "lucide-react";
@@ -31,9 +30,13 @@ import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
   SUI_GAS_MIN,
+  formatInteger,
+  formatPercent,
+  formatToken,
   getBalanceChange,
   isSui,
 } from "@suilend/frontend-sui";
@@ -45,7 +48,6 @@ import {
 import {
   WAD,
   createObligationIfNoneExists,
-  maxU64,
   sendObligationToUser,
 } from "@suilend/sdk";
 import { Action } from "@suilend/sdk/lib/types";
@@ -83,7 +85,6 @@ import {
 } from "@/lib/actions";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { TX_TOAST_DURATION } from "@/lib/constants";
-import { formatInteger, formatPercent, formatToken } from "@/lib/format";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -860,7 +861,7 @@ function Page() {
     const swapAndDepositButtonState = getSubmitButtonState(
       Action.DEPOSIT,
       tokenOutReserve,
-      maxU64,
+      MAX_U64,
       data,
       obligation,
     )(quoteAmountOut ?? new BigNumber(0));
