@@ -6,6 +6,9 @@ import { ClassValue } from "clsx";
 import {
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_WETH_COINTYPE,
+  NORMALIZED_suiETH_COINTYPE,
+  NORMALIZED_suiUSDT_COINTYPE,
+  NORMALIZED_wBTC_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
 } from "@suilend/frontend-sui";
@@ -43,20 +46,34 @@ export default function TokenLogo({
   };
   const wormholeAsset = wormholeAssetMap[token.coinType];
 
+  const suiBridgeAssetMap: Record<string, string> = {
+    [NORMALIZED_suiUSDT_COINTYPE]: "USDT by Sui Bridge (Ethereum-native)",
+    [NORMALIZED_wBTC_COINTYPE]: "wBTC by Sui Bridge (Ethereum-native)",
+    [NORMALIZED_suiETH_COINTYPE]: "ETH by Sui Bridge (Ethereum-native)",
+  };
+  const suiBridgeAsset = suiBridgeAssetMap[token.coinType];
+
   const isSmall = className
     ? className.toString().includes("h-4") ||
       className.toString().includes("h-5") ||
       className.toString().includes("h-6")
     : false;
-  const wormholeLogoSize = isSmall ? 8 : 12;
+  const bridgeLogoSize = isSmall ? 8 : 12;
 
   return (
     <Tooltip
       title={
-        showTooltip && wormholeAsset ? (
+        showTooltip && (wormholeAsset || suiBridgeAsset) ? (
           <>
-            {`${wormholeAsset}. `}
-            <TextLink href={DOCS_BRIDGE_LEARN_MORE_URL}>Learn more</TextLink>
+            {`${wormholeAsset || suiBridgeAsset}.`}
+            {wormholeAsset && (
+              <>
+                {" "}
+                <TextLink href={DOCS_BRIDGE_LEARN_MORE_URL}>
+                  Learn more
+                </TextLink>
+              </>
+            )}
           </>
         ) : undefined
       }
@@ -78,15 +95,25 @@ export default function TokenLogo({
           )}
         </AspectRatio>
 
-        {wormholeAsset && (
+        {(wormholeAsset || suiBridgeAsset) && (
           <div className="absolute -bottom-0.5 -right-0.5 z-[2] rounded-full border border-[black] bg-[black]">
-            <Image
-              src={`${ASSETS_URL}/partners/Wormhole.png`}
-              alt="Wormhole logo"
-              width={wormholeLogoSize}
-              height={wormholeLogoSize}
-              quality={100}
-            />
+            {wormholeAsset ? (
+              <Image
+                src={`${ASSETS_URL}/partners/Wormhole.png`}
+                alt="Wormhole logo"
+                width={bridgeLogoSize}
+                height={bridgeLogoSize}
+                quality={100}
+              />
+            ) : (
+              <Image
+                src={`${ASSETS_URL}/partners/Sui Bridge.png`}
+                alt="Sui Bridge logo"
+                width={bridgeLogoSize}
+                height={bridgeLogoSize}
+                quality={100}
+              />
+            )}
           </div>
         )}
       </div>
