@@ -3,7 +3,8 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { PropsWithChildren, useEffect, useRef } from "react";
 
-// import { registerWallet } from "@mysten/wallet-standard";
+import { MSafeWallet } from "@msafe/sui-wallet";
+import { registerWallet } from "@mysten/wallet-standard";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
@@ -31,7 +32,7 @@ function WalletContextProviderWrapper({ children }: PropsWithChildren) {
   useEffect(() => {
     if (didRegisterMsafeWalletRef.current) return;
 
-    // registerWallet(new MSafeWallet("Suilend", rpc.url, "sui:mainnet"));
+    registerWallet(new MSafeWallet("Suilend", rpc.url, "sui:mainnet"));
     didRegisterMsafeWalletRef.current = true;
   }, [rpc.url]);
 
