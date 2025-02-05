@@ -130,11 +130,12 @@ export default function MarketTable() {
         header: ({ column }) => tableHeader(column, "Asset name"),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) {
-            const { isDeprecated, title, tooltip, count } =
+            const { isIsolated, isDeprecated, title, tooltip, count } =
               row.original as HeaderRowData;
 
             const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
+            if (!isIsolated && !isDeprecated) return null;
             return (
               <div className="group flex flex-row items-center gap-2">
                 {isDeprecated && (
@@ -557,17 +558,23 @@ export default function MarketTable() {
 
   return (
     <div className="w-full">
-      <div className="hidden w-full md:block">
+      <div className="w-full max-md:hidden">
         <DataTable<RowData>
           columns={columns}
           data={rows}
-          container={{ className: "border rounded-sm" }}
           initialExpandedState={{ "0": true, "1": true, "2": false }} // Expand main and isolated assets rows, do not expand deprecated assets row
           tableRowClassName={(row) => {
             if (!row) return cn(styles.tableRow);
 
-            if ((row.original as HeaderRowData).isHeader)
-              return cn(styles.tableRow);
+            if ((row.original as HeaderRowData).isHeader) {
+              const { isIsolated, isDeprecated } =
+                row.original as HeaderRowData;
+
+              return cn(
+                styles.tableRow,
+                !isIsolated && !isDeprecated && "border-b-0",
+              );
+            }
             if ((row.original as CollapsibleRowData).isCollapsibleRow)
               return cn(styles.tableRow, row.getIsExpanded() && "bg-muted/5");
 
@@ -579,12 +586,15 @@ export default function MarketTable() {
           tableCellClassName={(cell) => {
             if (!cell) return undefined;
 
-            if ((cell.row.original as HeaderRowData).isHeader)
+            if ((cell.row.original as HeaderRowData).isHeader) {
+              const { isIsolated, isDeprecated } = cell.row
+                .original as HeaderRowData;
+
+              if (!isIsolated && !isDeprecated) return cn("p-0 h-0");
               return cn(
-                cell.column.getIsFirstColumn()
-                  ? "bg-card h-auto py-2"
-                  : "p-0 h-0",
+                cell.column.getIsFirstColumn() ? "h-auto py-2" : "p-0 h-0",
               );
+            }
             if ((cell.row.original as CollapsibleRowData).isCollapsibleRow)
               return cell.column.getIsFirstColumn() && cell.row.getIsExpanded()
                 ? cn("shadow-[inset_2px_0_0_0px_hsl(var(--primary))]")
@@ -616,6 +626,7 @@ export default function MarketTable() {
           }}
         />
       </div>
+
       <div className="w-full md:hidden">
         <MarketCardList rows={rows} />
       </div>

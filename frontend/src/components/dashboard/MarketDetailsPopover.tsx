@@ -9,7 +9,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getFormattedMaxOutflow } from "@/lib/rateLimiter";
 import { cn } from "@/lib/utils";
 
-export default function MarketOverviewPopover() {
+export default function MarketDetailsPopover() {
   const { data } = useLoadedAppContext();
 
   const formattedOutflow = getFormattedMaxOutflow(
@@ -20,7 +20,7 @@ export default function MarketOverviewPopover() {
 
   return (
     <Popover
-      id="market-overview"
+      id="market-details"
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
         <Button
