@@ -38,6 +38,7 @@ export function registerClasses(loader: StructClassLoader) {
   loader.register(obligation.BorrowRecord);
   loader.register(obligation.Deposit);
   loader.register(obligation.DepositRecord);
+  loader.register(obligation.ExistStaleOracles);
   loader.register(obligation.Obligation);
   loader.register(obligation.ObligationDataEvent);
   loader.register(lendingMarket.MintEvent);

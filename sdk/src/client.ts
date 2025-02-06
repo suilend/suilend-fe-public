@@ -1184,6 +1184,7 @@ export class SuilendClient {
       reserveArrayIndex: transaction.pure.u64(
         this.findReserveArrayIndex(coinType),
       ),
+      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
     });
   }
 

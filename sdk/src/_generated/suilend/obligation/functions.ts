@@ -1,7 +1,8 @@
 import { PUBLISHED_AT } from "..";
 import { ID } from "../../_dependencies/source/0x2/object/structs";
-import { obj, pure, vector } from "../../_framework/util";
+import { obj, option, pure, vector } from "../../_framework/util";
 import { Reserve } from "../reserve/structs";
+import { ExistStaleOracles } from "./structs";
 import {
   Transaction,
   TransactionArgument,
@@ -33,6 +34,7 @@ export interface WithdrawArgs {
   reserve: TransactionObjectInput;
   clock: TransactionObjectInput;
   ctokenAmount: bigint | TransactionArgument;
+  staleOracles: TransactionObjectInput | TransactionArgument | null;
 }
 
 export function withdraw(tx: Transaction, typeArg: string, args: WithdrawArgs) {
@@ -44,6 +46,7 @@ export function withdraw(tx: Transaction, typeArg: string, args: WithdrawArgs) {
       obj(tx, args.reserve),
       obj(tx, args.clock),
       pure(tx, args.ctokenAmount, `u64`),
+      option(tx, `${ExistStaleOracles.$typeName}`, args.staleOracles),
     ],
   });
 }
@@ -148,6 +151,18 @@ export function allowedBorrowValueUsd(
     target: `${PUBLISHED_AT}::obligation::allowed_borrow_value_usd`,
     typeArguments: [typeArg],
     arguments: [obj(tx, obligation)],
+  });
+}
+
+export function assertNoStaleOracles(
+  tx: Transaction,
+  existStaleOracles: TransactionObjectInput | TransactionArgument | null,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::obligation::assert_no_stale_oracles`,
+    arguments: [
+      option(tx, `${ExistStaleOracles.$typeName}`, existStaleOracles),
+    ],
   });
 }
 

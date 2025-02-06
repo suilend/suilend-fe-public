@@ -60,6 +60,7 @@ export function init(tx: Transaction, otw: TransactionObjectInput) {
 export interface ClaimFeesArgs {
   lendingMarket: TransactionObjectInput;
   reserveArrayIndex: bigint | TransactionArgument;
+  systemState: TransactionObjectInput;
 }
 
 export function claimFees(
@@ -73,6 +74,7 @@ export function claimFees(
     arguments: [
       obj(tx, args.lendingMarket),
       pure(tx, args.reserveArrayIndex, `u64`),
+      obj(tx, args.systemState),
     ],
   });
 }
@@ -202,6 +204,28 @@ export function reserve(
     target: `${PUBLISHED_AT}::lending_market::reserve`,
     typeArguments: typeArgs,
     arguments: [obj(tx, lendingMarket)],
+  });
+}
+
+export interface CompoundInterestArgs {
+  lendingMarket: TransactionObjectInput;
+  reserveArrayIndex: bigint | TransactionArgument;
+  clock: TransactionObjectInput;
+}
+
+export function compoundInterest(
+  tx: Transaction,
+  typeArg: string,
+  args: CompoundInterestArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::compound_interest`,
+    typeArguments: [typeArg],
+    arguments: [
+      obj(tx, args.lendingMarket),
+      pure(tx, args.reserveArrayIndex, `u64`),
+      obj(tx, args.clock),
+    ],
   });
 }
 
@@ -492,6 +516,18 @@ export function liquidate(
       obj(tx, args.clock),
       obj(tx, args.repayCoins),
     ],
+  });
+}
+
+export function reserves(
+  tx: Transaction,
+  typeArg: string,
+  lendingMarket: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::lending_market::reserves`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, lendingMarket)],
   });
 }
 
