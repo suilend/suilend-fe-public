@@ -15,6 +15,7 @@ import {
   ROOT_URL,
   SEND_URL,
   SPRINGSUI_URL,
+  STEAMM_URL,
   SWAP_URL,
 } from "@/lib/navigation";
 
@@ -61,9 +62,7 @@ export default function NavigationLinks() {
         SpringSui
       </Link>
       <Link
-        href={
-          !isInMsafeApp() ? SPRINGSUI_URL : getMsafeAppStoreUrl("SpringSui")
-        }
+        href={STEAMM_URL}
         isExternal
         label="Coming soon"
         endIcon={<ExternalLink className="h-3 w-3" />}
