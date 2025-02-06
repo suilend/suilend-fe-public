@@ -1,8 +1,7 @@
 export const TWITTER = "@suilendprotocol";
 
-export const TITLE = "Suilend | Lend and borrow crypto on Sui";
-export const DESCRIPTION =
-  "Money market built on the best chain for developers.";
+export const TITLE = "Suilend | Sui's DeFi Suite";
+export const DESCRIPTION = "Sui's DeFi Suite";
 
 export const TOAST_DURATION = 4 * 1000;
 export const TX_TOAST_DURATION = 10 * 1000;

@@ -11,7 +11,7 @@ import {
   TPrimaryTitle,
   TTitle,
 } from "@/components/shared/Typography";
-import { ASSETS_URL } from "@/lib/constants";
+import { ASSETS_URL, DESCRIPTION } from "@/lib/constants";
 
 export default function About() {
   return (
@@ -46,7 +46,7 @@ export default function About() {
               />
 
               <TPrimaryTitle className="w-full max-w-[800px] pr-6 text-[32px] uppercase md:text-[48px]">
-                Lend and borrow crypto on Sui
+                {DESCRIPTION}
               </TPrimaryTitle>
             </div>
 
@@ -57,11 +57,11 @@ export default function About() {
                 style={{ clipPath: "inset(0 0 0 0)" }}
               >
                 <Lava className="md:hidden" isFiltered />
-                <TTitle className="text-xl uppercase text-primary-foreground">
+                <TDisplay className="text-xl uppercase text-primary-foreground">
                   Why
                   <br />
                   Suilend?
-                </TTitle>
+                </TDisplay>
               </div>
 
               <div className="flex flex-col gap-4 px-4 md:border-t md:px-0 md:px-6 md:pt-6">
@@ -93,10 +93,10 @@ export default function About() {
 
           {/* Right */}
           <div className="relative z-[2] w-full md:w-[300px]">
-            <div className="flex h-full w-full flex-col gap-6 rounded-md border border-secondary bg-secondary/5 p-4 backdrop-blur-md md:items-end md:justify-between">
-              <TDisplay className="uppercase text-primary-foreground">
-                Money market built on the best chain for developers.
-              </TDisplay>
+            <div className="flex h-full w-full flex-col gap-6 rounded-md border border-secondary bg-secondary/5 p-4 backdrop-blur-md">
+              <TTitle className="text-lg uppercase text-primary-foreground">
+                Lend and borrow crypto on Sui
+              </TTitle>
             </div>
           </div>
         </div>

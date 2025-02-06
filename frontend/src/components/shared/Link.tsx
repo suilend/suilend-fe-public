@@ -17,10 +17,10 @@ interface LinkProps extends PropsWithChildren, NextLinkProps {
   activeClassName?: ClassValue;
   isExternal?: boolean;
   startIcon?: ReactNode;
-  endIcon?: ReactNode;
   label?: string;
   labelClassName?: ClassValue;
   labelActiveClassName?: ClassValue;
+  endIcon?: ReactNode;
 }
 
 export default function Link({
@@ -30,10 +30,10 @@ export default function Link({
   activeClassName,
   isExternal,
   startIcon,
-  endIcon,
   label,
   labelClassName,
   labelActiveClassName,
+  endIcon,
   children,
   ...props
 }: LinkProps) {
@@ -58,7 +58,6 @@ export default function Link({
     >
       {startIcon}
       {children}
-      {endIcon}
       {label && (
         <TLabelSans
           className={cn(
@@ -70,6 +69,7 @@ export default function Link({
           {label}
         </TLabelSans>
       )}
+      {endIcon}
     </Component>
   );
 }
