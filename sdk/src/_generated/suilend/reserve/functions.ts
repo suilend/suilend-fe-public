@@ -67,15 +67,20 @@ export function staker(
   });
 }
 
+export interface ClaimFeesArgs {
+  reserve: TransactionObjectInput;
+  systemState: TransactionObjectInput;
+}
+
 export function claimFees(
   tx: Transaction,
   typeArgs: [string, string],
-  reserve: TransactionObjectInput,
+  args: ClaimFeesArgs,
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve::claim_fees`,
     typeArguments: typeArgs,
-    arguments: [obj(tx, reserve)],
+    arguments: [obj(tx, args.reserve), obj(tx, args.systemState)],
   });
 }
 
@@ -554,6 +559,35 @@ export function initStaker(
   });
 }
 
+export function interestLastUpdateTimestampS(
+  tx: Transaction,
+  typeArg: string,
+  reserve: TransactionObjectInput,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::interest_last_update_timestamp_s`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, reserve)],
+  });
+}
+
+export interface IsPriceFreshArgs {
+  reserve: TransactionObjectInput;
+  clock: TransactionObjectInput;
+}
+
+export function isPriceFresh(
+  tx: Transaction,
+  typeArg: string,
+  args: IsPriceFreshArgs,
+) {
+  return tx.moveCall({
+    target: `${PUBLISHED_AT}::reserve::is_price_fresh`,
+    typeArguments: [typeArg],
+    arguments: [obj(tx, args.reserve), obj(tx, args.clock)],
+  });
+}
+
 export interface JoinFeesArgs {
   reserve: TransactionObjectInput;
   fees: TransactionObjectInput;
@@ -782,12 +816,12 @@ export interface UnstakeSuiFromStakerArgs {
 
 export function unstakeSuiFromStaker(
   tx: Transaction,
-  typeArg: string,
+  typeArgs: [string, string],
   args: UnstakeSuiFromStakerArgs,
 ) {
   return tx.moveCall({
     target: `${PUBLISHED_AT}::reserve::unstake_sui_from_staker`,
-    typeArguments: [typeArg],
+    typeArguments: typeArgs,
     arguments: [
       obj(tx, args.reserve),
       obj(tx, args.liquidityRequest),
