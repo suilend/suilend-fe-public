@@ -90,6 +90,11 @@ export const LENDING_MARKET_TYPE = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI"
   : "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
+export const LENDING_MARKET_REGISTRY_ID = process.env
+  .NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0x925c9a2336b02fc2b68099837bd66f6b5b4d45cd460e0a4b81708bac6c440eff"
+  : "0x64faff8d91a56c4f55debbb44767b009ee744a70bc2cc8e3bbd2718c92f85931";
+
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({
     id: upgradeCapId,
@@ -137,6 +142,29 @@ export class SuilendClient {
       phantom(lendingMarketType),
       lendingMarketId,
     );
+
+    const r = await client.getObject({
+      id: LENDING_MARKET_REGISTRY_ID,
+      options: {
+        showBcs: true,
+        /**
+         * Whether to show the content(i.e., package content or Move struct content) of the object. Default to
+         * be False
+         */
+        showContent: true,
+        /** Whether to show the Display metadata of the object for frontend rendering. Default to be False */
+        showDisplay: true,
+        /** Whether to show the owner of the object. Default to be False */
+        showOwner: true,
+        /** Whether to show the previous transaction digest of the object. Default to be False */
+        showPreviousTransaction: true,
+        /** Whether to show the storage rebate of the object. Default to be False */
+        showStorageRebate: true,
+        /** Whether to show the type of the object. Default to be False */
+        showType: true,
+      },
+    });
+    console.log("XXX", r);
 
     const latestPackageId = await getLatestPackageId(
       client,
