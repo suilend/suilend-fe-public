@@ -33,7 +33,7 @@ export default function Home() {
   return (
     <DashboardContextProvider>
       <Head>
-        <title>Suilend | Dashboard</title>
+        <title>Suilend | Lend</title>
       </Head>
 
       <div className="flex w-full flex-1 flex-col gap-6">
