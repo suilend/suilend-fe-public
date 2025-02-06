@@ -54,7 +54,7 @@ export default function Points() {
   return (
     <>
       <Head>
-        <title>Suilend | SEND Points</title>
+        <title>Suilend | Points</title>
       </Head>
 
       <div className="flex w-full flex-col items-center gap-8">

@@ -1,12 +1,13 @@
 export const ROOT_URL = "/";
-export const SEND_URL = "/send";
-export const POINTS_URL = "/points";
 export const SWAP_URL = "/swap";
 export const BRIDGE_URL = "/bridge";
+export const POINTS_URL = "/points";
+export const SEND_URL = "/send";
 export const ABOUT_URL = "/about";
 export const ADMIN_URL = "/admin";
 
 export const SPRINGSUI_URL = "https://springsui.com";
+export const STEAMM_URL = "https://steamm.fi";
 
 export const API_URL = "https://api.suilend.fi";
 export const DOCS_URL = "https://docs.suilend.fi";
