@@ -61,7 +61,7 @@ export default function AssetCell({
         result.push({
           title: "Stake",
           href: !isInMsafeApp()
-            ? `${SPRINGSUI_URL}?${new URLSearchParams({ lst: token.symbol })}`
+            ? `${SPRINGSUI_URL}/SUI-${token.symbol}`
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
