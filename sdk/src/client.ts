@@ -83,17 +83,27 @@ export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
 const SUILEND_UPGRADE_CAP_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? "0x05da14368a42a351e106806c09727968ae26be77a6741a018239ef0f99d5185e"
   : "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
-export const LENDING_MARKET_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667"
-  : "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
-export const LENDING_MARKET_TYPE = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI"
-  : "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
 
 export const LENDING_MARKET_REGISTRY_ID = process.env
   .NEXT_PUBLIC_USE_BETA_MARKET
   ? "0x925c9a2336b02fc2b68099837bd66f6b5b4d45cd460e0a4b81708bac6c440eff"
   : "0x64faff8d91a56c4f55debbb44767b009ee744a70bc2cc8e3bbd2718c92f85931";
+
+export const LENDING_MARKETS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? [
+      {
+        id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
+        type: "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
+      },
+    ]
+  : [
+      {
+        id: "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
+        type: "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
+      },
+    ];
+export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // For backwards compatibility
+export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // For backwards compatibility
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({
@@ -142,29 +152,6 @@ export class SuilendClient {
       phantom(lendingMarketType),
       lendingMarketId,
     );
-
-    const r = await client.getObject({
-      id: LENDING_MARKET_REGISTRY_ID,
-      options: {
-        showBcs: true,
-        /**
-         * Whether to show the content(i.e., package content or Move struct content) of the object. Default to
-         * be False
-         */
-        showContent: true,
-        /** Whether to show the Display metadata of the object for frontend rendering. Default to be False */
-        showDisplay: true,
-        /** Whether to show the owner of the object. Default to be False */
-        showOwner: true,
-        /** Whether to show the previous transaction digest of the object. Default to be False */
-        showPreviousTransaction: true,
-        /** Whether to show the storage rebate of the object. Default to be False */
-        showStorageRebate: true,
-        /** Whether to show the type of the object. Default to be False */
-        showType: true,
-      },
-    });
-    console.log("XXX", r);
 
     const latestPackageId = await getLatestPackageId(
       client,
