@@ -122,7 +122,7 @@ export default function AprWithRewardsBreakdown({
   action,
   changeAmount,
 }: AprWithRewardsBreakdownProps) {
-  const { data } = useLoadedAppContext();
+  const { data, lstAprPercentMap } = useLoadedAppContext();
 
   const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
@@ -130,7 +130,7 @@ export default function AprWithRewardsBreakdown({
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
     reserve,
-    data.lstAprPercentMap,
+    lstAprPercentMap,
   );
 
   const aprPercent =

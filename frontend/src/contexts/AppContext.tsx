@@ -28,6 +28,7 @@ import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
+import useFetchLstAprPercentMap from "@/fetchers/useFetchLstAprPercentMap";
 
 export interface AppData {
   suilendClient: SuilendClient;
@@ -45,13 +46,13 @@ export interface AppData {
   obligationOwnerCaps: ObligationOwnerCap<string>[] | undefined;
   obligations: ParsedObligation[] | undefined;
   lendingMarketOwnerCapId: string | undefined;
-
-  lstAprPercentMap: Record<string, BigNumber>;
 }
+export type LstAprPercentMap = Record<string, BigNumber>;
 
 interface AppContext {
   suilendClient: SuilendClient | undefined;
   data: AppData | undefined;
+  lstAprPercentMap: LstAprPercentMap | undefined;
   rawBalancesMap: Record<string, BigNumber> | undefined;
   balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   getBalance: (coinType: string) => BigNumber;
@@ -66,6 +67,7 @@ interface AppContext {
 type LoadedAppContext = AppContext & {
   suilendClient: SuilendClient;
   data: AppData;
+  lstAprPercentMap: LstAprPercentMap;
 
   filteredReserves: ParsedReserve[];
 };
@@ -73,6 +75,7 @@ type LoadedAppContext = AppContext & {
 const AppContext = createContext<AppContext>({
   suilendClient: undefined,
   data: undefined,
+  lstAprPercentMap: undefined,
   rawBalancesMap: undefined,
   balancesCoinMetadataMap: undefined,
   getBalance: () => {
@@ -99,6 +102,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
   // App data
   const { data: appData, mutateData: mutateAppData } = useFetchAppData(address);
+
+  // LST APRs
+  const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
 
   // Balances
   const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
@@ -195,6 +201,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     () => ({
       suilendClient: appData?.suilendClient,
       data: appData,
+      lstAprPercentMap,
       rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
@@ -208,6 +215,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }),
     [
       appData,
+      lstAprPercentMap,
       rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,

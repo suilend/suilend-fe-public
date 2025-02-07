@@ -39,7 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
-  const { data, ...restAppContext } = useLoadedAppContext();
+  const { data, lstAprPercentMap, ...restAppContext } = useLoadedAppContext();
   const obligation = restAppContext.obligation as ParsedObligation;
 
   const isLooping = getIsLooping(data, obligation);
@@ -49,7 +49,7 @@ function AccountPositionCardContent() {
   const netAprPercent = getNetAprPercent(
     obligation,
     data.rewardMap,
-    data.lstAprPercentMap,
+    lstAprPercentMap,
   );
 
   return (

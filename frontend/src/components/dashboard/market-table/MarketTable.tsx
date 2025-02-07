@@ -118,7 +118,7 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { data, filteredReserves } = useLoadedAppContext();
+  const { data, lstAprPercentMap, filteredReserves } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -303,7 +303,7 @@ export default function MarketTable() {
         Side.DEPOSIT,
         reserve.depositAprPercent,
         getFilteredRewards(data.rewardMap[reserve.coinType].deposit),
-        getStakingYieldAprPercent(Side.DEPOSIT, reserve, data.lstAprPercentMap),
+        getStakingYieldAprPercent(Side.DEPOSIT, reserve, lstAprPercentMap),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,
@@ -553,7 +553,7 @@ export default function MarketTable() {
     }
 
     return result;
-  }, [filteredReserves, data.rewardMap, data.lstAprPercentMap]);
+  }, [filteredReserves, data.rewardMap, lstAprPercentMap]);
 
   return (
     <div className="w-full">

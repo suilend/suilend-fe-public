@@ -14,7 +14,7 @@ import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDa
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { suilendClient, data } = useAppContext();
+  const { suilendClient, data, lstAprPercentMap } = useAppContext();
   const { season, seasonMap } = usePointsContext();
 
   // LaunchDarkly banner
@@ -59,7 +59,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
-          {!suilendClient || !data ? (
+          {!suilendClient || !data || !lstAprPercentMap ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>

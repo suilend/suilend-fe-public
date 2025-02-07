@@ -1,4 +1,3 @@
-import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
@@ -8,11 +7,6 @@ import {
   LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
-import {
-  LIQUID_STAKING_INFO_MAP,
-  LstClient,
-  NORMALIZED_LST_COINTYPES,
-} from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
 
@@ -57,37 +51,6 @@ export default function useFetchAppData(address?: string) {
       );
     }
 
-    // LSTs
-    const lstAprPercentMapEntries: [string, BigNumber][] = await Promise.all(
-      NORMALIZED_LST_COINTYPES.filter(
-        (lstCoinType) =>
-          !!reserveMap[lstCoinType] &&
-          !!Object.values(LIQUID_STAKING_INFO_MAP).find(
-            (info) => info.type === lstCoinType,
-          ),
-      )
-        .map(
-          (lstCoinType) =>
-            Object.values(LIQUID_STAKING_INFO_MAP).find(
-              (info) => info.type === lstCoinType,
-            )!,
-        )
-        .map((LIQUID_STAKING_INFO) =>
-          (async () => {
-            const lstClient = await LstClient.initialize(
-              suiClient,
-              LIQUID_STAKING_INFO,
-            );
-
-            const apr = await lstClient.getSpringSuiApy(); // TODO: Use APR
-            const aprPercent = new BigNumber(apr).times(100);
-
-            return [LIQUID_STAKING_INFO.type, aprPercent];
-          })(),
-        ),
-    );
-    const lstAprPercentMap = Object.fromEntries(lstAprPercentMapEntries);
-
     return {
       suilendClient,
 
@@ -104,8 +67,6 @@ export default function useFetchAppData(address?: string) {
       obligationOwnerCaps,
       obligations,
       lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
-
-      lstAprPercentMap,
     };
   };
 
