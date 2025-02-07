@@ -64,7 +64,7 @@ export default function NavigationLinks() {
       <Link
         href={STEAMM_URL}
         isExternal
-        label="Coming soon"
+        label="Soon"
         endIcon={<ExternalLink className="h-3 w-3" />}
       >
         STEAMM
