@@ -35,8 +35,8 @@ const logger = new Logger({ name: "Suilend Liquidator" });
 const LIQUIDATION_CLOSE_FACTOR = 0.2;
 
 export type LiquidationDispatcherConfig = {
+  lendingMarketId: string;
   lendingMarketType: string;
-  marketAddress: string;
   pollObligationIntervalSeconds: number;
   redisPort: number;
   redisUrl: string;
@@ -47,9 +47,9 @@ export type LiquidationDispatcherConfig = {
 
 export type LiquidationWorkerConfig = {
   keypair: Ed25519Keypair;
+  lendingMarketId: string;
   lendingMarketType: string;
   liquidationAttemptDurationSeconds: number;
-  marketAddress: string;
   redisPort: number;
   redisUrl: string;
   rpcURL: string;
@@ -126,7 +126,8 @@ export class LiquidationDispatcher {
     this.obligations = (
       await fetchAllObligationsForMarket(
         this.suiClient,
-        this.config.marketAddress,
+        this.config.lendingMarketId,
+        this.config.lendingMarketType,
       )
     ).filter((obligation) => {
       return obligation.borrows.length > 0;
@@ -161,7 +162,7 @@ export class LiquidationWorker {
 
   async run() {
     this.suilend = await SuilendClient.initialize(
-      this.config.marketAddress,
+      this.config.lendingMarketId,
       this.config.lendingMarketType,
       this.suiClient,
     );
@@ -456,7 +457,7 @@ export class LiquidationWorker {
   }
 
   async getLendingMarket() {
-    return await getLendingMarket(this.suiClient, this.config.marketAddress);
+    return await getLendingMarket(this.suiClient, this.config.lendingMarketId);
   }
 
   async swapAndConfirm(params: {

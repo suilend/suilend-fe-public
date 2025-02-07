@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 
 import { LendingMarket } from "../_generated/suilend/lending-market/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
+import { LENDING_MARKETS } from "../client";
 
 import { parseRateLimiter } from "./rateLimiter";
 import { parseReserve } from "./reserve";
@@ -16,6 +17,7 @@ export const parseLendingMarket = (
   currentTime: number,
 ) => {
   const id = lendingMarket.id;
+  const type = lendingMarket.$typeArgs[0];
   const version = lendingMarket.version;
 
   const parsedReserves = reserves.map((reserve) =>
@@ -36,6 +38,9 @@ export const parseLendingMarket = (
   );
 
   // Custom
+  const name =
+    LENDING_MARKETS.find((lm) => lm.id === id)?.name ?? "Lending market";
+
   let depositedAmountUsd = new BigNumber(0);
   let borrowedAmountUsd = new BigNumber(0);
   let tvlUsd = new BigNumber(0);
@@ -50,6 +55,7 @@ export const parseLendingMarket = (
 
   return {
     id,
+    type,
     version,
     reserves: parsedReserves,
     obligations,
@@ -58,6 +64,7 @@ export const parseLendingMarket = (
     badDebtUsd,
     badDebtLimitUsd,
 
+    name,
     depositedAmountUsd,
     borrowedAmountUsd,
     tvlUsd,

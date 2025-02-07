@@ -92,18 +92,25 @@ export const LENDING_MARKET_REGISTRY_ID = process.env
 export const LENDING_MARKETS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? [
       {
+        name: "Main market",
         id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
         type: "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
+      },
+      {
+        name: "Isolated 1",
+        id: "0xb1d89cf9082cedce09d3647f0ebda4a8b5db125aff5d312a8bfd7eefa715bd35",
+        type: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
       },
     ]
   : [
       {
+        name: "Main market",
         id: "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
         type: "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
       },
     ];
-export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // For backwards compatibility
-export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // For backwards compatibility
+export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market, for backwards compatibility
+export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // Main market, for backwards compatibility
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({

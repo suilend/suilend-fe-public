@@ -28,8 +28,8 @@ async function runDispatcher() {
     throw "REDIS_HOST environment variable not found";
   }
   const dispatcher = new LiquidationDispatcher({
+    lendingMarketId: LENDING_MARKET_ID,
     lendingMarketType: LENDING_MARKET_TYPE,
-    marketAddress: LENDING_MARKET_ID,
     pollObligationIntervalSeconds: 15,
     redisPort: 6379,
     redisUrl: process.env.REDIS_HOST,
@@ -58,9 +58,9 @@ async function runWorker() {
   });
   const worker = new LiquidationWorker({
     keypair: keypair,
+    lendingMarketId: LENDING_MARKET_ID,
     lendingMarketType: LENDING_MARKET_TYPE,
     liquidationAttemptDurationSeconds: 30,
-    marketAddress: LENDING_MARKET_ID,
     redisPort: 6379,
     redisUrl: process.env.REDIS_HOST,
     rpcURL: "https://fullnode.mainnet.sui.io/",

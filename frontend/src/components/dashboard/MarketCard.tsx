@@ -12,31 +12,30 @@ export default function MarketCard() {
 
   return (
     <Card
+      id={`market-card-${data.lendingMarket.id}`}
       className="max-md:rounded-0 bg-transparent max-md:-mx-4 max-md:w-auto max-md:border-x-0"
       headerProps={{
-        titleContainerClassName: "max-md:h-auto",
-        title: "Main market",
+        title: data.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
-        endContent: (
-          <div className="flex flex-row gap-6 md:gap-4">
-            <div className="flex flex-col items-end gap-1 md:flex-row md:items-baseline md:gap-2">
-              <TLabelSans>Deposits</TLabelSans>
-              <TBody>{formatUsd(data.lendingMarket.depositedAmountUsd)}</TBody>
-            </div>
-            <div className="flex flex-col items-end gap-1 md:flex-row md:items-baseline md:gap-2">
-              <TLabelSans>Borrows</TLabelSans>
-              <TBody>{formatUsd(data.lendingMarket.borrowedAmountUsd)}</TBody>
-            </div>
-            <div className="flex flex-col items-end gap-1 md:flex-row md:items-baseline md:gap-2">
-              <TLabelSans>TVL</TLabelSans>
-              <TBody>{formatUsd(data.lendingMarket.tvlUsd)}</TBody>
-            </div>
-          </div>
-        ),
         noSeparator: true,
       }}
     >
-      <CardContent className="md:p-0">
+      <CardContent className="flex flex-col gap-4 md:p-0">
+        <div className="flex flex-row justify-between gap-4 md:px-4">
+          <div className="flex flex-col items-start gap-1">
+            <TLabelSans className="text-left">Deposits</TLabelSans>
+            <TBody>{formatUsd(data.lendingMarket.depositedAmountUsd)}</TBody>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <TLabelSans className="text-center">Borrows</TLabelSans>
+            <TBody>{formatUsd(data.lendingMarket.borrowedAmountUsd)}</TBody>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <TLabelSans className="text-right">TVL</TLabelSans>
+            <TBody>{formatUsd(data.lendingMarket.tvlUsd)}</TBody>
+          </div>
+        </div>
+
         <MarketTable />
       </CardContent>
     </Card>

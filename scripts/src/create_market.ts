@@ -18,7 +18,7 @@ async function createLendingMarket() {
   const client = new SuiClient({ url: "https://fullnode.mainnet.sui.io:443" });
 
   const transaction = new Transaction();
-  const ownerCap = await SuilendClient.createNewLendingMarket(
+  const ownerCap = SuilendClient.createNewLendingMarket(
     "0xddb6304a726ff1da7d8b5240c35a5f4d1c43f289258d440ba42044a4ed6c7dc6",
     "0x2::sui::SUI",
     transaction,

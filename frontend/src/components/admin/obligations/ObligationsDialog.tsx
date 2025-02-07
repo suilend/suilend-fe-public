@@ -4,10 +4,10 @@ import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { LENDING_MARKETS } from "@suilend/sdk";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
-import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk/client";
 import {
   ParsedObligation,
   parseObligation,
@@ -15,6 +15,7 @@ import {
 import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import LiquidateDialog from "@/components/admin/liquidate/LiquidateDialog";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
 import Button from "@/components/shared/Button";
@@ -30,6 +31,11 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
   const { data } = useLoadedAppContext();
+
+  const { selectedLendingMarketId } = useAdminContext();
+  const selectedLendingMarket = LENDING_MARKETS.find(
+    (lm) => lm.id === selectedLendingMarketId,
+  );
 
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =
@@ -49,10 +55,12 @@ export default function ObligationsDialog() {
   const [obligations, setObligations] = useState<Obligation<string>[]>([]);
 
   const fetchObligationData = async () => {
+    if (!selectedLendingMarket) throw new Error("Missing lending market");
+
     const rawLendingMarket = await LendingMarket.fetch(
       suiClient,
-      phantom(LENDING_MARKET_TYPE),
-      LENDING_MARKET_ID,
+      phantom(selectedLendingMarket.type),
+      selectedLendingMarket.id,
     );
     const refreshedReserves = await simulate.refreshReservePrice(
       rawLendingMarket.reserves.map((r) =>
@@ -70,7 +78,8 @@ export default function ObligationsDialog() {
     }
     fetchAllObligationsForMarketWithHandler(
       suiClient,
-      LENDING_MARKET_ID,
+      selectedLendingMarket.id,
+      selectedLendingMarket.type,
       chunkHandler,
     );
   };

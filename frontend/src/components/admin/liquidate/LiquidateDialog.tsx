@@ -21,11 +21,7 @@ import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import {
-  LENDING_MARKET_ID,
-  LENDING_MARKET_TYPE,
-  SuilendClient,
-} from "@suilend/sdk/client";
+import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
 import {
   ParsedObligation,
   parseObligation,
@@ -39,6 +35,7 @@ import {
 } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DataTable, {
   decimalSortingFn,
   tableHeader,
@@ -68,6 +65,11 @@ export default function LiquidateDialog({
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, getBalance } = useLoadedAppContext();
+
+  const { selectedLendingMarketId } = useAdminContext();
+  const selectedLendingMarket = LENDING_MARKETS.find(
+    (lm) => lm.id === selectedLendingMarketId,
+  );
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);
@@ -101,15 +103,17 @@ export default function LiquidateDialog({
   };
 
   const fetchObligationDetails = async (obligationId: string) => {
+    if (!selectedLendingMarket) throw new Error("Missing lending market");
+
     await fetchObligationOwner(obligationId);
     const rawLendingMarket = await LendingMarket.fetch(
       suiClient,
-      phantom(LENDING_MARKET_TYPE),
-      LENDING_MARKET_ID,
+      phantom(selectedLendingMarket.type),
+      selectedLendingMarket.id,
     );
     const rawObligation = await SuilendClient.getObligation(
       obligationId,
-      [LENDING_MARKET_TYPE],
+      [selectedLendingMarket.type],
       suiClient,
     );
     let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];

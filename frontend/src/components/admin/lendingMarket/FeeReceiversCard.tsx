@@ -10,8 +10,9 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import { LENDING_MARKET_ID, SuilendClient } from "@suilend/sdk";
+import { SuilendClient } from "@suilend/sdk";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Input, { getInputId } from "@/components/shared/Input";
 import { TLabelSans, TTitle } from "@/components/shared/Typography";
@@ -29,6 +30,8 @@ export default function FeeReceiversCard() {
   const { signExecuteAndWaitForTransaction } = useWalletContext();
   const { suilendClient, data, refresh } = useLoadedAppContext();
 
+  const { selectedLendingMarketId } = useAdminContext();
+
   const isEditable = !!data.lendingMarketOwnerCapId;
 
   // State
@@ -42,7 +45,7 @@ export default function FeeReceiversCard() {
       try {
         const feeReceivers = await SuilendClient.getFeeReceivers(
           suiClient,
-          LENDING_MARKET_ID,
+          selectedLendingMarketId,
         );
 
         const rows: FeeReceiverRow[] = feeReceivers.receivers.map(
@@ -59,7 +62,7 @@ export default function FeeReceiversCard() {
         console.error(err);
       }
     })();
-  }, [suiClient]);
+  }, [suiClient, selectedLendingMarketId]);
 
   const onChange = (id: string, key: keyof FeeReceiverRow) => (value: string) =>
     setFeeReceiverRows((prev) =>
