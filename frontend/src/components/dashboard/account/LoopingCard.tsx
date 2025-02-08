@@ -15,6 +15,7 @@ import Spinner from "@/components/shared/Spinner";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   IS_LOOPING_MESSAGE,
   WAS_LOOPING_MESSAGE,
@@ -26,16 +27,17 @@ import {
 
 export default function LoopingCard() {
   const { address } = useWalletContext();
-  const { data, refresh, obligation, obligationOwnerCap } =
-    useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { refresh, obligation, obligationOwnerCap } = useLoadedUserContext();
+
   const { withdraw, borrow } = useActionsModalContext();
 
-  const loopedAssetCoinTypes = getLoopedAssetCoinTypes(data, obligation);
-  const isLooping = getIsLooping(data, obligation);
+  const loopedAssetCoinTypes = getLoopedAssetCoinTypes(appData, obligation);
+  const isLooping = getIsLooping(appData, obligation);
 
   const { deposits: zeroShareDeposits, borrows: zeroShareBorrows } =
     getZeroSharePositions(obligation);
-  const wasLooping = getWasLooping(data, obligation);
+  const wasLooping = getWasLooping(appData, obligation);
 
   // Restore eligibility
   const [isRestoringEligibility, setIsRestoringEligibility] =
@@ -59,7 +61,7 @@ export default function LoopingCard() {
       });
     } finally {
       setIsRestoringEligibility(false);
-      await refresh();
+      refresh();
     }
   };
 

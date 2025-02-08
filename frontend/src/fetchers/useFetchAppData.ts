@@ -10,7 +10,7 @@ import {
 
 import { AppData } from "@/contexts/AppContext";
 
-export default function useFetchAppData(address?: string) {
+export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
 
   // Data
@@ -23,54 +23,42 @@ export default function useFetchAppData(address?: string) {
 
     const {
       lendingMarket,
-      reserveMap,
-
-      reserveCoinTypes,
-      rewardCoinTypes,
-
-      rewardCoinMetadataMap,
       coinMetadataMap,
 
-      obligationOwnerCaps,
-      obligations,
-    } = await initializeSuilend(suiClient, suilendClient, address);
-
-    const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
       reserveMap,
-      rewardCoinTypes,
-      rewardCoinMetadataMap,
-      obligations ?? [],
-    );
+      refreshedRawReserves,
+      reserveCoinTypes,
+      reserveCoinMetadataMap,
 
-    let lendingMarketOwnerCapId: string | null = null;
-    if (address) {
-      lendingMarketOwnerCapId = await SuilendClient.getLendingMarketOwnerCapId(
-        address,
-        suilendClient.lendingMarket.$typeArgs,
-        suiClient,
-      );
-    }
+      rewardCoinTypes,
+      activeRewardCoinTypes,
+      rewardCoinMetadataMap,
+    } = await initializeSuilend(suiClient, suilendClient);
+
+    const { rewardPriceMap } = await initializeSuilendRewards(
+      reserveMap,
+      activeRewardCoinTypes,
+    );
 
     return {
       suilendClient,
 
       lendingMarket,
-      reserveMap,
-      rewardMap,
-
-      reserveCoinTypes,
-      rewardCoinTypes,
-
       coinMetadataMap,
-      rewardPriceMap,
 
-      obligationOwnerCaps,
-      obligations,
-      lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
+      reserveMap,
+      refreshedRawReserves,
+      reserveCoinTypes,
+      reserveCoinMetadataMap,
+
+      rewardPriceMap,
+      rewardCoinTypes,
+      activeRewardCoinTypes,
+      rewardCoinMetadataMap,
     };
   };
 
-  const { data, mutate } = useSWR<AppData>(`appData-${address}`, dataFetcher, {
+  const { data, mutate } = useSWR<AppData>("appData", dataFetcher, {
     refreshInterval: 30 * 1000,
     onSuccess: (data) => {
       console.log("Refreshed app data", data);

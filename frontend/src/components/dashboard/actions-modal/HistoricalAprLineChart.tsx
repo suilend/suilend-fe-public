@@ -20,6 +20,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
 import {
@@ -56,7 +57,7 @@ interface TooltipContentProps {
 }
 
 function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
@@ -110,12 +111,12 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
                     className="h-4 w-4"
                     token={{
                       coinType,
-                      symbol: data.coinMetadataMap[coinType].symbol,
-                      iconUrl: data.coinMetadataMap[coinType].iconUrl,
+                      symbol: appData.coinMetadataMap[coinType].symbol,
+                      iconUrl: appData.coinMetadataMap[coinType].iconUrl,
                     }}
                   />
                   <TLabelSans>
-                    {data.coinMetadataMap[coinType].symbol}
+                    {appData.coinMetadataMap[coinType].symbol}
                   </TLabelSans>
                 </>
               )}
@@ -327,7 +328,9 @@ export default function HistoricalAprLineChart({
   reserve,
   side,
 }: HistoricalAprLineChartProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { userData } = useLoadedUserContext();
+
   const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
     useReserveAssetDataEventsContext();
 
@@ -338,13 +341,13 @@ export default function HistoricalAprLineChart({
   );
 
   const aprRewardReserves = useMemo(() => {
-    const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
+    const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
     const aprRewards = getDedupedAprRewards(rewards);
 
     return aprRewards
-      .map((aprReward) => data.reserveMap[aprReward.stats.rewardCoinType])
+      .map((aprReward) => appData.reserveMap[aprReward.stats.rewardCoinType])
       .filter(Boolean);
-  }, [data.rewardMap, reserve.coinType, side, data.reserveMap]);
+  }, [userData.rewardMap, reserve.coinType, side, appData.reserveMap]);
 
   const didFetchInitialReserveAssetDataEventsRef = useRef<boolean>(false);
   const didFetchInitialRewardReservesAssetDataEventsRef = useRef<

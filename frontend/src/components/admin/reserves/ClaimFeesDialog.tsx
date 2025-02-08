@@ -19,6 +19,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 interface ClaimFeesDialogProps {
@@ -28,12 +29,13 @@ interface ClaimFeesDialogProps {
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   // Reserves
   const reserves = useMemo(
-    () => (reserve ? [reserve] : data.lendingMarket.reserves),
-    [reserve, data.lendingMarket.reserves],
+    () => (reserve ? [reserve] : appData.lendingMarket.reserves),
+    [reserve, appData.lendingMarket.reserves],
   );
 
   // Fees
@@ -103,7 +105,7 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

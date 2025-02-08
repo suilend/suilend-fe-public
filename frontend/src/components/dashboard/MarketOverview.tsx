@@ -7,7 +7,7 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function MarketOverview() {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   return (
     <Card
@@ -21,17 +21,17 @@ export default function MarketOverview() {
       <CardContent className="flex flex-row justify-between gap-4">
         <div className="flex flex-col gap-1">
           <TLabelSans>Total deposits</TLabelSans>
-          <TBody>{formatUsd(data.lendingMarket.depositedAmountUsd)}</TBody>
+          <TBody>{formatUsd(appData.lendingMarket.depositedAmountUsd)}</TBody>
         </div>
 
         <div className="flex flex-col items-center gap-1">
           <TLabelSans className="text-center">Total borrows</TLabelSans>
-          <TBody>{formatUsd(data.lendingMarket.borrowedAmountUsd)}</TBody>
+          <TBody>{formatUsd(appData.lendingMarket.borrowedAmountUsd)}</TBody>
         </div>
 
         <div className="flex flex-col items-end gap-1">
           <TLabelSans className="text-right">TVL</TLabelSans>
-          <TBody>{formatUsd(data.lendingMarket.tvlUsd)}</TBody>
+          <TBody>{formatUsd(appData.lendingMarket.tvlUsd)}</TBody>
         </div>
       </CardContent>
     </Card>

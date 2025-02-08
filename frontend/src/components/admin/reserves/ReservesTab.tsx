@@ -18,11 +18,11 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ReservesTab() {
   const { explorer } = useSettingsContext();
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   return (
     <div className="flex w-full flex-col gap-2">
-      {data.lendingMarket.reserves.map((reserve) => {
+      {appData.lendingMarket.reserves.map((reserve) => {
         return (
           <Card key={reserve.id}>
             <CardHeader>

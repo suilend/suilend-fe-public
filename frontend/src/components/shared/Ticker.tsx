@@ -16,10 +16,10 @@ interface TickerProps {
 }
 
 export default function Ticker({ className, items }: TickerProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   const animationDuration = `${
-    data.lendingMarket.reserves.filter((reserve) =>
+    appData.lendingMarket.reserves.filter((reserve) =>
       !isInMsafeApp()
         ? true
         : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType),

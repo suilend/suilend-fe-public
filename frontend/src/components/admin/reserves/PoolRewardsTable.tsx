@@ -15,7 +15,7 @@ import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 interface RowData {
@@ -44,9 +44,9 @@ export default function PoolRewardsTable({
   onCloseReward,
 }: PoolRewardsTableProps) {
   const { explorer } = useSettingsContext();
-  const { data } = useLoadedAppContext();
+  const { userData } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   const columns: ColumnDef<RowData>[] = [
     {

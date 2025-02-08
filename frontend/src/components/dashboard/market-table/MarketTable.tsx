@@ -38,6 +38,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   DEPRECATED_ASSETS_TOOLTIP,
   ISOLATED_ASSETS_TOOLTIP,
@@ -118,7 +119,9 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { data, lstAprPercentMap, filteredReserves } = useLoadedAppContext();
+  const { lstAprPercentMap } = useLoadedAppContext();
+  const { userData, filteredReserves } = useLoadedUserContext();
+
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -302,13 +305,13 @@ export default function MarketTable() {
       const totalDepositAprPercent = getTotalAprPercent(
         Side.DEPOSIT,
         reserve.depositAprPercent,
-        getFilteredRewards(data.rewardMap[reserve.coinType].deposit),
+        getFilteredRewards(userData.rewardMap[reserve.coinType].deposit),
         getStakingYieldAprPercent(Side.DEPOSIT, reserve, lstAprPercentMap),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,
         reserve.borrowAprPercent,
-        getFilteredRewards(data.rewardMap[reserve.coinType].borrow),
+        getFilteredRewards(userData.rewardMap[reserve.coinType].borrow),
       );
 
       const almostExceedsDepositLimit = getAlmostExceedsLimit(
@@ -553,7 +556,7 @@ export default function MarketTable() {
     }
 
     return result;
-  }, [filteredReserves, data.rewardMap, lstAprPercentMap]);
+  }, [filteredReserves, userData.rewardMap, lstAprPercentMap]);
 
   return (
     <div className="w-full">

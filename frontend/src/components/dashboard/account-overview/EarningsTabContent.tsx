@@ -36,6 +36,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
@@ -61,8 +62,9 @@ export default function EarningsTabContent({
   eventsData,
   nowS,
 }: EarningsTabContentProps) {
-  const { data, ...restAppContext } = useLoadedAppContext();
-  const obligation = restAppContext.obligation as ParsedObligation;
+  const { appData } = useLoadedAppContext();
+  const { userData, ...restUserContext } = useLoadedUserContext();
+  const obligation = restUserContext.obligation as ParsedObligation;
 
   type CumInterestEarnedMap = {
     [coinType: string]: {
@@ -165,7 +167,7 @@ export default function EarningsTabContent({
       } else if (event.eventType === EventType.WITHDRAW) {
         coinType = (event as ApiWithdrawEvent).coinType;
       } else if (event.eventType === EventType.LIQUIDATE) {
-        const withdrawReserve = data.lendingMarket.reserves.find(
+        const withdrawReserve = appData.lendingMarket.reserves.find(
           (reserve) =>
             reserve.id === (event as ApiLiquidateEvent).withdrawReserveId,
         );
@@ -175,7 +177,7 @@ export default function EarningsTabContent({
       }
       if (!coinType) return;
 
-      const coinMetadata = data.coinMetadataMap[coinType];
+      const coinMetadata = appData.coinMetadataMap[coinType];
       if (!coinMetadata) return;
 
       const reserveAssetDataEvent = eventsData.reserveAssetData.find(
@@ -219,7 +221,7 @@ export default function EarningsTabContent({
 
     for (const coinType of Object.keys(resultMap)) {
       // Add current timestamp
-      const reserve = data.reserveMap[coinType];
+      const reserve = appData.reserveMap[coinType];
       if (!reserve) continue;
 
       const timestampS = nowS;
@@ -246,10 +248,10 @@ export default function EarningsTabContent({
     return resultMap;
   }, [
     eventsData,
-    data.lendingMarket.reserves,
-    data.coinMetadataMap,
+    appData.lendingMarket.reserves,
+    appData.coinMetadataMap,
     getInterestEarned,
-    data.reserveMap,
+    appData.reserveMap,
     nowS,
   ]);
 
@@ -263,12 +265,12 @@ export default function EarningsTabContent({
     };
 
     eventsData.claimReward.forEach((claimRewardEvent) => {
-      const reserve = data.lendingMarket.reserves.find(
+      const reserve = appData.lendingMarket.reserves.find(
         (reserve) => reserve.id === claimRewardEvent.reserveId,
       );
       if (!reserve) return;
 
-      const coinMetadata = data.coinMetadataMap[claimRewardEvent.coinType];
+      const coinMetadata = appData.coinMetadataMap[claimRewardEvent.coinType];
       if (!coinMetadata) return;
 
       const claimedAmount = new BigNumber(claimRewardEvent.liquidityAmount).div(
@@ -297,7 +299,7 @@ export default function EarningsTabContent({
       ] = resultMap[side][reserve.coinType][claimRewardEvent.coinType][nowS];
     });
 
-    Object.entries(data.rewardMap).forEach(([coinType, rewards]) => {
+    Object.entries(userData.rewardMap).forEach(([coinType, rewards]) => {
       [...rewards.deposit, ...rewards.borrow].forEach((reward) => {
         const claimableAmount =
           reward.obligationClaims[obligation.id]?.claimableAmount ??
@@ -323,10 +325,10 @@ export default function EarningsTabContent({
     return resultMap;
   }, [
     eventsData,
-    data.lendingMarket.reserves,
-    data.coinMetadataMap,
+    appData.lendingMarket.reserves,
+    appData.coinMetadataMap,
     nowS,
-    data.rewardMap,
+    userData.rewardMap,
     obligation.id,
   ]);
 
@@ -347,7 +349,7 @@ export default function EarningsTabContent({
       const coinType = (event as ApiBorrowEvent).coinType;
       if (!coinType) return;
 
-      const coinMetadata = data.coinMetadataMap[coinType];
+      const coinMetadata = appData.coinMetadataMap[coinType];
       if (!coinMetadata) return;
 
       const feesAmount = new BigNumber(event.originationFeeAmount).div(
@@ -360,7 +362,7 @@ export default function EarningsTabContent({
     });
 
     return resultMap;
-  }, [eventsData, data.coinMetadataMap]);
+  }, [eventsData, appData.coinMetadataMap]);
 
   // Minus - Interest paid
   const getInterestPaid = useCallback(
@@ -422,7 +424,7 @@ export default function EarningsTabContent({
       } else if (event.eventType === EventType.REPAY) {
         coinType = (event as ApiRepayEvent).coinType;
       } else if (event.eventType === EventType.LIQUIDATE) {
-        const repayReserve = data.lendingMarket.reserves.find(
+        const repayReserve = appData.lendingMarket.reserves.find(
           (reserve) =>
             reserve.id === (event as ApiLiquidateEvent).repayReserveId,
         );
@@ -432,7 +434,7 @@ export default function EarningsTabContent({
       }
       if (!coinType) return;
 
-      const coinMetadata = data.coinMetadataMap[coinType];
+      const coinMetadata = appData.coinMetadataMap[coinType];
       if (!coinMetadata) return;
 
       const reserveAssetDataEvent = eventsData.reserveAssetData.find(
@@ -478,7 +480,7 @@ export default function EarningsTabContent({
 
     for (const coinType of Object.keys(resultMap)) {
       // Add current timestamp
-      const reserve = data.reserveMap[coinType];
+      const reserve = appData.reserveMap[coinType];
       if (!reserve) continue;
 
       const timestampS = nowS;
@@ -505,10 +507,10 @@ export default function EarningsTabContent({
     return resultMap;
   }, [
     eventsData,
-    data.lendingMarket.reserves,
-    data.coinMetadataMap,
+    appData.lendingMarket.reserves,
+    appData.coinMetadataMap,
     getInterestPaid,
-    data.reserveMap,
+    appData.reserveMap,
     nowS,
   ]);
 
@@ -526,13 +528,13 @@ export default function EarningsTabContent({
     ].sort(eventSortAsc);
 
     events.forEach((event) => {
-      const withdrawReserve = data.lendingMarket.reserves.find(
+      const withdrawReserve = appData.lendingMarket.reserves.find(
         (reserve) => reserve.id === event.withdrawReserveId,
       );
       if (!withdrawReserve) return;
 
       const withdrawCoinMetadata =
-        data.coinMetadataMap[withdrawReserve.coinType];
+        appData.coinMetadataMap[withdrawReserve.coinType];
       if (!withdrawCoinMetadata) return;
 
       const reserveAssetDataEvent = eventsData.reserveAssetData.find(
@@ -553,14 +555,14 @@ export default function EarningsTabContent({
     });
 
     return resultMap;
-  }, [eventsData, data.lendingMarket.reserves, data.coinMetadataMap]);
+  }, [eventsData, appData.lendingMarket.reserves, appData.coinMetadataMap]);
 
   // Chart
   const getInterpolatedCumInterestData = useCallback(
     (cumInterestMap?: CumInterestMap) => {
       if (cumInterestMap === undefined) return undefined;
       const sortedCoinTypes = Object.keys(cumInterestMap).sort((a, b) =>
-        reserveSort(data.lendingMarket.reserves, a, b),
+        reserveSort(appData.lendingMarket.reserves, a, b),
       );
       const sortedTimestampsS = Array.from(
         new Set(
@@ -635,7 +637,7 @@ export default function EarningsTabContent({
       }
       return result;
     },
-    [data.lendingMarket.reserves],
+    [appData.lendingMarket.reserves],
   );
   const interpolatedCumInterestEarnedData = useMemo(
     () => getInterpolatedCumInterestData(cumInterestEarnedMap),
@@ -659,7 +661,7 @@ export default function EarningsTabContent({
       if (cumInterestMap === undefined) return undefined;
 
       return Object.keys(cumInterestMap).reduce((acc, coinType) => {
-        const reserve = data.reserveMap[coinType];
+        const reserve = appData.reserveMap[coinType];
         if (!reserve) return acc;
 
         const d = cumInterestMap[coinType].find((d) => d.timestampS === nowS);
@@ -671,7 +673,7 @@ export default function EarningsTabContent({
         return acc.plus(cumInterestUsd);
       }, new BigNumber(0));
     },
-    [data.reserveMap, nowS],
+    [appData.reserveMap, nowS],
   );
 
   const cumInterestEarnedUsd = useMemo(
@@ -690,7 +692,7 @@ export default function EarningsTabContent({
             if (isSendPoints(rewardCoinType)) return;
 
             const rewardAmount = reserveRewards[rewardCoinType][nowS];
-            const rewardPrice = data.rewardPriceMap[rewardCoinType];
+            const rewardPrice = appData.rewardPriceMap[rewardCoinType];
             if (!rewardPrice) return;
 
             result = result.plus(rewardAmount.times(rewardPrice));
@@ -700,18 +702,18 @@ export default function EarningsTabContent({
     });
 
     return result;
-  }, [rewardsEarnedMap, nowS, data.rewardPriceMap]);
+  }, [rewardsEarnedMap, nowS, appData.rewardPriceMap]);
 
   const cumBorrowFeesUsd = useMemo(() => {
     if (cumBorrowFeesMap === undefined) return undefined;
 
     return Object.keys(cumBorrowFeesMap).reduce((acc, coinType) => {
-      const reserve = data.reserveMap[coinType];
+      const reserve = appData.reserveMap[coinType];
       if (!reserve) return acc;
 
       return acc.plus(cumBorrowFeesMap[coinType].times(reserve.price));
     }, new BigNumber(0));
-  }, [cumBorrowFeesMap, data.reserveMap]);
+  }, [cumBorrowFeesMap, appData.reserveMap]);
 
   const cumInterestPaidUsd = useMemo(
     () => getCumInterestUsd(cumInterestPaidMap),
@@ -722,12 +724,12 @@ export default function EarningsTabContent({
     if (cumLiquidationsMap === undefined) return undefined;
 
     return Object.keys(cumLiquidationsMap).reduce((acc, coinType) => {
-      const reserve = data.reserveMap[coinType];
+      const reserve = appData.reserveMap[coinType];
       if (!reserve) return acc;
 
       return acc.plus(cumLiquidationsMap[coinType].times(reserve.price));
     }, new BigNumber(0));
-  }, [cumLiquidationsMap, data.reserveMap]);
+  }, [cumLiquidationsMap, appData.reserveMap]);
 
   const totalEarningsUsd = useMemo(() => {
     if (
@@ -762,7 +764,7 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType } = row.original;
 
-          const coinMetadata = data.coinMetadataMap[coinType];
+          const coinMetadata = appData.coinMetadataMap[coinType];
 
           return (
             <div className="flex w-max flex-row items-center gap-2">
@@ -787,7 +789,7 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType, interestEarned } = row.original;
 
-          const coinMetadata = data.coinMetadataMap[coinType];
+          const coinMetadata = appData.coinMetadataMap[coinType];
 
           if (interestEarned.eq(0))
             return <TLabelSans className="w-max">--</TLabelSans>;
@@ -811,9 +813,11 @@ export default function EarningsTabContent({
           return (
             <div className="flex w-max flex-col gap-1">
               {Object.keys(rewardsEarned)
-                .sort((a, b) => reserveSort(data.lendingMarket.reserves, a, b))
+                .sort((a, b) =>
+                  reserveSort(appData.lendingMarket.reserves, a, b),
+                )
                 .map((coinType) => {
-                  const coinMetadata = data.coinMetadataMap[coinType];
+                  const coinMetadata = appData.coinMetadataMap[coinType];
 
                   return (
                     <TokenAmount
@@ -839,7 +843,7 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType, borrowFees } = row.original;
 
-          const coinMetadata = data.coinMetadataMap[coinType];
+          const coinMetadata = appData.coinMetadataMap[coinType];
 
           if (borrowFees.eq(0))
             return <TLabelSans className="w-max">--</TLabelSans>;
@@ -858,7 +862,7 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType, interestPaid } = row.original;
 
-          const coinMetadata = data.coinMetadataMap[coinType];
+          const coinMetadata = appData.coinMetadataMap[coinType];
 
           if (interestPaid.eq(0))
             return <TLabelSans className="w-max">--</TLabelSans>;
@@ -877,7 +881,7 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType, liquidations } = row.original;
 
-          const coinMetadata = data.coinMetadataMap[coinType];
+          const coinMetadata = appData.coinMetadataMap[coinType];
 
           if (liquidations.eq(0))
             return <TLabelSans className="w-max">--</TLabelSans>;
@@ -892,7 +896,7 @@ export default function EarningsTabContent({
     );
 
     return result;
-  }, [data.coinMetadataMap, data.lendingMarket.reserves, nowS]);
+  }, [appData.coinMetadataMap, appData.lendingMarket.reserves, nowS]);
 
   // Rows
   const rows = useMemo(() => {
@@ -943,7 +947,7 @@ export default function EarningsTabContent({
         [],
       )
       .sort((a, b) =>
-        reserveSort(data.lendingMarket.reserves, a.coinType, b.coinType),
+        reserveSort(appData.lendingMarket.reserves, a.coinType, b.coinType),
       );
   }, [
     cumInterestEarnedMap,
@@ -952,7 +956,7 @@ export default function EarningsTabContent({
     cumInterestPaidMap,
     cumLiquidationsMap,
     nowS,
-    data.lendingMarket.reserves,
+    appData.lendingMarket.reserves,
   ]);
 
   return (

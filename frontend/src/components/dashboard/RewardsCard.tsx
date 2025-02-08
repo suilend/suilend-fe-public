@@ -18,6 +18,7 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
@@ -28,9 +29,9 @@ interface ClaimableRewardProps {
 }
 
 function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
-  const coinMetadata = data.coinMetadataMap[coinType];
+  const coinMetadata = appData.coinMetadataMap[coinType];
 
   return (
     <div className="flex flex-row items-center gap-1.5">
@@ -75,14 +76,14 @@ function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
 
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
-  const { data, obligation } = useLoadedAppContext();
+  const { userData, obligation } = useLoadedUserContext();
   const { season, seasonMap, addressRowMap } = usePointsContext();
 
   // Rewards
   const rewardsMap: Record<string, RewardSummary[]> = {};
   const claimableRewardsMap: Record<string, BigNumber> = {};
   if (obligation) {
-    Object.values(data.rewardMap).flatMap((rewards) =>
+    Object.values(userData.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
         if (isSendPoints(r.stats.rewardCoinType)) return;
         if (!r.obligationClaims[obligation.id]) return;
@@ -114,8 +115,8 @@ export default function RewardsCard() {
   // Points
   const pointsStats = getPointsStats(
     seasonMap[season].coinType,
-    data.rewardMap,
-    data.obligations,
+    userData.rewardMap,
+    userData.obligations,
   );
 
   return !address ? (

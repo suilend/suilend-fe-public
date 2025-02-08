@@ -274,7 +274,7 @@ export class SuilendClient {
     });
 
     if (objs.data.length > 0) return objs.data[0].data?.objectId as string;
-    else return null;
+    else return undefined;
   }
 
   async getLendingMarketOwnerCapId(ownerId: string) {

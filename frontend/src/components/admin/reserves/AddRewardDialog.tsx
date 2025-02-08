@@ -15,6 +15,7 @@ import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface AddRewardDialogProps {
   reserve: ParsedReserve;
@@ -26,10 +27,11 @@ export default function AddRewardDialog({
   isDepositReward,
 }: AddRewardDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, balancesCoinMetadataMap, getBalance, refresh } =
-    useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, balancesCoinMetadataMap, getBalance, refresh } =
+    useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -55,7 +57,7 @@ export default function AddRewardDialog({
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
@@ -97,7 +99,7 @@ export default function AddRewardDialog({
     try {
       await suilendClient.addReward(
         address,
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         reserve.arrayIndex,
         isDepositReward,
         coinType,
@@ -117,7 +119,7 @@ export default function AddRewardDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

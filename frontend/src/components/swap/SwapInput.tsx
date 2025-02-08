@@ -9,8 +9,8 @@ import { formatToken, formatUsd } from "@suilend/frontend-sui";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +47,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     },
     ref,
   ) => {
-    const { getBalance, obligation } = useLoadedAppContext();
+    const { getBalance, obligation } = useLoadedUserContext();
 
     const { isUsingDeposits } = useSwapContext();
 

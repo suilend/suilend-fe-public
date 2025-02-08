@@ -29,12 +29,12 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =
     useState<number>(0);
-  const reserveSymbols = data.lendingMarket.reserves.map(
+  const reserveSymbols = appData.lendingMarket.reserves.map(
     (reserve) => reserve.symbol,
   );
 
@@ -81,7 +81,7 @@ export default function ObligationsDialog() {
         <TLabelSans>Deposits</TLabelSans>
 
         <div className="flex flex-row flex-wrap items-end gap-2">
-          {data.lendingMarket.reserves.map((reserve) => (
+          {appData.lendingMarket.reserves.map((reserve) => (
             <Switch
               key={"deposit-switch-" + reserve.symbol}
               id={"deposit-switch-" + reserve.symbol}
@@ -101,7 +101,7 @@ export default function ObligationsDialog() {
         <TLabelSans>Borrows</TLabelSans>
 
         <div className="flex flex-row flex-wrap items-end gap-2">
-          {data.lendingMarket.reserves.map((reserve) => (
+          {appData.lendingMarket.reserves.map((reserve) => (
             <Switch
               key={"borrow-switch-" + reserve.symbol}
               id={"borrow-switch-" + reserve.symbol}
@@ -197,7 +197,9 @@ export default function ObligationsDialog() {
                 ).length > 0
               );
             })
-            .map((obligation) => parseObligation(obligation, data.reserveMap))}
+            .map((obligation) =>
+              parseObligation(obligation, appData.reserveMap),
+            )}
           noDataMessage="No Obligations"
         />
       </div>

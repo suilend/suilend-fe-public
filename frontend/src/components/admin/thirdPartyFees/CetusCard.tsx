@@ -24,7 +24,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
 
 const CAP_OWNER =
@@ -33,7 +33,7 @@ const CAP_OWNER =
 export default function CetusCard() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   const isEditable = address === CAP_OWNER;
 

@@ -15,6 +15,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
 import { Token } from "@/lib/types";
 
@@ -26,7 +27,9 @@ export default function ClaimRewardsDropdownMenu({
   rewardsMap,
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { data, refresh } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
+
   const { claimRewards } = useDashboardContext();
 
   const tokens: Token[] = Object.values(rewardsMap).map((r) => ({
@@ -35,7 +38,7 @@ export default function ClaimRewardsDropdownMenu({
     iconUrl: r[0].stats.iconUrl,
   }));
   const tokensWithReserves = tokens.filter((token) =>
-    data.reserveCoinTypes.includes(token.coinType),
+    appData.reserveCoinTypes.includes(token.coinType),
   );
 
   // State
@@ -68,7 +71,7 @@ export default function ClaimRewardsDropdownMenu({
         },
       );
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

@@ -22,10 +22,10 @@ export default function PointsCount({
   season,
   amount,
 }: PointsCountProps) {
-  const { data } = useAppContext();
+  const { appData } = useAppContext();
   const { seasonMap } = usePointsContext();
 
-  const coinMetadata = data?.coinMetadataMap[seasonMap[season].coinType];
+  const coinMetadata = appData?.coinMetadataMap[seasonMap[season].coinType];
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">

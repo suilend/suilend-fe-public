@@ -50,6 +50,7 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface RowData {
   symbol: string;
@@ -67,7 +68,8 @@ export default function LiquidateDialog({
 }: LiquidateDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, getBalance } = useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { getBalance } = useLoadedUserContext();
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);
@@ -227,7 +229,7 @@ export default function LiquidateDialog({
     fetchObligationHistory(parsedObligation.id);
   } else {
     parsedObligation = refreshedObligation
-      ? parseObligation(refreshedObligation, data.reserveMap)
+      ? parseObligation(refreshedObligation, appData.reserveMap)
       : null;
   }
 
@@ -370,7 +372,7 @@ export default function LiquidateDialog({
 
           <div className="col-span-2 flex flex-row items-end gap-2">
             <DataTable<FormattedObligationHistory>
-              columns={historyColumnDefinition(data.lendingMarket.reserves)}
+              columns={historyColumnDefinition(appData.lendingMarket.reserves)}
               data={obligationHistory}
               noDataMessage="Loading obligation history"
               onRowClick={(row) => async () => {

@@ -10,7 +10,7 @@ import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 const TRANSFER_POLICY =
   "0x43517be5e9399224075d11855e89ef46ad3c3e45276949b2d679f8f79d735f0e";
@@ -24,7 +24,7 @@ const CAP_OWNER =
 
 export default function RootletsCard() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   const isEditable = address === CAP_OWNER;
 
@@ -57,7 +57,7 @@ export default function RootletsCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

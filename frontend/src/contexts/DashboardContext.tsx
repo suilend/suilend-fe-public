@@ -18,6 +18,7 @@ import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -46,8 +47,8 @@ export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, obligation, obligationOwnerCap } =
-    useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =

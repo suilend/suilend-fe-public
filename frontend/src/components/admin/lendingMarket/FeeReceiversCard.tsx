@@ -17,6 +17,7 @@ import Input, { getInputId } from "@/components/shared/Input";
 import { TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface FeeReceiverRow {
   id: string;
@@ -27,9 +28,10 @@ interface FeeReceiverRow {
 export default function FeeReceiversCard() {
   const { suiClient } = useSettingsContext();
   const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // State
   const initialFeeReceiverRowsRef = useRef<FeeReceiverRow[] | undefined>(
@@ -90,7 +92,7 @@ export default function FeeReceiversCard() {
   };
 
   const submit = async () => {
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -98,7 +100,7 @@ export default function FeeReceiversCard() {
     try {
       suilendClient.setFeeReceiversAndWeights(
         transaction,
-        data.lendingMarketOwnerCapId!,
+        userData.lendingMarketOwnerCapId!,
         feeReceiverRows.map((r) => r.address),
         feeReceiverRows.map((r) => BigInt(r.weight)),
       );
@@ -111,7 +113,7 @@ export default function FeeReceiversCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

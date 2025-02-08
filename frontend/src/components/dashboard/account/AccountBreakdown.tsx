@@ -23,6 +23,7 @@ import { TBody } from "@/components/shared/Typography";
 import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   BORROW_LIMIT_PRICE_TOOLTIP,
   BORROW_WEIGHT_TOOLTIP,
@@ -142,14 +143,15 @@ function BreakdownTable({
 }
 
 export default function AccountBreakdown() {
-  const { data, ...restAppContext } = useLoadedAppContext();
-  const obligation = restAppContext.obligation as ParsedObligation;
+  const { appData } = useLoadedAppContext();
+  const userContext = useLoadedUserContext();
+  const obligation = userContext.obligation as ParsedObligation;
 
   const sortedDeposits = obligation.deposits
     .slice()
     .sort((a, b) =>
       reserveSort(
-        data.lendingMarket.reserves,
+        appData.lendingMarket.reserves,
         a.reserve.coinType,
         b.reserve.coinType,
       ),
@@ -158,7 +160,7 @@ export default function AccountBreakdown() {
     .slice()
     .sort((a, b) =>
       reserveSort(
-        data.lendingMarket.reserves,
+        appData.lendingMarket.reserves,
         a.reserve.coinType,
         b.reserve.coinType,
       ),

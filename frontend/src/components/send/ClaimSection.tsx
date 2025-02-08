@@ -52,6 +52,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
 import { ROOT_URL } from "@/lib/navigation";
 import {
@@ -124,7 +125,8 @@ function RedeemTabContent({
 }: RedeemTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, getBalance } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, getBalance } = useLoadedUserContext();
 
   const {
     mSendCoinMetadataMap,
@@ -173,7 +175,7 @@ function RedeemTabContent({
 
     try {
       if (hasSendPointsToRedeem)
-        redeemSendPointsMsend(suilendClient, data, address, transaction);
+        redeemSendPointsMsend(suilendClient, userData, address, transaction);
       if (hasSuilendCapsulesToRedeem)
         redeemSuilendCapsulesMsend(
           Object.values(userAllocations.suilendCapsules.ownedObjectsMap).flat(),
@@ -444,8 +446,8 @@ const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
 function ClaimTabContent() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, getBalance, obligationOwnerCap } =
-    useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { userData, getBalance, obligationOwnerCap } = useLoadedUserContext();
 
   const {
     mSendObjectMap,
@@ -456,15 +458,15 @@ function ClaimTabContent() {
   } = useLoadedSendContext();
 
   // Reserves
-  const suiReserve = data.reserveMap[NORMALIZED_SUI_COINTYPE];
-  const sendReserve = data.reserveMap[NORMALIZED_SEND_COINTYPE];
+  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const sendReserve = appData.reserveMap[NORMALIZED_SEND_COINTYPE];
 
   // Balances
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
   const mSendBalance = mSendBalanceMap[selectedMsendCoinType];
 
   // Deposit sSUI
-  const ssuiDepositedAmount = (data.obligations ?? []).reduce(
+  const ssuiDepositedAmount = (userData.obligations ?? []).reduce(
     (acc, obligation) =>
       acc.plus(
         obligation.deposits.reduce(
@@ -906,7 +908,7 @@ export default function ClaimSection({
   totalAllocationBreakdownMaps,
 }: ClaimSectionProps) {
   const { address } = useWalletContext();
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   const {
     mSendObjectMap,
@@ -963,7 +965,7 @@ export default function ClaimSection({
       : Tab.CLAIM;
 
   // Penalty
-  const suiReserve = data.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
 
   return (
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">

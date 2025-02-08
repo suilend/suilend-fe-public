@@ -75,6 +75,7 @@ import {
   TokenDirection,
   useSwapContext,
 } from "@/contexts/SwapContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
   getMaxValue,
@@ -94,14 +95,9 @@ const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const {
-    suilendClient,
-    data,
-    getBalance,
-    refresh,
-    obligation,
-    obligationOwnerCap,
-  } = useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { getBalance, refresh, obligation, obligationOwnerCap } =
+    useLoadedUserContext();
 
   const {
     tokenHistoricalUsdPricesMap,
@@ -125,10 +121,10 @@ function Page() {
   const tokenInBalance = getBalance(tokenIn.coinType);
 
   // Reserves
-  const tokenInReserve = data.lendingMarket.reserves.find(
+  const tokenInReserve = appData.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenIn.coinType,
   );
-  const tokenOutReserve = data.lendingMarket.reserves.find(
+  const tokenOutReserve = appData.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenOut.coinType,
   );
 
@@ -156,7 +152,7 @@ function Page() {
               Action.WITHDRAW,
               tokenInReserve!,
               tokenInDepositPositionAmount,
-              data,
+              appData,
               obligation,
             )()
           : tokenInBalance,
@@ -776,7 +772,7 @@ function Page() {
     else {
       setQuotesMap({});
 
-      const isReserve = !!data.lendingMarket.reserves.find(
+      const isReserve = !!appData.lendingMarket.reserves.find(
         (r) => r.coinType === coinType,
       );
       setTokenSymbol(isReserve ? _token.symbol : _token.coinType, direction);
@@ -832,7 +828,7 @@ function Page() {
 
     const swapAndDepositButtonNoValueState = getSubmitButtonNoValueState(
       Action.DEPOSIT,
-      data.lendingMarket.reserves,
+      appData.lendingMarket.reserves,
       tokenOutReserve,
       obligation,
     )();
@@ -862,7 +858,7 @@ function Page() {
       Action.DEPOSIT,
       tokenOutReserve,
       MAX_U64,
-      data,
+      appData,
       obligation,
     )(quoteAmountOut ?? new BigNumber(0));
     if (swapAndDepositButtonState !== undefined)
@@ -877,7 +873,7 @@ function Page() {
   const swapAndDepositWarningMessages = tokenOutReserve
     ? getSubmitWarningMessages(
         Action.DEPOSIT,
-        data.lendingMarket.reserves,
+        appData.lendingMarket.reserves,
         tokenOutReserve,
         obligation,
       )()
@@ -1117,7 +1113,7 @@ function Page() {
     } finally {
       (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(false);
       inputRef.current?.focus();
-      await refresh();
+      refresh();
     }
   };
 

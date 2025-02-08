@@ -8,22 +8,24 @@ import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function MigrateCard() {
   const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // Submit
   const submit = async () => {
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
     try {
-      suilendClient.migrate(transaction, data.lendingMarketOwnerCapId);
+      suilendClient.migrate(transaction, userData.lendingMarketOwnerCapId);
 
       await signExecuteAndWaitForTransaction(transaction);
 
@@ -33,7 +35,7 @@ export default function MigrateCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

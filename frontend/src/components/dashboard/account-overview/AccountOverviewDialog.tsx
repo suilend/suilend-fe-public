@@ -28,7 +28,7 @@ import Tabs from "@/components/shared/Tabs";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { EventType, eventSortAsc } from "@/lib/events";
 import { API_URL } from "@/lib/navigation";
 import { Token } from "@/lib/types";
@@ -97,7 +97,7 @@ export default function AccountOverviewDialog() {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
-  const { refresh, obligation } = useLoadedAppContext();
+  const { refresh, obligation } = useLoadedUserContext();
 
   // Open
   const isOpen = queryParams[QueryParams.TAB] !== undefined;

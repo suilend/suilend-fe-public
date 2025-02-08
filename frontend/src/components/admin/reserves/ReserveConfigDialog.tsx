@@ -5,10 +5,7 @@ import { cloneDeep } from "lodash";
 import { Bolt, Rss, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import DiffLine, { InterestRateDiffLine } from "@/components/admin/DiffLine";
@@ -24,6 +21,7 @@ import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DiffProps {
   initialState: { pythPriceId: string } & ConfigState;
@@ -68,11 +66,11 @@ interface ReserveConfigDialogProps {
 export default function ReserveConfigDialog({
   reserve,
 }: ReserveConfigDialogProps) {
-  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   const [pythPriceId, setPythPriceId] = useState<string>(
     reserve.priceIdentifier,
@@ -152,7 +150,7 @@ export default function ReserveConfigDialog({
 
   const saveChanges = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -161,13 +159,13 @@ export default function ReserveConfigDialog({
     try {
       if (pythPriceId !== initialPythPriceIdRef.current)
         await suilendClient.changeReservePriceFeed(
-          data.lendingMarketOwnerCapId,
+          userData.lendingMarketOwnerCapId,
           reserve.coinType,
           pythPriceId,
           transaction,
         );
       suilendClient.updateReserveConfig(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         transaction,
         reserve.coinType,
         newConfig,
@@ -182,7 +180,7 @@ export default function ReserveConfigDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

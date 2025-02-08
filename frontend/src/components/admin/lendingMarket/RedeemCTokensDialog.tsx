@@ -12,11 +12,13 @@ import Dialog from "@/components/shared/Dialog";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function RedeemCTokensDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, balancesCoinMetadataMap, getBalance, refresh } =
-    useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { balancesCoinMetadataMap, getBalance, refresh } =
+    useLoadedUserContext();
 
   const coinTypes = useMemo(
     () =>
@@ -55,7 +57,7 @@ export default function RedeemCTokensDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 
