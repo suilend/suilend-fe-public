@@ -14,7 +14,7 @@ import DropdownMenu, {
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface CoinDropdownMenuProps {
   coinMetadataMap?: Record<string, CoinMetadata>;
@@ -28,7 +28,7 @@ export default function CoinDropdownMenu({
   onChange,
 }: CoinDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { getBalance } = useLoadedAppContext();
+  const { getBalance } = useLoadedUserContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);

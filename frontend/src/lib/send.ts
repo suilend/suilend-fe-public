@@ -17,7 +17,7 @@ import {
 } from "@suilend/frontend-sui";
 import { SuilendClient } from "@suilend/sdk";
 
-import { AppData } from "@/contexts/AppContext";
+import { UserData } from "@/contexts/UserContext";
 import {
   CETUS_CONTRACT_PACKAGE_ID,
   CETUS_GLOBAL_CONFIG_OBJECT_ID,
@@ -156,26 +156,27 @@ export type Allocation = {
 // Redeem mSEND
 export const redeemSendPointsMsend = (
   suilendClient: SuilendClient,
-  data: AppData,
+  userData: UserData,
   address: string,
   transaction: Transaction,
 ) => {
   // Claim SEND Points rewards
   const sendPointsCoins = [];
 
-  for (const obligation of data.obligations ?? []) {
-    const obligationOwnerCap = data.obligationOwnerCaps?.find(
+  for (const obligation of userData.obligations ?? []) {
+    const obligationOwnerCap = userData.obligationOwnerCaps?.find(
       (o) => o.obligationId === obligation.id,
     );
     if (!obligationOwnerCap) continue;
 
-    const sendPointsRewards = Object.values(data.rewardMap).flatMap((rewards) =>
-      [...rewards.deposit, ...rewards.borrow].filter(
-        (r) =>
-          isSendPointsS1(r.stats.rewardCoinType) &&
-          !!r.obligationClaims[obligation.id] &&
-          r.obligationClaims[obligation.id].claimableAmount.gt(0),
-      ),
+    const sendPointsRewards = Object.values(userData.rewardMap).flatMap(
+      (rewards) =>
+        [...rewards.deposit, ...rewards.borrow].filter(
+          (r) =>
+            isSendPointsS1(r.stats.rewardCoinType) &&
+            !!r.obligationClaims[obligation.id] &&
+            r.obligationClaims[obligation.id].claimableAmount.gt(0),
+        ),
     );
 
     for (const sendPointsReward of sendPointsRewards) {

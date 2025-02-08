@@ -17,6 +17,7 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tabs from "@/components/shared/Tabs";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
   TAB = "rewardsTab",
@@ -35,7 +36,8 @@ export default function ReserveRewardsDialog({
   };
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
   // Tabs
   enum Tab {
@@ -65,7 +67,7 @@ export default function ReserveRewardsDialog({
 
   const onCancelReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -77,7 +79,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = suilendClient.cancelReward(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
@@ -94,13 +96,13 @@ export default function ReserveRewardsDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 
   const onCloseReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -112,7 +114,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = suilendClient.closeReward(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
@@ -129,7 +131,7 @@ export default function ReserveRewardsDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

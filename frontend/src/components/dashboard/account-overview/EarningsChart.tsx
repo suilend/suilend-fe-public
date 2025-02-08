@@ -46,7 +46,7 @@ function TooltipContent({
   viewBox,
   x,
 }: TooltipContentProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   if (viewBox === undefined || x === undefined) return null;
   return (
@@ -69,7 +69,7 @@ function TooltipContent({
             .slice()
             .sort((a, b) => d[b] - d[a])
             .map((coinType) => {
-              const coinMetadata = data.coinMetadataMap[coinType];
+              const coinMetadata = appData.coinMetadataMap[coinType];
 
               return (
                 <div

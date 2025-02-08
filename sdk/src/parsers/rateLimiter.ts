@@ -6,10 +6,7 @@ import { WAD } from "../lib/constants";
 export type ParsedRateLimiter = ReturnType<typeof parseRateLimiter>;
 export type ParsedRateLimiterConfig = ReturnType<typeof parseRateLimiterConfig>;
 
-export const parseRateLimiter = (
-  rateLimiter: RateLimiter,
-  currentTime: number,
-) => {
+export const parseRateLimiter = (rateLimiter: RateLimiter, nowS: number) => {
   const config = parseRateLimiterConfig(rateLimiter);
 
   const $typeName = rateLimiter.$typeName;
@@ -19,7 +16,7 @@ export const parseRateLimiter = (
 
   // Custom
   const prevWeight = new BigNumber(config.windowDuration.toString())
-    .minus((BigInt(currentTime) - windowStart + BigInt(1)).toString())
+    .minus((BigInt(nowS) - windowStart + BigInt(1)).toString())
     .div(config.windowDuration.toString());
   const currentOutflow = prevWeight
     .times(new BigNumber(prevQty.toString()))

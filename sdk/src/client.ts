@@ -300,7 +300,7 @@ export class SuilendClient {
     });
 
     if (objs.data.length > 0) return objs.data[0].data?.objectId as string;
-    else return null;
+    else return undefined;
   }
 
   async getLendingMarketOwnerCapId(ownerId: string) {
@@ -1210,6 +1210,7 @@ export class SuilendClient {
       reserveArrayIndex: transaction.pure.u64(
         this.findReserveArrayIndex(coinType),
       ),
+      systemState: transaction.object(SUI_SYSTEM_STATE_OBJECT_ID),
     });
   }
 

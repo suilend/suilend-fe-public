@@ -18,6 +18,7 @@ import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DiffProps {
   initialState: ConfigState;
@@ -45,9 +46,10 @@ function Diff({ initialState, currentState }: DiffProps) {
 
 export default function RateLimiterConfigDialog() {
   const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   const getInitialConfigState = (
     config: ParsedRateLimiter["config"],
@@ -56,7 +58,7 @@ export default function RateLimiterConfigDialog() {
     windowDuration: config.windowDuration.toString(),
   });
   const initialConfigStateRef = useRef<ConfigState>(
-    getInitialConfigState(data.lendingMarket.rateLimiter.config),
+    getInitialConfigState(appData.lendingMarket.rateLimiter.config),
   );
 
   const rateLimiterConfigState = useRateLimiterConfigState(
@@ -66,7 +68,7 @@ export default function RateLimiterConfigDialog() {
 
   // Submit
   const submit = async () => {
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -74,7 +76,7 @@ export default function RateLimiterConfigDialog() {
 
     try {
       suilendClient.updateRateLimiterConfig(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         transaction,
         newConfig,
       );
@@ -88,7 +90,7 @@ export default function RateLimiterConfigDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

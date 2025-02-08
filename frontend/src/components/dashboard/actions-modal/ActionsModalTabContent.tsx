@@ -43,8 +43,8 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import YourBorrowLimitlabel from "@/components/shared/YourBorrowLimitLabel";
 import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
@@ -91,7 +91,8 @@ export default function ActionsModalTabContent({
 }: ActionsModalTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { getBalance, refresh, obligation } = useLoadedAppContext();
+  const { getBalance, refresh, obligation } = useLoadedUserContext();
+
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =
     useActionsModalContext();
@@ -339,7 +340,7 @@ export default function ActionsModalTabContent({
     } finally {
       setIsSubmitting(false);
       inputRef.current?.focus();
-      await refresh();
+      refresh();
     }
   };
 

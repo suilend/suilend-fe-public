@@ -1,4 +1,4 @@
-import { CoinMetadata, SuiClient } from "@mysten/sui/client";
+import { SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
@@ -36,17 +36,12 @@ import {
   isSendPoints,
 } from "@suilend/frontend-sui";
 
+import { Reserve } from "../_generated/suilend/reserve/structs";
 import { SuilendClient } from "../client";
-import {
-  ParsedObligation,
-  ParsedReserve,
-  parseLendingMarket,
-  parseObligation,
-} from "../parsers";
+import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
-import { formatRewards } from "./liquidityMining";
 
 export const RESERVES_CUSTOM_ORDER = [
   // MAIN ASSETS
@@ -88,19 +83,20 @@ export const RESERVES_CUSTOM_ORDER = [
 export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
-  address?: string,
 ) => {
-  const now = Math.floor(Date.now() / 1000);
+  const nowMs = Date.now();
+  const nowS = Math.floor(nowMs / 1000);
 
   const refreshedRawReserves = await simulate.refreshReservePrice(
     suilendClient.lendingMarket.reserves.map((r) =>
-      simulate.compoundReserveInterest(r, now),
+      simulate.compoundReserveInterest(r, nowS),
     ),
     new SuiPriceServiceConnection("https://hermes.pyth.network"),
   );
 
   const reserveCoinTypes: string[] = [];
   const rewardCoinTypes: string[] = [];
+  const activeRewardCoinTypes: string[] = [];
   refreshedRawReserves.forEach((r) => {
     reserveCoinTypes.push(normalizeStructTag(r.coinType.name));
 
@@ -110,20 +106,24 @@ export const initializeSuilend = async (
     ].forEach((pr) => {
       if (!pr) return;
 
+      const isActive =
+        nowMs >= Number(pr.startTimeMs) && nowMs < Number(pr.endTimeMs);
+
       rewardCoinTypes.push(normalizeStructTag(pr.coinType.name));
+      if (isActive)
+        activeRewardCoinTypes.push(normalizeStructTag(pr.coinType.name));
     });
   });
-  const uniqueReservesCoinTypes = Array.from(new Set(reserveCoinTypes));
-  const uniqueRewardsCoinTypes = Array.from(new Set(rewardCoinTypes));
+  const uniqueReserveCoinTypes = Array.from(new Set(reserveCoinTypes));
+  const uniqueRewardCoinTypes = Array.from(new Set(rewardCoinTypes));
+  const uniqueActiveRewardsCoinTypes = Array.from(
+    new Set(activeRewardCoinTypes),
+  );
 
-  const reserveCoinMetadataMap = await getCoinMetadataMap(
-    suiClient,
-    uniqueReservesCoinTypes,
-  );
-  const rewardCoinMetadataMap = await getCoinMetadataMap(
-    suiClient,
-    uniqueRewardsCoinTypes,
-  );
+  const [reserveCoinMetadataMap, rewardCoinMetadataMap] = await Promise.all([
+    getCoinMetadataMap(suiClient, uniqueReserveCoinTypes),
+    getCoinMetadataMap(suiClient, uniqueRewardCoinTypes),
+  ]);
   const coinMetadataMap = {
     ...reserveCoinMetadataMap,
     ...rewardCoinMetadataMap,
@@ -153,7 +153,7 @@ export const initializeSuilend = async (
     suilendClient.lendingMarket,
     refreshedRawReserves,
     coinMetadataMap,
-    now,
+    nowS,
   );
   lendingMarket.reserves = lendingMarket.reserves.slice().sort((a, b) => {
     const aCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(a.coinType);
@@ -170,57 +170,24 @@ export const initializeSuilend = async (
     {},
   ) as Record<string, ParsedReserve>;
 
-  // Obligations
-  let obligationOwnerCaps, obligations;
-  if (address) {
-    obligationOwnerCaps = await SuilendClient.getObligationOwnerCaps(
-      address,
-      suilendClient.lendingMarket.$typeArgs,
-      suiClient,
-    );
-
-    obligations = (
-      await Promise.all(
-        obligationOwnerCaps.map((ownerCap) =>
-          SuilendClient.getObligation(
-            ownerCap.obligationId,
-            suilendClient.lendingMarket.$typeArgs,
-            suiClient,
-          ),
-        ),
-      )
-    )
-      .map((rawObligation) =>
-        simulate.refreshObligation(rawObligation, refreshedRawReserves),
-      )
-      .map((refreshedObligation) =>
-        parseObligation(refreshedObligation, reserveMap),
-      )
-      .sort((a, b) => +b.netValueUsd.minus(a.netValueUsd));
-  }
-
   return {
     lendingMarket,
-    refreshedRawReserves,
-    reserveMap,
-
-    reserveCoinTypes: uniqueReservesCoinTypes,
-    rewardCoinTypes: uniqueRewardsCoinTypes,
-
-    reserveCoinMetadataMap,
-    rewardCoinMetadataMap,
     coinMetadataMap,
 
-    obligationOwnerCaps,
-    obligations,
+    reserveMap,
+    refreshedRawReserves,
+    reserveCoinTypes: uniqueReserveCoinTypes,
+    reserveCoinMetadataMap,
+
+    rewardCoinTypes: uniqueRewardCoinTypes,
+    activeRewardCoinTypes: uniqueActiveRewardsCoinTypes,
+    rewardCoinMetadataMap,
   };
 };
 
 export const initializeSuilendRewards = async (
   reserveMap: Record<string, ParsedReserve>,
-  rewardCoinTypes: string[],
-  rewardCoinMetadataMap: Record<string, CoinMetadata>,
-  obligations?: ParsedObligation[],
+  activeRewardCoinTypes: string[],
 ) => {
   const rewardPriceMap: Record<string, BigNumber | undefined> = Object.entries(
     reserveMap,
@@ -230,27 +197,59 @@ export const initializeSuilendRewards = async (
   );
   rewardPriceMap[NORMALIZED_TREATS_COINTYPE] = new BigNumber(0.1);
 
-  const reservelessRewardCoinTypes = rewardCoinTypes.filter(
+  const reservelessActiveRewardCoinTypes = activeRewardCoinTypes.filter(
     (coinType) =>
       !(isSendPoints(coinType) || coinType === NORMALIZED_MAYA_COINTYPE) &&
       !rewardPriceMap[coinType],
   );
-  const reservelessRewardBirdeyePrices = await Promise.all(
-    reservelessRewardCoinTypes.map((coinType) => getPrice(coinType)),
+  const reservelessActiveRewardBirdeyePrices = await Promise.all(
+    reservelessActiveRewardCoinTypes.map((coinType) => getPrice(coinType)),
   );
-  for (let i = 0; i < reservelessRewardCoinTypes.length; i++) {
-    const birdeyePrice = reservelessRewardBirdeyePrices[i];
+  for (let i = 0; i < reservelessActiveRewardCoinTypes.length; i++) {
+    const birdeyePrice = reservelessActiveRewardBirdeyePrices[i];
     if (birdeyePrice === undefined) continue;
 
-    rewardPriceMap[reservelessRewardCoinTypes[i]] = new BigNumber(birdeyePrice);
+    rewardPriceMap[reservelessActiveRewardCoinTypes[i]] = new BigNumber(
+      birdeyePrice,
+    );
   }
 
-  const rewardMap = formatRewards(
-    reserveMap,
-    rewardCoinMetadataMap,
-    rewardPriceMap,
-    obligations,
+  return { rewardPriceMap };
+};
+
+export const initializeObligations = async (
+  suiClient: SuiClient,
+  suilendClient: SuilendClient,
+  refreshedRawReserves: Reserve<string>[],
+  reserveMap: Record<string, ParsedReserve>,
+  address?: string,
+) => {
+  if (!address) return { obligationOwnerCaps: [], obligations: [] };
+
+  const obligationOwnerCaps = await SuilendClient.getObligationOwnerCaps(
+    address,
+    suilendClient.lendingMarket.$typeArgs,
+    suiClient,
   );
 
-  return { rewardPriceMap, rewardMap };
+  const obligations = (
+    await Promise.all(
+      obligationOwnerCaps.map((ownerCap) =>
+        SuilendClient.getObligation(
+          ownerCap.obligationId,
+          suilendClient.lendingMarket.$typeArgs,
+          suiClient,
+        ),
+      ),
+    )
+  )
+    .map((rawObligation) =>
+      simulate.refreshObligation(rawObligation, refreshedRawReserves),
+    )
+    .map((refreshedObligation) =>
+      parseObligation(refreshedObligation, reserveMap),
+    )
+    .sort((a, b) => +b.netValueUsd.minus(a.netValueUsd));
+
+  return { obligationOwnerCaps, obligations };
 };

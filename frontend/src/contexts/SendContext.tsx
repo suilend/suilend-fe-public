@@ -39,7 +39,7 @@ import {
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getPointsStats } from "@/lib/points";
 import {
   BURN_SEND_POINTS_EVENT_TYPE,
@@ -151,7 +151,7 @@ export const useLoadedSendContext = () => useSendContext() as LoadedSendContext;
 export function SendContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { data, getBalance } = useLoadedAppContext();
+  const { userData, getBalance } = useLoadedUserContext();
 
   // mSEND - object map
   const [mSendObjectMap, setMsendObjectMap] = useState<
@@ -553,8 +553,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     // SEND Points
     const ownedSendPoints = getPointsStats(
       NORMALIZED_SEND_POINTS_S1_COINTYPE,
-      data.rewardMap,
-      data.obligations,
+      userData.rewardMap,
+      userData.obligations,
     ).totalPoints.total;
 
     const redeemedSendPointsMsend = transactionsSinceTge?.from.reduce(
@@ -801,8 +801,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     mSendCoinMetadataMap,
     transactionsSinceTge,
     ownedKiosks,
-    data.rewardMap,
-    data.obligations,
+    userData.rewardMap,
+    userData.obligations,
     ownedSuilendCapsulesObjectsMap,
     rootletsOwnedMsendObjectsMap,
   ]);

@@ -25,6 +25,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,8 @@ interface TokenRowProps {
 }
 
 function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
-  const { data, getBalance, obligation } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { getBalance, obligation } = useLoadedUserContext();
 
   const { isUsingDeposits, verifiedCoinTypes } = useSwapContext();
 
@@ -77,11 +79,11 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {(data.reserveCoinTypes.includes(token.coinType) ||
+                {(appData.reserveCoinTypes.includes(token.coinType) ||
                   verifiedCoinTypes.includes(token.coinType)) && (
                   <Tooltip
                     title={
-                      data.reserveCoinTypes.includes(token.coinType)
+                      appData.reserveCoinTypes.includes(token.coinType)
                         ? "This asset is listed on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
                           ? "This asset appears on the list of Cetus verified assets"
@@ -167,7 +169,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { getBalance, obligation, filteredReserves } = useLoadedAppContext();
+  const { getBalance, obligation, filteredReserves } = useLoadedUserContext();
 
   const {
     isUsingDeposits,

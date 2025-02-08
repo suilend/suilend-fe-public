@@ -25,6 +25,7 @@ import {
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
   RESERVE_INDEX = "assetIndex", // Being phased out
@@ -125,8 +126,8 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, obligation, obligationOwnerCap } =
-    useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // Open
   const [isOpen, setIsOpen] = useState<boolean>(
@@ -159,7 +160,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   // Reserve symbol
   const reserveSymbol = useMemo(() => {
     if (queryParams[QueryParams.RESERVE_INDEX] !== undefined)
-      return data.lendingMarket.reserves.find(
+      return appData.lendingMarket.reserves.find(
         (r) =>
           Number(r.arrayIndex) ===
           +(queryParams[QueryParams.RESERVE_INDEX] as string),
@@ -169,7 +170,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       queryParams[QueryParams.RESERVE_SYMBOL] ??
       defaultContextValue.reserveSymbol
     );
-  }, [queryParams, data.lendingMarket.reserves]);
+  }, [queryParams, appData.lendingMarket.reserves]);
   useEffect(() => {
     if (queryParams[QueryParams.RESERVE_SYMBOL]) setIsOpen(true);
   }, [queryParams]);

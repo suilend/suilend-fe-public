@@ -13,13 +13,13 @@ import NavigationLinks from "@/components/layout/NavigationLinks";
 import SettingsDialog from "@/components/layout/SettingsDialog";
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Button from "@/components/shared/Button";
-import { useAppContext } from "@/contexts/AppContext";
+import { useUserContext } from "@/contexts/UserContext";
 
 export default function AppHeader() {
   const router = useRouter();
 
   const { address } = useWalletContext();
-  const { refresh } = useAppContext();
+  const { refresh } = useUserContext();
 
   // Menu
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);

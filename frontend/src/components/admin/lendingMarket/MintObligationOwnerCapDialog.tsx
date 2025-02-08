@@ -8,10 +8,12 @@ import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function MintObligationOwnerCapDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   // Submit
   const submit = async () => {
@@ -36,7 +38,7 @@ export default function MintObligationOwnerCapDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

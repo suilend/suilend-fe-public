@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 import PointsCount from "@/components/points/PointsCount";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import { cn } from "@/lib/utils";
 
@@ -19,10 +20,11 @@ export default function PointsPerDayStat({
   isCentered,
   isRightAligned,
 }: PointsPerDayStatProps) {
-  const { data, obligation } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { obligation } = useLoadedUserContext();
 
-  const isLooping = getIsLooping(data, obligation);
-  const wasLooping = getWasLooping(data, obligation);
+  const isLooping = getIsLooping(appData, obligation);
+  const wasLooping = getWasLooping(appData, obligation);
 
   return (
     <div

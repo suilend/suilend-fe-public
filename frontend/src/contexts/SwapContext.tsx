@@ -44,6 +44,7 @@ import {
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SWAP_URL } from "@/lib/navigation";
 import { SwapToken } from "@/lib/types";
 
@@ -188,13 +189,13 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
+  const { appData } = useLoadedAppContext();
   const {
-    data,
     rawBalancesMap,
     balancesCoinMetadataMap,
     obligation,
     filteredReserves,
-  } = useLoadedAppContext();
+  } = useLoadedUserContext();
 
   // SDKs - Aftermath
   const aftermathSdk = useMemo(() => {
@@ -301,7 +302,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
           (coinType) =>
             !Object.keys({
-              ...data.coinMetadataMap,
+              ...appData.coinMetadataMap,
               ...(balancesCoinMetadataMap ?? {}),
             }).includes(coinType),
         );
@@ -310,7 +311,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
           coinTypesMissingMetadata,
         );
         const mergedCoinMetadataMap = {
-          ...data.coinMetadataMap,
+          ...appData.coinMetadataMap,
           ...(balancesCoinMetadataMap ?? {}),
           ...coinMetadataMap,
         };
@@ -339,7 +340,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, data.coinMetadataMap, balancesCoinMetadataMap, suiClient],
+    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap, suiClient],
   );
 
   // Tokens - Verified coinTypes
@@ -373,9 +374,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Tokens - Reserves
   useEffect(() => {
     fetchTokensMetadata(
-      data.lendingMarket.reserves.map((reserve) => reserve.coinType),
+      appData.lendingMarket.reserves.map((reserve) => reserve.coinType),
     );
-  }, [fetchTokensMetadata, data.lendingMarket.reserves]);
+  }, [fetchTokensMetadata, appData.lendingMarket.reserves]);
 
   // Tokens - Balances
   useEffect(() => {

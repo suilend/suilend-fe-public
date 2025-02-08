@@ -5,10 +5,10 @@ import AccountAssetTable, {
 } from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function ObligationBorrowsCard() {
-  const { obligation } = useLoadedAppContext();
+  const { obligation } = useLoadedUserContext();
 
   if (!obligation) return null;
   return (

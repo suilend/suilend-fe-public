@@ -67,10 +67,7 @@ export default function ConnectWalletButton() {
     })();
   }, [addressesToLookUp, suiClient]);
 
-  const isConnected =
-    !!address &&
-    (!isImpersonating ? !!wallet : true) &&
-    Object.keys(addressNameServiceNameMap).includes(address);
+  const isConnected = !!address && (!isImpersonating ? !!wallet : true);
 
   return isConnected ? (
     <ConnectedWalletDropdownMenu

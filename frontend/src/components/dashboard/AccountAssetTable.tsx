@@ -43,7 +43,8 @@ export default function AccountAssetTable({
   assets,
   noAssetsMessage,
 }: AccountAssetTableProps) {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+
   const { open: openActionsModal } = useActionsModalContext();
 
   // Columns
@@ -95,12 +96,12 @@ export default function AccountAssetTable({
         .slice()
         .sort((a, b) =>
           reserveSort(
-            data.lendingMarket.reserves,
+            appData.lendingMarket.reserves,
             a.token.coinType,
             b.token.coinType,
           ),
         ),
-    [assets, data.lendingMarket.reserves],
+    [assets, appData.lendingMarket.reserves],
   );
 
   return (

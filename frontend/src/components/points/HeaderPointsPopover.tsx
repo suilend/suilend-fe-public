@@ -12,23 +12,23 @@ import Popover from "@/components/shared/Popover";
 import TitleWithIcon from "@/components/shared/TitleWithIcon";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppContext } from "@/contexts/AppContext";
 import { usePointsContext } from "@/contexts/PointsContext";
+import { useUserContext } from "@/contexts/UserContext";
 import { POINTS_URL } from "@/lib/navigation";
 import { getPointsStats } from "@/lib/points";
 
 export default function PointsCountPopover() {
   const router = useRouter();
 
-  const { data } = useAppContext();
+  const { userData } = useUserContext();
   const { season, seasonMap, addressRowMap } = usePointsContext();
 
   // Points
-  const pointsStats = data
+  const pointsStats = userData
     ? getPointsStats(
         seasonMap[season].coinType,
-        data.rewardMap,
-        data.obligations,
+        userData.rewardMap,
+        userData.obligations,
       )
     : undefined;
 

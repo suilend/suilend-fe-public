@@ -12,24 +12,26 @@ import AccountAssetTable, {
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const { data, balancesCoinMetadataMap, getBalance } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { balancesCoinMetadataMap, getBalance } = useLoadedUserContext();
 
   const coinTypes = useMemo(
     () =>
       Object.keys(balancesCoinMetadataMap ?? {}).filter(
         (coinType) =>
           getBalance(coinType).gt(0) &&
-          (data.reserveCoinTypes.includes(coinType) ||
-            data.rewardCoinTypes.includes(coinType)),
+          (appData.reserveCoinTypes.includes(coinType) ||
+            appData.rewardCoinTypes.includes(coinType)),
       ),
     [
       balancesCoinMetadataMap,
       getBalance,
-      data.reserveCoinTypes,
-      data.rewardCoinTypes,
+      appData.reserveCoinTypes,
+      appData.rewardCoinTypes,
     ],
   );
 
@@ -45,8 +47,9 @@ export default function WalletBalancesCard() {
             <span className="text-xs text-muted-foreground">
               {formatUsd(
                 coinTypes.reduce((acc, coinType) => {
-                  const reserve = data.reserveMap[coinType];
-                  const price = reserve?.price ?? data.rewardPriceMap[coinType];
+                  const reserve = appData.reserveMap[coinType];
+                  const price =
+                    reserve?.price ?? appData.rewardPriceMap[coinType];
 
                   if (price === undefined) return acc;
                   return acc.plus(getBalance(coinType).times(price));
@@ -64,10 +67,10 @@ export default function WalletBalancesCard() {
           assets={Object.entries(balancesCoinMetadataMap ?? {})
             .filter(([coinType]) => coinTypes.includes(coinType))
             .map(([coinType, coinMetadata]) => {
-              const reserve = data.reserveMap[coinType];
+              const reserve = appData.reserveMap[coinType];
 
               let price: BigNumber | undefined =
-                reserve?.price ?? data.rewardPriceMap[coinType];
+                reserve?.price ?? appData.rewardPriceMap[coinType];
               if (price !== undefined && price.isNaN()) price = undefined;
 
               return {

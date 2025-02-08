@@ -33,11 +33,11 @@ export const LOOPING_WARNING_MESSAGE = (action: string, symbol: string) =>
   `Note that by ${action} ${symbol} you will be looping (defined as ${LOOPING_DEFINITION}) and no longer eligible for ${REWARDS_DEFINITION}.`;
 
 export const getLoopedAssetCoinTypes = (
-  data: AppData,
+  appData: AppData,
   obligation?: ParsedObligation,
 ) => {
   const result: string[][] = [];
-  data.lendingMarket.reserves.forEach((reserve) => {
+  appData.lendingMarket.reserves.forEach((reserve) => {
     const outCoinTypes = (() => {
       if (isStablecoin(reserve.coinType))
         return NORMALIZED_STABLECOIN_COINTYPES;
@@ -60,8 +60,11 @@ export const getLoopedAssetCoinTypes = (
 
   return result;
 };
-export const getIsLooping = (data: AppData, obligation?: ParsedObligation) => {
-  const loopedAssetCoinTypes = getLoopedAssetCoinTypes(data, obligation);
+export const getIsLooping = (
+  appData: AppData,
+  obligation?: ParsedObligation,
+) => {
+  const loopedAssetCoinTypes = getLoopedAssetCoinTypes(appData, obligation);
   return loopedAssetCoinTypes.length > 0;
 };
 
@@ -77,8 +80,11 @@ export const getZeroSharePositions = (obligation?: ParsedObligation) => ({
       new BigNumber(b.userRewardManager.share.toString()).eq(0),
   ),
 });
-export const getWasLooping = (data: AppData, obligation?: ParsedObligation) => {
-  const isLooping = getIsLooping(data, obligation);
+export const getWasLooping = (
+  appData: AppData,
+  obligation?: ParsedObligation,
+) => {
+  const isLooping = getIsLooping(appData, obligation);
   const { deposits: zeroShareDeposits, borrows: zeroShareBorrows } =
     getZeroSharePositions(obligation);
 

@@ -1,4 +1,3 @@
-import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
@@ -8,15 +7,10 @@ import {
   LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
-import {
-  LIQUID_STAKING_INFO_MAP,
-  LstClient,
-  NORMALIZED_LST_COINTYPES,
-} from "@suilend/springsui-sdk";
 
 import { AppData } from "@/contexts/AppContext";
 
-export default function useFetchAppData(address?: string) {
+export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
 
   // Data
@@ -33,87 +27,42 @@ export default function useFetchAppData(address?: string) {
 
     const {
       lendingMarket,
-      reserveMap,
-
-      reserveCoinTypes,
-      rewardCoinTypes,
-
-      rewardCoinMetadataMap,
       coinMetadataMap,
 
-      obligationOwnerCaps,
-      obligations,
-    } = await initializeSuilend(suiClient, suilendClient, address);
-
-    const { rewardPriceMap, rewardMap } = await initializeSuilendRewards(
       reserveMap,
+      refreshedRawReserves,
+      reserveCoinTypes,
+      reserveCoinMetadataMap,
+
       rewardCoinTypes,
+      activeRewardCoinTypes,
       rewardCoinMetadataMap,
-      obligations ?? [],
+    } = await initializeSuilend(suiClient, suilendClient);
+
+    const { rewardPriceMap } = await initializeSuilendRewards(
+      reserveMap,
+      activeRewardCoinTypes,
     );
-
-    let lendingMarketOwnerCapId: string | null = null;
-    if (address) {
-      lendingMarketOwnerCapId = await SuilendClient.getLendingMarketOwnerCapId(
-        address,
-        suilendClient.lendingMarket.$typeArgs,
-        suiClient,
-      );
-    }
-
-    // LSTs
-    const lstAprPercentMapEntries: [string, BigNumber][] = await Promise.all(
-      NORMALIZED_LST_COINTYPES.filter(
-        (lstCoinType) =>
-          !!reserveMap[lstCoinType] &&
-          !!Object.values(LIQUID_STAKING_INFO_MAP).find(
-            (info) => info.type === lstCoinType,
-          ),
-      )
-        .map(
-          (lstCoinType) =>
-            Object.values(LIQUID_STAKING_INFO_MAP).find(
-              (info) => info.type === lstCoinType,
-            )!,
-        )
-        .map((LIQUID_STAKING_INFO) =>
-          (async () => {
-            const lstClient = await LstClient.initialize(
-              suiClient,
-              LIQUID_STAKING_INFO,
-            );
-
-            const apr = await lstClient.getSpringSuiApy(); // TODO: Use APR
-            const aprPercent = new BigNumber(apr).times(100);
-
-            return [LIQUID_STAKING_INFO.type, aprPercent];
-          })(),
-        ),
-    );
-    const lstAprPercentMap = Object.fromEntries(lstAprPercentMapEntries);
 
     return {
       suilendClient,
 
       lendingMarket,
-      reserveMap,
-      rewardMap,
-
-      reserveCoinTypes,
-      rewardCoinTypes,
-
       coinMetadataMap,
+
+      reserveMap,
+      refreshedRawReserves,
+      reserveCoinTypes,
+      reserveCoinMetadataMap,
+
       rewardPriceMap,
-
-      obligationOwnerCaps,
-      obligations,
-      lendingMarketOwnerCapId: lendingMarketOwnerCapId ?? undefined,
-
-      lstAprPercentMap,
+      rewardCoinTypes,
+      activeRewardCoinTypes,
+      rewardCoinMetadataMap,
     };
   };
 
-  const { data, mutate } = useSWR<AppData>(`appData-${address}`, dataFetcher, {
+  const { data, mutate } = useSWR<AppData>("appData", dataFetcher, {
     refreshInterval: 30 * 1000,
     onSuccess: (data) => {
       console.log("Refreshed app data", data);

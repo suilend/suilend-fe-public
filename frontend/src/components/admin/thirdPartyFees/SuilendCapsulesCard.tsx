@@ -9,7 +9,7 @@ import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 const NFT_PROTOCOL_PACKAGE_ID =
   "0xbdd1811dd6e8feb2c7311d193bbf92cb45d3d6a8fb2b6ec60dc19adf20c18796";
@@ -26,7 +26,7 @@ const CAPSULES_WALLET =
 
 export default function SuilendCapsulesCard() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   const isEditable = address === CAPSULES_WALLET;
 
@@ -59,7 +59,7 @@ export default function SuilendCapsulesCard() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

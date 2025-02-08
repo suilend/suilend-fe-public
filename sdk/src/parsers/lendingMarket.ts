@@ -14,7 +14,7 @@ export const parseLendingMarket = (
   lendingMarket: LendingMarket<string>,
   reserves: Reserve<string>[],
   coinMetadataMap: Record<string, CoinMetadata>,
-  currentTime: number,
+  nowS: number,
 ) => {
   const id = lendingMarket.id;
   const type = lendingMarket.$typeArgs[0];
@@ -26,10 +26,7 @@ export const parseLendingMarket = (
 
   const obligations = lendingMarket.obligations;
 
-  const parsedRateLimiter = parseRateLimiter(
-    lendingMarket.rateLimiter,
-    currentTime,
-  );
+  const parsedRateLimiter = parseRateLimiter(lendingMarket.rateLimiter, nowS);
 
   const feeReceiver = lendingMarket.feeReceiver;
   const badDebtUsd = new BigNumber(lendingMarket.badDebtUsd.value.toString());

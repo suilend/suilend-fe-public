@@ -29,6 +29,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 const calculateUtilizationPercent = (reserve: ParsedReserve) =>
@@ -122,15 +123,16 @@ export default function AprWithRewardsBreakdown({
   action,
   changeAmount,
 }: AprWithRewardsBreakdownProps) {
-  const { data } = useLoadedAppContext();
+  const { lstAprPercentMap } = useLoadedAppContext();
+  const { userData } = useLoadedUserContext();
 
-  const rewards = data.rewardMap[reserve.coinType]?.[side] ?? [];
+  const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
 
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
     reserve,
-    data.lstAprPercentMap,
+    lstAprPercentMap,
   );
 
   const aprPercent =

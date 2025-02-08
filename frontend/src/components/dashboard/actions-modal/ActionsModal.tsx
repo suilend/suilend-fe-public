@@ -11,6 +11,7 @@ import ActionsModalTabContent from "@/components/dashboard/actions-modal/Actions
 import ParametersPanel from "@/components/dashboard/actions-modal/ParametersPanel";
 import Tabs from "@/components/shared/Tabs";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   getMaxValue,
@@ -21,7 +22,9 @@ import {
 } from "@/lib/actions";
 
 export default function ActionsModal() {
-  const { data, getBalance, obligation } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
+  const { getBalance, obligation } = useLoadedUserContext();
+
   const {
     reserveSymbol,
     selectedTab,
@@ -38,7 +41,7 @@ export default function ActionsModal() {
   // Reserve
   const reserve =
     reserveSymbol !== undefined
-      ? data.lendingMarket.reserves.find((r) => r.symbol === reserveSymbol)
+      ? appData.lendingMarket.reserves.find((r) => r.symbol === reserveSymbol)
       : undefined;
 
   // Tabs
@@ -67,7 +70,7 @@ export default function ActionsModal() {
           Action.DEPOSIT,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getNewBorrowUtilizationCalculations:
@@ -78,7 +81,7 @@ export default function ActionsModal() {
           ),
         getSubmitButtonNoValueState: getSubmitButtonNoValueState(
           Action.DEPOSIT,
-          data.lendingMarket.reserves,
+          appData.lendingMarket.reserves,
           reserve,
           obligation,
         ),
@@ -86,12 +89,12 @@ export default function ActionsModal() {
           Action.DEPOSIT,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getSubmitWarningMessages: getSubmitWarningMessages(
           Action.DEPOSIT,
-          data.lendingMarket.reserves,
+          appData.lendingMarket.reserves,
           reserve,
           obligation,
         ),
@@ -105,7 +108,7 @@ export default function ActionsModal() {
           Action.BORROW,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getNewBorrowUtilizationCalculations:
@@ -116,7 +119,7 @@ export default function ActionsModal() {
           ),
         getSubmitButtonNoValueState: getSubmitButtonNoValueState(
           Action.BORROW,
-          data.lendingMarket.reserves,
+          appData.lendingMarket.reserves,
           reserve,
           obligation,
         ),
@@ -124,12 +127,12 @@ export default function ActionsModal() {
           Action.BORROW,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getSubmitWarningMessages: getSubmitWarningMessages(
           Action.BORROW,
-          data.lendingMarket.reserves,
+          appData.lendingMarket.reserves,
           reserve,
           obligation,
         ),
@@ -143,7 +146,7 @@ export default function ActionsModal() {
           Action.WITHDRAW,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getNewBorrowUtilizationCalculations:
@@ -156,7 +159,7 @@ export default function ActionsModal() {
           Action.WITHDRAW,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         submit: withdraw,
@@ -169,7 +172,7 @@ export default function ActionsModal() {
           Action.REPAY,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         getNewBorrowUtilizationCalculations:
@@ -182,7 +185,7 @@ export default function ActionsModal() {
           Action.REPAY,
           reserve,
           coinBalanceForReserve,
-          data,
+          appData,
           obligation,
         ),
         submit: repay,
@@ -192,7 +195,7 @@ export default function ActionsModal() {
     reserve,
     getBalance,
     selectedTab,
-    data,
+    appData,
     obligation,
     deposit,
     borrow,

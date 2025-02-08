@@ -22,7 +22,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppContext } from "@/contexts/AppContext";
+import { useUserContext } from "@/contexts/UserContext";
 import { API_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,7 @@ export default function ConnectedWalletDropdownMenu({
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
-  const { data, obligation, setObligationId } = useAppContext();
+  const { userData, obligation, setObligationId } = useUserContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -111,7 +111,7 @@ export default function ConnectedWalletDropdownMenu({
   const hasVipItem = isEligibleForVipProgram;
   const hasDisconnectItem = !isImpersonating;
 
-  const hasAccounts = (data?.obligationOwnerCaps ?? []).length > 0;
+  const hasAccounts = (userData?.obligationOwnerCaps ?? []).length > 0;
   const hasWallets = !isImpersonating;
 
   const noItems =
@@ -195,10 +195,10 @@ export default function ConnectedWalletDropdownMenu({
                 Accounts
               </TLabelSans>
 
-              {!data?.obligations ? (
+              {!userData?.obligations ? (
                 <Skeleton className="h-[70px] w-full rounded-sm" />
               ) : (
-                data.obligations.map((o, index, array) => (
+                userData.obligations.map((o, index, array) => (
                   <DropdownMenuItem
                     key={o.id}
                     className="flex flex-col items-start gap-1"

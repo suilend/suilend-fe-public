@@ -30,6 +30,7 @@ import UtilizationBar, {
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
   BORROWS_TOOLTIP,
@@ -39,17 +40,18 @@ import {
 import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
-  const { data, ...restAppContext } = useLoadedAppContext();
-  const obligation = restAppContext.obligation as ParsedObligation;
+  const { appData, lstAprPercentMap } = useLoadedAppContext();
+  const { userData, ...restUserContext } = useLoadedUserContext();
+  const obligation = restUserContext.obligation as ParsedObligation;
 
-  const isLooping = getIsLooping(data, obligation);
-  const wasLooping = getWasLooping(data, obligation);
+  const isLooping = getIsLooping(appData, obligation);
+  const wasLooping = getWasLooping(appData, obligation);
 
   // APR
   const netAprPercent = getNetAprPercent(
     obligation,
-    data.rewardMap,
-    data.lstAprPercentMap,
+    userData.rewardMap,
+    lstAprPercentMap,
   );
 
   return (
@@ -170,7 +172,7 @@ export default function AccountPositionCard() {
 
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { obligation } = useLoadedAppContext();
+  const { obligation } = useLoadedUserContext();
 
   const openAccountOverviewTab = (tab: AccountOverviewTab) => {
     shallowPushQuery(router, {

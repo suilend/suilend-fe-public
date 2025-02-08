@@ -15,14 +15,15 @@ import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, balancesCoinMetadataMap, refresh } =
-    useLoadedAppContext();
+  const { suilendClient, appData } = useLoadedAppContext();
+  const { userData, balancesCoinMetadataMap, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -58,7 +59,7 @@ export default function AddRewardsDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
@@ -92,7 +93,7 @@ export default function AddRewardsDialog() {
     try {
       let isFirstReward = true;
       for (const side of Object.values(Side)) {
-        for (const reserve of data.lendingMarket.reserves) {
+        for (const reserve of appData.lendingMarket.reserves) {
           const reserveArrayIndex = reserve.arrayIndex;
 
           const rewardValue = new BigNumber(
@@ -104,7 +105,7 @@ export default function AddRewardsDialog() {
           if (rewardValue !== "0") {
             await suilendClient.addReward(
               address,
-              data.lendingMarketOwnerCapId,
+              userData.lendingMarketOwnerCapId,
               reserveArrayIndex,
               side === Side.DEPOSIT,
               coinType,
@@ -129,7 +130,7 @@ export default function AddRewardsDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 
@@ -197,7 +198,7 @@ export default function AddRewardsDialog() {
           endDecorator="ms"
         />
 
-        {data.lendingMarket.reserves.map((reserve, index) => (
+        {appData.lendingMarket.reserves.map((reserve, index) => (
           <Fragment key={reserve.coinType}>
             <div
               className={cn(

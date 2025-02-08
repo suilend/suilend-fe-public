@@ -21,6 +21,7 @@ import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppContextProvider } from "@/contexts/AppContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
+import { UserContextProvider } from "@/contexts/UserContext";
 import { TITLE } from "@/lib/constants";
 import "@/styles/globals.scss";
 
@@ -74,14 +75,16 @@ export default function App({ Component, pageProps }: AppProps) {
           <SettingsContextProvider>
             <WalletContextProviderWrapper>
               <AppContextProvider>
-                <PointsContextProvider>
-                  <TooltipProvider>
-                    <Layout>
-                      <Component {...pageProps} />
-                    </Layout>
-                    <Toaster />
-                  </TooltipProvider>
-                </PointsContextProvider>
+                <UserContextProvider>
+                  <PointsContextProvider>
+                    <TooltipProvider>
+                      <Layout>
+                        <Component {...pageProps} />
+                      </Layout>
+                      <Toaster />
+                    </TooltipProvider>
+                  </PointsContextProvider>
+                </UserContextProvider>
               </AppContextProvider>
             </WalletContextProviderWrapper>
           </SettingsContextProvider>

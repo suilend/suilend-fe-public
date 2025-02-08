@@ -94,9 +94,10 @@ export const calculateDepositAprPercent = (reserve: Reserve<string>) => {
 
 export const compoundReserveInterest = (
   reserve: Reserve<string>,
-  now: number,
+  nowS: number,
 ): Reserve<string> => {
-  const timeElapsedSeconds = now - Number(reserve.interestLastUpdateTimestampS);
+  const timeElapsedSeconds =
+    nowS - Number(reserve.interestLastUpdateTimestampS);
   if (timeElapsedSeconds === 0) {
     return reserve;
   }
@@ -133,15 +134,15 @@ export const compoundReserveInterest = (
   updatedReserve.borrowedAmount = stringToDecimal(
     oldBorrowedAmount.plus(netNewDebt).toString(),
   );
-  updatedReserve.interestLastUpdateTimestampS = BigInt(now);
+  updatedReserve.interestLastUpdateTimestampS = BigInt(nowS);
 
   updatedReserve.depositsPoolRewardManager = updatePoolRewardsManager(
     updatedReserve.depositsPoolRewardManager,
-    now * 1000,
+    nowS * 1000,
   );
   updatedReserve.borrowsPoolRewardManager = updatePoolRewardsManager(
     updatedReserve.borrowsPoolRewardManager,
-    now * 1000,
+    nowS * 1000,
   );
 
   return updatedReserve as Reserve<string>;
@@ -236,7 +237,7 @@ export const refreshReservePrice = async (
 export const updateUserRewardManager = (
   poolManager: PoolRewardManager,
   userRewardManager: UserRewardManager,
-  now: number,
+  nowMs: number,
 ): UserRewardManager => {
   const updatedUserRewardManager = { ...userRewardManager };
 
@@ -283,7 +284,7 @@ export const updateUserRewardManager = (
     }
   }
 
-  updatedUserRewardManager.lastUpdateTimeMs = BigInt(now);
+  updatedUserRewardManager.lastUpdateTimeMs = BigInt(nowMs);
 
   return updatedUserRewardManager as UserRewardManager;
 };

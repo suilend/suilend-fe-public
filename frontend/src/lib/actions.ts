@@ -22,7 +22,7 @@ const getMaxCalculations = (
   action: Action,
   reserve: ParsedReserve,
   balance: BigNumber,
-  data: AppData,
+  appData: AppData,
   obligation?: ParsedObligation,
 ) => {
   const MIN_AVAILABLE_AMOUNT = new BigNumber(100).div(
@@ -124,7 +124,7 @@ const getMaxCalculations = (
       {
         reason: "Pool outflow rate limit surpassed",
         isDisabled: true,
-        value: data.lendingMarket.rateLimiter.remainingOutflow
+        value: appData.lendingMarket.rateLimiter.remainingOutflow
           .div(reserve.maxPrice)
           .div(reserve.config.borrowWeightBps.div(10000))
           .div(1 + borrowFee),
@@ -151,7 +151,7 @@ const getMaxCalculations = (
       {
         reason: "Pool outflow rate limit surpassed",
         isDisabled: true,
-        value: data.lendingMarket.rateLimiter.remainingOutflow.div(
+        value: appData.lendingMarket.rateLimiter.remainingOutflow.div(
           reserve.maxPrice,
         ),
       },
@@ -208,7 +208,7 @@ export const getMaxValue =
     action: Action,
     reserve: ParsedReserve,
     balance: BigNumber,
-    data: AppData,
+    appData: AppData,
     obligation?: ParsedObligation,
   ) =>
   () => {
@@ -216,7 +216,7 @@ export const getMaxValue =
       action,
       reserve,
       balance,
-      data,
+      appData,
       obligation,
     );
 
@@ -466,7 +466,7 @@ export const getSubmitButtonState =
     action: Action,
     reserve: ParsedReserve,
     balance: BigNumber,
-    data: AppData,
+    appData: AppData,
     obligation?: ParsedObligation,
   ) =>
   (value: BigNumber): SubmitButtonState | undefined => {
@@ -474,7 +474,7 @@ export const getSubmitButtonState =
       action,
       reserve,
       balance,
-      data,
+      appData,
       obligation,
     );
 

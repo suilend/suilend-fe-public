@@ -68,7 +68,7 @@ export default function HistoryTabContent({
   eventsData,
 }: HistoryTabContentProps) {
   const { explorer } = useSettingsContext();
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(
@@ -152,10 +152,10 @@ export default function HistoryTabContent({
           } else if (eventType === EventType.LIQUIDATE) {
             const liquidateEvent = event as ApiLiquidateEvent;
 
-            const withdrawReserve = data.lendingMarket.reserves.find(
+            const withdrawReserve = appData.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.withdrawReserveId,
             );
-            const repayReserve = data.lendingMarket.reserves.find(
+            const repayReserve = appData.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.repayReserveId,
             );
 
@@ -193,7 +193,7 @@ export default function HistoryTabContent({
               const subRowDepositEvent = subRow.original
                 .event as ApiDepositEvent;
               const coinMetadata =
-                data.coinMetadataMap[subRowDepositEvent.coinType];
+                appData.coinMetadataMap[subRowDepositEvent.coinType];
 
               const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
                 (e) =>
@@ -216,7 +216,7 @@ export default function HistoryTabContent({
             return (
               <div className="flex w-max flex-col gap-1">
                 {Object.entries(depositedAmountMap).map(([coinType, value]) => {
-                  const coinMetadata = data.coinMetadataMap[coinType];
+                  const coinMetadata = appData.coinMetadataMap[coinType];
 
                   return (
                     <TokenAmount
@@ -235,7 +235,7 @@ export default function HistoryTabContent({
             );
           } else if (eventType === EventType.BORROW) {
             const borrowEvent = event as ApiBorrowEvent;
-            const coinMetadata = data.coinMetadataMap[borrowEvent.coinType];
+            const coinMetadata = appData.coinMetadataMap[borrowEvent.coinType];
 
             const incFeesAmount = new BigNumber(
               borrowEvent.liquidityAmount,
@@ -265,7 +265,8 @@ export default function HistoryTabContent({
             );
           } else if (eventType === EventType.WITHDRAW) {
             const withdrawEvent = event as ApiWithdrawEvent;
-            const coinMetadata = data.coinMetadataMap[withdrawEvent.coinType];
+            const coinMetadata =
+              appData.coinMetadataMap[withdrawEvent.coinType];
 
             const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
               (e) =>
@@ -292,7 +293,7 @@ export default function HistoryTabContent({
             );
           } else if (eventType === EventType.REPAY) {
             const repayEvent = event as ApiRepayEvent;
-            const coinMetadata = data.coinMetadataMap[repayEvent.coinType];
+            const coinMetadata = appData.coinMetadataMap[repayEvent.coinType];
 
             const amount = new BigNumber(repayEvent.liquidityAmount).div(
               10 ** coinMetadata.decimals,
@@ -312,10 +313,10 @@ export default function HistoryTabContent({
           } else if (eventType === EventType.LIQUIDATE) {
             const liquidateEvent = event as ApiLiquidateEvent;
 
-            const withdrawReserve = data.lendingMarket.reserves.find(
+            const withdrawReserve = appData.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.withdrawReserveId,
             );
-            const repayReserve = data.lendingMarket.reserves.find(
+            const repayReserve = appData.lendingMarket.reserves.find(
               (reserve) => reserve.id === liquidateEvent.repayReserveId,
             );
             if (!withdrawReserve || !repayReserve)
@@ -424,7 +425,7 @@ export default function HistoryTabContent({
               const subRowClaimRewardEvent = subRow.original
                 .event as ApiClaimRewardEvent;
               const coinMetadata =
-                data.coinMetadataMap[subRowClaimRewardEvent.coinType];
+                appData.coinMetadataMap[subRowClaimRewardEvent.coinType];
 
               claimedAmountMap[subRowClaimRewardEvent.coinType] = (
                 claimedAmountMap[subRowClaimRewardEvent.coinType] ??
@@ -439,7 +440,7 @@ export default function HistoryTabContent({
             return (
               <div className="flex w-max flex-col gap-1">
                 {Object.entries(claimedAmountMap).map(([coinType, value]) => {
-                  const coinMetadata = data.coinMetadataMap[coinType];
+                  const coinMetadata = appData.coinMetadataMap[coinType];
 
                   return (
                     <TokenAmount
@@ -489,9 +490,9 @@ export default function HistoryTabContent({
       },
     ],
     [
-      data.coinMetadataMap,
+      appData.coinMetadataMap,
       eventsData?.reserveAssetData,
-      data.lendingMarket.reserves,
+      appData.lendingMarket.reserves,
       explorer,
     ],
   );
@@ -550,11 +551,11 @@ export default function HistoryTabContent({
               ].map((event) => event.coinType),
               ...eventsData.liquidate
                 .map((liquidateEvent) => {
-                  const withdrawReserve = data.lendingMarket.reserves.find(
+                  const withdrawReserve = appData.lendingMarket.reserves.find(
                     (reserve) =>
                       reserve.id === liquidateEvent.withdrawReserveId,
                   );
-                  const repayReserve = data.lendingMarket.reserves.find(
+                  const repayReserve = appData.lendingMarket.reserves.find(
                     (reserve) => reserve.id === liquidateEvent.repayReserveId,
                   );
 
@@ -565,8 +566,8 @@ export default function HistoryTabContent({
                 })
                 .flat(),
             ]),
-          ).sort((a, b) => reserveSort(data.lendingMarket.reserves, a, b)),
-    [eventsData, data.lendingMarket.reserves],
+          ).sort((a, b) => reserveSort(appData.lendingMarket.reserves, a, b)),
+    [eventsData, appData.lendingMarket.reserves],
   );
   const isNotFilteredOutCoinType = (coinType: string) =>
     !filteredOutCoinTypes.includes(coinType);
@@ -703,7 +704,7 @@ export default function HistoryTabContent({
                 );
               })}
               {coinTypes.map((coinType) => {
-                const coinMetadata = data.coinMetadataMap[coinType];
+                const coinMetadata = appData.coinMetadataMap[coinType];
                 const isSelected = isNotFilteredOutCoinType(coinType);
 
                 return (

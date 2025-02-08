@@ -18,13 +18,14 @@ import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function AddReserveDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, balancesCoinMetadataMap, refresh } =
-    useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, balancesCoinMetadataMap, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -107,7 +108,7 @@ export default function AddReserveDialog() {
 
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
@@ -149,7 +150,7 @@ export default function AddReserveDialog() {
 
     try {
       await suilendClient.createReserve(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         transaction,
         pythPriceId,
         coinType,
@@ -166,7 +167,7 @@ export default function AddReserveDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

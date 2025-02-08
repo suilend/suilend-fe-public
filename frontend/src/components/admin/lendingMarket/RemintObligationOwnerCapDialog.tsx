@@ -10,12 +10,14 @@ import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function RemintObligationOwnerCapDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -29,7 +31,7 @@ export default function RemintObligationOwnerCapDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     if (obligationId === "") {
@@ -42,7 +44,7 @@ export default function RemintObligationOwnerCapDialog() {
     try {
       suilendClient.newObligationOwnerCap(
         transaction,
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         address,
         obligationId,
       );
@@ -57,7 +59,7 @@ export default function RemintObligationOwnerCapDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

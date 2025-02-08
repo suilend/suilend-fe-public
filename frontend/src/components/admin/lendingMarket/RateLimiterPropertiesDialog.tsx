@@ -8,9 +8,9 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function RateLimiterPropertiesDialog() {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
-  const rateLimiter = data.lendingMarket.rateLimiter;
+  const rateLimiter = appData.lendingMarket.rateLimiter;
 
   return (
     <Dialog

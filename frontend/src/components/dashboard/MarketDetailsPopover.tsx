@@ -10,10 +10,10 @@ import { getFormattedMaxOutflow } from "@/lib/rateLimiter";
 import { cn } from "@/lib/utils";
 
 export default function MarketDetailsPopover() {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   const formattedOutflow = getFormattedMaxOutflow(
-    data.lendingMarket.rateLimiter,
+    appData.lendingMarket.rateLimiter,
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);

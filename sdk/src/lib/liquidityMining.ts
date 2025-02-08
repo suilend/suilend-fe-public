@@ -11,8 +11,8 @@ import { Side } from "./types";
 
 export type RewardMap = {
   [coinType: string]: {
-    deposit: RewardSummary[];
-    borrow: RewardSummary[];
+    [Side.DEPOSIT]: RewardSummary[];
+    [Side.BORROW]: RewardSummary[];
   };
 };
 
@@ -70,7 +70,7 @@ export const formatRewards = (
   priceMap: Record<string, BigNumber | undefined>,
   obligations?: ParsedObligation[],
 ) => {
-  const currentTime = new Date().getTime();
+  const nowMs = Date.now();
   const rewardMap: RewardMap = {};
 
   const getRewardSummary = (
@@ -82,8 +82,7 @@ export const formatRewards = (
     const rewardPrice = priceMap?.[poolReward.coinType];
 
     const isActive =
-      currentTime >= poolReward.startTimeMs &&
-      currentTime < poolReward.endTimeMs;
+      nowMs >= poolReward.startTimeMs && nowMs < poolReward.endTimeMs;
 
     const aprPercent = rewardPrice
       ? poolReward.totalRewards
@@ -151,22 +150,21 @@ export const formatRewards = (
         side,
       },
       obligationClaims: Object.fromEntries(
-        (obligations
-          ?.map((ob) => {
-            const claim = getObligationClaims(
-              ob,
+        (obligations ?? [])
+          .map((obligation) => {
+            const claim = getObligationClaim(
+              obligation,
               poolReward,
               side === Side.DEPOSIT
                 ? reserve.depositsPoolRewardManager.id
                 : reserve.borrowsPoolRewardManager.id,
               reserve.arrayIndex,
             );
-            if (!claim) {
-              return undefined;
-            }
-            return [ob.id, claim];
+            if (!claim) return undefined;
+
+            return [obligation.id, claim];
           })
-          .filter(Boolean) as [string, ObligationClaim][]) ?? [],
+          .filter(Boolean) as [string, ObligationClaim][],
       ),
     };
   };
@@ -181,15 +179,15 @@ export const formatRewards = (
     ) as RewardSummary[];
 
     rewardMap[reserve.coinType] = {
-      deposit: depositRewards,
-      borrow: borrowRewards,
+      [Side.DEPOSIT]: depositRewards,
+      [Side.BORROW]: borrowRewards,
     };
   });
 
   return rewardMap;
 };
 
-const getObligationClaims = (
+const getObligationClaim = (
   obligation: ParsedObligation,
   poolReward: ParsedPoolReward,
   reservePoolManagerId: string,
@@ -204,8 +202,6 @@ const getObligationClaims = (
   if (!userReward) return;
 
   return {
-    // TODO: earnedRewards is refreshed via simulate.ts to only show unclaimed rewards.
-    // Lifetime earned amount is not available right yet as a result.
     claimableAmount: userReward?.earnedRewards
       ? new BigNumber(userReward.earnedRewards.value.toString())
           .div(WAD)

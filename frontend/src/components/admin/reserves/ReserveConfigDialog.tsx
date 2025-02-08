@@ -21,6 +21,7 @@ import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DiffProps {
   initialState: { pythPriceId: string } & ConfigState;
@@ -66,9 +67,10 @@ export default function ReserveConfigDialog({
   reserve,
 }: ReserveConfigDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, data, refresh } = useLoadedAppContext();
+  const { suilendClient } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  const isEditable = !!data.lendingMarketOwnerCapId;
+  const isEditable = !!userData.lendingMarketOwnerCapId;
 
   const [pythPriceId, setPythPriceId] = useState<string>(
     reserve.priceIdentifier,
@@ -148,7 +150,7 @@ export default function ReserveConfigDialog({
 
   const saveChanges = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!data.lendingMarketOwnerCapId)
+    if (!userData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -157,13 +159,13 @@ export default function ReserveConfigDialog({
     try {
       if (pythPriceId !== initialPythPriceIdRef.current)
         await suilendClient.changeReservePriceFeed(
-          data.lendingMarketOwnerCapId,
+          userData.lendingMarketOwnerCapId,
           reserve.coinType,
           pythPriceId,
           transaction,
         );
       suilendClient.updateReserveConfig(
-        data.lendingMarketOwnerCapId,
+        userData.lendingMarketOwnerCapId,
         transaction,
         reserve.coinType,
         newConfig,
@@ -178,7 +180,7 @@ export default function ReserveConfigDialog({
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

@@ -16,15 +16,15 @@ import { DISCORD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function WormholeConnectWrapper() {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
 
   const assetUsdPriceMap: Record<string, BigNumber> = {
-    USDC: data.reserveMap[NORMALIZED_USDC_COINTYPE].price,
-    USDT: data.reserveMap[NORMALIZED_wUSDT_COINTYPE].price,
-    WETH: data.reserveMap[NORMALIZED_WETH_COINTYPE].price,
-    WSOL: data.reserveMap[NORMALIZED_SOL_COINTYPE].price,
-    SOL: data.reserveMap[NORMALIZED_SOL_COINTYPE].price,
+    USDC: appData.reserveMap[NORMALIZED_USDC_COINTYPE].price,
+    USDT: appData.reserveMap[NORMALIZED_wUSDT_COINTYPE].price,
+    WETH: appData.reserveMap[NORMALIZED_WETH_COINTYPE].price,
+    WSOL: appData.reserveMap[NORMALIZED_SOL_COINTYPE].price,
+    SOL: appData.reserveMap[NORMALIZED_SOL_COINTYPE].price,
   };
 
   return (
