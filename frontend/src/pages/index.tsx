@@ -10,7 +10,6 @@ import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCar
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import WalletAssetsCard from "@/components/dashboard/WalletBalancesCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 
@@ -28,8 +27,6 @@ function Cards() {
 }
 
 export default function Home() {
-  const { data } = useLoadedAppContext();
-
   const { lg } = useBreakpoint();
 
   return (

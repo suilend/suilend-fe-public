@@ -14,11 +14,11 @@ import {
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function AddLendingMarketDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedAppContext();
+  const { refresh } = useLoadedUserContext();
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -62,7 +62,7 @@ export default function AddLendingMarketDialog() {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
-      await refresh();
+      refresh();
     }
   };
 

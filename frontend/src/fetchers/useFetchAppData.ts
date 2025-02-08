@@ -15,10 +15,6 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    // suiClient.getOwnedObjects({
-    //   owner: ADMIN_ADDRESS,
-    // });
-
     const suilendClient = await SuilendClient.initialize(
       LENDING_MARKET_ID,
       LENDING_MARKET_TYPE,

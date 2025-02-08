@@ -35,9 +35,6 @@ export const parseLendingMarket = (
   );
 
   // Custom
-  const name =
-    LENDING_MARKETS.find((lm) => lm.id === id)?.name ?? "Lending market";
-
   let depositedAmountUsd = new BigNumber(0);
   let borrowedAmountUsd = new BigNumber(0);
   let tvlUsd = new BigNumber(0);
@@ -50,6 +47,14 @@ export const parseLendingMarket = (
     tvlUsd = tvlUsd.plus(parsedReserve.availableAmountUsd);
   });
 
+  const LENDING_MARKET = LENDING_MARKETS.find((lm) => lm.id === id);
+  if (!LENDING_MARKET)
+    throw new Error(
+      `Missing LENDING_MARKETS definition for lending market with id: ${id}`,
+    );
+
+  const { name, ownerCapId } = LENDING_MARKET;
+
   return {
     id,
     type,
@@ -61,10 +66,12 @@ export const parseLendingMarket = (
     badDebtUsd,
     badDebtLimitUsd,
 
-    name,
     depositedAmountUsd,
     borrowedAmountUsd,
     tvlUsd,
+
+    name,
+    ownerCapId,
 
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.

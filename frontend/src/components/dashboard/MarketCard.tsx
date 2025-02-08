@@ -8,14 +8,14 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function MarketCard() {
-  const { data } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   return (
     <Card
-      id={`market-card-${data.lendingMarket.id}`}
+      id={`market-card-${appData.lendingMarket.id}`}
       className="max-md:rounded-0 bg-transparent max-md:-mx-4 max-md:w-auto max-md:border-x-0"
       headerProps={{
-        title: data.lendingMarket.name,
+        title: appData.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
         noSeparator: true,
       }}
@@ -24,15 +24,15 @@ export default function MarketCard() {
         <div className="flex flex-row justify-between gap-4 md:px-4">
           <div className="flex flex-col items-start gap-1">
             <TLabelSans className="text-left">Deposits</TLabelSans>
-            <TBody>{formatUsd(data.lendingMarket.depositedAmountUsd)}</TBody>
+            <TBody>{formatUsd(appData.lendingMarket.depositedAmountUsd)}</TBody>
           </div>
           <div className="flex flex-col items-center gap-1">
             <TLabelSans className="text-center">Borrows</TLabelSans>
-            <TBody>{formatUsd(data.lendingMarket.borrowedAmountUsd)}</TBody>
+            <TBody>{formatUsd(appData.lendingMarket.borrowedAmountUsd)}</TBody>
           </div>
           <div className="flex flex-col items-end gap-1">
             <TLabelSans className="text-right">TVL</TLabelSans>
-            <TBody>{formatUsd(data.lendingMarket.tvlUsd)}</TBody>
+            <TBody>{formatUsd(appData.lendingMarket.tvlUsd)}</TBody>
           </div>
         </div>
 
