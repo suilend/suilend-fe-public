@@ -91,13 +91,13 @@ export const LENDING_MARKET_REGISTRY_ID = process.env
 
 export const LENDING_MARKETS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? [
-      {
-        name: "Old",
-        id: "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8",
-        type: "0x2::sui::SUI",
-        ownerCapId:
-          "0xa92aae3be305687d3abe36deb4d92f78ec17bfce7d8d07972722d1166e4bc6ab",
-      },
+      // {
+      //   name: "Old",
+      //   id: "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8",
+      //   type: "0x2::sui::SUI",
+      //   ownerCapId:
+      //     "0xa92aae3be305687d3abe36deb4d92f78ec17bfce7d8d07972722d1166e4bc6ab",
+      // },
       {
         name: "Main market",
         id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
