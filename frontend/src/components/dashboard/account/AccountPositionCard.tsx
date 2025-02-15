@@ -40,7 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
-  const { lstAprPercentMap, appData } = useLoadedAppContext();
+  const { appData, lstAprPercentMap } = useLoadedAppContext();
   const { userData, ...restUserContext } = useLoadedUserContext();
   const obligation = restUserContext.obligation as ParsedObligation;
 

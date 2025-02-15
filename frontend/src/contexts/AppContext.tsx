@@ -40,18 +40,17 @@ export type LstAprPercentMap = Record<string, BigNumber>;
 interface AppContext {
   allAppData: AppData[] | undefined;
   refreshAllAppData: () => Promise<void>;
-  lstAprPercentMap: LstAprPercentMap | undefined;
 
   appData: AppData | undefined;
-  // mainMarketAppData: AppData | undefined;
-  // setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
+
+  lstAprPercentMap: LstAprPercentMap | undefined;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AppData[];
-  lstAprPercentMap: LstAprPercentMap;
 
   appData: AppData;
-  // mainMarketAppData: AppData;
+
+  lstAprPercentMap: LstAprPercentMap;
 };
 
 const AppContext = createContext<AppContext>({
@@ -59,13 +58,10 @@ const AppContext = createContext<AppContext>({
   refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
-  lstAprPercentMap: undefined,
 
   appData: undefined,
-  // mainMarketAppData: undefined,
-  // setSelectedLendingMarketId: () => {
-  //   throw Error("AppContextProvider not initialized");
-  // },
+
+  lstAprPercentMap: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -83,15 +79,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
 
   // Lending market
-  // const [selectedLendingMarketId, setSelectedLendingMarketId] =
-  //   useLocalStorage<string>("selectedLendingMarketId", "");
-
-  // const appData = useMemo(
-  //   () =>
-  //     allAppData?.find((a) => a.lendingMarket.id === selectedLendingMarketId) ??
-  //     allAppData?.[0],
-  //   [allAppData, selectedLendingMarketId],
-  // );
   const appData = useMemo(() => allAppData?.[0], [allAppData]);
 
   // Context
@@ -99,20 +86,12 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     () => ({
       allAppData,
       refreshAllAppData,
-      lstAprPercentMap,
 
       appData,
-      // mainMarketAppData,
-      // setSelectedLendingMarketId,
-    }),
-    [
-      allAppData,
-      refreshAllAppData,
+
       lstAprPercentMap,
-      appData,
-      // mainMarketAppData,
-      // setSelectedLendingMarketId,
-    ],
+    }),
+    [allAppData, refreshAllAppData, appData, lstAprPercentMap],
   );
 
   return (
