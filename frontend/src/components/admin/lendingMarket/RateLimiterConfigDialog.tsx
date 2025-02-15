@@ -70,7 +70,8 @@ export default function RateLimiterConfigDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable) throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
     const newConfig = parseConfigState(configState);

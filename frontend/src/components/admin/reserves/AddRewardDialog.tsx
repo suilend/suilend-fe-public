@@ -58,7 +58,8 @@ export default function AddRewardDialog({
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable) throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
       toast.error("Select a coin");

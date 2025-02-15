@@ -33,7 +33,8 @@ export default function AddLendingMarketDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable) throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
 
     if (type === "") {
       toast.error("Enter a type");

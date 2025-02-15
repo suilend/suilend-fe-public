@@ -70,7 +70,8 @@ export default function ReserveRewardsDialog({
 
   const onCancelReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable) throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
@@ -104,7 +105,8 @@ export default function ReserveRewardsDialog({
 
   const onCloseReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable) throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarketOwnerCapId)
+      throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
