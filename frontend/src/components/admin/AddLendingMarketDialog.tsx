@@ -5,13 +5,8 @@ import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import {
-  ADMIN_ADDRESS,
-  LENDING_MARKET_REGISTRY_ID,
-  SuilendClient,
-} from "@suilend/sdk";
+import { LENDING_MARKET_REGISTRY_ID, SuilendClient } from "@suilend/sdk";
 
-import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
@@ -20,10 +15,6 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 export default function AddLendingMarketDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
-
-  const { appData } = useAdminContext();
-
-  const isEditable = address === ADMIN_ADDRESS;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -37,8 +28,6 @@ export default function AddLendingMarketDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarket.ownerCapId)
-      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     if (type === "") {
       toast.error("Enter a type");
@@ -98,7 +87,6 @@ export default function AddLendingMarketDialog() {
               labelClassName="uppercase"
               size="lg"
               onClick={submit}
-              disabled={!isEditable}
             >
               Add
             </Button>
