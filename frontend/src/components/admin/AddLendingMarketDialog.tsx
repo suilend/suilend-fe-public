@@ -5,12 +5,9 @@ import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import {
-  ADMIN_ADDRESS,
-  LENDING_MARKET_REGISTRY_ID,
-  SuilendClient,
-} from "@suilend/sdk";
+import { LENDING_MARKET_REGISTRY_ID, SuilendClient } from "@suilend/sdk";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
@@ -20,7 +17,9 @@ export default function AddLendingMarketDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
-  const isEditable = address === ADMIN_ADDRESS;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -34,8 +33,7 @@ export default function AddLendingMarketDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable)
-      throw new Error("Connected wallet is not the admin wallet");
+    if (!isEditable) throw new Error("Error: No lending market owner cap");
 
     if (type === "") {
       toast.error("Enter a type");

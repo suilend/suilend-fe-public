@@ -40,7 +40,7 @@ import {
 } from "@suilend/frontend-sui";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { ADMIN_ADDRESS, SuilendClient } from "../client";
+import { SuilendClient } from "../client";
 import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
@@ -86,7 +86,7 @@ export const RESERVES_CUSTOM_ORDER = [
 export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
-  address?: string,
+  hasLendingMarketOwnerCap?: boolean,
 ) => {
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
@@ -186,7 +186,7 @@ export const initializeSuilend = async (
           Date.now() >= 1734609600000) || // 2024-12-19 12:00:00 UTC
         isDeprecated(reserve.coinType) || // Always show deprecated reserves
         reserve.config.depositLimit.gt(0) ||
-        address === ADMIN_ADDRESS
+        hasLendingMarketOwnerCap
       );
     });
 

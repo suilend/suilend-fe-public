@@ -4,13 +4,10 @@ import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
 import { formatNumber } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DataTable, {
   decimalSortingFn,
   tableHeader,
@@ -47,9 +44,10 @@ export default function PoolRewardsTable({
   onCloseReward,
 }: PoolRewardsTableProps) {
   const { explorer } = useSettingsContext();
-  const { address } = useWalletContext();
 
-  const isEditable = address === ADMIN_ADDRESS;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   const columns: ColumnDef<RowData>[] = [
     {

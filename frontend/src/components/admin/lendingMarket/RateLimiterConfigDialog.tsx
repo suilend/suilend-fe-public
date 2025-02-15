@@ -6,7 +6,6 @@ import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -51,7 +50,7 @@ export default function RateLimiterConfigDialog() {
 
   const { appData } = useAdminContext();
 
-  const isEditable = address === ADMIN_ADDRESS;
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   const getInitialConfigState = (
     config: ParsedRateLimiter["config"],
@@ -71,15 +70,14 @@ export default function RateLimiterConfigDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable)
-      throw new Error("Connected wallet is not the admin wallet");
+    if (!isEditable) throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
     const newConfig = parseConfigState(configState);
 
     try {
       appData.suilendClient.updateRateLimiterConfig(
-        appData.lendingMarket.ownerCapId,
+        appData.lendingMarketOwnerCapId,
         transaction,
         newConfig,
       );

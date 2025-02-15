@@ -298,9 +298,9 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
       />
       <LabelWithValue
         label="Admin cap"
-        value={appData.lendingMarket.ownerCapId}
+        value={appData.lendingMarketOwnerCapId}
         isId
-        url={explorer.buildObjectUrl(appData.lendingMarket.ownerCapId)}
+        url={explorer.buildObjectUrl(appData.lendingMarketOwnerCapId)}
         isExplorerUrl
         horizontal
       />

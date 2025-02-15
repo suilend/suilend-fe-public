@@ -15,8 +15,7 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { allAppData, lstAprPercentMap, appData, mainMarketAppData } =
-    useAppContext();
+  const { allAppData, lstAprPercentMap, appData } = useAppContext();
   const { userData } = useUserContext();
   const { season, seasonMap } = usePointsContext();
 
@@ -65,7 +64,7 @@ export default function Layout({ children }: PropsWithChildren) {
           {!allAppData ||
           !lstAprPercentMap ||
           !appData ||
-          !mainMarketAppData ||
+          // !mainMarketAppData ||
           !userData ? (
             <FullPageSpinner />
           ) : (

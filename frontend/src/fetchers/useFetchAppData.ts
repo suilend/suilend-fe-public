@@ -1,5 +1,3 @@
-import { AppContext } from "next/app";
-
 import useSWR from "swr";
 
 import {
@@ -21,11 +19,21 @@ export default function useFetchAppData() {
     const result: AppData[] = [];
 
     for (const LENDING_MARKET of LENDING_MARKETS) {
+      if (LENDING_MARKET.isHidden) continue;
+
       const suilendClient = await SuilendClient.initialize(
         LENDING_MARKET.id,
         LENDING_MARKET.type,
         suiClient,
       );
+
+      const lendingMarketOwnerCapId = !address
+        ? undefined
+        : await SuilendClient.getLendingMarketOwnerCapId(
+            address,
+            suilendClient.lendingMarket.$typeArgs,
+            suiClient,
+          );
 
       const {
         lendingMarket,
@@ -40,7 +48,11 @@ export default function useFetchAppData() {
         rewardCoinTypes,
         activeRewardCoinTypes,
         rewardCoinMetadataMap,
-      } = await initializeSuilend(suiClient, suilendClient, address);
+      } = await initializeSuilend(
+        suiClient,
+        suilendClient,
+        !!lendingMarketOwnerCapId,
+      );
 
       const { rewardPriceMap } = await initializeSuilendRewards(
         reserveMap,
@@ -49,6 +61,7 @@ export default function useFetchAppData() {
 
       result.push({
         suilendClient,
+        lendingMarketOwnerCapId,
 
         lendingMarket,
         coinMetadataMap,

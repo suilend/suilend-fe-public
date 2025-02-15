@@ -1,7 +1,5 @@
 import {
-  Dispatch,
   PropsWithChildren,
-  SetStateAction,
   createContext,
   useCallback,
   useContext,
@@ -10,7 +8,6 @@ import {
 
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
-import { useLocalStorage } from "usehooks-ts";
 
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -22,6 +19,7 @@ import useFetchLstAprPercentMap from "@/fetchers/useFetchLstAprPercentMap";
 
 export interface AppData {
   suilendClient: SuilendClient;
+  lendingMarketOwnerCapId: string | undefined;
 
   lendingMarket: ParsedLendingMarket;
   coinMetadataMap: Record<string, CoinMetadata>;
@@ -45,15 +43,15 @@ interface AppContext {
   lstAprPercentMap: LstAprPercentMap | undefined;
 
   appData: AppData | undefined;
-  mainMarketAppData: AppData | undefined;
-  setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
+  // mainMarketAppData: AppData | undefined;
+  // setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AppData[];
   lstAprPercentMap: LstAprPercentMap;
 
   appData: AppData;
-  mainMarketAppData: AppData;
+  // mainMarketAppData: AppData;
 };
 
 const AppContext = createContext<AppContext>({
@@ -64,10 +62,10 @@ const AppContext = createContext<AppContext>({
   lstAprPercentMap: undefined,
 
   appData: undefined,
-  mainMarketAppData: undefined,
-  setSelectedLendingMarketId: () => {
-    throw Error("AppContextProvider not initialized");
-  },
+  // mainMarketAppData: undefined,
+  // setSelectedLendingMarketId: () => {
+  //   throw Error("AppContextProvider not initialized");
+  // },
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -85,17 +83,16 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
 
   // Lending market
-  const [selectedLendingMarketId, setSelectedLendingMarketId] =
-    useLocalStorage<string>("selectedLendingMarketId", "");
+  // const [selectedLendingMarketId, setSelectedLendingMarketId] =
+  //   useLocalStorage<string>("selectedLendingMarketId", "");
 
-  const appData = useMemo(
-    () =>
-      allAppData?.find((a) => a.lendingMarket.id === selectedLendingMarketId) ??
-      allAppData?.[0],
-    [allAppData, selectedLendingMarketId],
-  );
-
-  const mainMarketAppData = useMemo(() => allAppData?.[0], [allAppData]);
+  // const appData = useMemo(
+  //   () =>
+  //     allAppData?.find((a) => a.lendingMarket.id === selectedLendingMarketId) ??
+  //     allAppData?.[0],
+  //   [allAppData, selectedLendingMarketId],
+  // );
+  const appData = useMemo(() => allAppData?.[0], [allAppData]);
 
   // Context
   const contextValue: AppContext = useMemo(
@@ -105,16 +102,16 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       lstAprPercentMap,
 
       appData,
-      mainMarketAppData,
-      setSelectedLendingMarketId,
+      // mainMarketAppData,
+      // setSelectedLendingMarketId,
     }),
     [
       allAppData,
       refreshAllAppData,
       lstAprPercentMap,
       appData,
-      mainMarketAppData,
-      setSelectedLendingMarketId,
+      // mainMarketAppData,
+      // setSelectedLendingMarketId,
     ],
   );
 

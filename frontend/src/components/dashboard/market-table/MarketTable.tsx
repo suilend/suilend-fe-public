@@ -34,7 +34,6 @@ import styles from "@/components/dashboard/market-table/MarketTable.module.scss"
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
-import { useMarketContext } from "@/components/dashboard/MarketContext";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
@@ -122,8 +121,7 @@ type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 export default function MarketTable() {
   const { lstAprPercentMap } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
-
-  const { appData } = useMarketContext();
+  const { appData } = useLoadedAppContext();
 
   const { open: openActionsModal } = useActionsModalContext();
 

@@ -111,6 +111,7 @@ export const LENDING_MARKETS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
         type: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
         ownerCapId:
           "0xed8262012d34105c5ac59cf2dd6473d492e6ab7529fe7f9ea6cb1fa8dc2dba56",
+        isHidden: true,
       },
     ]
   : [

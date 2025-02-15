@@ -2,10 +2,10 @@ import { ExternalLink } from "lucide-react";
 
 import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
 
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import {
   ABOUT_URL,
@@ -21,6 +21,7 @@ import {
 
 export default function NavigationLinks() {
   const { address } = useWalletContext();
+  const { appData } = useLoadedAppContext();
 
   return (
     <>
@@ -46,7 +47,7 @@ export default function NavigationLinks() {
       </div>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>
-      {address === ADMIN_ADDRESS && !isInMsafeApp() && (
+      {!!appData.lendingMarketOwnerCapId && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
       )}
 

@@ -6,7 +6,6 @@ import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -41,7 +40,7 @@ export default function ReserveRewardsDialog({
 
   const { appData } = useAdminContext();
 
-  const isEditable = address === ADMIN_ADDRESS;
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   // Tabs
   enum Tab {
@@ -71,8 +70,7 @@ export default function ReserveRewardsDialog({
 
   const onCancelReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable)
-      throw new Error("Connected wallet is not the admin wallet");
+    if (!isEditable) throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
@@ -83,7 +81,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = appData.suilendClient.cancelReward(
-        appData.lendingMarket.ownerCapId,
+        appData.lendingMarketOwnerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
@@ -106,8 +104,7 @@ export default function ReserveRewardsDialog({
 
   const onCloseReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable)
-      throw new Error("Connected wallet is not the admin wallet");
+    if (!isEditable) throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
@@ -118,7 +115,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = appData.suilendClient.closeReward(
-        appData.lendingMarket.ownerCapId,
+        appData.lendingMarketOwnerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,

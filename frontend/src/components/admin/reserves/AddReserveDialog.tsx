@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
@@ -27,7 +26,7 @@ export default function AddReserveDialog() {
 
   const { appData } = useAdminContext();
 
-  const isEditable = address === ADMIN_ADDRESS;
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -110,8 +109,7 @@ export default function AddReserveDialog() {
 
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!isEditable)
-      throw new Error("Connected wallet is not the admin wallet");
+    if (!isEditable) throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
       toast.error("Select a coin");
@@ -152,7 +150,7 @@ export default function AddReserveDialog() {
 
     try {
       await appData.suilendClient.createReserve(
-        appData.lendingMarket.ownerCapId,
+        appData.lendingMarketOwnerCapId,
         transaction,
         pythPriceId,
         coinType,

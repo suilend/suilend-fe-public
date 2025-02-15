@@ -35,7 +35,7 @@ interface UserContext {
   refresh: () => void; // Refreshes appData, balances, and userData
 
   obligation: ParsedObligation | undefined; // Depends on userData
-  obligationOwnerCap: ObligationOwnerCap<string> | undefined; //Depends on userData
+  obligationOwnerCap: ObligationOwnerCap<string> | undefined; // Depends on userData
   setObligationId: (obligationId: string) => void;
 }
 type LoadedUserContext = UserContext & {

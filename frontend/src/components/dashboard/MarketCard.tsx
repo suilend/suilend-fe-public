@@ -2,13 +2,13 @@ import { formatUsd } from "@suilend/frontend-sui";
 
 import Card from "@/components/dashboard/Card";
 import MarketTable from "@/components/dashboard/market-table/MarketTable";
-import { useMarketContext } from "@/components/dashboard/MarketContext";
 import MarketDetailsPopover from "@/components/dashboard/MarketDetailsPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function MarketCard() {
-  const { appData } = useMarketContext();
+  const { appData } = useLoadedAppContext();
 
   return (
     <Card
