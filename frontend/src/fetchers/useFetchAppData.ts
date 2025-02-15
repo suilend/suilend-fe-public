@@ -19,8 +19,6 @@ export default function useFetchAppData() {
     const result: AppData[] = [];
 
     for (const LENDING_MARKET of LENDING_MARKETS) {
-      if (LENDING_MARKET.isHidden) continue;
-
       const suilendClient = await SuilendClient.initialize(
         LENDING_MARKET.id,
         LENDING_MARKET.type,
@@ -34,6 +32,8 @@ export default function useFetchAppData() {
             suilendClient.lendingMarket.$typeArgs,
             suiClient,
           );
+
+      if (LENDING_MARKET.isHidden && !lendingMarketOwnerCapId) continue;
 
       const {
         lendingMarket,

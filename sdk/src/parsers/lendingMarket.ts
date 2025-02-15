@@ -49,11 +49,11 @@ export const parseLendingMarket = (
 
   const LENDING_MARKET = LENDING_MARKETS.find((lm) => lm.id === id);
   if (!LENDING_MARKET)
-    throw new Error(
+    console.error(
       `Missing LENDING_MARKETS definition for lending market with id: ${id}`,
     );
 
-  const { name, ownerCapId } = LENDING_MARKET;
+  const name = LENDING_MARKET?.name ?? "Unknown";
 
   return {
     id,
@@ -71,7 +71,6 @@ export const parseLendingMarket = (
     tvlUsd,
 
     name,
-    ownerCapId,
 
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.

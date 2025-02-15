@@ -6,7 +6,6 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import { formatRewards, initializeObligations } from "@suilend/sdk";
-import { SuilendClient } from "@suilend/sdk/client";
 
 import { useAppContext } from "@/contexts/AppContext";
 import { UserData } from "@/contexts/UserContext";
@@ -43,7 +42,7 @@ export default function useFetchUserData() {
   };
 
   const { data, mutate } = useSWR<UserData>(
-    !appData ? null : `userData-${address}-${appData.lendingMarket.id}`,
+    !appData ? null : `userData-${address}`,
     dataFetcher,
     {
       refreshInterval: 30 * 1000,
