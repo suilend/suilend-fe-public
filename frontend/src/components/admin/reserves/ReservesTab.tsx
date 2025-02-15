@@ -1,5 +1,6 @@
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import AddReserveDialog from "@/components/admin/reserves/AddReserveDialog";
 import AddRewardsDialog from "@/components/admin/reserves/AddRewardsDialog";
 import ClaimFeesDialog from "@/components/admin/reserves/ClaimFeesDialog";
@@ -14,11 +15,11 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ReservesTab() {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+
+  const { appData } = useAdminContext();
 
   return (
     <div className="flex w-full flex-col gap-2">

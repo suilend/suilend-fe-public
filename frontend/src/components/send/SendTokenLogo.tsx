@@ -11,9 +11,9 @@ interface SendTokenLogoProps {
 }
 
 export default function SendTokenLogo({ className }: SendTokenLogoProps) {
-  const { appData } = useLoadedAppContext();
+  const { mainMarketAppData } = useLoadedAppContext();
 
-  const sendReserve = appData.reserveMap[NORMALIZED_SEND_COINTYPE];
+  const sendReserve = mainMarketAppData.reserveMap[NORMALIZED_SEND_COINTYPE];
 
   return (
     <TokenLogo

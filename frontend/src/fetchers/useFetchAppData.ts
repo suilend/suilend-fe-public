@@ -1,64 +1,75 @@
+import { AppContext } from "next/app";
+
 import useSWR from "swr";
 
-import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
-import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
 import {
-  LENDING_MARKET_ID,
-  LENDING_MARKET_TYPE,
-  SuilendClient,
-} from "@suilend/sdk/client";
+  showErrorToast,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
+import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
+import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
 
 import { AppData } from "@/contexts/AppContext";
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
 
   // Data
   const dataFetcher = async () => {
-    const suilendClient = await SuilendClient.initialize(
-      LENDING_MARKET_ID,
-      LENDING_MARKET_TYPE,
-      suiClient,
-    );
+    const result: AppData[] = [];
 
-    const {
-      lendingMarket,
-      coinMetadataMap,
+    for (const LENDING_MARKET of LENDING_MARKETS) {
+      const suilendClient = await SuilendClient.initialize(
+        LENDING_MARKET.id,
+        LENDING_MARKET.type,
+        suiClient,
+      );
 
-      reserveMap,
-      refreshedRawReserves,
-      reserveCoinTypes,
-      reserveCoinMetadataMap,
+      const {
+        lendingMarket,
+        coinMetadataMap,
 
-      rewardCoinTypes,
-      activeRewardCoinTypes,
-      rewardCoinMetadataMap,
-    } = await initializeSuilend(suiClient, suilendClient);
+        refreshedRawReserves,
+        reserveMap,
+        filteredReserves,
+        reserveCoinTypes,
+        reserveCoinMetadataMap,
 
-    const { rewardPriceMap } = await initializeSuilendRewards(
-      reserveMap,
-      activeRewardCoinTypes,
-    );
+        rewardCoinTypes,
+        activeRewardCoinTypes,
+        rewardCoinMetadataMap,
+      } = await initializeSuilend(suiClient, suilendClient, address);
 
-    return {
-      suilendClient,
+      const { rewardPriceMap } = await initializeSuilendRewards(
+        reserveMap,
+        activeRewardCoinTypes,
+      );
 
-      lendingMarket,
-      coinMetadataMap,
+      result.push({
+        suilendClient,
 
-      reserveMap,
-      refreshedRawReserves,
-      reserveCoinTypes,
-      reserveCoinMetadataMap,
+        lendingMarket,
+        coinMetadataMap,
 
-      rewardPriceMap,
-      rewardCoinTypes,
-      activeRewardCoinTypes,
-      rewardCoinMetadataMap,
-    };
+        refreshedRawReserves,
+        reserveMap,
+        filteredReserves,
+        reserveCoinTypes,
+        reserveCoinMetadataMap,
+
+        rewardPriceMap,
+        rewardCoinTypes,
+        activeRewardCoinTypes,
+        rewardCoinMetadataMap,
+      });
+    }
+
+    return result;
   };
 
-  const { data, mutate } = useSWR<AppData>("appData", dataFetcher, {
+  const { data, mutate } = useSWR<AppData[]>("appData", dataFetcher, {
     refreshInterval: 30 * 1000,
     onSuccess: (data) => {
       console.log("Refreshed app data", data);

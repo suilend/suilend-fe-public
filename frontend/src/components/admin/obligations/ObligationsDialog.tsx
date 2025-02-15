@@ -4,7 +4,6 @@ import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { useSettingsContext } from "@suilend/frontend-sui-next";
-import { LENDING_MARKETS } from "@suilend/sdk";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -26,16 +25,11 @@ import Switch from "@/components/shared/Switch";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import Value from "@/components/shared/Value";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
 
-  const { selectedLendingMarketId } = useAdminContext();
-  const selectedLendingMarket = LENDING_MARKETS.find(
-    (lm) => lm.id === selectedLendingMarketId,
-  );
+  const { appData } = useAdminContext();
 
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =
@@ -55,12 +49,10 @@ export default function ObligationsDialog() {
   const [obligations, setObligations] = useState<Obligation<string>[]>([]);
 
   const fetchObligationData = async () => {
-    if (!selectedLendingMarket) throw new Error("Missing lending market");
-
     const rawLendingMarket = await LendingMarket.fetch(
       suiClient,
-      phantom(selectedLendingMarket.type),
-      selectedLendingMarket.id,
+      phantom(appData.lendingMarket.type),
+      appData.lendingMarket.id,
     );
     const refreshedReserves = await simulate.refreshReservePrice(
       rawLendingMarket.reserves.map((r) =>
@@ -78,8 +70,8 @@ export default function ObligationsDialog() {
     }
     fetchAllObligationsForMarketWithHandler(
       suiClient,
-      selectedLendingMarket.id,
-      selectedLendingMarket.type,
+      appData.lendingMarket.id,
+      appData.lendingMarket.type,
       chunkHandler,
     );
   };

@@ -5,18 +5,19 @@ import {
   createContext,
   useContext,
   useMemo,
-  useState,
 } from "react";
 
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { useLocalStorage } from "usehooks-ts";
+
+import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
 
 interface AdminContext {
-  selectedLendingMarketId: string;
+  appData: AppData;
   setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
 }
 
 const defaultContextValue: AdminContext = {
-  selectedLendingMarketId: LENDING_MARKETS[0].id,
+  appData: {} as AppData,
   setSelectedLendingMarketId: () => {
     throw Error("AdminContextProvider not initialized");
   },
@@ -27,16 +28,26 @@ const AdminContext = createContext<AdminContext>(defaultContextValue);
 export const useAdminContext = () => useContext(AdminContext);
 
 export function AdminContextProvider({ children }: PropsWithChildren) {
+  const { allAppData } = useLoadedAppContext();
+
+  // Lending market
   const [selectedLendingMarketId, setSelectedLendingMarketId] =
-    useState<string>(LENDING_MARKETS[0].id);
+    useLocalStorage<string>("admin_selectedLendingMarketId", "");
+
+  const appData = useMemo(
+    () =>
+      allAppData.find((a) => a.lendingMarket.id === selectedLendingMarketId) ??
+      allAppData[0],
+    [allAppData, selectedLendingMarketId],
+  );
 
   // Context
   const contextValue: AdminContext = useMemo(
     () => ({
-      selectedLendingMarketId,
+      appData,
       setSelectedLendingMarketId,
     }),
-    [selectedLendingMarketId, setSelectedLendingMarketId],
+    [appData, setSelectedLendingMarketId],
   );
 
   return (

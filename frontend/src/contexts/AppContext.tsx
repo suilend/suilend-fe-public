@@ -1,5 +1,7 @@
 import {
+  Dispatch,
   PropsWithChildren,
+  SetStateAction,
   createContext,
   useCallback,
   useContext,
@@ -8,6 +10,7 @@ import {
 
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
+import { useLocalStorage } from "usehooks-ts";
 
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { SuilendClient } from "@suilend/sdk/client";
@@ -23,8 +26,9 @@ export interface AppData {
   lendingMarket: ParsedLendingMarket;
   coinMetadataMap: Record<string, CoinMetadata>;
 
-  reserveMap: Record<string, ParsedReserve>;
   refreshedRawReserves: Reserve<string>[];
+  reserveMap: Record<string, ParsedReserve>;
+  filteredReserves: ParsedReserve[];
   reserveCoinTypes: string[];
   reserveCoinMetadataMap: Record<string, CoinMetadata>;
 
@@ -36,49 +40,82 @@ export interface AppData {
 export type LstAprPercentMap = Record<string, BigNumber>;
 
 interface AppContext {
-  suilendClient: SuilendClient | undefined;
-  appData: AppData | undefined;
-  refreshAppData: () => Promise<void>;
+  allAppData: AppData[] | undefined;
+  refreshAllAppData: () => Promise<void>;
   lstAprPercentMap: LstAprPercentMap | undefined;
+
+  appData: AppData | undefined;
+  mainMarketAppData: AppData | undefined;
+  setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
 }
 type LoadedAppContext = AppContext & {
-  suilendClient: SuilendClient;
-  appData: AppData;
+  allAppData: AppData[];
   lstAprPercentMap: LstAprPercentMap;
+
+  appData: AppData;
+  mainMarketAppData: AppData;
 };
 
 const AppContext = createContext<AppContext>({
-  suilendClient: undefined,
-  appData: undefined,
-  refreshAppData: async () => {
+  allAppData: undefined,
+  refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
   lstAprPercentMap: undefined,
+
+  appData: undefined,
+  mainMarketAppData: undefined,
+  setSelectedLendingMarketId: () => {
+    throw Error("AppContextProvider not initialized");
+  },
 });
 
 export const useAppContext = () => useContext(AppContext);
 export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  // App data
-  const { data: appData, mutateData: mutateAppData } = useFetchAppData();
+  // All app data
+  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
 
-  const refreshAppData = useCallback(async () => {
-    await mutateAppData();
-  }, [mutateAppData]);
+  const refreshAllAppData = useCallback(async () => {
+    await mutateAllAppData();
+  }, [mutateAllAppData]);
 
   // LST APRs
   const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
 
+  // Lending market
+  const [selectedLendingMarketId, setSelectedLendingMarketId] =
+    useLocalStorage<string>("selectedLendingMarketId", "");
+
+  const appData = useMemo(
+    () =>
+      allAppData?.find((a) => a.lendingMarket.id === selectedLendingMarketId) ??
+      allAppData?.[0],
+    [allAppData, selectedLendingMarketId],
+  );
+
+  const mainMarketAppData = useMemo(() => allAppData?.[0], [allAppData]);
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
-      suilendClient: appData?.suilendClient,
-      appData,
-      refreshAppData,
+      allAppData,
+      refreshAllAppData,
       lstAprPercentMap,
+
+      appData,
+      mainMarketAppData,
+      setSelectedLendingMarketId,
     }),
-    [appData, refreshAppData, lstAprPercentMap],
+    [
+      allAppData,
+      refreshAllAppData,
+      lstAprPercentMap,
+      appData,
+      mainMarketAppData,
+      setSelectedLendingMarketId,
+    ],
   );
 
   return (

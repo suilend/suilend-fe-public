@@ -6,7 +6,6 @@ import {
   shallowPushQuery,
   useSettingsContext,
 } from "@suilend/frontend-sui-next";
-import { LENDING_MARKETS } from "@suilend/sdk";
 
 import AddLendingMarketDialog from "@/components/admin/AddLendingMarketDialog";
 import {
@@ -21,6 +20,7 @@ import ThirdPartyFeesTab from "@/components/admin/thirdPartyFees/ThirdPartyFeesT
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import StandardSelect from "@/components/shared/StandardSelect";
 import Tabs from "@/components/shared/Tabs";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   TAB = "tab",
@@ -33,9 +33,9 @@ function Page() {
   };
 
   const { explorer } = useSettingsContext();
+  const { allAppData } = useLoadedAppContext();
 
-  const { selectedLendingMarketId, setSelectedLendingMarketId } =
-    useAdminContext();
+  const { appData, setSelectedLendingMarketId } = useAdminContext();
 
   // Tabs
   enum Tab {
@@ -81,17 +81,17 @@ function Page() {
 
             <div className="flex-1">
               <StandardSelect
-                items={LENDING_MARKETS.map((l) => ({
-                  ...l,
-                  name: `${l.name} (${formatId(l.id)})`,
+                items={allAppData.map((a) => ({
+                  id: a.lendingMarket.id,
+                  name: `${a.lendingMarket.name} (${formatId(a.lendingMarket.id)})`,
                 }))}
-                value={selectedLendingMarketId}
+                value={appData.lendingMarket.id}
                 onChange={setSelectedLendingMarketId}
               />
             </div>
 
             <OpenOnExplorerButton
-              url={explorer.buildObjectUrl(selectedLendingMarketId)}
+              url={explorer.buildObjectUrl(appData.lendingMarket.id)}
             />
           </div>
 

@@ -6,8 +6,10 @@ import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DiffLine from "@/components/admin/DiffLine";
 import RateLimiterConfig, {
   ConfigState,
@@ -17,7 +19,6 @@ import RateLimiterConfig, {
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DiffProps {
@@ -45,11 +46,12 @@ function Diff({ initialState, currentState }: DiffProps) {
 }
 
 export default function RateLimiterConfigDialog() {
-  const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refresh } = useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = address === ADMIN_ADDRESS;
 
   const getInitialConfigState = (
     config: ParsedRateLimiter["config"],
@@ -68,15 +70,16 @@ export default function RateLimiterConfigDialog() {
 
   // Submit
   const submit = async () => {
-    if (!userData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!address) throw new Error("Wallet not connected");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the admin wallet");
 
     const transaction = new Transaction();
     const newConfig = parseConfigState(configState);
 
     try {
-      suilendClient.updateRateLimiterConfig(
-        userData.lendingMarketOwnerCapId,
+      appData.suilendClient.updateRateLimiterConfig(
+        appData.lendingMarket.ownerCapId,
         transaction,
         newConfig,
       );

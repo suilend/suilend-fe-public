@@ -7,18 +7,19 @@ import { toast } from "sonner";
 import { formatToken, getToken, isCTokenCoinType } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function RedeemCTokensDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
   const { balancesCoinMetadataMap, getBalance, refresh } =
     useLoadedUserContext();
+
+  const { appData } = useAdminContext();
 
   const coinTypes = useMemo(
     () =>
@@ -43,7 +44,7 @@ export default function RedeemCTokensDialog() {
     // await signExecuteAndWaitForTransaction(transaction);
 
     try {
-      await suilendClient.redeemCtokensAndWithdrawLiquidity(
+      await appData.suilendClient.redeemCtokensAndWithdrawLiquidity(
         address,
         coinTypes,
         transaction,

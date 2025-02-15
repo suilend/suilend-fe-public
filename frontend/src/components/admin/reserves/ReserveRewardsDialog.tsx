@@ -6,8 +6,10 @@ import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";
 import PoolRewardsTable from "@/components/admin/reserves/PoolRewardsTable";
 import Button from "@/components/shared/Button";
@@ -16,7 +18,6 @@ import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tabs from "@/components/shared/Tabs";
 import { TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
@@ -36,8 +37,11 @@ export default function ReserveRewardsDialog({
   };
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { refresh } = useLoadedUserContext();
+
+  const { appData } = useAdminContext();
+
+  const isEditable = address === ADMIN_ADDRESS;
 
   // Tabs
   enum Tab {
@@ -67,8 +71,8 @@ export default function ReserveRewardsDialog({
 
   const onCancelReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!userData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the admin wallet");
 
     const transaction = new Transaction();
 
@@ -78,8 +82,8 @@ export default function ReserveRewardsDialog({
     const rewardCoinType = poolReward.coinType;
 
     try {
-      const [unclaimedRewards] = suilendClient.cancelReward(
-        userData.lendingMarketOwnerCapId,
+      const [unclaimedRewards] = appData.suilendClient.cancelReward(
+        appData.lendingMarket.ownerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
@@ -102,8 +106,8 @@ export default function ReserveRewardsDialog({
 
   const onCloseReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!userData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the admin wallet");
 
     const transaction = new Transaction();
 
@@ -113,8 +117,8 @@ export default function ReserveRewardsDialog({
     const rewardCoinType = poolReward.coinType;
 
     try {
-      const [unclaimedRewards] = suilendClient.closeReward(
-        userData.lendingMarketOwnerCapId,
+      const [unclaimedRewards] = appData.suilendClient.closeReward(
+        appData.lendingMarket.ownerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,

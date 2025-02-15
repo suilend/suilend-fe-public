@@ -5,11 +5,13 @@ import LoopingCard from "@/components/dashboard/account/LoopingCard";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
+import { MarketContextProvider } from "@/components/dashboard/MarketContext";
 import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
 import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCard";
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import WalletAssetsCard from "@/components/dashboard/WalletBalancesCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 
@@ -29,6 +31,8 @@ function Cards() {
 export default function Home() {
   const { lg } = useBreakpoint();
 
+  const { allAppData } = useLoadedAppContext();
+
   return (
     <DashboardContextProvider>
       <Head>
@@ -41,11 +45,17 @@ export default function Home() {
         {!lg ? (
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
-            <div className="flex flex-col gap-2">
+            <div className="flex w-full flex-col gap-2">
               <Cards />
             </div>
 
-            <MarketCard />
+            <div className="flex w-full flex-col gap-4">
+              {allAppData.map((a) => (
+                <MarketContextProvider key={a.lendingMarket.id} appData={a}>
+                  <MarketCard />
+                </MarketContextProvider>
+              ))}
+            </div>
           </div>
         ) : (
           // Horizontal layout
@@ -54,7 +64,11 @@ export default function Home() {
               className="flex w-full min-w-0 flex-col gap-4"
               style={{ paddingRight: 360 + 8 * 4 }}
             >
-              <MarketCard />
+              {allAppData.map((a) => (
+                <MarketContextProvider key={a.lendingMarket.id} appData={a}>
+                  <MarketCard />
+                </MarketContextProvider>
+              ))}
             </div>
 
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">

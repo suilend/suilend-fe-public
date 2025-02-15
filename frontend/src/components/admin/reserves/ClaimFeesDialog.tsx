@@ -12,13 +12,13 @@ import {
 } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Spinner from "@/components/shared/Spinner";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +29,9 @@ interface ClaimFeesDialogProps {
 export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
+
+  const { appData } = useAdminContext();
 
   // Reserves
   const reserves = useMemo(
@@ -95,7 +96,7 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
 
     try {
       for (const _reserve of reserves)
-        suilendClient.claimFees(transaction, _reserve.coinType);
+        appData.suilendClient.claimFees(transaction, _reserve.coinType);
 
       await signExecuteAndWaitForTransaction(transaction);
 

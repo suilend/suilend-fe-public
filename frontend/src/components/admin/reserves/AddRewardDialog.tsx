@@ -7,14 +7,15 @@ import { toast } from "sonner";
 
 import { formatToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface AddRewardDialogProps {
@@ -27,11 +28,12 @@ export default function AddRewardDialog({
   isDepositReward,
 }: AddRewardDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
-  const { userData, balancesCoinMetadataMap, getBalance, refresh } =
+  const { balancesCoinMetadataMap, getBalance, refresh } =
     useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = address === ADMIN_ADDRESS;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -57,8 +59,8 @@ export default function AddRewardDialog({
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!userData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the admin wallet");
 
     if (coinType === undefined) {
       toast.error("Select a coin");
@@ -97,9 +99,9 @@ export default function AddRewardDialog({
       .toString();
 
     try {
-      await suilendClient.addReward(
+      await appData.suilendClient.addReward(
         address,
-        userData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
         reserve.arrayIndex,
         isDepositReward,
         coinType,

@@ -10,14 +10,13 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import { SuilendClient } from "@suilend/sdk";
+import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Input, { getInputId } from "@/components/shared/Input";
 import { TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface FeeReceiverRow {
@@ -28,13 +27,12 @@ interface FeeReceiverRow {
 
 export default function FeeReceiversCard() {
   const { suiClient } = useSettingsContext();
-  const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refresh } = useLoadedUserContext();
 
-  const { selectedLendingMarketId } = useAdminContext();
+  const { appData } = useAdminContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   // State
   const initialFeeReceiverRowsRef = useRef<FeeReceiverRow[] | undefined>(
@@ -47,7 +45,7 @@ export default function FeeReceiversCard() {
       try {
         const feeReceivers = await SuilendClient.getFeeReceivers(
           suiClient,
-          selectedLendingMarketId,
+          appData.lendingMarket.id,
         );
 
         const rows: FeeReceiverRow[] = feeReceivers.receivers.map(
@@ -64,7 +62,7 @@ export default function FeeReceiversCard() {
         console.error(err);
       }
     })();
-  }, [suiClient, selectedLendingMarketId]);
+  }, [suiClient, appData.lendingMarket.id]);
 
   const onChange = (id: string, key: keyof FeeReceiverRow) => (value: string) =>
     setFeeReceiverRows((prev) =>
@@ -95,15 +93,16 @@ export default function FeeReceiversCard() {
   };
 
   const submit = async () => {
-    if (!userData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!address) throw new Error("Wallet not connected");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the admin wallet");
 
     const transaction = new Transaction();
 
     try {
-      suilendClient.setFeeReceiversAndWeights(
+      appData.suilendClient.setFeeReceiversAndWeights(
         transaction,
-        userData.lendingMarketOwnerCapId!,
+        appData.lendingMarket.ownerCapId,
         feeReceiverRows.map((r) => r.address),
         feeReceiverRows.map((r) => BigInt(r.weight)),
       );

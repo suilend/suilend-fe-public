@@ -4,7 +4,11 @@ import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
 import { formatNumber } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
 
 import DataTable, {
@@ -15,7 +19,6 @@ import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 interface RowData {
@@ -44,9 +47,9 @@ export default function PoolRewardsTable({
   onCloseReward,
 }: PoolRewardsTableProps) {
   const { explorer } = useSettingsContext();
-  const { userData } = useLoadedUserContext();
+  const { address } = useWalletContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   const columns: ColumnDef<RowData>[] = [
     {

@@ -2,15 +2,15 @@ import { useState } from "react";
 
 import { Info } from "lucide-react";
 
+import { useMarketContext } from "@/components/dashboard/MarketContext";
 import Button from "@/components/shared/Button";
 import Popover from "@/components/shared/Popover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getFormattedMaxOutflow } from "@/lib/rateLimiter";
 import { cn } from "@/lib/utils";
 
 export default function MarketDetailsPopover() {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useMarketContext();
 
   const formattedOutflow = getFormattedMaxOutflow(
     appData.lendingMarket.rateLimiter,

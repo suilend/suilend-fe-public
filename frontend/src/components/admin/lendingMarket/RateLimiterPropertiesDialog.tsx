@@ -1,14 +1,14 @@
 import { formatISO } from "date-fns";
 import { TableProperties } from "lucide-react";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function RateLimiterPropertiesDialog() {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useAdminContext();
 
   const rateLimiter = appData.lendingMarket.rateLimiter;
 
