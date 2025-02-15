@@ -4,16 +4,17 @@ import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import { TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function MintObligationOwnerCapDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
+
+  const { appData } = useAdminContext();
 
   // Submit
   const submit = async () => {
@@ -23,7 +24,7 @@ export default function MintObligationOwnerCapDialog() {
 
     try {
       const createdObligationOwnerCap =
-        suilendClient.createObligation(transaction);
+        appData.suilendClient.createObligation(transaction);
 
       transaction.transferObjects(
         [createdObligationOwnerCap],

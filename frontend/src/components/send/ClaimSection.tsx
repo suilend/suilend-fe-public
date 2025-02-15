@@ -125,7 +125,7 @@ function RedeemTabContent({
 }: RedeemTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { userData, getBalance } = useLoadedUserContext();
 
   const {
@@ -175,7 +175,12 @@ function RedeemTabContent({
 
     try {
       if (hasSendPointsToRedeem)
-        redeemSendPointsMsend(suilendClient, userData, address, transaction);
+        redeemSendPointsMsend(
+          appData.suilendClient,
+          userData,
+          address,
+          transaction,
+        );
       if (hasSuilendCapsulesToRedeem)
         redeemSuilendCapsulesMsend(
           Object.values(userAllocations.suilendCapsules.ownedObjectsMap).flat(),
@@ -446,7 +451,7 @@ const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
 function ClaimTabContent() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { userData, getBalance, obligationOwnerCap } = useLoadedUserContext();
 
   const {
@@ -577,7 +582,7 @@ function ClaimTabContent() {
       await claimSend(
         rpc,
         suiClient,
-        suilendClient,
+        appData.suilendClient,
         address,
         selectedMsendCoinType,
         claimAmount,

@@ -105,7 +105,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
   return (
     <div className="flex w-full flex-col gap-6">
       {rows.map((row, index) => {
-        const { isDeprecated, title, tooltip, count } = row;
+        const { isIsolated, isDeprecated, title, tooltip, count } = row;
 
         const isHeaderRowExpanded =
           !isDeprecated || headerRowIsExpandedMap[title];
@@ -114,35 +114,37 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
         return (
           <div key={index} className="flex w-full flex-col gap-4">
             {/* Title */}
-            <button
-              className="group flex flex-row items-center gap-2"
-              onClick={
-                !isDeprecated
-                  ? undefined
-                  : () =>
-                      setHeaderRowIsExpandedMap((prev) => ({
-                        ...prev,
-                        [title]: !prev[title],
-                      }))
-              }
-            >
-              {isDeprecated && (
-                <HeaderRowIcon className="-mr-1 h-4 w-4 text-primary" />
-              )}
+            {!(!isIsolated && !isDeprecated) && (
+              <button
+                className="group flex flex-row items-center gap-2"
+                onClick={
+                  !isDeprecated
+                    ? undefined
+                    : () =>
+                        setHeaderRowIsExpandedMap((prev) => ({
+                          ...prev,
+                          [title]: !prev[title],
+                        }))
+                }
+              >
+                {isDeprecated && (
+                  <HeaderRowIcon className="-mr-1 h-4 w-4 text-primary" />
+                )}
 
-              <Tooltip title={tooltip}>
-                <TTitle
-                  className={cn(
-                    "w-max uppercase",
-                    !!tooltip &&
-                      cn("decoration-primary/50", hoverUnderlineClassName),
-                  )}
-                >
-                  {title}
-                </TTitle>
-              </Tooltip>
-              <TLabel>{count}</TLabel>
-            </button>
+                <Tooltip title={tooltip}>
+                  <TTitle
+                    className={cn(
+                      "w-max uppercase",
+                      !!tooltip &&
+                        cn("decoration-primary/50", hoverUnderlineClassName),
+                    )}
+                  >
+                    {title}
+                  </TTitle>
+                </Tooltip>
+                <TLabel>{count}</TLabel>
+              </button>
+            )}
 
             {/* Cards */}
             {isHeaderRowExpanded && (

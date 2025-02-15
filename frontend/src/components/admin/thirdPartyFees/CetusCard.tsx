@@ -79,6 +79,9 @@ export default function CetusCard() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the cap owner wallet");
+
     if (!feesMap) return;
 
     try {

@@ -5,8 +5,8 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
+import { useAppContext } from "@/contexts/AppContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
-import { useUserContext } from "@/contexts/UserContext";
 import {
   ABOUT_URL,
   ADMIN_URL,
@@ -21,7 +21,7 @@ import {
 
 export default function NavigationLinks() {
   const { address } = useWalletContext();
-  const { userData } = useUserContext();
+  const { appData } = useAppContext();
 
   return (
     <>
@@ -47,7 +47,7 @@ export default function NavigationLinks() {
       </div>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>
-      {!!userData?.lendingMarketOwnerCapId && !isInMsafeApp() && (
+      {!!appData?.lendingMarketOwnerCapId && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
       )}
 

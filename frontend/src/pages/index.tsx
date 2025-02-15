@@ -4,8 +4,7 @@ import AccountPositionCard from "@/components/dashboard/account/AccountPositionC
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
-import MarketTable from "@/components/dashboard/market-table/MarketTable";
-import MarketOverview from "@/components/dashboard/MarketOverview";
+import MarketCard from "@/components/dashboard/MarketCard";
 import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
 import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCard";
 import RewardsCard from "@/components/dashboard/RewardsCard";
@@ -42,25 +41,24 @@ export default function Home() {
         {!lg ? (
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
-            <div className="flex flex-col gap-2">
+            <div className="flex w-full flex-col gap-2">
               <Cards />
             </div>
 
-            <div className="flex w-full flex-col gap-6">
-              <MarketOverview />
-              <MarketTable />
+            <div className="flex w-full flex-col gap-4">
+              <MarketCard />
             </div>
           </div>
         ) : (
           // Horizontal layout
           <div className="relative w-full flex-1">
             <div
-              className="flex w-full min-w-0 flex-col gap-6"
+              className="flex w-full min-w-0 flex-col gap-4"
               style={{ paddingRight: 360 + 8 * 4 }}
             >
-              <MarketOverview />
-              <MarketTable />
+              <MarketCard />
             </div>
+
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
               <div className="flex w-full shrink-0 flex-col gap-4">
                 <Cards />

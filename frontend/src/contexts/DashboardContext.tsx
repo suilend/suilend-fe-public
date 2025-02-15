@@ -47,7 +47,7 @@ export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // First deposit
@@ -78,14 +78,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           }));
 
         if (isDepositing)
-          suilendClient.claimRewardsAndDeposit(
+          appData.suilendClient.claimRewardsAndDeposit(
             address,
             obligationOwnerCap.id,
             rewards,
             transaction,
           );
         else
-          suilendClient.claimRewardsAndSendToUser(
+          appData.suilendClient.claimRewardsAndSendToUser(
             address,
             obligationOwnerCap.id,
             rewards,
@@ -102,7 +102,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     },
     [
       address,
-      suilendClient,
+      appData.suilendClient,
       signExecuteAndWaitForTransaction,
       obligationOwnerCap,
       obligation,

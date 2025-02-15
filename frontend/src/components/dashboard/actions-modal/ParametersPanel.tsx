@@ -14,6 +14,7 @@ import {
   getPythOracleUrl,
 } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -31,12 +32,6 @@ import {
   OPEN_LTV_TOOLTIP,
 } from "@/lib/tooltips";
 import { cn } from "@/lib/utils";
-
-// TODO: Update beta market values
-const ADMIN_CAP_ID =
-  "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927";
-const ADMIN_ADDRESS =
-  "0xb1ffbc2e1915f44b8f271a703becc1bf8aa79bc22431a58900a102892b783c25";
 
 export enum ParametersPanelTab {
   ADVANCED = "advanced",
@@ -248,7 +243,7 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
 
 function ObjectsTabContent({ side, reserve }: TabContentProps) {
   const { explorer } = useSettingsContext();
-  const { suilendClient } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
 
   const pythOracleUrl = getPythOracleUrl(reserve.coinType);
 
@@ -264,9 +259,9 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
       />
       <LabelWithValue
         label="Lending market"
-        value={suilendClient.lendingMarket.id}
+        value={appData.lendingMarket.id}
         isId
-        url={explorer.buildObjectUrl(suilendClient.lendingMarket.id)}
+        url={explorer.buildObjectUrl(appData.lendingMarket.id)}
         isExplorerUrl
         horizontal
       />
@@ -303,9 +298,9 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
       />
       <LabelWithValue
         label="Admin cap"
-        value={ADMIN_CAP_ID}
+        value={appData.lendingMarket.ownerCapId}
         isId
-        url={explorer.buildObjectUrl(ADMIN_CAP_ID)}
+        url={explorer.buildObjectUrl(appData.lendingMarket.ownerCapId)}
         isExplorerUrl
         horizontal
       />

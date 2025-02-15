@@ -21,11 +21,7 @@ import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import {
-  LENDING_MARKET_ID,
-  LENDING_MARKET_TYPE,
-  SuilendClient,
-} from "@suilend/sdk/client";
+import { SuilendClient } from "@suilend/sdk/client";
 import {
   ParsedObligation,
   parseObligation,
@@ -39,6 +35,7 @@ import {
 } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DataTable, {
   decimalSortingFn,
   tableHeader,
@@ -49,7 +46,6 @@ import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface RowData {
@@ -68,8 +64,9 @@ export default function LiquidateDialog({
 }: LiquidateDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
   const { getBalance } = useLoadedUserContext();
+
+  const { appData } = useAdminContext();
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);
@@ -106,12 +103,12 @@ export default function LiquidateDialog({
     await fetchObligationOwner(obligationId);
     const rawLendingMarket = await LendingMarket.fetch(
       suiClient,
-      phantom(LENDING_MARKET_TYPE),
-      LENDING_MARKET_ID,
+      phantom(appData.lendingMarket.type),
+      appData.lendingMarket.id,
     );
     const rawObligation = await SuilendClient.getObligation(
       obligationId,
-      [LENDING_MARKET_TYPE],
+      [appData.lendingMarket.type],
       suiClient,
     );
     let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];
@@ -195,7 +192,7 @@ export default function LiquidateDialog({
         useGasCoin: isSui(borrow.coinType),
       })(transaction);
 
-      const [redeemCoin] = await suilendClient.liquidateAndRedeem(
+      const [redeemCoin] = await appData.suilendClient.liquidateAndRedeem(
         transaction,
         obligation.original,
         borrow.coinType,

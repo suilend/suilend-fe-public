@@ -7,7 +7,6 @@ import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
-import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "@suilend/sdk/client";
 import {
   ParsedObligation,
   parseObligation,
@@ -15,6 +14,7 @@ import {
 import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import LiquidateDialog from "@/components/admin/liquidate/LiquidateDialog";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
 import Button from "@/components/shared/Button";
@@ -25,11 +25,11 @@ import Switch from "@/components/shared/Switch";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import Value from "@/components/shared/Value";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+
+  const { appData } = useAdminContext();
 
   const [minDepositValue, setMinDepositValue] = useState<number>(0);
   const [minWeightedBorrowValue, setMinWeightedBorrowValue] =
@@ -51,8 +51,8 @@ export default function ObligationsDialog() {
   const fetchObligationData = async () => {
     const rawLendingMarket = await LendingMarket.fetch(
       suiClient,
-      phantom(LENDING_MARKET_TYPE),
-      LENDING_MARKET_ID,
+      phantom(appData.lendingMarket.type),
+      appData.lendingMarket.id,
     );
     const refreshedReserves = await simulate.refreshReservePrice(
       rawLendingMarket.reserves.map((r) =>
@@ -70,7 +70,8 @@ export default function ObligationsDialog() {
     }
     fetchAllObligationsForMarketWithHandler(
       suiClient,
-      LENDING_MARKET_ID,
+      appData.lendingMarket.id,
+      appData.lendingMarket.type,
       chunkHandler,
     );
   };

@@ -33,6 +33,8 @@ export default function SuilendCapsulesCard() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the capsules wallet");
 
     const transaction = new Transaction();
 

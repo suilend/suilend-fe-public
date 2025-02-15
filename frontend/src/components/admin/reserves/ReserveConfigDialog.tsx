@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DiffLine, { InterestRateDiffLine } from "@/components/admin/DiffLine";
 import ReserveConfig, {
   ConfigState,
@@ -20,7 +21,6 @@ import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface DiffProps {
@@ -67,10 +67,11 @@ export default function ReserveConfigDialog({
   reserve,
 }: ReserveConfigDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { refresh } = useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   const [pythPriceId, setPythPriceId] = useState<string>(
     reserve.priceIdentifier,
@@ -130,11 +131,11 @@ export default function ReserveConfigDialog({
 
     try {
       const priceUpdateData =
-        await suilendClient.pythConnection.getPriceFeedsUpdateData([
+        await appData.suilendClient.pythConnection.getPriceFeedsUpdateData([
           pythPriceId,
         ]);
-      await suilendClient.pythClient.createPriceFeed(
-        transaction as any,
+      await appData.suilendClient.pythClient.createPriceFeed(
+        transaction,
         priceUpdateData,
       );
 
@@ -150,7 +151,7 @@ export default function ReserveConfigDialog({
 
   const saveChanges = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!userData.lendingMarketOwnerCapId)
+    if (!appData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
@@ -158,14 +159,14 @@ export default function ReserveConfigDialog({
 
     try {
       if (pythPriceId !== initialPythPriceIdRef.current)
-        await suilendClient.changeReservePriceFeed(
-          userData.lendingMarketOwnerCapId,
+        await appData.suilendClient.changeReservePriceFeed(
+          appData.lendingMarketOwnerCapId,
           reserve.coinType,
           pythPriceId,
           transaction,
         );
-      suilendClient.updateReserveConfig(
-        userData.lendingMarketOwnerCapId,
+      appData.suilendClient.updateReserveConfig(
+        appData.lendingMarketOwnerCapId,
         transaction,
         reserve.coinType,
         newConfig,

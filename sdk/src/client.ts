@@ -76,15 +76,55 @@ const WORMHOLE_STATE_ID =
 const PYTH_STATE_ID =
   "0x1f9310238ee9298fb703c3419030b35b22bb1cc37113e3bb5007c99aec79e5b8";
 
+export const ADMIN_ADDRESS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0xa902504c338e17f44dfee1bd1c3cad1ff03326579b9cdcfe2762fc12c46fc033" // beta owner
+  : "0xb1ffbc2e1915f44b8f271a703becc1bf8aa79bc22431a58900a102892b783c25";
+
 const SUILEND_UPGRADE_CAP_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
   ? "0x05da14368a42a351e106806c09727968ae26be77a6741a018239ef0f99d5185e"
   : "0x3d4ef1859c3ee9fc72858f588b56a09da5466e64f8cc4e90a7b3b909fba8a7ae";
-export const LENDING_MARKET_ID = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667"
-  : "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1";
-export const LENDING_MARKET_TYPE = process.env.NEXT_PUBLIC_USE_BETA_MARKET
-  ? "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI"
-  : "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL";
+
+export const LENDING_MARKET_REGISTRY_ID = process.env
+  .NEXT_PUBLIC_USE_BETA_MARKET
+  ? "0x925c9a2336b02fc2b68099837bd66f6b5b4d45cd460e0a4b81708bac6c440eff"
+  : "0x64faff8d91a56c4f55debbb44767b009ee744a70bc2cc8e3bbd2718c92f85931";
+
+export const LENDING_MARKETS = process.env.NEXT_PUBLIC_USE_BETA_MARKET
+  ? [
+      // {
+      //   name: "Old",
+      //   id: "0x850850ef3ec0aa8c3345a2c3c486b571fdc31f3ebcaff931d7f9b9707aace2f8",
+      //   type: "0x2::sui::SUI",
+      //   ownerCapId:
+      //     "0xa92aae3be305687d3abe36deb4d92f78ec17bfce7d8d07972722d1166e4bc6ab",
+      // },
+      {
+        name: "Main market",
+        id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
+        type: "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
+        ownerCapId:
+          "0xf0df3204ecd426bc83f5e5dccb07ea35f1af220a40ec02dfd63fb7f2fea00824",
+      },
+      {
+        name: "Isolated 1",
+        id: "0xb1d89cf9082cedce09d3647f0ebda4a8b5db125aff5d312a8bfd7eefa715bd35",
+        type: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
+        ownerCapId:
+          "0xed8262012d34105c5ac59cf2dd6473d492e6ab7529fe7f9ea6cb1fa8dc2dba56",
+        isHidden: true,
+      },
+    ]
+  : [
+      {
+        name: "Main market",
+        id: "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
+        type: "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
+        ownerCapId:
+          "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
+      },
+    ];
+export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market, for backwards compatibility
+export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // Main market, for backwards compatibility
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({

@@ -126,7 +126,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // Open
@@ -229,11 +229,11 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       try {
         const { obligationOwnerCapId, didCreate } =
           createObligationIfNoneExists(
-            suilendClient,
+            appData.suilendClient,
             transaction,
             obligationOwnerCap,
           );
-        await suilendClient.depositIntoObligation(
+        await appData.suilendClient.depositIntoObligation(
           address,
           coinType,
           value,
@@ -253,7 +253,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     },
     [
       address,
-      suilendClient,
+      appData.suilendClient,
       signExecuteAndWaitForTransaction,
       obligationOwnerCap,
     ],
@@ -268,7 +268,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       const transaction = new Transaction();
 
       try {
-        await suilendClient.borrowAndSendToUser(
+        await appData.suilendClient.borrowAndSendToUser(
           address,
           obligationOwnerCap.id,
           obligation.id,
@@ -287,7 +287,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     },
     [
       address,
-      suilendClient,
+      appData.suilendClient,
       signExecuteAndWaitForTransaction,
       obligationOwnerCap,
       obligation,
@@ -303,7 +303,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       const transaction = new Transaction();
 
       try {
-        await suilendClient.withdrawAndSendToUser(
+        await appData.suilendClient.withdrawAndSendToUser(
           address,
           obligationOwnerCap.id,
           obligation.id,
@@ -322,7 +322,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     },
     [
       address,
-      suilendClient,
+      appData.suilendClient,
       signExecuteAndWaitForTransaction,
       obligationOwnerCap,
       obligation,
@@ -337,7 +337,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       const transaction = new Transaction();
 
       try {
-        await suilendClient.repayIntoObligation(
+        await appData.suilendClient.repayIntoObligation(
           address,
           obligation.id,
           coinType,
@@ -353,7 +353,12 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
-    [address, suilendClient, signExecuteAndWaitForTransaction, obligation],
+    [
+      address,
+      appData.suilendClient,
+      signExecuteAndWaitForTransaction,
+      obligation,
+    ],
   );
 
   // Context

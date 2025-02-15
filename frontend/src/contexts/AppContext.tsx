@@ -19,12 +19,14 @@ import useFetchLstAprPercentMap from "@/fetchers/useFetchLstAprPercentMap";
 
 export interface AppData {
   suilendClient: SuilendClient;
+  lendingMarketOwnerCapId: string | undefined;
 
   lendingMarket: ParsedLendingMarket;
   coinMetadataMap: Record<string, CoinMetadata>;
 
-  reserveMap: Record<string, ParsedReserve>;
   refreshedRawReserves: Reserve<string>[];
+  reserveMap: Record<string, ParsedReserve>;
+  filteredReserves: ParsedReserve[];
   reserveCoinTypes: string[];
   reserveCoinMetadataMap: Record<string, CoinMetadata>;
 
@@ -36,23 +38,29 @@ export interface AppData {
 export type LstAprPercentMap = Record<string, BigNumber>;
 
 interface AppContext {
-  suilendClient: SuilendClient | undefined;
+  allAppData: AppData[] | undefined;
+  refreshAllAppData: () => Promise<void>;
+
   appData: AppData | undefined;
-  refreshAppData: () => Promise<void>;
+
   lstAprPercentMap: LstAprPercentMap | undefined;
 }
 type LoadedAppContext = AppContext & {
-  suilendClient: SuilendClient;
+  allAppData: AppData[];
+
   appData: AppData;
+
   lstAprPercentMap: LstAprPercentMap;
 };
 
 const AppContext = createContext<AppContext>({
-  suilendClient: undefined,
-  appData: undefined,
-  refreshAppData: async () => {
+  allAppData: undefined,
+  refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
+
+  appData: undefined,
+
   lstAprPercentMap: undefined,
 });
 
@@ -60,25 +68,30 @@ export const useAppContext = () => useContext(AppContext);
 export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  // App data
-  const { data: appData, mutateData: mutateAppData } = useFetchAppData();
+  // All app data
+  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
 
-  const refreshAppData = useCallback(async () => {
-    await mutateAppData();
-  }, [mutateAppData]);
+  const refreshAllAppData = useCallback(async () => {
+    await mutateAllAppData();
+  }, [mutateAllAppData]);
 
   // LST APRs
   const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
 
+  // Lending market
+  const appData = useMemo(() => allAppData?.[0], [allAppData]);
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
-      suilendClient: appData?.suilendClient,
+      allAppData,
+      refreshAllAppData,
+
       appData,
-      refreshAppData,
+
       lstAprPercentMap,
     }),
-    [appData, refreshAppData, lstAprPercentMap],
+    [allAppData, refreshAllAppData, appData, lstAprPercentMap],
   );
 
   return (

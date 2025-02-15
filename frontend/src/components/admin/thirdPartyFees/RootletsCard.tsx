@@ -31,6 +31,8 @@ export default function RootletsCard() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
+    if (!isEditable)
+      throw new Error("Connected wallet is not the cap owner wallet");
 
     const transaction = new Transaction();
 

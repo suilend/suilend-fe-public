@@ -134,6 +134,7 @@ async function main() {
   const obligations = await fetchAllObligationsForMarket(
     client,
     LENDING_MARKET_ID,
+    LENDING_MARKET_TYPE,
   );
   console.log("Fetched obligations");
 

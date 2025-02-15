@@ -4,28 +4,33 @@ import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
 import { TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function MigrateCard() {
-  const { signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { refresh } = useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   // Submit
   const submit = async () => {
-    if (!userData.lendingMarketOwnerCapId)
+    if (!address) throw new Error("Wallet not connected");
+    if (!appData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     const transaction = new Transaction();
 
     try {
-      suilendClient.migrate(transaction, userData.lendingMarketOwnerCapId);
+      appData.suilendClient.migrate(
+        transaction,
+        appData.lendingMarketOwnerCapId,
+      );
 
       await signExecuteAndWaitForTransaction(transaction);
 

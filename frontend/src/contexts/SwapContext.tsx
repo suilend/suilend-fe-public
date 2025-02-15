@@ -190,12 +190,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { appData } = useLoadedAppContext();
-  const {
-    rawBalancesMap,
-    balancesCoinMetadataMap,
-    obligation,
-    filteredReserves,
-  } = useLoadedUserContext();
+  const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
+    useLoadedUserContext();
 
   // SDKs - Aftermath
   const aftermathSdk = useMemo(() => {
@@ -419,7 +415,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       const isTokenInValid = !!obligation.deposits.find(
         (d) => d.coinType === tokenIn.coinType,
       );
-      const isTokenOutValid = !!filteredReserves.find(
+      const isTokenOutValid = !!appData.filteredReserves.find(
         (r) => r.coinType === tokenOut.coinType,
       );
       if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
@@ -463,7 +459,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     isUsingDeposits,
     obligation?.deposits,
     setIsUsingDeposits,
-    filteredReserves,
+    appData.filteredReserves,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,

@@ -10,18 +10,18 @@ import pLimit from "p-limit";
 import { phantom } from "../_generated/_framework/reified";
 import { PACKAGE_ID } from "../_generated/suilend";
 import { Obligation } from "../_generated/suilend/obligation/structs";
-import { LENDING_MARKET_TYPE } from "../client";
 
 import * as parsed from "./events";
 
 export async function fetchAllObligationsForMarketWithHandler(
   client: SuiClient,
-  marketAddress: string,
+  lendingMarketId: string,
+  lendingMarketType: string,
   chunkHandler: (obligations: Obligation<string>[]) => Promise<void>,
 ) {
   const limit = pLimit(30);
   const rawLendingMarket = await client.getObject({
-    id: marketAddress,
+    id: lendingMarketId,
     options: {
       showType: true,
       showContent: true,
@@ -54,7 +54,7 @@ export async function fetchAllObligationsForMarketWithHandler(
         for (const rawObligation of obligationObjects) {
           obligations.push(
             Obligation.fromBcs(
-              phantom(LENDING_MARKET_TYPE),
+              phantom(lendingMarketType),
               fromBase64((rawObligation.data?.bcs as any).bcsBytes),
             ),
           );
@@ -68,10 +68,11 @@ export async function fetchAllObligationsForMarketWithHandler(
 
 export async function fetchAllObligationsForMarket(
   client: SuiClient,
-  marketAddress: string,
+  lendingMarketId: string,
+  lendingMarketType: string,
 ) {
   const rawLendingMarket = await client.getObject({
-    id: marketAddress,
+    id: lendingMarketId,
     options: {
       showType: true,
       showContent: true,
@@ -102,7 +103,7 @@ export async function fetchAllObligationsForMarket(
   for (const rawObligation of obligationObjects) {
     obligations.push(
       Obligation.fromBcs(
-        phantom(LENDING_MARKET_TYPE),
+        phantom(lendingMarketType),
         fromBase64((rawObligation.data?.bcs as any).bcsBytes),
       ),
     );

@@ -7,6 +7,7 @@ import { formatNumber } from "@suilend/frontend-sui";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import DataTable, {
   decimalSortingFn,
   tableHeader,
@@ -15,7 +16,6 @@ import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 interface RowData {
@@ -44,9 +44,10 @@ export default function PoolRewardsTable({
   onCloseReward,
 }: PoolRewardsTableProps) {
   const { explorer } = useSettingsContext();
-  const { userData } = useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   const columns: ColumnDef<RowData>[] = [
     {

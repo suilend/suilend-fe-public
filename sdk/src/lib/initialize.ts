@@ -4,6 +4,7 @@ import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
 
 import {
+  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_AUSD_COINTYPE,
   NORMALIZED_BLUE_COINTYPE,
   NORMALIZED_BUCK_COINTYPE,
@@ -33,6 +34,8 @@ import {
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   getCoinMetadataMap,
   getPrice,
+  isDeprecated,
+  isInMsafeApp,
   isSendPoints,
 } from "@suilend/frontend-sui";
 
@@ -83,6 +86,7 @@ export const RESERVES_CUSTOM_ORDER = [
 export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
+  hasLendingMarketOwnerCap?: boolean,
 ) => {
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
@@ -170,12 +174,29 @@ export const initializeSuilend = async (
     {},
   ) as Record<string, ParsedReserve>;
 
+  const filteredReserves = lendingMarket.reserves
+    .filter((reserve) =>
+      !isInMsafeApp()
+        ? true
+        : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType),
+    )
+    .filter((reserve) => {
+      return (
+        (reserve.coinType === NORMALIZED_upSUI_COINTYPE &&
+          Date.now() >= 1734609600000) || // 2024-12-19 12:00:00 UTC
+        isDeprecated(reserve.coinType) || // Always show deprecated reserves
+        reserve.config.depositLimit.gt(0) ||
+        hasLendingMarketOwnerCap
+      );
+    });
+
   return {
     lendingMarket,
     coinMetadataMap,
 
-    reserveMap,
     refreshedRawReserves,
+    reserveMap,
+    filteredReserves,
     reserveCoinTypes: uniqueReserveCoinTypes,
     reserveCoinMetadataMap,
 

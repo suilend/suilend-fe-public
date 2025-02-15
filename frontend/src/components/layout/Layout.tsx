@@ -15,7 +15,7 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { suilendClient, appData, lstAprPercentMap } = useAppContext();
+  const { allAppData, appData, lstAprPercentMap } = useAppContext();
   const { userData } = useUserContext();
   const { season, seasonMap } = usePointsContext();
 
@@ -61,7 +61,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
-          {!suilendClient || !appData || !lstAprPercentMap || !userData ? (
+          {!allAppData || !appData || !lstAprPercentMap || !userData ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>

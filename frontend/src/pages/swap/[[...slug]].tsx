@@ -95,7 +95,7 @@ const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
+  const { appData } = useLoadedAppContext();
   const { getBalance, refresh, obligation, obligationOwnerCap } =
     useLoadedUserContext();
 
@@ -970,7 +970,7 @@ function Page() {
         ).toString();
 
         // TODO: Support MAX
-        const [_coinIn] = await suilendClient.withdraw(
+        const [_coinIn] = await appData.suilendClient.withdraw(
           obligationOwnerCap.id,
           obligation.id,
           tokenIn.coinType,
@@ -993,11 +993,11 @@ function Page() {
 
         const { obligationOwnerCapId, didCreate } =
           createObligationIfNoneExists(
-            suilendClient,
+            appData.suilendClient,
             transaction,
             obligationOwnerCap,
           );
-        suilendClient.deposit(
+        appData.suilendClient.deposit(
           coinOut,
           tokenOutReserve.coinType,
           obligationOwnerCapId,

@@ -1,64 +1,88 @@
 import useSWR from "swr";
 
-import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
-import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
 import {
-  LENDING_MARKET_ID,
-  LENDING_MARKET_TYPE,
-  SuilendClient,
-} from "@suilend/sdk/client";
+  showErrorToast,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
+import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
+import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
 
 import { AppData } from "@/contexts/AppContext";
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
 
   // Data
   const dataFetcher = async () => {
-    const suilendClient = await SuilendClient.initialize(
-      LENDING_MARKET_ID,
-      LENDING_MARKET_TYPE,
-      suiClient,
-    );
+    const result: AppData[] = [];
 
-    const {
-      lendingMarket,
-      coinMetadataMap,
+    for (const LENDING_MARKET of LENDING_MARKETS) {
+      const suilendClient = await SuilendClient.initialize(
+        LENDING_MARKET.id,
+        LENDING_MARKET.type,
+        suiClient,
+      );
 
-      reserveMap,
-      refreshedRawReserves,
-      reserveCoinTypes,
-      reserveCoinMetadataMap,
+      const lendingMarketOwnerCapId = !address
+        ? undefined
+        : await SuilendClient.getLendingMarketOwnerCapId(
+            address,
+            suilendClient.lendingMarket.$typeArgs,
+            suiClient,
+          );
 
-      rewardCoinTypes,
-      activeRewardCoinTypes,
-      rewardCoinMetadataMap,
-    } = await initializeSuilend(suiClient, suilendClient);
+      if (LENDING_MARKET.isHidden && !lendingMarketOwnerCapId) continue;
 
-    const { rewardPriceMap } = await initializeSuilendRewards(
-      reserveMap,
-      activeRewardCoinTypes,
-    );
+      const {
+        lendingMarket,
+        coinMetadataMap,
 
-    return {
-      suilendClient,
+        refreshedRawReserves,
+        reserveMap,
+        filteredReserves,
+        reserveCoinTypes,
+        reserveCoinMetadataMap,
 
-      lendingMarket,
-      coinMetadataMap,
+        rewardCoinTypes,
+        activeRewardCoinTypes,
+        rewardCoinMetadataMap,
+      } = await initializeSuilend(
+        suiClient,
+        suilendClient,
+        !!lendingMarketOwnerCapId,
+      );
 
-      reserveMap,
-      refreshedRawReserves,
-      reserveCoinTypes,
-      reserveCoinMetadataMap,
+      const { rewardPriceMap } = await initializeSuilendRewards(
+        reserveMap,
+        activeRewardCoinTypes,
+      );
 
-      rewardPriceMap,
-      rewardCoinTypes,
-      activeRewardCoinTypes,
-      rewardCoinMetadataMap,
-    };
+      result.push({
+        suilendClient,
+        lendingMarketOwnerCapId,
+
+        lendingMarket,
+        coinMetadataMap,
+
+        refreshedRawReserves,
+        reserveMap,
+        filteredReserves,
+        reserveCoinTypes,
+        reserveCoinMetadataMap,
+
+        rewardPriceMap,
+        rewardCoinTypes,
+        activeRewardCoinTypes,
+        rewardCoinMetadataMap,
+      });
+    }
+
+    return result;
   };
 
-  const { data, mutate } = useSWR<AppData>("appData", dataFetcher, {
+  const { data, mutate } = useSWR<AppData[]>("appData", dataFetcher, {
     refreshInterval: 30 * 1000,
     onSuccess: (data) => {
       console.log("Refreshed app data", data);

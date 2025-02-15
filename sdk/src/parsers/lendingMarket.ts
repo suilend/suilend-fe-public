@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 
 import { LendingMarket } from "../_generated/suilend/lending-market/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
+import { LENDING_MARKETS } from "../client";
 
 import { parseRateLimiter } from "./rateLimiter";
 import { parseReserve } from "./reserve";
@@ -16,6 +17,7 @@ export const parseLendingMarket = (
   nowS: number,
 ) => {
   const id = lendingMarket.id;
+  const type = lendingMarket.$typeArgs[0];
   const version = lendingMarket.version;
 
   const parsedReserves = reserves.map((reserve) =>
@@ -45,8 +47,18 @@ export const parseLendingMarket = (
     tvlUsd = tvlUsd.plus(parsedReserve.availableAmountUsd);
   });
 
+  const LENDING_MARKET = LENDING_MARKETS.find((lm) => lm.id === id);
+  if (!LENDING_MARKET)
+    console.error(
+      `Missing LENDING_MARKETS definition for lending market with id: ${id}`,
+    );
+
+  const name = LENDING_MARKET?.name ?? "Unknown";
+  const ownerCapId = LENDING_MARKET?.ownerCapId ?? "Unknown";
+
   return {
     id,
+    type,
     version,
     reserves: parsedReserves,
     obligations,
@@ -58,6 +70,9 @@ export const parseLendingMarket = (
     depositedAmountUsd,
     borrowedAmountUsd,
     tvlUsd,
+
+    name,
+    ownerCapId,
 
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.

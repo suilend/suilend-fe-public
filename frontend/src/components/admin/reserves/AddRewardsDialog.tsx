@@ -8,22 +8,23 @@ import { toast } from "sonner";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { Side } from "@suilend/sdk/lib/types";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
 import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { suilendClient, appData } = useLoadedAppContext();
-  const { userData, balancesCoinMetadataMap, refresh } = useLoadedUserContext();
+  const { balancesCoinMetadataMap, refresh } = useLoadedUserContext();
 
-  const isEditable = !!userData.lendingMarketOwnerCapId;
+  const { appData } = useAdminContext();
+
+  const isEditable = !!appData.lendingMarketOwnerCapId;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -59,7 +60,7 @@ export default function AddRewardsDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!userData.lendingMarketOwnerCapId)
+    if (!appData.lendingMarketOwnerCapId)
       throw new Error("Error: No lending market owner cap");
 
     if (coinType === undefined) {
@@ -103,9 +104,9 @@ export default function AddRewardsDialog() {
             .toString();
 
           if (rewardValue !== "0") {
-            await suilendClient.addReward(
+            await appData.suilendClient.addReward(
               address,
-              userData.lendingMarketOwnerCapId,
+              appData.lendingMarketOwnerCapId,
               reserveArrayIndex,
               side === Side.DEPOSIT,
               coinType,
