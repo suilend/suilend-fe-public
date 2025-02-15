@@ -54,6 +54,7 @@ export const parseLendingMarket = (
     );
 
   const name = LENDING_MARKET?.name ?? "Unknown";
+  const ownerCapId = LENDING_MARKET?.ownerCapId ?? "Unknown";
 
   return {
     id,
@@ -71,6 +72,7 @@ export const parseLendingMarket = (
     tvlUsd,
 
     name,
+    ownerCapId,
 
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.
