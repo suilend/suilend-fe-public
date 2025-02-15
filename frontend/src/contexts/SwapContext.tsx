@@ -189,7 +189,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, filteredReserves } = useLoadedAppContext();
   const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
     useLoadedUserContext();
 
@@ -415,7 +415,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       const isTokenInValid = !!obligation.deposits.find(
         (d) => d.coinType === tokenIn.coinType,
       );
-      const isTokenOutValid = !!appData.filteredReserves.find(
+      const isTokenOutValid = !!filteredReserves.find(
         (r) => r.coinType === tokenOut.coinType,
       );
       if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
@@ -459,7 +459,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     isUsingDeposits,
     obligation?.deposits,
     setIsUsingDeposits,
-    appData.filteredReserves,
+    filteredReserves,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,

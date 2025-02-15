@@ -6,6 +6,7 @@ import { Bolt, Rss, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -71,7 +72,7 @@ export default function ReserveConfigDialog({
 
   const { appData } = useAdminContext();
 
-  const isEditable = !!appData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   const [pythPriceId, setPythPriceId] = useState<string>(
     reserve.priceIdentifier,
@@ -151,8 +152,8 @@ export default function ReserveConfigDialog({
 
   const saveChanges = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     const transaction = new Transaction();
     const newConfig = parseConfigState(configState, reserve.mintDecimals);
@@ -160,13 +161,13 @@ export default function ReserveConfigDialog({
     try {
       if (pythPriceId !== initialPythPriceIdRef.current)
         await appData.suilendClient.changeReservePriceFeed(
-          appData.lendingMarketOwnerCapId,
+          appData.lendingMarket.ownerCapId,
           reserve.coinType,
           pythPriceId,
           transaction,
         );
       appData.suilendClient.updateReserveConfig(
-        appData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
         transaction,
         reserve.coinType,
         newConfig,

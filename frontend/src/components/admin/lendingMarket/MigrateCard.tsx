@@ -3,6 +3,7 @@ import { Package } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
@@ -16,20 +17,20 @@ export default function MigrateCard() {
 
   const { appData } = useAdminContext();
 
-  const isEditable = !!appData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     const transaction = new Transaction();
 
     try {
       appData.suilendClient.migrate(
         transaction,
-        appData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
       );
 
       await signExecuteAndWaitForTransaction(transaction);

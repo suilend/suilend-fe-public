@@ -5,6 +5,7 @@ import { Eraser, Replace } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";
@@ -18,7 +19,7 @@ export default function RemintObligationOwnerCapDialog() {
 
   const { appData } = useAdminContext();
 
-  const isEditable = !!appData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -32,8 +33,8 @@ export default function RemintObligationOwnerCapDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     if (obligationId === "") {
       toast.error("Enter an obligation id");
@@ -45,7 +46,7 @@ export default function RemintObligationOwnerCapDialog() {
     try {
       appData.suilendClient.newObligationOwnerCap(
         transaction,
-        appData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
         address,
         obligationId,
       );

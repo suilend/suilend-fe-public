@@ -169,7 +169,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { appData } = useLoadedAppContext();
+  const { filteredReserves } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
   const {
@@ -200,10 +200,10 @@ export default function TokenSelectionDialog({
 
   const reserveTokens = useMemo(
     () =>
-      appData.filteredReserves
+      filteredReserves
         .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
         .filter(Boolean) as SwapToken[],
-    [appData.filteredReserves, tokens],
+    [filteredReserves, tokens],
   );
 
   const otherTokens = useMemo(
@@ -217,13 +217,13 @@ export default function TokenSelectionDialog({
   );
 
   const depositTokens = useMemo(() => {
-    return appData.filteredReserves
+    return filteredReserves
       .filter((r) =>
         obligation?.deposits.find((d) => d.coinType === r.coinType),
       )
       .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
       .filter(Boolean) as SwapToken[];
-  }, [appData.filteredReserves, obligation, tokens]);
+  }, [filteredReserves, obligation, tokens]);
 
   // Tokens - top
   const topTokens = useMemo(

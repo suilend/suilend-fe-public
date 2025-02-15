@@ -6,6 +6,7 @@ import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -24,7 +25,7 @@ export default function AddRewardsDialog() {
 
   const { appData } = useAdminContext();
 
-  const isEditable = !!appData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -60,8 +61,8 @@ export default function AddRewardsDialog() {
   // Submit
   const submit = async () => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     if (coinType === undefined) {
       toast.error("Select a coin");
@@ -106,7 +107,7 @@ export default function AddRewardsDialog() {
           if (rewardValue !== "0") {
             await appData.suilendClient.addReward(
               address,
-              appData.lendingMarketOwnerCapId,
+              appData.lendingMarket.ownerCapId,
               reserveArrayIndex,
               side === Side.DEPOSIT,
               coinType,

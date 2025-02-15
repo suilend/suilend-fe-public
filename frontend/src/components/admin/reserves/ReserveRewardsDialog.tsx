@@ -6,6 +6,7 @@ import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -40,7 +41,7 @@ export default function ReserveRewardsDialog({
 
   const { appData } = useAdminContext();
 
-  const isEditable = !!appData.lendingMarketOwnerCapId;
+  const isEditable = address === ADMIN_ADDRESS;
 
   // Tabs
   enum Tab {
@@ -70,8 +71,8 @@ export default function ReserveRewardsDialog({
 
   const onCancelReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     const transaction = new Transaction();
 
@@ -82,7 +83,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = appData.suilendClient.cancelReward(
-        appData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
@@ -105,8 +106,8 @@ export default function ReserveRewardsDialog({
 
   const onCloseReward = async (poolReward: ParsedPoolReward) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!appData.lendingMarketOwnerCapId)
-      throw new Error("Error: No lending market owner cap");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     const transaction = new Transaction();
 
@@ -117,7 +118,7 @@ export default function ReserveRewardsDialog({
 
     try {
       const [unclaimedRewards] = appData.suilendClient.closeReward(
-        appData.lendingMarketOwnerCapId,
+        appData.lendingMarket.ownerCapId,
         reserveArrayIndex,
         isDepositReward,
         rewardIndex,
