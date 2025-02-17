@@ -80,7 +80,7 @@ export default function TokenLogo({
     >
       <div className={cn("relative h-7 w-7", className)} style={style}>
         <AspectRatio ratio={1} className="relative z-[1]">
-          {token.iconUrl ? (
+          {token.iconUrl && token.iconUrl !== "TODO" ? (
             <Image
               key={token.iconUrl}
               className={cn("rounded-full object-cover", imageClassName)}
