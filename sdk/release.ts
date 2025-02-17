@@ -7,7 +7,6 @@ import packageJson from "./package.json";
 const newPackageJson = Object.assign({}, packageJson) as any;
 
 newPackageJson["name"] = NAME;
-newPackageJson["private"] = false;
 newPackageJson["main"] = "./index.js";
 
 const exportsMap: Record<string, string> = {
