@@ -122,6 +122,13 @@ export const LENDING_MARKETS = process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
         ownerCapId:
           "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
       },
+      {
+        name: "STEAMM LP",
+        id: "0xc1888ec1b81a414e427a44829310508352aec38252ee0daa9f8b181b6947de9f",
+        type: "0x0a071f4976abae1a7f722199cf0bfcbe695ef9408a878e7d12a7ca87b7e582a6::lp_rewards::LP_REWARDS",
+        ownerCapId:
+          "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
+      },
     ];
 export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market, for backwards compatibility
 export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // Main market, for backwards compatibility
