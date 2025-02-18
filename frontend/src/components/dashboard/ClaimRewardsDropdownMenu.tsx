@@ -89,25 +89,27 @@ export default function ClaimRewardsDropdownMenu({
       }
       contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
       items={
-        <>
+        <div className="flex w-full flex-row items-center gap-2">
           <DropdownMenuItem
-            className="flex flex-row items-center justify-between gap-2"
+            className="flex flex-1 flex-col items-start gap-1.5"
             onClick={() => submit(false)}
           >
-            <TLabelSans>Claim to wallet</TLabelSans>
+            <TLabelSans className="text-foreground">Claim to wallet</TLabelSans>
             <TokenLogos className="h-4 w-4" tokens={tokens} />
           </DropdownMenuItem>
 
           {tokensWithReserves.length > 0 && (
             <DropdownMenuItem
-              className="flex flex-row items-center justify-between gap-2"
+              className="flex flex-1 flex-col items-start gap-1.5"
               onClick={() => submit(true)}
             >
-              <TLabelSans>Claim and deposit</TLabelSans>
+              <TLabelSans className="text-foreground">
+                Claim and deposit
+              </TLabelSans>
               <TokenLogos className="h-4 w-4" tokens={tokensWithReserves} />
             </DropdownMenuItem>
           )}
-        </>
+        </div>
       }
     />
   );
