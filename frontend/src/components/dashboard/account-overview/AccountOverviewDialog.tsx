@@ -246,10 +246,10 @@ export default function AccountOverviewDialog() {
       dialogContentInnerClassName="max-w-6xl"
     >
       <Tabs
+        listClassName="mb-0"
         tabs={tabs}
         selectedTab={selectedTab}
         onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
-        listClassName="mb-0"
       />
 
       {selectedTab === Tab.EARNINGS && (

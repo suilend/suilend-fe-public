@@ -17,19 +17,19 @@ interface Tab {
 }
 
 interface TabsProps extends PropsWithChildren {
+  listClassName?: ClassValue;
+  triggerClassName?: (tab: Tab) => ClassValue;
   tabs: Tab[];
   selectedTab: string;
   onTabChange: (tab: string) => void;
-  listClassName?: ClassValue;
-  triggerClassName?: (tab: Tab) => ClassValue;
 }
 
 export default function Tabs({
+  listClassName,
+  triggerClassName,
   tabs,
   selectedTab,
   onTabChange,
-  listClassName,
-  triggerClassName,
 
   children,
 }: TabsProps) {

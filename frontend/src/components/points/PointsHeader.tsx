@@ -41,9 +41,6 @@ export default function PointsHeader({
             </TDisplay>
 
             <Tabs
-              tabs={tabs}
-              selectedTab={selectedTab}
-              onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
               listClassName="mb-0 w-[200px] md:w-[240px] bg-border rounded-sm p-0"
               triggerClassName={(tab) =>
                 cn(
@@ -54,6 +51,9 @@ export default function PointsHeader({
                     "data-[state=active]:bg-[var(--points-season-2)] data-[state=active]:text-background",
                 )
               }
+              tabs={tabs}
+              selectedTab={selectedTab}
+              onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
             />
           </div>
         </div>
