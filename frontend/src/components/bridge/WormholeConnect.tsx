@@ -9,6 +9,7 @@ import {
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { LENDING_MARKETS } from "@suilend/sdk";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -16,8 +17,10 @@ import { DISCORD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function WormholeConnectWrapper() {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
+
+  const appData = allAppData[LENDING_MARKETS[0].id];
 
   const assetUsdPriceMap: Record<string, BigNumber> = {
     USDC: appData.reserveMap[NORMALIZED_USDC_COINTYPE].price,

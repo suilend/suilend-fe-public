@@ -54,6 +54,7 @@ export const parseLendingMarket = (
     );
 
   const name = LENDING_MARKET?.name ?? "Unknown";
+  const slug = LENDING_MARKET?.slug ?? "unknown";
   const ownerCapId = LENDING_MARKET?.ownerCapId ?? "Unknown";
 
   return {
@@ -72,6 +73,7 @@ export const parseLendingMarket = (
     tvlUsd,
 
     name,
+    slug,
     ownerCapId,
 
     /**

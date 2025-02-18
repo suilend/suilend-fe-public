@@ -81,9 +81,9 @@ function Page() {
 
             <div className="flex-1">
               <StandardSelect
-                items={allAppData.map((a) => ({
-                  id: a.lendingMarket.id,
-                  name: `${a.lendingMarket.name} (${formatId(a.lendingMarket.id)})`,
+                items={Object.values(allAppData).map((_appData) => ({
+                  id: _appData.lendingMarket.id,
+                  name: `${_appData.lendingMarket.name} (${formatId(_appData.lendingMarket.id)})`,
                 }))}
                 value={appData.lendingMarket.id}
                 onChange={setSelectedLendingMarketId}

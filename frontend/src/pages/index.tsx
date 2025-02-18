@@ -1,4 +1,7 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
+
+import { shallowPushQuery } from "@suilend/frontend-sui-next";
 
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
@@ -10,6 +13,11 @@ import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCar
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import WalletAssetsCard from "@/components/dashboard/WalletBalancesCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
+import Tabs from "@/components/shared/Tabs";
+import {
+  QueryParams as AppContextQueryParams,
+  useLoadedAppContext,
+} from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 
@@ -27,7 +35,25 @@ function Cards() {
 }
 
 export default function Home() {
+  const router = useRouter();
+
   const { lg } = useBreakpoint();
+
+  const { allAppData, appData } = useLoadedAppContext();
+
+  // Tabs
+  const tabs = Object.values(allAppData).map((_appData) => ({
+    id: _appData.lendingMarket.slug,
+    title: _appData.lendingMarket.name,
+  }));
+
+  const selectedTab = appData.lendingMarket.slug;
+  const onSelectedTabChange = (tab: string) => {
+    shallowPushQuery(router, {
+      ...router.query,
+      [AppContextQueryParams.LENDING_MARKET]: tab,
+    });
+  };
 
   return (
     <DashboardContextProvider>
@@ -46,6 +72,14 @@ export default function Home() {
             </div>
 
             <div className="flex w-full flex-col gap-4">
+              {tabs.length > 1 && (
+                <Tabs
+                  listClassName="mb-0"
+                  tabs={tabs}
+                  selectedTab={selectedTab}
+                  onTabChange={(tab) => onSelectedTabChange(tab)}
+                />
+              )}
               <MarketCard />
             </div>
           </div>
@@ -56,6 +90,15 @@ export default function Home() {
               className="flex w-full min-w-0 flex-col gap-4"
               style={{ paddingRight: 360 + 8 * 4 }}
             >
+              {tabs.length > 1 && (
+                <Tabs
+                  listClassName="mb-0 w-max"
+                  triggerClassName={() => "px-4"}
+                  tabs={tabs}
+                  selectedTab={selectedTab}
+                  onTabChange={(tab) => onSelectedTabChange(tab)}
+                />
+              )}
               <MarketCard />
             </div>
 

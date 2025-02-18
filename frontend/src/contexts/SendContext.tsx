@@ -37,6 +37,7 @@ import {
   useWalletContext,
 } from "@suilend/frontend-sui-next";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
+import { LENDING_MARKETS } from "@suilend/sdk";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -151,7 +152,9 @@ export const useLoadedSendContext = () => useSendContext() as LoadedSendContext;
 export function SendContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { userData, getBalance } = useLoadedUserContext();
+  const { allUserData, getBalance } = useLoadedUserContext();
+
+  const userData = allUserData[LENDING_MARKETS[0].id];
 
   // mSEND - object map
   const [mSendObjectMap, setMsendObjectMap] = useState<

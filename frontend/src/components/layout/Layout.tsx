@@ -15,9 +15,14 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { allAppData, appData, filteredReserves, lstAprPercentMap } =
-    useAppContext();
-  const { userData } = useUserContext();
+  const {
+    allAppData,
+    filteredReservesMap,
+    appData,
+    filteredReserves,
+    lstAprPercentMap,
+  } = useAppContext();
+  const { allUserData, userData } = useUserContext();
   const { season, seasonMap } = usePointsContext();
 
   // LaunchDarkly banner
@@ -63,9 +68,11 @@ export default function Layout({ children }: PropsWithChildren) {
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
           {!allAppData ||
+          !filteredReservesMap ||
           !appData ||
           !filteredReserves ||
           !lstAprPercentMap ||
+          !allUserData ||
           !userData ? (
             <FullPageSpinner />
           ) : (

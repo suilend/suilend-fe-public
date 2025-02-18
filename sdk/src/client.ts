@@ -89,7 +89,16 @@ export const LENDING_MARKET_REGISTRY_ID = process.env
   ? "0x925c9a2336b02fc2b68099837bd66f6b5b4d45cd460e0a4b81708bac6c440eff"
   : "0x64faff8d91a56c4f55debbb44767b009ee744a70bc2cc8e3bbd2718c92f85931";
 
-export const LENDING_MARKETS = process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
+type UiLendingMarket = {
+  name: string;
+  slug: string;
+  id: string;
+  type: string;
+  ownerCapId: string;
+  isHidden?: boolean;
+};
+export const LENDING_MARKETS: UiLendingMarket[] = process.env
+  .NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
   ? [
       // {
       //   name: "Old",
@@ -100,6 +109,7 @@ export const LENDING_MARKETS = process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
       // },
       {
         name: "Main market",
+        slug: "main",
         id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
         type: "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
         ownerCapId:
@@ -107,16 +117,17 @@ export const LENDING_MARKETS = process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
       },
       {
         name: "Isolated 1",
+        slug: "isolated-1",
         id: "0xb1d89cf9082cedce09d3647f0ebda4a8b5db125aff5d312a8bfd7eefa715bd35",
         type: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
         ownerCapId:
           "0xed8262012d34105c5ac59cf2dd6473d492e6ab7529fe7f9ea6cb1fa8dc2dba56",
-        isHidden: true, // FOR TESTING ONLY
       },
     ]
   : [
       {
         name: "Main market",
+        slug: "main",
         id: "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
         type: "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
         ownerCapId:
@@ -124,10 +135,12 @@ export const LENDING_MARKETS = process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET
       },
       {
         name: "STEAMM LP",
+        slug: "steamm-lp",
         id: "0xc1888ec1b81a414e427a44829310508352aec38252ee0daa9f8b181b6947de9f",
         type: "0x0a071f4976abae1a7f722199cf0bfcbe695ef9408a878e7d12a7ca87b7e582a6::lp_rewards::LP_REWARDS",
         ownerCapId:
           "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
+        isHidden: true, // Only visible in the admin panel
       },
     ];
 export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market, for backwards compatibility

@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import {
   PropsWithChildren,
   createContext,
@@ -10,13 +11,17 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
+import { shallowPushQuery } from "@suilend/frontend-sui-next";
 import useFetchBalances from "@suilend/frontend-sui-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/frontend-sui-next/hooks/useRefreshOnBalancesChange";
 import { ParsedObligation, RewardMap } from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 
-import { useAppContext } from "@/contexts/AppContext";
+import {
+  QueryParams as AppContextQueryParams,
+  useAppContext,
+} from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
 
 export interface UserData {
@@ -30,15 +35,17 @@ interface UserContext {
   balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   getBalance: (coinType: string) => BigNumber;
 
+  allUserData: Record<string, UserData> | undefined; // Depends on suilendClient, appData
   userData: UserData | undefined; // Depends on suilendClient, appData
 
-  refresh: () => void; // Refreshes appData, balances, and userData
+  refresh: () => void; // Refreshes allAppData, balances, and allUserData
 
   obligation: ParsedObligation | undefined; // Depends on userData
   obligationOwnerCap: ObligationOwnerCap<string> | undefined; // Depends on userData
-  setObligationId: (obligationId: string) => void;
+  setObligationId: (lendingMarketSlug: string, obligationId: string) => void;
 }
 type LoadedUserContext = UserContext & {
+  allUserData: Record<string, UserData>;
   userData: UserData;
 };
 
@@ -49,6 +56,7 @@ const UserContext = createContext<UserContext>({
     throw Error("UserContextProvider not initialized");
   },
 
+  allUserData: undefined,
   userData: undefined,
 
   refresh: () => {
@@ -66,7 +74,9 @@ export const useUserContext = () => useContext(UserContext);
 export const useLoadedUserContext = () => useUserContext() as LoadedUserContext;
 
 export function UserContextProvider({ children }: PropsWithChildren) {
-  const { refreshAllAppData } = useAppContext();
+  const router = useRouter();
+
+  const { appData, refreshAllAppData } = useAppContext();
 
   // Balances
   const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
@@ -97,16 +107,25 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // User data
-  const { data: userData, mutateData: mutateUserData } = useFetchUserData();
+  const { data: allUserData, mutateData: mutateAllUserData } =
+    useFetchUserData();
+
+  const userData = useMemo(
+    () =>
+      appData?.lendingMarket.id
+        ? allUserData?.[appData.lendingMarket.id]
+        : undefined,
+    [appData?.lendingMarket.id, allUserData],
+  );
 
   // Refresh
   const refresh = useCallback(() => {
     (async () => {
       await refreshAllAppData();
-      await mutateUserData();
+      await mutateAllUserData();
     })();
     refreshRawBalancesMap();
-  }, [refreshAllAppData, mutateUserData, refreshRawBalancesMap]);
+  }, [refreshAllAppData, mutateAllUserData, refreshRawBalancesMap]);
 
   useRefreshOnBalancesChange(refresh as () => Promise<void>);
 
@@ -137,22 +156,31 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       balancesCoinMetadataMap,
       getBalance,
 
+      allUserData,
       userData,
 
       refresh,
 
       obligation,
       obligationOwnerCap,
-      setObligationId,
+      setObligationId: (lendingMarketSlug: string, obligationId: string) => {
+        shallowPushQuery(router, {
+          ...router.query,
+          [AppContextQueryParams.LENDING_MARKET]: lendingMarketSlug,
+        });
+        setObligationId(obligationId);
+      },
     }),
     [
       rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
+      allUserData,
       userData,
       refresh,
       obligation,
       obligationOwnerCap,
+      router,
       setObligationId,
     ],
   );

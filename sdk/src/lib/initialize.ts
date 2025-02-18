@@ -4,7 +4,6 @@ import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
 
 import {
-  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_AUSD_COINTYPE,
   NORMALIZED_BLUE_COINTYPE,
   NORMALIZED_BUCK_COINTYPE,
@@ -34,8 +33,6 @@ import {
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   getCoinMetadataMap,
   getPrice,
-  isDeprecated,
-  isInMsafeApp,
   isSendPoints,
 } from "@suilend/frontend-sui";
 

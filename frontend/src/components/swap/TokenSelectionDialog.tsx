@@ -37,7 +37,7 @@ interface TokenRowProps {
 }
 
 function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
   const { isUsingDeposits, verifiedCoinTypes } = useSwapContext();
@@ -79,11 +79,15 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {(appData.reserveCoinTypes.includes(token.coinType) ||
+                {(Object.values(allAppData).find((_appData) =>
+                  _appData.reserveCoinTypes.includes(token.coinType),
+                ) ||
                   verifiedCoinTypes.includes(token.coinType)) && (
                   <Tooltip
                     title={
-                      appData.reserveCoinTypes.includes(token.coinType)
+                      Object.values(allAppData).find((_appData) =>
+                        _appData.reserveCoinTypes.includes(token.coinType),
+                      )
                         ? "This asset is listed on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
                           ? "This asset appears on the list of Cetus verified assets"
@@ -169,7 +173,7 @@ export default function TokenSelectionDialog({
   token,
   onSelectToken,
 }: TokenSelectionDialogProps) {
-  const { filteredReserves } = useLoadedAppContext();
+  const { filteredReservesMap, filteredReserves } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
   const {
@@ -198,13 +202,17 @@ export default function TokenSelectionDialog({
     ];
   }, [tokens, getBalance, verifiedCoinTypes]);
 
-  const reserveTokens = useMemo(
-    () =>
-      filteredReserves
-        .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
-        .filter(Boolean) as SwapToken[],
-    [filteredReserves, tokens],
-  );
+  const reserveTokens = useMemo(() => {
+    const result: SwapToken[] = [];
+
+    for (const r of Object.values(filteredReservesMap).flat()) {
+      const token = tokens.find((t) => t.symbol === r.token.symbol);
+      if (token && !result.find((t) => t.coinType === token.coinType))
+        result.push(token);
+    }
+
+    return result;
+  }, [filteredReservesMap, tokens]);
 
   const otherTokens = useMemo(
     () =>

@@ -28,6 +28,7 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
+import { LENDING_MARKETS } from "@suilend/sdk";
 
 import Card from "@/components/dashboard/Card";
 import MsendDropdownMenu from "@/components/send/MsendDropdownMenu";
@@ -125,8 +126,8 @@ function RedeemTabContent({
 }: RedeemTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { userData, getBalance } = useLoadedUserContext();
+  const { allAppData } = useLoadedAppContext();
+  const { allUserData, getBalance } = useLoadedUserContext();
 
   const {
     mSendCoinMetadataMap,
@@ -136,6 +137,9 @@ function RedeemTabContent({
     ...restLoadedSendContext
   } = useLoadedSendContext();
   const userAllocations = restLoadedSendContext.userAllocations!;
+
+  const appData = allAppData[LENDING_MARKETS[0].id];
+  const userData = allUserData[LENDING_MARKETS[0].id];
 
   // Balances
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
@@ -451,8 +455,9 @@ const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
 function ClaimTabContent() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { userData, getBalance, obligationOwnerCap } = useLoadedUserContext();
+  const { allAppData } = useLoadedAppContext();
+  const { allUserData, getBalance, obligationOwnerCap } =
+    useLoadedUserContext();
 
   const {
     mSendObjectMap,
@@ -461,6 +466,9 @@ function ClaimTabContent() {
     mSendCoinTypesWithBalance,
     selectedMsendCoinType,
   } = useLoadedSendContext();
+
+  const appData = allAppData[LENDING_MARKETS[0].id];
+  const userData = allUserData[LENDING_MARKETS[0].id];
 
   // Reserves
   const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -913,7 +921,7 @@ export default function ClaimSection({
   totalAllocationBreakdownMaps,
 }: ClaimSectionProps) {
   const { address } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
 
   const {
     mSendObjectMap,
@@ -921,6 +929,8 @@ export default function ClaimSection({
     userAllocations,
     selectedMsendCoinType,
   } = useLoadedSendContext();
+
+  const appData = allAppData[LENDING_MARKETS[0].id];
 
   // Allocations
   const sendPointsAllocation = allocations.find(

@@ -13,36 +13,42 @@ import { UserData } from "@/contexts/UserContext";
 export default function useFetchUserData() {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { appData } = useAppContext();
+  const { allAppData } = useAppContext();
 
   // Data
   const dataFetcher = async () => {
-    if (!appData) return undefined as unknown as UserData; // In practice `dataFetcher` won't be called if `appData` is falsy
+    if (!allAppData) return undefined as unknown as Record<string, UserData>; // In practice `dataFetcher` won't be called if `allAppData` is falsy
 
-    const { obligationOwnerCaps, obligations } = await initializeObligations(
-      suiClient,
-      appData.suilendClient,
-      appData.refreshedRawReserves,
-      appData.reserveMap,
-      address,
-    );
+    const result: Record<string, UserData> = {};
 
-    const rewardMap = formatRewards(
-      appData.reserveMap,
-      appData.rewardCoinMetadataMap,
-      appData.rewardPriceMap,
-      obligations,
-    );
+    for (const appData of Object.values(allAppData)) {
+      const { obligationOwnerCaps, obligations } = await initializeObligations(
+        suiClient,
+        appData.suilendClient,
+        appData.refreshedRawReserves,
+        appData.reserveMap,
+        address,
+      );
 
-    return {
-      obligationOwnerCaps,
-      obligations,
-      rewardMap,
-    };
+      const rewardMap = formatRewards(
+        appData.reserveMap,
+        appData.rewardCoinMetadataMap,
+        appData.rewardPriceMap,
+        obligations,
+      );
+
+      result[appData.lendingMarket.id] = {
+        obligationOwnerCaps,
+        obligations,
+        rewardMap,
+      };
+    }
+
+    return result;
   };
 
-  const { data, mutate } = useSWR<UserData>(
-    !appData ? null : `userData-${address}`,
+  const { data, mutate } = useSWR<Record<string, UserData>>(
+    !allAppData ? null : `userData-${address}`,
     dataFetcher,
     {
       refreshInterval: 30 * 1000,

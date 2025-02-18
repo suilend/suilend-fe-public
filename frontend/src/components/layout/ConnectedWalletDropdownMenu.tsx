@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
@@ -22,6 +22,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useUserContext } from "@/contexts/UserContext";
 import { API_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,8 @@ export default function ConnectedWalletDropdownMenu({
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
-  const { userData, obligation, setObligationId } = useUserContext();
+  const { allAppData } = useLoadedAppContext();
+  const { allUserData, obligation, setObligationId } = useUserContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -111,7 +113,9 @@ export default function ConnectedWalletDropdownMenu({
   const hasVipItem = isEligibleForVipProgram;
   const hasDisconnectItem = !isImpersonating;
 
-  const hasAccounts = (userData?.obligationOwnerCaps ?? []).length > 0;
+  const hasAccounts = Object.values(allUserData ?? {}).some(
+    (_userData) => _userData.obligationOwnerCaps.length > 0,
+  );
   const hasWallets = !isImpersonating;
 
   const noItems =
@@ -195,49 +199,69 @@ export default function ConnectedWalletDropdownMenu({
                 Accounts
               </TLabelSans>
 
-              {!userData?.obligations ? (
+              {!allUserData ? (
                 <Skeleton className="h-[70px] w-full rounded-sm" />
               ) : (
-                userData.obligations.map((o, index, array) => (
-                  <DropdownMenuItem
-                    key={o.id}
-                    className="flex flex-col items-start gap-1"
-                    isSelected={o.id === obligation?.id}
-                    onClick={() => setObligationId(o.id)}
-                  >
-                    <div className="flex w-full flex-row justify-between">
-                      <div className="flex flex-row items-center gap-1">
-                        <TLabelSans className="text-foreground">
-                          Account {array.findIndex((_o) => _o.id === o.id) + 1}
-                        </TLabelSans>
-
-                        <OpenOnExplorerButton
-                          className="h-4 w-4 hover:bg-transparent"
-                          iconClassName="w-3 h-3"
-                          url={explorer.buildObjectUrl(o.id)}
-                        />
-                      </div>
-
-                      <TLabelSans>
-                        {o.positionCount} position
-                        {o.positionCount !== 1 ? "s" : ""}
+                Object.entries(allUserData)
+                  .filter(([, _userData]) => _userData.obligations.length > 0)
+                  .map(([_lendingMarketId, _userData], _userDataIndex) => (
+                    <Fragment key={_lendingMarketId}>
+                      <TLabelSans
+                        className={cn(_userDataIndex !== 0 && "mt-2")}
+                      >
+                        {allAppData?.[_lendingMarketId].lendingMarket.name}{" "}
                       </TLabelSans>
-                    </div>
 
-                    <div className="flex w-full flex-row justify-between">
-                      <TLabelSans>
-                        {formatUsd(o.depositedAmountUsd)} deposited
-                      </TLabelSans>
-                      <TLabelSans>
-                        {formatUsd(o.borrowedAmountUsd)} borrowed
-                      </TLabelSans>
-                    </div>
+                      {_userData.obligations.map((o, _, obligationsArray) => (
+                        <DropdownMenuItem
+                          key={o.id}
+                          className="flex flex-col items-start gap-1"
+                          isSelected={o.id === obligation?.id}
+                          onClick={() =>
+                            setObligationId(
+                              allAppData?.[_lendingMarketId].lendingMarket.slug,
+                              o.id,
+                            )
+                          }
+                        >
+                          <div className="flex w-full flex-row justify-between">
+                            <div className="flex flex-row items-center gap-1">
+                              <TLabelSans className="text-foreground">
+                                Account{" "}
+                                {obligationsArray.findIndex(
+                                  (_o) => _o.id === o.id,
+                                ) + 1}
+                              </TLabelSans>
 
-                    <div className="mt-2 w-full">
-                      <UtilizationBar obligation={o} noTooltip />
-                    </div>
-                  </DropdownMenuItem>
-                ))
+                              <OpenOnExplorerButton
+                                className="h-4 w-4 hover:bg-transparent"
+                                iconClassName="w-3 h-3"
+                                url={explorer.buildObjectUrl(o.id)}
+                              />
+                            </div>
+
+                            <TLabelSans>
+                              {o.positionCount} position
+                              {o.positionCount !== 1 ? "s" : ""}
+                            </TLabelSans>
+                          </div>
+
+                          <div className="flex w-full flex-row justify-between">
+                            <TLabelSans>
+                              {formatUsd(o.depositedAmountUsd)} deposited
+                            </TLabelSans>
+                            <TLabelSans>
+                              {formatUsd(o.borrowedAmountUsd)} borrowed
+                            </TLabelSans>
+                          </div>
+
+                          <div className="mt-2 w-full">
+                            <UtilizationBar obligation={o} noTooltip />
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </Fragment>
+                  ))
               )}
             </>
           )}

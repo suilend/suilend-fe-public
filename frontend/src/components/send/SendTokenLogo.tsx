@@ -1,6 +1,7 @@
 import { ClassValue } from "clsx";
 
 import { NORMALIZED_SEND_COINTYPE } from "@suilend/frontend-sui";
+import { LENDING_MARKETS } from "@suilend/sdk";
 
 import TokenLogo from "@/components/shared/TokenLogo";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -11,7 +12,9 @@ interface SendTokenLogoProps {
 }
 
 export default function SendTokenLogo({ className }: SendTokenLogoProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+
+  const appData = allAppData[LENDING_MARKETS[0].id];
 
   const sendReserve = appData.reserveMap[NORMALIZED_SEND_COINTYPE];
 

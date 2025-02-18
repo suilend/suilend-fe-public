@@ -24,7 +24,7 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    const result: AppData[] = [];
+    const result: Record<string, AppData> = {};
 
     for (const LENDING_MARKET of LENDING_MARKETS) {
       if (LENDING_MARKET.isHidden && !isAdmin) continue;
@@ -54,7 +54,7 @@ export default function useFetchAppData() {
         activeRewardCoinTypes,
       );
 
-      result.push({
+      result[lendingMarket.id] = {
         suilendClient,
 
         lendingMarket,
@@ -69,13 +69,13 @@ export default function useFetchAppData() {
         rewardCoinTypes,
         activeRewardCoinTypes,
         rewardCoinMetadataMap,
-      });
+      };
     }
 
     return result;
   };
 
-  const { data, mutate } = useSWR<AppData[]>(
+  const { data, mutate } = useSWR<Record<string, AppData>>(
     `appData-${isAdmin}`,
     dataFetcher,
     {

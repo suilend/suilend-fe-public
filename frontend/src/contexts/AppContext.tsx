@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import {
   PropsWithChildren,
   createContext,
@@ -24,6 +25,10 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import useFetchLstAprPercentMap from "@/fetchers/useFetchLstAprPercentMap";
 
+export enum QueryParams {
+  LENDING_MARKET = "market",
+}
+
 export interface AppData {
   suilendClient: SuilendClient;
 
@@ -43,7 +48,8 @@ export interface AppData {
 export type LstAprPercentMap = Record<string, BigNumber>;
 
 interface AppContext {
-  allAppData: AppData[] | undefined;
+  allAppData: Record<string, AppData> | undefined;
+  filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
   refreshAllAppData: () => Promise<void>;
 
   appData: AppData | undefined;
@@ -52,7 +58,8 @@ interface AppContext {
   lstAprPercentMap: LstAprPercentMap | undefined;
 }
 type LoadedAppContext = AppContext & {
-  allAppData: AppData[];
+  allAppData: Record<string, AppData>;
+  filteredReservesMap: Record<string, ParsedReserve[]>;
 
   appData: AppData;
   filteredReserves: ParsedReserve[];
@@ -62,6 +69,7 @@ type LoadedAppContext = AppContext & {
 
 const AppContext = createContext<AppContext>({
   allAppData: undefined,
+  filteredReservesMap: undefined,
   refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
@@ -76,6 +84,16 @@ export const useAppContext = () => useContext(AppContext);
 export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
+  const router = useRouter();
+  const queryParams = useCallback(
+    () => ({
+      [QueryParams.LENDING_MARKET]: router.query[QueryParams.LENDING_MARKET] as
+        | string
+        | undefined,
+    }),
+    [router.query],
+  )();
+
   const { address } = useWalletContext();
 
   // Lending markets
@@ -85,14 +103,22 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     await mutateAllAppData();
   }, [mutateAllAppData]);
 
-  const appData = useMemo(() => allAppData?.[0], [allAppData]); // USE MAIN MARKET ONLY FOR NOW
+  const appData = useMemo(
+    () =>
+      Object.values(allAppData ?? {}).find(
+        (_appData) =>
+          _appData.lendingMarket.slug ===
+          queryParams[QueryParams.LENDING_MARKET],
+      ) ?? Object.values(allAppData ?? {})[0],
+    [queryParams, allAppData],
+  );
 
   // Filtered reserves
   const filteredReservesMap = useMemo(() => {
     if (!allAppData) return undefined;
 
     const result: Record<string, ParsedReserve[]> = {};
-    for (const _appData of allAppData) {
+    for (const _appData of Object.values(allAppData)) {
       const filteredReserves = _appData.lendingMarket.reserves
         .filter((reserve) =>
           !isInMsafeApp()
@@ -117,10 +143,13 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     return result;
   }, [allAppData, address]);
 
-  const filteredReserves = useMemo(() => {
-    if (!appData) return undefined;
-    return filteredReservesMap?.[appData.lendingMarket.id];
-  }, [appData, filteredReservesMap]);
+  const filteredReserves = useMemo(
+    () =>
+      appData?.lendingMarket.id
+        ? filteredReservesMap?.[appData.lendingMarket.id]
+        : undefined,
+    [appData?.lendingMarket.id, filteredReservesMap],
+  );
 
   // LST APRs
   const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
@@ -129,6 +158,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const contextValue: AppContext = useMemo(
     () => ({
       allAppData,
+      filteredReservesMap,
       refreshAllAppData,
 
       appData,
@@ -138,6 +168,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }),
     [
       allAppData,
+      filteredReservesMap,
       refreshAllAppData,
       appData,
       filteredReserves,
