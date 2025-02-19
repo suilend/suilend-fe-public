@@ -35,7 +35,7 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
     useLocalStorage<string>("admin_selectedLendingMarketId", "");
 
   const appData = useMemo(
-    () => allAppData[selectedLendingMarketId] ?? allAppData[0],
+    () => allAppData[selectedLendingMarketId] ?? Object.values(allAppData)[0],
     [allAppData, selectedLendingMarketId],
   );
 
