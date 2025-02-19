@@ -12,7 +12,6 @@ import {
 } from "@suilend/frontend-sui";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { ParsedReserve } from "@suilend/sdk/parsers";
-import { isLst } from "@suilend/springsui-sdk";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
 import { MarketCardListType } from "@/components/dashboard/market-table/MarketCardList";
@@ -20,6 +19,7 @@ import { MarketTableType } from "@/components/dashboard/market-table/MarketTable
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import { SPRINGSUI_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,8 @@ export default function AssetCell({
   token,
   price,
 }: AssetCellProps) {
+  const { isLst } = useLoadedAppContext();
+
   const isTouchscreen = useIsTouchscreen();
 
   const links: { title: string; href: string; isRelative?: boolean }[] =
@@ -79,7 +81,7 @@ export default function AssetCell({
       }
 
       return result;
-    }, [tableType, reserve, token]);
+    }, [tableType, reserve, token, isLst]);
 
   return (
     <div className="flex flex-row items-center gap-3">

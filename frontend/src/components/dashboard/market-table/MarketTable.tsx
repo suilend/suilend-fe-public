@@ -19,7 +19,6 @@ import {
 } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { isEcosystemLst } from "@suilend/springsui-sdk";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import DataTable, {
@@ -119,7 +118,7 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { lstAprPercentMap } = useLoadedAppContext();
+  const { lstData, isEcosystemLst } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
   const { filteredReserves } = useLoadedAppContext();
 
@@ -308,7 +307,7 @@ export default function MarketTable() {
         Side.DEPOSIT,
         reserve.depositAprPercent,
         getFilteredRewards(userData.rewardMap[reserve.coinType].deposit),
-        getStakingYieldAprPercent(Side.DEPOSIT, reserve, lstAprPercentMap),
+        getStakingYieldAprPercent(Side.DEPOSIT, reserve, lstData.aprPercentMap),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,
@@ -558,7 +557,12 @@ export default function MarketTable() {
     }
 
     return result;
-  }, [filteredReserves, userData.rewardMap, lstAprPercentMap]);
+  }, [
+    filteredReserves,
+    userData.rewardMap,
+    lstData.aprPercentMap,
+    isEcosystemLst,
+  ]);
 
   return (
     <div className="w-full">

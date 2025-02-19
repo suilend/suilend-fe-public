@@ -20,7 +20,7 @@ export default function Layout({ children }: PropsWithChildren) {
     filteredReservesMap,
     appData,
     filteredReserves,
-    lstAprPercentMap,
+    lstData,
   } = useAppContext();
   const { allUserData, userData } = useUserContext();
   const { season, seasonMap } = usePointsContext();
@@ -71,7 +71,7 @@ export default function Layout({ children }: PropsWithChildren) {
           !filteredReservesMap ||
           !appData ||
           !filteredReserves ||
-          !lstAprPercentMap ||
+          !lstData ||
           !allUserData ||
           !userData ? (
             <FullPageSpinner />

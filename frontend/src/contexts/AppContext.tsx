@@ -12,6 +12,7 @@ import BigNumber from "bignumber.js";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
+  NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_upSUI_COINTYPE,
   isDeprecated,
   isInMsafeApp,
@@ -23,7 +24,7 @@ import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
-import useFetchLstAprPercentMap from "@/fetchers/useFetchLstAprPercentMap";
+import useFetchLstData from "@/fetchers/useFetchLstData";
 
 export enum QueryParams {
   LENDING_MARKET = "market",
@@ -45,7 +46,10 @@ export interface AppData {
   activeRewardCoinTypes: string[];
   rewardCoinMetadataMap: Record<string, CoinMetadata>;
 }
-export type LstAprPercentMap = Record<string, BigNumber>;
+export interface LstData {
+  lstCoinTypes: string[];
+  aprPercentMap: Record<string, BigNumber>;
+}
 
 interface AppContext {
   allAppData: Record<string, AppData> | undefined;
@@ -55,7 +59,9 @@ interface AppContext {
   appData: AppData | undefined;
   filteredReserves: ParsedReserve[] | undefined;
 
-  lstAprPercentMap: LstAprPercentMap | undefined;
+  lstData: LstData | undefined;
+  isLst: (coinType: string) => boolean;
+  isEcosystemLst: (coinType: string) => boolean;
 }
 type LoadedAppContext = AppContext & {
   allAppData: Record<string, AppData>;
@@ -64,7 +70,7 @@ type LoadedAppContext = AppContext & {
   appData: AppData;
   filteredReserves: ParsedReserve[];
 
-  lstAprPercentMap: LstAprPercentMap;
+  lstData: LstData;
 };
 
 const AppContext = createContext<AppContext>({
@@ -77,7 +83,13 @@ const AppContext = createContext<AppContext>({
   appData: undefined,
   filteredReserves: undefined,
 
-  lstAprPercentMap: undefined,
+  lstData: undefined,
+  isLst: () => {
+    throw Error("AppContextProvider not initialized");
+  },
+  isEcosystemLst: () => {
+    throw Error("AppContextProvider not initialized");
+  },
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -151,8 +163,18 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     [appData?.lendingMarket.id, filteredReservesMap],
   );
 
-  // LST APRs
-  const { data: lstAprPercentMap } = useFetchLstAprPercentMap();
+  // LST
+  const { data: lstData } = useFetchLstData();
+
+  const isLst = useCallback(
+    (coinType: string) => lstData?.lstCoinTypes.includes(coinType) ?? false,
+    [lstData],
+  );
+  const isEcosystemLst = useCallback(
+    (coinType: string) =>
+      isLst(coinType) && coinType !== NORMALIZED_sSUI_COINTYPE,
+    [isLst],
+  );
 
   // Context
   const contextValue: AppContext = useMemo(
@@ -164,7 +186,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       appData,
       filteredReserves,
 
-      lstAprPercentMap,
+      lstData,
+      isLst,
+      isEcosystemLst,
     }),
     [
       allAppData,
@@ -172,7 +196,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       refreshAllAppData,
       appData,
       filteredReserves,
-      lstAprPercentMap,
+      lstData,
+      isLst,
+      isEcosystemLst,
     ],
   );
 
