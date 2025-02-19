@@ -18,7 +18,7 @@ Possible extensions/improvements
 
 4. Right now the worker tries to liquidate for a fixed number of seconds, after which it gives up and moves on. You can probably be more intelligent about this logic.
 
-5. The liquidator doens't actually make sure that each liquidation is profitable. In theory if the slippage on Cetus is poor enough, it could lose money on liquidations.  
+5. The liquidator doesn't actually make sure that each liquidation is profitable. In theory if the slippage on Cetus is poor enough, it could lose money on liquidations.  
 
 6. It might be useful to have multiple venues to dump assets onto in case the liquidity one venue is poor.
 
