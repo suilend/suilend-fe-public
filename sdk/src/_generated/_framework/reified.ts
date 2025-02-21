@@ -376,7 +376,7 @@ export function assertReifiedTypeArgsMatch(
 ) {
   if (reifiedTypeArgs.length !== typeArgs.length) {
     throw new Error(
-      `provided item has mismatching number of type argments ${fullType} (expected ${reifiedTypeArgs.length}, got ${typeArgs.length}))`,
+      `provided item has mismatching number of type arguments ${fullType} (expected ${reifiedTypeArgs.length}, got ${typeArgs.length}))`,
     );
   }
   for (let i = 0; i < typeArgs.length; i++) {
@@ -385,7 +385,7 @@ export function assertReifiedTypeArgsMatch(
       compressSuiType(extractType(reifiedTypeArgs[i]))
     ) {
       throw new Error(
-        `provided item has mismatching type argments ${fullType} (expected ${extractType(
+        `provided item has mismatching type arguments ${fullType} (expected ${extractType(
           reifiedTypeArgs[i],
         )}, got ${typeArgs[i]}))`,
       );

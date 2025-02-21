@@ -309,7 +309,7 @@ export class LiquidationWorker {
         toCoinType: COIN_TYPES.USDC,
         fromAmount: parseInt(redeemEvent.params().liquidity_amount),
       });
-      logger.info(`Succesfully dumped withdrawn assets`);
+      logger.info(`Successfully dumped withdrawn assets`);
     }
   }
 
