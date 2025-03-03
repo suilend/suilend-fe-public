@@ -206,7 +206,11 @@ export default function PenaltyLineChart({
               stroke="hsl(var(--foreground))"
               strokeWidth={2}
               label={(props) => (
-                <Label fill="hsl(var(--foreground))" {...props}>
+                <Label
+                  fill="hsl(var(--foreground))"
+                  textAnchor="end"
+                  {...props}
+                >
                   NOW
                 </Label>
               )}

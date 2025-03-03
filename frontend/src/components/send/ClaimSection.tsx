@@ -754,135 +754,142 @@ function ClaimTabContent() {
           </div>
 
           {/* Penalty */}
-          <div className="flex w-full flex-row justify-between gap-4">
-            <TBodySans className="text-muted-foreground">Penalty</TBodySans>
+          {mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) && (
+            <div className="flex w-full flex-row justify-between gap-4">
+              <TBodySans className="text-muted-foreground">Penalty</TBodySans>
 
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex flex-row items-center gap-2">
-                <TokenLogo className="h-4 w-4" token={suiReserve.token} />
-                <Tooltip
-                  title={`${formatToken(claimPenaltyAmountSui, {
-                    dp: SUI_DECIMALS,
-                  })} SUI`}
-                >
-                  <TBody
-                    className={cn(
-                      "decoration-foreground/50",
-                      hoverUnderlineClassName,
-                    )}
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-row items-center gap-2">
+                  <TokenLogo className="h-4 w-4" token={suiReserve.token} />
+                  <Tooltip
+                    title={`${formatToken(claimPenaltyAmountSui, {
+                      dp: SUI_DECIMALS,
+                    })} SUI`}
                   >
-                    {formatToken(claimPenaltyAmountSui, { exact: false })}
-                    {" SUI"}
-                  </TBody>
-                </Tooltip>
+                    <TBody
+                      className={cn(
+                        "decoration-foreground/50",
+                        hoverUnderlineClassName,
+                      )}
+                    >
+                      {formatToken(claimPenaltyAmountSui, { exact: false })}
+                      {" SUI"}
+                    </TBody>
+                  </Tooltip>
+                </div>
+                <TLabel>
+                  {formatUsd(claimPenaltyAmountSui.times(suiReserve.price))}
+                </TLabel>
               </div>
-              <TLabel>
-                {formatUsd(claimPenaltyAmountSui.times(suiReserve.price))}
-              </TLabel>
             </div>
-          </div>
+          )}
 
           {/* Flash loan */}
-          {new BigNumber(sendReserve.price.div(suiReserve.price)).gt(
-            mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
-          ) && (
-            <>
-              <div className="flex w-full flex-row justify-between gap-4">
-                <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
-                  <TBodySans
-                    className={cn(
-                      "text-muted-foreground decoration-muted-foreground/50",
-                      hoverUnderlineClassName,
-                    )}
-                  >
-                    Use flash loan to pay penalty
-                  </TBodySans>
-                </Tooltip>
-
-                <Switch
-                  id="isFlashLoan"
-                  isChecked={isFlashLoan}
-                  onToggle={setIsFlashLoan}
-                />
-              </div>
-              {isFlashLoan && (
-                <div className="flex flex-col gap-3 rounded-md border p-4">
-                  {/* Slippage */}
-                  <div className="flex h-5 flex-row items-center justify-between gap-4">
-                    <TBodySans className="text-muted-foreground">
-                      Slippage
+          {mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) &&
+            new BigNumber(sendReserve.price.div(suiReserve.price)).gt(
+              mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
+            ) && (
+              <>
+                <div className="flex w-full flex-row justify-between gap-4">
+                  <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
+                    <TBodySans
+                      className={cn(
+                        "text-muted-foreground decoration-muted-foreground/50",
+                        hoverUnderlineClassName,
+                      )}
+                    >
+                      Use flash loan to pay penalty
                     </TBodySans>
+                  </Tooltip>
 
-                    <div className="flex flex-row items-center gap-1">
-                      <Input
-                        className="h-6 w-12 rounded-sm border-border bg-transparent px-2 text-right"
-                        type="number"
-                        placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
-                        min={0}
-                        max={100}
-                        step={0.1}
-                        value={flashLoanSlippagePercent ?? ""}
-                        onChange={(e) =>
-                          setFlashLoanSlippagePercent(e.target.value)
-                        }
-                      />
-                      <TBody>%</TBody>
-                    </div>
-                  </div>
-
-                  {/* Approximate deduction */}
-                  <div className="flex flex-row justify-between gap-4">
-                    <TBodySans className="text-muted-foreground">
-                      Deduction (approx.)
-                    </TBodySans>
-
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="flex flex-row items-center gap-2">
-                        <SendTokenLogo />
-                        <TBody>
-                          {formatToken(flashLoanDeductionAmountSend, {
-                            exact: false,
-                          })}
-                          {" SEND"}
-                          {flashLoanDeductionPercent.gt(0) &&
-                            ` (${formatPercent(flashLoanDeductionPercent, { dp: 0 })})`}
-                        </TBody>
-                      </div>
-                      <TLabel>
-                        {formatUsd(
-                          flashLoanDeductionAmountSend.times(sendReserve.price),
-                        )}
-                      </TLabel>
-                    </div>
-                  </div>
-
-                  {/* Approximate proceeds */}
-                  <div className="flex flex-row justify-between gap-4">
-                    <TBodySans className="text-muted-foreground">
-                      Proceeds (approx.)
-                    </TBodySans>
-
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="flex flex-row items-center gap-2">
-                        <SendTokenLogo />
-                        <TBody>
-                          {formatToken(flashLoanProceedsAmountSend, {
-                            exact: false,
-                          })}
-                          {" SEND"}
-                        </TBody>
-                      </div>
-                      <TLabel>
-                        {formatUsd(
-                          flashLoanProceedsAmountSend.times(sendReserve.price),
-                        )}
-                      </TLabel>
-                    </div>
-                  </div>
+                  <Switch
+                    id="isFlashLoan"
+                    isChecked={isFlashLoan}
+                    onToggle={setIsFlashLoan}
+                  />
                 </div>
-              )}
-            </>
-          )}
+                {isFlashLoan && (
+                  <div className="flex flex-col gap-3 rounded-md border p-4">
+                    {/* Slippage */}
+                    <div className="flex h-5 flex-row items-center justify-between gap-4">
+                      <TBodySans className="text-muted-foreground">
+                        Slippage
+                      </TBodySans>
+
+                      <div className="flex flex-row items-center gap-1">
+                        <Input
+                          className="h-6 w-12 rounded-sm border-border bg-transparent px-2 text-right"
+                          type="number"
+                          placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          value={flashLoanSlippagePercent ?? ""}
+                          onChange={(e) =>
+                            setFlashLoanSlippagePercent(e.target.value)
+                          }
+                        />
+                        <TBody>%</TBody>
+                      </div>
+                    </div>
+
+                    {/* Approximate deduction */}
+                    <div className="flex flex-row justify-between gap-4">
+                      <TBodySans className="text-muted-foreground">
+                        Deduction (approx.)
+                      </TBodySans>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-row items-center gap-2">
+                          <SendTokenLogo />
+                          <TBody>
+                            {formatToken(flashLoanDeductionAmountSend, {
+                              exact: false,
+                            })}
+                            {" SEND"}
+                            {flashLoanDeductionPercent.gt(0) &&
+                              ` (${formatPercent(flashLoanDeductionPercent, { dp: 0 })})`}
+                          </TBody>
+                        </div>
+                        <TLabel>
+                          {formatUsd(
+                            flashLoanDeductionAmountSend.times(
+                              sendReserve.price,
+                            ),
+                          )}
+                        </TLabel>
+                      </div>
+                    </div>
+
+                    {/* Approximate proceeds */}
+                    <div className="flex flex-row justify-between gap-4">
+                      <TBodySans className="text-muted-foreground">
+                        Proceeds (approx.)
+                      </TBodySans>
+
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-row items-center gap-2">
+                          <SendTokenLogo />
+                          <TBody>
+                            {formatToken(flashLoanProceedsAmountSend, {
+                              exact: false,
+                            })}
+                            {" SEND"}
+                          </TBody>
+                        </div>
+                        <TLabel>
+                          {formatUsd(
+                            flashLoanProceedsAmountSend.times(
+                              sendReserve.price,
+                            ),
+                          )}
+                        </TLabel>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
         </div>
 
         {/* Submit */}
