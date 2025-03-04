@@ -108,20 +108,20 @@ export const LENDING_MARKETS: UiLendingMarket[] = process.env
       //     "0xa92aae3be305687d3abe36deb4d92f78ec17bfce7d8d07972722d1166e4bc6ab",
       // },
       {
-        name: "Main market",
+        name: "Main market (beta)",
         slug: "main",
         id: "0x12e46de3eafaf0308a2dd64f1158782ed19e6621835bf883a1dd6b3061115667",
         type: "0x83556891f4a0f233ce7b05cfe7f957d4020492a34f5405b2cb9377d060bef4bf::spring_sui::SPRING_SUI",
         ownerCapId:
-          "0xf0df3204ecd426bc83f5e5dccb07ea35f1af220a40ec02dfd63fb7f2fea00824",
+          "0xf0df3204ecd426bc83f5e5dccb07ea35f1af220a40ec02dfd63fb7f2fea00824", // Owner: beta owner (0xa902...c033)
       },
       {
-        name: "Isolated 1",
-        slug: "isolated-1",
+        name: "STEAMM LM (beta)",
+        slug: "steamm-lm",
         id: "0xb1d89cf9082cedce09d3647f0ebda4a8b5db125aff5d312a8bfd7eefa715bd35",
         type: "0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP",
         ownerCapId:
-          "0xed8262012d34105c5ac59cf2dd6473d492e6ab7529fe7f9ea6cb1fa8dc2dba56",
+          "0xed8262012d34105c5ac59cf2dd6473d492e6ab7529fe7f9ea6cb1fa8dc2dba56", // Owner: beta owner (0xa902...c033)
       },
     ]
   : [
@@ -134,8 +134,8 @@ export const LENDING_MARKETS: UiLendingMarket[] = process.env
           "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
       },
       {
-        name: "STEAMM LP",
-        slug: "steamm-lp",
+        name: "STEAMM LM",
+        slug: "steamm-lm",
         id: "0xc1888ec1b81a414e427a44829310508352aec38252ee0daa9f8b181b6947de9f",
         type: "0x0a071f4976abae1a7f722199cf0bfcbe695ef9408a878e7d12a7ca87b7e582a6::lp_rewards::LP_REWARDS",
         ownerCapId:

@@ -35,8 +35,8 @@ interface UserContext {
   balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   getBalance: (coinType: string) => BigNumber;
 
-  allUserData: Record<string, UserData> | undefined; // Depends on suilendClient, appData
-  userData: UserData | undefined; // Depends on suilendClient, appData
+  allUserData: Record<string, UserData> | undefined; // Depends on allAppData
+  userData: UserData | undefined; // Depends on allUserData
 
   refresh: () => void; // Refreshes allAppData, balances, and allUserData
 
