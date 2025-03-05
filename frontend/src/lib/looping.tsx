@@ -42,6 +42,8 @@ export const getLoopedAssetCoinTypes = (
       if (isStablecoin(reserve.coinType))
         return NORMALIZED_STABLECOIN_COINTYPES;
       if (isEth(reserve.coinType)) return NORMALIZED_ETH_COINTYPES;
+      // Don't prevent BTC looping
+
       return [reserve.coinType];
     })();
 

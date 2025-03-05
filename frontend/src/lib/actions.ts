@@ -526,6 +526,7 @@ export const getSubmitWarningMessages =
           }
         }
       }
+      // Don't prevent BTC looping
     } else if (action === Action.BORROW) {
       if (isStablecoin(reserve.coinType)) {
         for (const stablecoinCoinType of NORMALIZED_STABLECOIN_COINTYPES) {
@@ -548,6 +549,7 @@ export const getSubmitWarningMessages =
           }
         }
       }
+      // Don't prevent BTC looping
 
       if (!reserve.config.isolated) {
         const isolatedReservesWithBorrows = reserves
