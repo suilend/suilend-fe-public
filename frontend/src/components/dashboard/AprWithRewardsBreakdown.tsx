@@ -2,6 +2,8 @@ import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
 import {
+  NORMALIZED_DEEP_COINTYPE,
+  NORMALIZED_LBTC_COINTYPE,
   NORMALIZED_TREATS_COINTYPE,
   formatPercent,
   formatPoints,
@@ -364,6 +366,17 @@ export default function AprWithRewardsBreakdown({
                             </span>
                           </>
                         )}
+                        {reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
+                          reward.stats.rewardCoinType ===
+                            NORMALIZED_DEEP_COINTYPE && (
+                            <>
+                              <br />
+                              <span className="font-sans text-muted-foreground">
+                                DEEP rewards will be distributed
+                                <br /> directly to users once a day
+                              </span>
+                            </>
+                          )}
                       </>
                     }
                   >
