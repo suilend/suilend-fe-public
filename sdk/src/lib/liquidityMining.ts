@@ -260,7 +260,10 @@ export const getDedupedPerDayRewards = (
   return result;
 };
 
-const getRewardsAprPercent = (side: Side, filteredRewards: RewardSummary[]) =>
+export const getRewardsAprPercent = (
+  side: Side,
+  filteredRewards: RewardSummary[],
+) =>
   getDedupedAprRewards(filteredRewards).reduce(
     (acc, reward) =>
       acc.plus(reward.stats.aprPercent.times(side === Side.DEPOSIT ? 1 : -1)),
