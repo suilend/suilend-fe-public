@@ -307,7 +307,11 @@ export default function MarketTable() {
         Side.DEPOSIT,
         reserve.depositAprPercent,
         getFilteredRewards(userData.rewardMap[reserve.coinType].deposit),
-        getStakingYieldAprPercent(Side.DEPOSIT, reserve, lstData.aprPercentMap),
+        getStakingYieldAprPercent(
+          Side.DEPOSIT,
+          reserve.coinType,
+          lstData.aprPercentMap,
+        ),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,

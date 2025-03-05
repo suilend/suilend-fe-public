@@ -131,7 +131,7 @@ export default function AprWithRewardsBreakdown({
 
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
-    reserve,
+    reserve.coinType,
     lstData.aprPercentMap,
   );
 

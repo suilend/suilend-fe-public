@@ -272,9 +272,9 @@ export const getRewardsAprPercent = (
 
 export const getStakingYieldAprPercent = (
   side: Side,
-  reserve: ParsedReserve,
+  coinType: string,
   lstAprPercentMap: Record<string, BigNumber>,
-) => (side === Side.DEPOSIT ? lstAprPercentMap[reserve.coinType] : undefined);
+) => (side === Side.DEPOSIT ? lstAprPercentMap[coinType] : undefined);
 
 export const getTotalAprPercent = (
   side: Side,
@@ -298,7 +298,7 @@ export const getNetAprPercent = (
       const weightedDepositedAmountUsd_stakingYieldAprPercent = new BigNumber(
         getStakingYieldAprPercent(
           Side.DEPOSIT,
-          deposit.reserve,
+          deposit.reserve.coinType,
           lstAprPercentMap,
         ) ?? 0,
       ).times(deposit.depositedAmountUsd);
