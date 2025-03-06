@@ -132,7 +132,7 @@ export default function AprWithRewardsBreakdown({
 
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
-  if (reserve.coinType === NORMALIZED_LBTC_COINTYPE)
+  if (reserve.coinType === NORMALIZED_LBTC_COINTYPE && side === Side.DEPOSIT)
     filteredRewards.push({
       stats: {
         id: uuidv4(),
