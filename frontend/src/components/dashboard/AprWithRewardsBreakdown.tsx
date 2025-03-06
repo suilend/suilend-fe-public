@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   NORMALIZED_DEEP_COINTYPE,
@@ -32,6 +33,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { ASSETS_URL } from "@/lib/constants";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 const calculateUtilizationPercent = (reserve: ParsedReserve) =>
@@ -130,6 +132,22 @@ export default function AprWithRewardsBreakdown({
 
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
+  if (reserve.coinType === NORMALIZED_LBTC_COINTYPE)
+    filteredRewards.push({
+      stats: {
+        id: uuidv4(),
+        isActive: true,
+        rewardIndex: -1, // Not used
+        reserve,
+        rewardCoinType: "LOMBARD",
+        mintDecimals: 0, // Not used
+        symbol: "3x Lombard Lux",
+        iconUrl: `${ASSETS_URL}/partners/Lombard Lux.png`,
+        perDay: new BigNumber(0), // Not used, but must be defined
+        side: Side.DEPOSIT,
+      },
+      obligationClaims: {},
+    });
 
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
@@ -272,20 +290,24 @@ export default function AprWithRewardsBreakdown({
                       key={index}
                       isLast={index === perDayRewards.length - 1}
                       value={
-                        <>
-                          {formatPerDay(
-                            reward.stats.rewardCoinType,
-                            showChange,
-                            reward.stats.perDay,
-                            newPerDayRewards[index].stats.perDay,
-                          )}
-                          <br />
-                          <span className="font-sans text-muted-foreground">
-                            {"Per "}
-                            {reserve.symbol}
-                            {" per day"}
-                          </span>
-                        </>
+                        reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
+                        reward.stats.rewardCoinType ===
+                          "LOMBARD" ? undefined : (
+                          <>
+                            {formatPerDay(
+                              reward.stats.rewardCoinType,
+                              showChange,
+                              reward.stats.perDay,
+                              newPerDayRewards[index].stats.perDay,
+                            )}
+                            <br />
+                            <span className="font-sans text-muted-foreground">
+                              {"Per "}
+                              {reserve.symbol}
+                              {" per day"}
+                            </span>
+                          </>
+                        )
                       }
                     >
                       <TokenLogo
