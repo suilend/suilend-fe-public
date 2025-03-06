@@ -366,7 +366,7 @@ export default function AprWithRewardsBreakdown({
                             </span>
                           </>
                         )}
-                        {reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
+                        {/* {reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
                           reward.stats.rewardCoinType ===
                             NORMALIZED_DEEP_COINTYPE && (
                             <>
@@ -376,7 +376,7 @@ export default function AprWithRewardsBreakdown({
                                 <br /> directly to users once a day
                               </span>
                             </>
-                          )}
+                          )} */}
                       </>
                     }
                   >

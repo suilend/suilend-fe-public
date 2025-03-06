@@ -178,24 +178,24 @@ export const formatRewards = (
     const depositRewards = reserve.depositsPoolRewardManager.poolRewards.map(
       (poolReward) => getRewardSummary(reserve, poolReward, Side.DEPOSIT),
     ) as RewardSummary[];
-    if (reserve.coinType === NORMALIZED_LBTC_COINTYPE) {
-      depositRewards.push({
-        stats: {
-          id: uuidv4(),
-          isActive: true,
-          rewardIndex: -1, // Not applicable as can not be claimed
-          reserve,
-          rewardCoinType: NORMALIZED_DEEP_COINTYPE,
-          mintDecimals: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].mintDecimals,
-          price: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].price,
-          symbol: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].token.symbol,
-          iconUrl: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].token.iconUrl,
-          aprPercent: new BigNumber(1),
-          side: Side.DEPOSIT,
-        },
-        obligationClaims: {}, // Can not be claimed, will be distributed directly to the user ~once per day
-      });
-    }
+    // if (reserve.coinType === NORMALIZED_LBTC_COINTYPE) {
+    //   depositRewards.push({
+    //     stats: {
+    //       id: uuidv4(),
+    //       isActive: true,
+    //       rewardIndex: -1, // Not applicable as can not be claimed
+    //       reserve,
+    //       rewardCoinType: NORMALIZED_DEEP_COINTYPE,
+    //       mintDecimals: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].mintDecimals,
+    //       price: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].price,
+    //       symbol: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].token.symbol,
+    //       iconUrl: parsedReserveMap[NORMALIZED_DEEP_COINTYPE].token.iconUrl,
+    //       aprPercent: new BigNumber(1),
+    //       side: Side.DEPOSIT,
+    //     },
+    //     obligationClaims: {}, // Can not be claimed, will be distributed directly to the user ~once per day
+    //   });
+    // }
 
     const borrowRewards = reserve.borrowsPoolRewardManager.poolRewards.map(
       (poolReward) => getRewardSummary(reserve, poolReward, Side.BORROW),
