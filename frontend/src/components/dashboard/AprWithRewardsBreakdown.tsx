@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from "uuid";
 import {
   NORMALIZED_DEEP_COINTYPE,
   NORMALIZED_LBTC_COINTYPE,
-  NORMALIZED_TREATS_COINTYPE,
   formatPercent,
   formatPoints,
   formatPrice,
@@ -14,6 +13,7 @@ import {
 } from "@suilend/frontend-sui";
 import {
   AprRewardSummary,
+  NORMALIZED_TREATS_COINTYPE,
   PerDayRewardSummary,
   getDedupedAprRewards,
   getDedupedPerDayRewards,

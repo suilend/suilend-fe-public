@@ -34,7 +34,7 @@ export default function FirstDepositDialog() {
     >
       <TBodySans>
         {
-          "Your account is represented as an NFT, which can be viewed in your wallet's NFT section. Remember, do not burn!"
+          "Your account is represented as an NFT, which can be viewed in your wallet's NFT section. Remember, DO NOT BURN!"
         }
       </TBodySans>
 
