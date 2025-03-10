@@ -270,7 +270,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Use deposits
   const [isUsingDeposits, setIsUsingDeposits] = useLocalStorage<boolean>(
     "swap_isUsingDeposits",
-    false,
+    router.query.useDeposits === "true",
   );
 
   // Tokens

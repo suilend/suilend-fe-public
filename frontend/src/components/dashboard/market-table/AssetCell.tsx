@@ -45,13 +45,17 @@ export default function AssetCell({
     useMemo(() => {
       const result = [];
 
-      if (tableType === AccountAssetTableType.BALANCES && !isInMsafeApp()) {
+      if (
+        (tableType === AccountAssetTableType.DEPOSITS ||
+          tableType === AccountAssetTableType.BALANCES) &&
+        !isInMsafeApp()
+      ) {
         result.push({
           title: "Swap",
-          href: getSwapUrl(
+          href: `${getSwapUrl(
             reserve ? token.symbol : token.coinType,
             token.symbol !== "USDC" ? "USDC" : "SUI",
-          ),
+          )}${tableType === AccountAssetTableType.DEPOSITS ? "?useDeposits=true" : ""}`,
           isRelative: true,
         });
       }
