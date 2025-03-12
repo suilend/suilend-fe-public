@@ -504,7 +504,10 @@ export const claimSend = async (
     [value],
   );
 
-  let suiPenaltyCoin = transaction.gas;
+  let suiPenaltyCoin = isFlashLoan
+    ? undefined // Set below
+    : transaction.splitCoins(transaction.gas, [0]);
+
   const flashLoanArgs: Record<string, any> = {};
   if (isFlashLoan) {
     const cetusSdk = initMainnetSDK(rpc.url);
@@ -544,7 +547,7 @@ export const claimSend = async (
     arguments: [
       transaction.object(mSEND_COINTYPE_MANAGER_MAP[mSendCoinType]),
       transaction.object(splitMsendCoin),
-      transaction.object(suiPenaltyCoin),
+      transaction.object(suiPenaltyCoin!),
       transaction.object(SUI_CLOCK_OBJECT_ID),
     ],
   });
@@ -559,7 +562,7 @@ export const claimSend = async (
       address,
       transaction,
     });
-  }
+  } else transaction.transferObjects([suiPenaltyCoin!], address);
 
   if (isDepositing) {
     // Deposit SEND
