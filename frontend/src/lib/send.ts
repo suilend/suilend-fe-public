@@ -506,7 +506,9 @@ export const claimSend = async (
 
   let suiPenaltyCoin = isFlashLoan
     ? undefined // Set below
-    : transaction.splitCoins(transaction.gas, [0]);
+    : claimPenaltyAmountSui.gt(0)
+      ? transaction.gas
+      : transaction.splitCoins(transaction.gas, [0]);
 
   const flashLoanArgs: Record<string, any> = {};
   if (isFlashLoan) {
