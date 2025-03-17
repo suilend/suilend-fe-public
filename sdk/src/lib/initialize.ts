@@ -86,10 +86,13 @@ export const RESERVES_CUSTOM_ORDER = [
 
 const MAYA_COINTYPE =
   "0x3bf0aeb7b9698b18ec7937290a5701088fcd5d43ad11a2564b074d022a6d71ec::maya::MAYA";
+const mPOINTS_COINTYPE =
+  "0x7bae0b3b7b6c3da899fe3f4af95b7110633499c02b8c6945110d799d99deaa68::mpoints::MPOINTS";
 const TREATS_COINTYPE =
   "0x0dadb7fa2771c2952f96161fc1f0c105d1f22d53926b9ff2498a8eea2f6eb204::treats::TREATS";
 
 export const NORMALIZED_MAYA_COINTYPE = normalizeStructTag(MAYA_COINTYPE);
+export const NORMALIZED_mPOINTS_COINTYPE = normalizeStructTag(mPOINTS_COINTYPE);
 export const NORMALIZED_TREATS_COINTYPE = normalizeStructTag(TREATS_COINTYPE);
 
 export const initializeSuilend = async (
@@ -214,8 +217,7 @@ export const initializeSuilendRewards = async (
       !(
         isSendPoints(coinType) ||
         coinType === NORMALIZED_MAYA_COINTYPE ||
-        coinType ===
-          "0x7bae0b3b7b6c3da899fe3f4af95b7110633499c02b8c6945110d799d99deaa68::mpoints::MPOINTS"
+        coinType === NORMALIZED_mPOINTS_COINTYPE
       ) && !rewardPriceMap[coinType],
   );
   const reservelessActiveRewardBirdeyePrices = await Promise.all(
