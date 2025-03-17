@@ -724,7 +724,7 @@ function ClaimTabContent() {
                 style={{
                   height: `${INPUT_HEIGHT}px`,
                   paddingLeft: `${4 * 4 + MAX_BUTTON_WIDTH + 4 * 4}px`,
-                  paddingRight: `${4 * 4 + mSendCoinMetadataMap[selectedMsendCoinType].symbol.length * 14.4 + 4 * 4}px`,
+                  paddingRight: `${4 * 4 + "SEND".length * 14.4 + 4 * 4}px`,
                 }}
                 step="any"
               />
@@ -733,9 +733,7 @@ function ClaimTabContent() {
                 className="absolute right-4 top-0 z-[2] flex flex-col items-end justify-center"
                 style={{ height: `${INPUT_HEIGHT}px` }}
               >
-                <TBody className="text-right text-2xl">
-                  {mSendCoinMetadataMap[selectedMsendCoinType].symbol}
-                </TBody>
+                <TBody className="text-right text-2xl">SEND</TBody>
               </div>
             </div>
 
