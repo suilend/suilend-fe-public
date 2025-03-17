@@ -9,6 +9,7 @@ import {
   formatToken,
   formatUsd,
   isSendPoints,
+  isSendPointsS2,
 } from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/lib/constants";
 import {
@@ -44,9 +45,7 @@ interface RowData {
   coinType: string;
   interestEarned: BigNumber;
   rewardsEarned: {
-    [rewardCoinType: string]: {
-      [timestampS: number]: BigNumber;
-    };
+    [rewardCoinType: string]: BigNumber;
   };
   borrowFees: BigNumber;
   interestPaid: BigNumber;
@@ -822,7 +821,7 @@ export default function EarningsTabContent({
                   return (
                     <TokenAmount
                       key={coinType}
-                      amount={rewardsEarned[coinType][nowS]}
+                      amount={rewardsEarned[coinType]}
                       token={{
                         coinType,
                         symbol: coinMetadata.symbol,
@@ -896,7 +895,7 @@ export default function EarningsTabContent({
     );
 
     return result;
-  }, [appData.coinMetadataMap, appData.lendingMarket.reserves, nowS]);
+  }, [appData.coinMetadataMap, appData.lendingMarket.reserves]);
 
   // Rows
   const rows = useMemo(() => {
@@ -923,8 +922,25 @@ export default function EarningsTabContent({
     );
 
     return coinTypes
-      .reduce(
-        (acc: RowData[], coinType) => [
+      .reduce((acc: RowData[], coinType) => {
+        const dedupedRewardsEarned: Record<string, BigNumber> = {};
+
+        for (const [rewardCoinType, amount] of Object.entries(
+          rewardsEarnedMap?.[Side.DEPOSIT]?.[coinType] ?? {},
+        )) {
+          dedupedRewardsEarned[rewardCoinType] = (
+            dedupedRewardsEarned[rewardCoinType] ?? new BigNumber(0)
+          ).plus(amount[nowS]);
+        }
+        for (const [rewardCoinType, amount] of Object.entries(
+          rewardsEarnedMap?.[Side.BORROW]?.[coinType] ?? {},
+        )) {
+          dedupedRewardsEarned[rewardCoinType] = (
+            dedupedRewardsEarned[rewardCoinType] ?? new BigNumber(0)
+          ).plus(amount[nowS]);
+        }
+
+        return [
           ...acc,
           {
             coinType,
@@ -932,10 +948,7 @@ export default function EarningsTabContent({
               cumInterestEarnedMap[coinType]?.find((d) => d.timestampS === nowS)
                 ?.cumInterest ?? 0,
             ),
-            rewardsEarned: {
-              ...(rewardsEarnedMap?.[Side.DEPOSIT]?.[coinType] ?? {}),
-              ...(rewardsEarnedMap?.[Side.BORROW]?.[coinType] ?? {}),
-            },
+            rewardsEarned: dedupedRewardsEarned,
             borrowFees: cumBorrowFeesMap[coinType] ?? new BigNumber(0),
             interestPaid: new BigNumber(
               cumInterestPaidMap[coinType]?.find((d) => d.timestampS === nowS)
@@ -943,9 +956,8 @@ export default function EarningsTabContent({
             ),
             liquidations: cumLiquidationsMap[coinType] ?? new BigNumber(0),
           } as RowData,
-        ],
-        [],
-      )
+        ];
+      }, [])
       .sort((a, b) =>
         reserveSort(appData.lendingMarket.reserves, a.coinType, b.coinType),
       );
