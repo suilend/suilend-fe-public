@@ -211,8 +211,12 @@ export const initializeSuilendRewards = async (
 
   const reservelessActiveRewardCoinTypes = activeRewardCoinTypes.filter(
     (coinType) =>
-      !(isSendPoints(coinType) || coinType === NORMALIZED_MAYA_COINTYPE) &&
-      !rewardPriceMap[coinType],
+      !(
+        isSendPoints(coinType) ||
+        coinType === NORMALIZED_MAYA_COINTYPE ||
+        coinType ===
+          "0x7bae0b3b7b6c3da899fe3f4af95b7110633499c02b8c6945110d799d99deaa68::mpoints::MPOINTS"
+      ) && !rewardPriceMap[coinType],
   );
   const reservelessActiveRewardBirdeyePrices = await Promise.all(
     reservelessActiveRewardCoinTypes.map((coinType) => getPrice(coinType)),
