@@ -28,6 +28,8 @@ module.exports = {
         destination: "https://suilend.fi/:path*",
         permanent: true,
       },
+
+      // Swap redirects
       {
         source: "/:path*",
         has: [
@@ -45,6 +47,17 @@ module.exports = {
           {
             type: "host",
             value: "suil.ag",
+          },
+        ],
+        destination: "https://suilend.fi/swap/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "send.ag",
           },
         ],
         destination: "https://suilend.fi/swap/:path*",
