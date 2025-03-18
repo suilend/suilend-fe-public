@@ -1,6 +1,13 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   buildTx as build7kTransaction,
@@ -21,6 +28,8 @@ import {
   AlertTriangle,
   ArrowRightLeft,
   ArrowUpDown,
+  ChevronDown,
+  ChevronUp,
   Info,
   RotateCw,
 } from "lucide-react";
@@ -37,6 +46,7 @@ import {
   formatInteger,
   formatPercent,
   formatToken,
+  formatUsd,
   getBalanceChange,
   isSui,
 } from "@suilend/frontend-sui";
@@ -69,6 +79,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   HISTORICAL_USD_PRICES_INTERVAL_S,
+  QUOTE_PROVIDER_NAME_MAP,
   QuoteProvider,
   StandardizedQuote,
   SwapContextProvider,
@@ -246,11 +257,16 @@ function Page() {
     return sortedQuotes;
   }, [quotesMap]);
 
-  const quote = quotes?.find(
-    (q) =>
-      q.in.coinType === tokenIn.coinType &&
-      q.out.coinType === tokenOut.coinType,
-  ); // Best quote by amount out
+  const [overrideQuoteId, setOverrideQuoteId] = useState<string | undefined>(
+    undefined,
+  );
+  const quote =
+    quotes?.find((q) => q.id === overrideQuoteId) ??
+    quotes?.find(
+      (q) =>
+        q.in.coinType === tokenIn.coinType &&
+        q.out.coinType === tokenOut.coinType,
+    ); // Best quote by amount out
   const quoteAmountIn = useMemo(() => quote?.in.amount, [quote?.in.amount]);
   const quoteAmountOut = useMemo(() => quote?.out.amount, [quote?.out.amount]);
 
@@ -493,7 +509,7 @@ function Page() {
     if (isSwapping || isSwappingAndDepositing) return;
     refreshIntervalRef.current = setInterval(
       () => fetchQuotes(tokenIn, tokenOut, value),
-      30 * 1000,
+      60 * 1000,
     );
 
     return () => {
@@ -723,6 +739,11 @@ function Page() {
         : undefined,
     [quoteAmountOut, quoteAmountIn, isInverted],
   );
+
+  // Quote selection
+  const [isQuotesListCollapsed, setIsQuotesListCollapsed] =
+    useState<boolean>(true);
+  const toggleIsQuotesListCollapsed = () => setIsQuotesListCollapsed((o) => !o);
 
   // Price difference
   const priceDifferencePercent = useMemo(
@@ -1239,15 +1260,112 @@ function Page() {
                     <Skeleton className="h-4 w-40" />
                   )}
 
-                  {/* Routing */}
+                  {/* Provider */}
                   {quote ? (
-                    <ReactFlowProvider>
-                      <RoutingDialog quote={quote} />
-                    </ReactFlowProvider>
+                    <Button
+                      className="h-4 p-0 text-muted-foreground hover:bg-transparent"
+                      labelClassName="font-sans text-xs"
+                      endIcon={
+                        isQuotesListCollapsed ? <ChevronDown /> : <ChevronUp />
+                      }
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleIsQuotesListCollapsed}
+                    >
+                      Details
+                    </Button>
                   ) : (
                     <Skeleton className="h-4 w-12" />
                   )}
                 </div>
+
+                {/* Quotes list */}
+                {!isQuotesListCollapsed && (
+                  <div className="flex w-full flex-col gap-2">
+                    {Object.values(QuoteProvider).map((provider) => {
+                      const _quote = (quotes ?? []).find(
+                        (q) => q.provider === provider,
+                      );
+
+                      const bestQuote = (quotes ?? [])
+                        .slice()
+                        .sort((a, b) => +b.out.amount - +a.out.amount)[0];
+
+                      return (
+                        <Fragment key={provider}>
+                          {_quote === undefined ? (
+                            <Skeleton className="h-[54px] w-full rounded-sm bg-muted/10" />
+                          ) : (
+                            <button
+                              key={_quote.id}
+                              className={cn(
+                                "group flex w-full flex-col items-start gap-1 rounded-sm border px-3 py-2 transition-colors disabled:pointer-events-none",
+                                _quote.id === quote?.id
+                                  ? "border-transparent !bg-muted/15 transition-colors"
+                                  : "hover:border-transparent hover:bg-muted/10",
+                              )}
+                              onClick={() => setOverrideQuoteId(_quote.id)}
+                              disabled={isNaN(+_quote.out.amount)}
+                            >
+                              <div className="flex w-full flex-row items-center justify-between">
+                                <TLabelSans className="text-foreground">
+                                  {isNaN(+_quote.out.amount) ? (
+                                    `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
+                                  ) : (
+                                    <>
+                                      {formatToken(_quote.out.amount, {
+                                        dp: tokenOut.decimals,
+                                      })}{" "}
+                                      {tokenOut.symbol}
+                                    </>
+                                  )}
+                                </TLabelSans>
+
+                                {!isNaN(+_quote.out.amount) && (
+                                  <TLabelSans
+                                    className={cn(
+                                      "uppercase",
+                                      _quote.id === bestQuote.id
+                                        ? "text-success"
+                                        : "text-destructive",
+                                    )}
+                                  >
+                                    {_quote.id === bestQuote.id
+                                      ? "Best"
+                                      : formatPercent(
+                                          new BigNumber(
+                                            _quote.out.amount
+                                              .div(bestQuote.out.amount)
+                                              .minus(1),
+                                          ).times(100),
+                                        )}
+                                  </TLabelSans>
+                                )}
+                              </div>
+
+                              <div className="flex h-4 w-full flex-row items-center justify-between">
+                                {!isNaN(+_quote.out.amount) && (
+                                  <TLabelSans>
+                                    {formatUsd(
+                                      _quote.out.amount.times(tokenOutUsdPrice),
+                                    )}
+                                  </TLabelSans>
+                                )}
+
+                                {/* Routing */}
+                                {!isNaN(+_quote.out.amount) && (
+                                  <ReactFlowProvider>
+                                    <RoutingDialog quote={_quote} />
+                                  </ReactFlowProvider>
+                                )}
+                              </div>
+                            </button>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Price difference */}
                 {priceDifferencePercent !== undefined ? (

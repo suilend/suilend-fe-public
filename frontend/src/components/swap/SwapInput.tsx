@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 
 const INPUT_HEIGHT = 70; // px
 const USD_LABEL_HEIGHT = 16; // px
-const INPUT_PADDING_Y = INPUT_HEIGHT / 2 - (32 + USD_LABEL_HEIGHT) / 2; // px
 
 interface SwapInputProps {
   title?: string;
@@ -83,7 +82,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
             isValueLoading && "animate-pulse bg-muted/10",
           )}
         >
-          {title && <TLabelSans className="px-3 pt-3">{title}</TLabelSans>}
+          {title && <TLabelSans className="px-3 pb-1 pt-3">{title}</TLabelSans>}
 
           <div className="relative w-full">
             <InputComponent
@@ -101,8 +100,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 height: `${INPUT_HEIGHT}px`,
                 paddingLeft: `${3 * 4}px`,
                 paddingRight: `${3 * 4 + (5 * 4 + 2 * 4 + token.symbol.slice(0, 10).length * 14.4 + 1 * 4 + 4 * 4) + 3 * 4}px`,
-                paddingTop: `${INPUT_PADDING_Y}px`,
-                paddingBottom: `${INPUT_PADDING_Y + USD_LABEL_HEIGHT}px`,
+                paddingTop: 0,
+                paddingBottom: `${INPUT_HEIGHT - 32}px`,
               }}
               step="any"
             />
@@ -112,15 +111,17 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               !usdValue.eq(0) && (
                 <TLabel
                   className="absolute left-3 z-[2]"
-                  style={{ bottom: `${INPUT_PADDING_Y}px` }}
+                  style={{
+                    bottom: `${INPUT_HEIGHT - (32 + 4 + USD_LABEL_HEIGHT)}px`,
+                  }}
                 >
                   {formatUsd(usdValue)}
                 </TLabel>
               )}
 
             <div
-              className="absolute right-3 z-[2] flex h-8 flex-col items-end justify-center gap-1"
-              style={{ top: `${INPUT_PADDING_Y}px` }}
+              className="absolute right-3 z-[2] flex flex-col items-end justify-center gap-1"
+              style={{ top: 0 }}
             >
               <TokenSelectionDialog
                 direction={direction}

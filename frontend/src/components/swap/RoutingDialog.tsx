@@ -503,9 +503,9 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           variant="ghost"
           size="sm"
         >
-          {hopsCount} hop{hopsCount !== 1 && "s"}
-          {" | "}
           {QUOTE_PROVIDER_NAME_MAP[quote.provider]}
+          {" | "}
+          {hopsCount} hop{hopsCount !== 1 && "s"}
         </Button>
       }
       headerProps={{
@@ -515,9 +515,9 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
         },
         description: (
           <>
-            {hopsCount} hop{hopsCount !== 1 && "s"}
-            {" | "}
             {QUOTE_PROVIDER_NAME_MAP[quote.provider]}
+            {" | "}
+            {hopsCount} hop{hopsCount !== 1 && "s"}
           </>
         ),
       }}
