@@ -100,8 +100,7 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 1;
-const PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD = 8;
+const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 
 function Page() {
   const { explorer } = useSettingsContext();
@@ -1375,13 +1374,7 @@ function Page() {
                         "text-foreground",
                         priceDifferencePercent.gte(
                           PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
-                        ) &&
-                          cn(
-                            "text-warning",
-                            priceDifferencePercent.gte(
-                              PRICE_DIFFERENCE_PERCENT_DESTRUCTIVE_THRESHOLD,
-                            ) && "text-destructive",
-                          ),
+                        ) && "text-warning",
                       )}
                     >
                       <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
