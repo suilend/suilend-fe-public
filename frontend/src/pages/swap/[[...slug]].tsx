@@ -1006,7 +1006,6 @@ function Page() {
         throw new Error("Missing coin to transfer to deposit/transfer to user");
 
       transaction = _transaction;
-      transaction.setGasBudget(SUI_GAS_MIN * 10 ** SUI_DECIMALS);
 
       if (isDepositing) {
         if (!tokenOutReserve) throw new Error("Cannot deposit this token");
