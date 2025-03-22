@@ -10,6 +10,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
 import mixpanel from "mixpanel-browser";
 
+import { RPCS, RpcId } from "@suilend/frontend-sui";
 import {
   SettingsContextProvider,
   WalletContextProvider,
@@ -26,16 +27,20 @@ import { TITLE } from "@/lib/constants";
 import "@/styles/globals.scss";
 
 function WalletContextProviderWrapper({ children }: PropsWithChildren) {
-  const { rpc } = useSettingsContext();
-
   // MSafe Wallet
   const didRegisterMsafeWalletRef = useRef<boolean>(false);
   useEffect(() => {
     if (didRegisterMsafeWalletRef.current) return;
 
-    registerWallet(new MSafeWallet("Suilend", rpc.url, "sui:mainnet"));
+    registerWallet(
+      new MSafeWallet(
+        "Suilend",
+        RPCS.find((rpc) => rpc.id === RpcId.FULL_NODE)!.url,
+        "sui:mainnet",
+      ),
+    );
     didRegisterMsafeWalletRef.current = true;
-  }, [rpc.url]);
+  }, []);
 
   return (
     <WalletContextProvider appName="Suilend">{children}</WalletContextProvider>
