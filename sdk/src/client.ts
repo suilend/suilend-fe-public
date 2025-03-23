@@ -7,7 +7,7 @@ import {
 import {
   SUI_CLOCK_OBJECT_ID,
   SUI_SYSTEM_STATE_OBJECT_ID,
-  fromBase64,
+  fromB64,
   normalizeStructTag,
   toHex,
 } from "@mysten/sui/utils";
@@ -280,7 +280,7 @@ export class SuilendClient {
         obligationOwnerCaps.push(
           ObligationOwnerCap.fromBcs(
             phantom(lendingMarketTypeArgs[0]),
-            fromBase64(obj.data?.bcs?.bcsBytes),
+            fromB64(obj.data?.bcs?.bcsBytes),
           ),
         );
       });
@@ -307,7 +307,7 @@ export class SuilendClient {
 
     const obligation = Obligation.fromBcs(
       phantom(lendingMarketTypeArgs[0]),
-      fromBase64(obligationData.data.bcs.bcsBytes),
+      fromB64(obligationData.data.bcs.bcsBytes),
     );
 
     return obligation;

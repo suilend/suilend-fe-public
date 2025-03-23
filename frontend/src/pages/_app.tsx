@@ -14,7 +14,6 @@ import { RPCS, RpcId } from "@suilend/frontend-sui";
 import {
   SettingsContextProvider,
   WalletContextProvider,
-  useSettingsContext,
 } from "@suilend/frontend-sui-next";
 
 import Layout from "@/components/layout/Layout";
