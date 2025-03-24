@@ -17,7 +17,9 @@ export default function useFetchLstData() {
     let LIQUID_STAKING_INFO_MAP: Record<string, LiquidStakingObjectInfo>;
     try {
       LIQUID_STAKING_INFO_MAP = await (
-        await fetch(`${SPRINGSUI_ASSETS_URL}/liquid-staking-info-map.json`)
+        await fetch(
+          `${SPRINGSUI_ASSETS_URL}/liquid-staking-info-map.json?timestamp=${Date.now()}`,
+        )
       ).json();
     } catch (err) {
       LIQUID_STAKING_INFO_MAP = {};
