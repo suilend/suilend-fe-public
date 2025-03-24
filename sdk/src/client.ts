@@ -9,7 +9,7 @@ import {
   SUI_SYSTEM_STATE_OBJECT_ID,
   fromB64,
   normalizeStructTag,
-  toHex,
+  toHEX,
 } from "@mysten/sui/utils";
 import {
   SuiPriceServiceConnection,
@@ -731,7 +731,7 @@ export class SuilendClient {
         this.lendingMarket.reserves[Number(deposit.reserveArrayIndex)];
       reserveArrayIndexToPriceId.set(
         deposit.reserveArrayIndex,
-        toHex(new Uint8Array(reserve.priceIdentifier.bytes)),
+        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
       );
     });
 
@@ -740,7 +740,7 @@ export class SuilendClient {
         this.lendingMarket.reserves[Number(borrow.reserveArrayIndex)];
       reserveArrayIndexToPriceId.set(
         borrow.reserveArrayIndex,
-        toHex(new Uint8Array(reserve.priceIdentifier.bytes)),
+        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
       );
     });
 
@@ -753,7 +753,7 @@ export class SuilendClient {
         this.lendingMarket.reserves[Number(extraReserveArrayIndex)];
       reserveArrayIndexToPriceId.set(
         extraReserveArrayIndex,
-        toHex(new Uint8Array(reserve.priceIdentifier.bytes)),
+        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
       );
     }
 

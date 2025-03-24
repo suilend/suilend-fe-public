@@ -1,5 +1,5 @@
 import { bcs } from "@mysten/sui/bcs";
-import { toHex } from "@mysten/sui/utils";
+import { toHEX } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
 import { v4 as uuidv4 } from "uuid";
@@ -209,7 +209,7 @@ export const refreshReservePrice = async (
   pythConnection: SuiPriceServiceConnection,
 ): Promise<Reserve<string>[]> => {
   const priceIdentifiers = reserves.map((r) =>
-    toHex(new Uint8Array(r.priceIdentifier.bytes)),
+    toHEX(new Uint8Array(r.priceIdentifier.bytes)),
   );
   const priceData = await pythConnection.getLatestPriceFeeds(priceIdentifiers);
   if (!priceData) return reserves;
