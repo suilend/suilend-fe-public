@@ -443,7 +443,7 @@ export default function TokenSelectionDialog({
               variant="ghost"
               onClick={() => onTokenClick(t)}
             >
-              {/* TODO: Truncate symbol if the list of priority tokens includes non-reserves */}
+              {/* TODO: Truncate symbol if the list of top tokens includes non-reserves */}
               {t.symbol}
             </Button>
           ))}
