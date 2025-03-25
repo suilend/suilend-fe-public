@@ -208,9 +208,12 @@ export const refreshReservePrice = async (
   reserves: Reserve<string>[],
   pythConnection: SuiPriceServiceConnection,
 ): Promise<Reserve<string>[]> => {
-  const priceIdentifiers = reserves.map((r) =>
-    toHEX(new Uint8Array(r.priceIdentifier.bytes)),
+  const priceIdentifiers = Array.from(
+    new Set(
+      reserves.map((r) => toHEX(new Uint8Array(r.priceIdentifier.bytes))),
+    ),
   );
+
   const priceData = await pythConnection.getLatestPriceFeeds(priceIdentifiers);
   if (!priceData) return reserves;
 
