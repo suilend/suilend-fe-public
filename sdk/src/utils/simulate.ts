@@ -214,23 +214,30 @@ export const refreshReservePrice = async (
     ),
   );
 
-  const priceData = await pythConnection.getLatestPriceFeeds(priceIdentifiers);
-  if (!priceData) return reserves;
+  const priceFeeds = await pythConnection.getLatestPriceFeeds(priceIdentifiers);
+  if (!priceFeeds) return reserves;
 
   const updatedReserves: Reserve<string>[] = [];
   for (let i = 0; i < reserves.length; i++) {
-    const newReserve = { ...reserves[i] };
+    const reserve = reserves[i];
+
+    const priceFeed = priceFeeds.find(
+      (p) => p.id === toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+    );
+    if (!priceFeed)
+      throw new Error(
+        `Price feed not found for reserve ${reserve.coinType.name}`,
+      );
+
+    const newReserve = { ...reserve };
     newReserve.price = stringToDecimal(
-      priceData[i].getPriceUnchecked().getPriceAsNumberUnchecked().toString(),
+      priceFeed.getPriceUnchecked().getPriceAsNumberUnchecked().toString(),
     );
     newReserve.smoothedPrice = stringToDecimal(
-      priceData[i]
-        .getEmaPriceUnchecked()
-        .getPriceAsNumberUnchecked()
-        .toString(),
+      priceFeed.getEmaPriceUnchecked().getPriceAsNumberUnchecked().toString(),
     );
     newReserve.priceLastUpdateTimestampS = BigInt(
-      priceData[i].getPriceUnchecked().publishTime,
+      priceFeed.getPriceUnchecked().publishTime,
     );
     updatedReserves.push(newReserve as Reserve<string>);
   }
