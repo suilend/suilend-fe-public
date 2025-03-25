@@ -40,7 +40,7 @@ export default function Link({
   const router = useRouter();
   const isActive = startsWithHref
     ? router.asPath.startsWith(startsWithHref)
-    : router.asPath === href;
+    : router.asPath.split("?")[0] === href;
 
   const Component = isExternal ? "a" : NextLink;
 
