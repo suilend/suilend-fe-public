@@ -5,9 +5,8 @@ import {
   createContext,
   useContext,
   useMemo,
+  useState,
 } from "react";
-
-import { useLocalStorage } from "usehooks-ts";
 
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
 
@@ -32,7 +31,7 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
 
   // Lending market
   const [selectedLendingMarketId, setSelectedLendingMarketId] =
-    useLocalStorage<string>("admin_selectedLendingMarketId", "");
+    useState<string>("");
 
   const appData = useMemo(
     () => allAppData[selectedLendingMarketId] ?? Object.values(allAppData)[0],
