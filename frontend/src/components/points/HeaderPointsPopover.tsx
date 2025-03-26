@@ -63,7 +63,7 @@ export default function PointsCountPopover() {
           icon={<PointsLogo season={season} />}
           style={{ color: seasonMap[season].color }}
         >
-          SEND points Season {season}
+          SEND Points Season {season}
         </TitleWithIcon>
 
         <div className="flex w-full flex-col gap-2">

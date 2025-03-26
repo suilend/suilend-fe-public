@@ -12,7 +12,6 @@ export default function MarketCard() {
 
   return (
     <Card
-      id={`market-card-${appData.lendingMarket.id}`}
       className="bg-transparent max-md:-mx-4 max-md:w-auto max-md:rounded-none max-md:border-x-0"
       headerProps={{
         title: appData.lendingMarket.name,

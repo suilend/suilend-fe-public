@@ -261,7 +261,7 @@ function Page() {
       hoverSrc: `${ASSETS_URL}/send/lending/early-users-hover.mp4`,
       title: "Early Users",
       description:
-        "Early users are those who used Suilend prior to the launch of SEND points.",
+        "Early users are those who used Suilend prior to the launch of SEND Points.",
       allocationType: AllocationType.FLAT,
       assetType: AssetType.LENDING,
       cta: undefined,
