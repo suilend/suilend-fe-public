@@ -1,4 +1,5 @@
 import BigNumber from "bignumber.js";
+import pLimit from "p-limit";
 import useSWR from "swr";
 
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
@@ -13,6 +14,8 @@ export default function useFetchLstData() {
 
   // Data
   const dataFetcher = async () => {
+    const limit10 = pLimit(10);
+
     // LSTs
     let LIQUID_STAKING_INFO_MAP: Record<string, LiquidStakingObjectInfo>;
     try {
@@ -35,7 +38,7 @@ export default function useFetchLstData() {
           RESERVES_CUSTOM_ORDER.includes(LIQUID_STAKING_INFO.type),
         )
         .map((LIQUID_STAKING_INFO) =>
-          (async () => {
+          limit10<[], [string, BigNumber]>(async () => {
             const lstClient = await LstClient.initialize(
               suiClient,
               LIQUID_STAKING_INFO,
@@ -45,7 +48,7 @@ export default function useFetchLstData() {
             const aprPercent = new BigNumber(apr).times(100);
 
             return [LIQUID_STAKING_INFO.type, aprPercent];
-          })(),
+          }),
         ),
     );
     const aprPercentMap = Object.fromEntries(aprPercentMapEntries);
