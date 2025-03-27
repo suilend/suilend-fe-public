@@ -37,6 +37,7 @@ import {
   getCoinMetadataMap,
   getPrice,
   isSendPoints,
+  isSteammPoints,
 } from "@suilend/frontend-sui";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
@@ -231,6 +232,7 @@ export const initializeSuilendRewards = async (
     (coinType) =>
       !(
         isSendPoints(coinType) ||
+        isSteammPoints(coinType) ||
         coinType === NORMALIZED_MAYA_COINTYPE ||
         coinType === NORMALIZED_mPOINTS_COINTYPE
       ) && !rewardPriceMap[coinType],
