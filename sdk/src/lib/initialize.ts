@@ -168,6 +168,17 @@ export const initializeSuilend = async (
     (reserve.smoothedPrice.value as bigint) = parsedBirdeyePrice;
   }
 
+  const walReserve = refreshedRawReserves.find(
+    (r) => normalizeStructTag(r.coinType.name) === NORMALIZED_WAL_COINTYPE,
+  );
+  if (walReserve) {
+    const walPrice = BigInt(
+      +new BigNumber(0.35).times(WAD).integerValue(BigNumber.ROUND_DOWN),
+    );
+    (walReserve.price.value as bigint) = walPrice;
+    (walReserve.smoothedPrice.value as bigint) = walPrice;
+  }
+
   const lendingMarket = parseLendingMarket(
     suilendClient.lendingMarket,
     refreshedRawReserves,
