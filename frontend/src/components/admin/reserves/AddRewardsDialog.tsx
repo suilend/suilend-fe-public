@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
+import { formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -185,6 +186,11 @@ export default function AddRewardsDialog() {
         />
         <Input
           label="startTimeMs"
+          labelRight={
+            startTimeMs.length >= 13
+              ? formatDate(new Date(+startTimeMs), "yyyy-MM-dd HH:mm:ss")
+              : undefined
+          }
           id="startTimeMs"
           type="number"
           value={startTimeMs}
@@ -193,6 +199,11 @@ export default function AddRewardsDialog() {
         />
         <Input
           label="endTimeMs"
+          labelRight={
+            endTimeMs.length >= 13
+              ? formatDate(new Date(+endTimeMs), "yyyy-MM-dd HH:mm:ss")
+              : undefined
+          }
           id="endTimeMs"
           type="number"
           value={endTimeMs}
