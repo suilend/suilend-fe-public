@@ -1,9 +1,4 @@
-import {
-  CSSProperties,
-  PropsWithChildren,
-  ReactElement,
-  cloneElement,
-} from "react";
+import { PropsWithChildren, ReactElement, cloneElement } from "react";
 
 import { ClassValue } from "clsx";
 
@@ -30,7 +25,6 @@ export default function Tabs({
   tabs,
   selectedTab,
   onTabChange,
-
   children,
 }: TabsProps) {
   return (
