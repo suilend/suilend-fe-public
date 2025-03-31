@@ -329,7 +329,7 @@ export default function AprWithRewardsBreakdown({
                 {/* Total APR */}
                 <div className="flex flex-row items-center justify-between gap-4">
                   <TBodySans>{capitalize(side)} APR</TBodySans>
-                  <TBody>
+                  <TBody className="font-bold">
                     {formatAprPercent(
                       showChange,
                       totalAprPercent,
