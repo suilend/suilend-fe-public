@@ -19,7 +19,7 @@ import {
   TransactionObjectArgument,
   coinWithBalance,
 } from "@mysten/sui/transactions";
-import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
+import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
 import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
@@ -1063,17 +1063,17 @@ function Page() {
         { ...tokenIn, description: "" },
         -1,
       );
+      const balanceChangeOut = getBalanceChange(res, address, {
+        ...tokenOut,
+        description: "",
+      });
+
       const balanceChangeInFormatted = formatToken(
         !isUsingDeposits && balanceChangeIn !== undefined
           ? balanceChangeIn
           : quote.in.amount, // When using deposits, the in asset is not in the wallet
         { dp: tokenIn.decimals, trimTrailingZeros: true },
       );
-
-      const balanceChangeOut = getBalanceChange(res, address, {
-        ...tokenOut,
-        description: "",
-      });
       const balanceChangeOutFormatted = formatToken(
         !isDepositing && balanceChangeOut !== undefined
           ? balanceChangeOut
