@@ -4,10 +4,12 @@ import useSWR from "swr";
 
 import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
 import { RESERVES_CUSTOM_ORDER } from "@suilend/sdk";
-import { LiquidStakingObjectInfo, LstClient } from "@suilend/springsui-sdk";
+import {
+  LstClient,
+  fetchRegistryLiquidStakingInfoMap,
+} from "@suilend/springsui-sdk";
 
 import { LstData } from "@/contexts/AppContext";
-import { SPRINGSUI_ASSETS_URL } from "@/lib/constants";
 
 export default function useFetchLstData() {
   const { suiClient } = useSettingsContext();
@@ -17,20 +19,10 @@ export default function useFetchLstData() {
     const limit10 = pLimit(10);
 
     // LSTs
-    let LIQUID_STAKING_INFO_MAP: Record<string, LiquidStakingObjectInfo>;
-    try {
-      LIQUID_STAKING_INFO_MAP = await (
-        await fetch(
-          `${SPRINGSUI_ASSETS_URL}/liquid-staking-info-map.json?timestamp=${Date.now()}`,
-        )
-      ).json();
-    } catch (err) {
-      LIQUID_STAKING_INFO_MAP = {};
-    }
+    const LIQUID_STAKING_INFO_MAP =
+      await fetchRegistryLiquidStakingInfoMap(suiClient);
 
-    const lstCoinTypes = Object.values(LIQUID_STAKING_INFO_MAP).map(
-      (LIQUID_STAKING_INFO) => LIQUID_STAKING_INFO.type,
-    );
+    const lstCoinTypes = Object.keys(LIQUID_STAKING_INFO_MAP);
 
     const aprPercentMapEntries: [string, BigNumber][] = await Promise.all(
       Object.values(LIQUID_STAKING_INFO_MAP)
