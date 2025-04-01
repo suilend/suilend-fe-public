@@ -246,7 +246,7 @@ export default function ActionsModalTabContent({
       title: `${capitalize(action)} ${formatToken(new BigNumber(value), {
         dp: reserve.mintDecimals,
         trimTrailingZeros: true,
-      })} ${reserve.symbol}`,
+      })} ${reserve.token.symbol}`,
     };
   })();
 
@@ -317,7 +317,7 @@ export default function ActionsModalTabContent({
       );
 
       toast.success(
-        `${capitalize(actionPastTense)} ${balanceChangeFormatted} ${reserve.symbol}`,
+        `${capitalize(actionPastTense)} ${balanceChangeFormatted} ${reserve.token.symbol}`,
         {
           action: (
             <TextLink className="block" href={txUrl}>
@@ -373,12 +373,12 @@ export default function ActionsModalTabContent({
             <Tooltip
               title={
                 !isTouchscreen && balance.gt(0)
-                  ? `${formatToken(balance, { dp: reserve.mintDecimals })} ${reserve.symbol}`
+                  ? `${formatToken(balance, { dp: reserve.mintDecimals })} ${reserve.token.symbol}`
                   : undefined
               }
             >
               <TBody className="text-xs">
-                {formatToken(balance, { exact: false })} {reserve.symbol}
+                {formatToken(balance, { exact: false })} {reserve.token.symbol}
               </TBody>
             </Tooltip>
           </div>
@@ -392,12 +392,13 @@ export default function ActionsModalTabContent({
             <Tooltip
               title={
                 !isTouchscreen && positionAmount.gt(0)
-                  ? `${formatToken(positionAmount, { dp: reserve.mintDecimals })} ${reserve.symbol}`
+                  ? `${formatToken(positionAmount, { dp: reserve.mintDecimals })} ${reserve.token.symbol}`
                   : undefined
               }
             >
               <TBody className="text-xs">
-                {formatToken(positionAmount, { exact: false })} {reserve.symbol}
+                {formatToken(positionAmount, { exact: false })}{" "}
+                {reserve.token.symbol}
               </TBody>
             </Tooltip>
           </div>
@@ -406,7 +407,7 @@ export default function ActionsModalTabContent({
 
       <div className="-m-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden p-4 md:pb-6">
         <div
-          className="flex flex-col gap-3"
+          className="flex min-h-[116px] flex-col gap-3"
           style={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
         >
           <LabelWithValue
@@ -431,24 +432,23 @@ export default function ActionsModalTabContent({
             horizontal
             value="0"
           />
-          <YourBorrowLimitlabel
-            obligation={obligation}
-            newObligation={newObligation}
-          />
+          {[Action.DEPOSIT, Action.WITHDRAW].includes(action) && (
+            <YourBorrowLimitlabel
+              obligation={obligation}
+              newObligation={newObligation}
+            />
+          )}
           <YourUtilizationLabel
             obligation={obligation}
             newObligation={newObligation}
             noUtilizationBar
           />
-          {action === Action.BORROW ? (
+          {action === Action.BORROW && (
             <LabelWithValue
               label="Borrow fee"
-              value={`${formatToken(borrowFee)} ${reserve.symbol}`}
+              value={`${formatToken(borrowFee)} ${reserve.token.symbol}`}
               horizontal
             />
-          ) : (
-            // Placeholder so the UI doesn't move when switching tabs
-            <div className="h-5 max-md:hidden" />
           )}
         </div>
 
