@@ -30,8 +30,8 @@ import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
+  NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_USDC_COINTYPE,
   getCoinMetadataMap,
   getHistoryPrice,
   getPrice,
@@ -101,11 +101,11 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider._7K; quote: _7kQuote }
 );
 
-const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
+export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_IN_COINTYPE = NORMALIZED_SUI_COINTYPE;
 
-const DEFAULT_TOKEN_OUT_SYMBOL = "USDC";
-const DEFAULT_TOKEN_OUT_COINTYPE = NORMALIZED_USDC_COINTYPE;
+export const DEFAULT_TOKEN_OUT_SYMBOL = "SEND";
+const DEFAULT_TOKEN_OUT_COINTYPE = NORMALIZED_SEND_COINTYPE;
 
 export const getSwapUrl = (
   inSymbol: string = DEFAULT_TOKEN_IN_SYMBOL,
@@ -268,8 +268,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   }, []);
 
   // Use deposits
-  const [isUsingDeposits, setIsUsingDeposits] = useLocalStorage<boolean>(
-    "swap_isUsingDeposits",
+  const [isUsingDeposits, setIsUsingDeposits] = useState<boolean>(
     router.query.useDeposits === "true",
   );
 

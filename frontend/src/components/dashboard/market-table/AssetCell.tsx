@@ -32,7 +32,11 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { getSwapUrl } from "@/contexts/SwapContext";
+import {
+  DEFAULT_TOKEN_IN_SYMBOL as SWAP_DEFAULT_TOKEN_IN_SYMBOL,
+  DEFAULT_TOKEN_OUT_SYMBOL as SWAP_DEFAULT_TOKEN_OUT_SYMBOL,
+  getSwapUrl,
+} from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SPRINGSUI_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -78,8 +82,12 @@ export default function AssetCell({
         result.push({
           title: "Swap",
           href: `${getSwapUrl(
-            reserve ? token.symbol : token.coinType,
-            token.symbol !== "USDC" ? "USDC" : "SUI",
+            token.symbol !== SWAP_DEFAULT_TOKEN_OUT_SYMBOL
+              ? reserve
+                ? token.symbol
+                : token.coinType
+              : SWAP_DEFAULT_TOKEN_IN_SYMBOL,
+            SWAP_DEFAULT_TOKEN_OUT_SYMBOL,
           )}${tableType === AccountAssetTableType.DEPOSITS ? "?useDeposits=true" : ""}`,
           isRelative: true,
         });
