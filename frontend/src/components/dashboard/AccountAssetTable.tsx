@@ -30,6 +30,7 @@ interface RowData {
   price?: BigNumber;
   amount: BigNumber;
   amountUsd?: BigNumber;
+  extra?: Record<string, any>;
 }
 
 interface AccountAssetTableProps {

@@ -3,7 +3,11 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 
-import { formatUsd, getToken } from "@suilend/frontend-sui";
+import {
+  NORMALIZED_WAL_COINTYPE,
+  formatUsd,
+  getToken,
+} from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 
 import AccountAssetTable, {
@@ -17,7 +21,8 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
   const { appData } = useLoadedAppContext();
-  const { balancesCoinMetadataMap, getBalance } = useLoadedUserContext();
+  const { balancesCoinMetadataMap, getBalance, ownedStakedWalObjects } =
+    useLoadedUserContext();
 
   const coinTypes = useMemo(
     () =>
@@ -64,26 +69,46 @@ export default function WalletBalancesCard() {
       <CardContent className="p-0">
         <AccountAssetTable
           type={AccountAssetTableType.BALANCES}
-          assets={Object.entries(balancesCoinMetadataMap ?? {})
-            .filter(([coinType]) => coinTypes.includes(coinType))
-            .map(([coinType, coinMetadata]) => {
-              const reserve = appData.reserveMap[coinType];
+          assets={[
+            ...Object.entries(balancesCoinMetadataMap ?? {})
+              .filter(([coinType]) => coinTypes.includes(coinType))
+              .map(([coinType, coinMetadata]) => {
+                const reserve = appData.reserveMap[coinType];
 
-              let price: BigNumber | undefined =
-                reserve?.price ?? appData.rewardPriceMap[coinType];
-              if (price !== undefined && price.isNaN()) price = undefined;
+                let price: BigNumber | undefined =
+                  reserve?.price ?? appData.rewardPriceMap[coinType];
+                if (price !== undefined && price.isNaN()) price = undefined;
+
+                return {
+                  reserve,
+                  token: getToken(coinType, coinMetadata),
+                  price,
+                  amount: getBalance(coinType),
+                  amountUsd:
+                    price !== undefined
+                      ? getBalance(coinType).times(price)
+                      : undefined,
+                };
+              }),
+            ...(ownedStakedWalObjects ?? []).map((obj) => {
+              const price = appData.reserveMap[NORMALIZED_WAL_COINTYPE].price;
 
               return {
-                reserve,
-                token: getToken(coinType, coinMetadata),
+                reserve: undefined,
+                token: {
+                  ...getToken(
+                    NORMALIZED_WAL_COINTYPE,
+                    appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
+                  ),
+                  symbol: "Staked WAL",
+                },
                 price,
-                amount: getBalance(coinType),
-                amountUsd:
-                  price !== undefined
-                    ? getBalance(coinType).times(price)
-                    : undefined,
+                amount: obj.amount,
+                amountUsd: obj.amount.times(price),
+                extra: { obj },
               };
-            })}
+            }),
+          ]}
           noAssetsMessage="No assets"
         />
       </CardContent>

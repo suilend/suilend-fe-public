@@ -4,14 +4,22 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
 } from "react";
 
-import { CoinMetadata } from "@mysten/sui/client";
+import { CoinMetadata, SuiObjectResponse } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { shallowPushQuery } from "@suilend/frontend-sui-next";
+import { NORMALIZED_WAL_COINTYPE } from "@suilend/frontend-sui";
+import {
+  shallowPushQuery,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 import useFetchBalances from "@suilend/frontend-sui-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/frontend-sui-next/hooks/useRefreshOnBalancesChange";
@@ -23,6 +31,8 @@ import {
   useAppContext,
 } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
+import { getOwnedObjectsOfType } from "@/lib/transactions";
+import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
 export interface UserData {
   obligationOwnerCaps: ObligationOwnerCap<string>[];
@@ -34,6 +44,7 @@ interface UserContext {
   rawBalancesMap: Record<string, BigNumber> | undefined;
   balancesCoinMetadataMap: Record<string, CoinMetadata> | undefined;
   getBalance: (coinType: string) => BigNumber;
+  ownedStakedWalObjects: StakedWalObject[] | undefined;
 
   allUserData: Record<string, UserData> | undefined; // Depends on allAppData
   userData: UserData | undefined; // Depends on allUserData
@@ -55,6 +66,7 @@ const UserContext = createContext<UserContext>({
   getBalance: () => {
     throw Error("UserContextProvider not initialized");
   },
+  ownedStakedWalObjects: undefined,
 
   allUserData: undefined,
   userData: undefined,
@@ -76,6 +88,8 @@ export const useLoadedUserContext = () => useUserContext() as LoadedUserContext;
 export function UserContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
 
+  const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
   const { appData, refreshAllAppData } = useAppContext();
 
   // Balances
@@ -106,6 +120,69 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     [rawBalancesMap, balancesCoinMetadataMap],
   );
 
+  const [ownedStakedWalObjectsMap, setOwnedStakedWalObjectsMap] = useState<
+    Record<string, SuiObjectResponse[]>
+  >({});
+
+  const fetchOwnedStakedWalObjectsMap = useCallback(
+    async (_address: string) => {
+      console.log("Fetching ownedStakedWalObjectsMap", _address);
+
+      try {
+        const objs = await getOwnedObjectsOfType(
+          suiClient,
+          _address,
+          STAKED_WAL_TYPE,
+        );
+
+        setOwnedStakedWalObjectsMap((prev) => ({
+          ...prev,
+          [_address]: objs,
+        }));
+        console.log("Fetched ownedStakedWalObjectsMap", _address, objs);
+      } catch (err) {
+        console.error("Failed to fetch ownedStakedWalObjectsMap", err);
+      }
+    },
+    [suiClient],
+  );
+
+  const isFetchingOwnedStakedWalObjectsMapRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!address) return;
+
+    if (isFetchingOwnedStakedWalObjectsMapRef.current.includes(address)) return;
+    isFetchingOwnedStakedWalObjectsMapRef.current.push(address);
+
+    fetchOwnedStakedWalObjectsMap(address);
+  }, [address, fetchOwnedStakedWalObjectsMap]);
+
+  const ownedStakedWalObjects = useMemo(() => {
+    if (!address || appData === undefined) return undefined;
+
+    const result: StakedWalObject[] = [];
+    for (const obj of ownedStakedWalObjectsMap[address] ?? []) {
+      const { activation_epoch, node_id, principal, state } = (
+        obj.data?.content as any
+      ).fields;
+
+      result.push({
+        id: obj.data?.objectId as string,
+        nodeId: node_id,
+        activationEpoch: activation_epoch,
+        amount: new BigNumber(principal).div(
+          10 ** appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+        ),
+        state:
+          state.variant === "Staked"
+            ? StakedWalState.STAKED
+            : StakedWalState.WITHDRAWING,
+      });
+    }
+
+    return result;
+  }, [address, appData, ownedStakedWalObjectsMap]);
+
   // User data
   const { data: allUserData, mutateData: mutateAllUserData } =
     useFetchUserData();
@@ -125,7 +202,14 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       await mutateAllUserData();
     })();
     refreshRawBalancesMap();
-  }, [refreshAllAppData, mutateAllUserData, refreshRawBalancesMap]);
+    if (address) fetchOwnedStakedWalObjectsMap(address);
+  }, [
+    refreshAllAppData,
+    mutateAllUserData,
+    refreshRawBalancesMap,
+    address,
+    fetchOwnedStakedWalObjectsMap,
+  ]);
 
   useRefreshOnBalancesChange(refresh as () => Promise<void>);
 
@@ -155,6 +239,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
+      ownedStakedWalObjects,
 
       allUserData,
       userData,
@@ -175,6 +260,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       rawBalancesMap,
       balancesCoinMetadataMap,
       getBalance,
+      ownedStakedWalObjects,
       allUserData,
       userData,
       refresh,

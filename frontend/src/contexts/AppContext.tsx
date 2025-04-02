@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
@@ -17,7 +19,10 @@ import {
   isDeprecated,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+import {
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/frontend-sui-next";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -25,6 +30,7 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import useFetchLstData from "@/fetchers/useFetchLstData";
+import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
 export enum QueryParams {
   LENDING_MARKET = "market",
@@ -62,6 +68,9 @@ interface AppContext {
   lstData: LstData | undefined;
   isLst: (coinType: string) => boolean;
   isEcosystemLst: (coinType: string) => boolean;
+
+  walrusEpoch: number | undefined;
+  walrusEpochProgressPercent: number | undefined;
 }
 type LoadedAppContext = AppContext & {
   allAppData: Record<string, AppData>;
@@ -90,6 +99,9 @@ const AppContext = createContext<AppContext>({
   isEcosystemLst: () => {
     throw Error("AppContextProvider not initialized");
   },
+
+  walrusEpoch: undefined,
+  walrusEpochProgressPercent: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -106,6 +118,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     [router.query],
   )();
 
+  const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
   // Lending markets
@@ -176,6 +189,37 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     [isLst],
   );
 
+  // Walrus
+  const [walrusEpoch, setWalrusEpoch] = useState<number | undefined>(undefined);
+  const [walrusEpochProgressPercent, setWalrusEpochProgressPercent] = useState<
+    number | undefined
+  >(undefined);
+  useEffect(() => {
+    (async () => {
+      try {
+        const obj = await suiClient.getObject({
+          id: WALRUS_INNER_STAKING_OBJECT_ID,
+          options: {
+            showContent: true,
+          },
+        });
+
+        const { epoch, epoch_duration, first_epoch_start } = (
+          obj.data?.content as any
+        ).fields.value.fields;
+
+        setWalrusEpoch(epoch);
+        setWalrusEpochProgressPercent(
+          ((Date.now() - (+first_epoch_start + (epoch - 1) * +epoch_duration)) /
+            +epoch_duration) *
+            100,
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [suiClient]);
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -189,6 +233,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       lstData,
       isLst,
       isEcosystemLst,
+
+      walrusEpoch,
+      walrusEpochProgressPercent,
     }),
     [
       allAppData,
@@ -199,6 +246,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       lstData,
       isLst,
       isEcosystemLst,
+      walrusEpoch,
+      walrusEpochProgressPercent,
     ],
   );
 
