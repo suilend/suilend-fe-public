@@ -245,7 +245,6 @@ export default function AssetCell({
       refresh();
     }
   };
-  console.log("XXXX", extra);
 
   const unstakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
