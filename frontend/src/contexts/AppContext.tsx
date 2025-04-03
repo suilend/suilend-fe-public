@@ -16,7 +16,6 @@ import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_yapSUI_COINTYPE,
-  isDeprecated,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
 import {
@@ -156,7 +155,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
           return (
             (reserve.coinType === NORMALIZED_yapSUI_COINTYPE &&
               Date.now() >= 1739966400000) || // 2024-02-19 12:00:00 UTC
-            isDeprecated(reserve.coinType) || // Always show deprecated reserves
+            (reserve.depositedAmount.gt(0) &&
+              reserve.config.depositLimit.eq(0)) || // Always show deprecated reserves
             reserve.config.depositLimit.gt(0) ||
             address === ADMIN_ADDRESS
           );

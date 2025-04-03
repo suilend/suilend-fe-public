@@ -8,7 +8,6 @@ import {
   Token,
   formatToken,
   formatUsd,
-  isDeprecated,
   isMemecoin,
   issSui,
 } from "@suilend/frontend-sui";
@@ -397,7 +396,8 @@ export default function MarketTable() {
 
       return {
         isIsolated: reserve.config.isolated,
-        isDeprecated: isDeprecated(reserve.token.coinType),
+        isDeprecated:
+          reserve.depositedAmount.gt(0) && reserve.config.depositLimit.eq(0),
 
         reserve,
         token: reserve.token,
