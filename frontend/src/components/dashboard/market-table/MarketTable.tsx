@@ -117,7 +117,8 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { lstData, isEcosystemLst } = useLoadedAppContext();
+  const { deprecatedReserveIds, lstData, isEcosystemLst } =
+    useLoadedAppContext();
   const { userData } = useLoadedUserContext();
   const { filteredReserves } = useLoadedAppContext();
 
@@ -396,8 +397,7 @@ export default function MarketTable() {
 
       return {
         isIsolated: reserve.config.isolated,
-        isDeprecated:
-          reserve.depositedAmount.gt(0) && reserve.config.depositLimit.eq(0),
+        isDeprecated: (deprecatedReserveIds ?? []).includes(reserve.id),
 
         reserve,
         token: reserve.token,
@@ -565,6 +565,7 @@ export default function MarketTable() {
     filteredReserves,
     userData.rewardMap,
     lstData.aprPercentMap,
+    deprecatedReserveIds,
     isEcosystemLst,
   ]);
 

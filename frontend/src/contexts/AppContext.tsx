@@ -11,6 +11,7 @@ import {
 
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
+import { useFlags } from "launchdarkly-react-client-sdk";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
@@ -58,6 +59,7 @@ export interface LstData {
 
 interface AppContext {
   allAppData: Record<string, AppData> | undefined;
+  deprecatedReserveIds: string[] | undefined;
   filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
   refreshAllAppData: () => Promise<void>;
 
@@ -83,6 +85,7 @@ type LoadedAppContext = AppContext & {
 
 const AppContext = createContext<AppContext>({
   allAppData: undefined,
+  deprecatedReserveIds: undefined,
   filteredReservesMap: undefined,
   refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
@@ -137,6 +140,13 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     [queryParams, allAppData],
   );
 
+  // Deprecated reserves
+  const flags = useFlags();
+  const deprecatedReserveIds: string[] | undefined = useMemo(
+    () => flags?.suilendDeprecatedReserveIds,
+    [flags?.suilendDeprecatedReserveIds],
+  );
+
   // Filtered reserves
   const filteredReservesMap = useMemo(() => {
     if (!allAppData) return undefined;
@@ -155,9 +165,11 @@ export function AppContextProvider({ children }: PropsWithChildren) {
           return (
             (reserve.coinType === NORMALIZED_yapSUI_COINTYPE &&
               Date.now() >= 1739966400000) || // 2024-02-19 12:00:00 UTC
-            (reserve.depositedAmount.gt(0) &&
-              reserve.config.depositLimit.eq(0)) || // Always show deprecated reserves
-            reserve.config.depositLimit.gt(0) ||
+            deprecatedReserveIds?.includes(reserve.id) || // Show deprecated reserves
+            !(
+              reserve.config.depositLimit.eq(0) &&
+              reserve.depositedAmountUsd.lt(1000)
+            ) || // Show reserves with depositLimit > 0 OR depositedAmountUsd >= 1000
             address === ADMIN_ADDRESS
           );
         });
@@ -166,7 +178,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }
 
     return result;
-  }, [allAppData, address]);
+  }, [allAppData, deprecatedReserveIds, address]);
 
   const filteredReserves = useMemo(
     () =>
@@ -224,6 +236,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const contextValue: AppContext = useMemo(
     () => ({
       allAppData,
+      deprecatedReserveIds,
       filteredReservesMap,
       refreshAllAppData,
 
@@ -239,6 +252,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }),
     [
       allAppData,
+      deprecatedReserveIds,
       filteredReservesMap,
       refreshAllAppData,
       appData,
