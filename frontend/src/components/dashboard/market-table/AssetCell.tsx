@@ -32,6 +32,7 @@ import { MarketTableType } from "@/components/dashboard/market-table/MarketTable
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
@@ -40,9 +41,8 @@ import {
   getSwapUrl,
 } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { ASSETS_URL } from "@/lib/constants";
 import { SPRINGSUI_URL } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import {
   SUILEND_WALRUS_NODE_ID,
   StakedWalObject,
@@ -291,48 +291,49 @@ export default function AssetCell({
 
   return (
     <div className="flex flex-row items-center gap-3">
-      <div className="relative w-max">
-        <TokenLogo showTooltip token={token} />
-
-        {
-          // Staked WAL
-          token.coinType === NORMALIZED_WAL_COINTYPE &&
-            reserve === undefined && (
-              <div className="absolute left-1/2 top-[100%] flex w-max -translate-x-1/2 flex-row items-center gap-1">
-                {(extra!.obj as StakedWalObject).nodeId ===
-                  SUILEND_WALRUS_NODE_ID && (
-                  <Image
-                    className="-mt-px"
-                    src={`${ASSETS_URL}/Suilend.svg`}
-                    alt="Suilend logo"
-                    width={8}
-                    height={8}
-                    quality={100}
-                  />
-                )}
-                <TLabelSans className="text-[8px]">
-                  {(extra!.obj as StakedWalObject).nodeId ===
-                  SUILEND_WALRUS_NODE_ID
-                    ? "Suilend"
-                    : formatId((extra!.obj as StakedWalObject).nodeId, 2)}
-                </TLabelSans>
-              </div>
-            )
-        }
-      </div>
+      <TokenLogo showTooltip token={token} />
 
       <div className="flex flex-col gap-1">
-        <div className="flex flex-row flex-wrap items-baseline gap-x-2">
-          <TBody>{token.symbol}</TBody>
+        <div className="flex flex-row flex-wrap items-baseline gap-x-2 gap-y-1">
+          <TBody>
+            {
+              // Staked WAL
+              token.coinType === NORMALIZED_WAL_COINTYPE &&
+                reserve === undefined && (
+                  <>
+                    <Tooltip title={(extra!.obj as StakedWalObject).nodeId}>
+                      <span
+                        className={cn(
+                          "w-max decoration-foreground/50",
+                          hoverUnderlineClassName,
+                          (extra!.obj as StakedWalObject).nodeId !==
+                            SUILEND_WALRUS_NODE_ID && "uppercase",
+                        )}
+                      >
+                        {(extra!.obj as StakedWalObject).nodeId ===
+                        SUILEND_WALRUS_NODE_ID
+                          ? "Suilend"
+                          : formatId((extra!.obj as StakedWalObject).nodeId, 2)}
+                      </span>
+                    </Tooltip>{" "}
+                  </>
+                )
+            }
+            {token.symbol}
+          </TBody>
           {
-            // Staked WAL (withdrawing state)
+            // Staked WAL (Withdrawing, withdrawEpoch > epoch)
             token.coinType === NORMALIZED_WAL_COINTYPE &&
               reserve === undefined &&
               (extra!.obj as StakedWalObject).state ===
-                StakedWalState.WITHDRAWING && (
+                StakedWalState.WITHDRAWING &&
+              !(
+                (extra!.obj as StakedWalObject).withdrawEpoch! <=
+                (walrusEpoch ?? 0)
+              ) && (
                 <TLabelSans className="animate-pulse">
                   Withdrawing Epoch{" "}
-                  {(extra!.obj as StakedWalObject).activationEpoch + 1}
+                  {(extra!.obj as StakedWalObject).withdrawEpoch!}
                 </TLabelSans>
               )
           }
@@ -341,8 +342,8 @@ export default function AssetCell({
             <TextLink
               key={link.title}
               className={cn(
-                "hoverLink block shrink-0 text-xs uppercase text-muted-foreground no-underline opacity-0 hover:text-foreground",
-                isTouchscreen && "opacity-100",
+                "hoverLink block shrink-0 text-xs uppercase text-muted-foreground no-underline hover:text-foreground",
+                isTouchscreen && "!opacity-100",
               )}
               href={link.href}
               isRelative={link.isRelative}
@@ -357,8 +358,8 @@ export default function AssetCell({
             address && (
               <Button
                 className={cn(
-                  "hoverLink h-auto px-0 py-0 text-muted-foreground opacity-0 hover:bg-transparent hover:text-foreground",
-                  isTouchscreen && "opacity-100",
+                  "hoverLink h-auto px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground",
+                  isTouchscreen && "!opacity-100",
                 )}
                 labelClassName="uppercase text-xs"
                 variant="ghost"
@@ -367,9 +368,12 @@ export default function AssetCell({
                   reserve === undefined
                     ? (extra!.obj as StakedWalObject).state ===
                       StakedWalState.WITHDRAWING
-                      ? undefined
-                      : (extra!.obj as StakedWalObject).activationEpoch >
-                          (walrusEpoch ?? 0) + 1
+                      ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
+                        (walrusEpoch ?? 0)
+                        ? withdrawWal
+                        : undefined
+                      : (extra!.obj as StakedWalObject).activationEpoch >=
+                          (walrusEpoch ?? 0) + 2
                         ? withdrawWal
                         : unstakeWal
                     : // WAL
@@ -381,9 +385,12 @@ export default function AssetCell({
                   reserve === undefined
                     ? (extra!.obj as StakedWalObject).state ===
                       StakedWalState.WITHDRAWING
-                      ? undefined
-                      : (extra!.obj as StakedWalObject).activationEpoch >
-                          (walrusEpoch ?? 0) + 1
+                      ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
+                        (walrusEpoch ?? 0)
+                        ? "Withdraw"
+                        : undefined
+                      : (extra!.obj as StakedWalObject).activationEpoch >=
+                          (walrusEpoch ?? 0) + 2
                         ? "Withdraw"
                         : "Unstake"
                     : // WAL

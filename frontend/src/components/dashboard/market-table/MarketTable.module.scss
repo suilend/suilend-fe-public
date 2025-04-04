@@ -1,6 +1,13 @@
 .tableRow {
   --bg-color: hsl(var(--background));
 
+  a[class*="hoverLink"] {
+    opacity: 0;
+  }
+  button[class*="hoverLink"] {
+    opacity: 0;
+  }
+
   &:hover {
     --bg-color: #0f1729; // background + 10% muted
 

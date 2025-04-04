@@ -20,6 +20,7 @@ export type StakedWalObject = {
   id: string;
   nodeId: string;
   activationEpoch: number;
+  withdrawEpoch: number | undefined;
   amount: BigNumber;
   state: StakedWalState;
 };

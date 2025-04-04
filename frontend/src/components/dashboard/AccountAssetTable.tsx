@@ -14,6 +14,7 @@ import DataTable, {
   tableHeader,
 } from "@/components/dashboard/DataTable";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
@@ -76,9 +77,11 @@ export default function AccountAssetTable({
 
           return (
             <div className="flex flex-col items-end gap-1">
-              <TBody className="text-right">
-                {formatToken(amount, { dp: token.decimals })}
-              </TBody>
+              <Tooltip title={`${formatToken(amount, { dp: token.decimals })}`}>
+                <TBody className="text-right">
+                  {formatToken(amount, { exact: false })}
+                </TBody>
+              </Tooltip>
               <TLabel className="text-right">
                 {amountUsd !== undefined ? formatUsd(amountUsd) : "--"}
               </TLabel>
