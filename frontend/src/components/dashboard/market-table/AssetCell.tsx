@@ -1,5 +1,4 @@
-import Image from "next/image";
-import { MouseEvent, useMemo } from "react";
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
@@ -67,7 +66,8 @@ export default function AssetCell({
   extra,
 }: AssetCellProps) {
   const { explorer } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { address, signExecuteAndWaitForTransaction, dryRunTransaction } =
+    useWalletContext();
   const { appData, isLst, walrusEpoch } = useLoadedAppContext();
   const { getBalance, refresh } = useLoadedUserContext();
 
@@ -202,6 +202,38 @@ export default function AssetCell({
   };
 
   // Staked WAL
+  const [stakedWalCanBeWithdrawnEarly, setStakedWalCanBeWithdrawnEarly] =
+    useState<boolean>(false);
+
+  const canStakedWalBeWithdrawnEarly = useCallback(async () => {
+    const transaction = new Transaction();
+
+    try {
+      const { id } = extra!.obj as StakedWalObject;
+
+      transaction.moveCall({
+        target: `${WALRUS_PACKAGE_ID}::staking::can_withdraw_staked_wal_early`,
+        arguments: [
+          transaction.object(WALRUS_STAKING_OBJECT_ID),
+          transaction.object(id),
+        ],
+      });
+
+      const inspectResults = await dryRunTransaction(transaction);
+      const result = inspectResults.results?.[0].returnValues?.[0][0][0];
+
+      setStakedWalCanBeWithdrawnEarly(Boolean(result));
+    } catch (err) {
+      toast.error("Failed to determine if staked WAL can be withdrawn early", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  }, [extra, dryRunTransaction]);
+
+  useEffect(() => {
+    canStakedWalBeWithdrawnEarly();
+  }, [canStakedWalBeWithdrawnEarly]);
+
   const withdrawWal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!address) return;
@@ -371,9 +403,8 @@ export default function AssetCell({
                       ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
                         (walrusEpoch ?? 0)
                         ? withdrawWal
-                        : undefined
-                      : (extra!.obj as StakedWalObject).activationEpoch >=
-                          (walrusEpoch ?? 0) + 2
+                        : undefined // "Withdrawing in X Epoch" label shown
+                      : stakedWalCanBeWithdrawnEarly
                         ? withdrawWal
                         : unstakeWal
                     : // WAL
@@ -388,9 +419,8 @@ export default function AssetCell({
                       ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
                         (walrusEpoch ?? 0)
                         ? "Withdraw"
-                        : undefined
-                      : (extra!.obj as StakedWalObject).activationEpoch >=
-                          (walrusEpoch ?? 0) + 2
+                        : undefined // "Withdrawing in X Epoch" label shown
+                      : stakedWalCanBeWithdrawnEarly
                         ? "Withdraw"
                         : "Unstake"
                     : // WAL
