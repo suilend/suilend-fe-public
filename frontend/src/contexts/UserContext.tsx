@@ -170,6 +170,10 @@ export function UserContextProvider({ children }: PropsWithChildren) {
         id: obj.data?.objectId as string,
         nodeId: node_id,
         activationEpoch: activation_epoch,
+        withdrawEpoch:
+          state.variant === "Withdrawing"
+            ? state.fields.withdraw_epoch
+            : undefined,
         amount: new BigNumber(principal).div(
           10 ** appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
         ),
