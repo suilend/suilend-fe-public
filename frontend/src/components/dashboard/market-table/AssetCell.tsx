@@ -231,8 +231,9 @@ export default function AssetCell({
   }, [extra, dryRunTransaction]);
 
   useEffect(() => {
-    canStakedWalBeWithdrawnEarly();
-  }, [canStakedWalBeWithdrawnEarly]);
+    if (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
+      canStakedWalBeWithdrawnEarly();
+  }, [token.coinType, reserve, canStakedWalBeWithdrawnEarly]);
 
   const withdrawWal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
