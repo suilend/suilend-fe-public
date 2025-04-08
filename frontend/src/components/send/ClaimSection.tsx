@@ -453,7 +453,7 @@ const MAX_BUTTON_HEIGHT = 40; // px
 const DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT = 3;
 
 function ClaimTabContent() {
-  const { rpc, explorer, suiClient } = useSettingsContext();
+  const { rpc, explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const { allUserData, getBalance, obligationOwnerCap } =
@@ -589,7 +589,6 @@ function ClaimTabContent() {
     try {
       await claimSend(
         rpc,
-        suiClient,
         appData.suilendClient,
         address,
         selectedMsendCoinType,

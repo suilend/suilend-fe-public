@@ -30,6 +30,29 @@ export const getOwnedObjectsOfType = async (
   return allObjs;
 };
 
+export const getAllCoins = async (
+  suiClient: SuiClient,
+  address: string,
+  coinType: string,
+) => {
+  const allCoins = [];
+  let cursor = undefined;
+  let hasNextPage = true;
+  while (hasNextPage) {
+    const coins = await suiClient.getCoins({
+      owner: address,
+      coinType,
+      cursor,
+    });
+
+    allCoins.push(...coins.data);
+    cursor = coins.nextCursor ?? undefined;
+    hasNextPage = coins.hasNextPage;
+  }
+
+  return allCoins;
+};
+
 export const queryTransactionBlocksAfter = async (
   suiClient: SuiClient,
   filter: TransactionFilter,

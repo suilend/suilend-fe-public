@@ -467,7 +467,6 @@ const repayFlashLoan = (args: {
 
 export const claimSend = async (
   rpc: Rpc,
-  suiClient: SuiClient,
   suilendClient: SuilendClient,
   address: string,
   mSendCoinType: string,
