@@ -1,7 +1,11 @@
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
 import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
-import { Transaction, TransactionResult } from "@mysten/sui/transactions";
+import {
+  Transaction,
+  TransactionResult,
+  coinWithBalance,
+} from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
@@ -475,34 +479,16 @@ export const claimSend = async (
   transaction: Transaction,
   obligationOwnerCapId: string,
 ) => {
-  // Get mSEND coins
-  const mSendCoins = (
-    await suiClient.getCoins({
-      owner: address,
-      coinType: mSendCoinType,
-    })
-  ).data;
-
-  // Merge mSEND coins
-  if (mSendCoins.length === 0) return;
-
-  const mergedMsendCoin = mSendCoins[0];
-  if (mSendCoins.length > 1) {
-    transaction.mergeCoins(
-      transaction.object(mergedMsendCoin.coinObjectId),
-      mSendCoins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-    );
-  }
-
   const value = new BigNumber(claimAmount)
     .times(10 ** 6)
     .integerValue(BigNumber.ROUND_DOWN)
     .toString();
 
-  const [splitMsendCoin] = transaction.splitCoins(
-    transaction.object(mergedMsendCoin.coinObjectId),
-    [value],
-  );
+  const mSendCoin = coinWithBalance({
+    type: mSendCoinType,
+    balance: BigInt(value),
+    useGasCoin: false,
+  })(transaction);
 
   let suiPenaltyCoin = isFlashLoan
     ? undefined // Set below
@@ -548,7 +534,7 @@ export const claimSend = async (
     ],
     arguments: [
       transaction.object(mSEND_COINTYPE_MANAGER_MAP[mSendCoinType]),
-      transaction.object(splitMsendCoin),
+      transaction.object(mSendCoin),
       transaction.object(suiPenaltyCoin!),
       transaction.object(SUI_CLOCK_OBJECT_ID),
     ],
