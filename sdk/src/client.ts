@@ -187,7 +187,7 @@ export class SuilendClient {
     lendingMarketId: string,
     lendingMarketType: string,
     client: SuiClient,
-    logPackageId?: string,
+    logPackageId?: boolean,
   ) {
     const lendingMarket = await LendingMarket.fetch(
       client,

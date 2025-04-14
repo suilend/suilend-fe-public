@@ -33,6 +33,7 @@ export default function useFetchAppData() {
         LENDING_MARKET.id,
         LENDING_MARKET.type,
         suiClient,
+        true,
       );
 
       const {
