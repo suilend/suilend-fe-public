@@ -187,6 +187,7 @@ export class SuilendClient {
     lendingMarketId: string,
     lendingMarketType: string,
     client: SuiClient,
+    logPackageId?: string,
   ) {
     const lendingMarket = await LendingMarket.fetch(
       client,
@@ -198,7 +199,8 @@ export class SuilendClient {
       client,
       SUILEND_UPGRADE_CAP_ID,
     );
-    console.log("latestPackageId", latestPackageId);
+    if (logPackageId)
+      console.log("@suilend/sdk | latestPackageId:", latestPackageId);
     setPublishedAt(latestPackageId);
 
     return new SuilendClient(lendingMarket, client);
