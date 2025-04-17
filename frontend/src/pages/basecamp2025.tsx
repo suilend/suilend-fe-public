@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { useWalletContext } from "@suilend/frontend-sui-next";
@@ -5,6 +6,7 @@ import { useWalletContext } from "@suilend/frontend-sui-next";
 import Button from "@/components/shared/Button";
 import { TBodySans, TDisplay } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export default function Basecamp2025() {
@@ -52,12 +54,14 @@ export default function Basecamp2025() {
         </TDisplay>
 
         <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
-          As Sui's leading DeFi protocol, Suilend is proud to be a Platinum
-          Sponsor for Sui Basecamp 2025 Dubai.
+          {
+            "As Sui's leading DeFi protocol, Suilend is proud to be a Platinum Sponsor for Sui Basecamp 2025 Dubai."
+          }
           <br />
           <br />
-          Mint our Basecamp 2025 Commemorative NFT to celebrate your time in
-          Dubai! Use this NFT to qualify for a chance at exclusive prizes!
+          {
+            "Mint our Basecamp 2025 Commemorative NFT to celebrate your time in Dubai! Use this NFT to qualify for a chance at exclusive prizes!"
+          }
         </TBodySans>
 
         <video
@@ -69,7 +73,7 @@ export default function Basecamp2025() {
           style={{ aspectRatio: "1/1" }}
         >
           <source
-            src="https://suilend-assets.s3.us-east-2.amazonaws.com/suilend/basecamp2025/Suilend_NFT_Token.mp4"
+            src={`${ASSETS_URL}/basecamp2025/Basecamp_NFT.mp4`}
             type="video/mp4"
           />
         </video>
@@ -106,13 +110,14 @@ export default function Basecamp2025() {
         </TDisplay>
 
         <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
-          Spice up your Basecamp experience with a Limited Edition Basecamp Root
-          Sauce. Only 100 of these limited edition bottles exist!
+          {
+            "Spice up your Basecamp experience with a Limited Edition Basecamp Root Sauce. Only 100 of these limited edition bottles exist!"
+          }
           <br />
           <br />
-          One Limited Edition Root Sauce NFT has been airdropped to every wallet
-          owning a Rootlet. Burn this NFT to redeem a physical bottle of root
-          sauce.
+          {
+            "One Limited Edition Root Sauce NFT has been airdropped to every wallet owning a Rootlet. Burn this NFT to redeem a physical bottle of root sauce."
+          }
         </TBodySans>
 
         <video
@@ -124,7 +129,7 @@ export default function Basecamp2025() {
           style={{ aspectRatio: "1/1" }}
         >
           <source
-            src="https://suilend-assets.s3.us-east-2.amazonaws.com/suilend/basecamp2025/Suilendbasecamp-PROCESSED.mp4"
+            src={`${ASSETS_URL}/basecamp2025/Basecamp_Root_Sauce_NFT.mp4`}
             type="video/mp4"
           />
         </video>
