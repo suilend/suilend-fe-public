@@ -65,7 +65,7 @@ export default function Basecamp2025() {
         </TBodySans>
 
         <video
-          className="w-full max-w-[320px] bg-muted/10"
+          className="w-full max-w-[320px] border border-white/50 bg-muted/10"
           autoPlay
           loop
           muted
