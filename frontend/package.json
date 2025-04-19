@@ -40,7 +40,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@sentry/nextjs": "^8.38.0",
     "@suilend/frontend-sui": "^0.2.56",
-    "@suilend/frontend-sui-next": "^0.1.25",
+    "@suilend/frontend-sui-next": "^0.1.26",
     "@suilend/springsui-sdk": "^1.0.21",
     "@suilend/steamm-sdk": "^0.0.17",
     "@tanstack/react-table": "^8.20.5",
