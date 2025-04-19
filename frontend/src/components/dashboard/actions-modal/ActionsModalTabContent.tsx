@@ -22,7 +22,6 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
@@ -98,7 +97,6 @@ export default function ActionsModalTabContent({
     useActionsModalContext();
 
   const { md } = useBreakpoint();
-  const isTouchscreen = useIsTouchscreen();
 
   // First deposit
   const [justDeposited, setJustDeposited] = useState<boolean>(false);
@@ -372,7 +370,7 @@ export default function ActionsModalTabContent({
             <Wallet className="h-3 w-3 text-foreground" />
             <Tooltip
               title={
-                !isTouchscreen && balance.gt(0)
+                balance.gt(0)
                   ? `${formatToken(balance, { dp: reserve.mintDecimals })} ${reserve.token.symbol}`
                   : undefined
               }
@@ -391,7 +389,7 @@ export default function ActionsModalTabContent({
             )}
             <Tooltip
               title={
-                !isTouchscreen && positionAmount.gt(0)
+                positionAmount.gt(0)
                   ? `${formatToken(positionAmount, { dp: reserve.mintDecimals })} ${reserve.token.symbol}`
                   : undefined
               }
