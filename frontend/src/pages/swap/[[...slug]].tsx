@@ -641,7 +641,7 @@ function Page() {
   );
 
   // Ratios
-  const [isInverted, setIsInverted] = useState<boolean>(false);
+  const [isInverted, setIsInverted] = useState<boolean>(true);
 
   const currentTokenRatio = useMemo(
     () =>
