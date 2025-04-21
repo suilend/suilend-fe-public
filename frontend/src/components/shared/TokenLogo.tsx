@@ -80,18 +80,23 @@ export default function TokenLogo({
     >
       <div className={cn("relative h-7 w-7", className)} style={style}>
         <AspectRatio ratio={1} className="relative z-[1]">
-          {token.iconUrl && token.iconUrl !== "TODO" ? (
+          {!token.iconUrl ||
+          token.iconUrl === "" ||
+          token.iconUrl === "TODO" ? (
+            <div className="h-full w-full shrink-0 rounded-[50%] bg-muted/15" />
+          ) : (
             <Image
               key={token.iconUrl}
-              className={cn("rounded-full object-cover", imageClassName)}
+              className={cn(
+                "shrink-0 rounded-[50%] rounded-full object-cover",
+                imageClassName,
+              )}
               src={token.iconUrl}
               alt={`${token.symbol} logo`}
               fill
               quality={100}
               {...restImageProps}
             />
-          ) : (
-            <div className="h-full w-full" />
           )}
         </AspectRatio>
 
