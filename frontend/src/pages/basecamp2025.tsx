@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import { Flame } from "lucide-react";
+import { Droplet, Flame } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -20,14 +20,18 @@ import {
   TDisplay,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
 import { getOwnedObjectsOfType } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 enum QueryParams {
-  DEV_MODE = "dev-mode",
+  DEV_MODE = "dev",
 }
+
+const BASECAMP_2025_NFT_REGISTRY_OBJECT_ID =
+  "0xf78982d5ee345026220d092c48bbde1151fb65538357032e5f24f82d6761c40a";
+const BASECAMP_2025_NFT_PACKAGE_ID =
+  "0xc441dac0335300ee0c37280f5daad227cbe86b3ad59b428e486cb6a981f43c1a";
 
 const ROOT_SAUCE_NFT_PACKAGE_ID =
   "0x87ae5da8393dcbdcd584eee6e6703e57d3c67ff7eecb40415f7bf9114138bb88";
@@ -45,7 +49,84 @@ export default function Basecamp2025() {
 
   const isInDevMode = queryParams[QueryParams.DEV_MODE] === "true";
 
+  // Location
+  const [isLocationValid, setIsLocationValid] = useState<boolean | undefined>(
+    undefined,
+  );
+
+  const isFetchingLocationRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (isFetchingLocationRef.current) return;
+    isFetchingLocationRef.current = true;
+
+    (async () => {
+      try {
+        const res = await fetch("/api/ip-address-country");
+        if (!res.ok) throw new Error("Request failed");
+
+        const json = await res.json();
+        const code = json?.country?.code;
+        setIsLocationValid(code === "AE" || isInDevMode);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [isInDevMode]);
+
+  const isComingSoon = Date.now() < 1746043200000 && !isInDevMode; // 1 May 00:00 (GMT+4)
+  const isOver =
+    Date.now() >= 1746043200000 + 3 * 24 * 60 * 1000 && !isInDevMode; // 4 May 00:00 (GMT+4)
+
   // Owned objects
+  // Owned objects - Basecamp 2025 NFT
+  const [ownedBasecamp2025NftObjectsMap, setOwnedBasecamp2025NftObjectsMap] =
+    useState<Record<string, SuiObjectResponse[]>>({});
+
+  const fetchOwnedBasecamp2025NftObjectsMap = useCallback(
+    async (_address: string) => {
+      console.log("Fetching ownedBasecamp2025NftObjectsMap", _address);
+
+      try {
+        const objs = await getOwnedObjectsOfType(
+          suiClient,
+          _address,
+          `${BASECAMP_2025_NFT_PACKAGE_ID}::suilend_basecamp_nft::SuilendBasecampNft`,
+        );
+
+        setOwnedBasecamp2025NftObjectsMap((prev) => ({
+          ...prev,
+          [_address]: objs,
+        }));
+        console.log("Fetched ownedBasecamp2025NftObjectsMap", _address, objs);
+      } catch (err) {
+        console.error("Failed to fetch ownedBasecamp2025NftObjectsMap", err);
+      }
+    },
+    [suiClient],
+  );
+
+  const isFetchingOwnedBasecamp2025NftObjectsMapRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!address) return;
+
+    if (isFetchingOwnedBasecamp2025NftObjectsMapRef.current.includes(address))
+      return;
+    isFetchingOwnedBasecamp2025NftObjectsMapRef.current.push(address);
+
+    fetchOwnedBasecamp2025NftObjectsMap(address);
+  }, [address, fetchOwnedBasecamp2025NftObjectsMap]);
+
+  const ownedBasecamp2025NftObjectIds = useMemo(
+    () =>
+      address === undefined ||
+      ownedBasecamp2025NftObjectsMap[address] === undefined
+        ? undefined
+        : ownedBasecamp2025NftObjectsMap[address].map(
+            (obj) => obj.data?.objectId as string,
+          ),
+    [ownedBasecamp2025NftObjectsMap, address],
+  );
+
   // Owned objects - Root Sauce NFT
   const [ownedRootSauceNftObjectsMap, setOwnedRootSauceNftObjectsMap] =
     useState<Record<string, SuiObjectResponse[]>>({});
@@ -95,40 +176,67 @@ export default function Basecamp2025() {
     [ownedRootSauceNftObjectsMap, address],
   );
 
-  // Location
-  const [isLocationValid, setIsLocationValid] = useState<boolean | undefined>(
-    undefined,
-  );
-
-  const isFetchingLocationRef = useRef<boolean>(false);
-  useEffect(() => {
-    if (isFetchingLocationRef.current) return;
-    isFetchingLocationRef.current = true;
-
-    (async () => {
-      try {
-        const res = await fetch("/api/ip-address-country");
-        if (!res.ok) throw new Error("Request failed");
-
-        const json = await res.json();
-        const code = json?.country?.code;
-        setIsLocationValid(code === "AE" || isInDevMode);
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [isInDevMode]);
-
-  const isComingSoon = Date.now() < 1746043200000 && !isInDevMode; // 1 May 00:00 (GMT+4)
-  const isOver =
-    Date.now() >= 1746043200000 + 3 * 24 * 60 * 1000 && !isInDevMode; // 4 May 00:00 (GMT+4)
-
   // Actions
-  // Actions - Basecamp NFT
-  const mintBasecampNft = async () => {};
+  // Actions - Basecamp 2025 NFT
+  const [isMintingBasecamp2025Nft, setIsMintingBasecamp2025Nft] =
+    useState<boolean>(false);
+
+  const mintBasecamp2025Nft = async () => {
+    if (
+      !isLocationValid ||
+      !address ||
+      ownedBasecamp2025NftObjectIds === undefined ||
+      ownedBasecamp2025NftObjectIds.length > 0
+    )
+      return;
+    if (isMintingBasecamp2025Nft) return;
+
+    setIsMintingBasecamp2025Nft(true);
+
+    const transaction = new Transaction();
+
+    try {
+      transaction.moveCall({
+        target: `${BASECAMP_2025_NFT_PACKAGE_ID}::suilend_basecamp_nft::new`,
+        arguments: [transaction.object(BASECAMP_2025_NFT_REGISTRY_OBJECT_ID)],
+      });
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success("Minted Basecamp 2025 NFT", {
+        classNames: {
+          toast: "border-primary border-[2px]",
+        },
+        description:
+          "Make sure to use this NFT to enter the STEAMM Capsule Raffle at Booth P4!",
+        action: (
+          <TextLink
+            className="block text-muted-foreground decoration-muted-foreground/50"
+            href={txUrl}
+          >
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        icon: <Droplet className="h-5 w-5 text-primary" />,
+        duration: TX_TOAST_DURATION,
+      });
+    } catch (err) {
+      showErrorToast(
+        "Failed to mint Basecamp 2025 NFT",
+        err as Error,
+        undefined,
+        true,
+      );
+    } finally {
+      setIsMintingBasecamp2025Nft(false);
+      fetchOwnedBasecamp2025NftObjectsMap(address);
+    }
+  };
 
   // Actions - Root Sauce NFT
-  const [isBurningNft, setIsBurningNft] = useState<boolean>(false);
+  const [isBurningRootSauceNft, setIsBurningRootSauceNft] =
+    useState<boolean>(false);
 
   const burnRootSauceNft = async () => {
     if (
@@ -138,33 +246,39 @@ export default function Basecamp2025() {
       ownedRootSauceNftObjectIds.length === 0
     )
       return;
-    if (isBurningNft) return;
+    if (isBurningRootSauceNft) return;
 
-    setIsBurningNft(true);
+    setIsBurningRootSauceNft(true);
 
     const transaction = new Transaction();
 
     try {
       const objId = ownedRootSauceNftObjectIds[0]; // Burn one NFT at a time
 
-      // transaction.moveCall({
-      //   target: `${ROOT_SAUCE_NFT_PACKAGE_ID}::rootlets_basecamp_nft::destroy`,
-      //   arguments: [transaction.object(objId)],
-      // });
+      transaction.moveCall({
+        target: `${ROOT_SAUCE_NFT_PACKAGE_ID}::rootlets_basecamp_nft::destroy`,
+        arguments: [transaction.object(objId)],
+      });
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success("Burned Root Sauce NFT", {
+        classNames: {
+          toast: "border-[#EA4630] border-[2px]",
+        },
         description:
-          "Don't forget to redeem your Root Sauce at the SEND booth!",
+          "Don't forget to show this burn confirmation at Booth P4 to redeem your Root Sauce!",
         action: (
-          <TextLink className="block" href={txUrl}>
+          <TextLink
+            className="block text-muted-foreground decoration-muted-foreground/50"
+            href={txUrl}
+          >
             View tx on {explorer.name}
           </TextLink>
         ),
         icon: <Flame className="h-5 w-5 text-[#EA4630]" />,
-        duration: TX_TOAST_DURATION,
+        duration: 10 * 60 * 60 * 1000, // 10 hours
       });
     } catch (err) {
       showErrorToast(
@@ -174,7 +288,7 @@ export default function Basecamp2025() {
         true,
       );
     } finally {
-      setIsBurningNft(false);
+      setIsBurningRootSauceNft(false);
       fetchOwnedRootSauceNftObjectsMap(address);
     }
   };
@@ -184,7 +298,7 @@ export default function Basecamp2025() {
       {/* Mint */}
       <div className="flex flex-col items-center gap-8 md:flex-1">
         <TDisplay className="text-center text-4xl md:text-5xl">
-          Sui Basecamp NFT
+          Basecamp 2025 NFT
         </TDisplay>
 
         <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
@@ -199,7 +313,7 @@ export default function Basecamp2025() {
         </TBodySans>
 
         <video
-          className="w-full max-w-[320px] border border-white/50 bg-muted/10"
+          className="w-full max-w-[320px] border border-white/25 bg-muted/10"
           autoPlay
           loop
           muted
@@ -212,27 +326,48 @@ export default function Basecamp2025() {
           />
         </video>
 
-        {isLocationValid === undefined ? (
-          <Skeleton className="h-14 w-[260px]" />
-        ) : (
+        <div className="flex flex-col items-center gap-3">
           <Button
             className={cn(
               "h-14 w-[260px]",
-              isLocationValid === false
+              !isLocationValid ||
+                !address ||
+                ownedBasecamp2025NftObjectIds === undefined ||
+                ownedBasecamp2025NftObjectIds.length > 0
                 ? "disabled:opacity-50"
                 : "disabled:opacity-100",
             )}
             labelClassName="text-wrap uppercase"
-            disabled={isLocationValid === false || isComingSoon || isOver}
-            onClick={mintBasecampNft}
+            disabled={
+              isMintingBasecamp2025Nft ||
+              isComingSoon ||
+              isOver ||
+              !isLocationValid ||
+              !address ||
+              ownedBasecamp2025NftObjectIds === undefined ||
+              ownedBasecamp2025NftObjectIds.length > 0
+            }
+            onClick={mintBasecamp2025Nft}
           >
-            {isComingSoon
-              ? "Coming soon"
-              : isOver
-                ? "Mint finished"
-                : "Mint Basecamp NFT"}
+            {isMintingBasecamp2025Nft ? (
+              <Spinner size="md" />
+            ) : (
+              <>
+                {isComingSoon
+                  ? "Coming soon"
+                  : isOver
+                    ? "Mint finished"
+                    : "Mint Basecamp 2025 NFT"}
+              </>
+            )}
           </Button>
-        )}
+
+          <TLabelSans>
+            {ownedBasecamp2025NftObjectIds?.length ?? 0} Basecamp 2025 NFT
+            {(ownedBasecamp2025NftObjectIds?.length ?? 0) !== 1 && "s"} in
+            wallet
+          </TLabelSans>
+        </div>
       </div>
 
       <div className="w-full bg-border max-md:h-px md:w-px" />
@@ -255,7 +390,7 @@ export default function Basecamp2025() {
         </TBodySans>
 
         <video
-          className="w-full max-w-[320px] bg-muted/10"
+          className="w-full max-w-[320px] border border-white/25 bg-muted/10"
           autoPlay
           loop
           muted
@@ -281,7 +416,7 @@ export default function Basecamp2025() {
             )}
             labelClassName="text-wrap uppercase"
             disabled={
-              isBurningNft ||
+              isBurningRootSauceNft ||
               isComingSoon ||
               isOver ||
               !isLocationValid ||
@@ -291,7 +426,7 @@ export default function Basecamp2025() {
             }
             onClick={burnRootSauceNft}
           >
-            {isBurningNft ? (
+            {isBurningRootSauceNft ? (
               <Spinner size="md" />
             ) : (
               <>
