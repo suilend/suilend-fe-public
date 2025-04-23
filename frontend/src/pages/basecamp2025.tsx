@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import { useFlags } from "launchdarkly-react-client-sdk";
 import { Droplet, Flame } from "lucide-react";
 import { toast } from "sonner";
 
@@ -73,9 +74,17 @@ export default function Basecamp2025() {
     })();
   }, [isInDevMode]);
 
+  // Dates
   const isComingSoon = Date.now() < 1746043200000 && !isInDevMode; // 1 May 00:00 (GMT+4)
   const isOver =
     Date.now() >= 1746043200000 + 3 * 24 * 60 * 1000 && !isInDevMode; // 4 May 00:00 (GMT+4)
+
+  // Flags
+  const flags = useFlags();
+  const isRootSauceNftBurningEnabled: boolean | undefined = useMemo(
+    () => flags?.suilendBasecamp2025RootSauceEnableBurning,
+    [flags?.suilendBasecamp2025RootSauceEnableBurning],
+  );
 
   // Owned objects
   // Owned objects - Basecamp 2025 NFT
@@ -419,6 +428,7 @@ export default function Basecamp2025() {
               isBurningRootSauceNft ||
               isComingSoon ||
               isOver ||
+              !isRootSauceNftBurningEnabled ||
               !isLocationValid ||
               !address ||
               ownedRootSauceNftObjectIds === undefined ||
@@ -434,7 +444,9 @@ export default function Basecamp2025() {
                   ? "Coming soon"
                   : isOver
                     ? "Burn finished"
-                    : "Burn Root Sauce NFT"}
+                    : !isRootSauceNftBurningEnabled
+                      ? "Out of Root Sauce"
+                      : "Burn Root Sauce NFT"}
               </>
             )}
           </Button>
