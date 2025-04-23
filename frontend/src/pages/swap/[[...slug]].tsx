@@ -274,8 +274,8 @@ function Page() {
     if (timestampsS.length === 0) return false;
 
     const maxTimestampS = Math.max(...timestampsS);
-    return quotesMap[maxTimestampS].length < numActiveProviders;
-  }, [quotesMap, numActiveProviders]);
+    return quotesMap[maxTimestampS].length < 1; // < numActiveProviders;
+  }, [quotesMap]);
 
   const fetchQuotes = useCallback(
     async (
@@ -1306,7 +1306,12 @@ function Page() {
                               disabled={isNaN(+_quote.out.amount)}
                             >
                               <div className="flex w-full flex-row items-center justify-between">
-                                <TLabelSans className="text-foreground">
+                                <TLabelSans
+                                  className={cn(
+                                    !isNaN(+_quote.out.amount) &&
+                                      "text-foreground",
+                                  )}
+                                >
                                   {isNaN(+_quote.out.amount) ? (
                                     `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
                                   ) : (
