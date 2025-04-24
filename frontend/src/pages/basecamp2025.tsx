@@ -306,7 +306,7 @@ export default function Basecamp2025() {
     <div className="flex w-full flex-col gap-8 py-4 md:flex-row md:items-stretch md:gap-10">
       {/* Mint */}
       <div className="flex flex-col items-center gap-8 md:flex-1">
-        <TDisplay className="text-center text-4xl md:text-5xl">
+        <TDisplay className="text-center text-4xl uppercase md:text-5xl">
           Basecamp 2025 NFT
         </TDisplay>
 
@@ -383,7 +383,7 @@ export default function Basecamp2025() {
 
       {/* Burn */}
       <div className="flex flex-col items-center gap-8 md:flex-1">
-        <TDisplay className="text-center text-4xl md:text-5xl">
+        <TDisplay className="text-center text-4xl uppercase md:text-5xl">
           Root Sauce NFT
         </TDisplay>
 
