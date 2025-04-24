@@ -36,7 +36,7 @@ export default function PointsHeader({
           />
 
           <div className="relative z-[2] flex h-full w-full flex-col items-center justify-end gap-8 pb-2">
-            <TDisplay className="text-center text-4xl md:text-5xl">
+            <TDisplay className="text-center text-4xl uppercase md:text-5xl">
               SEND Points
             </TDisplay>
 

@@ -345,7 +345,7 @@ export default function AssetCell({
                       >
                         {(extra!.obj as StakedWalObject).nodeId ===
                         SUILEND_WALRUS_NODE_ID
-                          ? "Suilend"
+                          ? "Suilend".toUpperCase()
                           : formatId((extra!.obj as StakedWalObject).nodeId, 2)}
                       </span>
                     </Tooltip>{" "}
