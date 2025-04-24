@@ -27,7 +27,6 @@ import {
   Aftermath as AftermathSdk,
 } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
-import { useLocalStorage } from "usehooks-ts";
 
 import {
   NORMALIZED_SEND_COINTYPE,

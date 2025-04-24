@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import {
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
   NORMALIZED_WAL_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   TX_TOAST_DURATION,
@@ -80,6 +81,7 @@ export default function AssetCell({
 
       if (
         (tableType === AccountAssetTableType.DEPOSITS ||
+          tableType === AccountAssetTableType.BORROWS ||
           tableType === AccountAssetTableType.BALANCES) &&
         !(
           // Staked WAL
@@ -90,14 +92,22 @@ export default function AssetCell({
         result.push({
           title: "Swap",
           href: `${getSwapUrl(
-            token.symbol !== SWAP_DEFAULT_TOKEN_OUT_SYMBOL
-              ? reserve
-                ? token.symbol
-                : token.coinType
-              : SWAP_DEFAULT_TOKEN_IN_SYMBOL,
-            SWAP_DEFAULT_TOKEN_OUT_SYMBOL,
+            token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
+            reserve ? token.symbol : token.coinType,
           )}${tableType === AccountAssetTableType.DEPOSITS ? "?useDeposits=true" : ""}`,
           isRelative: true,
+        });
+      }
+      if (
+        (tableType === AccountAssetTableType.BALANCES ||
+          tableType === MarketTableType.MARKET) &&
+        token.coinType === NORMALIZED_SUI_COINTYPE
+      ) {
+        result.push({
+          title: "Stake",
+          href: !isInMsafeApp()
+            ? `${SPRINGSUI_URL}/SUI-sSUI`
+            : getMsafeAppStoreUrl("SpringSui"),
         });
       }
       if (
@@ -112,21 +122,9 @@ export default function AssetCell({
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
-      if (
-        (tableType === AccountAssetTableType.BALANCES ||
-          tableType === MarketTableType.MARKET) &&
-        token.coinType === NORMALIZED_SUI_COINTYPE
-      ) {
-        result.push({
-          title: "Stake",
-          href: !isInMsafeApp()
-            ? SPRINGSUI_URL
-            : getMsafeAppStoreUrl("SpringSui"),
-        });
-      }
 
       return result;
-    }, [tableType, reserve, token, isLst]);
+    }, [tableType, token, reserve, isLst]);
 
   // WAL
   const stakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
