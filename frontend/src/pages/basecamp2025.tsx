@@ -317,7 +317,7 @@ export default function Basecamp2025() {
           <br />
           <br />
           {
-            "Mint our Basecamp 2025 Commemorative NFT to celebrate your time in Dubai! Use this NFT to qualify for a chance at exclusive prizes!"
+            "Mint our Basecamp 2025 Commemorative NFT to celebrate your time in Dubai! Use this NFT to pick up SEND merch and qualify for a chance at exclusive prizes!"
           }
         </TBodySans>
 

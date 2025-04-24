@@ -100,7 +100,7 @@ export default function WalletBalancesCard() {
                     NORMALIZED_WAL_COINTYPE,
                     appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
                   ),
-                  symbol: "Staked WAL",
+                  symbol: "Staked WAL".toUpperCase(),
                 },
                 price,
                 amount: obj.amount,
