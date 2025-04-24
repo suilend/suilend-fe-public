@@ -218,7 +218,7 @@ export default function Basecamp2025() {
           toast: "border-primary border-[2px]",
         },
         description:
-          "Make sure to use this NFT to enter the STEAMM Capsule Raffle at Booth P4!",
+          "Make sure to use this NFT to pick up SEND merch at Booth P4",
         action: (
           <TextLink
             className="block text-muted-foreground decoration-muted-foreground/50"
