@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.51",
+  "version": "1.1.52",
   "private": false,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -34,8 +34,8 @@
     "ts-node": "^10.9.2"
   },
   "peerDependencies": {
-    "@mysten/bcs": "1.2.1",
-    "@mysten/sui": "1.20.0",
-    "@suilend/frontend-sui": "^0.2.54"
+    "@mysten/bcs": "1.6.0",
+    "@mysten/sui": "1.28.2",
+    "@suilend/frontend-sui": "^0.2.58"
   }
 }

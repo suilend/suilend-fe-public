@@ -13,10 +13,10 @@
   },
   "dependencies": {
     "@cetusprotocol/cetus-sui-clmm-sdk": "^5.1.8",
-    "@mysten/bcs": "1.2.1",
-    "@mysten/sui": "1.20.0",
+    "@mysten/bcs": "1.6.0",
+    "@mysten/sui": "1.28.2",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
-    "@suilend/sdk": "^1.1.49",
+    "@suilend/sdk": "^1.1.51",
     "bignumber.js": "^9.1.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
