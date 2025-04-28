@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import Script from "next/script";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SuiObjectResponse } from "@mysten/sui/client";
@@ -6,6 +7,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useFlags } from "launchdarkly-react-client-sdk";
 import { Droplet, Flame } from "lucide-react";
 import { toast } from "sonner";
+import { useLocalStorage } from "usehooks-ts";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   showErrorToast,
@@ -22,6 +25,7 @@ import {
   TLabelSans,
 } from "@/components/shared/Typography";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
+import { SUILEND_URL } from "@/lib/navigation";
 import { getOwnedObjectsOfType } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +52,15 @@ export default function Basecamp2025() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
 
+  // State
   const isInDevMode = queryParams[QueryParams.DEV_MODE] === "true";
+
+  const [hasMintedBasecamp2025Nft, setHasMintedBasecamp2025Nft] =
+    useLocalStorage<boolean>("hasMintedBasecamp2025Nft", false);
+  const [hasBurnedRootSauceNft, setHasBurnedRootSauceNft] =
+    useLocalStorage<boolean>("hasBurnedRootSauceNft", false);
+
+  const xForWebsitesScriptId = useRef<string>(uuidv4()).current;
 
   // Location
   const [isLocationValid, setIsLocationValid] = useState<boolean | undefined>(
@@ -230,6 +242,8 @@ export default function Basecamp2025() {
         icon: <Droplet className="h-5 w-5 text-primary" />,
         duration: TX_TOAST_DURATION,
       });
+
+      setHasMintedBasecamp2025Nft(true);
     } catch (err) {
       showErrorToast(
         "Failed to mint Basecamp 2025 NFT",
@@ -289,6 +303,8 @@ export default function Basecamp2025() {
         icon: <Flame className="h-5 w-5 text-[#EA4630]" />,
         duration: 10 * 60 * 60 * 1000, // 10 hours
       });
+
+      setHasBurnedRootSauceNft(true);
     } catch (err) {
       showErrorToast(
         "Failed to burn Root Sauce NFT",
@@ -303,160 +319,224 @@ export default function Basecamp2025() {
   };
 
   return (
-    <div className="flex w-full flex-col gap-8 py-4 md:flex-row md:items-stretch md:gap-10">
-      {/* Mint */}
-      <div className="flex flex-col items-center gap-8 md:flex-1">
-        <TDisplay className="text-center text-4xl uppercase md:text-5xl">
-          Basecamp 2025 NFT
-        </TDisplay>
+    <>
+      <Script id={xForWebsitesScriptId}>
+        {`window.twttr = (function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0],
+    t = window.twttr || {};
+  if (d.getElementById(id)) return t;
+  js = d.createElement(s);
+  js.id = id;
+  js.src = "https://platform.twitter.com/widgets.js";
+  fjs.parentNode.insertBefore(js, fjs);
 
-        <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
-          {
-            "As Sui's leading DeFi protocol, Suilend is proud to be a Platinum Sponsor for Sui Basecamp 2025 Dubai."
-          }
-          <br />
-          <br />
-          {
-            "Mint our Basecamp 2025 Commemorative NFT to celebrate your time in Dubai! Use this NFT to pick up SEND merch and qualify for a chance at exclusive prizes!"
-          }
-        </TBodySans>
+  t._e = [];
+  t.ready = function(f) {
+    t._e.push(f);
+  };
 
-        <video
-          className="w-full max-w-[320px] border border-white/25 bg-muted/10"
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{ aspectRatio: "1/1" }}
-        >
-          <source
-            src={`${ASSETS_URL}/basecamp2025/Basecamp_NFT.mp4`}
-            type="video/mp4"
-          />
-        </video>
+  return t;
+}(document, "script", "twitter-wjs-${xForWebsitesScriptId}"));`}
+      </Script>
 
-        <div className="flex flex-col items-center gap-3">
-          <Button
-            className={cn(
-              "h-14 w-[260px]",
-              !isLocationValid ||
+      <div className="flex w-full flex-col gap-8 py-4 md:flex-row md:items-stretch md:gap-10">
+        {/* Mint */}
+        <div className="flex flex-col items-center gap-8 md:flex-1">
+          <TDisplay className="text-center text-4xl uppercase md:text-5xl">
+            Basecamp 2025 NFT
+          </TDisplay>
+
+          <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
+            {
+              "As Sui's leading DeFi protocol, Suilend is proud to be a Platinum Sponsor for Sui Basecamp 2025 Dubai."
+            }
+            <br />
+            <br />
+            {
+              "Mint our Basecamp 2025 Commemorative NFT to celebrate your time in Dubai! Use this NFT to pick up SEND merch and qualify for a chance at exclusive prizes!"
+            }
+          </TBodySans>
+
+          <video
+            className="w-full max-w-[320px] border border-white/25 bg-muted/10"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ aspectRatio: "1/1" }}
+          >
+            <source
+              src={`${ASSETS_URL}/basecamp2025/Basecamp_NFT.mp4`}
+              type="video/mp4"
+            />
+          </video>
+
+          <div className="flex flex-col items-center gap-3">
+            <Button
+              className={cn(
+                "h-14 w-[260px]",
+                !isLocationValid ||
+                  !address ||
+                  ownedBasecamp2025NftObjectIds === undefined ||
+                  ownedBasecamp2025NftObjectIds.length > 0
+                  ? "disabled:opacity-50"
+                  : "disabled:opacity-100",
+              )}
+              labelClassName="text-wrap uppercase"
+              disabled={
+                isMintingBasecamp2025Nft ||
+                isComingSoon ||
+                isOver ||
+                !isLocationValid ||
                 !address ||
                 ownedBasecamp2025NftObjectIds === undefined ||
                 ownedBasecamp2025NftObjectIds.length > 0
-                ? "disabled:opacity-50"
-                : "disabled:opacity-100",
-            )}
-            labelClassName="text-wrap uppercase"
-            disabled={
-              isMintingBasecamp2025Nft ||
-              isComingSoon ||
-              isOver ||
-              !isLocationValid ||
-              !address ||
-              ownedBasecamp2025NftObjectIds === undefined ||
-              ownedBasecamp2025NftObjectIds.length > 0
-            }
-            onClick={mintBasecamp2025Nft}
-          >
-            {isMintingBasecamp2025Nft ? (
-              <Spinner size="md" />
-            ) : (
-              <>
-                {isComingSoon
-                  ? "Coming soon"
-                  : isOver
-                    ? "Mint finished"
-                    : "Mint Basecamp 2025 NFT"}
-              </>
-            )}
-          </Button>
+              }
+              onClick={mintBasecamp2025Nft}
+            >
+              {isMintingBasecamp2025Nft ? (
+                <Spinner size="md" />
+              ) : (
+                <>
+                  {isComingSoon
+                    ? "Coming soon"
+                    : isOver
+                      ? "Mint finished"
+                      : "Mint Basecamp 2025 NFT"}
+                </>
+              )}
+            </Button>
 
-          <TLabelSans>
-            {ownedBasecamp2025NftObjectIds?.length ?? 0} Basecamp 2025 NFT
-            {(ownedBasecamp2025NftObjectIds?.length ?? 0) !== 1 && "s"} in
-            wallet
-          </TLabelSans>
+            <TLabelSans>
+              {ownedBasecamp2025NftObjectIds?.length ?? 0} Basecamp 2025 NFT
+              {(ownedBasecamp2025NftObjectIds?.length ?? 0) !== 1 && "s"} in
+              wallet
+            </TLabelSans>
+
+            <div
+              className={cn(
+                "w-max rounded-[100px] border border-white/25",
+                !hasMintedBasecamp2025Nft &&
+                  "-mt-3 h-0 overflow-hidden opacity-0",
+              )}
+            >
+              <a
+                className="twitter-share-button"
+                href={`https://twitter.com/intent/tweet?${new URLSearchParams({
+                  text: `Just minted my Basecamp 2025 NFT!
+
+SEND IT @suilendprotocol!`,
+                  url: `${SUILEND_URL}/basecamp2025`,
+                })}`}
+                data-size="large"
+                data-lang="en"
+              >
+                Tweet
+              </a>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="w-full bg-border max-md:h-px md:w-px" />
+        <div className="w-full bg-border max-md:h-px md:w-px" />
 
-      {/* Burn */}
-      <div className="flex flex-col items-center gap-8 md:flex-1">
-        <TDisplay className="text-center text-4xl uppercase md:text-5xl">
-          Root Sauce NFT
-        </TDisplay>
+        {/* Burn */}
+        <div className="flex flex-col items-center gap-8 md:flex-1">
+          <TDisplay className="text-center text-4xl uppercase md:text-5xl">
+            Root Sauce NFT
+          </TDisplay>
 
-        <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
-          {
-            "Spice up your Basecamp experience with a Limited Edition Basecamp Root Sauce. Only 100 of these limited edition bottles exist!"
-          }
-          <br />
-          <br />
-          {
-            "One Limited Edition Root Sauce NFT has been airdropped to every wallet owning a Rootlet. Burn this NFT to redeem a physical bottle of root sauce."
-          }
-        </TBodySans>
+          <TBodySans className="max-w-lg text-center leading-5 text-foreground/80">
+            {
+              "Spice up your Basecamp experience with a Limited Edition Basecamp Root Sauce. Only 100 of these limited edition bottles exist!"
+            }
+            <br />
+            <br />
+            {
+              "One Limited Edition Root Sauce NFT has been airdropped to every wallet owning a Rootlet. Burn this NFT to redeem a physical bottle of root sauce."
+            }
+          </TBodySans>
 
-        <video
-          className="w-full max-w-[320px] border border-white/25 bg-muted/10"
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{ aspectRatio: "1/1" }}
-        >
-          <source
-            src={`${ASSETS_URL}/basecamp2025/Basecamp_Root_Sauce_NFT.mp4`}
-            type="video/mp4"
-          />
-        </video>
+          <video
+            className="w-full max-w-[320px] border border-white/25 bg-muted/10"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ aspectRatio: "1/1" }}
+          >
+            <source
+              src={`${ASSETS_URL}/basecamp2025/Basecamp_Root_Sauce_NFT.mp4`}
+              type="video/mp4"
+            />
+          </video>
 
-        <div className="flex flex-col items-center gap-3">
-          <Button
-            className={cn(
-              "h-14 w-[260px] bg-[#EA4630] text-white hover:bg-[#EA3430]",
-              !isLocationValid ||
+          <div className="flex flex-col items-center gap-3">
+            <Button
+              className={cn(
+                "h-14 w-[260px] bg-[#EA4630] text-white hover:bg-[#EA3430]",
+                !isLocationValid ||
+                  !address ||
+                  ownedRootSauceNftObjectIds === undefined ||
+                  ownedRootSauceNftObjectIds.length === 0
+                  ? "disabled:opacity-50"
+                  : "disabled:opacity-100",
+              )}
+              labelClassName="text-wrap uppercase"
+              disabled={
+                isBurningRootSauceNft ||
+                isComingSoon ||
+                isOver ||
+                !isRootSauceNftBurningEnabled ||
+                !isLocationValid ||
                 !address ||
                 ownedRootSauceNftObjectIds === undefined ||
                 ownedRootSauceNftObjectIds.length === 0
-                ? "disabled:opacity-50"
-                : "disabled:opacity-100",
-            )}
-            labelClassName="text-wrap uppercase"
-            disabled={
-              isBurningRootSauceNft ||
-              isComingSoon ||
-              isOver ||
-              !isRootSauceNftBurningEnabled ||
-              !isLocationValid ||
-              !address ||
-              ownedRootSauceNftObjectIds === undefined ||
-              ownedRootSauceNftObjectIds.length === 0
-            }
-            onClick={burnRootSauceNft}
-          >
-            {isBurningRootSauceNft ? (
-              <Spinner size="md" />
-            ) : (
-              <>
-                {isComingSoon
-                  ? "Coming soon"
-                  : isOver
-                    ? "Burn finished"
-                    : !isRootSauceNftBurningEnabled
-                      ? "Out of Root Sauce"
-                      : "Burn Root Sauce NFT"}
-              </>
-            )}
-          </Button>
+              }
+              onClick={burnRootSauceNft}
+            >
+              {isBurningRootSauceNft ? (
+                <Spinner size="md" />
+              ) : (
+                <>
+                  {isComingSoon
+                    ? "Coming soon"
+                    : isOver
+                      ? "Burn finished"
+                      : !isRootSauceNftBurningEnabled
+                        ? "Out of Root Sauce"
+                        : "Burn Root Sauce NFT"}
+                </>
+              )}
+            </Button>
 
-          <TLabelSans>
-            {ownedRootSauceNftObjectIds?.length ?? 0} Root Sauce NFT
-            {(ownedRootSauceNftObjectIds?.length ?? 0) !== 1 && "s"} in wallet
-          </TLabelSans>
+            <TLabelSans>
+              {ownedRootSauceNftObjectIds?.length ?? 0} Root Sauce NFT
+              {(ownedRootSauceNftObjectIds?.length ?? 0) !== 1 && "s"} in wallet
+            </TLabelSans>
+
+            <div
+              className={cn(
+                "w-max rounded-[100px] border border-white/25",
+                !hasBurnedRootSauceNft && "-mt-3 h-0 overflow-hidden opacity-0",
+              )}
+            >
+              <a
+                className="twitter-share-button"
+                href={`https://twitter.com/intent/tweet?${new URLSearchParams({
+                  text: `Just burned my Root Sauce NFT!
+
+Get ready, let's r🐽t @rootlets_nft!`,
+                  url: `${SUILEND_URL}/basecamp2025`,
+                })}`}
+                data-size="large"
+                data-lang="en"
+              >
+                Tweet
+              </a>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

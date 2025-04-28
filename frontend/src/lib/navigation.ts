@@ -6,6 +6,7 @@ export const SEND_URL = "/send";
 export const ABOUT_URL = "/about";
 export const ADMIN_URL = "/admin";
 
+export const SUILEND_URL = "https://suilend.fi";
 export const SPRINGSUI_URL = "https://springsui.com";
 export const STEAMM_URL = "https://steamm.fi";
 
