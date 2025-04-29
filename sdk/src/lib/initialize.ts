@@ -139,8 +139,8 @@ export const initializeSuilend = async (
   );
 
   const [reserveCoinMetadataMap, rewardCoinMetadataMap] = await Promise.all([
-    getCoinMetadataMap(suiClient, uniqueReserveCoinTypes),
-    getCoinMetadataMap(suiClient, uniqueRewardCoinTypes),
+    getCoinMetadataMap(uniqueReserveCoinTypes),
+    getCoinMetadataMap(uniqueRewardCoinTypes),
   ]);
   const coinMetadataMap = {
     ...reserveCoinMetadataMap,

@@ -31,7 +31,7 @@ const CAP_OWNER =
   "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";
 
 export default function CetusCard() {
-  const { rpc, explorer, suiClient } = useSettingsContext();
+  const { rpc, explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
@@ -55,7 +55,7 @@ export default function CetusCard() {
       const coinTypes = refFees.map((refFee) =>
         normalizeStructTag(refFee.coinAddress),
       );
-      const coinMetadataMap = await getCoinMetadataMap(suiClient, coinTypes);
+      const coinMetadataMap = await getCoinMetadataMap(coinTypes);
 
       setFeesMap(
         refFees.reduce((acc, refFee) => {
@@ -74,7 +74,7 @@ export default function CetusCard() {
         }, {} as FeesMap),
       );
     })();
-  }, [cetusSdk, suiClient]);
+  }, [cetusSdk]);
 
   // Submit
   const submit = async () => {

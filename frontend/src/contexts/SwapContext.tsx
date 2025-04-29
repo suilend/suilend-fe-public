@@ -301,7 +301,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
             }).includes(coinType),
         );
         const coinMetadataMap = await getCoinMetadataMap(
-          suiClient,
           coinTypesMissingMetadata,
         );
         const mergedCoinMetadataMap = {
@@ -334,7 +333,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap, suiClient],
+    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap],
   );
 
   // Tokens - Verified coinTypes
