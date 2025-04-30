@@ -12,7 +12,7 @@ import {
 } from "@suilend/frontend-sui-next";
 
 import { SendContextProvider } from "@/contexts/SendContext";
-import { mintMtokenWithVesting } from "@/lib/send";
+import { mintMTokens } from "@/lib/send";
 
 // Initialize the WebAssembly module
 let moduleInitialized = false;
@@ -587,7 +587,7 @@ function Page() {
 
                 try {
                   const transaction = new Transaction();
-                  const [adminCap, manager, sendCoin] = mintMtokenWithVesting({
+                  const [adminCap, manager, sendCoin] = mintMTokens({
                     transaction,
                     treasuryCap,
                     mTokenType,
