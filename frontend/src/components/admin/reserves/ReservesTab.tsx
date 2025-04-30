@@ -64,8 +64,8 @@ export default function ReservesTab() {
         const getQuoterName = (quoterType: string) => {
           return quoterType.endsWith("omm::OracleQuoter")
             ? "Oracle"
-            : quoterType.endsWith("stable::StableQuoter")
-              ? "Stable"
+            : quoterType.endsWith("omm_v2::OracleQuoterV2")
+              ? "Oracle V2"
               : "CPMM";
         };
 
