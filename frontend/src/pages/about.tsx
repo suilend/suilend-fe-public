@@ -64,7 +64,7 @@ export default function About() {
                 </TDisplay>
               </div>
 
-              <div className="flex flex-col gap-4 px-4 md:border-t md:px-0 md:px-6 md:pt-6">
+              <div className="flex flex-col gap-4 px-4 md:border-t md:px-6 md:pt-6">
                 <div className="flex flex-row items-center gap-3">
                   <Server className="h-6 w-6 text-foreground/50" />
                   <TBody className="w-full text-[16px] uppercase">
