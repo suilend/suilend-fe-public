@@ -64,7 +64,7 @@ export default function Basecamp2025() {
 
   // Location
   const [isLocationValid, setIsLocationValid] = useState<boolean | undefined>(
-    undefined,
+    true,
   );
 
   const isFetchingLocationRef = useRef<boolean>(false);
@@ -72,24 +72,12 @@ export default function Basecamp2025() {
     if (isFetchingLocationRef.current) return;
     isFetchingLocationRef.current = true;
 
-    (async () => {
-      try {
-        const res = await fetch("/api/ip-address-country");
-        if (!res.ok) throw new Error("Request failed");
-
-        const json = await res.json();
-        const code = json?.country?.code;
-        setIsLocationValid(code === "AE" || isInDevMode);
-      } catch (err) {
-        console.error(err);
-      }
-    })();
+    setIsLocationValid(true);
   }, [isInDevMode]);
 
   // Dates
   const isComingSoon = Date.now() < 1746043200000 && !isInDevMode; // 1 May 00:00 (GMT+4)
-  const isOver =
-    Date.now() >= 1746043200000 + 3 * 24 * 60 * 1000 && !isInDevMode; // 4 May 00:00 (GMT+4)
+  const isOver = Date.now() >= 1746302400000 && !isInDevMode; // 4 May 00:00 (GMT+4)
 
   // Flags
   const flags = useFlags();
