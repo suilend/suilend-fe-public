@@ -52,16 +52,18 @@ const generateTokenBytecode = async (params: {
   tokenDescription: string;
   iconUrl: string;
   tokenDecimals: number;
+  moduleName: string;
+  typeName: string;
 }): Promise<Uint8Array> => {
   try {
     // Ensure the WASM module is initialized before using any of its functions
     await ensureModuleInitialized();
 
     // Create sanitized module and type names
-    const moduleName = params.tokenSymbol
+    const moduleName = params.moduleName
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, "_");
-    const typeName = params.tokenSymbol
+    const typeName = params.typeName
       .toUpperCase()
       .replace(/[^A-Z0-9_]/g, "_");
 
@@ -187,6 +189,8 @@ function Page() {
                 try {
                   const formData = new FormData(e.target as HTMLFormElement);
                   const tokenConfig = {
+                    moduleName: formData.get("moduleName") as string,
+                    typeName: formData.get("typeName") as string,
                     tokenSymbol: formData.get("tokenSymbol") as string,
                     tokenName: formData.get("tokenName") as string,
                     tokenDescription: formData.get(
@@ -305,7 +309,34 @@ function Page() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Full name of your token
+                    Token name for your token
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Module Name</label>
+                  <input
+                    name="moduleName"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="BBB"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Module name for your token
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Type Name</label>
+                  <input
+                    name="typeName"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="My Token"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Type name for your token
                   </p>
                 </div>
               </div>
@@ -317,7 +348,6 @@ function Page() {
                   className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   rows={3}
                   placeholder="A description of what this token is for"
-                  required
                 ></textarea>
               </div>
 
