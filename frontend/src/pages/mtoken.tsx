@@ -63,9 +63,7 @@ const generateTokenBytecode = async (params: {
     const moduleName = params.moduleName
       .toLowerCase()
       .replace(/[^a-z0-9_]/g, "_");
-    const typeName = params.typeName
-      .toUpperCase()
-      .replace(/[^A-Z0-9_]/g, "_");
+    const typeName = params.typeName.toUpperCase().replace(/[^A-Z0-9_]/g, "_");
 
     // Base64 encoded bytecode template for a standard coin module with decimals parameter
     const bytecode = Buffer.from(
