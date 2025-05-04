@@ -634,9 +634,17 @@ function Page() {
                   // Transfer all objects to the user
                   if (address) {
                     transaction.transferObjects(
-                      [adminCap, manager, sendCoin],
+                      [adminCap, sendCoin],
                       transaction.pure.address(address),
                     );
+
+                    transaction.moveCall({
+                      target: "0x2::transfer::public_share_object",
+                      typeArguments: [
+                        `0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3::mtoken::VestingManager<${mTokenType}, ${vestingType}, ${penaltyType}>`,
+                      ],
+                      arguments: [manager],
+                    });
 
                     signExecuteAndWaitForTransaction(transaction)
                       .then((res) => {
