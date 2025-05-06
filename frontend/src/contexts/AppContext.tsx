@@ -12,6 +12,7 @@ import {
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
+import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
@@ -56,7 +57,13 @@ export interface AllAppData {
   lstAprPercentMap: Record<string, BigNumber>;
 }
 
-interface AppContext {
+export interface AppContext {
+  localCoinMetadataMap: Record<string, CoinMetadata>;
+  addCoinMetadataToLocalMap: (
+    coinType: string,
+    coinMetadata: CoinMetadata,
+  ) => void;
+
   allAppData: AllAppData | undefined;
   deprecatedReserveIds: string[] | undefined;
   filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
@@ -80,6 +87,11 @@ type LoadedAppContext = AppContext & {
 };
 
 const AppContext = createContext<AppContext>({
+  localCoinMetadataMap: {},
+  addCoinMetadataToLocalMap: () => {
+    throw Error("AppContextProvider not initialized");
+  },
+
   allAppData: undefined,
   deprecatedReserveIds: undefined,
   filteredReservesMap: undefined,
@@ -118,8 +130,23 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
+  // Local CoinMetadata map
+  const [localCoinMetadataMap, setLocalCoinMetadataMap] = useLocalStorage<
+    Record<string, CoinMetadata>
+  >("coinMetadataMap", {});
+
+  const addCoinMetadataToLocalMap = useCallback(
+    (coinType: string, coinMetadata: CoinMetadata) => {
+      setLocalCoinMetadataMap((o) => ({ ...o, [coinType]: coinMetadata }));
+    },
+    [setLocalCoinMetadataMap],
+  );
+
   // All app data
-  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
+  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData(
+    localCoinMetadataMap,
+    addCoinMetadataToLocalMap,
+  );
 
   const refreshAllAppData = useCallback(async () => {
     await mutateAllAppData();
@@ -230,6 +257,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
+      localCoinMetadataMap,
+      addCoinMetadataToLocalMap,
+
       allAppData,
       deprecatedReserveIds,
       filteredReservesMap,
@@ -245,6 +275,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       walrusEpochProgressPercent,
     }),
     [
+      localCoinMetadataMap,
+      addCoinMetadataToLocalMap,
       allAppData,
       deprecatedReserveIds,
       filteredReservesMap,

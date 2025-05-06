@@ -1,4 +1,4 @@
-import { SuiClient } from "@mysten/sui/client";
+import { CoinMetadata, SuiClient } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import BigNumber from "bignumber.js";
@@ -101,6 +101,7 @@ export const NORMALIZED_TREATS_COINTYPE = normalizeStructTag(TREATS_COINTYPE);
 export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
+  existingCoinMetadataMap?: Record<string, CoinMetadata>,
 ) => {
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
@@ -138,11 +139,39 @@ export const initializeSuilend = async (
     new Set(activeRewardCoinTypes),
   );
 
-  const [reserveCoinMetadataMap, rewardCoinMetadataMap] = await Promise.all([
-    getCoinMetadataMap(uniqueReserveCoinTypes),
-    getCoinMetadataMap(uniqueRewardCoinTypes),
+  const [_reserveCoinMetadataMap, _rewardCoinMetadataMap] = await Promise.all([
+    getCoinMetadataMap(
+      uniqueReserveCoinTypes.filter(
+        (coinType) => !(existingCoinMetadataMap ?? {})[coinType],
+      ),
+    ),
+    getCoinMetadataMap(
+      uniqueRewardCoinTypes.filter(
+        (coinType) => !(existingCoinMetadataMap ?? {})[coinType],
+      ),
+    ),
   ]);
-  const coinMetadataMap = {
+  const reserveCoinMetadataMap: Record<string, CoinMetadata> =
+    uniqueReserveCoinTypes.reduce(
+      (acc, coinType) => ({
+        ...acc,
+        [coinType]:
+          existingCoinMetadataMap?.[coinType] ??
+          _reserveCoinMetadataMap[coinType],
+      }),
+      {} as Record<string, CoinMetadata>,
+    );
+  const rewardCoinMetadataMap: Record<string, CoinMetadata> =
+    uniqueRewardCoinTypes.reduce(
+      (acc, coinType) => ({
+        ...acc,
+        [coinType]:
+          existingCoinMetadataMap?.[coinType] ??
+          _rewardCoinMetadataMap[coinType],
+      }),
+      {} as Record<string, CoinMetadata>,
+    );
+  const coinMetadataMap: Record<string, CoinMetadata> = {
     ...reserveCoinMetadataMap,
     ...rewardCoinMetadataMap,
   };

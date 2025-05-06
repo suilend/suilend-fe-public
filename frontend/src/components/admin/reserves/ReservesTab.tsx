@@ -1,13 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import BigNumber from "bignumber.js";
 
 import { formatPercent } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { MAINNET_CONFIG, PoolInfo, SteammSDK } from "@suilend/steamm-sdk";
+import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AddReserveDialog from "@/components/admin/reserves/AddReserveDialog";
@@ -25,34 +21,30 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { API_URL } from "@/lib/navigation";
+
 export default function ReservesTab() {
-  const { rpc, explorer } = useSettingsContext();
-  const { address } = useWalletContext();
+  const { explorer } = useSettingsContext();
 
   const { appData } = useAdminContext();
 
   // Pools
-  const steammClient = useMemo(() => {
-    const sdk = new SteammSDK({ ...MAINNET_CONFIG, fullRpcUrl: rpc.url });
-    sdk.senderAddress =
-      address ??
-      "0x0000000000000000000000000000000000000000000000000000000000000000"; // Address must be set to use the SDK
-
-    return sdk;
-  }, [rpc.url, address]);
-
-  const [poolInfos, setPoolInfos] = useState<PoolInfo[] | undefined>(undefined);
+  const [poolInfos, setPoolInfos] = useState<any[] | undefined>(undefined);
 
   useEffect(() => {
     (async () => {
       try {
-        const _poolInfos = await steammClient.getPools();
-        setPoolInfos(_poolInfos);
+        const poolsRes = await fetch(`${API_URL}/steamm/pools/all`);
+        const poolsJson: any[] = await poolsRes.json();
+        if ((poolsJson as any)?.statusCode === 500)
+          throw new Error("Failed to fetch pools");
+
+        setPoolInfos(poolsJson.map((poolObj) => poolObj.poolInfo));
       } catch (err) {
         console.error(err);
       }
     })();
-  }, [steammClient]);
+  }, []);
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -63,7 +55,7 @@ export default function ReservesTab() {
 
         const getQuoterName = (quoterType: string) => {
           return quoterType.endsWith("omm::OracleQuoter")
-            ? "Oracle"
+            ? "Oracle V1"
             : quoterType.endsWith("omm_v2::OracleQuoterV2")
               ? "Oracle V2"
               : "CPMM";

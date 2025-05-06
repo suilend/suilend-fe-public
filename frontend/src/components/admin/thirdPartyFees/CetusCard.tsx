@@ -56,6 +56,7 @@ export default function CetusCard() {
         normalizeStructTag(refFee.coinAddress),
       );
       const coinMetadataMap = await getCoinMetadataMap(coinTypes);
+      // TODO: Add to local map
 
       setFeesMap(
         refFees.reduce((acc, refFee) => {
