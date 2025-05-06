@@ -209,7 +209,10 @@ export default function ConnectedWalletDropdownMenu({
                       <TLabelSans
                         className={cn(_userDataIndex !== 0 && "mt-2")}
                       >
-                        {allAppData?.[_lendingMarketId].lendingMarket.name}{" "}
+                        {
+                          allAppData?.allLendingMarketData[_lendingMarketId]
+                            .lendingMarket.name
+                        }{" "}
                       </TLabelSans>
 
                       {_userData.obligations.map((o, _, obligationsArray) => (
@@ -219,7 +222,8 @@ export default function ConnectedWalletDropdownMenu({
                           isSelected={o.id === obligation?.id}
                           onClick={() =>
                             setObligationId(
-                              allAppData?.[_lendingMarketId].lendingMarket.slug,
+                              allAppData?.allLendingMarketData[_lendingMarketId]
+                                .lendingMarket.slug,
                               o.id,
                             )
                           }

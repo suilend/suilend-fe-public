@@ -79,14 +79,16 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {(Object.values(allAppData).find((_appData) =>
-                  _appData.reserveCoinTypes.includes(token.coinType),
+                {(Object.values(allAppData.allLendingMarketData).find(
+                  (_appData) =>
+                    _appData.reserveCoinTypes.includes(token.coinType),
                 ) ||
                   verifiedCoinTypes.includes(token.coinType)) && (
                   <Tooltip
                     title={
-                      Object.values(allAppData).find((_appData) =>
-                        _appData.reserveCoinTypes.includes(token.coinType),
+                      Object.values(allAppData.allLendingMarketData).find(
+                        (_appData) =>
+                          _appData.reserveCoinTypes.includes(token.coinType),
                       )
                         ? "This asset is listed on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)

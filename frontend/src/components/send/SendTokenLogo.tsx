@@ -14,7 +14,7 @@ interface SendTokenLogoProps {
 export default function SendTokenLogo({ className }: SendTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
 
-  const appData = allAppData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
   const sendReserve = appData.reserveMap[NORMALIZED_SEND_COINTYPE];
 

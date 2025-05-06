@@ -21,7 +21,7 @@ export default function useFetchUserData() {
 
     const result: Record<string, UserData> = {};
 
-    for (const appData of Object.values(allAppData)) {
+    for (const appData of Object.values(allAppData.allLendingMarketData)) {
       const { obligationOwnerCaps, obligations } = await initializeObligations(
         suiClient,
         appData.suilendClient,

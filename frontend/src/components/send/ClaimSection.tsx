@@ -138,7 +138,7 @@ function RedeemTabContent({
   } = useLoadedSendContext();
   const userAllocations = restLoadedSendContext.userAllocations!;
 
-  const appData = allAppData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
 
   // Balances
@@ -467,7 +467,7 @@ function ClaimTabContent() {
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appData = allAppData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
 
   // Reserves
@@ -934,7 +934,7 @@ export default function ClaimSection({
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appData = allAppData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
   // Allocations
   const sendPointsAllocation = allocations.find(

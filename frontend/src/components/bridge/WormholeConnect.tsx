@@ -20,7 +20,7 @@ export default function WormholeConnectWrapper() {
   const { allAppData } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
 
-  const appData = allAppData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
   const assetUsdPriceMap: Record<string, BigNumber> = {
     USDC: appData.reserveMap[NORMALIZED_USDC_COINTYPE].price,

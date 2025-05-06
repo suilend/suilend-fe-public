@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
 import {
@@ -14,7 +15,8 @@ import {
   SuilendClient,
 } from "@suilend/sdk/client";
 
-import { AppData } from "@/contexts/AppContext";
+import { AllAppData } from "@/contexts/AppContext";
+import { API_URL } from "@/lib/navigation";
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
@@ -24,59 +26,81 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    const result: Record<string, AppData> = {};
+    const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
+      // Lending markets
+      (async () => {
+        const result: AllAppData["allLendingMarketData"] = {};
 
-    for (const LENDING_MARKET of LENDING_MARKETS) {
-      if (LENDING_MARKET.isHidden && !isAdmin) continue;
+        for (const LENDING_MARKET of LENDING_MARKETS) {
+          if (LENDING_MARKET.isHidden && !isAdmin) continue;
 
-      const suilendClient = await SuilendClient.initialize(
-        LENDING_MARKET.id,
-        LENDING_MARKET.type,
-        suiClient,
-        true,
-      );
+          const suilendClient = await SuilendClient.initialize(
+            LENDING_MARKET.id,
+            LENDING_MARKET.type,
+            suiClient,
+            true,
+          );
 
-      const {
-        lendingMarket,
-        coinMetadataMap,
+          const {
+            lendingMarket,
+            coinMetadataMap,
 
-        refreshedRawReserves,
-        reserveMap,
-        reserveCoinTypes,
-        reserveCoinMetadataMap,
+            refreshedRawReserves,
+            reserveMap,
+            reserveCoinTypes,
+            reserveCoinMetadataMap,
 
-        rewardCoinTypes,
-        activeRewardCoinTypes,
-        rewardCoinMetadataMap,
-      } = await initializeSuilend(suiClient, suilendClient);
+            rewardCoinTypes,
+            activeRewardCoinTypes,
+            rewardCoinMetadataMap,
+          } = await initializeSuilend(suiClient, suilendClient);
 
-      const { rewardPriceMap } = await initializeSuilendRewards(
-        reserveMap,
-        activeRewardCoinTypes,
-      );
+          const { rewardPriceMap } = await initializeSuilendRewards(
+            reserveMap,
+            activeRewardCoinTypes,
+          );
 
-      result[lendingMarket.id] = {
-        suilendClient,
+          result[lendingMarket.id] = {
+            suilendClient,
 
-        lendingMarket,
-        coinMetadataMap,
+            lendingMarket,
+            coinMetadataMap,
 
-        refreshedRawReserves,
-        reserveMap,
-        reserveCoinTypes,
-        reserveCoinMetadataMap,
+            refreshedRawReserves,
+            reserveMap,
+            reserveCoinTypes,
+            reserveCoinMetadataMap,
 
-        rewardPriceMap,
-        rewardCoinTypes,
-        activeRewardCoinTypes,
-        rewardCoinMetadataMap,
-      };
-    }
+            rewardPriceMap,
+            rewardCoinTypes,
+            activeRewardCoinTypes,
+            rewardCoinMetadataMap,
+          };
+        }
 
-    return result;
+        return result;
+      })(),
+
+      // LSTs
+      (async () => {
+        const lstAprsRes = await fetch(`${API_URL}/springsui/all`);
+        const lstAprsJson: Record<string, string> = await lstAprsRes.json();
+        if ((lstAprsRes as any)?.statusCode === 500)
+          throw new Error("Failed to fetch SpringSui LST APRs");
+
+        return Object.fromEntries(
+          Object.entries(lstAprsJson).map(([coinType, aprPercent]) => [
+            coinType,
+            new BigNumber(aprPercent),
+          ]),
+        ) as AllAppData["lstAprPercentMap"];
+      })(),
+    ]);
+
+    return { allLendingMarketData, lstAprPercentMap };
   };
 
-  const { data, mutate } = useSWR<Record<string, AppData>>(
+  const { data, mutate } = useSWR<AllAppData>(
     `appData-${isAdmin}`,
     dataFetcher,
     {

@@ -3,7 +3,6 @@ import { capitalize } from "lodash";
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  NORMALIZED_DEEP_COINTYPE,
   NORMALIZED_LBTC_COINTYPE,
   formatPercent,
   formatPoints,
@@ -127,7 +126,7 @@ export default function AprWithRewardsBreakdown({
   action,
   changeAmount,
 }: AprWithRewardsBreakdownProps) {
-  const { lstData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
 
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
@@ -152,7 +151,7 @@ export default function AprWithRewardsBreakdown({
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
     reserve.coinType,
-    lstData.aprPercentMap,
+    allAppData.lstAprPercentMap,
   );
 
   const aprPercent =

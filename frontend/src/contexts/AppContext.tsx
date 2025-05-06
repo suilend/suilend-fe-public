@@ -29,7 +29,6 @@ import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
-import useFetchLstData from "@/fetchers/useFetchLstData";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
 export enum QueryParams {
@@ -52,13 +51,13 @@ export interface AppData {
   activeRewardCoinTypes: string[];
   rewardCoinMetadataMap: Record<string, CoinMetadata>;
 }
-export interface LstData {
-  lstCoinTypes: string[];
-  aprPercentMap: Record<string, BigNumber>;
+export interface AllAppData {
+  allLendingMarketData: Record<string, AppData>;
+  lstAprPercentMap: Record<string, BigNumber>;
 }
 
 interface AppContext {
-  allAppData: Record<string, AppData> | undefined;
+  allAppData: AllAppData | undefined;
   deprecatedReserveIds: string[] | undefined;
   filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
   refreshAllAppData: () => Promise<void>;
@@ -66,7 +65,6 @@ interface AppContext {
   appData: AppData | undefined;
   filteredReserves: ParsedReserve[] | undefined;
 
-  lstData: LstData | undefined;
   isLst: (coinType: string) => boolean;
   isEcosystemLst: (coinType: string) => boolean;
 
@@ -74,13 +72,11 @@ interface AppContext {
   walrusEpochProgressPercent: number | undefined;
 }
 type LoadedAppContext = AppContext & {
-  allAppData: Record<string, AppData>;
+  allAppData: AllAppData;
   filteredReservesMap: Record<string, ParsedReserve[]>;
 
   appData: AppData;
   filteredReserves: ParsedReserve[];
-
-  lstData: LstData;
 };
 
 const AppContext = createContext<AppContext>({
@@ -94,7 +90,6 @@ const AppContext = createContext<AppContext>({
   appData: undefined,
   filteredReserves: undefined,
 
-  lstData: undefined,
   isLst: () => {
     throw Error("AppContextProvider not initialized");
   },
@@ -123,7 +118,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
-  // Lending markets
+  // All app data
   const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
 
   const refreshAllAppData = useCallback(async () => {
@@ -132,12 +127,12 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
   const appData = useMemo(
     () =>
-      Object.values(allAppData ?? {}).find(
+      Object.values(allAppData?.allLendingMarketData ?? {}).find(
         (_appData) =>
           _appData.lendingMarket.slug ===
           queryParams[QueryParams.LENDING_MARKET],
-      ) ?? Object.values(allAppData ?? {})[0],
-    [queryParams, allAppData],
+      ) ?? Object.values(allAppData?.allLendingMarketData ?? {})[0],
+    [queryParams, allAppData?.allLendingMarketData],
   );
 
   // Deprecated reserves
@@ -152,7 +147,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     if (!allAppData) return undefined;
 
     const result: Record<string, ParsedReserve[]> = {};
-    for (const _appData of Object.values(allAppData)) {
+    for (const _appData of Object.values(allAppData.allLendingMarketData)) {
       const filteredReserves = _appData.lendingMarket.reserves
         .filter((reserve) =>
           !isInMsafeApp()
@@ -189,11 +184,11 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   );
 
   // LST
-  const { data: lstData } = useFetchLstData();
-
   const isLst = useCallback(
-    (coinType: string) => lstData?.lstCoinTypes.includes(coinType) ?? false,
-    [lstData],
+    (coinType: string) =>
+      Object.keys(allAppData?.lstAprPercentMap ?? {}).includes(coinType) ??
+      false,
+    [allAppData?.lstAprPercentMap],
   );
   const isEcosystemLst = useCallback(
     (coinType: string) =>
@@ -243,7 +238,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       appData,
       filteredReserves,
 
-      lstData,
       isLst,
       isEcosystemLst,
 
@@ -257,7 +251,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       refreshAllAppData,
       appData,
       filteredReserves,
-      lstData,
       isLst,
       isEcosystemLst,
       walrusEpoch,

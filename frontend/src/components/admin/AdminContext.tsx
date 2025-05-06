@@ -34,8 +34,10 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
     useState<string>("");
 
   const appData = useMemo(
-    () => allAppData[selectedLendingMarketId] ?? Object.values(allAppData)[0],
-    [allAppData, selectedLendingMarketId],
+    () =>
+      allAppData.allLendingMarketData[selectedLendingMarketId] ??
+      Object.values(allAppData.allLendingMarketData)[0],
+    [allAppData.allLendingMarketData, selectedLendingMarketId],
   );
 
   // Context

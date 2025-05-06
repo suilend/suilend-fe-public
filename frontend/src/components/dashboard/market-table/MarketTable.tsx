@@ -117,7 +117,7 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { deprecatedReserveIds, lstData, isEcosystemLst } =
+  const { allAppData, deprecatedReserveIds, isEcosystemLst } =
     useLoadedAppContext();
   const { userData } = useLoadedUserContext();
   const { filteredReserves } = useLoadedAppContext();
@@ -310,7 +310,7 @@ export default function MarketTable() {
         getStakingYieldAprPercent(
           Side.DEPOSIT,
           reserve.coinType,
-          lstData.aprPercentMap,
+          allAppData.lstAprPercentMap,
         ),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
@@ -564,7 +564,7 @@ export default function MarketTable() {
   }, [
     filteredReserves,
     userData.rewardMap,
-    lstData.aprPercentMap,
+    allAppData.lstAprPercentMap,
     deprecatedReserveIds,
     isEcosystemLst,
   ]);

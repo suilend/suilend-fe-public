@@ -15,13 +15,8 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const {
-    allAppData,
-    filteredReservesMap,
-    appData,
-    filteredReserves,
-    lstData,
-  } = useAppContext();
+  const { allAppData, filteredReservesMap, appData, filteredReserves } =
+    useAppContext();
   const { allUserData, userData } = useUserContext();
   const { season, seasonMap } = usePointsContext();
 
@@ -71,7 +66,6 @@ export default function Layout({ children }: PropsWithChildren) {
           !filteredReservesMap ||
           !appData ||
           !filteredReserves ||
-          !lstData ||
           !allUserData ||
           !userData ? (
             <FullPageSpinner />

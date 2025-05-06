@@ -42,10 +42,12 @@ export default function Home() {
   const { allAppData, appData } = useLoadedAppContext();
 
   // Tabs
-  const tabs = Object.values(allAppData).map((_appData) => ({
-    id: _appData.lendingMarket.slug,
-    title: _appData.lendingMarket.name,
-  }));
+  const tabs = Object.values(allAppData.allLendingMarketData).map(
+    (_appData) => ({
+      id: _appData.lendingMarket.slug,
+      title: _appData.lendingMarket.name,
+    }),
+  );
 
   const selectedTab = appData.lendingMarket.slug;
   const onSelectedTabChange = (tab: string) => {
