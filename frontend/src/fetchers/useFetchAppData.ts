@@ -92,19 +92,24 @@ export default function useFetchAppData(
         return result;
       })(),
 
-      // LSTs
+      // LSTs (won't cause error if fails)
       (async () => {
-        const lstAprsRes = await fetch(`${API_URL}/springsui/all`);
-        const lstAprsJson: Record<string, string> = await lstAprsRes.json();
-        if ((lstAprsRes as any)?.statusCode === 500)
-          throw new Error("Failed to fetch SpringSui LST APRs");
+        try {
+          const lstAprsRes = await fetch(`${API_URL}/springsui/all`);
+          const lstAprsJson: Record<string, string> = await lstAprsRes.json();
+          if ((lstAprsRes as any)?.statusCode === 500)
+            throw new Error("Failed to fetch SpringSui LST APRs");
 
-        return Object.fromEntries(
-          Object.entries(lstAprsJson).map(([coinType, aprPercent]) => [
-            coinType,
-            new BigNumber(aprPercent),
-          ]),
-        ) as AllAppData["lstAprPercentMap"];
+          return Object.fromEntries(
+            Object.entries(lstAprsJson).map(([coinType, aprPercent]) => [
+              coinType,
+              new BigNumber(aprPercent),
+            ]),
+          ) as AllAppData["lstAprPercentMap"];
+        } catch (err) {
+          console.error(err);
+          return {} as AllAppData["lstAprPercentMap"];
+        }
       })(),
     ]);
 
