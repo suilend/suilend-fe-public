@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   NORMALIZED_LBTC_COINTYPE,
+  NORMALIZED_flSUI_COINTYPE,
   formatPercent,
   formatPoints,
   formatPrice,
@@ -71,9 +72,11 @@ const formatPerDay = (
   newValue?: BigNumber,
 ) => {
   const formatter = (_value: BigNumber) =>
-    isSendPoints(coinType)
+    coinType === "LIQ_AG"
       ? formatPoints(_value, { dp: 3 })
-      : formatToken(_value, { exact: false });
+      : isSendPoints(coinType)
+        ? formatPoints(_value, { dp: 3 })
+        : formatToken(_value, { exact: false });
 
   return showChange && (newValue === undefined || !newValue.eq(value)) ? (
     <>
@@ -131,22 +134,40 @@ export default function AprWithRewardsBreakdown({
 
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
-  if (reserve.coinType === NORMALIZED_LBTC_COINTYPE && side === Side.DEPOSIT)
-    filteredRewards.push({
-      stats: {
-        id: uuidv4(),
-        isActive: true,
-        rewardIndex: -1, // Not used
-        reserve,
-        rewardCoinType: "LOMBARD",
-        mintDecimals: 0, // Not used
-        symbol: "3x Lombard Lux",
-        iconUrl: `${ASSETS_URL}/partners/Lombard Lux.png`,
-        perDay: new BigNumber(0), // Not used, but must be defined
-        side: Side.DEPOSIT,
-      },
-      obligationClaims: {},
-    });
+  if (side === Side.DEPOSIT) {
+    if (reserve.coinType === NORMALIZED_flSUI_COINTYPE)
+      filteredRewards.push({
+        stats: {
+          id: uuidv4(),
+          isActive: true,
+          rewardIndex: -1, // Not used
+          reserve,
+          rewardCoinType: "LIQ_AG",
+          mintDecimals: 0, // Not used
+          symbol: "LiqAg Points",
+          iconUrl: `${ASSETS_URL}/partners/LiqAg.png`,
+          perDay: new BigNumber(0.036),
+          side: Side.DEPOSIT,
+        },
+        obligationClaims: {},
+      });
+    if (reserve.coinType === NORMALIZED_LBTC_COINTYPE)
+      filteredRewards.push({
+        stats: {
+          id: uuidv4(),
+          isActive: true,
+          rewardIndex: -1, // Not used
+          reserve,
+          rewardCoinType: "LOMBARD",
+          mintDecimals: 0, // Not used
+          symbol: "3x Lombard Lux",
+          iconUrl: `${ASSETS_URL}/partners/Lombard Lux.png`,
+          perDay: new BigNumber(0), // Not used, but must be defined
+          side: Side.DEPOSIT,
+        },
+        obligationClaims: {},
+      });
+  }
 
   const stakingYieldAprPercent = getStakingYieldAprPercent(
     side,
