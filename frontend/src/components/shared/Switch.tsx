@@ -9,6 +9,7 @@ interface SwitchProps {
   horizontal?: boolean;
   isChecked: boolean;
   onToggle: (isChecked: boolean) => void;
+  isDisabled?: boolean;
 }
 
 export default function Switch({
@@ -17,20 +18,24 @@ export default function Switch({
   horizontal,
   isChecked,
   onToggle,
+  isDisabled,
 }: SwitchProps) {
   const switchId = getSwitchId(id);
 
   return (
     <div
       className={cn(
-        "flex cursor-pointer gap-2",
+        "flex gap-2",
         horizontal ? "flex-row items-center" : "flex-col",
+        !isDisabled ? "cursor-pointer" : "pointer-events-none opacity-50",
       )}
-      onClick={() => onToggle(!isChecked)}
+      onClick={!isDisabled ? () => onToggle(!isChecked) : undefined}
     >
       {label && (
         <label htmlFor={switchId} className="w-fit">
-          <TLabelSans className="cursor-pointer">{label}</TLabelSans>
+          <TLabelSans className={cn(!isDisabled && "cursor-pointer")}>
+            {label}
+          </TLabelSans>
         </label>
       )}
 

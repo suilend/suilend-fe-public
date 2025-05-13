@@ -1160,15 +1160,14 @@ function Page() {
 
               {/* Right */}
               <div className="flex flex-row items-center gap-4">
-                {(obligation?.deposits ?? []).length > 0 && (
-                  <Switch
-                    id="isUsingDeposits"
-                    label="Use deposits"
-                    horizontal
-                    isChecked={isUsingDeposits}
-                    onToggle={setIsUsingDeposits}
-                  />
-                )}
+                <Switch
+                  id="isUsingDeposits"
+                  label="Use deposits"
+                  horizontal
+                  isChecked={isUsingDeposits}
+                  onToggle={setIsUsingDeposits}
+                  isDisabled={(obligation?.deposits ?? []).length === 0}
+                />
 
                 <SwapSlippagePopover
                   slippagePercent={slippagePercent}
