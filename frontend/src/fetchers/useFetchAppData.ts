@@ -95,15 +95,18 @@ export default function useFetchAppData(
       // LSTs (won't cause error if fails)
       (async () => {
         try {
-          const lstAprsRes = await fetch(`${API_URL}/springsui/all`);
-          const lstAprsJson: Record<string, string> = await lstAprsRes.json();
-          if ((lstAprsRes as any)?.statusCode === 500)
-            throw new Error("Failed to fetch SpringSui LST APRs");
+          const lstInfoRes = await fetch(`${API_URL}/springsui/lst-info`);
+          const lstInfoJson: Record<
+            string,
+            { LIQUID_STAKING_INFO: any; liquidStakingInfo: any; apy: string }
+          > = await lstInfoRes.json();
+          if ((lstInfoRes as any)?.statusCode === 500)
+            throw new Error("Failed to fetch SpringSui LST data");
 
           return Object.fromEntries(
-            Object.entries(lstAprsJson).map(([coinType, aprPercent]) => [
+            Object.entries(lstInfoJson).map(([coinType, lstData]) => [
               coinType,
-              new BigNumber(aprPercent),
+              new BigNumber(lstData.apy),
             ]),
           ) as AllAppData["lstAprPercentMap"];
         } catch (err) {
