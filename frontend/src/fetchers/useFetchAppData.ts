@@ -92,7 +92,7 @@ export default function useFetchAppData(
         return result;
       })(),
 
-      // LSTs (won't cause error if fails)
+      // LSTs (won't throw on error)
       (async () => {
         try {
           const lstInfoRes = await fetch(`${API_URL}/springsui/lst-info`);

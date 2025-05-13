@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
@@ -6,13 +6,13 @@ import { formatDate } from "date-fns";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatToken } from "@suilend/frontend-sui";
+import { Token, formatToken } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
-import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
+import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
@@ -29,8 +29,7 @@ export default function AddRewardDialog({
   isDepositReward,
 }: AddRewardDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { balancesCoinMetadataMap, getBalance, refresh } =
-    useLoadedUserContext();
+  const { getBalance, refresh } = useLoadedUserContext();
 
   const { appData } = useAdminContext();
 
@@ -39,19 +38,13 @@ export default function AddRewardDialog({
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinType, setCoinType] = useState<string | undefined>(undefined);
-  const coinMetadata = useMemo(
-    () =>
-      coinType !== undefined ? balancesCoinMetadataMap?.[coinType] : undefined,
-    [coinType, balancesCoinMetadataMap],
-  );
-
+  const [token, setToken] = useState<Token | undefined>(undefined);
   const [amount, setAmount] = useState<string>("");
   const [startTimeMs, setStartTimeMs] = useState<string>("");
   const [endTimeMs, setEndTimeMs] = useState<string>("");
 
   const reset = () => {
-    setCoinType(undefined);
+    setToken(undefined);
     setAmount("");
     setStartTimeMs("");
     setEndTimeMs("");
@@ -63,15 +56,10 @@ export default function AddRewardDialog({
     if (!appData.lendingMarket.ownerCapId)
       throw new Error("Error: lendingMarket.ownerCapId not defined");
 
-    if (coinType === undefined) {
+    if (token === undefined) {
       toast.error("Select a coin");
       return;
     }
-    if (!coinMetadata) {
-      toast.error("Invalid coin selected");
-      return;
-    }
-
     if (amount === "") {
       toast.error("Enter an amount");
       return;
@@ -96,7 +84,7 @@ export default function AddRewardDialog({
     const transaction = new Transaction();
 
     const rewardValue = new BigNumber(amount)
-      .times(10 ** coinMetadata.decimals)
+      .times(10 ** token.decimals)
       .toString();
 
     try {
@@ -105,7 +93,7 @@ export default function AddRewardDialog({
         appData.lendingMarket.ownerCapId,
         reserve.arrayIndex,
         isDepositReward,
-        coinType,
+        token.coinType,
         rewardValue,
         BigInt(startTimeMs),
         BigInt(endTimeMs),
@@ -169,24 +157,20 @@ export default function AddRewardDialog({
       }}
     >
       <Grid>
-        <CoinDropdownMenu
-          coinMetadataMap={balancesCoinMetadataMap}
-          value={coinType}
-          onChange={setCoinType}
-        />
+        <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
         <Input
           label="amount"
           labelRight={
-            coinType && coinMetadata
-              ? `Max: ${formatToken(getBalance(coinType), { dp: coinMetadata.decimals })}`
+            token
+              ? `Max: ${formatToken(getBalance(token.coinType), { dp: token.decimals })}`
               : undefined
           }
           id="amount"
           type="number"
           value={amount}
           onChange={setAmount}
-          inputProps={{ disabled: coinType === undefined }}
-          endDecorator={coinMetadata?.symbol}
+          inputProps={{ disabled: token === undefined }}
+          endDecorator={token?.symbol}
         />
         <Input
           label="startTimeMs"

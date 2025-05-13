@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
@@ -6,12 +6,13 @@ import { formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
+import { Token } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
-import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
+import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { balancesCoinMetadataMap, refresh } = useLoadedUserContext();
+  const { refresh } = useLoadedUserContext();
 
   const { appData } = useAdminContext();
 
@@ -31,13 +32,7 @@ export default function AddRewardsDialog() {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinType, setCoinType] = useState<string | undefined>(undefined);
-  const coinMetadata = useMemo(
-    () =>
-      coinType !== undefined ? balancesCoinMetadataMap?.[coinType] : undefined,
-    [coinType, balancesCoinMetadataMap],
-  );
-
+  const [token, setToken] = useState<Token | undefined>(undefined);
   const [startTimeMs, setStartTimeMs] = useState<string>("");
   const [endTimeMs, setEndTimeMs] = useState<string>("");
 
@@ -52,7 +47,7 @@ export default function AddRewardsDialog() {
       }));
 
   const reset = () => {
-    setCoinType(undefined);
+    setToken(undefined);
     setStartTimeMs("");
     setEndTimeMs("");
 
@@ -65,15 +60,10 @@ export default function AddRewardsDialog() {
     if (!appData.lendingMarket.ownerCapId)
       throw new Error("Error: lendingMarket.ownerCapId not defined");
 
-    if (coinType === undefined) {
+    if (token === undefined) {
       toast.error("Select a coin");
       return;
     }
-    if (!coinMetadata) {
-      toast.error("Invalid coin selected");
-      return;
-    }
-
     if (startTimeMs === "") {
       toast.error("Enter a start time");
       return;
@@ -102,7 +92,7 @@ export default function AddRewardsDialog() {
           const rewardValue = new BigNumber(
             rewardsMap?.[reserve.coinType]?.[side] || 0,
           )
-            .times(10 ** coinMetadata.decimals)
+            .times(10 ** token.decimals)
             .toString();
 
           if (rewardValue !== "0") {
@@ -111,7 +101,7 @@ export default function AddRewardsDialog() {
               appData.lendingMarket.ownerCapId,
               reserveArrayIndex,
               side === Side.DEPOSIT,
-              coinType,
+              token.coinType,
               rewardValue,
               BigInt(startTimeMs),
               BigInt(endTimeMs),
@@ -179,11 +169,7 @@ export default function AddRewardsDialog() {
       }}
     >
       <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
-        <CoinDropdownMenu
-          coinMetadataMap={balancesCoinMetadataMap}
-          value={coinType}
-          onChange={setCoinType}
-        />
+        <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
         <Input
           label="startTimeMs"
           labelRight={
@@ -236,7 +222,7 @@ export default function AddRewardsDialog() {
               type="number"
               value={rewardsMap?.[reserve.coinType]?.deposit || ""}
               onChange={setRewardsValue(reserve.coinType, Side.DEPOSIT)}
-              endDecorator={coinMetadata?.symbol}
+              endDecorator={token?.symbol}
             />
             <Input
               label={index === 0 ? "borrowRewards" : undefined}
@@ -244,7 +230,7 @@ export default function AddRewardsDialog() {
               type="number"
               value={rewardsMap?.[reserve.coinType]?.borrow || ""}
               onChange={setRewardsValue(reserve.coinType, Side.BORROW)}
-              endDecorator={coinMetadata?.symbol}
+              endDecorator={token?.symbol}
             />
           </Fragment>
         ))}

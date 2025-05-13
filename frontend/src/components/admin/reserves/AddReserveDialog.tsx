@@ -1,15 +1,16 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
+import { Token } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
-import CoinDropdownMenu from "@/components/admin/CoinDropdownMenu";
+import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";
 import ReserveConfig, {
   ConfigState,
   parseConfigState,
@@ -23,7 +24,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function AddReserveDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { balancesCoinMetadataMap, refresh } = useLoadedUserContext();
+  const { refresh } = useLoadedUserContext();
 
   const { appData } = useAdminContext();
 
@@ -32,13 +33,7 @@ export default function AddReserveDialog() {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
-  const [coinType, setCoinType] = useState<string | undefined>(undefined);
-  const coinMetadata = useMemo(
-    () =>
-      coinType !== undefined ? balancesCoinMetadataMap?.[coinType] : undefined,
-    [coinType, balancesCoinMetadataMap],
-  );
-
+  const [token, setToken] = useState<Token | undefined>(undefined);
   const [pythPriceId, setPythPriceId] = useState<string>("");
 
   const initialConfigStateRef = useRef<ConfigState>({
@@ -73,7 +68,7 @@ export default function AddReserveDialog() {
   const { configState, resetConfigState } = reserveConfigState;
 
   const reset = () => {
-    setCoinType(undefined);
+    setToken(undefined);
     setPythPriceId("");
 
     resetConfigState();
@@ -113,15 +108,10 @@ export default function AddReserveDialog() {
     if (!appData.lendingMarket.ownerCapId)
       throw new Error("Error: lendingMarket.ownerCapId not defined");
 
-    if (coinType === undefined) {
+    if (token === undefined) {
       toast.error("Select a coin");
       return;
     }
-    if (!coinMetadata) {
-      toast.error("Invalid coin selected");
-      return;
-    }
-
     if (pythPriceId === "") {
       toast.error("Enter a pyth price id");
       return;
@@ -148,14 +138,14 @@ export default function AddReserveDialog() {
     }
 
     const transaction = new Transaction();
-    const newConfig = parseConfigState(configState, coinMetadata.decimals);
+    const newConfig = parseConfigState(configState, token.decimals);
 
     try {
       await appData.suilendClient.createReserve(
         appData.lendingMarket.ownerCapId,
         transaction,
         pythPriceId,
-        coinType,
+        token.coinType,
         newConfig,
       );
 
@@ -215,11 +205,7 @@ export default function AddReserveDialog() {
       }}
     >
       <Grid>
-        <CoinDropdownMenu
-          coinMetadataMap={balancesCoinMetadataMap}
-          value={coinType}
-          onChange={setCoinType}
-        />
+        <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
         <div className="flex w-full flex-row items-end gap-2">
           <Input
             className="flex-1"
@@ -240,7 +226,7 @@ export default function AddReserveDialog() {
           </Button>
         </div>
 
-        <ReserveConfig symbol={coinMetadata?.symbol} {...reserveConfigState} />
+        <ReserveConfig symbol={token?.symbol} {...reserveConfigState} />
       </Grid>
     </Dialog>
   );

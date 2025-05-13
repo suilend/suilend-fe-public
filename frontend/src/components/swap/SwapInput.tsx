@@ -7,7 +7,7 @@ import { mergeRefs } from "react-merge-refs";
 import { formatToken, formatUsd } from "@suilend/frontend-sui";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
-import TokenSelectionDialog from "@/components/swap/TokenSelectionDialog";
+import TokenSelectionDialog from "@/components/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -48,7 +48,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
   ) => {
     const { getBalance, obligation } = useLoadedUserContext();
 
-    const { isUsingDeposits } = useSwapContext();
+    const { isUsingDeposits, ...restSwapContext } = useSwapContext();
+    const tokens = restSwapContext.tokens as SwapToken[];
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -124,8 +125,10 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               style={{ top: 0 }}
             >
               <TokenSelectionDialog
+                isSwapInput
                 direction={direction}
                 token={token}
+                tokens={tokens}
                 onSelectToken={onSelectToken}
               />
 

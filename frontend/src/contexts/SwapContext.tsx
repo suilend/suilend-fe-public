@@ -34,6 +34,7 @@ import {
   getCoinMetadataMap,
   getHistoryPrice,
   getPrice,
+  getToken,
   isCoinType,
 } from "@suilend/frontend-sui";
 import {
@@ -323,17 +324,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
         const result = filteredCoinTypes
           .filter((coinType) => !!mergedCoinMetadataMap[coinType])
-          .map((coinType) => {
-            const metadata = mergedCoinMetadataMap[coinType];
-
-            return {
-              coinType,
-              decimals: metadata.decimals,
-              symbol: metadata.symbol,
-              name: metadata.name,
-              iconUrl: metadata.iconUrl,
-            };
-          });
+          .map((coinType) =>
+            getToken(coinType, mergedCoinMetadataMap[coinType]),
+          );
 
         setTokens((prev) => [
           ...(prev ?? []),

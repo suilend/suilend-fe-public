@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import { ClassValue } from "clsx";
 import { Check, ChevronDown, Download, Search, Wallet } from "lucide-react";
 
 import {
@@ -30,7 +31,7 @@ import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenRowProps {
-  direction: TokenDirection;
+  direction?: TokenDirection;
   token: SwapToken;
   isSelected: boolean;
   onClick: () => void;
@@ -165,26 +166,33 @@ function TokenRow({ direction, token, isSelected, onClick }: TokenRowProps) {
 }
 
 interface TokenSelectionDialogProps {
-  direction: TokenDirection;
-  token: SwapToken;
+  triggerClassName?: ClassValue;
+  triggerLabelSelectedClassName?: ClassValue;
+  triggerLabelUnselectedClassName?: ClassValue;
+  triggerChevronClassName?: ClassValue;
+  isSwapInput?: boolean;
+  direction?: TokenDirection;
+  token?: SwapToken;
+  tokens: SwapToken[];
   onSelectToken: (token: SwapToken) => void;
 }
 
 export default function TokenSelectionDialog({
+  triggerClassName,
+  triggerLabelSelectedClassName,
+  triggerLabelUnselectedClassName,
+  triggerChevronClassName,
+  isSwapInput,
   direction,
   token,
+  tokens,
   onSelectToken,
 }: TokenSelectionDialogProps) {
   const { filteredReservesMap, filteredReserves } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
-  const {
-    isUsingDeposits,
-    fetchTokensMetadata,
-    verifiedCoinTypes,
-    ...restSwapContext
-  } = useSwapContext();
-  const tokens = restSwapContext.tokens as SwapToken[];
+  const { isUsingDeposits, fetchTokensMetadata, verifiedCoinTypes } =
+    useSwapContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -311,10 +319,17 @@ export default function TokenSelectionDialog({
     if (
       filteredTokens.length === 0 &&
       isCoinType(searchString) &&
-      !isUsingDeposits
+      !isUsingDeposits &&
+      isSwapInput
     )
       fetchTokensMetadata([normalizeStructTag(searchString)]);
-  }, [filteredTokens, searchString, isUsingDeposits, fetchTokensMetadata]);
+  }, [
+    filteredTokens,
+    searchString,
+    isUsingDeposits,
+    isSwapInput,
+    fetchTokensMetadata,
+  ]);
 
   const filteredTokensMap = useMemo(() => {
     let result: Record<
@@ -386,19 +401,35 @@ export default function TokenSelectionDialog({
       rootProps={{ open: isOpen, onOpenChange }}
       trigger={
         <Button
-          className="h-auto p-0 hover:bg-transparent"
-          labelClassName="text-2xl"
+          className={cn(
+            "group h-auto p-0 hover:bg-transparent",
+            triggerClassName,
+          )}
+          labelClassName={cn(
+            token
+              ? cn("text-2xl", triggerLabelSelectedClassName)
+              : cn("text-sm", triggerLabelUnselectedClassName),
+          )}
           startIcon={
-            <TokenLogo
-              className="mr-1 h-5 w-5"
-              imageProps={{ className: "rounded-full" }}
-              token={token}
+            token && (
+              <TokenLogo
+                className="mr-1 h-5 w-5"
+                imageProps={{ className: "rounded-full" }}
+                token={token}
+              />
+            )
+          }
+          endIcon={
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 text-foreground/50 transition-colors group-hover:text-foreground",
+                triggerChevronClassName,
+              )}
             />
           }
-          endIcon={<ChevronDown className="h-4 w-4 opacity-50" />}
           variant="ghost"
         >
-          {token.symbol.slice(0, 10)}
+          {token ? token.symbol.slice(0, 10) : "Select token"}
         </Button>
       }
       headerProps={{
@@ -434,7 +465,12 @@ export default function TokenSelectionDialog({
           {topTokens.map((t) => (
             <Button
               key={t.coinType}
-              className="gap-1.5 rounded-full border hover:border-transparent"
+              className={cn(
+                "gap-1.5 rounded-full",
+                t.coinType === token?.coinType
+                  ? "border border-white bg-muted/25"
+                  : "border transition-colors hover:border-transparent",
+              )}
               startIcon={
                 <TokenLogo
                   className="h-4 w-4"
@@ -478,7 +514,7 @@ export default function TokenSelectionDialog({
                       key={t.coinType}
                       direction={direction}
                       token={t}
-                      isSelected={t.coinType === token.coinType}
+                      isSelected={t.coinType === token?.coinType}
                       onClick={() => onTokenClick(t)}
                     />
                   ))}
@@ -488,7 +524,7 @@ export default function TokenSelectionDialog({
         ) : (
           <TLabelSans className="py-4 text-center">
             {searchString
-              ? isCoinType(searchString) && !isUsingDeposits
+              ? isCoinType(searchString) && !isUsingDeposits && isSwapInput
                 ? "Fetching token metadata..."
                 : `No tokens matching "${searchString}"`
               : "No tokens"}

@@ -1,16 +1,12 @@
+import { Token as FrontendToken } from "@suilend/frontend-sui";
+
 export type Token = {
   coinType: string;
   symbol: string;
   iconUrl?: string | null;
 };
 
-export type SwapToken = {
-  coinType: string;
-  decimals: number;
-  symbol: string;
-  name: string;
-  iconUrl?: string | null;
-};
+export type SwapToken = FrontendToken;
 
 export type SubmitButtonState = {
   isLoading?: boolean;
