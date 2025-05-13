@@ -134,8 +134,8 @@ interface SwapContext {
   tokenUsdPricesMap: Record<string, BigNumber>;
   fetchTokenUsdPrice: (token: SwapToken) => Promise<void>;
 
-  isUsingDeposits: boolean;
-  setIsUsingDeposits: Dispatch<SetStateAction<boolean>>;
+  tradeWithinAccount: boolean;
+  setTradeWithinAccount: Dispatch<SetStateAction<boolean>>;
 
   tokens?: SwapToken[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
@@ -159,8 +159,8 @@ const defaultContextValue: SwapContext = {
     throw Error("SwapContextProvider not initialized");
   },
 
-  isUsingDeposits: false,
-  setIsUsingDeposits: () => {
+  tradeWithinAccount: false,
+  setTradeWithinAccount: () => {
     throw Error("SwapContextProvider not initialized");
   },
 
@@ -272,9 +272,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     }
   }, []);
 
-  // Use deposits
-  const [isUsingDeposits, setIsUsingDeposits] = useState<boolean>(
-    router.query.useDeposits === "true",
+  // Trade within account
+  const [tradeWithinAccount, setTradeWithinAccount] = useState<boolean>(
+    router.query.tradeWithinAccount === "true",
   );
 
   // Tokens
@@ -412,11 +412,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       (t) => t.symbol === tokenOutSymbol || t.coinType === tokenOutSymbol,
     );
 
-    if (!isUsingDeposits) return [tokenIn, tokenOut];
+    if (!tradeWithinAccount) return [tokenIn, tokenOut];
     else {
       if (!tokenIn || !tokenOut) return [undefined, undefined];
       if (!obligation?.deposits || obligation.deposits.length === 0) {
-        setIsUsingDeposits(false);
+        setTradeWithinAccount(false);
         return [tokenIn, tokenOut];
       }
 
@@ -464,9 +464,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     tokens,
     tokenInSymbol,
     tokenOutSymbol,
-    isUsingDeposits,
+    tradeWithinAccount,
     obligation?.deposits,
-    setIsUsingDeposits,
+    setTradeWithinAccount,
     filteredReserves,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
@@ -524,8 +524,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       tokenUsdPricesMap,
       fetchTokenUsdPrice,
 
-      isUsingDeposits,
-      setIsUsingDeposits,
+      tradeWithinAccount,
+      setTradeWithinAccount,
 
       tokens,
       fetchTokensMetadata,
@@ -542,8 +542,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       fetchTokenHistoricalUsdPrices,
       tokenUsdPricesMap,
       fetchTokenUsdPrice,
-      isUsingDeposits,
-      setIsUsingDeposits,
+      tradeWithinAccount,
+      setTradeWithinAccount,
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,

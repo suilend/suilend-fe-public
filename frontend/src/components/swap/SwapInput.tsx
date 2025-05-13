@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useRef } from "react";
 
 import BigNumber from "bignumber.js";
-import { Download, Wallet } from "lucide-react";
+import { Download, Upload, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
 import { formatToken, formatUsd } from "@suilend/frontend-sui";
@@ -48,8 +48,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
   ) => {
     const { getBalance, obligation } = useLoadedUserContext();
 
-    const { isUsingDeposits, ...restSwapContext } = useSwapContext();
-    const tokens = restSwapContext.tokens as SwapToken[];
+    const swapContext = useSwapContext();
+    const tokens = swapContext.tokens as SwapToken[];
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -69,6 +69,12 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     );
     const tokenDepositedAmount =
       tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
+
+    const tokenBorrowPosition = obligation?.borrows?.find(
+      (b) => b.coinType === token.coinType,
+    );
+    const tokenBorrowedAmount =
+      tokenBorrowPosition?.borrowedAmount ?? new BigNumber(0);
 
     return (
       <div
@@ -132,39 +138,39 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 onSelectToken={onSelectToken}
               />
 
-              <div className="flex flex-row items-center gap-3 pr-1">
+              <div
+                className={cn(
+                  "flex flex-row items-center gap-3 pr-1",
+                  onAmountClick && "cursor-pointer",
+                )}
+                onClick={onAmountClick}
+              >
                 {/* Balance */}
-                {!isUsingDeposits && (
-                  <div
-                    className={cn(
-                      "flex flex-row items-center gap-1.5 text-muted-foreground",
-                      onAmountClick && "cursor-pointer",
-                    )}
-                    onClick={onAmountClick}
-                  >
-                    <Wallet className="h-3 w-3 text-inherit" />
+                <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                  <Wallet className="h-3 w-3 text-inherit" />
+                  <TLabel className="text-inherit">
+                    {tokenBalance.eq(0)
+                      ? "--"
+                      : formatToken(tokenBalance, { exact: false })}
+                  </TLabel>
+                </div>
+
+                {/* Deposited */}
+                {tokenDepositedAmount.gt(0) && (
+                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                    <Download className="h-3 w-3 text-inherit" />
                     <TLabel className="text-inherit">
-                      {tokenBalance.eq(0)
-                        ? "--"
-                        : formatToken(tokenBalance, { exact: false })}
+                      {formatToken(tokenDepositedAmount, { exact: false })}
                     </TLabel>
                   </div>
                 )}
 
-                {/* Deposited */}
-                {(isUsingDeposits || direction === TokenDirection.OUT) && (
-                  <div
-                    className={cn(
-                      "flex flex-row items-center gap-1.5 text-muted-foreground",
-                      onAmountClick && "cursor-pointer",
-                    )}
-                    onClick={onAmountClick}
-                  >
-                    <Download className="h-3 w-3 text-inherit" />
+                {/* Borrowed */}
+                {tokenBorrowedAmount.gt(0) && (
+                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                    <Upload className="h-3 w-3 text-inherit" />
                     <TLabel className="text-inherit">
-                      {tokenDepositedAmount.eq(0)
-                        ? "--"
-                        : formatToken(tokenDepositedAmount, { exact: false })}
+                      {formatToken(tokenBorrowedAmount, { exact: false })}
                     </TLabel>
                   </div>
                 )}
