@@ -185,7 +185,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
         .filter((reserve) =>
           reserve.coinType ===
           "0x8400e7044d360c28dd338111d2aa54ca5bdc960a8d6b60bf3b28e1ca503df3e2::koban::KOBAN"
-            ? Date.now() >= 1747148400000 || // 2025-05-13 15:00:00 UTC
+            ? Date.now() >= 1747234800000 || // 2025-05-14 15:00:00 UTC
               address === ADMIN_ADDRESS
             : true,
         )
