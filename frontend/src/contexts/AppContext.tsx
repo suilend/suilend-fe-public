@@ -17,7 +17,6 @@ import { useLocalStorage } from "usehooks-ts";
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_sSUI_COINTYPE,
-  NORMALIZED_yapSUI_COINTYPE,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
 import {
@@ -183,10 +182,15 @@ export function AppContextProvider({ children }: PropsWithChildren) {
                 reserve.coinType,
               ),
         )
+        .filter((reserve) =>
+          reserve.coinType ===
+          "0x8400e7044d360c28dd338111d2aa54ca5bdc960a8d6b60bf3b28e1ca503df3e2::koban::KOBAN"
+            ? Date.now() >= 1747148400000 || // 2025-05-13 15:00:00 UTC
+              address === ADMIN_ADDRESS
+            : true,
+        )
         .filter((reserve) => {
           return (
-            (reserve.coinType === NORMALIZED_yapSUI_COINTYPE &&
-              Date.now() >= 1739966400000) || // 2024-02-19 12:00:00 UTC
             deprecatedReserveIds?.includes(reserve.id) || // Show deprecated reserves
             !(
               reserve.config.depositLimit.eq(0) &&
