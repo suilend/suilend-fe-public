@@ -820,7 +820,7 @@ function Page() {
   };
 
   // Swap
-  const swapButtonState: SubmitButtonState = (() => {
+  const buttonState_swap: SubmitButtonState = (() => {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSubmitting_swap) return { isDisabled: true, isLoading: true };
 
@@ -848,7 +848,7 @@ function Page() {
   })();
 
   // Swap and deposit
-  const swapAndDepositButtonState: SubmitButtonState = (() => {
+  const buttonState_swapAndDeposit: SubmitButtonState = (() => {
     if (!tokenOutReserve)
       return { isDisabled: true, title: "Cannot deposit this token" };
 
@@ -879,11 +879,11 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
-      isDisabled: swapButtonState.isDisabled,
+      isDisabled: buttonState_swap.isDisabled,
     };
   })();
 
-  const swapAndDepositWarningMessages = tokenOutReserve
+  const warningMessages_swapAndDeposit = tokenOutReserve
     ? getSubmitWarningMessages(
         Action.DEPOSIT,
         appData.lendingMarket.reserves,
@@ -893,7 +893,7 @@ function Page() {
     : undefined;
 
   // Trade within account
-  const tradeWithinAccountButtonState: SubmitButtonState = (() => {
+  const buttonState_tradeWithinAccount: SubmitButtonState = (() => {
     if (!tokenOutReserve)
       return { isDisabled: true, title: "Cannot deposit or repay this token" };
 
@@ -1163,14 +1163,14 @@ function Page() {
     if (!quote) throw new Error("Quote not found");
 
     if (tradeWithinAccount) {
-      if (tradeWithinAccountButtonState.isDisabled) return;
+      if (buttonState_tradeWithinAccount.isDisabled) return;
       setIsSubmitting_tradeWithinAccount(true);
     } else {
       if (isSwapAndDeposit) {
-        if (swapAndDepositButtonState.isDisabled) return;
+        if (buttonState_swapAndDeposit.isDisabled) return;
         setIsSubmitting_swapAndDeposit(true);
       } else {
-        if (swapButtonState.isDisabled) return;
+        if (buttonState_swap.isDisabled) return;
         setIsSubmitting_swap(true);
       }
     }
@@ -1574,17 +1574,17 @@ function Page() {
                 className="h-auto min-h-14 w-full"
                 labelClassName="text-wrap uppercase"
                 size="lg"
-                disabled={tradeWithinAccountButtonState.isDisabled}
+                disabled={buttonState_tradeWithinAccount.isDisabled}
                 onClick={() => onSwapClick()}
               >
-                {tradeWithinAccountButtonState.isLoading ? (
+                {buttonState_tradeWithinAccount.isLoading ? (
                   <Spinner size="md" />
                 ) : (
-                  tradeWithinAccountButtonState.title
+                  buttonState_tradeWithinAccount.title
                 )}
-                {tradeWithinAccountButtonState.description && (
+                {buttonState_tradeWithinAccount.description && (
                   <span className="mt-0.5 block font-sans text-xs normal-case">
-                    {tradeWithinAccountButtonState.description}
+                    {buttonState_tradeWithinAccount.description}
                   </span>
                 )}
               </Button>
@@ -1620,17 +1620,17 @@ function Page() {
                   )}
                   labelClassName="text-wrap uppercase"
                   size="lg"
-                  disabled={swapButtonState.isDisabled}
+                  disabled={buttonState_swap.isDisabled}
                   onClick={() => onSwapClick(false)}
                 >
-                  {swapButtonState.isLoading ? (
+                  {buttonState_swap.isLoading ? (
                     <Spinner size="md" />
                   ) : (
-                    swapButtonState.title
+                    buttonState_swap.title
                   )}
-                  {swapButtonState.description && (
+                  {buttonState_swap.description && (
                     <span className="mt-0.5 block font-sans text-xs normal-case">
-                      {swapButtonState.description}
+                      {buttonState_swap.description}
                     </span>
                   )}
                 </Button>
@@ -1641,17 +1641,17 @@ function Page() {
                     className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
                     labelClassName="uppercase text-wrap text-xs"
                     variant="secondary"
-                    disabled={swapAndDepositButtonState.isDisabled}
+                    disabled={buttonState_swapAndDeposit.isDisabled}
                     onClick={() => onSwapClick(true)}
                   >
-                    {swapAndDepositButtonState.isLoading ? (
+                    {buttonState_swapAndDeposit.isLoading ? (
                       <Spinner size="sm" />
                     ) : (
-                      swapAndDepositButtonState.title
+                      buttonState_swapAndDeposit.title
                     )}
-                    {swapAndDepositButtonState.description && (
+                    {buttonState_swapAndDeposit.description && (
                       <span className="block font-sans text-xs normal-case">
-                        {swapAndDepositButtonState.description}
+                        {buttonState_swapAndDeposit.description}
                       </span>
                     )}
                   </Button>
@@ -1659,7 +1659,7 @@ function Page() {
               </div>
 
               {tokenOutReserve &&
-                (swapAndDepositWarningMessages ?? []).map((warningMessage) => (
+                (warningMessages_swapAndDeposit ?? []).map((warningMessage) => (
                   <TLabelSans
                     key={warningMessage}
                     className="text-[10px] text-warning"
