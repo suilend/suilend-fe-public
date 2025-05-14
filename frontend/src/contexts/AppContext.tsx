@@ -10,9 +10,7 @@ import {
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
-import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
-import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
@@ -24,6 +22,7 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
+import useExpandedLocalStorageMap from "@suilend/frontend-sui-next/hooks/useExpandedLocalStorageMap";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -131,13 +130,14 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
 
   // Local CoinMetadata map
-  const [localCoinMetadataMap, setLocalCoinMetadataMap] = useLocalStorage<
-    Record<string, CoinMetadata>
-  >("suilend_coinMetadataMap", {});
+  const { value: localCoinMetadataMap, setValue: setLocalCoinMetadataMap } =
+    useExpandedLocalStorageMap<Record<string, CoinMetadata>>(
+      "suilend_coinMetadataMap",
+    );
 
   const addCoinMetadataToLocalMap = useCallback(
     (coinType: string, coinMetadata: CoinMetadata) => {
-      setLocalCoinMetadataMap((o) => ({ ...o, [coinType]: coinMetadata }));
+      setLocalCoinMetadataMap({ [coinType]: coinMetadata });
     },
     [setLocalCoinMetadataMap],
   );
