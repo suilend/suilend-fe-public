@@ -5,10 +5,12 @@ import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { cloneDeep } from "lodash";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
-import { useLocalStorage } from "usehooks-ts";
 
 import { formatToken } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import {
+  useLocalStorage,
+  useSettingsContext,
+} from "@suilend/frontend-sui-next";
 import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,

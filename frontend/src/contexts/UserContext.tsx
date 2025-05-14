@@ -12,11 +12,11 @@ import {
 
 import { CoinMetadata, SuiObjectResponse } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
-import { useLocalStorage } from "usehooks-ts";
 
 import { NORMALIZED_WAL_COINTYPE } from "@suilend/frontend-sui";
 import {
   shallowPushQuery,
+  useLocalStorage,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";

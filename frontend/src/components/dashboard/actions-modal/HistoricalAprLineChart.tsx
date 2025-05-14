@@ -4,9 +4,9 @@ import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import { capitalize } from "lodash";
 import * as Recharts from "recharts";
-import { useLocalStorage } from "usehooks-ts";
 
 import { COINTYPE_COLOR_MAP, formatPercent } from "@suilend/frontend-sui";
+import { useLocalStorage } from "@suilend/frontend-sui-next";
 import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { getDedupedAprRewards } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";

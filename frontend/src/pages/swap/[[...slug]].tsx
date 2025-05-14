@@ -35,7 +35,6 @@ import {
 } from "lucide-react";
 import { ReactFlowProvider } from "reactflow";
 import { toast } from "sonner";
-import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -52,6 +51,7 @@ import {
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import {
+  useLocalStorage,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";

@@ -41,7 +41,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@sentry/nextjs": "^8.38.0",
     "@suilend/frontend-sui": "^0.2.66",
-    "@suilend/frontend-sui-next": "^0.1.38",
+    "@suilend/frontend-sui-next": "^0.1.43",
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
     "@vercel/speed-insights": "^1.1.0",
@@ -77,7 +77,7 @@
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "usehooks-ts": "^3.1.0",
+    "usehooks-ts": "^3.1.1",
     "uuid": "^11.0.3",
     "vaul": "^1.1.1"
   },

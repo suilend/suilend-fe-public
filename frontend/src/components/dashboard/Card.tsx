@@ -2,7 +2,8 @@ import { PropsWithChildren, ReactElement, ReactNode } from "react";
 
 import { ClassValue } from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useLocalStorage } from "usehooks-ts";
+
+import { useLocalStorage } from "@suilend/frontend-sui-next";
 
 import Button from "@/components/shared/Button";
 import TitleWithIcon from "@/components/shared/TitleWithIcon";
