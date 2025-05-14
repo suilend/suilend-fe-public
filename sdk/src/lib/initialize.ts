@@ -191,10 +191,10 @@ export const initializeSuilend = async (
     ),
   );
   for (const reserve of reservesWithTemporaryPythPriceFeeds) {
-    const birdeyePrice = await getPrice(
+    let birdeyePrice = await getPrice(
       normalizeStructTag(reserve.coinType.name),
     );
-    if (birdeyePrice === undefined) continue;
+    if (birdeyePrice === undefined) birdeyePrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
 
     const parsedBirdeyePrice = BigInt(
       +new BigNumber(birdeyePrice)
