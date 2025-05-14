@@ -13,6 +13,7 @@ import DataTable, {
 import PointsCount from "@/components/points/PointsCount";
 import PointsRank from "@/components/points/PointsRank";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
+import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
@@ -66,7 +67,7 @@ export default function PointsLeaderboardTable({
 
               <div className="flex h-5 flex-row items-center">
                 <CopyToClipboardButton value={address} />
-                <OpenURLButton url={explorer.buildAddressUrl(address)} />
+                <OpenOnExplorerButton url={explorer.buildAddressUrl(address)} />
                 <OpenURLButton
                   url={`${ROOT_URL}?wallet=${address}`}
                   icon={<VenetianMask />}
