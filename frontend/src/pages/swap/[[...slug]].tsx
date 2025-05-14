@@ -114,8 +114,8 @@ function Page() {
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,
     fetchTokenUsdPrice,
-    isUsingDeposits,
-    setIsUsingDeposits,
+    tradeWithinAccount,
+    setTradeWithinAccount,
     tokens,
     setTokenSymbol,
     reverseTokenSymbols,
@@ -142,14 +142,18 @@ function Page() {
   const tokenInDepositPosition = obligation?.deposits?.find(
     (d) => d.coinType === tokenIn.coinType,
   );
-  const tokenOutDepositPosition = obligation?.deposits?.find(
-    (d) => d.coinType === tokenOut.coinType,
+  const tokenInDepositPositionAmount = useMemo(
+    () => tokenInDepositPosition?.depositedAmount ?? new BigNumber(0),
+    [tokenInDepositPosition],
   );
 
-  const tokenInDepositPositionAmount =
-    tokenInDepositPosition?.depositedAmount ?? new BigNumber(0);
-  const tokenOutDepositPositionAmount =
-    tokenOutDepositPosition?.depositedAmount ?? new BigNumber(0);
+  const tokenOutBorrowPosition = obligation?.borrows?.find(
+    (b) => b.coinType === tokenOut.coinType,
+  );
+  const tokenOutBorrowPositionAmount = useMemo(
+    () => tokenOutBorrowPosition?.borrowedAmount ?? new BigNumber(0),
+    [tokenOutBorrowPosition],
+  );
 
   // Max
   const tokenInMaxCalculations = (() => {
@@ -157,7 +161,7 @@ function Page() {
       {
         reason: `Insufficient ${tokenIn.symbol}`,
         isDisabled: true,
-        value: isUsingDeposits
+        value: tradeWithinAccount
           ? getMaxValue(
               Action.WITHDRAW,
               tokenInReserve!,
@@ -168,7 +172,7 @@ function Page() {
           : tokenInBalance,
       },
     ];
-    if (isSui(tokenIn.coinType) && !isUsingDeposits)
+    if (isSui(tokenIn.coinType) && !tradeWithinAccount)
       result.push({
         reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
         isDisabled: true,
@@ -216,8 +220,10 @@ function Page() {
   );
 
   // State
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [isSwappingAndDepositing, setIsSwappingAndDepositing] =
+  const [isSubmitting_swap, setIsSubmitting_swap] = useState<boolean>(false);
+  const [isSubmitting_swapAndDeposit, setIsSubmitting_swapAndDeposit] =
+    useState<boolean>(false);
+  const [isSubmitting_tradeWithinAccount, setIsSubmitting_tradeWithinAccount] =
     useState<boolean>(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -266,8 +272,6 @@ function Page() {
         q.in.coinType === tokenIn.coinType &&
         q.out.coinType === tokenOut.coinType,
     ); // Best quote by amount out
-  const quoteAmountIn = useMemo(() => quote?.in.amount, [quote?.in.amount]);
-  const quoteAmountOut = useMemo(() => quote?.out.amount, [quote?.out.amount]);
 
   const isFetchingQuotes = useMemo(() => {
     const timestampsS = Object.keys(quotesMap).map((timestampS) => +timestampS);
@@ -505,7 +509,12 @@ function Page() {
   useEffect(() => {
     if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
 
-    if (isSwapping || isSwappingAndDepositing) return;
+    if (
+      isSubmitting_swap ||
+      isSubmitting_swapAndDeposit ||
+      isSubmitting_tradeWithinAccount
+    )
+      return;
     refreshIntervalRef.current = setInterval(
       () => fetchQuotes(tokenIn, tokenOut, value),
       60 * 1000,
@@ -515,8 +524,9 @@ function Page() {
       if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
   }, [
-    isSwapping,
-    isSwappingAndDepositing,
+    isSubmitting_swap,
+    isSubmitting_swapAndDeposit,
+    isSubmitting_tradeWithinAccount,
     fetchQuotes,
     tokenIn,
     tokenOut,
@@ -562,8 +572,8 @@ function Page() {
     inputRef.current?.focus();
   };
 
-  // Use deposits - utilization
-  const newObligation = (() => {
+  // Trade within account - utilization
+  const newObligation_deposit = useMemo(() => {
     if (!(obligation && tokenInReserve && tokenOutReserve && quote))
       return undefined;
 
@@ -585,7 +595,37 @@ function Page() {
     };
 
     return depositObligation;
-  })();
+  }, [obligation, tokenInReserve, tokenOutReserve, quote]);
+
+  const newObligation_repay = useMemo(() => {
+    if (!(obligation && tokenInReserve && tokenOutReserve && quote))
+      return undefined;
+
+    const withdrawObligation = {
+      ...obligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.WITHDRAW,
+        tokenInReserve,
+        obligation,
+      )(quote.in.amount) ?? {}),
+    };
+    const repayObligation = {
+      ...withdrawObligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.REPAY,
+        tokenOutReserve,
+        withdrawObligation,
+      )(BigNumber.min(quote.out.amount, tokenOutBorrowPositionAmount)) ?? {}),
+    };
+
+    return repayObligation;
+  }, [
+    obligation,
+    tokenInReserve,
+    tokenOutReserve,
+    quote,
+    tokenOutBorrowPositionAmount,
+  ]);
 
   // USD prices - historical
   const tokenInHistoricalUsdPrices = useMemo(
@@ -627,17 +667,17 @@ function Page() {
 
   const tokenInUsdValue = useMemo(
     () =>
-      quoteAmountIn !== undefined && tokenInUsdPrice !== undefined
-        ? quoteAmountIn.times(tokenInUsdPrice)
+      quote !== undefined && tokenInUsdPrice !== undefined
+        ? quote.in.amount.times(tokenInUsdPrice)
         : undefined,
-    [quoteAmountIn, tokenInUsdPrice],
+    [quote, tokenInUsdPrice],
   );
   const tokenOutUsdValue = useMemo(
     () =>
-      quoteAmountOut !== undefined && tokenOutUsdPrice !== undefined
-        ? quoteAmountOut.times(tokenOutUsdPrice)
+      quote !== undefined && tokenOutUsdPrice !== undefined
+        ? quote.out.amount.times(tokenOutUsdPrice)
         : undefined,
-    [quoteAmountOut, tokenOutUsdPrice],
+    [quote, tokenOutUsdPrice],
   );
 
   // Ratios
@@ -731,12 +771,12 @@ function Page() {
   // Ratios - quote
   const quoteRatio = useMemo(
     () =>
-      quoteAmountOut !== undefined && quoteAmountIn !== undefined
-        ? (!isInverted ? quoteAmountOut : quoteAmountIn).div(
-            !isInverted ? quoteAmountIn : quoteAmountOut,
+      quote !== undefined
+        ? (!isInverted ? quote.out.amount : quote.in.amount).div(
+            !isInverted ? quote.in.amount : quote.out.amount,
           )
         : undefined,
-    [quoteAmountOut, quoteAmountIn, isInverted],
+    [quote, isInverted],
   );
 
   // Quote selection
@@ -812,9 +852,9 @@ function Page() {
   };
 
   // Swap
-  const swapButtonState: SubmitButtonState = (() => {
+  const buttonState_swap: SubmitButtonState = (() => {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
-    if (isSwapping) return { isDisabled: true, isLoading: true };
+    if (isSubmitting_swap) return { isDisabled: true, isLoading: true };
 
     if (value === "") return { isDisabled: true, title: "Enter an amount" };
     if (new BigNumber(value).lt(0))
@@ -835,64 +875,112 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
-      isDisabled: !quote || isFetchingQuotes || isSwappingAndDepositing,
+      isDisabled: !quote || isFetchingQuotes || isSubmitting_swapAndDeposit,
     };
   })();
 
   // Swap and deposit
-  const swapAndDepositButtonState: SubmitButtonState = (() => {
+  const buttonState_swapAndDeposit: SubmitButtonState = (() => {
     if (!tokenOutReserve)
       return { isDisabled: true, title: "Cannot deposit this token" };
 
-    if (isSwappingAndDepositing) return { isDisabled: true, isLoading: true };
+    if (!address)
+      return {
+        isDisabled: true,
+        title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
+      };
+    if (isSubmitting_swapAndDeposit)
+      return { isDisabled: true, isLoading: true };
 
-    const swapAndDepositButtonNoValueState = getSubmitButtonNoValueState(
+    const buttonNoValueState = getSubmitButtonNoValueState(
       Action.DEPOSIT,
       appData.lendingMarket.reserves,
       tokenOutReserve,
       obligation,
     )();
-    if (swapAndDepositButtonNoValueState !== undefined)
-      return swapAndDepositButtonNoValueState;
+    if (buttonNoValueState !== undefined) return buttonNoValueState;
 
-    if (isUsingDeposits) {
-      if (value === "") return { isDisabled: true, title: "Enter an amount" };
-      if (new BigNumber(value).lt(0))
-        return { isDisabled: true, title: "Enter a +ve amount" };
-      if (new BigNumber(value).eq(0))
-        return { isDisabled: true, title: "Enter a non-zero amount" };
-
-      if (suiBalance.lt(SUI_GAS_MIN))
-        return {
-          isDisabled: true,
-          title: `${SUI_GAS_MIN} SUI should be saved for gas`,
-        };
-
-      for (const calc of tokenInMaxCalculations) {
-        if (new BigNumber(value).gt(calc.value))
-          return { isDisabled: calc.isDisabled, title: calc.reason };
-      }
-    }
-
-    const swapAndDepositButtonState = getSubmitButtonState(
+    const buttonState = getSubmitButtonState(
       Action.DEPOSIT,
       tokenOutReserve,
       MAX_U64,
       appData,
       obligation,
-    )(quoteAmountOut ?? new BigNumber(0));
-    if (swapAndDepositButtonState !== undefined)
-      return swapAndDepositButtonState;
+    )(quote?.out.amount ?? new BigNumber(0));
+    if (buttonState !== undefined) return buttonState;
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
-      isDisabled: swapButtonState.isDisabled || isSwapping,
+      isDisabled: buttonState_swap.isDisabled,
     };
   })();
 
-  const swapAndDepositWarningMessages = tokenOutReserve
+  const warningMessages_swapAndDeposit = tokenOutReserve
     ? getSubmitWarningMessages(
         Action.DEPOSIT,
+        appData.lendingMarket.reserves,
+        tokenOutReserve,
+        obligation,
+      )()
+    : undefined;
+
+  // Trade within account
+  const buttonState_tradeWithinAccount: SubmitButtonState = (() => {
+    if (!tokenOutReserve)
+      return { isDisabled: true, title: "Cannot deposit or repay this token" };
+
+    if (!address) return { isDisabled: true, title: "Connect wallet" };
+    if (isSubmitting_tradeWithinAccount)
+      return { isDisabled: true, isLoading: true };
+
+    const buttonNoValueState = getSubmitButtonNoValueState(
+      tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
+      appData.lendingMarket.reserves,
+      tokenOutReserve,
+      obligation,
+    )();
+    if (buttonNoValueState !== undefined) return buttonNoValueState;
+
+    if (value === "") return { isDisabled: true, title: "Enter an amount" };
+    if (new BigNumber(value).lt(0))
+      return { isDisabled: true, title: "Enter a +ve amount" };
+    if (new BigNumber(value).eq(0))
+      return { isDisabled: true, title: "Enter a non-zero amount" };
+
+    if (suiBalance.lt(SUI_GAS_MIN))
+      return {
+        isDisabled: true,
+        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+      };
+
+    for (const calc of tokenInMaxCalculations) {
+      if (new BigNumber(value).gt(calc.value))
+        return { isDisabled: calc.isDisabled, title: calc.reason };
+    }
+
+    const buttonState = getSubmitButtonState(
+      tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
+      tokenOutReserve,
+      MAX_U64,
+      appData,
+      obligation,
+    )(
+      BigNumber.min(
+        quote?.out.amount ?? new BigNumber(0),
+        tokenOutBorrowPositionAmount.eq(0) ? 0 : tokenOutBorrowPositionAmount,
+      ),
+    );
+    if (buttonState !== undefined) return buttonState;
+
+    return {
+      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
+      isDisabled: !quote || isFetchingQuotes,
+    };
+  })();
+
+  const tradeWithinAccountWarningMessages = tokenOutReserve
+    ? getSubmitWarningMessages(
+        tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
         appData.lendingMarket.reserves,
         tokenOutReserve,
         obligation,
@@ -963,7 +1051,7 @@ function Page() {
     } else throw new Error("Unknown quote type");
   };
 
-  const swap = async (isDepositing: boolean) => {
+  const swap = async (isSwapAndDeposit?: boolean) => {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
@@ -976,7 +1064,7 @@ function Page() {
 
     try {
       let coinIn: TransactionObjectArgument | undefined;
-      if (isUsingDeposits) {
+      if (tradeWithinAccount) {
         if (!obligation || !obligationOwnerCap)
           throw new Error("Obligation or ObligationOwnerCap not found");
         if (!tokenInReserve || !tokenInDepositPosition)
@@ -1007,28 +1095,84 @@ function Page() {
 
       transaction = _transaction;
 
-      if (isDepositing) {
-        if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+      if (tradeWithinAccount) {
+        if (tokenOutBorrowPositionAmount.eq(0)) {
+          // DEPOSIT out token
+          if (!tokenOutReserve) throw new Error("Cannot deposit this token");
 
-        const { obligationOwnerCapId, didCreate } =
-          createObligationIfNoneExists(
-            appData.suilendClient,
+          const { obligationOwnerCapId, didCreate } =
+            createObligationIfNoneExists(
+              appData.suilendClient,
+              transaction,
+              obligationOwnerCap,
+            );
+          appData.suilendClient.deposit(
+            coinOut,
+            tokenOutReserve.coinType,
+            obligationOwnerCapId,
             transaction,
-            obligationOwnerCap,
           );
-        appData.suilendClient.deposit(
-          coinOut,
-          tokenOutReserve.coinType,
-          obligationOwnerCapId,
-          transaction,
-        );
-        if (didCreate)
-          sendObligationToUser(obligationOwnerCapId, address, transaction);
-      } else
-        transaction.transferObjects(
-          [coinOut],
-          transaction.pure.address(address),
-        );
+          if (didCreate)
+            sendObligationToUser(obligationOwnerCapId, address, transaction);
+        } else {
+          // REPAY out token
+          if (!tokenOutReserve) throw new Error("Cannot repay this token");
+          if (!obligation) throw new Error("Obligation not found");
+
+          appData.suilendClient.repay(
+            obligation.id,
+            tokenOutReserve.coinType,
+            coinOut,
+            transaction,
+          );
+
+          const repaidAmount = BigNumber.min(
+            quote.out.amount,
+            tokenOutBorrowPositionAmount,
+          );
+          const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+          if (depositedAmount.gt(0)) {
+            appData.suilendClient.deposit(
+              coinOut,
+              tokenOutReserve.coinType,
+              obligationOwnerCap!.id,
+              transaction,
+            ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
+          } else {
+            transaction.transferObjects(
+              [coinOut],
+              transaction.pure.address(address),
+            ); // Transfer empty coin to user
+          }
+        }
+      } else {
+        if (isSwapAndDeposit) {
+          // DEPOSIT out token
+          if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+
+          const { obligationOwnerCapId, didCreate } =
+            createObligationIfNoneExists(
+              appData.suilendClient,
+              transaction,
+              obligationOwnerCap,
+            );
+          appData.suilendClient.deposit(
+            coinOut,
+            tokenOutReserve.coinType,
+            obligationOwnerCapId,
+            transaction,
+          );
+          if (didCreate)
+            sendObligationToUser(obligationOwnerCapId, address, transaction);
+        } else {
+          // TRANSFER out token
+          transaction.transferObjects(
+            [coinOut],
+            transaction.pure.address(address),
+          );
+        }
+      }
     } catch (err) {
       Sentry.captureException(err, { provider: quote.provider } as any);
       console.error(err);
@@ -1041,20 +1185,25 @@ function Page() {
     return res;
   };
 
-  const onSwapClick = async (isDepositing: boolean) => {
+  const onSwapClick = async (isSwapAndDeposit?: boolean) => {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    if (isDepositing) {
-      if (swapAndDepositButtonState.isDisabled) return;
+    if (tradeWithinAccount) {
+      if (buttonState_tradeWithinAccount.isDisabled) return;
+      setIsSubmitting_tradeWithinAccount(true);
     } else {
-      if (swapButtonState.isDisabled) return;
+      if (isSwapAndDeposit) {
+        if (buttonState_swapAndDeposit.isDisabled) return;
+        setIsSubmitting_swapAndDeposit(true);
+      } else {
+        if (buttonState_swap.isDisabled) return;
+        setIsSubmitting_swap(true);
+      }
     }
 
-    (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(true);
-
     try {
-      const res = await swap(isDepositing);
+      const res = await swap(isSwapAndDeposit);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChangeIn = getBalanceChange(
@@ -1068,34 +1217,95 @@ function Page() {
         description: "",
       });
 
-      const balanceChangeInFormatted = formatToken(
-        !isUsingDeposits && balanceChangeIn !== undefined
-          ? balanceChangeIn
-          : quote.in.amount, // When using deposits, the in asset is not in the wallet
-        { dp: tokenIn.decimals, trimTrailingZeros: true },
-      );
-      const balanceChangeOutFormatted = formatToken(
-        !isDepositing && balanceChangeOut !== undefined
-          ? balanceChangeOut
-          : quote.out.amount, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
-        { dp: tokenOut.decimals, trimTrailingZeros: true },
-      );
+      if (tradeWithinAccount) {
+        const balanceChangeInFormatted = formatToken(quote.in.amount, {
+          dp: tokenIn.decimals,
+          trimTrailingZeros: true,
+        });
+        const balanceChangeOutFormatted = formatToken(quote.out.amount, {
+          dp: tokenOut.decimals,
+          trimTrailingZeros: true,
+        });
 
-      toast.success(
-        `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
-        {
-          description: isDepositing
-            ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`
-            : undefined,
-          icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
-          action: (
-            <TextLink className="block" href={txUrl}>
-              View tx on {explorer.name}
-            </TextLink>
-          ),
-          duration: TX_TOAST_DURATION,
-        },
-      );
+        if (tokenOutBorrowPositionAmount.eq(0)) {
+          toast.success(
+            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            {
+              description: `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+              icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        } else {
+          const repaidAmount = BigNumber.min(
+            quote.out.amount,
+            tokenOutBorrowPositionAmount,
+          );
+          const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+          const balanceChangeOutRepaidFormatted = formatToken(repaidAmount, {
+            dp: tokenOut.decimals,
+            trimTrailingZeros: true,
+          });
+          const balanceChangeOutDepositedFormatted = formatToken(
+            depositedAmount,
+            { dp: tokenOut.decimals, trimTrailingZeros: true },
+          );
+
+          toast.success(
+            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            {
+              description: [
+                `Repaid ${balanceChangeOutRepaidFormatted} ${tokenOut.symbol}`,
+                depositedAmount.gt(0)
+                  ? `deposited ${balanceChangeOutDepositedFormatted} ${tokenOut.symbol}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", "),
+              icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        }
+      } else {
+        const balanceChangeInFormatted = formatToken(
+          balanceChangeIn !== undefined ? balanceChangeIn : quote.in.amount,
+          { dp: tokenIn.decimals, trimTrailingZeros: true },
+        );
+        const balanceChangeOutFormatted = formatToken(
+          !isSwapAndDeposit && balanceChangeOut !== undefined
+            ? balanceChangeOut
+            : quote.out.amount, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
+          { dp: tokenOut.decimals, trimTrailingZeros: true },
+        );
+
+        toast.success(
+          `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+          {
+            description: isSwapAndDeposit
+              ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`
+              : undefined,
+            icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+            action: (
+              <TextLink className="block" href={txUrl}>
+                View tx on {explorer.name}
+              </TextLink>
+            ),
+            duration: TX_TOAST_DURATION,
+          },
+        );
+      }
       formatAndSetValue("", tokenIn);
       setQuotesMap({});
 
@@ -1110,7 +1320,13 @@ function Page() {
           tokenOut.decimals,
           BigNumber.ROUND_DOWN,
         ),
-        deposit: isDepositing ? "true" : "false",
+        deposit: (
+          tradeWithinAccount
+            ? tokenOutBorrowPositionAmount.eq(0)
+            : isSwapAndDeposit
+        )
+          ? "true"
+          : "false",
       };
       if (tokenInUsdValue !== undefined)
         properties.amountInUsd = tokenInUsdValue.toFixed(
@@ -1125,12 +1341,33 @@ function Page() {
 
       track("swap_success", properties);
     } catch (err) {
-      toast.error(`Failed to ${isDepositing ? "swap and deposit" : "swap"}`, {
-        description: (err as Error)?.message || "An unknown error occurred",
-        duration: TX_TOAST_DURATION,
-      });
+      if (tradeWithinAccount) {
+        toast.error(
+          `Failed to swap and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
+          {
+            description: (err as Error)?.message || "An unknown error occurred",
+            duration: TX_TOAST_DURATION,
+          },
+        );
+      } else {
+        toast.error(
+          `Failed to ${isSwapAndDeposit ? "swap and deposit" : "swap"}`,
+          {
+            description: (err as Error)?.message || "An unknown error occurred",
+            duration: TX_TOAST_DURATION,
+          },
+        );
+      }
     } finally {
-      (isDepositing ? setIsSwappingAndDepositing : setIsSwapping)(false);
+      if (tradeWithinAccount) {
+        setIsSubmitting_tradeWithinAccount(false);
+      } else {
+        if (isSwapAndDeposit) {
+          setIsSubmitting_swapAndDeposit(false);
+        } else {
+          setIsSubmitting_swap(false);
+        }
+      }
       inputRef.current?.focus();
       refresh();
     }
@@ -1161,11 +1398,11 @@ function Page() {
               {/* Right */}
               <div className="flex flex-row items-center gap-4">
                 <Switch
-                  id="isUsingDeposits"
-                  label="Use deposits"
+                  id="tradeWithinAccount"
+                  label="Trade within account"
                   horizontal
-                  isChecked={isUsingDeposits}
-                  onToggle={setIsUsingDeposits}
+                  isChecked={tradeWithinAccount}
+                  onToggle={setTradeWithinAccount}
                   isDisabled={(obligation?.deposits ?? []).length === 0}
                 />
 
@@ -1212,9 +1449,8 @@ function Page() {
               <SwapInput
                 title="Buy"
                 value={
-                  new BigNumber(value || 0).gt(0) &&
-                  quoteAmountOut !== undefined
-                    ? quoteAmountOut.toFixed(
+                  new BigNumber(value || 0).gt(0) && quote !== undefined
+                    ? quote.out.amount.toFixed(
                         tokenOut.decimals,
                         BigNumber.ROUND_DOWN,
                       )
@@ -1393,9 +1629,57 @@ function Page() {
           </div>
 
           {/* Submit */}
-          <div className="flex w-full flex-col gap-px">
-            {!isUsingDeposits ? (
-              <>
+          {tradeWithinAccount ? (
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex w-full flex-col gap-px">
+                {/* Trade within account */}
+                <Button
+                  className="h-auto min-h-14 w-full"
+                  labelClassName="text-wrap uppercase"
+                  size="lg"
+                  disabled={buttonState_tradeWithinAccount.isDisabled}
+                  onClick={() => onSwapClick()}
+                >
+                  {buttonState_tradeWithinAccount.isLoading ? (
+                    <Spinner size="md" />
+                  ) : (
+                    buttonState_tradeWithinAccount.title
+                  )}
+                  {buttonState_tradeWithinAccount.description && (
+                    <span className="mt-0.5 block font-sans text-xs normal-case">
+                      {buttonState_tradeWithinAccount.description}
+                    </span>
+                  )}
+                </Button>
+
+                <div className="flex h-8 w-full flex-row items-center">
+                  <YourUtilizationLabel
+                    obligation={obligation}
+                    newObligation={
+                      tokenOutBorrowPositionAmount.eq(0)
+                        ? newObligation_deposit
+                        : newObligation_repay
+                    }
+                    noUtilizationBar
+                  />
+                </div>
+              </div>
+
+              {(tradeWithinAccountWarningMessages ?? []).map(
+                (warningMessage) => (
+                  <TLabelSans
+                    key={warningMessage}
+                    className="text-[10px] text-warning"
+                  >
+                    <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                    {warningMessage}
+                  </TLabelSans>
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex w-full flex-col gap-px">
                 {/* Swap */}
                 <Button
                   className={cn(
@@ -1404,84 +1688,46 @@ function Page() {
                   )}
                   labelClassName="text-wrap uppercase"
                   size="lg"
-                  disabled={swapButtonState.isDisabled}
+                  disabled={buttonState_swap.isDisabled}
                   onClick={() => onSwapClick(false)}
                 >
-                  {swapButtonState.isLoading ? (
+                  {buttonState_swap.isLoading ? (
                     <Spinner size="md" />
                   ) : (
-                    swapButtonState.title
+                    buttonState_swap.title
                   )}
-                  {swapButtonState.description && (
+                  {buttonState_swap.description && (
                     <span className="mt-0.5 block font-sans text-xs normal-case">
-                      {swapButtonState.description}
+                      {buttonState_swap.description}
                     </span>
                   )}
                 </Button>
 
                 {/* Swap and deposit */}
                 {tokenOutReserve && (
-                  <div className="flex w-full flex-col gap-2">
-                    <Button
-                      className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
-                      labelClassName="uppercase text-wrap text-xs"
-                      variant="secondary"
-                      disabled={swapAndDepositButtonState.isDisabled}
-                      onClick={
-                        swapAndDepositButtonState.isDisabled
-                          ? undefined
-                          : () => onSwapClick(true)
-                      }
-                    >
-                      {swapAndDepositButtonState.isLoading ? (
-                        <Spinner size="sm" />
-                      ) : (
-                        swapAndDepositButtonState.title
-                      )}
-                      {swapAndDepositButtonState.description && (
-                        <span className="block font-sans text-xs normal-case">
-                          {swapAndDepositButtonState.description}
-                        </span>
-                      )}
-                    </Button>
-
-                    {(swapAndDepositWarningMessages ?? []).map(
-                      (warningMessage) => (
-                        <TLabelSans
-                          key={warningMessage}
-                          className="text-[10px] text-warning"
-                        >
-                          <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                          {warningMessage}
-                        </TLabelSans>
-                      ),
+                  <Button
+                    className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                    labelClassName="uppercase text-wrap text-xs"
+                    variant="secondary"
+                    disabled={buttonState_swapAndDeposit.isDisabled}
+                    onClick={() => onSwapClick(true)}
+                  >
+                    {buttonState_swapAndDeposit.isLoading ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      buttonState_swapAndDeposit.title
                     )}
-                  </div>
+                    {buttonState_swapAndDeposit.description && (
+                      <span className="block font-sans text-xs normal-case">
+                        {buttonState_swapAndDeposit.description}
+                      </span>
+                    )}
+                  </Button>
                 )}
-              </>
-            ) : (
-              // Swap and deposit
-              <div className="flex w-full flex-col gap-2">
-                <Button
-                  className="h-auto min-h-14 w-full"
-                  labelClassName="text-wrap uppercase"
-                  size="lg"
-                  disabled={swapAndDepositButtonState.isDisabled}
-                  onClick={() => onSwapClick(true)}
-                >
-                  {swapAndDepositButtonState.isLoading ? (
-                    <Spinner size="md" />
-                  ) : (
-                    swapAndDepositButtonState.title
-                  )}
-                  {swapAndDepositButtonState.description && (
-                    <span className="mt-0.5 block font-sans text-xs normal-case">
-                      {swapAndDepositButtonState.description}
-                    </span>
-                  )}
-                </Button>
+              </div>
 
-                {(swapAndDepositWarningMessages ?? []).map((warningMessage) => (
+              {tokenOutReserve &&
+                (warningMessages_swapAndDeposit ?? []).map((warningMessage) => (
                   <TLabelSans
                     key={warningMessage}
                     className="text-[10px] text-warning"
@@ -1490,15 +1736,8 @@ function Page() {
                     {warningMessage}
                   </TLabelSans>
                 ))}
-
-                <YourUtilizationLabel
-                  obligation={obligation}
-                  newObligation={newObligation}
-                  noUtilizationBar
-                />
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Tokens */}
           <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-6 gap-y-4">

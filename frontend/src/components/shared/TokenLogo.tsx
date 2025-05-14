@@ -78,7 +78,7 @@ export default function TokenLogo({
         ) : undefined
       }
     >
-      <div className={cn("relative h-7 w-7", className)} style={style}>
+      <div className={cn("relative h-7 w-7 shrink-0", className)} style={style}>
         <AspectRatio ratio={1} className="relative z-[1]">
           {!token.iconUrl ||
           token.iconUrl === "" ||
