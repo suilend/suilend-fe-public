@@ -132,7 +132,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // Local CoinMetadata map
   const [localCoinMetadataMap, setLocalCoinMetadataMap] = useLocalStorage<
     Record<string, CoinMetadata>
-  >("coinMetadataMap", {});
+  >("suilend_coinMetadataMap", {});
 
   const addCoinMetadataToLocalMap = useCallback(
     (coinType: string, coinMetadata: CoinMetadata) => {
