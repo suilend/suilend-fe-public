@@ -11,12 +11,14 @@ import {
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HAEDAL_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
+  NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_LBTC_COINTYPE,
   NORMALIZED_LOFI_COINTYPE,
   NORMALIZED_NS_COINTYPE,
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_UP_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_WAL_COINTYPE,
   NORMALIZED_WETH_COINTYPE,
@@ -82,6 +84,9 @@ export const RESERVES_CUSTOM_ORDER = [
   NORMALIZED_HAEDAL_COINTYPE,
   NORMALIZED_BLUE_COINTYPE,
   NORMALIZED_NS_COINTYPE,
+  NORMALIZED_UP_COINTYPE,
+  NORMALIZED_KOBAN_COINTYPE,
+
   NORMALIZED_mUSD_COINTYPE,
   NORMALIZED_BUCK_COINTYPE,
 
@@ -186,10 +191,10 @@ export const initializeSuilend = async (
     ),
   );
   for (const reserve of reservesWithTemporaryPythPriceFeeds) {
-    const birdeyePrice = await getPrice(
+    let birdeyePrice = await getPrice(
       normalizeStructTag(reserve.coinType.name),
     );
-    if (birdeyePrice === undefined) continue;
+    if (birdeyePrice === undefined) birdeyePrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
 
     const parsedBirdeyePrice = BigInt(
       +new BigNumber(birdeyePrice)
