@@ -16,6 +16,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
+  NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   isInMsafeApp,
 } from "@suilend/frontend-sui";
@@ -183,8 +184,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
               ),
         )
         .filter((reserve) =>
-          reserve.coinType ===
-          "0x8400e7044d360c28dd338111d2aa54ca5bdc960a8d6b60bf3b28e1ca503df3e2::koban::KOBAN"
+          reserve.coinType === NORMALIZED_KOBAN_COINTYPE
             ? Date.now() >= 1747234800000 || // 2025-05-14 15:00:00 UTC
               address === ADMIN_ADDRESS
             : true,
