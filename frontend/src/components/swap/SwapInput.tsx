@@ -48,8 +48,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
   ) => {
     const { getBalance, obligation } = useLoadedUserContext();
 
-    const swapContext = useSwapContext();
-    const tokens = swapContext.tokens as SwapToken[];
+    const { tradeWithinAccount, ...restSwapContext } = useSwapContext();
+    const tokens = restSwapContext.tokens as SwapToken[];
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
@@ -145,34 +145,40 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 )}
                 onClick={onAmountClick}
               >
-                {/* Balance */}
-                <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
-                  <Wallet className="h-3 w-3 text-inherit" />
-                  <TLabel className="text-inherit">
-                    {tokenBalance.eq(0)
-                      ? "--"
-                      : formatToken(tokenBalance, { exact: false })}
-                  </TLabel>
-                </div>
+                {!tradeWithinAccount ? (
+                  <>
+                    {/* Balance */}
+                    <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                      <Wallet className="h-3 w-3 text-inherit" />
+                      <TLabel className="text-inherit">
+                        {tokenBalance.eq(0)
+                          ? "--"
+                          : formatToken(tokenBalance, { exact: false })}
+                      </TLabel>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Deposited */}
+                    {tokenDepositedAmount.gt(0) && (
+                      <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                        <Download className="h-3 w-3 text-inherit" />
+                        <TLabel className="text-inherit">
+                          {formatToken(tokenDepositedAmount, { exact: false })}
+                        </TLabel>
+                      </div>
+                    )}
 
-                {/* Deposited */}
-                {tokenDepositedAmount.gt(0) && (
-                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
-                    <Download className="h-3 w-3 text-inherit" />
-                    <TLabel className="text-inherit">
-                      {formatToken(tokenDepositedAmount, { exact: false })}
-                    </TLabel>
-                  </div>
-                )}
-
-                {/* Borrowed */}
-                {tokenBorrowedAmount.gt(0) && (
-                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
-                    <Upload className="h-3 w-3 text-inherit" />
-                    <TLabel className="text-inherit">
-                      {formatToken(tokenBorrowedAmount, { exact: false })}
-                    </TLabel>
-                  </div>
+                    {/* Borrowed */}
+                    {tokenBorrowedAmount.gt(0) && (
+                      <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                        <Upload className="h-3 w-3 text-inherit" />
+                        <TLabel className="text-inherit">
+                          {formatToken(tokenBorrowedAmount, { exact: false })}
+                        </TLabel>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

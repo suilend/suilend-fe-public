@@ -142,14 +142,18 @@ function Page() {
   const tokenInDepositPosition = obligation?.deposits?.find(
     (d) => d.coinType === tokenIn.coinType,
   );
-  const tokenInDepositPositionAmount =
-    tokenInDepositPosition?.depositedAmount ?? new BigNumber(0);
+  const tokenInDepositPositionAmount = useMemo(
+    () => tokenInDepositPosition?.depositedAmount ?? new BigNumber(0),
+    [tokenInDepositPosition],
+  );
 
   const tokenOutBorrowPosition = obligation?.borrows?.find(
     (b) => b.coinType === tokenOut.coinType,
   );
-  const tokenOutBorrowPositionAmount =
-    tokenOutBorrowPosition?.borrowedAmount ?? new BigNumber(0);
+  const tokenOutBorrowPositionAmount = useMemo(
+    () => tokenOutBorrowPosition?.borrowedAmount ?? new BigNumber(0),
+    [tokenOutBorrowPosition],
+  );
 
   // Max
   const tokenInMaxCalculations = (() => {
@@ -268,8 +272,6 @@ function Page() {
         q.in.coinType === tokenIn.coinType &&
         q.out.coinType === tokenOut.coinType,
     ); // Best quote by amount out
-  const quoteAmountIn = useMemo(() => quote?.in.amount, [quote?.in.amount]);
-  const quoteAmountOut = useMemo(() => quote?.out.amount, [quote?.out.amount]);
 
   const isFetchingQuotes = useMemo(() => {
     const timestampsS = Object.keys(quotesMap).map((timestampS) => +timestampS);
@@ -570,8 +572,8 @@ function Page() {
     inputRef.current?.focus();
   };
 
-  // Use deposits - utilization
-  const newObligation = (() => {
+  // Trade within account - utilization
+  const newObligation_deposit = useMemo(() => {
     if (!(obligation && tokenInReserve && tokenOutReserve && quote))
       return undefined;
 
@@ -593,7 +595,37 @@ function Page() {
     };
 
     return depositObligation;
-  })();
+  }, [obligation, tokenInReserve, tokenOutReserve, quote]);
+
+  const newObligation_repay = useMemo(() => {
+    if (!(obligation && tokenInReserve && tokenOutReserve && quote))
+      return undefined;
+
+    const withdrawObligation = {
+      ...obligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.WITHDRAW,
+        tokenInReserve,
+        obligation,
+      )(quote.in.amount) ?? {}),
+    };
+    const repayObligation = {
+      ...withdrawObligation,
+      ...(getNewBorrowUtilizationCalculations(
+        Action.REPAY,
+        tokenOutReserve,
+        withdrawObligation,
+      )(BigNumber.min(quote.out.amount, tokenOutBorrowPositionAmount)) ?? {}),
+    };
+
+    return repayObligation;
+  }, [
+    obligation,
+    tokenInReserve,
+    tokenOutReserve,
+    quote,
+    tokenOutBorrowPositionAmount,
+  ]);
 
   // USD prices - historical
   const tokenInHistoricalUsdPrices = useMemo(
@@ -635,17 +667,17 @@ function Page() {
 
   const tokenInUsdValue = useMemo(
     () =>
-      quoteAmountIn !== undefined && tokenInUsdPrice !== undefined
-        ? quoteAmountIn.times(tokenInUsdPrice)
+      quote !== undefined && tokenInUsdPrice !== undefined
+        ? quote.in.amount.times(tokenInUsdPrice)
         : undefined,
-    [quoteAmountIn, tokenInUsdPrice],
+    [quote, tokenInUsdPrice],
   );
   const tokenOutUsdValue = useMemo(
     () =>
-      quoteAmountOut !== undefined && tokenOutUsdPrice !== undefined
-        ? quoteAmountOut.times(tokenOutUsdPrice)
+      quote !== undefined && tokenOutUsdPrice !== undefined
+        ? quote.out.amount.times(tokenOutUsdPrice)
         : undefined,
-    [quoteAmountOut, tokenOutUsdPrice],
+    [quote, tokenOutUsdPrice],
   );
 
   // Ratios
@@ -739,12 +771,12 @@ function Page() {
   // Ratios - quote
   const quoteRatio = useMemo(
     () =>
-      quoteAmountOut !== undefined && quoteAmountIn !== undefined
-        ? (!isInverted ? quoteAmountOut : quoteAmountIn).div(
-            !isInverted ? quoteAmountIn : quoteAmountOut,
+      quote !== undefined
+        ? (!isInverted ? quote.out.amount : quote.in.amount).div(
+            !isInverted ? quote.in.amount : quote.out.amount,
           )
         : undefined,
-    [quoteAmountOut, quoteAmountIn, isInverted],
+    [quote, isInverted],
   );
 
   // Quote selection
@@ -874,7 +906,7 @@ function Page() {
       MAX_U64,
       appData,
       obligation,
-    )(quoteAmountOut ?? new BigNumber(0));
+    )(quote?.out.amount ?? new BigNumber(0));
     if (buttonState !== undefined) return buttonState;
 
     return {
@@ -934,7 +966,7 @@ function Page() {
       obligation,
     )(
       BigNumber.min(
-        quoteAmountOut ?? new BigNumber(0),
+        quote?.out.amount ?? new BigNumber(0),
         tokenOutBorrowPositionAmount.eq(0) ? 0 : tokenOutBorrowPositionAmount,
       ),
     );
@@ -1060,7 +1092,6 @@ function Page() {
         await getTransactionForStandardizedQuote(transaction, coinIn);
       if (!coinOut)
         throw new Error("Missing coin to transfer to deposit/transfer to user");
-      console.log("XXXX", coinOut);
 
       transaction = _transaction;
 
@@ -1088,36 +1119,32 @@ function Page() {
           if (!tokenOutReserve) throw new Error("Cannot repay this token");
           if (!obligation) throw new Error("Obligation not found");
 
-          // const repayAmount = BigNumber.min(
-          //   quote.out.amount,
-          //   tokenOutBorrowPositionAmount,
-          // );
-          // const remainderAmount = quote.out.amount.minus(repayAmount);
-
-          // const repayCoin = transaction.splitCoins(coinOut, [
-          //   quote.out.amount
-          //     .times(10 ** tokenOut.decimals)
-          //     .integerValue(BigNumber.ROUND_DOWN)
-          //     .toString(),
-          // ]);
-          // const remainderCoin = transaction.splitCoins(coinOut, [
-          //   remainderAmount
-          //     .times(10 ** tokenOut.decimals)
-          //     .integerValue(BigNumber.ROUND_DOWN)
-          //     .toString(),
-          // ]);
-
           appData.suilendClient.repay(
             obligation.id,
             tokenOutReserve.coinType,
             coinOut,
             transaction,
           );
-          // if (remainderAmount.gt(0))
-          //   transaction.transferObjects(
-          //     [remainderCoin],
-          //     transaction.pure.address(address),
-          //   );
+
+          const repaidAmount = BigNumber.min(
+            quote.out.amount,
+            tokenOutBorrowPositionAmount,
+          );
+          const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+          if (depositedAmount.gt(0)) {
+            appData.suilendClient.deposit(
+              coinOut,
+              tokenOutReserve.coinType,
+              obligationOwnerCap!.id,
+              transaction,
+            ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
+          } else {
+            transaction.transferObjects(
+              [coinOut],
+              transaction.pure.address(address),
+            ); // Transfer empty coin to user
+          }
         }
       } else {
         if (isSwapAndDeposit) {
@@ -1200,21 +1227,57 @@ function Page() {
           trimTrailingZeros: true,
         });
 
-        toast.success(
-          `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
-          {
-            description: `${
-              tokenOutBorrowPositionAmount.eq(0) ? "Deposited" : "Repaid"
-            } ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
-            icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
-            action: (
-              <TextLink className="block" href={txUrl}>
-                View tx on {explorer.name}
-              </TextLink>
-            ),
-            duration: TX_TOAST_DURATION,
-          },
-        );
+        if (tokenOutBorrowPositionAmount.eq(0)) {
+          toast.success(
+            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            {
+              description: `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+              icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        } else {
+          const repaidAmount = BigNumber.min(
+            quote.out.amount,
+            tokenOutBorrowPositionAmount,
+          );
+          const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+          const balanceChangeOutRepaidFormatted = formatToken(repaidAmount, {
+            dp: tokenOut.decimals,
+            trimTrailingZeros: true,
+          });
+          const balanceChangeOutDepositedFormatted = formatToken(
+            depositedAmount,
+            { dp: tokenOut.decimals, trimTrailingZeros: true },
+          );
+
+          toast.success(
+            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            {
+              description: [
+                `Repaid ${balanceChangeOutRepaidFormatted} ${tokenOut.symbol}`,
+                depositedAmount.gt(0)
+                  ? `deposited ${balanceChangeOutDepositedFormatted} ${tokenOut.symbol}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(", "),
+              icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        }
       } else {
         const balanceChangeInFormatted = formatToken(
           balanceChangeIn !== undefined ? balanceChangeIn : quote.in.amount,
@@ -1386,9 +1449,8 @@ function Page() {
               <SwapInput
                 title="Buy"
                 value={
-                  new BigNumber(value || 0).gt(0) &&
-                  quoteAmountOut !== undefined
-                    ? quoteAmountOut.toFixed(
+                  new BigNumber(value || 0).gt(0) && quote !== undefined
+                    ? quote.out.amount.toFixed(
                         tokenOut.decimals,
                         BigNumber.ROUND_DOWN,
                       )
@@ -1569,25 +1631,39 @@ function Page() {
           {/* Submit */}
           {tradeWithinAccount ? (
             <div className="flex w-full flex-col gap-2">
-              {/* Trade within account */}
-              <Button
-                className="h-auto min-h-14 w-full"
-                labelClassName="text-wrap uppercase"
-                size="lg"
-                disabled={buttonState_tradeWithinAccount.isDisabled}
-                onClick={() => onSwapClick()}
-              >
-                {buttonState_tradeWithinAccount.isLoading ? (
-                  <Spinner size="md" />
-                ) : (
-                  buttonState_tradeWithinAccount.title
-                )}
-                {buttonState_tradeWithinAccount.description && (
-                  <span className="mt-0.5 block font-sans text-xs normal-case">
-                    {buttonState_tradeWithinAccount.description}
-                  </span>
-                )}
-              </Button>
+              <div className="flex w-full flex-col gap-px">
+                {/* Trade within account */}
+                <Button
+                  className="h-auto min-h-14 w-full"
+                  labelClassName="text-wrap uppercase"
+                  size="lg"
+                  disabled={buttonState_tradeWithinAccount.isDisabled}
+                  onClick={() => onSwapClick()}
+                >
+                  {buttonState_tradeWithinAccount.isLoading ? (
+                    <Spinner size="md" />
+                  ) : (
+                    buttonState_tradeWithinAccount.title
+                  )}
+                  {buttonState_tradeWithinAccount.description && (
+                    <span className="mt-0.5 block font-sans text-xs normal-case">
+                      {buttonState_tradeWithinAccount.description}
+                    </span>
+                  )}
+                </Button>
+
+                <div className="flex h-8 w-full flex-row items-center">
+                  <YourUtilizationLabel
+                    obligation={obligation}
+                    newObligation={
+                      tokenOutBorrowPositionAmount.eq(0)
+                        ? newObligation_deposit
+                        : newObligation_repay
+                    }
+                    noUtilizationBar
+                  />
+                </div>
+              </div>
 
               {(tradeWithinAccountWarningMessages ?? []).map(
                 (warningMessage) => (
@@ -1599,14 +1675,6 @@ function Page() {
                     {warningMessage}
                   </TLabelSans>
                 ),
-              )}
-
-              {tokenOutBorrowPositionAmount.eq(0) && (
-                <YourUtilizationLabel
-                  obligation={obligation}
-                  newObligation={newObligation}
-                  noUtilizationBar
-                />
               )}
             </div>
           ) : (

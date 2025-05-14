@@ -4,7 +4,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import {
-  Check,
+  BadgeCheck,
   ChevronDown,
   Download,
   Search,
@@ -47,7 +47,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
-  const { verifiedCoinTypes } = useSwapContext();
+  const { tradeWithinAccount, verifiedCoinTypes } = useSwapContext();
 
   // Amount
   const tokenBalance = getBalance(token.coinType);
@@ -86,7 +86,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
           {/* Top */}
           <div className="flex w-full flex-row items-center justify-between gap-4">
             {/* Top left */}
-            <div className="flex min-w-0 flex-row items-center gap-1">
+            <div className="flex min-w-0 flex-row items-center gap-1.5">
               <TBody className="overflow-hidden text-ellipsis text-nowrap">
                 {token.symbol}
               </TBody>
@@ -109,9 +109,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
                           : ""
                     }
                   >
-                    <div className="h-4 w-4 rounded-full bg-success/10 p-0.5">
-                      <Check className="h-3 w-3 text-success" />
-                    </div>
+                    <BadgeCheck className="h-4 w-4 text-verified" />
                   </Tooltip>
                 )}
 
@@ -125,41 +123,47 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
 
             {/* Top right */}
             <div className="flex shrink-0 flex-row items-center gap-3">
-              {/* Balance */}
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-1.5",
-                  tokenBalance.gt(0)
-                    ? "text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                <Wallet className="h-3 w-3 text-inherit" />
-                <TBody className="text-inherit">
-                  {tokenBalance.eq(0)
-                    ? "--"
-                    : formatToken(tokenBalance, { exact: false })}
-                </TBody>
-              </div>
+              {!tradeWithinAccount ? (
+                <>
+                  {/* Balance */}
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5",
+                      tokenBalance.gt(0)
+                        ? "text-foreground"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <Wallet className="h-3 w-3 text-inherit" />
+                    <TBody className="text-inherit">
+                      {tokenBalance.eq(0)
+                        ? "--"
+                        : formatToken(tokenBalance, { exact: false })}
+                    </TBody>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Deposited */}
+                  {tokenDepositedAmount.gt(0) && (
+                    <div className="flex flex-row items-center gap-1.5 text-foreground">
+                      <Download className="h-3 w-3 text-inherit" />
+                      <TBody className="text-inherit">
+                        {formatToken(tokenDepositedAmount, { exact: false })}
+                      </TBody>
+                    </div>
+                  )}
 
-              {/* Deposited */}
-              {tokenDepositedAmount.gt(0) && (
-                <div className="flex flex-row items-center gap-1.5 text-foreground">
-                  <Download className="h-3 w-3 text-inherit" />
-                  <TBody className="text-inherit">
-                    {formatToken(tokenDepositedAmount, { exact: false })}
-                  </TBody>
-                </div>
-              )}
-
-              {/* Borrowed */}
-              {tokenBorrowedAmount.gt(0) && (
-                <div className="flex flex-row items-center gap-1.5 text-foreground">
-                  <Upload className="h-3 w-3 text-inherit" />
-                  <TBody className="text-inherit">
-                    {formatToken(tokenBorrowedAmount, { exact: false })}
-                  </TBody>
-                </div>
+                  {/* Borrowed */}
+                  {tokenBorrowedAmount.gt(0) && (
+                    <div className="flex flex-row items-center gap-1.5 text-foreground">
+                      <Upload className="h-3 w-3 text-inherit" />
+                      <TBody className="text-inherit">
+                        {formatToken(tokenBorrowedAmount, { exact: false })}
+                      </TBody>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

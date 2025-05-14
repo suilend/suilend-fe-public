@@ -94,7 +94,7 @@ export default function AssetCell({
           href: `${getSwapUrl(
             token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
             reserve ? token.symbol : token.coinType,
-          )}${tableType === AccountAssetTableType.DEPOSITS ? "?tradeWithinAccount=true" : ""}`,
+          )}${tableType === AccountAssetTableType.DEPOSITS || tableType === AccountAssetTableType.BORROWS ? "?tradeWithinAccount=true" : ""}`,
           isRelative: true,
         });
       }
