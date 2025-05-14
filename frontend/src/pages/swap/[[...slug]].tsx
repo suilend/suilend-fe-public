@@ -1399,7 +1399,7 @@ function Page() {
               <div className="flex flex-row items-center gap-4">
                 <Switch
                   id="tradeWithinAccount"
-                  label="Trade within account"
+                  label="Swap in account"
                   horizontal
                   isChecked={tradeWithinAccount}
                   onToggle={setTradeWithinAccount}
