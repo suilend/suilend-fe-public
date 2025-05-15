@@ -2,6 +2,7 @@ import { CSSProperties, ReactNode } from "react";
 
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
+import { useLocalStorage } from "usehooks-ts";
 
 import {
   formatBorrowWeight,
@@ -10,7 +11,6 @@ import {
   formatToken,
   formatUsd,
 } from "@suilend/frontend-sui";
-import { useLocalStorage } from "@suilend/frontend-sui-next";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { reserveSort } from "@suilend/sdk/utils";
 

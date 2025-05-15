@@ -7,11 +7,11 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useFlags } from "launchdarkly-react-client-sdk";
 import { Droplet, Flame } from "lucide-react";
 import { toast } from "sonner";
+import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
 import {
   showErrorToast,
-  useLocalStorage,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";

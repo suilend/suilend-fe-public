@@ -189,12 +189,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const {
-    localCoinMetadataMap,
-    addCoinMetadataToLocalMap,
-    appData,
-    filteredReserves,
-  } = useLoadedAppContext();
+  const { appData, filteredReserves } = useLoadedAppContext();
   const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
     useLoadedUserContext();
 
@@ -302,7 +297,6 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
           (coinType) =>
             !Object.keys({
-              ...localCoinMetadataMap,
               ...appData.coinMetadataMap,
               ...(balancesCoinMetadataMap ?? {}),
             }).includes(coinType),
@@ -310,13 +304,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const coinMetadataMap = await getCoinMetadataMap(
           coinTypesMissingMetadata,
         );
-        for (const coinType of Object.keys(coinMetadataMap)) {
-          if (!localCoinMetadataMap[coinType])
-            addCoinMetadataToLocalMap(coinType, coinMetadataMap[coinType]);
-        }
 
         const mergedCoinMetadataMap = {
-          ...localCoinMetadataMap,
           ...appData.coinMetadataMap,
           ...(balancesCoinMetadataMap ?? {}),
           ...coinMetadataMap,
@@ -338,13 +327,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [
-      tokens,
-      localCoinMetadataMap,
-      appData.coinMetadataMap,
-      addCoinMetadataToLocalMap,
-      balancesCoinMetadataMap,
-    ],
+    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap],
   );
 
   // Tokens - Verified coinTypes

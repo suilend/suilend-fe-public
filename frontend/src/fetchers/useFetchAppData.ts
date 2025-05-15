@@ -15,13 +15,10 @@ import {
   SuilendClient,
 } from "@suilend/sdk/client";
 
-import { AllAppData, AppContext } from "@/contexts/AppContext";
+import { AllAppData } from "@/contexts/AppContext";
 import { API_URL } from "@/lib/navigation";
 
-export default function useFetchAppData(
-  localCoinMetadataMap: AppContext["localCoinMetadataMap"],
-  addCoinMetadataToLocalMap: AppContext["addCoinMetadataToLocalMap"],
-) {
+export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
@@ -56,15 +53,7 @@ export default function useFetchAppData(
             rewardCoinTypes,
             activeRewardCoinTypes,
             rewardCoinMetadataMap,
-          } = await initializeSuilend(
-            suiClient,
-            suilendClient,
-            localCoinMetadataMap,
-          );
-          for (const coinType of Object.keys(coinMetadataMap)) {
-            if (!localCoinMetadataMap[coinType])
-              addCoinMetadataToLocalMap(coinType, coinMetadataMap[coinType]);
-          }
+          } = await initializeSuilend(suiClient, suilendClient);
 
           const { rewardPriceMap } = await initializeSuilendRewards(
             reserveMap,

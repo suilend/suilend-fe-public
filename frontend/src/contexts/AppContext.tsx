@@ -22,7 +22,6 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
-import useExpandedLocalStorageMap from "@suilend/frontend-sui-next/hooks/useExpandedLocalStorageMap";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -56,13 +55,7 @@ export interface AllAppData {
   lstAprPercentMap: Record<string, BigNumber>;
 }
 
-export interface AppContext {
-  localCoinMetadataMap: Record<string, CoinMetadata>;
-  addCoinMetadataToLocalMap: (
-    coinType: string,
-    coinMetadata: CoinMetadata,
-  ) => void;
-
+interface AppContext {
   allAppData: AllAppData | undefined;
   deprecatedReserveIds: string[] | undefined;
   filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
@@ -86,11 +79,6 @@ type LoadedAppContext = AppContext & {
 };
 
 const AppContext = createContext<AppContext>({
-  localCoinMetadataMap: {},
-  addCoinMetadataToLocalMap: () => {
-    throw Error("AppContextProvider not initialized");
-  },
-
   allAppData: undefined,
   deprecatedReserveIds: undefined,
   filteredReservesMap: undefined,
@@ -129,24 +117,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
 
-  // Local CoinMetadata map
-  const { value: localCoinMetadataMap, setValue: setLocalCoinMetadataMap } =
-    useExpandedLocalStorageMap<Record<string, CoinMetadata>>(
-      "suilend_coinMetadataMap",
-    );
-
-  const addCoinMetadataToLocalMap = useCallback(
-    (coinType: string, coinMetadata: CoinMetadata) => {
-      setLocalCoinMetadataMap({ [coinType]: coinMetadata });
-    },
-    [setLocalCoinMetadataMap],
-  );
-
   // All app data
-  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData(
-    localCoinMetadataMap,
-    addCoinMetadataToLocalMap,
-  );
+  const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
 
   const refreshAllAppData = useCallback(async () => {
     await mutateAllAppData();
@@ -261,9 +233,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
-      localCoinMetadataMap,
-      addCoinMetadataToLocalMap,
-
       allAppData,
       deprecatedReserveIds,
       filteredReservesMap,
@@ -279,8 +248,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       walrusEpochProgressPercent,
     }),
     [
-      localCoinMetadataMap,
-      addCoinMetadataToLocalMap,
       allAppData,
       deprecatedReserveIds,
       filteredReservesMap,
