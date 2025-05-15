@@ -47,7 +47,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
-  const { tradeWithinAccount, verifiedCoinTypes } = useSwapContext();
+  const { swapInAccount, verifiedCoinTypes } = useSwapContext();
 
   // Amount
   const tokenBalance = getBalance(token.coinType);
@@ -123,7 +123,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
 
             {/* Top right */}
             <div className="flex shrink-0 flex-row items-center gap-3">
-              {!tradeWithinAccount ? (
+              {!swapInAccount ? (
                 <>
                   {/* Balance */}
                   <div
@@ -206,7 +206,7 @@ export default function TokenSelectionDialog({
   const { filteredReservesMap, filteredReserves } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
-  const { tradeWithinAccount, fetchTokensMetadata, verifiedCoinTypes } =
+  const { swapInAccount, fetchTokensMetadata, verifiedCoinTypes } =
     useSwapContext();
 
   // State
@@ -276,7 +276,7 @@ export default function TokenSelectionDialog({
         NORMALIZED_SEND_COINTYPE,
       ]
         .filter((coinType) =>
-          tradeWithinAccount
+          swapInAccount
             ? direction === TokenDirection.IN
               ? !!depositTokens.find((t) => t.coinType === coinType)
               : true
@@ -284,7 +284,7 @@ export default function TokenSelectionDialog({
         )
         .map((coinType) => tokens.find((t) => t.coinType === coinType))
         .filter(Boolean) as SwapToken[],
-    [tradeWithinAccount, direction, depositTokens, tokens],
+    [swapInAccount, direction, depositTokens, tokens],
   );
 
   // Filter
@@ -324,7 +324,7 @@ export default function TokenSelectionDialog({
   const filteredTokens = useMemo(() => {
     let result: SwapToken[];
 
-    if (tradeWithinAccount) {
+    if (swapInAccount) {
       if (direction === TokenDirection.IN) result = [...filteredDepositTokens];
       else
         result = [
@@ -343,7 +343,7 @@ export default function TokenSelectionDialog({
 
     return result;
   }, [
-    tradeWithinAccount,
+    swapInAccount,
     direction,
     filteredDepositTokens,
     filteredBorrowTokens,
@@ -356,14 +356,14 @@ export default function TokenSelectionDialog({
     if (
       filteredTokens.length === 0 &&
       isCoinType(searchString) &&
-      !tradeWithinAccount &&
+      !swapInAccount &&
       isSwapInput
     )
       fetchTokensMetadata([normalizeStructTag(searchString)]);
   }, [
     filteredTokens,
     searchString,
-    tradeWithinAccount,
+    swapInAccount,
     isSwapInput,
     fetchTokensMetadata,
   ]);
@@ -377,7 +377,7 @@ export default function TokenSelectionDialog({
       }
     >;
 
-    if (tradeWithinAccount) {
+    if (swapInAccount) {
       if (direction === TokenDirection.IN)
         result = {
           deposit: {
@@ -426,7 +426,7 @@ export default function TokenSelectionDialog({
 
     return result;
   }, [
-    tradeWithinAccount,
+    swapInAccount,
     direction,
     filteredDepositTokens,
     filteredBorrowTokens,
@@ -491,7 +491,7 @@ export default function TokenSelectionDialog({
             id="searchString"
             type="text"
             placeholder={
-              tradeWithinAccount
+              swapInAccount
                 ? "Search by token symbol or name"
                 : "Search by token symbol, name or address"
             }
@@ -569,7 +569,7 @@ export default function TokenSelectionDialog({
         ) : (
           <TLabelSans className="py-4 text-center">
             {searchString
-              ? isCoinType(searchString) && !tradeWithinAccount && isSwapInput
+              ? isCoinType(searchString) && !swapInAccount && isSwapInput
                 ? "Fetching token metadata..."
                 : `No tokens matching "${searchString}"`
               : "No tokens"}

@@ -114,8 +114,8 @@ function Page() {
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,
     fetchTokenUsdPrice,
-    tradeWithinAccount,
-    setTradeWithinAccount,
+    swapInAccount,
+    setSwapInAccount,
     tokens,
     setTokenSymbol,
     reverseTokenSymbols,
@@ -161,7 +161,7 @@ function Page() {
       {
         reason: `Insufficient ${tokenIn.symbol}`,
         isDisabled: true,
-        value: tradeWithinAccount
+        value: swapInAccount
           ? getMaxValue(
               Action.WITHDRAW,
               tokenInReserve!,
@@ -172,7 +172,7 @@ function Page() {
           : tokenInBalance,
       },
     ];
-    if (isSui(tokenIn.coinType) && !tradeWithinAccount)
+    if (isSui(tokenIn.coinType) && !swapInAccount)
       result.push({
         reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
         isDisabled: true,
@@ -223,7 +223,7 @@ function Page() {
   const [isSubmitting_swap, setIsSubmitting_swap] = useState<boolean>(false);
   const [isSubmitting_swapAndDeposit, setIsSubmitting_swapAndDeposit] =
     useState<boolean>(false);
-  const [isSubmitting_tradeWithinAccount, setIsSubmitting_tradeWithinAccount] =
+  const [isSubmitting_swapInAccount, setIsSubmitting_swapInAccount] =
     useState<boolean>(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -512,7 +512,7 @@ function Page() {
     if (
       isSubmitting_swap ||
       isSubmitting_swapAndDeposit ||
-      isSubmitting_tradeWithinAccount
+      isSubmitting_swapInAccount
     )
       return;
     refreshIntervalRef.current = setInterval(
@@ -526,7 +526,7 @@ function Page() {
   }, [
     isSubmitting_swap,
     isSubmitting_swapAndDeposit,
-    isSubmitting_tradeWithinAccount,
+    isSubmitting_swapInAccount,
     fetchQuotes,
     tokenIn,
     tokenOut,
@@ -572,7 +572,7 @@ function Page() {
     inputRef.current?.focus();
   };
 
-  // Trade within account - utilization
+  // Swap in account - utilization
   const newObligation_deposit = useMemo(() => {
     if (!(obligation && tokenInReserve && tokenOutReserve && quote))
       return undefined;
@@ -924,13 +924,13 @@ function Page() {
       )()
     : undefined;
 
-  // Trade within account
-  const buttonState_tradeWithinAccount: SubmitButtonState = (() => {
+  // Swap in account
+  const buttonState_swapInAccount: SubmitButtonState = (() => {
     if (!tokenOutReserve)
       return { isDisabled: true, title: "Cannot deposit or repay this token" };
 
     if (!address) return { isDisabled: true, title: "Connect wallet" };
-    if (isSubmitting_tradeWithinAccount)
+    if (isSubmitting_swapInAccount)
       return { isDisabled: true, isLoading: true };
 
     const buttonNoValueState = getSubmitButtonNoValueState(
@@ -978,7 +978,7 @@ function Page() {
     };
   })();
 
-  const tradeWithinAccountWarningMessages = tokenOutReserve
+  const warningMessages_swapInAccount = tokenOutReserve
     ? getSubmitWarningMessages(
         tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
         appData.lendingMarket.reserves,
@@ -1064,7 +1064,7 @@ function Page() {
 
     try {
       let coinIn: TransactionObjectArgument | undefined;
-      if (tradeWithinAccount) {
+      if (swapInAccount) {
         if (!obligation || !obligationOwnerCap)
           throw new Error("Obligation or ObligationOwnerCap not found");
         if (!tokenInReserve || !tokenInDepositPosition)
@@ -1095,7 +1095,7 @@ function Page() {
 
       transaction = _transaction;
 
-      if (tradeWithinAccount) {
+      if (swapInAccount) {
         if (tokenOutBorrowPositionAmount.eq(0)) {
           // DEPOSIT out token
           if (!tokenOutReserve) throw new Error("Cannot deposit this token");
@@ -1189,9 +1189,9 @@ function Page() {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    if (tradeWithinAccount) {
-      if (buttonState_tradeWithinAccount.isDisabled) return;
-      setIsSubmitting_tradeWithinAccount(true);
+    if (swapInAccount) {
+      if (buttonState_swapInAccount.isDisabled) return;
+      setIsSubmitting_swapInAccount(true);
     } else {
       if (isSwapAndDeposit) {
         if (buttonState_swapAndDeposit.isDisabled) return;
@@ -1217,7 +1217,7 @@ function Page() {
         description: "",
       });
 
-      if (tradeWithinAccount) {
+      if (swapInAccount) {
         const balanceChangeInFormatted = formatToken(quote.in.amount, {
           dp: tokenIn.decimals,
           trimTrailingZeros: true,
@@ -1321,9 +1321,7 @@ function Page() {
           BigNumber.ROUND_DOWN,
         ),
         deposit: (
-          tradeWithinAccount
-            ? tokenOutBorrowPositionAmount.eq(0)
-            : isSwapAndDeposit
+          swapInAccount ? tokenOutBorrowPositionAmount.eq(0) : isSwapAndDeposit
         )
           ? "true"
           : "false",
@@ -1341,7 +1339,7 @@ function Page() {
 
       track("swap_success", properties);
     } catch (err) {
-      if (tradeWithinAccount) {
+      if (swapInAccount) {
         toast.error(
           `Failed to swap and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
           {
@@ -1359,8 +1357,8 @@ function Page() {
         );
       }
     } finally {
-      if (tradeWithinAccount) {
-        setIsSubmitting_tradeWithinAccount(false);
+      if (swapInAccount) {
+        setIsSubmitting_swapInAccount(false);
       } else {
         if (isSwapAndDeposit) {
           setIsSubmitting_swapAndDeposit(false);
@@ -1398,11 +1396,11 @@ function Page() {
               {/* Right */}
               <div className="flex flex-row items-center gap-4">
                 <Switch
-                  id="tradeWithinAccount"
+                  id="swapInAccount"
                   label="Swap in account"
                   horizontal
-                  isChecked={tradeWithinAccount}
-                  onToggle={setTradeWithinAccount}
+                  isChecked={swapInAccount}
+                  onToggle={setSwapInAccount}
                   isDisabled={(obligation?.deposits ?? []).length === 0}
                 />
 
@@ -1629,25 +1627,25 @@ function Page() {
           </div>
 
           {/* Submit */}
-          {tradeWithinAccount ? (
+          {swapInAccount ? (
             <div className="flex w-full flex-col gap-2">
               <div className="flex w-full flex-col gap-px">
-                {/* Trade within account */}
+                {/* Swap in account */}
                 <Button
                   className="h-auto min-h-14 w-full"
                   labelClassName="text-wrap uppercase"
                   size="lg"
-                  disabled={buttonState_tradeWithinAccount.isDisabled}
+                  disabled={buttonState_swapInAccount.isDisabled}
                   onClick={() => onSwapClick()}
                 >
-                  {buttonState_tradeWithinAccount.isLoading ? (
+                  {buttonState_swapInAccount.isLoading ? (
                     <Spinner size="md" />
                   ) : (
-                    buttonState_tradeWithinAccount.title
+                    buttonState_swapInAccount.title
                   )}
-                  {buttonState_tradeWithinAccount.description && (
+                  {buttonState_swapInAccount.description && (
                     <span className="mt-0.5 block font-sans text-xs normal-case">
-                      {buttonState_tradeWithinAccount.description}
+                      {buttonState_swapInAccount.description}
                     </span>
                   )}
                 </Button>
@@ -1665,17 +1663,15 @@ function Page() {
                 </div>
               </div>
 
-              {(tradeWithinAccountWarningMessages ?? []).map(
-                (warningMessage) => (
-                  <TLabelSans
-                    key={warningMessage}
-                    className="text-[10px] text-warning"
-                  >
-                    <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
-                    {warningMessage}
-                  </TLabelSans>
-                ),
-              )}
+              {(warningMessages_swapInAccount ?? []).map((warningMessage) => (
+                <TLabelSans
+                  key={warningMessage}
+                  className="text-[10px] text-warning"
+                >
+                  <AlertTriangle className="mb-0.5 mr-1 inline h-3 w-3" />
+                  {warningMessage}
+                </TLabelSans>
+              ))}
             </div>
           ) : (
             <div className="flex w-full flex-col gap-2">

@@ -48,7 +48,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
   ) => {
     const { getBalance, obligation } = useLoadedUserContext();
 
-    const { tradeWithinAccount, ...restSwapContext } = useSwapContext();
+    const { swapInAccount, ...restSwapContext } = useSwapContext();
     const tokens = restSwapContext.tokens as SwapToken[];
 
     // Autofocus
@@ -145,7 +145,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 )}
                 onClick={onAmountClick}
               >
-                {!tradeWithinAccount ? (
+                {!swapInAccount ? (
                   <>
                     {/* Balance */}
                     <div className="flex flex-row items-center gap-1.5 text-muted-foreground">

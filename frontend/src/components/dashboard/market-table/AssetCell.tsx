@@ -91,10 +91,24 @@ export default function AssetCell({
       ) {
         result.push({
           title: "Swap",
-          href: `${getSwapUrl(
-            token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
-            reserve ? token.symbol : token.coinType,
-          )}${tableType === AccountAssetTableType.DEPOSITS || tableType === AccountAssetTableType.BORROWS ? "?tradeWithinAccount=true" : ""}`,
+          href:
+            // Swap deposited token to SUI/USDC (to deposit)
+            tableType === AccountAssetTableType.DEPOSITS
+              ? `${getSwapUrl(
+                  reserve ? token.symbol : token.coinType,
+                  token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
+                )}?${new URLSearchParams({ swapInAccount: "true" }).toString()}`
+              : // Swap deposited SUI/USDC to borrowed token (to repay)
+                tableType === AccountAssetTableType.BORROWS
+                ? `${getSwapUrl(
+                    token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
+                    reserve ? token.symbol : token.coinType,
+                  )}?${new URLSearchParams({ swapInAccount: "true" }).toString()}`
+                : // Swap token in wallet to SUI/USDC (to wallet)
+                  getSwapUrl(
+                    reserve ? token.symbol : token.coinType,
+                    token.coinType !== NORMALIZED_SUI_COINTYPE ? "SUI" : "USDC",
+                  ),
           isRelative: true,
         });
       }
