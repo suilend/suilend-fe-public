@@ -71,7 +71,7 @@ const getMaxCalculations = (
     ];
     if (isSui(reserve.coinType))
       result.push({
-        reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        reason: "Insufficient gas",
         isDisabled: true,
         value: balance.minus(SUI_GAS_MIN),
       });
@@ -192,7 +192,7 @@ const getMaxCalculations = (
     ];
     if (isSui(reserve.coinType))
       result.push({
-        reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        reason: "Insufficient gas",
         isDisabled: true,
         value: balance.minus(SUI_GAS_MIN),
       });

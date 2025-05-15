@@ -10,6 +10,7 @@ import {
   MAX_U64,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
+  NORMALIZED_SUI_COINTYPE,
   SUI_GAS_MIN,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatInteger,
@@ -236,6 +237,12 @@ export default function ActionsModalTabContent({
       return { isDisabled: true, title: "Enter a +ve amount" };
     if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
       return { isDisabled: true, title: "Enter a non-zero amount" };
+
+    if (getBalance(NORMALIZED_SUI_COINTYPE).lt(SUI_GAS_MIN))
+      return {
+        isDisabled: true,
+        title: "Insufficient gas",
+      };
 
     if (getSubmitButtonState(new BigNumber(value)))
       return getSubmitButtonState(new BigNumber(value)) as SubmitButtonState;

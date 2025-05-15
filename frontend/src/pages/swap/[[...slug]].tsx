@@ -174,7 +174,7 @@ function Page() {
     ];
     if (isSui(tokenIn.coinType) && !swapInAccount)
       result.push({
-        reason: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        reason: "Insufficient gas",
         isDisabled: true,
         value: tokenInBalance.minus(SUI_GAS_MIN),
       });
@@ -865,7 +865,7 @@ function Page() {
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
         isDisabled: true,
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: "Insufficient gas",
       };
 
     for (const calc of tokenInMaxCalculations) {
@@ -950,7 +950,7 @@ function Page() {
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
         isDisabled: true,
-        title: `${SUI_GAS_MIN} SUI should be saved for gas`,
+        title: "Insufficient gas",
       };
 
     for (const calc of tokenInMaxCalculations) {

@@ -159,7 +159,7 @@ function RedeemTabContent({
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
         isDisabled: true,
-        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
+        title: "INSUFFICIENT GAS",
       };
 
     return {
@@ -532,7 +532,7 @@ function ClaimTabContent() {
 
     if (suiBalance.lt(SUI_GAS_MIN))
       return {
-        title: `${SUI_GAS_MIN} SUI SHOULD BE SAVED FOR GAS`,
+        title: "INSUFFICIENT GAS",
         isDisabled: true,
       };
     if (!isFlashLoan && suiBalance.lt(claimPenaltyAmountSui))
