@@ -7,12 +7,7 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  SUI_GAS_MIN,
-  formatToken,
-  formatUsd,
-  isSui,
-} from "@suilend/frontend-sui";
+import { formatToken, formatUsd, isSui } from "@suilend/frontend-sui";
 import {
   useSettingsContext,
   useWalletContext,
@@ -47,6 +42,7 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 
 interface RowData {
   symbol: string;
@@ -158,7 +154,7 @@ export default function LiquidateDialog({
 
     setLiquidateAmount(
       repayCoinBalance
-        .minus(isSui(borrow.coinType) ? SUI_GAS_MIN : 0)
+        .minus(isSui(borrow.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0)
         .toFixed(borrow.reserve.mintDecimals, BigNumber.ROUND_DOWN),
     );
   };

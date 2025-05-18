@@ -40,9 +40,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   MAX_U64,
-  NORMALIZED_SUI_COINTYPE,
   SUI_COINTYPE,
-  SUI_GAS_MIN,
   formatInteger,
   formatPercent,
   formatToken,
@@ -52,6 +50,7 @@ import {
 } from "@suilend/frontend-sui";
 import track from "@suilend/frontend-sui/lib/track";
 import {
+  showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
@@ -96,7 +95,10 @@ import {
   getSubmitWarningMessages,
 } from "@/lib/actions";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
-import { TX_TOAST_DURATION } from "@/lib/constants";
+import {
+  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+  TX_TOAST_DURATION,
+} from "@/lib/constants";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -127,7 +129,6 @@ function Page() {
   const tokenOut = restSwapContext.tokenOut as SwapToken;
 
   // Balances
-  const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
   const tokenInBalance = getBalance(tokenIn.coinType);
 
   // Reserves
@@ -174,9 +175,9 @@ function Page() {
     ];
     if (isSui(tokenIn.coinType) && !swapInAccount)
       result.push({
-        reason: "Insufficient gas",
+        reason: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
         isDisabled: true,
-        value: tokenInBalance.minus(SUI_GAS_MIN),
+        value: tokenInBalance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
       });
 
     return result;
@@ -862,12 +863,6 @@ function Page() {
     if (new BigNumber(value).eq(0))
       return { isDisabled: true, title: "Enter a non-zero amount" };
 
-    if (suiBalance.lt(SUI_GAS_MIN))
-      return {
-        isDisabled: true,
-        title: "Insufficient gas",
-      };
-
     for (const calc of tokenInMaxCalculations) {
       if (new BigNumber(value).gt(calc.value))
         return { isDisabled: calc.isDisabled, title: calc.reason };
@@ -946,12 +941,6 @@ function Page() {
       return { isDisabled: true, title: "Enter a +ve amount" };
     if (new BigNumber(value).eq(0))
       return { isDisabled: true, title: "Enter a non-zero amount" };
-
-    if (suiBalance.lt(SUI_GAS_MIN))
-      return {
-        isDisabled: true,
-        title: "Insufficient gas",
-      };
 
     for (const calc of tokenInMaxCalculations) {
       if (new BigNumber(value).gt(calc.value))
@@ -1340,20 +1329,18 @@ function Page() {
       track("swap_success", properties);
     } catch (err) {
       if (swapInAccount) {
-        toast.error(
+        showErrorToast(
           `Failed to swap and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
-          {
-            description: (err as Error)?.message || "An unknown error occurred",
-            duration: TX_TOAST_DURATION,
-          },
+          err as Error,
+          undefined,
+          true,
         );
       } else {
-        toast.error(
+        showErrorToast(
           `Failed to ${isSwapAndDeposit ? "swap and deposit" : "swap"}`,
-          {
-            description: (err as Error)?.message || "An unknown error occurred",
-            duration: TX_TOAST_DURATION,
-          },
+          err as Error,
+          undefined,
+          true,
         );
       }
     } finally {

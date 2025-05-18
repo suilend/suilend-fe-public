@@ -10,8 +10,6 @@ import {
   MAX_U64,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
-  NORMALIZED_SUI_COINTYPE,
-  SUI_GAS_MIN,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatInteger,
   formatPrice,
@@ -20,6 +18,7 @@ import {
   isSui,
 } from "@suilend/frontend-sui";
 import {
+  showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
@@ -48,6 +47,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
+  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";
@@ -238,12 +238,6 @@ export default function ActionsModalTabContent({
     if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
       return { isDisabled: true, title: "Enter a non-zero amount" };
 
-    if (getBalance(NORMALIZED_SUI_COINTYPE).lt(SUI_GAS_MIN))
-      return {
-        isDisabled: true,
-        title: "Insufficient gas",
-      };
-
     if (getSubmitButtonState(new BigNumber(value)))
       return getSubmitButtonState(new BigNumber(value)) as SubmitButtonState;
 
@@ -295,7 +289,9 @@ export default function ActionsModalTabContent({
       case Action.REPAY: {
         if (useMaxAmount)
           submitAmount = balance
-            .minus(isSui(reserve.coinType) ? SUI_GAS_MIN : 0)
+            .minus(
+              isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
+            )
             .times(10 ** reserve.mintDecimals)
             .toString();
 
@@ -338,10 +334,12 @@ export default function ActionsModalTabContent({
       if (action === Action.DEPOSIT)
         setTimeout(() => setJustDeposited(true), 1000);
     } catch (err) {
-      toast.error(`Failed to ${action.toLowerCase()}`, {
-        description: (err as Error)?.message || "An unknown error occurred",
-        duration: TX_TOAST_DURATION,
-      });
+      showErrorToast(
+        `Failed to ${action.toLowerCase()}`,
+        err as Error,
+        undefined,
+        true,
+      );
     } finally {
       setIsSubmitting(false);
       inputRef.current?.focus();

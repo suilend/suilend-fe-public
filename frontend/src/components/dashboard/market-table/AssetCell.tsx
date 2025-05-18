@@ -20,6 +20,7 @@ import {
   isInMsafeApp,
 } from "@suilend/frontend-sui";
 import {
+  showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
@@ -205,9 +206,7 @@ export default function AssetCell({
         duration: TX_TOAST_DURATION,
       });
     } catch (err) {
-      toast.error("Failed to stake WAL", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast("Failed to stake WAL", err as Error, undefined, true);
     } finally {
       refresh();
     }
@@ -236,9 +235,10 @@ export default function AssetCell({
 
       setStakedWalCanBeWithdrawnEarly(Boolean(result));
     } catch (err) {
-      toast.error("Failed to determine if staked WAL can be withdrawn early", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast(
+        "Failed to determine if staked WAL can be withdrawn early",
+        err as Error,
+      );
     }
   }, [extra, dryRunTransaction]);
 
@@ -283,9 +283,12 @@ export default function AssetCell({
         },
       );
     } catch (err) {
-      toast.error("Failed to withdraw staked WAL", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast(
+        "Failed to withdraw staked WAL",
+        err as Error,
+        undefined,
+        true,
+      );
     } finally {
       refresh();
     }
@@ -326,9 +329,12 @@ export default function AssetCell({
         },
       );
     } catch (err) {
-      toast.error("Failed to request withdrawal of staked WAL", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast(
+        "Failed to request withdrawal of staked WAL",
+        err as Error,
+        undefined,
+        true,
+      );
     } finally {
       refresh();
     }

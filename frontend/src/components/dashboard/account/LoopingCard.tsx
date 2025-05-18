@@ -5,7 +5,7 @@ import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatList } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+import { showErrorToast, useWalletContext } from "@suilend/frontend-sui-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
@@ -56,9 +56,7 @@ export default function LoopingCard() {
 
       toast.success("Restored eligibility");
     } catch (err) {
-      toast.error("Failed to restore eligibility", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast("Failed to restore eligibility", err as Error);
     } finally {
       setIsRestoringEligibility(false);
       refresh();

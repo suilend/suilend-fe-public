@@ -4,6 +4,8 @@ import { ClassValue } from "clsx";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
+import { showErrorToast } from "@suilend/frontend-sui-next";
+
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";
 
@@ -29,9 +31,7 @@ export default function CopyToClipboardButton({
         icon: <Copy className="h-5 w-5" />,
       });
     } catch (err) {
-      toast.error(`Failed to copy ${value} to clipboard`, {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast(`Failed to copy ${value} to clipboard`, err as Error);
       console.error(err);
     }
   };

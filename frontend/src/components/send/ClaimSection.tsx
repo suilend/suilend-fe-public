@@ -16,7 +16,6 @@ import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
-  SUI_GAS_MIN,
   formatInteger,
   formatPercent,
   formatToken,
@@ -25,6 +24,7 @@ import {
   issSui,
 } from "@suilend/frontend-sui";
 import {
+  showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
@@ -127,7 +127,7 @@ function RedeemTabContent({
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { allUserData, getBalance } = useLoadedUserContext();
+  const { allUserData } = useLoadedUserContext();
 
   const {
     mSendCoinMetadataMap,
@@ -141,9 +141,6 @@ function RedeemTabContent({
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
 
-  // Balances
-  const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
-
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
     start: Date.now(),
@@ -156,16 +153,10 @@ function RedeemTabContent({
   const submitButtonState: SubmitButtonState = useMemo(() => {
     if (isSubmitting) return { isLoading: true, isDisabled: true };
 
-    if (suiBalance.lt(SUI_GAS_MIN))
-      return {
-        isDisabled: true,
-        title: "INSUFFICIENT GAS",
-      };
-
     return {
       title: "REDEEM mSEND",
     };
-  }, [isSubmitting, suiBalance]);
+  }, [isSubmitting]);
 
   const submit = async () => {
     if (!address) return;
@@ -230,10 +221,7 @@ function RedeemTabContent({
         },
       );
     } catch (err) {
-      toast.error("Failed to redeem mSEND", {
-        description: (err as Error)?.message || "An unknown error occurred",
-        duration: TX_TOAST_DURATION,
-      });
+      showErrorToast("Failed to redeem mSEND", err as Error, undefined, true);
     } finally {
       setIsSubmitting(false);
       await refreshUserAllocations();
@@ -530,11 +518,6 @@ function ClaimTabContent() {
     if (new BigNumber(claimAmount).gt(mSendBalance))
       return { title: "INSUFFICIENT mSEND", isDisabled: true };
 
-    if (suiBalance.lt(SUI_GAS_MIN))
-      return {
-        title: "INSUFFICIENT GAS",
-        isDisabled: true,
-      };
     if (!isFlashLoan && suiBalance.lt(claimPenaltyAmountSui))
       return {
         title: "INSUFFICIENT SUI TO PAY PENALTY",
@@ -636,10 +619,7 @@ function ClaimTabContent() {
         },
       );
     } catch (err) {
-      toast.error("Failed to claim SEND", {
-        description: (err as Error)?.message || "An unknown error occurred",
-        duration: TX_TOAST_DURATION,
-      });
+      showErrorToast("Failed to claim SEND", err as Error, undefined, true);
     } finally {
       setIsSubmitting(false);
     }

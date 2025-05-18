@@ -4,7 +4,6 @@ import {
   MS_PER_YEAR,
   NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
-  SUI_GAS_MIN,
   formatList,
   isEth,
   isStablecoin,
@@ -15,6 +14,7 @@ import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { AppData } from "@/contexts/AppContext";
+import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 import { SubmitButtonState } from "@/lib/types";
 
@@ -71,9 +71,9 @@ const getMaxCalculations = (
     ];
     if (isSui(reserve.coinType))
       result.push({
-        reason: "Insufficient gas",
+        reason: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
         isDisabled: true,
-        value: balance.minus(SUI_GAS_MIN),
+        value: balance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
       });
 
     return result;
@@ -192,9 +192,9 @@ const getMaxCalculations = (
     ];
     if (isSui(reserve.coinType))
       result.push({
-        reason: "Insufficient gas",
+        reason: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
         isDisabled: true,
-        value: balance.minus(SUI_GAS_MIN),
+        value: balance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
       });
 
     return result;

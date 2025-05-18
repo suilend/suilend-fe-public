@@ -4,10 +4,10 @@ import { Fragment, useEffect, useState } from "react";
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
-import { toast } from "sonner";
 
 import { formatAddress, formatUsd } from "@suilend/frontend-sui";
 import {
+  showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/frontend-sui-next";
@@ -103,9 +103,7 @@ export default function ConnectedWalletDropdownMenu({
 
       window.open(json.telegramLink, "_blank");
     } catch (err) {
-      toast.error("Failed to join VIP Group on Telegram", {
-        description: (err as Error)?.message || "An unknown error occurred",
-      });
+      showErrorToast("Failed to join VIP Group on Telegram", err as Error);
     }
   };
 

@@ -3,7 +3,7 @@ import { CSSProperties, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
 import { RewardSummary } from "@suilend/sdk";
 
 import Button from "@/components/shared/Button";
@@ -63,12 +63,11 @@ export default function ClaimRewardsDropdownMenu({
         },
       );
     } catch (err) {
-      toast.error(
+      showErrorToast(
         `Failed to ${isDepositing ? "claim and deposit" : "claim"} rewards`,
-        {
-          description: (err as Error)?.message || "An unknown error occurred",
-          duration: TX_TOAST_DURATION,
-        },
+        err as Error,
+        undefined,
+        true,
       );
     } finally {
       refresh();
