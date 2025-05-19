@@ -4,15 +4,19 @@ import {
   SetStateAction,
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
+import { API_URL } from "@/lib/navigation";
 
 interface AdminContext {
   appData: AppData;
   setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
+
+  steammPoolInfos: any[] | undefined;
 }
 
 const defaultContextValue: AdminContext = {
@@ -20,6 +24,8 @@ const defaultContextValue: AdminContext = {
   setSelectedLendingMarketId: () => {
     throw Error("AdminContextProvider not initialized");
   },
+
+  steammPoolInfos: undefined,
 };
 
 const AdminContext = createContext<AdminContext>(defaultContextValue);
@@ -40,13 +46,35 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
     [allAppData.allLendingMarketData, selectedLendingMarketId],
   );
 
+  // STEAMM pools
+  const [steammPoolInfos, setSteammPoolInfos] = useState<any[] | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const poolsRes = await fetch(`${API_URL}/steamm/pools/all`);
+        const poolsJson: any[] = await poolsRes.json();
+        if ((poolsJson as any)?.statusCode === 500)
+          throw new Error("Failed to fetch pools");
+
+        setSteammPoolInfos(poolsJson.map((poolObj) => poolObj.poolInfo));
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
   // Context
   const contextValue: AdminContext = useMemo(
     () => ({
       appData,
       setSelectedLendingMarketId,
+
+      steammPoolInfos,
     }),
-    [appData, setSelectedLendingMarketId],
+    [appData, setSelectedLendingMarketId, steammPoolInfos],
   );
 
   return (

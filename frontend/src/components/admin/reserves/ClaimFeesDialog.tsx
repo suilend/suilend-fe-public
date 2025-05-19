@@ -13,6 +13,7 @@ import {
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
+import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Spinner from "@/components/shared/Spinner";
@@ -20,6 +21,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { getPoolInfo } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
 interface ClaimFeesDialogProps {
@@ -31,7 +33,8 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
-  const { appData } = useAdminContext();
+  const { appData, steammPoolInfos } = useAdminContext();
+  const poolInfo = getPoolInfo(steammPoolInfos, reserve?.coinType ?? "");
 
   // Reserves
   const reserves = useMemo(
@@ -182,7 +185,15 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
                     iconUrl: r.iconUrl,
                   }}
                 />
-                <TBody>{r.symbol}</TBody>
+                <TBody>
+                  {r.token.symbol}
+                  {poolInfo && (
+                    <>
+                      {" "}
+                      <SteammPoolBadges poolInfo={poolInfo} />
+                    </>
+                  )}
+                </TBody>
               </div>
 
               <div className="flex flex-col justify-between gap-2">

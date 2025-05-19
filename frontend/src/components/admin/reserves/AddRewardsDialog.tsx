@@ -13,19 +13,21 @@ import { Side } from "@suilend/sdk/lib/types";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";
+import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { getPoolInfo } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
-  const { appData } = useAdminContext();
+  const { appData, steammPoolInfos } = useAdminContext();
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -197,43 +199,55 @@ export default function AddRewardsDialog() {
           endDecorator="ms"
         />
 
-        {appData.lendingMarket.reserves.map((reserve, index) => (
-          <Fragment key={reserve.coinType}>
-            <div
-              className={cn(
-                "flex flex-row items-center gap-2",
-                index === 0 && "pt-6",
-              )}
-            >
-              <TokenLogo
-                className="h-4 w-4"
-                token={{
-                  coinType: reserve.coinType,
-                  symbol: reserve.symbol,
-                  iconUrl: reserve.iconUrl,
-                }}
-              />
-              <TBody>{reserve.symbol}</TBody>
-            </div>
+        {appData.lendingMarket.reserves.map((reserve, index) => {
+          const poolInfo = getPoolInfo(steammPoolInfos, reserve.token.coinType);
 
-            <Input
-              label={index === 0 ? "depositRewards" : undefined}
-              id={`depositRewards-${reserve.coinType}`}
-              type="number"
-              value={rewardsMap?.[reserve.coinType]?.deposit || ""}
-              onChange={setRewardsValue(reserve.coinType, Side.DEPOSIT)}
-              endDecorator={token?.symbol}
-            />
-            <Input
-              label={index === 0 ? "borrowRewards" : undefined}
-              id={`borrowRewards-${reserve.coinType}`}
-              type="number"
-              value={rewardsMap?.[reserve.coinType]?.borrow || ""}
-              onChange={setRewardsValue(reserve.coinType, Side.BORROW)}
-              endDecorator={token?.symbol}
-            />
-          </Fragment>
-        ))}
+          return (
+            <Fragment key={reserve.coinType}>
+              <div
+                className={cn(
+                  "flex flex-row items-center gap-2",
+                  index === 0 && "pt-6",
+                )}
+              >
+                <TokenLogo
+                  className="h-4 w-4"
+                  token={{
+                    coinType: reserve.coinType,
+                    symbol: reserve.token.symbol,
+                    iconUrl: reserve.token.iconUrl,
+                  }}
+                />
+                <TBody>
+                  {reserve.token.symbol}
+                  {poolInfo && (
+                    <>
+                      <br />
+                      <SteammPoolBadges poolInfo={poolInfo} />
+                    </>
+                  )}
+                </TBody>
+              </div>
+
+              <Input
+                label={index === 0 ? "depositRewards" : undefined}
+                id={`depositRewards-${reserve.coinType}`}
+                type="number"
+                value={rewardsMap?.[reserve.coinType]?.deposit || ""}
+                onChange={setRewardsValue(reserve.coinType, Side.DEPOSIT)}
+                endDecorator={token?.symbol}
+              />
+              <Input
+                label={index === 0 ? "borrowRewards" : undefined}
+                id={`borrowRewards-${reserve.coinType}`}
+                type="number"
+                value={rewardsMap?.[reserve.coinType]?.borrow || ""}
+                onChange={setRewardsValue(reserve.coinType, Side.BORROW)}
+                endDecorator={token?.symbol}
+              />
+            </Fragment>
+          );
+        })}
       </div>
     </Dialog>
   );

@@ -224,7 +224,7 @@ export default function AprWithRewardsBreakdown({
         ? newReserve.depositedAmount
         : newReserve.borrowedAmount;
 
-    // Assumes LM rewards are distributed proportionally to the pool size
+    // Assumes LM rewards are distributed proportionally to the reserve size
     rewardsAprMultiplier = newTotalAmount.eq(0)
       ? new BigNumber(-1)
       : totalAmount.div(newTotalAmount);

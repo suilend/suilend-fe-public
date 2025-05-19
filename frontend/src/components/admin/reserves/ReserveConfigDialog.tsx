@@ -17,12 +17,14 @@ import ReserveConfig, {
   parseConfigState,
   useReserveConfigState,
 } from "@/components/admin/reserves/ReserveConfig";
+import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { getPoolInfo } from "@/lib/admin";
 
 interface DiffProps {
   initialState: { pythPriceId: string } & ConfigState;
@@ -70,7 +72,8 @@ export default function ReserveConfigDialog({
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
-  const { appData } = useAdminContext();
+  const { appData, steammPoolInfos } = useAdminContext();
+  const poolInfo = getPoolInfo(steammPoolInfos, reserve.coinType);
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -198,7 +201,21 @@ export default function ReserveConfigDialog({
         </Button>
       }
       headerProps={{
-        title: { icon: <Bolt />, children: `${reserve.token.symbol} Config` },
+        title: {
+          icon: <Bolt />,
+          children: (
+            <>
+              {reserve.token.symbol}
+              {poolInfo && (
+                <>
+                  {" "}
+                  <SteammPoolBadges poolInfo={poolInfo} />
+                </>
+              )}{" "}
+              Config
+            </>
+          ),
+        },
       }}
       footerProps={{
         children: (

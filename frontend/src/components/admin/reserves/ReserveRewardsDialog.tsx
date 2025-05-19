@@ -12,6 +12,7 @@ import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";
 import PoolRewardsTable from "@/components/admin/reserves/PoolRewardsTable";
+import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
@@ -19,6 +20,7 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tabs from "@/components/shared/Tabs";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { getPoolInfo } from "@/lib/admin";
 
 enum QueryParams {
   TAB = "rewardsTab",
@@ -39,7 +41,8 @@ export default function ReserveRewardsDialog({
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
 
-  const { appData } = useAdminContext();
+  const { appData, steammPoolInfos } = useAdminContext();
+  const poolInfo = getPoolInfo(steammPoolInfos, reserve.coinType);
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -154,7 +157,18 @@ export default function ReserveRewardsDialog({
       headerProps={{
         title: {
           icon: <Sparkle />,
-          children: `${reserve.token.symbol} Rewards`,
+          children: (
+            <>
+              {reserve.token.symbol}
+              {poolInfo && (
+                <>
+                  {" "}
+                  <SteammPoolBadges poolInfo={poolInfo} />
+                </>
+              )}{" "}
+              Rewards
+            </>
+          ),
         },
       }}
     >

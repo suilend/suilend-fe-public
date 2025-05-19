@@ -4,10 +4,13 @@ import { TableProperties } from "lucide-react";
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 
+import { useAdminContext } from "@/components/admin/AdminContext";
+import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Grid from "@/components/shared/Grid";
 import LabelWithValue from "@/components/shared/LabelWithValue";
+import { getPoolInfo } from "@/lib/admin";
 
 interface ReservePropertiesDialogProps {
   reserve: ParsedReserve;
@@ -17,6 +20,9 @@ export default function ReservePropertiesDialog({
   reserve,
 }: ReservePropertiesDialogProps) {
   const { explorer } = useSettingsContext();
+
+  const { steammPoolInfos } = useAdminContext();
+  const poolInfo = getPoolInfo(steammPoolInfos, reserve.coinType);
 
   return (
     <Dialog
@@ -32,7 +38,18 @@ export default function ReservePropertiesDialog({
       headerProps={{
         title: {
           icon: <TableProperties />,
-          children: `${reserve.token.symbol} Properties`,
+          children: (
+            <>
+              {reserve.token.symbol}
+              {poolInfo && (
+                <>
+                  {" "}
+                  <SteammPoolBadges poolInfo={poolInfo} />
+                </>
+              )}{" "}
+              Properties
+            </>
+          ),
         },
       }}
     >

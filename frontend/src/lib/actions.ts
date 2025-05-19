@@ -122,7 +122,7 @@ const getMaxCalculations = (
                 .div(1 + borrowFee),
       },
       {
-        reason: "Pool outflow rate limit surpassed",
+        reason: "Outflow rate limit surpassed",
         isDisabled: true,
         value: appData.lendingMarket.rateLimiter.remainingOutflow
           .div(reserve.maxPrice)
@@ -149,7 +149,7 @@ const getMaxCalculations = (
         value: reserve.availableAmount.minus(MIN_AVAILABLE_AMOUNT),
       },
       {
-        reason: "Pool outflow rate limit surpassed",
+        reason: "Outflow rate limit surpassed",
         isDisabled: true,
         value: appData.lendingMarket.rateLimiter.remainingOutflow.div(
           reserve.maxPrice,
