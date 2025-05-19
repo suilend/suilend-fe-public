@@ -15,7 +15,8 @@
     "@pythnetwork/pyth-sui-js": "^2.1.0",
     "@suilend/frontend-sui": "^0.2.58",
     "@suilend/sdk": "^1.1.51",
-    "bignumber.js": "^9.1.2"
+    "bignumber.js": "^9.1.2",
+    "p-limit": "^6.2.0"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.8",
