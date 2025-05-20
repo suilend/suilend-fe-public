@@ -88,6 +88,12 @@ export enum SuilendCapsuleRarity {
   RARE = "rare",
 }
 
+export enum SuilendCapsuleS2Rarity {
+  COMMON = "common_s2",
+  UNCOMMON = "uncommon_s2",
+  RARE = "rare_s2",
+}
+
 export enum BluefinLeague {
   GOLD = "gold",
   PLATINUM = "platinum",

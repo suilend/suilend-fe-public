@@ -50,6 +50,7 @@ import {
   ROOTLETS_TYPE,
   SUILEND_CAPSULE_TYPE,
   SuilendCapsuleRarity,
+  SuilendCapsuleS2Rarity,
   TGE_TIMESTAMP_MS,
   WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
   mSEND_COINTYPE_MANAGER_MAP,
@@ -401,7 +402,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   const fetchOwnedSuilendCapsulesObjectsMap = useCallback(
     async (_address: string) => {
-      console.log("Fetching ownedSuilendCapsulesObjectsMap", _address);
+      console.log("xxx Fetching ownedSuilendCapsulesObjectsMap", _address);
 
       try {
         const objs = await getOwnedObjectsOfType(
@@ -427,6 +428,25 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               SuilendCapsuleRarity.RARE,
           ),
         };
+
+        const resultS2 = {
+          [SuilendCapsuleS2Rarity.COMMON]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleS2Rarity.COMMON,
+          ),
+          [SuilendCapsuleS2Rarity.UNCOMMON]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleS2Rarity.UNCOMMON,
+          ),
+          [SuilendCapsuleS2Rarity.RARE]: objs.filter(
+            (obj) =>
+              (obj.data?.content as any).fields.rarity ===
+              SuilendCapsuleS2Rarity.RARE,
+          ),
+        };
+        console.log("S2 capsules owned:", resultS2);
 
         setOwnedSuilendCapsulesObjectsMapMap((prev) => ({
           ...prev,
