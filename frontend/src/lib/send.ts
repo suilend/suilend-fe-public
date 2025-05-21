@@ -498,7 +498,16 @@ export const claimSend = async (
   let suiPenaltyCoin = isFlashLoan
     ? undefined // Set below
     : claimPenaltyAmountSui.gt(0)
-      ? transaction.gas
+      ? coinWithBalance({
+          type: NORMALIZED_SUI_COINTYPE,
+          balance: BigInt(
+            claimPenaltyAmountSui
+              .times(10 ** SUI_DECIMALS)
+              .integerValue(BigNumber.ROUND_UP)
+              .toString(),
+          ),
+          useGasCoin: true,
+        })(transaction)
       : transaction.splitCoins(transaction.gas, [0]);
 
   const flashLoanArgs: Record<string, any> = {};
