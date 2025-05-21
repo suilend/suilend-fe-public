@@ -202,12 +202,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   // SDKs - Cetus
   const cetusSdk = useMemo(() => {
-    const sdk = new CetusSdk(
-      "https://api-sui.cetus.zone/router_v2/find_routes",
-      address,
-      suiClient,
-      Env.Mainnet,
-    );
+    const sdk = new CetusSdk({
+      endpoint: "https://api-sui.cetus.zone/router_v2/find_routes",
+      signer: address,
+      client: suiClient,
+      env: Env.Mainnet,
+    });
     return sdk;
   }, [address, suiClient]);
 

@@ -1036,7 +1036,12 @@ function Page() {
         },
       });
 
-      return { transaction: transaction2, coinOut };
+      if ((transaction2 as any).txBytes) {
+        // BluefinXTx
+        throw new Error("BluefinXTx not supported");
+      } else {
+        return { transaction: transaction2 as Transaction, coinOut };
+      }
     } else throw new Error("Unknown quote type");
   };
 
