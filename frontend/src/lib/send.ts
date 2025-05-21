@@ -1,6 +1,6 @@
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { KioskClient, KioskData, KioskOwnerCap } from "@mysten/kiosk";
-import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
+import { SuiObjectResponse } from "@mysten/sui/client";
 import {
   Transaction,
   TransactionResult,

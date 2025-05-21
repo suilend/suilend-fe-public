@@ -288,11 +288,14 @@ export default function ActionsModalTabContent({
       }
       case Action.REPAY: {
         if (useMaxAmount)
-          submitAmount = balance
-            .minus(
+          submitAmount = BigNumber.min(
+            balance.minus(
               isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
-            )
+            ),
+            new BigNumber(value).times(2),
+          )
             .times(10 ** reserve.mintDecimals)
+            .integerValue(BigNumber.ROUND_DOWN)
             .toString();
 
         break;
