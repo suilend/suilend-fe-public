@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import {
+  BluefinXTx,
   buildTx as build7kTransaction,
   getQuote as get7kQuote,
 } from "@7kprotocol/sdk-ts/cjs";
@@ -1036,7 +1037,7 @@ function Page() {
         },
       });
 
-      if ((transaction2 as any).txBytes) {
+      if (transaction2 instanceof BluefinXTx) {
         // BluefinXTx
         throw new Error("BluefinXTx not supported");
       } else {
