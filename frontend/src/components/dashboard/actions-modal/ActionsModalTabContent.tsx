@@ -7,6 +7,7 @@ import { AlertTriangle, Download, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  API_URL,
   MAX_U64,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
@@ -51,7 +52,6 @@ import {
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";
-import { API_URL } from "@/lib/navigation";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

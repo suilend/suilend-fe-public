@@ -5,7 +5,7 @@ import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
-import { formatAddress, formatUsd } from "@suilend/frontend-sui";
+import { API_URL, formatAddress, formatUsd } from "@suilend/frontend-sui";
 import {
   showErrorToast,
   useSettingsContext,
@@ -24,7 +24,6 @@ import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useUserContext } from "@/contexts/UserContext";
-import { API_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 interface ConnectedWalletDropdownMenuProps {

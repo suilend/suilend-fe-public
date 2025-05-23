@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 
+import { API_URL } from "@suilend/frontend-sui";
+
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
-import { API_URL } from "@/lib/navigation";
 
 interface AdminContext {
   appData: AppData;

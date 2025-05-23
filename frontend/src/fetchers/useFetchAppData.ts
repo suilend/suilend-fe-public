@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import useSWR from "swr";
 
+import { API_URL } from "@suilend/frontend-sui";
 import {
   showErrorToast,
   useSettingsContext,
@@ -16,7 +17,6 @@ import {
 } from "@suilend/sdk/client";
 
 import { AllAppData } from "@/contexts/AppContext";
-import { API_URL } from "@/lib/navigation";
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();

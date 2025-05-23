@@ -12,12 +12,11 @@ import {
 import BigNumber from "bignumber.js";
 
 import {
+  API_URL,
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_SEND_POINTS_S2_COINTYPE,
 } from "@suilend/frontend-sui";
 import { useWalletContext } from "@suilend/frontend-sui-next";
-
-import { API_URL } from "@/lib/navigation";
 
 export enum Tab {
   SEASON_1 = "1",
