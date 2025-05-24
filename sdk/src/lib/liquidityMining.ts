@@ -90,29 +90,33 @@ export const formatRewards = (
       nowMs >= poolReward.startTimeMs && nowMs < poolReward.endTimeMs;
 
     const aprPercent = rewardPrice
-      ? poolReward.totalRewards
-          .times(rewardPrice)
-          .times(
-            new BigNumber(MS_PER_YEAR).div(
-              poolReward.endTimeMs - poolReward.startTimeMs,
-            ),
-          )
-          .div(
-            side === Side.DEPOSIT
-              ? getDepositShareUsd(
-                  reserve,
-                  new BigNumber(
-                    reserve.depositsPoolRewardManager.totalShares.toString(),
+      ? new BigNumber(
+          reserve.depositsPoolRewardManager.totalShares.toString(),
+        ).eq(0)
+        ? new BigNumber(0)
+        : poolReward.totalRewards
+            .times(rewardPrice)
+            .times(
+              new BigNumber(MS_PER_YEAR).div(
+                poolReward.endTimeMs - poolReward.startTimeMs,
+              ),
+            )
+            .div(
+              side === Side.DEPOSIT
+                ? getDepositShareUsd(
+                    reserve,
+                    new BigNumber(
+                      reserve.depositsPoolRewardManager.totalShares.toString(),
+                    ),
+                  )
+                : getBorrowShareUsd(
+                    reserve,
+                    new BigNumber(
+                      reserve.borrowsPoolRewardManager.totalShares.toString(),
+                    ),
                   ),
-                )
-              : getBorrowShareUsd(
-                  reserve,
-                  new BigNumber(
-                    reserve.borrowsPoolRewardManager.totalShares.toString(),
-                  ),
-                ),
-          )
-          .times(100)
+            )
+            .times(100)
       : undefined;
     const perDay = rewardPrice
       ? undefined
