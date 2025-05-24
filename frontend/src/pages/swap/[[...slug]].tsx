@@ -11,7 +11,6 @@ import {
 
 import {
   BluefinXTx,
-  DEFAULT_SOURCES as DEFAULT_SOURCES_7K,
   buildTx as build7kTransaction,
   getQuote as get7kQuote,
 } from "@7kprotocol/sdk-ts/cjs";
@@ -23,10 +22,7 @@ import {
 } from "@mysten/sui/transactions";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
-import {
-  RouterProtocolName as AftermathRouterProtocolName,
-  Aftermath as AftermathSdk,
-} from "aftermath-ts-sdk";
+import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 import {
@@ -106,38 +102,6 @@ import {
 } from "@/lib/constants";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const BLACKLISTED_PROTOCOLS_AFTERMATH: AftermathRouterProtocolName[] = [
-  "Cetus",
-];
-const DEFAULT_PROVIDERS_CETUS = [
-  CetusAggregatorSdk.CETUS,
-  CetusAggregatorSdk.DEEPBOOKV2,
-  CetusAggregatorSdk.KRIYA,
-  CetusAggregatorSdk.FLOWXV2,
-  CetusAggregatorSdk.FLOWXV3,
-  CetusAggregatorSdk.KRIYAV3,
-  CetusAggregatorSdk.TURBOS,
-  CetusAggregatorSdk.AFTERMATH,
-  CetusAggregatorSdk.HAEDAL,
-  CetusAggregatorSdk.VOLO,
-  CetusAggregatorSdk.AFSUI,
-  CetusAggregatorSdk.BLUEMOVE,
-  CetusAggregatorSdk.DEEPBOOKV3,
-  CetusAggregatorSdk.SCALLOP,
-  CetusAggregatorSdk.SUILEND,
-  CetusAggregatorSdk.BLUEFIN,
-  CetusAggregatorSdk.HAEDALPMM,
-  CetusAggregatorSdk.ALPHAFI,
-  CetusAggregatorSdk.SPRINGSUI,
-  CetusAggregatorSdk.STEAMM,
-  CetusAggregatorSdk.METASTABLE,
-  CetusAggregatorSdk.OBRIC,
-  CetusAggregatorSdk.HAWAL,
-  CetusAggregatorSdk.STEAMM_OMM,
-  CetusAggregatorSdk.MOMENTUM,
-  CetusAggregatorSdk.STEAMM_OMM_V2,
-];
 
 const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
   return Array.from(
@@ -366,7 +330,6 @@ function Page() {
                 coinInType: _tokenIn.coinType,
                 coinOutType: _tokenOut.coinType,
                 coinInAmount: BigInt(amountIn),
-                protocolBlacklist: BLACKLISTED_PROTOCOLS_AFTERMATH,
               });
 
             const standardizedQuote: StandardizedQuote = {
@@ -442,9 +405,6 @@ function Page() {
               target: _tokenOut.coinType,
               amount: new BN(amountIn),
               byAmountIn: true,
-              providers: DEFAULT_PROVIDERS_CETUS.filter(
-                (provider) => provider !== CetusAggregatorSdk.CETUS,
-              ),
             });
             if (!quote) return;
 
@@ -520,9 +480,6 @@ function Page() {
               tokenIn: _tokenIn.coinType,
               tokenOut: _tokenOut.coinType,
               amountIn,
-              sources: DEFAULT_SOURCES_7K.filter(
-                (source) => source !== "cetus",
-              ),
             });
 
             const standardizedQuote: StandardizedQuote = {
