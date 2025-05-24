@@ -1,3 +1,6 @@
+import { useRouter } from "next/router";
+import { useEffect, useMemo } from "react";
+
 import { useSettingsContext } from "@suilend/frontend-sui-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -18,11 +21,35 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { getPoolInfo } from "@/lib/admin";
+import { cn } from "@/lib/utils";
+
+enum QueryParams {
+  COIN_TYPE = "coinType",
+}
 
 export default function ReservesTab() {
+  const router = useRouter();
+  const queryParams = useMemo(
+    () => ({
+      [QueryParams.COIN_TYPE]: router.query[QueryParams.COIN_TYPE] as string,
+    }),
+    [router.query],
+  );
+
   const { explorer } = useSettingsContext();
 
   const { appData, steammPoolInfos } = useAdminContext();
+
+  // coinType
+  useEffect(() => {
+    if (!queryParams[QueryParams.COIN_TYPE]) return;
+
+    const id = `reserve-${queryParams[QueryParams.COIN_TYPE]}`;
+    const elem = document.getElementById(id);
+    if (!elem) return;
+
+    window.scrollTo({ top: elem.offsetTop - 100, behavior: "smooth" });
+  }, [queryParams]);
 
   return (
     <div className="flex w-full flex-col gap-2">
@@ -30,7 +57,14 @@ export default function ReservesTab() {
         const poolInfo = getPoolInfo(steammPoolInfos, reserve.token.coinType);
 
         return (
-          <Card key={reserve.id}>
+          <Card
+            key={reserve.id}
+            id={`reserve-${reserve.token.coinType}`}
+            className={cn(
+              queryParams[QueryParams.COIN_TYPE] === reserve.token.coinType &&
+                "border-secondary",
+            )}
+          >
             <CardHeader>
               <div className="flex flex-row items-center justify-between">
                 <TTitle>

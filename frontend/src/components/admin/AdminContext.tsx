@@ -1,8 +1,8 @@
+import { useRouter } from "next/router";
 import {
-  Dispatch,
   PropsWithChildren,
-  SetStateAction,
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -10,12 +10,17 @@ import {
 } from "react";
 
 import { API_URL } from "@suilend/frontend-sui";
+import { shallowPushQuery } from "@suilend/frontend-sui-next";
 
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
 
+enum QueryParams {
+  LENDING_MARKET_ID = "lendingMarketId",
+}
+
 interface AdminContext {
   appData: AppData;
-  setSelectedLendingMarketId: Dispatch<SetStateAction<string>>;
+  setSelectedLendingMarketId: (lendingMarketId: string) => void;
 
   steammPoolInfos: any[] | undefined;
 }
@@ -34,11 +39,33 @@ const AdminContext = createContext<AdminContext>(defaultContextValue);
 export const useAdminContext = () => useContext(AdminContext);
 
 export function AdminContextProvider({ children }: PropsWithChildren) {
+  const router = useRouter();
+  const queryParams = useMemo(
+    () => ({
+      [QueryParams.LENDING_MARKET_ID]: router.query[
+        QueryParams.LENDING_MARKET_ID
+      ] as string,
+    }),
+    [router.query],
+  );
+
   const { allAppData } = useLoadedAppContext();
 
   // Lending market
   const [selectedLendingMarketId, setSelectedLendingMarketId] =
-    useState<string>("");
+    useState<string>(queryParams[QueryParams.LENDING_MARKET_ID] ?? "");
+
+  const onSelectedLendingMarketIdChange = useCallback(
+    (lendingMarketId: string) => {
+      setSelectedLendingMarketId(lendingMarketId);
+
+      shallowPushQuery(router, {
+        ...router.query,
+        [QueryParams.LENDING_MARKET_ID]: lendingMarketId,
+      });
+    },
+    [router],
+  );
 
   const appData = useMemo(
     () =>
@@ -71,11 +98,11 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
   const contextValue: AdminContext = useMemo(
     () => ({
       appData,
-      setSelectedLendingMarketId,
+      setSelectedLendingMarketId: onSelectedLendingMarketIdChange,
 
       steammPoolInfos,
     }),
-    [appData, setSelectedLendingMarketId, steammPoolInfos],
+    [appData, onSelectedLendingMarketIdChange, steammPoolInfos],
   );
 
   return (

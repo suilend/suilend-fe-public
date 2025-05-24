@@ -422,6 +422,8 @@ function Page() {
               +standardizedQuote.out.amount,
               "pool providers:",
               getPoolProviders(standardizedQuote),
+              "quote:",
+              quote,
             );
           } catch (err) {
             console.error(err);
@@ -499,6 +501,8 @@ function Page() {
               +standardizedQuote.out.amount,
               "pool providers:",
               getPoolProviders(standardizedQuote),
+              "quote:",
+              quote,
             );
           } catch (err) {
             console.error(err);
@@ -566,6 +570,8 @@ function Page() {
               +standardizedQuote.out.amount,
               "pool providers:",
               getPoolProviders(standardizedQuote),
+              "quote:",
+              quote,
             );
           } catch (err) {
             console.error(err);
