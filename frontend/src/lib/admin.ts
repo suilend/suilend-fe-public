@@ -5,7 +5,7 @@ export const getPoolInfo = (
 
 export const getQuoterName = (quoterType: string) =>
   quoterType.endsWith("omm::OracleQuoter")
-    ? "Oracle V1"
+    ? "OMMv0.1"
     : quoterType.endsWith("omm_v2::OracleQuoterV2")
-      ? "Oracle V2"
+      ? "OMM"
       : "CPMM";
