@@ -124,7 +124,7 @@ const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, isLst } = useLoadedAppContext();
   const { getBalance, refresh, obligation, obligationOwnerCap } =
     useLoadedUserContext();
 
@@ -1632,24 +1632,28 @@ function Page() {
                 )}
 
                 {/* Price difference */}
-                {priceDifferencePercent !== undefined ? (
-                  <div className="w-max">
-                    <TLabelSans
-                      className={cn(
-                        "text-foreground",
-                        priceDifferencePercent.gte(
-                          PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
-                        ) && "text-warning",
-                      )}
-                    >
-                      <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
-                      {formatPercent(BigNumber.max(0, priceDifferencePercent))}{" "}
-                      Price difference (Birdeye)
-                    </TLabelSans>
-                  </div>
-                ) : (
-                  <Skeleton className="h-4 w-48" />
-                )}
+                {!(isSui(tokenIn.coinType) && isLst(tokenOut.coinType)) &&
+                  !(isLst(tokenIn.coinType) && isSui(tokenOut.coinType)) &&
+                  (priceDifferencePercent !== undefined ? (
+                    <div className="w-max">
+                      <TLabelSans
+                        className={cn(
+                          "text-foreground",
+                          priceDifferencePercent.gte(
+                            PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+                          ) && "text-warning",
+                        )}
+                      >
+                        <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
+                        {formatPercent(
+                          BigNumber.max(0, priceDifferencePercent),
+                        )}{" "}
+                        Price difference (Birdeye)
+                      </TLabelSans>
+                    </div>
+                  ) : (
+                    <Skeleton className="h-4 w-48" />
+                  ))}
               </div>
             )}
           </div>
