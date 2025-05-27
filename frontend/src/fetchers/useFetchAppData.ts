@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 
 import { API_URL } from "@suilend/frontend-sui";
 import {
@@ -21,6 +21,8 @@ import { AllAppData } from "@/contexts/AppContext";
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
+
+  const { cache } = useSWRConfig();
 
   const isAdmin = useMemo(() => address === ADMIN_ADDRESS, [address]);
 
@@ -111,13 +113,12 @@ export default function useFetchAppData() {
     {
       refreshInterval: 30 * 1000,
       onSuccess: (data) => {
-        console.log("Refreshed app data", data);
+        console.log("Fetched app data", data);
       },
-      onError: (err) => {
-        showErrorToast(
-          "Failed to refresh app data. Please check your internet connection or change RPC providers in Settings.",
-          err,
-        );
+      onError: (err, key) => {
+        const isInitialLoad = cache.get(key)?.data === undefined;
+        if (isInitialLoad) showErrorToast("Failed to fetch app data", err);
+
         console.error(err);
       },
     },

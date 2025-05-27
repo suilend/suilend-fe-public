@@ -1,4 +1,4 @@
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 
 import {
   showErrorToast,
@@ -14,6 +14,8 @@ export default function useFetchUserData() {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { allAppData } = useAppContext();
+
+  const { cache } = useSWRConfig();
 
   // Data
   const dataFetcher = async () => {
@@ -53,13 +55,12 @@ export default function useFetchUserData() {
     {
       refreshInterval: 30 * 1000,
       onSuccess: (data) => {
-        console.log("Refreshed user data", data);
+        console.log("Fetched user data", data);
       },
-      onError: (err) => {
-        showErrorToast(
-          "Failed to refresh user data. Please check your internet connection or change RPC providers in Settings.",
-          err,
-        );
+      onError: (err, key) => {
+        const isInitialLoad = cache.get(key)?.data === undefined;
+        if (isInitialLoad) showErrorToast("Failed to fetch user data", err);
+
         console.error(err);
       },
     },
