@@ -40,7 +40,7 @@
     "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@sentry/nextjs": "^8.38.0",
-    "@suilend/frontend-sui": "^0.2.71",
+    "@suilend/frontend-sui": "^0.2.72",
     "@suilend/frontend-sui-next": "^0.1.47",
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
