@@ -340,23 +340,16 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const res = await fetch(
-          "https://api-sui.cetus.zone/v2/sui/coins_info?is_verified_coin=true",
+        const coinTypes = (await aftermathSdk.Coin().getVerifiedCoins()).map(
+          normalizeStructTag,
         );
-        const json = await res.json();
-        const coinTypes =
-          json.msg === "OK"
-            ? json.data.list.map((coin: any) =>
-                normalizeStructTag(coin.coin_type),
-              )
-            : [];
 
         setVerifiedCoinTypes(coinTypes);
 
         fetchTokensMetadata(coinTypes);
       } catch (err) {}
     })();
-  }, [fetchTokensMetadata]);
+  }, [aftermathSdk, fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {

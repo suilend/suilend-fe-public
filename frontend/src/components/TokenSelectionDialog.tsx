@@ -105,7 +105,7 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
                       )
                         ? "This asset is listed on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
-                          ? "This asset appears on the list of Cetus verified assets"
+                          ? "This asset appears on the list of Aftermath verified assets"
                           : ""
                     }
                   >
