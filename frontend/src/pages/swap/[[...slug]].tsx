@@ -1648,7 +1648,7 @@ function Page() {
                         {formatPercent(
                           BigNumber.max(0, priceDifferencePercent),
                         )}{" "}
-                        Price difference (Birdeye)
+                        Price difference (Noodles/Birdeye)
                       </TLabelSans>
                     </div>
                   ) : (
