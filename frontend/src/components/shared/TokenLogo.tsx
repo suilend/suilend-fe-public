@@ -65,7 +65,7 @@ export default function TokenLogo({
       title={
         showTooltip && (wormholeAsset || suiBridgeAsset) ? (
           <>
-            {`${wormholeAsset || suiBridgeAsset}.`}
+            {wormholeAsset || suiBridgeAsset}
             {wormholeAsset && (
               <>
                 {" "}
