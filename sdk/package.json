@@ -19,10 +19,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/solendprotocol/suilend-public.git"
+    "url": "git+https://github.com/suilend/suilend-fe-public.git"
   },
   "bugs": {
-    "url": "https://github.com/solendprotocol/suilend-public/issues"
+    "url": "https://github.com/suilend/suilend-fe-public/issues"
   },
   "dependencies": {
     "@pythnetwork/pyth-sui-js": "^2.1.0",
