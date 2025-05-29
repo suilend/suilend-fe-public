@@ -135,6 +135,9 @@ export const parseObligation = (
 
   const netValueUsd = totalDepositedAmountUsd.minus(totalBorrowedAmountUsd);
 
+  // Cap `minPriceBorrowLimitUsd` at $20m (account borrow limit)
+  minPriceBorrowLimitUsd = BigNumber.min(minPriceBorrowLimitUsd, 20 * 10 ** 6);
+
   const weightedConservativeBorrowUtilizationPercent =
     minPriceBorrowLimitUsd.eq(0)
       ? new BigNumber(0)
