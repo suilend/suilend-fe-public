@@ -427,7 +427,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   const fetchOwnedSuilendCapsulesObjectsMap = useCallback(
     async (_address: string) => {
-      console.log("xxx Fetching ownedSuilendCapsulesObjectsMap", _address);
+      console.log("Fetching ownedSuilendCapsulesObjectsMap", _address);
 
       try {
         const objs = await getOwnedObjectsOfType(
