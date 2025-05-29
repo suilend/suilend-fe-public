@@ -39,7 +39,7 @@ export const mSEND_REDEMPTION_END_TIMESTAMP_MS =
 // Contracts
 const BURN_CONTRACT_PACKAGE_ID =
   "0xf4e0686b311e9b9d6da7e61fc42dae4254828f5ee3ded8ab5480ecd27e46ff08";
-const mTOKEN_CONTRACT_PACKAGE_ID =
+export const mTOKEN_CONTRACT_PACKAGE_ID =
   "0xbf51eb45d2b4faf7f9cda88433760dc65c6ac98bded0b0d30aeb696c74251ad3";
 
 // Managers

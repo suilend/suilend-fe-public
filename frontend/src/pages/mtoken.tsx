@@ -1,9 +1,10 @@
 import Head from "next/head";
+import { useState } from "react";
 
 import { bcs } from "@mysten/bcs";
 import init, * as template from "@mysten/move-bytecode-template";
 import { Transaction } from "@mysten/sui/transactions";
-import { normalizeSuiAddress } from "@mysten/sui/utils";
+import { SUI_CLOCK_OBJECT_ID, normalizeSuiAddress } from "@mysten/sui/utils";
 import { toast } from "sonner";
 
 import {
@@ -13,6 +14,7 @@ import {
 
 import { SendContextProvider } from "@/contexts/SendContext";
 import { mintMTokens } from "@/lib/send";
+import { mTOKEN_CONTRACT_PACKAGE_ID } from "@/lib/send";
 
 // Initialize the WebAssembly module
 let moduleInitialized = false;
@@ -136,9 +138,37 @@ const generateTokenBytecode = async (params: {
 };
 
 function Page() {
-  const { explorer } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { signExecuteAndWaitForTransaction } = useWalletContext();
+
+  // State for penalty balance
+  const [penaltyBalance, setPenaltyBalance] = useState<string | null>(null);
+  const [penaltyLoading, setPenaltyLoading] = useState(false);
+  const [penaltyError, setPenaltyError] = useState<string | null>(null);
+
+  // Handler to fetch penalty balance
+  const fetchPenaltyBalance = async (managerId: string) => {
+    setPenaltyLoading(true);
+    setPenaltyError(null);
+    setPenaltyBalance(null);
+    try {
+      const obj = await suiClient.getObject({
+        id: managerId,
+        options: { showContent: true },
+      });
+      console.log(obj);
+      const fields = (obj.data?.content as any)?.fields;
+      if (!fields) throw new Error("Object not found or missing fields");
+      const penaltyBalance = fields.penalty_balance;
+      setPenaltyBalance(penaltyBalance ?? "0");
+    } catch (err: any) {
+      setPenaltyError("Failed to fetch penalty balance");
+    } finally {
+      setPenaltyLoading(false);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -861,6 +891,157 @@ function Page() {
                 className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 Mint mTokens
+              </button>
+            </form>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-background p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <h2 className="mb-4 text-2xl font-bold">3. Claim Penalties</h2>
+
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+
+                const formData = new FormData(e.target as HTMLFormElement);
+                const manager = formData.get("manager") as string;
+                const adminCap = formData.get("adminCap") as string;
+                const mTokenType = formData.get("mTokenType") as string;
+                const vestingType = formData.get("vestingType") as string;
+                const penaltyType = formData.get("penaltyType") as string;
+
+                try {
+                  const transaction = new Transaction();
+
+                  if (address) {
+                    // Call collect_penalties
+                    const collectPenaltiesCall = transaction.moveCall({
+                      target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::collect_penalties`,
+                      typeArguments: [mTokenType, vestingType, penaltyType],
+                      arguments: [
+                        transaction.object(manager),
+                        transaction.object(adminCap),
+                      ],
+                    });
+
+                    // Transfer the upgrade cap to the sender
+                    transaction.transferObjects(
+                      [collectPenaltiesCall],
+                      transaction.pure.address(address),
+                    );
+                    signExecuteAndWaitForTransaction(transaction)
+                      .then((res) => {
+                        const txUrl = explorer.buildTxUrl(res.digest);
+                        toast.success("Collected penalties", {
+                          description: `View tx on ${explorer.name}`,
+                          action: (
+                            <a
+                              className="block text-blue-500 hover:underline"
+                              href={txUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View tx on {explorer.name}
+                            </a>
+                          ),
+                          duration: 5000,
+                        });
+                      })
+                      .catch((err) => {
+                        toast.error("Failed to collect penalties", {
+                          description: err.message,
+                          duration: 5000,
+                        });
+                      });
+                  } else {
+                    toast.error("No wallet connected", {
+                      duration: 5000,
+                    });
+                  }
+                } catch (err: any) {
+                  toast.error("Failed to create transaction", {
+                    description: err.message,
+                    duration: 5000,
+                  });
+                }
+              }}
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Vesting Manager ID
+                  </label>
+                  <input
+                    name="manager"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="0x..."
+                    required
+                    onBlur={(e) => fetchPenaltyBalance(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    ID of the VestingManager object
+                  </p>
+                  <div className="mt-1 text-xs">
+                    {penaltyLoading
+                      ? "Loading penalty balance..."
+                      : penaltyError
+                        ? penaltyError
+                        : penaltyBalance !== null
+                          ? `Penalty collected: ${penaltyBalance}`
+                          : "Enter a VestingManager ID to see penalty collected"}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Admin Cap ID</label>
+                  <input
+                    name="adminCap"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="0x..."
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    ID of the AdminCap object
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">mToken Type</label>
+                  <input
+                    name="mTokenType"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="0x123::module::TYPE"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Vesting Type</label>
+                  <input
+                    name="vestingType"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="0x123::module::TYPE"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Penalty Type</label>
+                  <input
+                    name="penaltyType"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    placeholder="0x123::module::TYPE"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              >
+                Claim Penalties
               </button>
             </form>
           </div>
