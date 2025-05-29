@@ -4,9 +4,9 @@ import BigNumber from "bignumber.js";
 import { Infinity, Minus, Plus } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-import { MAX_U64 } from "@suilend/frontend-sui";
 import { ParsedReserve } from "@suilend/sdk";
 import { CreateReserveConfigArgs } from "@suilend/sdk/_generated/suilend/reserve-config/functions";
+import { MAX_U64 } from "@suilend/sui-fe";
 
 import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";

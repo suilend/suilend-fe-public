@@ -22,9 +22,9 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 
-import { formatPercent, formatToken, getToken } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
+import { formatPercent, formatToken, getToken } from "@suilend/sui-fe";
+import { useSettingsContext } from "@suilend/sui-fe-next";
+import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";

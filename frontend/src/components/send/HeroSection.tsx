@@ -6,12 +6,12 @@ import { intervalToDuration } from "date-fns";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
-import { formatAddress, formatList, formatToken } from "@suilend/frontend-sui";
+import { formatAddress, formatList, formatToken } from "@suilend/sui-fe";
 import {
   WalletContextQueryParams,
   shallowPushQuery,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import SectionHeading from "@/components/send/SectionHeading";
 import SendTokenLogo from "@/components/send/SendTokenLogo";

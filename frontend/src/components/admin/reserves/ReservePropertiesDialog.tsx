@@ -1,8 +1,8 @@
 import { formatISO } from "date-fns";
 import { TableProperties } from "lucide-react";
 
-import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";

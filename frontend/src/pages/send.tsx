@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { formatInteger } from "@suilend/frontend-sui";
+import { formatInteger } from "@suilend/sui-fe";
 
 import AllocationCard from "@/components/send/AllocationCard";
 import BlurbSection from "@/components/send/BlurbSection";

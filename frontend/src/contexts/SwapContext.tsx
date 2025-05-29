@@ -36,11 +36,8 @@ import {
   getPrice,
   getToken,
   isCoinType,
-} from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";

@@ -14,7 +14,7 @@ import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";

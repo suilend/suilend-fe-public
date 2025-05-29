@@ -7,7 +7,7 @@ import {
   MS_PER_YEAR,
   NORMALIZED_DEEP_COINTYPE,
   NORMALIZED_LBTC_COINTYPE,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 
 import { ParsedObligation, ParsedPoolReward, ParsedReserve } from "../parsers";
 

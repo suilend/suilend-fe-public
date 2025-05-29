@@ -4,7 +4,7 @@ import { ClassValue } from "clsx";
 import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
-import { showErrorToast } from "@suilend/frontend-sui-next";
+import { showErrorToast } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import { cn } from "@/lib/utils";

@@ -1,11 +1,11 @@
 import useSWR, { useSWRConfig } from "swr";
 
+import { formatRewards, initializeObligations } from "@suilend/sdk";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { formatRewards, initializeObligations } from "@suilend/sdk";
+} from "@suilend/sui-fe-next";
 
 import { useAppContext } from "@/contexts/AppContext";
 import { UserData } from "@/contexts/UserContext";

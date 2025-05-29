@@ -6,6 +6,8 @@ import { capitalize } from "lodash";
 import { AlertTriangle, Download, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
+import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   API_URL,
   MAX_U64,
@@ -17,14 +19,12 @@ import {
   formatToken,
   getBalanceChange,
   isSui,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "@suilend/sui-fe-next";
 
 import {
   ActionSignature,

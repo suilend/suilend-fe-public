@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useMemo } from "react";
 
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AddReserveDialog from "@/components/admin/reserves/AddReserveDialog";

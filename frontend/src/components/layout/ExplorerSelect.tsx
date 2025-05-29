@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 
-import { EXPLORERS } from "@suilend/frontend-sui";
+import { EXPLORERS } from "@suilend/sui-fe";
 
 import StandardSelect from "@/components/shared/StandardSelect";
 

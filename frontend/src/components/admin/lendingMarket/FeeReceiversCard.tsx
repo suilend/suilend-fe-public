@@ -6,11 +6,8 @@ import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";

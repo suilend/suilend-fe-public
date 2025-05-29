@@ -5,12 +5,9 @@ import BigNumber from "bignumber.js";
 import { Grab } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatToken, formatUsd } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { formatToken, formatUsd } from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";

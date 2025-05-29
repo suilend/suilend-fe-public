@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { Settings } from "lucide-react";
 
-import { ExplorerId, RpcId } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { ExplorerId, RpcId } from "@suilend/sui-fe";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import ExplorerSelect from "@/components/layout/ExplorerSelect";
 import RpcSelect from "@/components/layout/RpcSelect";

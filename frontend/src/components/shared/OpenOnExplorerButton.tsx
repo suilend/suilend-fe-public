@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import OpenURLButton from "@/components/shared/OpenURLButton";
 

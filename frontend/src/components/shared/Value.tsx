@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
-import { formatId, formatType, formatUsd } from "@suilend/frontend-sui";
+import { formatId, formatType, formatUsd } from "@suilend/sui-fe";
 
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";

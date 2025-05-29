@@ -12,6 +12,7 @@ import { capitalize } from "lodash";
 import { ArrowUpRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 
+import { LENDING_MARKETS } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -22,13 +23,12 @@ import {
   formatUsd,
   getBalanceChange,
   issSui,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { LENDING_MARKETS } from "@suilend/sdk";
+} from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
 import MsendDropdownMenu from "@/components/send/MsendDropdownMenu";

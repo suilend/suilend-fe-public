@@ -12,20 +12,17 @@ import {
 import { CoinMetadata } from "@mysten/sui/client";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
+import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
+import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
+import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   isInMsafeApp,
-} from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
-import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";

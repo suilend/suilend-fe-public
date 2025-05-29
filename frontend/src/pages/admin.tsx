@@ -1,11 +1,8 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { formatId } from "@suilend/frontend-sui";
-import {
-  shallowPushQuery,
-  useSettingsContext,
-} from "@suilend/frontend-sui-next";
+import { formatId } from "@suilend/sui-fe";
+import { shallowPushQuery, useSettingsContext } from "@suilend/sui-fe-next";
 
 import AddLendingMarketDialog from "@/components/admin/AddLendingMarketDialog";
 import {

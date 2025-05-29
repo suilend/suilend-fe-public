@@ -3,13 +3,10 @@ import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { Ban, X } from "lucide-react";
 
-import { formatNumber } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
+import { formatNumber } from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import DataTable, {
   decimalSortingFn,

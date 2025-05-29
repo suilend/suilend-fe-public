@@ -2,8 +2,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { NORMALIZED_SUI_COINTYPE, formatAddress } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+import { NORMALIZED_SUI_COINTYPE, formatAddress } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";

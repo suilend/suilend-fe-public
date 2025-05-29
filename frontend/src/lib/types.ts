@@ -1,4 +1,4 @@
-import { Token as FrontendToken } from "@suilend/frontend-sui";
+import { Token as FrontendToken } from "@suilend/sui-fe";
 
 export type Token = {
   coinType: string;

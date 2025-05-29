@@ -1,9 +1,9 @@
 import BigNumber from "bignumber.js";
 import * as Recharts from "recharts";
 
-import { formatPercent } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
+import { formatPercent } from "@suilend/sui-fe";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";

@@ -4,8 +4,8 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { AlertTriangle } from "lucide-react";
 
-import { formatPercent } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { formatPercent } from "@suilend/sui-fe";
 
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";
 import LiquidationThresholdTitle from "@/components/dashboard/account/LiquidationThresholdTitle";

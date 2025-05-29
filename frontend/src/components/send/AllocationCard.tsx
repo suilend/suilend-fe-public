@@ -3,8 +3,8 @@ import { PropsWithChildren, useMemo, useRef, useState } from "react";
 
 import { ArrowUpRight, Info } from "lucide-react";
 
-import { formatToken } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
+import { formatToken } from "@suilend/sui-fe";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import styles from "@/components/send/AllocationCard.module.scss";
 import SendTokenLogo from "@/components/send/SendTokenLogo";

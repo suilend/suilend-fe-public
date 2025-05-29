@@ -3,12 +3,12 @@ import { forwardRef, useEffect, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { mergeRefs } from "react-merge-refs";
 
+import { Action } from "@suilend/sdk/lib/types";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatUsd,
-} from "@suilend/frontend-sui";
-import { Action } from "@suilend/sdk/lib/types";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "@suilend/sui-fe";
 
 import Button from "@/components/shared/Button";
 import { TBody, TLabel } from "@/components/shared/Typography";

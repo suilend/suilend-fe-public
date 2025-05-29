@@ -5,9 +5,9 @@ import { formatISO } from "date-fns";
 import { Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";

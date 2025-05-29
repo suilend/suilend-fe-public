@@ -4,7 +4,7 @@ import { SuiClient, SuiEvent } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { NORMALIZED_SUI_COINTYPE } from "@suilend/frontend-sui";
+import { NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
 
 const getEventsOfType = async (
   suiClient: SuiClient,

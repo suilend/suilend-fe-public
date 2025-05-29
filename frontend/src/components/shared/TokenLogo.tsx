@@ -11,7 +11,7 @@ import {
   NORMALIZED_wBTC_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";

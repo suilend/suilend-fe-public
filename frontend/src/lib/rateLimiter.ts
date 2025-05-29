@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { MAX_U64, formatDuration, formatUsd } from "@suilend/frontend-sui";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
+import { MAX_U64, formatDuration, formatUsd } from "@suilend/sui-fe";
 
 export const getFormattedMaxOutflow = (rateLimiter: ParsedRateLimiter) => {
   const {

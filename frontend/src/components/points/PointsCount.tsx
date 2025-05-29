@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
-import { formatPoints } from "@suilend/frontend-sui";
+import { formatPoints } from "@suilend/sui-fe";
 
 import PointsLogo from "@/components/points/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";

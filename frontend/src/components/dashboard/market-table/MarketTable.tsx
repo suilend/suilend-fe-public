@@ -5,19 +5,19 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
-  Token,
-  formatToken,
-  formatUsd,
-  isMemecoin,
-  issSui,
-} from "@suilend/frontend-sui";
-import {
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
 } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import {
+  Token,
+  formatToken,
+  formatUsd,
+  isMemecoin,
+  issSui,
+} from "@suilend/sui-fe";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import DataTable, {

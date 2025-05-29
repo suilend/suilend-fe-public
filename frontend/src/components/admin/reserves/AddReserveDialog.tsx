@@ -5,9 +5,9 @@ import { Eraser, Plus, Rss } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
-import { Token } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { Token } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";

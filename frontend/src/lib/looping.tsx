@@ -1,12 +1,12 @@
 import BigNumber from "bignumber.js";
 
+import { ParsedObligation } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_ETH_COINTYPES,
   NORMALIZED_STABLECOIN_COINTYPES,
   isEth,
   isStablecoin,
-} from "@suilend/frontend-sui";
-import { ParsedObligation } from "@suilend/sdk/parsers";
+} from "@suilend/sui-fe";
 
 import { AppData } from "@/contexts/AppContext";
 

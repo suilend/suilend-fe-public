@@ -3,7 +3,7 @@ import { useState } from "react";
 import BigNumber from "bignumber.js";
 import { Settings2 } from "lucide-react";
 
-import { formatPercent } from "@suilend/frontend-sui";
+import { formatPercent } from "@suilend/sui-fe";
 
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";

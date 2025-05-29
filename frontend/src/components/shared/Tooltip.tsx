@@ -20,7 +20,7 @@ import {
 } from "@radix-ui/react-tooltip";
 import { merge } from "lodash";
 
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import { TBodySans } from "@/components/shared/Typography";
 import {

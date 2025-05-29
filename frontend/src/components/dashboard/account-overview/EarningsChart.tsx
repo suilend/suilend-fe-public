@@ -2,9 +2,9 @@ import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import * as Recharts from "recharts";
 
-import { COINTYPE_COLOR_MAP, formatToken } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { Side } from "@suilend/sdk/lib/types";
+import { COINTYPE_COLOR_MAP, formatToken } from "@suilend/sui-fe";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";

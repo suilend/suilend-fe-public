@@ -5,12 +5,12 @@ import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
-import { API_URL, formatAddress, formatUsd } from "@suilend/frontend-sui";
+import { API_URL, formatAddress, formatUsd } from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";

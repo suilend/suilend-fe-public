@@ -40,6 +40,12 @@ import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  WAD,
+  createObligationIfNoneExists,
+  sendObligationToUser,
+} from "@suilend/sdk";
+import { Action } from "@suilend/sdk/lib/types";
+import {
   MAX_U64,
   SUI_COINTYPE,
   formatInteger,
@@ -48,19 +54,13 @@ import {
   formatUsd,
   getBalanceChange,
   isSui,
-} from "@suilend/frontend-sui";
-import track from "@suilend/frontend-sui/lib/track";
+} from "@suilend/sui-fe";
+import track from "@suilend/sui-fe/lib/track";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import {
-  WAD,
-  createObligationIfNoneExists,
-  sendObligationToUser,
-} from "@suilend/sdk";
-import { Action } from "@suilend/sdk/lib/types";
+} from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";

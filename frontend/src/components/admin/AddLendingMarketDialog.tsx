@@ -4,8 +4,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { LENDING_MARKET_REGISTRY_ID, SuilendClient } from "@suilend/sdk";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";

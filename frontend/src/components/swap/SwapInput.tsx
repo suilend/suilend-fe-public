@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import { Download, Upload, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
-import { formatToken, formatUsd } from "@suilend/frontend-sui";
+import { formatToken, formatUsd } from "@suilend/sui-fe";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/TokenSelectionDialog";

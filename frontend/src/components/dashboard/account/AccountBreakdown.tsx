@@ -4,15 +4,15 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { useLocalStorage } from "usehooks-ts";
 
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { reserveSort } from "@suilend/sdk/utils";
 import {
   formatBorrowWeight,
   formatLtvPercent,
   formatPrice,
   formatToken,
   formatUsd,
-} from "@suilend/frontend-sui";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
-import { reserveSort } from "@suilend/sdk/utils";
+} from "@suilend/sui-fe";
 
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";
 import LiquidationThresholdTitle from "@/components/dashboard/account/LiquidationThresholdTitle";

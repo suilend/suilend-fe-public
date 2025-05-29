@@ -1,5 +1,5 @@
-import { formatUsd } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk";
+import { formatUsd } from "@suilend/sui-fe";
 
 import FromToArrow from "@/components/shared/FromToArrow";
 import LabelWithValue from "@/components/shared/LabelWithValue";

@@ -1,7 +1,7 @@
 import { ClassValue } from "clsx";
 
-import { NORMALIZED_SEND_COINTYPE } from "@suilend/frontend-sui";
 import { LENDING_MARKETS } from "@suilend/sdk";
+import { NORMALIZED_SEND_COINTYPE } from "@suilend/sui-fe";
 
 import TokenLogo from "@/components/shared/TokenLogo";
 import { useLoadedAppContext } from "@/contexts/AppContext";

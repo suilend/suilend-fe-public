@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { formatPercent } from "@suilend/frontend-sui";
+import { formatPercent } from "@suilend/sui-fe";
 
 import { getQuoterName } from "@/lib/admin";
 

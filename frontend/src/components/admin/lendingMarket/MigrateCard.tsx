@@ -2,8 +2,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";

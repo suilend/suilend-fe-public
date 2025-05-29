@@ -2,7 +2,7 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo } from "react";
 
-import { shallowPushQuery, useWalletContext } from "@suilend/frontend-sui-next";
+import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
 import PointsHeader from "@/components/points/PointsHeader";
 import PointsLeaderboardTable from "@/components/points/PointsLeaderboardTable";

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 
-import { useSettingsContext } from "@suilend/frontend-sui-next";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -13,6 +12,7 @@ import {
 } from "@suilend/sdk/parsers/obligation";
 import { fetchAllObligationsForMarketWithHandler } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import LiquidateDialog from "@/components/admin/liquidate/LiquidateDialog";

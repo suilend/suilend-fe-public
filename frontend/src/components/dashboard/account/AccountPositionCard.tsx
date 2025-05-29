@@ -2,14 +2,14 @@ import { useRouter } from "next/router";
 
 import { FileClock } from "lucide-react";
 
-import { formatPercent, formatUsd } from "@suilend/frontend-sui";
+import { getNetAprPercent } from "@suilend/sdk";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { formatPercent, formatUsd } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import { getNetAprPercent } from "@suilend/sdk";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+} from "@suilend/sui-fe-next";
 
 import AccountBreakdown from "@/components/dashboard/account/AccountBreakdown";
 import BorrowLimitTitle from "@/components/dashboard/account/BorrowLimitTitle";

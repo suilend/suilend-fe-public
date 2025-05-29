@@ -4,8 +4,8 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatToken, getToken, isCTokenCoinType } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+import { formatToken, getToken, isCTokenCoinType } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import Button from "@/components/shared/Button";

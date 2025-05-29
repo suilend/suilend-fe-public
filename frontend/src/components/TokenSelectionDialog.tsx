@@ -22,7 +22,7 @@ import {
   formatToken,
   isCoinType,
   isSui,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 
 import Button from "@/components/shared/Button";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";

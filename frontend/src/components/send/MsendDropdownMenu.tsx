@@ -3,7 +3,7 @@ import { useState } from "react";
 import { intervalToDuration } from "date-fns";
 import { ChevronsUpDown } from "lucide-react";
 
-import { formatToken } from "@suilend/frontend-sui";
+import { formatToken } from "@suilend/sui-fe";
 
 import MsendTokenLogo from "@/components/send/MsendTokenLogo";
 import Button from "@/components/shared/Button";

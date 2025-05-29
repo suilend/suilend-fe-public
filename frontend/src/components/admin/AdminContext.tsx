@@ -9,8 +9,8 @@ import {
   useState,
 } from "react";
 
-import { API_URL } from "@suilend/frontend-sui";
-import { shallowPushQuery } from "@suilend/frontend-sui-next";
+import { API_URL } from "@suilend/sui-fe";
+import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
 

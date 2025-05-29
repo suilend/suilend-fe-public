@@ -1,4 +1,4 @@
-import { formatUsd } from "@suilend/frontend-sui";
+import { formatUsd } from "@suilend/sui-fe";
 
 import Card from "@/components/dashboard/Card";
 import MarketTable from "@/components/dashboard/market-table/MarketTable";

@@ -3,8 +3,8 @@ import { CSSProperties, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-import { showErrorToast, useSettingsContext } from "@suilend/frontend-sui-next";
 import { RewardSummary } from "@suilend/sdk";
+import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import DropdownMenu, {

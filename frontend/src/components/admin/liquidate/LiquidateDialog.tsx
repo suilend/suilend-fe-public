@@ -7,11 +7,6 @@ import BigNumber from "bignumber.js";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatToken, formatUsd, isSui } from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
@@ -29,6 +24,8 @@ import {
   getObligationHistoryPage,
 } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
+import { formatToken, formatUsd, isSui } from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import DataTable, {

@@ -3,6 +3,9 @@ import { Fragment, PropsWithChildren } from "react";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 
+import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { Side } from "@suilend/sdk/lib/types";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   COINTYPE_PYTH_PRICE_FEED_SYMBOL_MAP,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
@@ -12,11 +15,8 @@ import {
   formatToken,
   formatUsd,
   getPythOracleUrl,
-} from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
-import { ADMIN_ADDRESS } from "@suilend/sdk";
-import { Side } from "@suilend/sdk/lib/types";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "@suilend/sui-fe";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";

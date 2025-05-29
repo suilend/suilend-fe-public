@@ -6,10 +6,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { normalizeSuiAddress } from "@mysten/sui/utils";
 import { toast } from "sonner";
 
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { SendContextProvider } from "@/contexts/SendContext";
 import { mintMTokens } from "@/lib/send";

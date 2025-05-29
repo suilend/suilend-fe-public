@@ -14,17 +14,17 @@ import { CoinMetadata, SuiObjectResponse } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { NORMALIZED_WAL_COINTYPE } from "@suilend/frontend-sui";
+import { ParsedObligation, RewardMap } from "@suilend/sdk";
+import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+import { NORMALIZED_WAL_COINTYPE } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import useFetchBalances from "@suilend/frontend-sui-next/fetchers/useFetchBalances";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
-import useRefreshOnBalancesChange from "@suilend/frontend-sui-next/hooks/useRefreshOnBalancesChange";
-import { ParsedObligation, RewardMap } from "@suilend/sdk";
-import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
+} from "@suilend/sui-fe-next";
+import useFetchBalances from "@suilend/sui-fe-next/fetchers/useFetchBalances";
+import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
+import useRefreshOnBalancesChange from "@suilend/sui-fe-next/hooks/useRefreshOnBalancesChange";
 
 import {
   QueryParams as AppContextQueryParams,

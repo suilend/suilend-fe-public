@@ -10,11 +10,11 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { LDProvider } from "launchdarkly-react-client-sdk";
 import mixpanel from "mixpanel-browser";
 
-import { RPCS, RpcId } from "@suilend/frontend-sui";
+import { RPCS, RpcId } from "@suilend/sui-fe";
 import {
   SettingsContextProvider,
   WalletContextProvider,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";

@@ -3,18 +3,18 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import useSWR, { useSWRConfig } from "swr";
 
-import { API_URL } from "@suilend/frontend-sui";
-import {
-  showErrorToast,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
 import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
 import {
   ADMIN_ADDRESS,
   LENDING_MARKETS,
   SuilendClient,
 } from "@suilend/sdk/client";
+import { API_URL } from "@suilend/sui-fe";
+import {
+  showErrorToast,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
 

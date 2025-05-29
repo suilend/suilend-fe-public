@@ -5,9 +5,9 @@ import { cloneDeep } from "lodash";
 import { Bolt, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedRateLimiter } from "@suilend/sdk/parsers/rateLimiter";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import DiffLine from "@/components/admin/DiffLine";

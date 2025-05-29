@@ -1,6 +1,6 @@
 import { isEqual } from "lodash";
 
-import { MAX_U64 } from "@suilend/frontend-sui";
+import { MAX_U64 } from "@suilend/sui-fe";
 
 import { ConfigState as ReserveConfigState } from "@/components/admin/reserves/ReserveConfig";
 import LabelWithValue from "@/components/shared/LabelWithValue";

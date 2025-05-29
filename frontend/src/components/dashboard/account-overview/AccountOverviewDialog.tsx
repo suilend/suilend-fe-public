@@ -6,13 +6,6 @@ import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
-import {
-  API_URL,
-  formatPoints,
-  formatToken,
-  isSendPoints,
-} from "@suilend/frontend-sui";
-import { shallowPushQuery } from "@suilend/frontend-sui-next";
 import { WAD } from "@suilend/sdk/lib/constants";
 import {
   ApiBorrowEvent,
@@ -24,6 +17,13 @@ import {
   ApiReserveAssetDataEvent,
   ApiWithdrawEvent,
 } from "@suilend/sdk/lib/types";
+import {
+  API_URL,
+  formatPoints,
+  formatToken,
+  isSendPoints,
+} from "@suilend/sui-fe";
+import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import EarningsTabContent from "@/components/dashboard/account-overview/EarningsTabContent";
 import HistoryTabContent from "@/components/dashboard/account-overview/HistoryTabContent";

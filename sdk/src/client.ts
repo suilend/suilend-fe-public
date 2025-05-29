@@ -16,7 +16,7 @@ import {
   SuiPythClient,
 } from "@pythnetwork/pyth-sui-js";
 
-import { extractCTokenCoinType } from "@suilend/frontend-sui";
+import { extractCTokenCoinType } from "@suilend/sui-fe";
 
 import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import { phantom } from "./_generated/_framework/reified";

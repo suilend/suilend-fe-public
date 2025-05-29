@@ -1,5 +1,5 @@
-import { SUI_COINTYPE, Token, getToken, isSui } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { SUI_COINTYPE, Token, getToken, isSui } from "@suilend/sui-fe";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";

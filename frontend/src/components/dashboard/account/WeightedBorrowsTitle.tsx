@@ -1,8 +1,8 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
-import { formatUsd } from "@suilend/frontend-sui";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { formatUsd } from "@suilend/sui-fe";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { TLabelSans } from "@/components/shared/Typography";

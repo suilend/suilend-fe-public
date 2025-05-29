@@ -26,18 +26,15 @@ import {
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKETS } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_mSEND_12M_COINTYPE,
   NORMALIZED_mSEND_3M_COINTYPE,
   NORMALIZED_mSEND_COINTYPES,
-} from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
-import useCoinMetadataMap from "@suilend/frontend-sui-next/hooks/useCoinMetadataMap";
-import { LENDING_MARKETS } from "@suilend/sdk";
+} from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedUserContext } from "@/contexts/UserContext";

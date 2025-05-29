@@ -1,4 +1,4 @@
-import { COINTYPE_LOGO_MAP, COINTYPE_SYMBOL_MAP } from "@suilend/frontend-sui";
+import { COINTYPE_LOGO_MAP, COINTYPE_SYMBOL_MAP } from "@suilend/sui-fe";
 
 import TokenLogo from "@/components/shared/TokenLogo";
 import { usePointsContext } from "@/contexts/PointsContext";

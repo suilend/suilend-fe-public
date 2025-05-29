@@ -3,15 +3,6 @@ import { capitalize } from "lodash";
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  NORMALIZED_LBTC_COINTYPE,
-  NORMALIZED_flSUI_COINTYPE,
-  formatPercent,
-  formatPoints,
-  formatPrice,
-  formatToken,
-  isSendPoints,
-} from "@suilend/frontend-sui";
-import {
   AprRewardSummary,
   NORMALIZED_TREATS_COINTYPE,
   PerDayRewardSummary,
@@ -24,6 +15,15 @@ import {
 import { Action, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { linearlyInterpolate } from "@suilend/sdk/utils";
+import {
+  NORMALIZED_LBTC_COINTYPE,
+  NORMALIZED_flSUI_COINTYPE,
+  formatPercent,
+  formatPoints,
+  formatPrice,
+  formatToken,
+  isSendPoints,
+} from "@suilend/sui-fe";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import FromToArrow from "@/components/shared/FromToArrow";

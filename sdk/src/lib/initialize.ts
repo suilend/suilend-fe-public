@@ -42,7 +42,7 @@ import {
   getPrice,
   isSendPoints,
   isSteammPoints,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
 import { SuilendClient } from "../client";

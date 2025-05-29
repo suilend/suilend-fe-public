@@ -3,12 +3,12 @@ import { useState } from "react";
 import { Transaction } from "@mysten/sui/transactions";
 import { toast } from "sonner";
 
-import { TX_TOAST_DURATION } from "@suilend/frontend-sui";
+import { TX_TOAST_DURATION } from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import TextLink from "@/components/shared/TextLink";
 import { useLoadedAppContext } from "@/contexts/AppContext";

@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { shallowPushQuery } from "@suilend/frontend-sui-next";
+import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";

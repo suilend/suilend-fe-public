@@ -15,8 +15,8 @@ import {
   API_URL,
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_SEND_POINTS_S2_COINTYPE,
-} from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 export enum Tab {
   SEASON_1 = "1",

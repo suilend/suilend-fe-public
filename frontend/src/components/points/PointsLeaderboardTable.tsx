@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { VenetianMask } from "lucide-react";
 
-import { formatAddress } from "@suilend/frontend-sui";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
+import { formatAddress } from "@suilend/sui-fe";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import DataTable, {
   decimalSortingFn,

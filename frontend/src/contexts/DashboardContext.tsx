@@ -13,8 +13,8 @@ import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
 
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";

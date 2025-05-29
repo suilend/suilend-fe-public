@@ -3,7 +3,7 @@ import { CSSProperties, PropsWithChildren, forwardRef } from "react";
 
 import { ArrowLeftRight, Info, LucideIcon } from "lucide-react";
 
-import track from "@suilend/frontend-sui/lib/track";
+import track from "@suilend/sui-fe/lib/track";
 
 import Container from "@/components/shared/Container";
 import { TBody, TBodySans } from "@/components/shared/Typography";

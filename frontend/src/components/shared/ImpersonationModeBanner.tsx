@@ -4,12 +4,12 @@ import { ClassValue } from "clsx";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
-import { formatAddress } from "@suilend/frontend-sui";
+import { formatAddress } from "@suilend/sui-fe";
 import {
   WalletContextQueryParams,
   shallowPushQuery,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe-next";
 
 import Tooltip from "@/components/shared/Tooltip";
 import {

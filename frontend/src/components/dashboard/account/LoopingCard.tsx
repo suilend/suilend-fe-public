@@ -4,8 +4,8 @@ import BigNumber from "bignumber.js";
 import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatList } from "@suilend/frontend-sui";
-import { showErrorToast, useWalletContext } from "@suilend/frontend-sui-next";
+import { formatList } from "@suilend/sui-fe";
+import { showErrorToast, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";

@@ -10,6 +10,7 @@ import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
 
+import { SuilendClient } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -18,8 +19,7 @@ import {
   NORMALIZED_mSEND_6M_COINTYPE,
   Rpc,
   isSendPointsS1,
-} from "@suilend/frontend-sui";
-import { SuilendClient } from "@suilend/sdk";
+} from "@suilend/sui-fe";
 
 import { UserData } from "@/contexts/UserContext";
 import {

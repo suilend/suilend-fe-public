@@ -11,11 +11,8 @@ import {
   formatAddress,
   formatToken,
   getCoinMetadataMap,
-} from "@suilend/frontend-sui";
-import {
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/frontend-sui-next";
+} from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";

@@ -2,7 +2,7 @@ import {
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatToken,
   formatUsd,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 
 import { ReservesRowData } from "@/components/dashboard/market-table/MarketTable";
 import Tooltip from "@/components/shared/Tooltip";

@@ -6,10 +6,10 @@ import { formatDate } from "date-fns";
 import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Token, formatToken } from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { Token, formatToken } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";

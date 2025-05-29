@@ -2,7 +2,7 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
-import { formatPoints } from "@suilend/frontend-sui";
+import { formatPoints } from "@suilend/sui-fe";
 
 import PointsCount from "@/components/points/PointsCount";
 import PointsLogo from "@/components/points/PointsLogo";

@@ -1,5 +1,8 @@
 import BigNumber from "bignumber.js";
 
+import { Action } from "@suilend/sdk/lib/types";
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
+import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   MS_PER_YEAR,
   NORMALIZED_ETH_COINTYPES,
@@ -8,10 +11,7 @@ import {
   isEth,
   isStablecoin,
   isSui,
-} from "@suilend/frontend-sui";
-import { Action } from "@suilend/sdk/lib/types";
-import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
-import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+} from "@suilend/sui-fe";
 
 import { AppData } from "@/contexts/AppContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";

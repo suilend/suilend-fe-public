@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js";
 
-import { formatDuration } from "@suilend/frontend-sui";
+import { formatDuration } from "@suilend/sui-fe";
 
 import { usePointsContext } from "@/contexts/PointsContext";
 

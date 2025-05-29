@@ -1,15 +1,15 @@
 import WormholeConnect from "@wormhole-foundation/wormhole-connect";
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKETS } from "@suilend/sdk";
 import {
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
-} from "@suilend/frontend-sui";
-import track from "@suilend/frontend-sui/lib/track";
-import { useSettingsContext } from "@suilend/frontend-sui-next";
-import { LENDING_MARKETS } from "@suilend/sdk";
+} from "@suilend/sui-fe";
+import track from "@suilend/sui-fe/lib/track";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
 import { useLoadedAppContext } from "@/contexts/AppContext";

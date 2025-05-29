@@ -4,13 +4,6 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
-import {
-  MS_PER_YEAR,
-  formatToken,
-  formatUsd,
-  isSendPoints,
-  isSendPointsS2,
-} from "@suilend/frontend-sui";
 import { WAD } from "@suilend/sdk/lib/constants";
 import {
   ApiBorrowEvent,
@@ -22,6 +15,13 @@ import {
 } from "@suilend/sdk/lib/types";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { linearlyInterpolate, reserveSort } from "@suilend/sdk/utils";
+import {
+  MS_PER_YEAR,
+  formatToken,
+  formatUsd,
+  isSendPoints,
+  isSendPointsS2,
+} from "@suilend/sui-fe";
 
 import {
   EventsData,

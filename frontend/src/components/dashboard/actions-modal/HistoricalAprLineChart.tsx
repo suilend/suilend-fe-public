@@ -6,12 +6,12 @@ import { capitalize } from "lodash";
 import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
-import { COINTYPE_COLOR_MAP, formatPercent } from "@suilend/frontend-sui";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
 import { getDedupedAprRewards } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
+import { COINTYPE_COLOR_MAP, formatPercent } from "@suilend/sui-fe";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import Button from "@/components/shared/Button";

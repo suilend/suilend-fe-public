@@ -1,6 +1,6 @@
 import { Trophy } from "lucide-react";
 
-import { formatRank } from "@suilend/frontend-sui";
+import { formatRank } from "@suilend/sui-fe";
 
 import PointsDataLastUpdatedAt from "@/components/points/LeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";

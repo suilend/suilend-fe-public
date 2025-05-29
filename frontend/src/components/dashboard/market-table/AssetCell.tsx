@@ -4,6 +4,7 @@ import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
+import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
@@ -18,14 +19,13 @@ import {
   getMsafeAppStoreUrl,
   getToken,
   isInMsafeApp,
-} from "@suilend/frontend-sui";
+} from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
-} from "@suilend/frontend-sui-next";
-import useIsTouchscreen from "@suilend/frontend-sui-next/hooks/useIsTouchscreen";
-import { ParsedReserve } from "@suilend/sdk/parsers";
+} from "@suilend/sui-fe-next";
+import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
 import { MarketCardListType } from "@/components/dashboard/market-table/MarketCardList";

@@ -3,12 +3,8 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 
-import {
-  NORMALIZED_WAL_COINTYPE,
-  formatUsd,
-  getToken,
-} from "@suilend/frontend-sui";
-import { useWalletContext } from "@suilend/frontend-sui-next";
+import { NORMALIZED_WAL_COINTYPE, formatUsd, getToken } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountAssetTable, {
   AccountAssetTableType,

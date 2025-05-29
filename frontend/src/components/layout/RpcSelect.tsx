@@ -1,6 +1,6 @@
 import { ClassValue } from "clsx";
 
-import { RPCS } from "@suilend/frontend-sui";
+import { RPCS } from "@suilend/sui-fe";
 
 import StandardSelect from "@/components/shared/StandardSelect";
 
