@@ -5,7 +5,7 @@ import { formatDate } from "date-fns";
 import * as Recharts from "recharts";
 import { CartesianViewBox } from "recharts/types/util/types";
 
-import { MsendObject } from "@/lib/send";
+import { MsendObject } from "@/lib/mSend";
 
 interface LabelProps extends Recharts.LabelProps, PropsWithChildren {
   fill: string;

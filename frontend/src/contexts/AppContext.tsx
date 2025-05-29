@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
+import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";

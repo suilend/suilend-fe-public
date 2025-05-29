@@ -24,10 +24,11 @@ import {
 } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { Allocation, TGE_TIMESTAMP_MS } from "@/lib/send";
+import { AllocationWithUserAllocation } from "@/lib/mSend";
+import { TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {
-  allocations: Allocation[];
+  allocations: AllocationWithUserAllocation[];
 }
 
 export default function HeroSection({ allocations }: HeroSectionProps) {
@@ -36,7 +37,8 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
   const { isImpersonating, setIsConnectWalletDropdownOpen, address } =
     useWalletContext();
 
-  const { userAllocations } = useLoadedSendContext();
+  const { rawUserAllocationsS1 } = useLoadedSendContext();
+  const userAllocations = rawUserAllocationsS1;
 
   // Impersonation mode
   const onImpersonationModeBannerClick = () => {
@@ -61,8 +63,8 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
 
   const isFetchingUserRedeemedMsend =
     userAllocations !== undefined &&
-    (userAllocations.sendPoints.redeemedMsend === undefined ||
-      userAllocations.suilendCapsules.redeemedMsend === undefined ||
+    (userAllocations.sendPointsS1.redeemedMsend === undefined ||
+      userAllocations.suilendCapsulesS1.redeemedMsend === undefined ||
       userAllocations.rootlets.redeemedMsend === undefined);
   const isFetchingUserBridgedMsend =
     userAllocations !== undefined &&

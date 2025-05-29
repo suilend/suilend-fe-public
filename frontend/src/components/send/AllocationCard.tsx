@@ -15,17 +15,19 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
-  Allocation,
-  AllocationId,
-  AssetType,
+  ASSET_TYPE_NAME_MAP,
+  AllocationIdS1,
+  AllocationWithUserAllocation,
+} from "@/lib/mSend";
+import {
+  S1_mSEND_REDEMPTION_END_TIMESTAMP_MS,
   SEND_TOTAL_SUPPLY,
   TGE_TIMESTAMP_MS,
-  mSEND_REDEMPTION_END_TIMESTAMP_MS,
 } from "@/lib/send";
 import { cn } from "@/lib/utils";
 
 interface StatusProps {
-  allocation: Allocation;
+  allocation: AllocationWithUserAllocation;
   isEligible?: boolean;
   isNotEligible?: boolean;
   hasRedeemedMsend?: boolean;
@@ -42,15 +44,15 @@ function Status({
   const getSnapshotNotTakenStatus = () => {
     if (Date.now() >= TGE_TIMESTAMP_MS) {
       if (
-        allocation.id === AllocationId.SEND_POINTS ||
-        allocation.id === AllocationId.SUILEND_CAPSULES
+        allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+        allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1
       ) {
-        return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS
+        return Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS
           ? "Redemptions open"
           : "Redemptions closed";
       }
-      if (allocation.id === AllocationId.SAVE) return "Conversions open";
-      if (allocation.id === AllocationId.ROOTLETS) return "Redemptions open";
+      if (allocation.id === AllocationIdS1.SAVE) return "Conversions open";
+      if (allocation.id === AllocationIdS1.ROOTLETS) return "Redemptions open";
     }
 
     return "Snapshot not taken";
@@ -77,7 +79,7 @@ function Status({
           >
             {isEligible
               ? allocation.airdropSent &&
-                allocation.id !== AllocationId.ROOTLETS
+                allocation.id !== AllocationIdS1.ROOTLETS
                 ? "Airdropped"
                 : "Eligible"
               : hasRedeemedMsend
@@ -123,7 +125,7 @@ function Status({
 }
 
 interface CtaButtonProps {
-  allocation: Allocation;
+  allocation: AllocationWithUserAllocation;
   isEligible?: boolean;
 }
 
@@ -142,10 +144,10 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
 
   if (Date.now() >= TGE_TIMESTAMP_MS) {
     if (
-      allocation.id === AllocationId.SEND_POINTS ||
-      allocation.id === AllocationId.SUILEND_CAPSULES
+      allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+      allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1
     ) {
-      return Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS ? (
+      return Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS ? (
         isEligible ? (
           <Button
             className="h-10 w-full border-secondary text-primary-foreground"
@@ -162,7 +164,7 @@ function CtaButton({ allocation, isEligible }: CtaButtonProps) {
         <div className="h-10 w-full max-sm:hidden" />
       );
     }
-    if (allocation.id === AllocationId.ROOTLETS) {
+    if (allocation.id === AllocationIdS1.ROOTLETS) {
       return isEligible ? (
         <Button
           className="h-10 w-full border-secondary text-primary-foreground"
@@ -212,7 +214,7 @@ function Wrapper({ children }: PropsWithChildren) {
 }
 
 interface AllocationCardProps {
-  allocation: Allocation;
+  allocation: AllocationWithUserAllocation;
 }
 
 export default function AllocationCard({ allocation }: AllocationCardProps) {
@@ -220,14 +222,6 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
   // State
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
-
-  const assetTypeTitleMap: Record<AssetType, string> = {
-    [AssetType.LENDING]: "Lending",
-    [AssetType.NFT]: "NFT",
-    [AssetType.TOKEN]: "Token",
-    [AssetType.TRADING]: "Trading",
-    [AssetType.POINTS]: "Points",
-  };
 
   // Video
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
@@ -358,7 +352,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
                   {allocation.assetType && (
                     <TBodySans className="text-muted-foreground">
-                      {assetTypeTitleMap[allocation.assetType]}
+                      {ASSET_TYPE_NAME_MAP[allocation.assetType]}
                     </TBodySans>
                   )}
                 </div>
@@ -403,23 +397,25 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     )}
                     horizontal
                   />
-                  {allocation.totalAllocationBreakdown.map((breakdown) => (
-                    <LabelWithValue
-                      key={breakdown.title}
-                      labelClassName="text-sm pl-1 gap-2"
-                      labelStartDecorator={
-                        <div className="h-1 w-1 rounded-[50%] bg-muted" />
-                      }
-                      label={breakdown.title}
-                      valueClassName="gap-2 items-center"
-                      valueStartDecorator={<SendTokenLogo />}
-                      value={formatToken(
-                        breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
-                        { exact: false },
-                      )}
-                      horizontal
-                    />
-                  ))}
+                  {Object.values(allocation.totalAllocationBreakdownMap).map(
+                    (breakdown) => (
+                      <LabelWithValue
+                        key={breakdown.title}
+                        labelClassName="text-sm pl-1 gap-2"
+                        labelStartDecorator={
+                          <div className="h-1 w-1 rounded-[50%] bg-muted" />
+                        }
+                        label={breakdown.title}
+                        valueClassName="gap-2 items-center"
+                        valueStartDecorator={<SendTokenLogo />}
+                        value={formatToken(
+                          breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
+                          { exact: false },
+                        )}
+                        horizontal
+                      />
+                    ),
+                  )}
                 </div>
 
                 {allocation.eligibleWallets !== undefined && (
@@ -437,12 +433,10 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
 
                 {!(
                   Date.now() >= TGE_TIMESTAMP_MS &&
-                  [
-                    AllocationId.SEND_POINTS,
-                    AllocationId.SUILEND_CAPSULES,
-                    AllocationId.SAVE,
-                    AllocationId.ROOTLETS,
-                  ].includes(allocation.id)
+                  (allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+                    allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
+                    allocation.id === AllocationIdS1.SAVE ||
+                    allocation.id === AllocationIdS1.ROOTLETS)
                 ) && (
                   <>
                     <Separator className="bg-[#192A3A]" />

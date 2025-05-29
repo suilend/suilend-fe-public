@@ -55,19 +55,21 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
+import {
+  AllocationIdS1,
+  AllocationWithUserAllocation,
+  ROOTLETS_TYPE,
+  allocations,
+  redeemRootletsMsend,
+  redeemSendPointsS1Msend,
+  redeemSuilendCapsulesS1Msend,
+} from "@/lib/mSend";
 import { ROOT_URL } from "@/lib/navigation";
 import {
-  Allocation,
-  AllocationId,
-  ROOTLETS_TYPE,
+  S1_mSEND_REDEMPTION_END_TIMESTAMP_MS,
   SEND_TOTAL_SUPPLY,
-  SuilendCapsuleRarity,
   claimSend,
   formatCountdownDuration,
-  mSEND_REDEMPTION_END_TIMESTAMP_MS,
-  redeemRootletsMsend,
-  redeemSendPointsMsend,
-  redeemSuilendCapsulesMsend,
 } from "@/lib/send";
 import { SubmitButtonState } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -104,25 +106,21 @@ function SubmitButton({
 }
 
 interface RedeemTabContentProps {
-  sendPointsAllocation: Allocation;
-  rootletsAllocation: Allocation;
-  hasSendPointsToRedeem: boolean;
-  hasSuilendCapsulesToRedeem: boolean;
+  sendPointsS1Allocation: AllocationWithUserAllocation;
+  rootletsAllocation: AllocationWithUserAllocation;
+  hasSendPointsS1ToRedeem: boolean;
+  hasSuilendCapsulesS1ToRedeem: boolean;
   hasRootletsToRedeem: boolean;
   totalRedeemableMsend: BigNumber;
-  totalAllocationBreakdownMaps: {
-    suilendCapsules: Record<SuilendCapsuleRarity, { percent: BigNumber }>;
-  };
 }
 
 function RedeemTabContent({
-  sendPointsAllocation,
+  sendPointsS1Allocation,
   rootletsAllocation,
-  hasSendPointsToRedeem,
-  hasSuilendCapsulesToRedeem,
+  hasSendPointsS1ToRedeem,
+  hasSuilendCapsulesS1ToRedeem,
   hasRootletsToRedeem,
   totalRedeemableMsend,
-  totalAllocationBreakdownMaps,
 }: RedeemTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -133,10 +131,11 @@ function RedeemTabContent({
     mSendCoinMetadataMap,
     kioskClient,
     ownedKiosks,
-    refreshUserAllocations,
+    refreshRawUserAllocationsS1,
     ...restLoadedSendContext
   } = useLoadedSendContext();
-  const userAllocations = restLoadedSendContext.userAllocations!;
+  const userAllocations = restLoadedSendContext.rawUserAllocationsS1!;
+  const refreshUserAllocations = refreshRawUserAllocationsS1;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
@@ -144,7 +143,7 @@ function RedeemTabContent({
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
     start: Date.now(),
-    end: new Date(mSEND_REDEMPTION_END_TIMESTAMP_MS),
+    end: new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
   });
 
   // Submit
@@ -169,16 +168,18 @@ function RedeemTabContent({
     const transaction = new Transaction();
 
     try {
-      if (hasSendPointsToRedeem)
-        redeemSendPointsMsend(
+      if (hasSendPointsS1ToRedeem)
+        redeemSendPointsS1Msend(
           appData.suilendClient,
           userData,
           address,
           transaction,
         );
-      if (hasSuilendCapsulesToRedeem)
-        redeemSuilendCapsulesMsend(
-          Object.values(userAllocations.suilendCapsules.ownedObjectsMap).flat(),
+      if (hasSuilendCapsulesS1ToRedeem)
+        redeemSuilendCapsulesS1Msend(
+          Object.values(
+            userAllocations.suilendCapsulesS1.ownedObjectsMap,
+          ).flat(),
           address,
           transaction,
         );
@@ -234,19 +235,19 @@ function RedeemTabContent({
         <div className="relative flex w-full flex-col">
           {/* Items */}
           <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
-            {/* SEND Points */}
-            {hasSendPointsToRedeem && (
+            {/* SEND Points S1 */}
+            {hasSendPointsS1ToRedeem && (
               <>
                 <div className="flex w-full flex-row items-center justify-between gap-4">
                   <div className="flex flex-row items-center gap-3">
                     <Image
-                      src={sendPointsAllocation.src}
+                      src={sendPointsS1Allocation.src}
                       alt="SEND Points S1"
                       width={24}
                       height={24}
                     />
                     <TBody>
-                      {formatToken(userAllocations.sendPoints.owned, {
+                      {formatToken(userAllocations.sendPointsS1.owned, {
                         exact: false,
                       })}{" "}
                       SEND Points S1
@@ -259,38 +260,40 @@ function RedeemTabContent({
                       coinType={NORMALIZED_mSEND_3M_COINTYPE}
                     />
                     <TBody>
-                      {formatToken(sendPointsAllocation.userEligibleSend!, {
+                      {formatToken(sendPointsS1Allocation.userEligibleSend!, {
                         exact: false,
                       })}
                     </TBody>
                   </div>
                 </div>
 
-                {(hasSuilendCapsulesToRedeem || hasRootletsToRedeem) && (
+                {(hasSuilendCapsulesS1ToRedeem || hasRootletsToRedeem) && (
                   <Separator />
                 )}
               </>
             )}
 
-            {/* Suilend Capsules */}
-            {hasSuilendCapsulesToRedeem && (
+            {/* Suilend Capsules S1 */}
+            {hasSuilendCapsulesS1ToRedeem && (
               <>
-                {Object.entries(userAllocations.suilendCapsules.ownedObjectsMap)
+                {Object.entries(
+                  userAllocations.suilendCapsulesS1.ownedObjectsMap,
+                )
                   .filter(([rarity, ownedObjects]) => ownedObjects.length > 0)
                   .map(([rarity, ownedObjects], index, array) => (
                     <Fragment key={rarity}>
                       <div className="flex w-full flex-row items-center justify-between gap-4">
                         <div className="flex flex-row items-center gap-3">
                           <Image
-                            src={`${ASSETS_URL}/send/nft/suilend-capsules-${rarity}.png`}
-                            alt={`${capitalize(rarity)} Suilend Capsule`}
+                            src={`${ASSETS_URL}/send/nft/suilend-capsules/s1-${rarity}.png`}
+                            alt={`${capitalize(rarity)} Suilend Capsule S1`}
                             width={24}
                             height={24}
                           />
                           <TBody>
                             {formatInteger(ownedObjects.length)}{" "}
                             {capitalize(rarity)} Suilend Capsule
-                            {ownedObjects.length !== 1 && "s"}
+                            {ownedObjects.length !== 1 && "s"} S1
                           </TBody>
                         </div>
 
@@ -302,9 +305,9 @@ function RedeemTabContent({
                           <TBody>
                             {formatToken(
                               new BigNumber(ownedObjects.length).times(
-                                totalAllocationBreakdownMaps.suilendCapsules[
-                                  rarity as SuilendCapsuleRarity
-                                ].percent
+                                allocations.s1[
+                                  AllocationIdS1.SUILEND_CAPSULES_S1
+                                ].totalAllocationBreakdownMap[rarity].percent
                                   .times(SEND_TOTAL_SUPPLY)
                                   .div(100),
                               ),
@@ -400,7 +403,7 @@ function RedeemTabContent({
         </div>
 
         {/* Redemption ends in */}
-        {(hasSendPointsToRedeem || hasSuilendCapsulesToRedeem) && (
+        {(hasSendPointsS1ToRedeem || hasSuilendCapsulesS1ToRedeem) && (
           <div className="flex w-full flex-row items-center justify-between gap-4">
             <TBodySans className="text-muted-foreground">
               Redemption ends in
@@ -410,7 +413,7 @@ function RedeemTabContent({
               <Clock className="h-4 w-4 text-muted-foreground" />
               <Tooltip
                 title={formatDate(
-                  new Date(mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                  new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
                   "yyyy-MM-dd HH:mm:ss",
                 )}
               >
@@ -894,56 +897,51 @@ function ClaimTabContent() {
 }
 
 interface ClaimSectionProps {
-  allocations: Allocation[];
-  totalAllocationBreakdownMaps: {
-    suilendCapsules: Record<SuilendCapsuleRarity, { percent: BigNumber }>;
-  };
+  allocations: AllocationWithUserAllocation[];
 }
 
-export default function ClaimSection({
-  allocations,
-  totalAllocationBreakdownMaps,
-}: ClaimSectionProps) {
+export default function ClaimSection({ allocations }: ClaimSectionProps) {
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
 
   const {
     mSendObjectMap,
     mSendCoinMetadataMap,
-    userAllocations,
+    rawUserAllocationsS1,
     selectedMsendCoinType,
   } = useLoadedSendContext();
+  const userAllocations = rawUserAllocationsS1;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
-  // Allocations
-  const sendPointsAllocation = allocations.find(
-    (a) => a.id === AllocationId.SEND_POINTS,
-  ) as Allocation;
-  const suilendCapsulesAllocation = allocations.find(
-    (a) => a.id === AllocationId.SUILEND_CAPSULES,
-  ) as Allocation;
+  // Allocations (S1)
+  const sendPointsS1Allocation = allocations.find(
+    (a) => a.id === AllocationIdS1.SEND_POINTS_S1,
+  ) as AllocationWithUserAllocation;
+  const suilendCapsulesS1Allocation = allocations.find(
+    (a) => a.id === AllocationIdS1.SUILEND_CAPSULES_S1,
+  ) as AllocationWithUserAllocation;
   const rootletsAllocation = allocations.find(
-    (a) => a.id === AllocationId.ROOTLETS,
-  ) as Allocation;
+    (a) => a.id === AllocationIdS1.ROOTLETS,
+  ) as AllocationWithUserAllocation;
 
   // 1) Redeem mSEND
   const minMsendAmount =
     10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
 
-  const hasSendPointsToRedeem =
-    !!sendPointsAllocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
-  const hasSuilendCapsulesToRedeem =
-    !!suilendCapsulesAllocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasSendPointsS1ToRedeem =
+    !!sendPointsS1Allocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS;
+  const hasSuilendCapsulesS1ToRedeem =
+    !!suilendCapsulesS1Allocation.userEligibleSend?.gte(minMsendAmount) &&
+    Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS;
   const hasRootletsToRedeem =
     !!rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
 
   const totalRedeemableMsend = new BigNumber(
-    sendPointsAllocation.userEligibleSend ?? 0,
+    sendPointsS1Allocation.userEligibleSend ?? 0,
   )
-    .plus(suilendCapsulesAllocation.userEligibleSend ?? 0)
+    .plus(suilendCapsulesS1Allocation.userEligibleSend ?? 0)
     .plus(rootletsAllocation.userEligibleSend ?? 0);
 
   // Tabs
@@ -959,7 +957,7 @@ export default function ClaimSection({
 
   const selectedTab =
     totalRedeemableMsend.gt(minMsendAmount) &&
-    (Date.now() < mSEND_REDEMPTION_END_TIMESTAMP_MS || hasRootletsToRedeem)
+    (Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS || hasRootletsToRedeem)
       ? Tab.REDEEM
       : Tab.CLAIM;
 
@@ -1007,13 +1005,12 @@ export default function ClaimSection({
             <div className="flex w-full flex-col gap-6 p-4 pt-6">
               {selectedTab === Tab.REDEEM && (
                 <RedeemTabContent
-                  sendPointsAllocation={sendPointsAllocation}
+                  sendPointsS1Allocation={sendPointsS1Allocation}
                   rootletsAllocation={rootletsAllocation}
-                  hasSendPointsToRedeem={hasSendPointsToRedeem}
-                  hasSuilendCapsulesToRedeem={hasSuilendCapsulesToRedeem}
+                  hasSendPointsS1ToRedeem={hasSendPointsS1ToRedeem}
+                  hasSuilendCapsulesS1ToRedeem={hasSuilendCapsulesS1ToRedeem}
                   hasRootletsToRedeem={hasRootletsToRedeem}
                   totalRedeemableMsend={totalRedeemableMsend}
-                  totalAllocationBreakdownMaps={totalAllocationBreakdownMaps}
                 />
               )}
               {selectedTab === Tab.CLAIM && <ClaimTabContent />}

@@ -4,12 +4,71 @@ import { bcs } from "@mysten/bcs";
 import init, * as template from "@mysten/move-bytecode-template";
 import { Transaction } from "@mysten/sui/transactions";
 import { normalizeSuiAddress } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { SendContextProvider } from "@/contexts/SendContext";
-import { mintMTokens } from "@/lib/send";
+import { mTOKEN_CONTRACT_PACKAGE_ID } from "@/lib/send";
+
+const mintMTokens = ({
+  transaction,
+  treasuryCap,
+  mTokenType,
+  vestingType,
+  penaltyType,
+  vestingCoin,
+  amount,
+  tokenDecimals,
+  startPenaltyNumerator,
+  endPenaltyNumerator,
+  penaltyDenominator,
+  startTimeS,
+  endTimeS,
+}: {
+  transaction: Transaction;
+  treasuryCap: string;
+  mTokenType: string;
+  vestingType: string;
+  penaltyType: string;
+  vestingCoin: string;
+  amount: number;
+  tokenDecimals: number;
+  startPenaltyNumerator: number;
+  endPenaltyNumerator: number;
+  penaltyDenominator: number;
+  startTimeS: number;
+  endTimeS: number;
+}) => {
+  // Calculate splitAmount based on amount and tokenDecimals
+  const splitAmount = BigInt(
+    new BigNumber(amount)
+      .times(10 ** tokenDecimals)
+      .integerValue()
+      .toString(),
+  );
+
+  // Split tokens from the coin
+  const [splitCoin] = transaction.splitCoins(transaction.object(vestingCoin), [
+    transaction.pure.u64(splitAmount),
+  ]);
+
+  // Returns (AdminCap<MToken, Vesting, Penalty>, VestingManager<MToken, Vesting, Penalty>, Coin<MToken>)
+  return transaction.moveCall({
+    target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::mint_mtokens`,
+    typeArguments: [mTokenType, vestingType, penaltyType],
+    arguments: [
+      transaction.object(treasuryCap),
+      splitCoin,
+      transaction.pure.u64(startPenaltyNumerator),
+      transaction.pure.u64(endPenaltyNumerator),
+      transaction.pure.u64(penaltyDenominator),
+      transaction.pure.u64(startTimeS),
+      transaction.pure.u64(endTimeS),
+    ],
+  });
+};
 
 // Initialize the WebAssembly module
 let moduleInitialized = false;
