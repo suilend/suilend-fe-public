@@ -531,11 +531,15 @@ function Page() {
               provider: QuoteProvider.FLOWX,
               in: {
                 coinType: _tokenIn.coinType,
-                amount: new BigNumber(quote.amountIn.toString()),
+                amount: new BigNumber(quote.amountIn.toString()).div(
+                  10 ** _tokenIn.decimals,
+                ),
               },
               out: {
                 coinType: _tokenOut.coinType,
-                amount: new BigNumber(quote.amountOut.toString()),
+                amount: new BigNumber(quote.amountOut.toString()).div(
+                  10 ** _tokenOut.decimals,
+                ),
               },
               routes: (quote.routes ?? []).map((route, routeIndex) => ({
                 percent: new BigNumber(route.amountIn.toString())
@@ -547,11 +551,15 @@ function Page() {
                   provider: hop.protocol(),
                   in: {
                     coinType: normalizeStructTag(hop.input.coinType),
-                    amount: new BigNumber(hop.amountIn.toString()),
+                    amount: new BigNumber(hop.amountIn.toString()).div(
+                      10 ** _tokenIn.decimals,
+                    ),
                   },
                   out: {
                     coinType: normalizeStructTag(hop.output.coinType),
-                    amount: new BigNumber(hop.amountOut.toString()),
+                    amount: new BigNumber(hop.amountOut.toString()).div(
+                      10 ** _tokenOut.decimals,
+                    ),
                   },
                 })),
               })),
