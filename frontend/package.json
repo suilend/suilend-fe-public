@@ -17,6 +17,7 @@
     "@7kprotocol/sdk-ts": "^3.0.0",
     "@cetusprotocol/aggregator-sdk": "^0.10.0",
     "@cetusprotocol/cetus-sui-clmm-sdk": "^5.3.4",
+    "@flowx-finance/sdk": "^1.10.22",
     "@launchdarkly/node-server-sdk": "^9.7.2",
     "@msafe/sui-wallet": "^0.0.83",
     "@mysten/bcs": "1.6.0",

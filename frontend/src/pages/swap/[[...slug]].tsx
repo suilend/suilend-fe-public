@@ -16,6 +16,13 @@ import {
 } from "@7kprotocol/sdk-ts/cjs";
 import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import {
+  AggregatorQuoter,
+  Coin,
+  Commission,
+  CommissionType,
+  TradeBuilder,
+} from "@flowx-finance/sdk";
+import {
   Transaction,
   TransactionObjectArgument,
   coinWithBalance,
@@ -100,6 +107,7 @@ import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
+import { FLOWX_PARTNER_ID } from "@/lib/flowx";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -237,6 +245,7 @@ function Page() {
       [QuoteProvider.AFTERMATH]: true, // W->W, W->D, D->D
       [QuoteProvider.CETUS]: true, // W->W, W->D, D->D
       [QuoteProvider._7K]: true, // W->W, W->D, D->D
+      [QuoteProvider.FLOWX]: true, // W->W, W->D, D->D
     }),
     [],
   );
@@ -498,6 +507,69 @@ function Page() {
                   },
             );
             console.log("Swap - set 7K quote", +standardizedQuote.out.amount);
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+      }
+
+      // FLOWX
+      if (activeProvidersMap[QuoteProvider.FLOWX]) {
+        (async () => {
+          console.log("Swap - fetching FLOWX quote");
+          const quoter = new AggregatorQuoter("mainnet");
+
+          try {
+            const quote = await quoter.getRoutes({
+              tokenIn: _tokenIn.coinType,
+              tokenOut: _tokenOut.coinType,
+              amountIn: amountIn,
+            });
+
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              provider: QuoteProvider.FLOWX,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.amountIn.toString()),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.amountOut.toString()),
+              },
+              routes: (quote.routes ?? []).map((route, routeIndex) => ({
+                percent: new BigNumber(route.amountIn.toString())
+                  .div(quote.amountIn.toString())
+                  .times(100),
+                path: route.paths.map((hop) => ({
+                  id: hop.pool.id,
+                  routeIndex,
+                  provider: hop.protocol(),
+                  in: {
+                    coinType: normalizeStructTag(hop.input.coinType),
+                    amount: new BigNumber(hop.amountIn.toString()),
+                  },
+                  out: {
+                    coinType: normalizeStructTag(hop.output.coinType),
+                    amount: new BigNumber(hop.amountOut.toString()),
+                  },
+                })),
+              })),
+              quote,
+            };
+
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log(
+              "Swap - set FlowX Aggregator quote",
+              +standardizedQuote.out.amount,
+            );
           } catch (err) {
             console.error(err);
           }
@@ -1043,6 +1115,34 @@ function Page() {
       } else {
         return { transaction: transaction2 as Transaction, coinOut };
       }
+    } else if (quote.provider == QuoteProvider.FLOWX) {
+      if (!coinIn)
+        coinIn = coinWithBalance({
+          balance: BigInt(quote.quote.amountIn.toString()),
+          type: quote.in.coinType,
+          useGasCoin: isSui(quote.in.coinType),
+        })(transaction);
+
+      const tradeBuilder = new TradeBuilder("mainnet", quote.quote.routes);
+      const commission = new Commission(
+        FLOWX_PARTNER_ID,
+        new Coin(quote.out.coinType), //fee on coin out
+        CommissionType.PERCENTAGE, // percentage fee
+        0, //Fee by percentage, Ex: 1% = 1/100 * 1e6
+        true, //directly transfer to partner address
+      );
+      const trade = tradeBuilder
+        .slippage((+slippagePercent / 100) * 1e6)
+        .commission(commission)
+        .build();
+
+      const coinOut = await trade.swap({
+        coinIn: coinIn,
+        client: appData.suilendClient.client,
+        tx: transaction,
+      });
+
+      return { transaction, coinOut: coinOut as TransactionObjectArgument };
     } else throw new Error("Unknown quote type");
   };
 
@@ -1793,6 +1893,14 @@ function Page() {
 
         <TLabelSans className="opacity-50">
           {"Powered by "}
+          <TextLink
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
+            href="https://flowx.finance/swap"
+            noIcon
+          >
+            FlowX
+          </TextLink>
+          {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
             href="https://aftermath.finance/trade"
