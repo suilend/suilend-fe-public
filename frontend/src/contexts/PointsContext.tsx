@@ -26,7 +26,6 @@ export enum Tab {
 export interface LeaderboardRowData {
   rank: number;
   address: string;
-  pointsPerDay: BigNumber;
   totalPoints: BigNumber;
 }
 
@@ -98,7 +97,6 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
         [season]: json.rows.map((row: any) => ({
           rank: row.rank,
           address: row.address,
-          pointsPerDay: new BigNumber(row.pointsPerDay),
           totalPoints: new BigNumber(row.totalPoints),
         })),
       }));
@@ -136,7 +134,6 @@ export function PointsContextProvider({ children }: PropsWithChildren) {
           [key]: row ?? {
             rank: -1,
             address,
-            pointsPerDay: new BigNumber(-1),
             totalPoints: new BigNumber(-1),
           },
         };

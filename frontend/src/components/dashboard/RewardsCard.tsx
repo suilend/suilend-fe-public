@@ -8,7 +8,6 @@ import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
 import ClaimRewardsDropdownMenu from "@/components/dashboard/ClaimRewardsDropdownMenu";
-import PointsPerDayStat from "@/components/points/PointsPerDayStat";
 import RankStat from "@/components/points/RankStat";
 import TotalPointsStat from "@/components/points/TotalPointsStat";
 import Button from "@/components/shared/Button";
@@ -166,12 +165,6 @@ export default function RewardsCard() {
           <TotalPointsStat
             season={season}
             amount={pointsStats.totalPoints.total}
-            isCentered
-          />
-
-          <PointsPerDayStat
-            season={season}
-            amount={pointsStats.pointsPerDay.total}
             isRightAligned
           />
         </div>

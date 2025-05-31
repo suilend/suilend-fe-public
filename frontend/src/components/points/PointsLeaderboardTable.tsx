@@ -17,7 +17,7 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { LeaderboardRowData, usePointsContext } from "@/contexts/PointsContext";
+import { LeaderboardRowData } from "@/contexts/PointsContext";
 import { ROOT_URL } from "@/lib/navigation";
 
 interface PointsLeaderboardTableProps {
@@ -36,7 +36,6 @@ export default function PointsLeaderboardTable({
   disableSorting,
 }: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
-  const { season: currentSeason } = usePointsContext();
 
   // Columns
   const columns = useMemo(() => {
@@ -96,26 +95,9 @@ export default function PointsLeaderboardTable({
         },
       },
     ];
-    if (season === currentSeason)
-      result.push({
-        accessorKey: "pointsPerDay",
-        enableSorting: !disableSorting,
-        sortingFn: decimalSortingFn("pointsPerDay"),
-        header: ({ column }) =>
-          tableHeader(column, "Points per day", { isNumerical: true }),
-        cell: ({ row }) => {
-          const { pointsPerDay } = row.original;
-
-          return (
-            <div className="flex flex-row justify-end">
-              <PointsCount season={season} amount={pointsPerDay} />
-            </div>
-          );
-        },
-      });
 
     return result;
-  }, [season, explorer, currentSeason, disableSorting]);
+  }, [season, explorer, disableSorting]);
 
   return (
     <DataTable<LeaderboardRowData>

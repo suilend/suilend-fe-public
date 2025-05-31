@@ -83,14 +83,6 @@ export default function PointsCountPopover() {
               amount={pointsStats?.totalPoints.total}
             />
           </div>
-
-          <div className="flex flex-row items-center justify-between gap-4">
-            <TLabelSans>Points per day</TLabelSans>
-            <PointsCount
-              season={season}
-              amount={pointsStats?.pointsPerDay.total}
-            />
-          </div>
         </div>
 
         {!router.asPath.startsWith(POINTS_URL) && (
