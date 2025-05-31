@@ -716,10 +716,12 @@ function Page() {
 
   // Ratios
   const [isInverted, setIsInverted] = useState<boolean>(true);
-
   const currentTokenRatio = useMemo(
     () =>
-      tokenInUsdPrice !== undefined && tokenOutUsdPrice !== undefined
+      tokenInUsdPrice !== undefined &&
+      tokenOutUsdPrice !== undefined &&
+      !tokenInUsdPrice.eq(0) &&
+      !tokenOutUsdPrice.eq(0)
         ? new BigNumber(!isInverted ? tokenInUsdPrice : tokenOutUsdPrice).div(
             !isInverted ? tokenOutUsdPrice : tokenInUsdPrice,
           )
