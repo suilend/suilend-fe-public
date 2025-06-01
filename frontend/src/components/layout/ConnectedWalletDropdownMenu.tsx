@@ -200,7 +200,12 @@ export default function ConnectedWalletDropdownMenu({
                 <Skeleton className="h-[70px] w-full rounded-sm" />
               ) : (
                 Object.entries(allUserData)
-                  .filter(([, _userData]) => _userData.obligations.length > 0)
+                  .filter(
+                    ([_lendingMarketId, _userData]) =>
+                      !allAppData?.allLendingMarketData[_lendingMarketId]
+                        .lendingMarket.isHidden &&
+                      _userData.obligations.length > 0,
+                  )
                   .map(([_lendingMarketId, _userData], _userDataIndex) => (
                     <Fragment key={_lendingMarketId}>
                       <TLabelSans
