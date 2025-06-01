@@ -107,21 +107,13 @@ function SubmitButton({
 }
 
 interface RedeemTabContentProps {
-  sendPointsS1Allocation: AllocationWithUserAllocation;
-  rootletsAllocation: AllocationWithUserAllocation;
-  hasSendPointsS1ToRedeem: boolean;
-  hasSuilendCapsulesS1ToRedeem: boolean;
-  hasRootletsToRedeem: boolean;
-  totalRedeemableMsend: BigNumber;
+  userRedeemableAllocations: AllocationWithUserAllocation[];
+  userTotalRedeemableMsend: BigNumber;
 }
 
 function RedeemTabContent({
-  sendPointsS1Allocation,
-  rootletsAllocation,
-  hasSendPointsS1ToRedeem,
-  hasSuilendCapsulesS1ToRedeem,
-  hasRootletsToRedeem,
-  totalRedeemableMsend,
+  userRedeemableAllocations,
+  userTotalRedeemableMsend,
 }: RedeemTabContentProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -135,8 +127,7 @@ function RedeemTabContent({
     refreshRawUserAllocationsS1,
     ...restLoadedSendContext
   } = useLoadedSendContext();
-  const userAllocations = restLoadedSendContext.rawUserAllocationsS1!;
-  const refreshUserAllocations = refreshRawUserAllocationsS1;
+  const rawUserAllocationsS1 = restLoadedSendContext.rawUserAllocationsS1!;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
@@ -169,6 +160,16 @@ function RedeemTabContent({
     const transaction = new Transaction();
 
     try {
+      const hasSendPointsS1ToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS1.SEND_POINTS_S1,
+      );
+      const hasSuilendCapsulesS1ToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1,
+      );
+      const hasRootletsToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS1.ROOTLETS,
+      );
+
       if (hasSendPointsS1ToRedeem)
         redeemPointsMsend(
           "SEND_POINTS_S1",
@@ -181,14 +182,14 @@ function RedeemTabContent({
         redeemSuilendCapsulesMsend(
           1,
           Object.values(
-            userAllocations.suilendCapsulesS1.ownedObjectsMap,
+            rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap,
           ).flat(),
           address,
           transaction,
         ); // SERIES 1
       if (hasRootletsToRedeem)
         redeemRootletsMsend(
-          userAllocations.rootlets.ownedMsendObjectsMap,
+          rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
           kioskClient,
           ownedKiosks,
           address,
@@ -240,7 +241,7 @@ function RedeemTabContent({
       showErrorToast("Failed to redeem mSEND", err as Error, undefined, true);
     } finally {
       setIsSubmitting(false);
-      await refreshUserAllocations();
+      await refreshRawUserAllocationsS1();
     }
   };
 
@@ -250,143 +251,101 @@ function RedeemTabContent({
         <div className="relative flex w-full flex-col">
           {/* Items */}
           <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
-            {/* SEND Points S1 */}
-            {hasSendPointsS1ToRedeem && (
-              <>
-                <div className="flex w-full flex-row items-center justify-between gap-4">
-                  <div className="flex flex-row items-center gap-3">
-                    <Image
-                      src={sendPointsS1Allocation.src}
-                      alt="SEND Points S1"
-                      width={24}
-                      height={24}
-                    />
-                    <TBody>
-                      {formatToken(userAllocations.sendPointsS1.owned, {
-                        exact: false,
-                      })}{" "}
-                      SEND Points S1
-                    </TBody>
-                  </div>
+            {userRedeemableAllocations.map((allocation, index) => (
+              <Fragment key={allocation.id}>
+                {allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ? (
+                  Object.entries(allocation.ownedMap!)
+                    .filter(([, owned]) => owned.gt(0))
+                    .map(([rarity, owned], index, array) => (
+                      <Fragment key={rarity}>
+                        <div className="flex w-full flex-row items-center justify-between gap-4">
+                          <div className="flex flex-row items-center gap-3">
+                            <Image
+                              src={`${ASSETS_URL}/send/nft/suilend-capsules/s1-${rarity}.png`}
+                              alt={[capitalize(rarity), allocation.title].join(
+                                " ",
+                              )}
+                              width={24}
+                              height={24}
+                            />
+                            <TBody>
+                              {formatInteger(+owned)}{" "}
+                              {[capitalize(rarity), allocation.title].join(" ")}
+                            </TBody>
+                          </div>
 
-                  <div className="flex flex-row items-center gap-2">
-                    <MsendTokenLogo className="h-5 w-5" />
-                    <TBody>
-                      {formatToken(sendPointsS1Allocation.userEligibleSend!, {
-                        exact: false,
-                      })}
-                    </TBody>
-                  </div>
-                </div>
-
-                {(hasSuilendCapsulesS1ToRedeem || hasRootletsToRedeem) && (
-                  <Separator />
-                )}
-              </>
-            )}
-
-            {/* Suilend Capsules S1 */}
-            {hasSuilendCapsulesS1ToRedeem && (
-              <>
-                {Object.entries(
-                  userAllocations.suilendCapsulesS1.ownedObjectsMap,
-                )
-                  .filter(([rarity, ownedObjects]) => ownedObjects.length > 0)
-                  .map(([rarity, ownedObjects], index, array) => (
-                    <Fragment key={rarity}>
-                      <div className="flex w-full flex-row items-center justify-between gap-4">
-                        <div className="flex flex-row items-center gap-3">
-                          <Image
-                            src={`${ASSETS_URL}/send/nft/suilend-capsules/s1-${rarity}.png`}
-                            alt={`${capitalize(rarity)} Suilend Capsule S1`}
-                            width={24}
-                            height={24}
-                          />
-                          <TBody>
-                            {formatInteger(ownedObjects.length)}{" "}
-                            {capitalize(rarity)} Suilend Capsule
-                            {ownedObjects.length !== 1 && "s"} S1
-                          </TBody>
+                          <div className="flex flex-row items-center gap-2">
+                            <MsendTokenLogo className="h-5 w-5" />
+                            <TBody>
+                              {formatToken(
+                                owned.times(
+                                  allocations.s1[
+                                    AllocationIdS1.SUILEND_CAPSULES_S1
+                                  ].totalAllocationBreakdownMap[rarity].percent
+                                    .times(SEND_TOTAL_SUPPLY)
+                                    .div(100),
+                                ),
+                                { exact: false },
+                              )}
+                            </TBody>
+                          </div>
                         </div>
 
-                        <div className="flex flex-row items-center gap-2">
-                          <MsendTokenLogo className="h-5 w-5" />
-                          <TBody>
-                            {formatToken(
-                              new BigNumber(ownedObjects.length).times(
-                                allocations.s1[
-                                  AllocationIdS1.SUILEND_CAPSULES_S1
-                                ].totalAllocationBreakdownMap[rarity].percent
-                                  .times(SEND_TOTAL_SUPPLY)
-                                  .div(100),
+                        {index !== array.length - 1 && <Separator />}
+                      </Fragment>
+                    ))
+                ) : (
+                  <div className="flex w-full flex-row items-center justify-between gap-4">
+                    <div className="flex flex-row items-center gap-3">
+                      <Image
+                        src={allocation.src}
+                        alt={allocation.title}
+                        width={24}
+                        height={24}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <TBody>
+                          {allocation.id === AllocationIdS1.SEND_POINTS_S1
+                            ? formatToken(allocation.owned!, { exact: false })
+                            : formatInteger(+allocation.owned!)}{" "}
+                          {allocation.title}
+                        </TBody>
+                        {allocation.id === AllocationIdS1.ROOTLETS &&
+                          (ownedKiosks ?? []).reduce(
+                            (acc, { kiosk }) => [
+                              ...acc,
+                              ...kiosk.items.filter(
+                                (item) =>
+                                  item.type === ROOTLETS_TYPE && item.listing,
                               ),
-                              { exact: false },
-                            )}
-                          </TBody>
-                        </div>
+                            ],
+                            [] as KioskItem[],
+                          ).length > 0 && (
+                            <TLabelSans>
+                              {
+                                "Note: You'll need to unlist your listed Rootlets to redeem them"
+                              }
+                            </TLabelSans>
+                          )}
                       </div>
+                    </div>
 
-                      {index !== array.length - 1 && <Separator />}
-                    </Fragment>
-                  ))}
-
-                {hasRootletsToRedeem && <Separator />}
-              </>
-            )}
-
-            {/* Rootlets */}
-            {hasRootletsToRedeem && (
-              <>
-                <div className="flex w-full flex-row items-center justify-between gap-4">
-                  <div className="flex flex-row items-center gap-3">
-                    <Image
-                      src={rootletsAllocation.src}
-                      alt="Rootlets"
-                      width={24}
-                      height={24}
-                    />
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-row items-center gap-2">
+                      <MsendTokenLogo className="h-5 w-5" />
                       <TBody>
-                        {formatInteger(
-                          Object.keys(
-                            userAllocations.rootlets.ownedMsendObjectsMap,
-                          ).length,
-                        )}{" "}
-                        Rootlets NFT
-                        {Object.keys(
-                          userAllocations.rootlets.ownedMsendObjectsMap,
-                        ).length !== 1 && "s"}
+                        {formatToken(allocation.userEligibleSend!, {
+                          exact: false,
+                        })}
                       </TBody>
-                      {(ownedKiosks ?? []).reduce(
-                        (acc, { kiosk }) => [
-                          ...acc,
-                          ...kiosk.items.filter(
-                            (item) =>
-                              item.type === ROOTLETS_TYPE && item.listing,
-                          ),
-                        ],
-                        [] as KioskItem[],
-                      ).length > 0 && (
-                        <TLabelSans>
-                          {
-                            "Note: You'll need to unlist your listed Rootlets NFTs to redeem them"
-                          }
-                        </TLabelSans>
-                      )}
                     </div>
                   </div>
+                )}
 
-                  <div className="flex flex-row items-center gap-2">
-                    <MsendTokenLogo className="h-5 w-5" />
-                    <TBody>
-                      {formatToken(rootletsAllocation.userEligibleSend!, {
-                        exact: false,
-                      })}
-                    </TBody>
-                  </div>
-                </div>
-              </>
-            )}
+                {index !== userRedeemableAllocations.length - 1 && (
+                  <Separator />
+                )}
+              </Fragment>
+            ))}
           </div>
 
           {/* Total */}
@@ -396,7 +355,7 @@ function RedeemTabContent({
             <div className="flex flex-row items-center gap-2">
               <MsendTokenLogo className="h-5 w-5" />
               <TBody>
-                {formatToken(totalRedeemableMsend, {
+                {formatToken(userTotalRedeemableMsend, {
                   dp: mSendCoinMetadata.decimals,
                 })}
               </TBody>
@@ -405,10 +364,14 @@ function RedeemTabContent({
         </div>
 
         {/* Redemption ends in */}
-        {(hasSendPointsS1ToRedeem || hasSuilendCapsulesS1ToRedeem) && (
+        {userRedeemableAllocations.some(
+          (allocation) =>
+            allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+            allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1,
+        ) && (
           <div className="flex w-full flex-row items-center justify-between gap-4">
             <TBodySans className="text-muted-foreground">
-              Redemption ends in
+              S1 redemption ends in
             </TBodySans>
 
             <div className="flex flex-row items-center gap-2">
@@ -912,38 +875,31 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     rawUserAllocationsS1,
     selectedMsendCoinType,
   } = useLoadedSendContext();
-  const userAllocations = rawUserAllocationsS1;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
-  // Allocations (S1)
-  const sendPointsS1Allocation = allocations.find(
-    (a) => a.id === AllocationIdS1.SEND_POINTS_S1,
-  ) as AllocationWithUserAllocation;
-  const suilendCapsulesS1Allocation = allocations.find(
-    (a) => a.id === AllocationIdS1.SUILEND_CAPSULES_S1,
-  ) as AllocationWithUserAllocation;
-  const rootletsAllocation = allocations.find(
-    (a) => a.id === AllocationIdS1.ROOTLETS,
-  ) as AllocationWithUserAllocation;
-
-  // 1) Redeem mSEND
+  // Redeem
   const minMsendAmount = 10 ** (-1 * mSendCoinMetadata.decimals);
 
-  const hasSendPointsS1ToRedeem =
-    !!sendPointsS1Allocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS;
-  const hasSuilendCapsulesS1ToRedeem =
-    !!suilendCapsulesS1Allocation.userEligibleSend?.gte(minMsendAmount) &&
-    Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS;
-  const hasRootletsToRedeem =
-    !!rootletsAllocation.userEligibleSend?.gte(minMsendAmount);
+  const redeemableAllocations = allocations.filter(
+    (allocation) =>
+      allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+      allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
+      allocation.id === AllocationIdS1.ROOTLETS,
+  );
 
-  const totalRedeemableMsend = new BigNumber(
-    sendPointsS1Allocation.userEligibleSend ?? 0,
-  )
-    .plus(suilendCapsulesS1Allocation.userEligibleSend ?? 0)
-    .plus(rootletsAllocation.userEligibleSend ?? 0);
+  const userRedeemableAllocations = redeemableAllocations.filter(
+    (allocation) =>
+      allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+      allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1
+        ? allocation.userEligibleSend?.gte(minMsendAmount) &&
+          Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS
+        : allocation.userEligibleSend?.gte(minMsendAmount),
+  );
+  const userTotalRedeemableMsend = userRedeemableAllocations.reduce(
+    (acc, allocation) => acc.plus(allocation.userEligibleSend ?? 0),
+    new BigNumber(0),
+  );
 
   // Tabs
   enum Tab {
@@ -957,10 +913,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
   ];
 
   const selectedTab =
-    totalRedeemableMsend.gt(minMsendAmount) &&
-    (Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS || hasRootletsToRedeem)
-      ? Tab.REDEEM
-      : Tab.CLAIM;
+    userRedeemableAllocations.length > 0 ? Tab.REDEEM : Tab.CLAIM;
 
   // Penalty
   const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -969,7 +922,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim">Claim</SectionHeading>
 
-      {address && userAllocations === undefined ? (
+      {address && rawUserAllocationsS1 === undefined ? (
         <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
       ) : (
         <>
@@ -1006,12 +959,8 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
             <div className="flex w-full flex-col gap-6 p-4 pt-6">
               {selectedTab === Tab.REDEEM && (
                 <RedeemTabContent
-                  sendPointsS1Allocation={sendPointsS1Allocation}
-                  rootletsAllocation={rootletsAllocation}
-                  hasSendPointsS1ToRedeem={hasSendPointsS1ToRedeem}
-                  hasSuilendCapsulesS1ToRedeem={hasSuilendCapsulesS1ToRedeem}
-                  hasRootletsToRedeem={hasRootletsToRedeem}
-                  totalRedeemableMsend={totalRedeemableMsend}
+                  userRedeemableAllocations={userRedeemableAllocations}
+                  userTotalRedeemableMsend={userTotalRedeemableMsend}
                 />
               )}
               {selectedTab === Tab.CLAIM && <ClaimTabContent />}

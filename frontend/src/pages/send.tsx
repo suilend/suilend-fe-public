@@ -19,17 +19,18 @@ import {
 } from "@/contexts/SendContext";
 import {
   AllocationIdS1,
+  AllocationIdS2,
   AllocationWithUserAllocation,
   BluefinLeague,
   SuilendCapsuleS1Rarity,
+  SuilendCapsuleS2Rarity,
   allocations,
 } from "@/lib/mSend";
 import { SEND_TOTAL_SUPPLY, TGE_TIMESTAMP_MS } from "@/lib/send";
 import { cn } from "@/lib/utils";
 
 function Page() {
-  const { rawUserAllocationsS1 } = useLoadedSendContext();
-  const userAllocations = rawUserAllocationsS1;
+  const { rawUserAllocationsS1, rawUserAllocationsS2 } = useLoadedSendContext();
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
 
@@ -56,7 +57,7 @@ function Page() {
   const octo = allocations.s1[AllocationIdS1.OCTO];
   const tism = allocations.s1[AllocationIdS1.TISM];
 
-  const allocationsWithUserAllocationMap: Record<
+  const allocationsWithUserAllocationS1Map: Record<
     AllocationIdS1,
     AllocationWithUserAllocation
   > = {
@@ -64,8 +65,8 @@ function Page() {
       ...earlyUsers,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.earlyUsers.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.earlyUsers.isInSnapshot
             ? earlyUsers.totalAllocationBreakdownMap.wallet.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
@@ -77,9 +78,13 @@ function Page() {
     [AllocationIdS1.SEND_POINTS_S1]: {
       ...sendPointsS1,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.sendPointsS1.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.sendPointsS1.owned
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.sendPointsS1.owned
               .div(1000)
               .times(
                 sendPointsS1.totalAllocationBreakdownMap.thousand.percent
@@ -88,19 +93,39 @@ function Page() {
               )
           : undefined,
       userRedeemedMsend:
-        userAllocations !== undefined
-          ? userAllocations.sendPointsS1.redeemedMsend
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.sendPointsS1.redeemedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
     [AllocationIdS1.SUILEND_CAPSULES_S1]: {
       ...suilendCapsulesS1,
 
+      ownedMap:
+        rawUserAllocationsS1 !== undefined
+          ? {
+              [SuilendCapsuleS1Rarity.COMMON]: new BigNumber(
+                rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
+                  SuilendCapsuleS1Rarity.COMMON
+                ].length,
+              ),
+              [SuilendCapsuleS1Rarity.UNCOMMON]: new BigNumber(
+                rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
+                  SuilendCapsuleS1Rarity.UNCOMMON
+                ].length,
+              ),
+              [SuilendCapsuleS1Rarity.RARE]: new BigNumber(
+                rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
+                  SuilendCapsuleS1Rarity.RARE
+                ].length,
+              ),
+            }
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
+        rawUserAllocationsS1 !== undefined
           ? new BigNumber(
               new BigNumber(
-                userAllocations.suilendCapsulesS1.ownedObjectsMap[
+                rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
                   SuilendCapsuleS1Rarity.COMMON
                 ].length,
               ).times(
@@ -113,7 +138,7 @@ function Page() {
             )
               .plus(
                 new BigNumber(
-                  userAllocations.suilendCapsulesS1.ownedObjectsMap[
+                  rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
                     SuilendCapsuleS1Rarity.UNCOMMON
                   ].length,
                 ).times(
@@ -126,7 +151,7 @@ function Page() {
               )
               .plus(
                 new BigNumber(
-                  userAllocations.suilendCapsulesS1.ownedObjectsMap[
+                  rawUserAllocationsS1.suilendCapsulesS1.ownedObjectsMap[
                     SuilendCapsuleS1Rarity.RARE
                   ].length,
                 ).times(
@@ -139,8 +164,8 @@ function Page() {
               )
           : undefined,
       userRedeemedMsend:
-        userAllocations !== undefined
-          ? userAllocations.suilendCapsulesS1.redeemedMsend
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.suilendCapsulesS1.redeemedMsend
           : undefined,
       userBridgedMsend: undefined,
     },
@@ -150,22 +175,32 @@ function Page() {
       userEligibleSend: undefined,
       userRedeemedMsend: undefined,
       userBridgedMsend:
-        userAllocations !== undefined
-          ? userAllocations.save.bridgedMsend
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.save.bridgedMsend
           : undefined,
     },
     [AllocationIdS1.ROOTLETS]: {
       ...rootlets,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? Date.now() >= TGE_TIMESTAMP_MS
+            ? new BigNumber(
+                Object.keys(
+                  rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
+                ).length,
+              )
+            : rawUserAllocationsS1.rootlets.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
+        rawUserAllocationsS1 !== undefined
           ? (Date.now() >= TGE_TIMESTAMP_MS
               ? new BigNumber(
                   Object.keys(
-                    userAllocations.rootlets.ownedMsendObjectsMap,
+                    rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
                   ).length,
                 )
-              : userAllocations.rootlets.owned
+              : rawUserAllocationsS1.rootlets.owned
             ).times(
               rootlets.totalAllocationBreakdownMap.one.percent
                 .times(SEND_TOTAL_SUPPLY)
@@ -173,8 +208,8 @@ function Page() {
             )
           : undefined,
       userRedeemedMsend:
-        userAllocations !== undefined
-          ? userAllocations.rootlets.redeemedMsend?.[
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.rootlets.redeemedMsend?.[
               NORMALIZED_mSEND_SERIES_1_COINTYPE
             ] // SERIES 1 only
           : undefined,
@@ -185,10 +220,11 @@ function Page() {
       ...bluefinLeagues,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.bluefinLeagues.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.bluefinLeagues.isInSnapshot
             ? bluefinLeagues.totalAllocationBreakdownMap[
-                userAllocations.bluefinLeagues.isInSnapshot as BluefinLeague
+                rawUserAllocationsS1.bluefinLeagues
+                  .isInSnapshot as BluefinLeague
               ].percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
@@ -201,9 +237,9 @@ function Page() {
       ...bluefinSendTraders,
 
       userEligibleSend:
-        userAllocations !== undefined
+        rawUserAllocationsS1 !== undefined
           ? new BigNumber(
-              userAllocations.bluefinSendTraders.makerVolumeUsd
+              rawUserAllocationsS1.bluefinSendTraders.makerVolumeUsd
                 .div(1000)
                 .times(
                   bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdMakerVolume.percent
@@ -211,7 +247,7 @@ function Page() {
                     .div(100),
                 ),
             ).plus(
-              userAllocations.bluefinSendTraders.takerVolumeUsd
+              rawUserAllocationsS1.bluefinSendTraders.takerVolumeUsd
                 .div(1000)
                 .times(
                   bluefinSendTraders.totalAllocationBreakdownMap.thousandUsdTakerVolume.percent
@@ -227,9 +263,13 @@ function Page() {
     [AllocationIdS1.PRIME_MACHIN]: {
       ...primeMachin,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.primeMachin.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.primeMachin.owned.times(
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.primeMachin.owned.times(
               primeMachin.totalAllocationBreakdownMap.one.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100),
@@ -241,9 +281,13 @@ function Page() {
     [AllocationIdS1.EGG]: {
       ...egg,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.egg.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.egg.owned.times(
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.egg.owned.times(
               egg.totalAllocationBreakdownMap.one.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100),
@@ -255,9 +299,13 @@ function Page() {
     [AllocationIdS1.DOUBLEUP_CITIZEN]: {
       ...doubleUpCitizen,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.doubleUpCitizen.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.doubleUpCitizen.owned.times(
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.doubleUpCitizen.owned.times(
               doubleUpCitizen.totalAllocationBreakdownMap.one.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100),
@@ -269,9 +317,13 @@ function Page() {
     [AllocationIdS1.KUMO]: {
       ...kumo,
 
+      owned:
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.kumo.owned
+          : undefined,
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.kumo.owned.times(
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.kumo.owned.times(
               kumo.totalAllocationBreakdownMap.one.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100),
@@ -298,8 +350,8 @@ function Page() {
       ...fud,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.fud.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.fud.isInSnapshot
             ? fud.totalAllocationBreakdownMap.wallet.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
@@ -312,8 +364,8 @@ function Page() {
       ...aaa,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.aaa.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.aaa.isInSnapshot
             ? aaa.totalAllocationBreakdownMap.wallet.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
@@ -326,8 +378,8 @@ function Page() {
       ...octo,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.octo.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.octo.isInSnapshot
             ? octo.totalAllocationBreakdownMap.wallet.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
@@ -340,14 +392,114 @@ function Page() {
       ...tism,
 
       userEligibleSend:
-        userAllocations !== undefined
-          ? userAllocations.tism.isInSnapshot
+        rawUserAllocationsS1 !== undefined
+          ? rawUserAllocationsS1.tism.isInSnapshot
             ? tism.totalAllocationBreakdownMap.wallet.percent
                 .times(SEND_TOTAL_SUPPLY)
                 .div(100)
             : new BigNumber(0)
           : undefined,
       userRedeemedMsend: undefined,
+      userBridgedMsend: undefined,
+    },
+  };
+
+  // Allocations (S2)
+  const sendPointsS2 = allocations.s2[AllocationIdS2.SEND_POINTS_S2];
+  const steammPoints = allocations.s2[AllocationIdS2.STEAMM_POINTS];
+  const suilendCapsulesS2 = allocations.s2[AllocationIdS2.SUILEND_CAPSULES_S2];
+
+  const allocationsWithUserAllocationS2Map: Record<
+    AllocationIdS2,
+    AllocationWithUserAllocation
+  > = {
+    [AllocationIdS2.SEND_POINTS_S2]: {
+      ...sendPointsS2,
+
+      userEligibleSend:
+        rawUserAllocationsS2 !== undefined
+          ? rawUserAllocationsS2.sendPointsS2.owned
+              .div(1000)
+              .times(
+                sendPointsS2.totalAllocationBreakdownMap.thousand.percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
+              )
+          : undefined,
+      userRedeemedMsend:
+        rawUserAllocationsS2 !== undefined
+          ? new BigNumber(0) // N/A
+          : undefined,
+      userBridgedMsend: undefined,
+    },
+    [AllocationIdS2.STEAMM_POINTS]: {
+      ...steammPoints,
+
+      userEligibleSend:
+        rawUserAllocationsS2 !== undefined
+          ? rawUserAllocationsS2.steammPoints.owned
+              .div(1000)
+              .times(
+                steammPoints.totalAllocationBreakdownMap.thousand.percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
+              )
+          : undefined,
+      userRedeemedMsend:
+        rawUserAllocationsS2 !== undefined
+          ? new BigNumber(0) // N/A
+          : undefined,
+      userBridgedMsend: undefined,
+    },
+    [AllocationIdS2.SUILEND_CAPSULES_S2]: {
+      ...suilendCapsulesS2,
+
+      userEligibleSend:
+        rawUserAllocationsS2 !== undefined
+          ? new BigNumber(
+              new BigNumber(
+                rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                  SuilendCapsuleS2Rarity.COMMON
+                ].length,
+              ).times(
+                suilendCapsulesS2.totalAllocationBreakdownMap[
+                  SuilendCapsuleS2Rarity.COMMON
+                ].percent
+                  .times(SEND_TOTAL_SUPPLY)
+                  .div(100),
+              ),
+            )
+              .plus(
+                new BigNumber(
+                  rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                    SuilendCapsuleS2Rarity.UNCOMMON
+                  ].length,
+                ).times(
+                  suilendCapsulesS2.totalAllocationBreakdownMap[
+                    SuilendCapsuleS2Rarity.UNCOMMON
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+              )
+              .plus(
+                new BigNumber(
+                  rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                    SuilendCapsuleS2Rarity.RARE
+                  ].length,
+                ).times(
+                  suilendCapsulesS2.totalAllocationBreakdownMap[
+                    SuilendCapsuleS2Rarity.RARE
+                  ].percent
+                    .times(SEND_TOTAL_SUPPLY)
+                    .div(100),
+                ),
+              )
+          : undefined,
+      userRedeemedMsend:
+        rawUserAllocationsS2 !== undefined
+          ? new BigNumber(0) // N/A
+          : undefined,
       userBridgedMsend: undefined,
     },
   };
@@ -364,7 +516,7 @@ function Page() {
         <div className="relative z-[2] flex w-full flex-col items-center">
           <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
             <HeroSection
-              allocations={Object.values(allocationsWithUserAllocationMap)}
+              allocations={Object.values(allocationsWithUserAllocationS1Map)}
             />
 
             <div
@@ -388,7 +540,7 @@ function Page() {
                 }
               >
                 <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:gap-5 lg:grid-cols-4">
-                  {Object.values(allocationsWithUserAllocationMap).map(
+                  {Object.values(allocationsWithUserAllocationS1Map).map(
                     (allocationWithUserAllocation) => (
                       <AllocationCard
                         key={allocationWithUserAllocation.title}
@@ -417,7 +569,10 @@ function Page() {
             <>
               <Separator />
               <ClaimSection
-                allocations={Object.values(allocationsWithUserAllocationMap)}
+                allocations={[
+                  ...Object.values(allocationsWithUserAllocationS1Map),
+                  ...Object.values(allocationsWithUserAllocationS2Map),
+                ]}
               />
             </>
           )}

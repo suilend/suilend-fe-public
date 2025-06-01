@@ -124,6 +124,8 @@ export type Allocation = {
   >;
 };
 export type AllocationWithUserAllocation = Allocation & {
+  owned?: BigNumber;
+  ownedMap?: Record<string, BigNumber>; // Suilend Capsules only
   userEligibleSend?: BigNumber;
   userRedeemedMsend?: BigNumber;
   userBridgedMsend?: BigNumber;
@@ -275,7 +277,7 @@ export const allocations: {
       totalAllocationPercent: new BigNumber(1.111),
       totalAllocationBreakdownMap: {
         one: {
-          title: "Per Rootlets NFT",
+          title: "Per Rootlet",
           percent: new BigNumber(333.333333).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
       },
@@ -830,7 +832,7 @@ export const redeemRootletsMsend = async (
         const mSendObjectType = (obj.data?.content as any).type;
         if (!mSendObjectType) continue;
 
-        // Take mSEND coin out of Rootlets NFT
+        // Take mSEND coin out of NFT
         const mSendCoin = transaction.moveCall({
           target:
             "0xbe7741c72669f1552d0912a4bc5cdadb5856bcb970350613df9b4362e4855dc5::rootlet::receive_obj",

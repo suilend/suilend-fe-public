@@ -24,7 +24,7 @@ import {
 } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSendContext } from "@/contexts/SendContext";
-import { AllocationWithUserAllocation } from "@/lib/mSend";
+import { AllocationIdS1, AllocationWithUserAllocation } from "@/lib/mSend";
 import { TGE_TIMESTAMP_MS } from "@/lib/send";
 
 interface HeroSectionProps {
@@ -38,7 +38,6 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
     useWalletContext();
 
   const { rawUserAllocationsS1 } = useLoadedSendContext();
-  const userAllocations = rawUserAllocationsS1;
 
   // Impersonation mode
   const onImpersonationModeBannerClick = () => {
@@ -61,14 +60,17 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
     new BigNumber(0),
   );
 
-  const isFetchingUserRedeemedMsend =
-    userAllocations !== undefined &&
-    (userAllocations.sendPointsS1.redeemedMsend === undefined ||
-      userAllocations.suilendCapsulesS1.redeemedMsend === undefined ||
-      userAllocations.rootlets.redeemedMsend === undefined);
-  const isFetchingUserBridgedMsend =
-    userAllocations !== undefined &&
-    userAllocations.save.bridgedMsend === undefined;
+  const isFetchingUserRedeemedMsend = allocations
+    .filter(
+      (allocation) =>
+        allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+        allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
+        allocation.id === AllocationIdS1.ROOTLETS,
+    )
+    .some((allocation) => allocation.userRedeemedMsend === undefined);
+  const isFetchingUserBridgedMsend = allocations
+    .filter((allocation) => allocation.id === AllocationIdS1.SAVE)
+    .some((allocation) => allocation.userBridgedMsend === undefined);
 
   const userTotalAllocation = userEligibleSend
     .plus(userRedeemedMsend)
@@ -157,7 +159,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
             <div className="z-[2] flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
               <SendTokenLogo className="h-8 w-8" />
 
-              {userAllocations === undefined ? (
+              {rawUserAllocationsS1 === undefined ? (
                 <Skeleton className="h-10 w-48" />
               ) : (
                 <TDisplay className="text-4xl">
