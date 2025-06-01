@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import { Wallet } from "lucide-react";
 
+import { LENDING_MARKETS } from "@suilend/sdk";
 import { NORMALIZED_WAL_COINTYPE, formatUsd, getToken } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -16,7 +17,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData, appData } = useLoadedAppContext();
   const { balancesCoinMetadataMap, getBalance, ownedStakedWalObjects } =
     useLoadedUserContext();
 
@@ -87,6 +88,9 @@ export default function WalletBalancesCard() {
                 };
               }),
             ...(ownedStakedWalObjects ?? []).map((obj) => {
+              const appData =
+                allAppData.allLendingMarketData[LENDING_MARKETS[0].id]; // Override appData from useLoadedAppContext
+
               const price = appData.reserveMap[NORMALIZED_WAL_COINTYPE].price;
 
               return {

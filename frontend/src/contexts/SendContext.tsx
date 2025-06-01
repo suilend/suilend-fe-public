@@ -31,9 +31,10 @@ import {
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_SEND_POINTS_S2_COINTYPE,
   NORMALIZED_STEAMM_POINTS_COINTYPE,
-  NORMALIZED_mSEND_12M_COINTYPE,
-  NORMALIZED_mSEND_3M_COINTYPE,
   NORMALIZED_mSEND_COINTYPES,
+  NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  NORMALIZED_mSEND_SERIES_3_COINTYPE,
+  NORMALIZED_mSEND_SERIES_4_COINTYPE,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
@@ -80,7 +81,7 @@ import bluefinSendTradersTakersJson from "../pages/send/trading/bluefin-send-tra
 
 interface SendContext {
   mSendObjectMap: Record<string, MsendObject> | undefined;
-  mSendCoinMetadataMap: Record<string, CoinMetadata> | undefined;
+  mSendCoinMetadata: CoinMetadata | undefined;
   mSendBalanceMap: Record<string, BigNumber>;
   mSendCoinTypesWithBalance: string[];
 
@@ -100,7 +101,7 @@ interface SendContext {
         save: { bridgedMsend: BigNumber | undefined };
         rootlets: {
           owned: BigNumber;
-          ownedMsendObjectsMap: Record<string, SuiObjectResponse[]>;
+          ownedMsendObjectsMap: Record<string, SuiObjectResponse[]>; // SERIES 1 & 4
           redeemedMsend: BigNumber | undefined;
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
@@ -124,7 +125,7 @@ interface SendContext {
   rawUserAllocationsS2:
     | {
         sendPointsS2: { owned: BigNumber };
-        steammPointsS2: { owned: BigNumber };
+        steammPoints: { owned: BigNumber };
         suilendCapsulesS2: {
           ownedObjectsMap: Record<SuilendCapsuleS2Rarity, SuiObjectResponse[]>;
         };
@@ -137,12 +138,12 @@ interface SendContext {
 }
 type LoadedSendContext = SendContext & {
   mSendObjectMap: Record<string, MsendObject>;
-  mSendCoinMetadataMap: Record<string, CoinMetadata>;
+  mSendCoinMetadata: CoinMetadata;
 };
 
 const SendContext = createContext<SendContext>({
   mSendObjectMap: undefined,
-  mSendCoinMetadataMap: undefined,
+  mSendCoinMetadata: undefined,
   mSendBalanceMap: {},
   mSendCoinTypesWithBalance: [],
 
@@ -174,7 +175,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { allUserData, getBalance } = useLoadedUserContext();
 
-  const userData = allUserData[LENDING_MARKETS[0].id];
+  const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
+  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
 
   // mSEND - object map
   const [mSendObjectMap, setMsendObjectMap] = useState<
@@ -261,7 +263,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   }, [suiClient]);
 
   // mSEND - coinMetadata
-  const mSendCoinMetadataMap = useCoinMetadataMap(NORMALIZED_mSEND_COINTYPES);
+  const mSendCoinMetadataMap = useCoinMetadataMap([
+    NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  ]); // Works for all mSEND coinTypes
+  const mSendCoinMetadata: CoinMetadata | undefined = useMemo(
+    () => mSendCoinMetadataMap?.[NORMALIZED_mSEND_SERIES_1_COINTYPE],
+    [mSendCoinMetadataMap],
+  );
 
   // mSEND - Balances
   const mSendBalanceMap = useMemo(
@@ -512,7 +520,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const fetchRootletsOwnedMsendObjectsMap = useCallback(
     async (
       _address: string,
-      _mSendCoinMetadataMap: Record<string, CoinMetadata>,
+      _mSendCoinMetadata: CoinMetadata,
       _ownedKiosks: {
         kiosk: KioskData;
         kioskOwnerCap: KioskOwnerCap;
@@ -533,11 +541,20 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
         const result: Record<string, SuiObjectResponse[]> = {};
         for (const rootletsObjectId of rootletsObjectIds) {
-          const objs = await getOwnedObjectsOfType(
-            suiClient,
-            rootletsObjectId,
-            `0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`,
-          );
+          const [objsSeries1, objsSeries4] = await Promise.all([
+            getOwnedObjectsOfType(
+              suiClient,
+              rootletsObjectId,
+              `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_1_COINTYPE}>`,
+            ),
+            getOwnedObjectsOfType(
+              suiClient,
+              rootletsObjectId,
+              `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
+            ),
+          ]);
+          const objs = [...objsSeries1, ...objsSeries4];
+
           const ownedMsendRaw = objs.reduce(
             (acc, obj) =>
               acc.plus(
@@ -566,21 +583,17 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!address) return;
 
-    if (!mSendCoinMetadataMap) return;
+    if (!mSendCoinMetadata) return;
     if (!ownedKiosks) return;
 
     if (isFetchingRootletsOwnedMsendObjectsMapRef.current.includes(address))
       return;
     isFetchingRootletsOwnedMsendObjectsMapRef.current.push(address);
 
-    fetchRootletsOwnedMsendObjectsMap(
-      address,
-      mSendCoinMetadataMap,
-      ownedKiosks,
-    );
+    fetchRootletsOwnedMsendObjectsMap(address, mSendCoinMetadata, ownedKiosks);
   }, [
     address,
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     ownedKiosks,
     fetchRootletsOwnedMsendObjectsMap,
   ]);
@@ -595,7 +608,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const rawUserAllocationsS1 = useMemo(() => {
     if (!address) return undefined;
 
-    if (!mSendCoinMetadataMap) return undefined;
+    if (!mSendCoinMetadata) return undefined;
     if (ownedKiosks === undefined) return undefined;
     if (ownedSuilendCapsulesObjectsMap === undefined) return undefined;
     if (rootletsOwnedMsendObjectsMap === undefined) return undefined;
@@ -606,8 +619,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     // SEND Points (S1)
     const ownedSendPointsS1 = getPointsStats(
       NORMALIZED_SEND_POINTS_S1_COINTYPE,
-      userData.rewardMap,
-      userData.obligations,
+      userDataMainMarket.rewardMap,
+      userDataMainMarket.obligations,
     ).totalPoints.total;
 
     const redeemedSendPointsS1Msend = transactionsSinceTge?.from.reduce(
@@ -618,8 +631,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (acc2, event) =>
               acc2.plus(
                 new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 **
-                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+                  10 ** mSendCoinMetadata.decimals,
                 ),
               ),
             new BigNumber(0),
@@ -639,8 +651,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (acc2, event) =>
               acc2.plus(
                 new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 **
-                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+                  10 ** mSendCoinMetadata.decimals,
                 ),
               ),
             new BigNumber(0),
@@ -664,15 +675,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (balanceChange) =>
               (balanceChange.owner as any)?.AddressOwner === address &&
               normalizeStructTag(balanceChange.coinType) ===
-                NORMALIZED_mSEND_12M_COINTYPE,
+                NORMALIZED_mSEND_SERIES_3_COINTYPE,
           )
           .reduce(
             (acc2, balanceChange) =>
               acc2.plus(
                 new BigNumber(balanceChange.amount).div(
-                  10 **
-                    mSendCoinMetadataMap[NORMALIZED_mSEND_12M_COINTYPE]
-                      .decimals,
+                  10 ** mSendCoinMetadata.decimals,
                 ),
               ),
             new BigNumber(0),
@@ -698,8 +707,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       (acc, transaction) => {
         const mSendBalanceChanges = (transaction.balanceChanges ?? []).filter(
           (balanceChange) =>
-            normalizeStructTag(balanceChange.coinType) ===
-            NORMALIZED_mSEND_3M_COINTYPE,
+            [
+              NORMALIZED_mSEND_SERIES_1_COINTYPE,
+              NORMALIZED_mSEND_SERIES_4_COINTYPE,
+            ].includes(normalizeStructTag(balanceChange.coinType)),
         );
 
         const isRootletsRedeemTransaction =
@@ -724,8 +735,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (acc2, balanceChange) =>
               acc2.plus(
                 new BigNumber(balanceChange.amount).div(
-                  10 **
-                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+                  10 ** mSendCoinMetadata.decimals,
                 ),
               ),
             new BigNumber(0),
@@ -743,8 +753,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
             (acc2, event) =>
               acc2.plus(
                 new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 **
-                    mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+                  10 ** mSendCoinMetadata.decimals,
                 ),
               ),
             new BigNumber(0),
@@ -851,11 +860,11 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     };
   }, [
     address,
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     transactionsSinceTge,
     ownedKiosks,
-    userData.rewardMap,
-    userData.obligations,
+    userDataMainMarket.rewardMap,
+    userDataMainMarket.obligations,
     ownedSuilendCapsulesObjectsMap,
     rootletsOwnedMsendObjectsMap,
   ]);
@@ -863,7 +872,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const refreshRawUserAllocationsS1 = useCallback(async () => {
     if (!address) return;
 
-    if (!mSendCoinMetadataMap) return;
+    if (!mSendCoinMetadata) return;
 
     fetchTransactionsSinceTge(address);
     const newOwnedKiosks = await fetchOwnedKiosks(address);
@@ -871,12 +880,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     fetchOwnedSuilendCapsulesObjectsMap(address);
     fetchRootletsOwnedMsendObjectsMap(
       address,
-      mSendCoinMetadataMap,
+      mSendCoinMetadata,
       newOwnedKiosks!,
     );
   }, [
     address,
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     fetchTransactionsSinceTge,
     fetchOwnedSuilendCapsulesObjectsMap,
     fetchOwnedKiosks,
@@ -887,14 +896,14 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const rawUserAllocationsS2 = useMemo(() => {
     if (!address) return undefined;
 
-    if (!mSendCoinMetadataMap) return undefined;
+    if (!mSendCoinMetadata) return undefined;
     if (ownedSuilendCapsulesObjectsMap === undefined) return undefined;
 
     // SEND Points (S2)
     const ownedSendPointsS2 = getPointsStats(
       NORMALIZED_SEND_POINTS_S2_COINTYPE,
-      userData.rewardMap,
-      userData.obligations,
+      userDataMainMarket.rewardMap,
+      userDataMainMarket.obligations,
     ).totalPoints.total;
 
     // const redeemedSendPointsS1Msend = transactionsSinceTge?.from.reduce(
@@ -906,7 +915,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     //           acc2.plus(
     //             new BigNumber((event.parsedJson as any).claim_amount).div(
     //               10 **
-    //                 mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+    //                 mSendCoinMetadata.decimals,
     //             ),
     //           ),
     //         new BigNumber(0),
@@ -917,11 +926,11 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     //   new BigNumber(0),
     // );
 
-    // STEAMM Points (S2)
-    const ownedSteammPointsS2 = getPointsStats(
+    // STEAMM Points
+    const ownedSteammPoints = getPointsStats(
       NORMALIZED_STEAMM_POINTS_COINTYPE,
-      userData.rewardMap,
-      userData.obligations,
+      userDataSteammLmMarket.rewardMap,
+      userDataSteammLmMarket.obligations,
     ).totalPoints.total;
 
     // Suilend Capsules (S2)
@@ -934,7 +943,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     //           acc2.plus(
     //             new BigNumber((event.parsedJson as any).claim_amount).div(
     //               10 **
-    //                 mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
+    //                 mSendCoinMetadata.decimals,
     //             ),
     //           ),
     //         new BigNumber(0),
@@ -949,8 +958,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       sendPointsS2: {
         owned: ownedSendPointsS2,
       },
-      steammPointsS2: {
-        owned: ownedSteammPointsS2,
+      steammPoints: {
+        owned: ownedSteammPoints,
       },
       suilendCapsulesS2: {
         ownedObjectsMap: ownedSuilendCapsulesObjectsMap.s2,
@@ -958,23 +967,25 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     };
   }, [
     address,
-    mSendCoinMetadataMap,
-    userData.rewardMap,
-    userData.obligations,
+    mSendCoinMetadata,
     ownedSuilendCapsulesObjectsMap,
+    userDataMainMarket.rewardMap,
+    userDataMainMarket.obligations,
+    userDataSteammLmMarket.rewardMap,
+    userDataSteammLmMarket.obligations,
   ]);
 
   const refreshRawUserAllocationsS2 = useCallback(async () => {
     if (!address) return;
 
-    if (!mSendCoinMetadataMap) return;
+    if (!mSendCoinMetadata) return;
 
     fetchOwnedSuilendCapsulesObjectsMap(address);
-  }, [address, mSendCoinMetadataMap, fetchOwnedSuilendCapsulesObjectsMap]);
+  }, [address, mSendCoinMetadata, fetchOwnedSuilendCapsulesObjectsMap]);
 
   // Selected mSEND
   const [selectedMsendCoinType, setSelectedMsendCoinType] = useState<string>(
-    NORMALIZED_mSEND_3M_COINTYPE,
+    NORMALIZED_mSEND_SERIES_1_COINTYPE,
   );
 
   useEffect(() => {
@@ -988,7 +999,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const contextValue: SendContext = useMemo(
     () => ({
       mSendObjectMap,
-      mSendCoinMetadataMap,
+      mSendCoinMetadata,
       mSendBalanceMap,
       mSendCoinTypesWithBalance,
 
@@ -1004,7 +1015,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     }),
     [
       mSendObjectMap,
-      mSendCoinMetadataMap,
+      mSendCoinMetadata,
       mSendBalanceMap,
       mSendCoinTypesWithBalance,
       kioskClient,
@@ -1020,7 +1031,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SendContext.Provider value={contextValue}>
-      {mSendObjectMap !== undefined && mSendCoinMetadataMap !== undefined ? (
+      {mSendObjectMap !== undefined && mSendCoinMetadata !== undefined ? (
         children
       ) : (
         <FullPageSpinner />

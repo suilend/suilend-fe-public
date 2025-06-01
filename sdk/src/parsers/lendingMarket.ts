@@ -55,6 +55,7 @@ export const parseLendingMarket = (
 
   const name = LENDING_MARKET?.name ?? "Unknown";
   const slug = LENDING_MARKET?.slug ?? "unknown";
+  const isHidden = LENDING_MARKET?.isHidden ?? false;
   const ownerCapId = LENDING_MARKET?.ownerCapId ?? "Unknown";
 
   return {
@@ -74,6 +75,7 @@ export const parseLendingMarket = (
 
     name,
     slug,
+    isHidden,
     ownerCapId,
 
     /**

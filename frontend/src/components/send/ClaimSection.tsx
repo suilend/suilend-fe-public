@@ -16,7 +16,8 @@ import { LENDING_MARKETS } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_mSEND_3M_COINTYPE,
+  NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  NORMALIZED_mSEND_SERIES_4_COINTYPE,
   formatInteger,
   formatPercent,
   formatToken,
@@ -60,9 +61,9 @@ import {
   AllocationWithUserAllocation,
   ROOTLETS_TYPE,
   allocations,
+  redeemPointsMsend,
   redeemRootletsMsend,
-  redeemSendPointsS1Msend,
-  redeemSuilendCapsulesS1Msend,
+  redeemSuilendCapsulesMsend,
 } from "@/lib/mSend";
 import { ROOT_URL } from "@/lib/navigation";
 import {
@@ -128,7 +129,7 @@ function RedeemTabContent({
   const { allUserData } = useLoadedUserContext();
 
   const {
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     kioskClient,
     ownedKiosks,
     refreshRawUserAllocationsS1,
@@ -169,20 +170,22 @@ function RedeemTabContent({
 
     try {
       if (hasSendPointsS1ToRedeem)
-        redeemSendPointsS1Msend(
+        redeemPointsMsend(
+          "SEND_POINTS_S1",
           appData.suilendClient,
           userData,
           address,
           transaction,
-        );
+        ); // SERIES 1
       if (hasSuilendCapsulesS1ToRedeem)
-        redeemSuilendCapsulesS1Msend(
+        redeemSuilendCapsulesMsend(
+          1,
           Object.values(
             userAllocations.suilendCapsulesS1.ownedObjectsMap,
           ).flat(),
           address,
           transaction,
-        );
+        ); // SERIES 1
       if (hasRootletsToRedeem)
         redeemRootletsMsend(
           userAllocations.rootlets.ownedMsendObjectsMap,
@@ -190,23 +193,35 @@ function RedeemTabContent({
           ownedKiosks,
           address,
           transaction,
-        );
+        ); // SERIES 1 & 4
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
-      const balanceChange = getBalanceChange(res, address, {
-        coinType: NORMALIZED_mSEND_3M_COINTYPE,
-        ...mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE],
+      const balanceChangeSeries1 = getBalanceChange(res, address, {
+        coinType: NORMALIZED_mSEND_SERIES_1_COINTYPE,
+        ...mSendCoinMetadata,
       });
+      const balanceChangeSeries4 = getBalanceChange(res, address, {
+        coinType: NORMALIZED_mSEND_SERIES_4_COINTYPE,
+        ...mSendCoinMetadata,
+      });
+      const balanceChange: BigNumber | undefined =
+        balanceChangeSeries1 === undefined && balanceChangeSeries4 === undefined
+          ? undefined
+          : [
+              balanceChangeSeries1 ?? new BigNumber(0),
+              balanceChangeSeries4 ?? new BigNumber(0),
+            ].reduce(
+              (acc, balanceChange) => acc.plus(balanceChange),
+              new BigNumber(0),
+            );
 
       toast.success(
         [
           "Redeemed",
           balanceChange !== undefined
-            ? formatToken(balanceChange, {
-                dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals,
-              })
+            ? formatToken(balanceChange, { dp: mSendCoinMetadata.decimals })
             : null,
           "mSEND",
         ]
@@ -255,10 +270,7 @@ function RedeemTabContent({
                   </div>
 
                   <div className="flex flex-row items-center gap-2">
-                    <MsendTokenLogo
-                      className="h-5 w-5"
-                      coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                    />
+                    <MsendTokenLogo className="h-5 w-5" />
                     <TBody>
                       {formatToken(sendPointsS1Allocation.userEligibleSend!, {
                         exact: false,
@@ -298,10 +310,7 @@ function RedeemTabContent({
                         </div>
 
                         <div className="flex flex-row items-center gap-2">
-                          <MsendTokenLogo
-                            className="h-5 w-5"
-                            coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                          />
+                          <MsendTokenLogo className="h-5 w-5" />
                           <TBody>
                             {formatToken(
                               new BigNumber(ownedObjects.length).times(
@@ -368,10 +377,7 @@ function RedeemTabContent({
                   </div>
 
                   <div className="flex flex-row items-center gap-2">
-                    <MsendTokenLogo
-                      className="h-5 w-5"
-                      coinType={NORMALIZED_mSEND_3M_COINTYPE}
-                    />
+                    <MsendTokenLogo className="h-5 w-5" />
                     <TBody>
                       {formatToken(rootletsAllocation.userEligibleSend!, {
                         exact: false,
@@ -388,14 +394,10 @@ function RedeemTabContent({
             <TBodySans className="text-muted-foreground">Total</TBodySans>
 
             <div className="flex flex-row items-center gap-2">
-              <MsendTokenLogo
-                className="h-5 w-5"
-                coinType={NORMALIZED_mSEND_3M_COINTYPE}
-              />
+              <MsendTokenLogo className="h-5 w-5" />
               <TBody>
                 {formatToken(totalRedeemableMsend, {
-                  dp: mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE]
-                    .decimals,
+                  dp: mSendCoinMetadata.decimals,
                 })}
               </TBody>
             </div>
@@ -452,7 +454,7 @@ function ClaimTabContent() {
 
   const {
     mSendObjectMap,
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     mSendBalanceMap,
     mSendCoinTypesWithBalance,
     selectedMsendCoinType,
@@ -682,7 +684,7 @@ function ClaimTabContent() {
                   onClick={() =>
                     setClaimAmount(
                       mSendBalance.toFixed(
-                        mSendCoinMetadataMap[selectedMsendCoinType].decimals,
+                        mSendCoinMetadata.decimals,
                         BigNumber.ROUND_DOWN,
                       ),
                     )
@@ -906,7 +908,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
 
   const {
     mSendObjectMap,
-    mSendCoinMetadataMap,
+    mSendCoinMetadata,
     rawUserAllocationsS1,
     selectedMsendCoinType,
   } = useLoadedSendContext();
@@ -926,8 +928,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
   ) as AllocationWithUserAllocation;
 
   // 1) Redeem mSEND
-  const minMsendAmount =
-    10 ** (-1 * mSendCoinMetadataMap[NORMALIZED_mSEND_3M_COINTYPE].decimals);
+  const minMsendAmount = 10 ** (-1 * mSendCoinMetadata.decimals);
 
   const hasSendPointsS1ToRedeem =
     !!sendPointsS1Allocation.userEligibleSend?.gte(minMsendAmount) &&

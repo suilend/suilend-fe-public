@@ -1,30 +1,25 @@
 import { ClassValue } from "clsx";
 
+import { NORMALIZED_mSEND_SERIES_1_COINTYPE, getToken } from "@suilend/sui-fe";
+
 import TokenLogo from "@/components/shared/TokenLogo";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { cn } from "@/lib/utils";
 
 interface MsendTokenLogoProps {
   className?: ClassValue;
-  coinType: string;
 }
 
-export default function MsendTokenLogo({
-  className,
-  coinType,
-}: MsendTokenLogoProps) {
-  const { mSendCoinMetadataMap } = useLoadedSendContext();
+export default function MsendTokenLogo({ className }: MsendTokenLogoProps) {
+  const { mSendCoinMetadata } = useLoadedSendContext();
 
-  const coinMetadata = mSendCoinMetadataMap[coinType];
+  const coinType = NORMALIZED_mSEND_SERIES_1_COINTYPE; // Works for all mSEND coinTypes
+  const coinMetadata = mSendCoinMetadata;
 
   return (
     <TokenLogo
       className={cn("h-4 w-4", className)}
-      token={{
-        coinType,
-        symbol: coinMetadata.symbol,
-        iconUrl: coinMetadata.iconUrl,
-      }}
+      token={getToken(coinType, coinMetadata)}
     />
   );
 }

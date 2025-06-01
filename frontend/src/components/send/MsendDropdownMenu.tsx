@@ -41,10 +41,7 @@ export default function MsendDropdownMenu() {
           variant="secondary"
         >
           <div className="flex flex-row items-center gap-2">
-            <MsendTokenLogo
-              className="h-5 w-5"
-              coinType={selectedMsendCoinType}
-            />
+            <MsendTokenLogo className="h-5 w-5" />
             <TBody className="text-[16px] text-inherit">
               {formatToken(mSendBalanceMap[selectedMsendCoinType], {
                 exact: false,
@@ -97,7 +94,7 @@ export default function MsendDropdownMenu() {
 
           {/* Right */}
           <div className="flex flex-row items-center gap-2">
-            <MsendTokenLogo className="h-5 w-5" coinType={coinType} />
+            <MsendTokenLogo className="h-5 w-5" />
             <TBody className="text-[16px]">
               {formatToken(mSendBalanceMap[coinType], { exact: false })}
             </TBody>

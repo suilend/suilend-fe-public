@@ -1,30 +1,17 @@
-import { useMemo } from "react";
-
 import BigNumber from "bignumber.js";
 import useSWR, { useSWRConfig } from "swr";
 
 import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
-import {
-  ADMIN_ADDRESS,
-  LENDING_MARKETS,
-  SuilendClient,
-} from "@suilend/sdk/client";
+import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
 import { API_URL } from "@suilend/sui-fe";
-import {
-  showErrorToast,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/sui-fe-next";
+import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
 
   const { cache } = useSWRConfig();
-
-  const isAdmin = useMemo(() => address === ADMIN_ADDRESS, [address]);
 
   // Data
   const dataFetcher = async () => {
@@ -34,8 +21,6 @@ export default function useFetchAppData() {
         const result: AllAppData["allLendingMarketData"] = {};
 
         for (const LENDING_MARKET of LENDING_MARKETS) {
-          if (LENDING_MARKET.isHidden && !isAdmin) continue;
-
           const suilendClient = await SuilendClient.initialize(
             LENDING_MARKET.id,
             LENDING_MARKET.type,
@@ -107,22 +92,18 @@ export default function useFetchAppData() {
     return { allLendingMarketData, lstAprPercentMap };
   };
 
-  const { data, mutate } = useSWR<AllAppData>(
-    `appData-${isAdmin}`,
-    dataFetcher,
-    {
-      refreshInterval: 30 * 1000,
-      onSuccess: (data) => {
-        console.log("Fetched app data", data);
-      },
-      onError: (err, key) => {
-        const isInitialLoad = cache.get(key)?.data === undefined;
-        if (isInitialLoad) showErrorToast("Failed to fetch app data", err);
-
-        console.error(err);
-      },
+  const { data, mutate } = useSWR<AllAppData>("appData", dataFetcher, {
+    refreshInterval: 30 * 1000,
+    onSuccess: (data) => {
+      console.log("Fetched app data", data);
     },
-  );
+    onError: (err, key) => {
+      const isInitialLoad = cache.get(key)?.data === undefined;
+      if (isInitialLoad) showErrorToast("Failed to fetch app data", err);
+
+      console.error(err);
+    },
+  });
 
   return { data, mutateData: mutate };
 }

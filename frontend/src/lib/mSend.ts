@@ -6,9 +6,12 @@ import BigNumber from "bignumber.js";
 
 import { SuilendClient } from "@suilend/sdk";
 import {
-  NORMALIZED_mSEND_3M_COINTYPE,
+  NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  NORMALIZED_mSEND_SERIES_4_COINTYPE,
   formatInteger,
   isSendPointsS1,
+  isSendPointsS2,
+  isSteammPoints,
 } from "@suilend/sui-fe";
 
 import { UserData } from "@/contexts/UserContext";
@@ -23,19 +26,24 @@ const BURN_CONTRACT_PACKAGE_ID =
 // IDs - Managers
 const SEND_POINTS_S1_MANAGER_OBJECT_ID =
   "0x1236a2059bd24b46067cd6818469802b56a05920c9029c7b16c16a47efab2260";
+const SEND_POINTS_S2_MANAGER_OBJECT_ID = ""; // TODO_S2
+const STEAMM_POINTS_MANAGER_OBJECT_ID = ""; // TODO_S2
 const SUILEND_CAPSULES_S1_MANAGER_OBJECT_ID =
   "0x5307419ec2f76bb70a948d71adf22ffde99a102961a3aa61361cc233f6d31e6e";
+const SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID = ""; // TODO_S2
 
 // IDs - NFTs
 export const SUILEND_CAPSULE_TYPE =
   "0x008a7e85138643db888096f2db04766d549ca496583e41c3a683c6e1539a64ac::suilend_capsule::SuilendCapsule";
-
 export const ROOTLETS_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
 
 // Events
 export const BURN_SEND_POINTS_S1_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::points::BurnEvent`;
+export const BURN_SEND_POINTS_S2_EVENT_TYPE = ``; // TODO_S2
+export const BURN_STEAMM_POINTS_EVENT_TYPE = ``; // TODO_S2
 export const BURN_SUILEND_CAPSULES_S1_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::capsule::BurnEvent`;
+export const BURN_SUILEND_CAPSULES_S2_EVENT_TYPE = ``; // TODO_S2
 
 // Types
 export type MsendObject = {
@@ -92,7 +100,7 @@ export enum AllocationIdS1 {
 
 export enum AllocationIdS2 {
   SEND_POINTS_S2 = "sendPointsS2",
-  STEAMM_POINTS_S2 = "steammPointsS2",
+  STEAMM_POINTS = "steammPoints",
   SUILEND_CAPSULES_S2 = "suilendCapsulesS2",
 }
 
@@ -563,7 +571,7 @@ export const allocations: {
       id: AllocationIdS2.SEND_POINTS_S2,
       src: "",
       hoverSrc: "",
-      title: "Send Points S2",
+      title: "SEND Points S2",
       description: "",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
@@ -572,7 +580,7 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(18), // TODO
+      totalAllocationPercent: new BigNumber(18), // TODO_S2
       totalAllocationBreakdownMap: {
         thousand: {
           title: "Per 1K SEND Points S2",
@@ -582,11 +590,11 @@ export const allocations: {
         },
       },
     },
-    [AllocationIdS2.STEAMM_POINTS_S2]: {
-      id: AllocationIdS2.STEAMM_POINTS_S2,
+    [AllocationIdS2.STEAMM_POINTS]: {
+      id: AllocationIdS2.STEAMM_POINTS,
       src: "",
       hoverSrc: "",
-      title: "STEAMM Points S2",
+      title: "STEAMM Points",
       description: "",
       allocationType: AllocationType.LINEAR,
       assetType: AssetType.POINTS,
@@ -595,10 +603,10 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(18), // TODO
+      totalAllocationPercent: new BigNumber(18), // TODO_S2
       totalAllocationBreakdownMap: {
         thousand: {
-          title: "Per 1K STEAMM Points S2", // TODO
+          title: "Per 1K STEAMM Points", // TODO_S2
           percent: new BigNumber((18000 / 2764929) * 1000)
             .div(SEND_TOTAL_SUPPLY)
             .times(100), //Linear
@@ -618,18 +626,18 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(0.3), // TODO
+      totalAllocationPercent: new BigNumber(0.3), // TODO_S2
       totalAllocationBreakdownMap: {
         [SuilendCapsuleS2Rarity.COMMON]: {
-          title: "Per Common", // TODO
+          title: "Per Common", // TODO_S2
           percent: new BigNumber(142).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
         [SuilendCapsuleS2Rarity.UNCOMMON]: {
-          title: "Per Uncommon", // TODO
+          title: "Per Uncommon", // TODO_S2
           percent: new BigNumber(500).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
         [SuilendCapsuleS2Rarity.RARE]: {
-          title: "Per Rare", // TODO
+          title: "Per Rare", // TODO_S2
           percent: new BigNumber(2000).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
       },
@@ -638,14 +646,15 @@ export const allocations: {
 };
 
 // Redeem
-export const redeemSendPointsS1Msend = (
+export const redeemPointsMsend = (
+  type: "SEND_POINTS_S1" | "SEND_POINTS_S2" | "STEAMM_POINTS",
   suilendClient: SuilendClient,
   userData: UserData,
   address: string,
   transaction: Transaction,
 ) => {
-  // Claim SEND Points S1 rewards
-  const sendPointsS1Coins = [];
+  // Claim points rewards
+  const pointsCoins = [];
 
   for (const obligation of userData.obligations ?? []) {
     const obligationOwnerCap = userData.obligationOwnerCaps?.find(
@@ -653,71 +662,104 @@ export const redeemSendPointsS1Msend = (
     );
     if (!obligationOwnerCap) continue;
 
-    const sendPointsS1Rewards = Object.values(userData.rewardMap).flatMap(
-      (rewards) =>
-        [...rewards.deposit, ...rewards.borrow].filter(
-          (r) =>
-            isSendPointsS1(r.stats.rewardCoinType) &&
-            !!r.obligationClaims[obligation.id] &&
-            r.obligationClaims[obligation.id].claimableAmount.gt(0),
-        ),
+    const pointsRewards = Object.values(userData.rewardMap).flatMap((rewards) =>
+      [...rewards.deposit, ...rewards.borrow].filter(
+        (r) =>
+          (type === "SEND_POINTS_S1"
+            ? isSendPointsS1(r.stats.rewardCoinType)
+            : type === "SEND_POINTS_S2"
+              ? isSendPointsS2(r.stats.rewardCoinType)
+              : isSteammPoints(r.stats.rewardCoinType)) &&
+          !!r.obligationClaims[obligation.id] &&
+          r.obligationClaims[obligation.id].claimableAmount.gt(0),
+      ),
     );
 
-    for (const sendPointsS1Reward of sendPointsS1Rewards) {
-      const [sendPointsS1Coin] = suilendClient.claimReward(
+    for (const pointsReward of pointsRewards) {
+      const [pointsCoin] = suilendClient.claimReward(
         obligationOwnerCap.id,
-        sendPointsS1Reward.obligationClaims[obligation.id].reserveArrayIndex,
-        BigInt(sendPointsS1Reward.stats.rewardIndex),
-        sendPointsS1Reward.stats.rewardCoinType,
-        sendPointsS1Reward.stats.side,
+        pointsReward.obligationClaims[obligation.id].reserveArrayIndex,
+        BigInt(pointsReward.stats.rewardIndex),
+        pointsReward.stats.rewardCoinType,
+        pointsReward.stats.side,
         transaction,
       );
-      sendPointsS1Coins.push(sendPointsS1Coin);
+      pointsCoins.push(pointsCoin);
     }
   }
 
-  // Merge SEND Points S1 coins
-  if (sendPointsS1Coins.length === 0) return;
+  // Merge points coins
+  if (pointsCoins.length === 0) return;
 
-  const mergedSendPointsS1Coin = sendPointsS1Coins[0];
-  if (sendPointsS1Coins.length > 1) {
-    transaction.mergeCoins(mergedSendPointsS1Coin, sendPointsS1Coins.slice(1));
+  const mergedPointsCoin = pointsCoins[0];
+  if (pointsCoins.length > 1) {
+    transaction.mergeCoins(mergedPointsCoin, pointsCoins.slice(1));
   }
 
-  // Burn SEND Points S1 for mSEND
-  const mSendCoin = transaction.moveCall({
-    target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
-    typeArguments: [NORMALIZED_mSEND_3M_COINTYPE],
-    arguments: [
-      transaction.object(SEND_POINTS_S1_MANAGER_OBJECT_ID),
-      transaction.object(mergedSendPointsS1Coin),
-    ],
-  });
+  // Burn points for mSEND
+  const mSendCoin =
+    type === "SEND_POINTS_S1"
+      ? transaction.moveCall({
+          target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
+          typeArguments: [NORMALIZED_mSEND_SERIES_1_COINTYPE],
+          arguments: [
+            transaction.object(SEND_POINTS_S1_MANAGER_OBJECT_ID),
+            transaction.object(mergedPointsCoin),
+          ],
+        })
+      : type === "SEND_POINTS_S2"
+        ? transaction.moveCall({
+            target: ``, // TODO_S2
+            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            arguments: [
+              transaction.object(SEND_POINTS_S2_MANAGER_OBJECT_ID),
+              transaction.object(mergedPointsCoin),
+            ],
+          })
+        : transaction.moveCall({
+            target: ``, // TODO_S2
+            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            arguments: [
+              transaction.object(STEAMM_POINTS_MANAGER_OBJECT_ID),
+              transaction.object(mergedPointsCoin),
+            ],
+          });
 
   // Transfer mSEND to user
   transaction.transferObjects([mSendCoin], transaction.pure.address(address));
 };
 
-export const redeemSuilendCapsulesS1Msend = (
+export const redeemSuilendCapsulesMsend = (
+  season: 1 | 2,
   objs: SuiObjectResponse[],
   address: string,
   transaction: Transaction,
 ) => {
-  // Burn Suilend Capsules S1 for mSEND
+  // Burn Suilend Capsules for mSEND
   const maxCount = 250;
   const mSendCoins = [];
 
   for (const obj of objs) {
     if (mSendCoins.length >= maxCount) break;
 
-    const mSendCoin = transaction.moveCall({
-      target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
-      typeArguments: [NORMALIZED_mSEND_3M_COINTYPE],
-      arguments: [
-        transaction.object(SUILEND_CAPSULES_S1_MANAGER_OBJECT_ID),
-        transaction.object(obj.data?.objectId as string),
-      ],
-    });
+    const mSendCoin =
+      season === 1
+        ? transaction.moveCall({
+            target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
+            typeArguments: [NORMALIZED_mSEND_SERIES_1_COINTYPE],
+            arguments: [
+              transaction.object(SUILEND_CAPSULES_S1_MANAGER_OBJECT_ID),
+              transaction.object(obj.data?.objectId as string),
+            ],
+          })
+        : transaction.moveCall({
+            target: ``, // TODO_S2
+            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            arguments: [
+              transaction.object(SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID),
+              transaction.object(obj.data?.objectId as string),
+            ],
+          });
     mSendCoins.push(mSendCoin);
   }
 
@@ -785,12 +827,15 @@ export const redeemRootletsMsend = async (
       for (const obj of rootletsOwnedMsendObjectsMap[kioskItem.objectId]) {
         if ((obj.data?.content as any).fields.balance === "0") continue;
 
+        const mSendObjectType = (obj.data?.content as any).type;
+        if (!mSendObjectType) continue;
+
         // Take mSEND coin out of Rootlets NFT
         const mSendCoin = transaction.moveCall({
           target:
             "0xbe7741c72669f1552d0912a4bc5cdadb5856bcb970350613df9b4362e4855dc5::rootlet::receive_obj",
           arguments: [item, transaction.object(obj.data?.objectId as string)],
-          typeArguments: [`0x2::coin::Coin<${NORMALIZED_mSEND_3M_COINTYPE}>`],
+          typeArguments: [mSendObjectType],
         });
 
         // Transfer mSEND to user
