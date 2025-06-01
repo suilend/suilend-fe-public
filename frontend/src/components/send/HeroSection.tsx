@@ -138,8 +138,8 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
 
       <SectionHeading>
         {!address
-          ? "Connect your wallet to check your allocation"
-          : "Your allocation is"}
+          ? "Connect your wallet to check your TGE allocation"
+          : "Your TGE allocation is"}
       </SectionHeading>
 
       <div className="flex w-full flex-col items-center gap-4">

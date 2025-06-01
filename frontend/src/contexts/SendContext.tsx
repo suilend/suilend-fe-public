@@ -17,6 +17,7 @@ import {
   Network,
 } from "@mysten/kiosk";
 import {
+  BalanceChange,
   CoinMetadata,
   SuiClient,
   SuiObjectResponse,
@@ -43,7 +44,10 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   BURN_SEND_POINTS_S1_EVENT_TYPE,
+  BURN_SEND_POINTS_S2_EVENT_TYPE,
+  BURN_STEAMM_POINTS_EVENT_TYPE,
   BURN_SUILEND_CAPSULES_S1_EVENT_TYPE,
+  BURN_SUILEND_CAPSULES_S2_EVENT_TYPE,
   BluefinLeague,
   MsendObject,
   ROOTLETS_TYPE,
@@ -102,7 +106,7 @@ interface SendContext {
         rootlets: {
           owned: BigNumber;
           ownedMsendObjectsMap: Record<string, SuiObjectResponse[]>; // SERIES 1 & 4
-          redeemedMsend: BigNumber | undefined;
+          redeemedMsend: Record<string, BigNumber> | undefined; // SERIES 1 & 4
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
         bluefinSendTraders: {
@@ -705,13 +709,20 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     const redeemedRootletsMsend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
-        const mSendBalanceChanges = (transaction.balanceChanges ?? []).filter(
-          (balanceChange) =>
-            [
-              NORMALIZED_mSEND_SERIES_1_COINTYPE,
-              NORMALIZED_mSEND_SERIES_4_COINTYPE,
-            ].includes(normalizeStructTag(balanceChange.coinType)),
-        );
+        const mSendCoinTypes = Object.keys(acc);
+
+        const mSendBalanceChangesMap: Record<string, BalanceChange[]> = {};
+        for (const coinType of mSendCoinTypes) {
+          mSendBalanceChangesMap[coinType] = (
+            transaction.balanceChanges ?? []
+          ).filter(
+            (balanceChange) =>
+              normalizeStructTag(balanceChange.coinType) === coinType,
+          );
+        }
+        const mSendBalanceChanges: BalanceChange[] = Object.values(
+          mSendBalanceChangesMap,
+        ).flat();
 
         const isRootletsRedeemTransaction =
           mSendBalanceChanges.some(
@@ -726,46 +737,78 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           );
         if (!isRootletsRedeemTransaction) return acc;
 
-        const transactionTotalRedeemedMsend = mSendBalanceChanges
-          .filter(
-            (balanceChange) =>
-              (balanceChange.owner as any)?.AddressOwner === address,
-          )
-          .reduce(
-            (acc2, balanceChange) =>
-              acc2.plus(
-                new BigNumber(balanceChange.amount).div(
-                  10 ** mSendCoinMetadata.decimals,
+        const transactionTotalRedeemedMsendMap: Record<string, BigNumber> = {};
+        for (const coinType of mSendCoinTypes) {
+          transactionTotalRedeemedMsendMap[coinType] = mSendBalanceChangesMap[
+            coinType
+          ]
+            .filter(
+              (balanceChange) =>
+                (balanceChange.owner as any)?.AddressOwner === address,
+            )
+            .reduce(
+              (acc2, balanceChange) =>
+                acc2.plus(
+                  new BigNumber(balanceChange.amount).div(
+                    10 ** mSendCoinMetadata.decimals,
+                  ),
                 ),
-              ),
-            new BigNumber(0),
-          );
+              new BigNumber(0),
+            );
+        }
 
-        const transactionSendPointsSuilendCapsulesRedeemedMsend = (
-          transaction.events ?? []
-        )
-          .filter(
-            (event) =>
-              event.type === BURN_SEND_POINTS_S1_EVENT_TYPE ||
-              event.type === BURN_SUILEND_CAPSULES_S1_EVENT_TYPE,
-          )
-          .reduce(
-            (acc2, event) =>
-              acc2.plus(
-                new BigNumber((event.parsedJson as any).claim_amount).div(
-                  10 ** mSendCoinMetadata.decimals,
+        const transactionSendPointsSuilendCapsulesRedeemedMsendMap: Record<
+          string,
+          BigNumber
+        > = {
+          [NORMALIZED_mSEND_SERIES_1_COINTYPE]: (transaction.events ?? [])
+            .filter(
+              (event) =>
+                event.type === BURN_SEND_POINTS_S1_EVENT_TYPE ||
+                event.type === BURN_SUILEND_CAPSULES_S1_EVENT_TYPE,
+            )
+            .reduce(
+              (acc2, event) =>
+                acc2.plus(
+                  new BigNumber((event.parsedJson as any).claim_amount).div(
+                    10 ** mSendCoinMetadata.decimals,
+                  ),
                 ),
-              ),
-            new BigNumber(0),
-          );
+              new BigNumber(0),
+            ),
+          [NORMALIZED_mSEND_SERIES_4_COINTYPE]: (transaction.events ?? [])
+            .filter(
+              (event) =>
+                event.type === BURN_SEND_POINTS_S2_EVENT_TYPE ||
+                event.type === BURN_STEAMM_POINTS_EVENT_TYPE ||
+                event.type === BURN_SUILEND_CAPSULES_S2_EVENT_TYPE,
+            )
+            .reduce(
+              (acc2, event) =>
+                acc2.plus(
+                  new BigNumber((event.parsedJson as any).claim_amount).div(
+                    10 ** mSendCoinMetadata.decimals,
+                  ),
+                ),
+              new BigNumber(0),
+            ),
+        };
 
-        return acc.plus(
-          transactionTotalRedeemedMsend.minus(
-            transactionSendPointsSuilendCapsulesRedeemedMsend,
-          ),
-        );
+        const result: Record<string, BigNumber> = {};
+        for (const coinType of mSendCoinTypes) {
+          result[coinType] = acc[coinType].plus(
+            transactionTotalRedeemedMsendMap[coinType].minus(
+              transactionSendPointsSuilendCapsulesRedeemedMsendMap[coinType],
+            ),
+          );
+        }
+
+        return result;
       },
-      new BigNumber(0),
+      {
+        [NORMALIZED_mSEND_SERIES_1_COINTYPE]: new BigNumber(0),
+        [NORMALIZED_mSEND_SERIES_4_COINTYPE]: new BigNumber(0),
+      },
     );
 
     // Bluefin Leagues

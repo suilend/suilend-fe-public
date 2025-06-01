@@ -3,6 +3,8 @@ import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
+import { NORMALIZED_mSEND_SERIES_1_COINTYPE } from "@suilend/sui-fe";
+
 import AllocationCard from "@/components/send/AllocationCard";
 import BlurbSection from "@/components/send/BlurbSection";
 import ClaimSection from "@/components/send/ClaimSection";
@@ -172,7 +174,9 @@ function Page() {
           : undefined,
       userRedeemedMsend:
         userAllocations !== undefined
-          ? userAllocations.rootlets.redeemedMsend
+          ? userAllocations.rootlets.redeemedMsend?.[
+              NORMALIZED_mSEND_SERIES_1_COINTYPE
+            ] // SERIES 1 only
           : undefined,
       userBridgedMsend: undefined,
     },
