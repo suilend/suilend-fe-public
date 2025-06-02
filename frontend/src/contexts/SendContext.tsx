@@ -554,54 +554,66 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           )
           .map((item) => item.objectId);
 
-        const result: Record<
+        const resultEntries = (
+          await Promise.all(
+            rootletsObjectIds.map(async (rootletsObjectId) => {
+              const [objsSeries1, objsSeries4] = await Promise.all([
+                getOwnedObjectsOfType(
+                  suiClient,
+                  rootletsObjectId,
+                  `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_1_COINTYPE}>`,
+                ),
+                getOwnedObjectsOfType(
+                  suiClient,
+                  rootletsObjectId,
+                  `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
+                ),
+              ]);
+
+              const ownedMsendMap: Record<string, BigNumber> = {};
+              ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE] = objsSeries1
+                .reduce(
+                  (acc, obj) =>
+                    acc.plus(
+                      new BigNumber((obj.data?.content as any).fields.balance),
+                    ),
+                  new BigNumber(0),
+                )
+                .div(10 ** _mSendCoinMetadata.decimals);
+              ownedMsendMap[NORMALIZED_mSEND_SERIES_4_COINTYPE] = objsSeries4
+                .reduce(
+                  (acc, obj) =>
+                    acc.plus(
+                      new BigNumber((obj.data?.content as any).fields.balance),
+                    ),
+                  new BigNumber(0),
+                )
+                .div(10 ** _mSendCoinMetadata.decimals);
+              if (Object.values(ownedMsendMap).every((owned) => owned.eq(0)))
+                return undefined;
+
+              return [
+                rootletsObjectId,
+                {
+                  objs: [...objsSeries1, ...objsSeries4],
+                  ownedMsendMap,
+                },
+              ];
+            }),
+          )
+        ).filter(Boolean) as [
           string,
           {
             objs: SuiObjectResponse[];
             ownedMsendMap: Record<string, BigNumber>;
-          }
-        > = {};
-        for (const rootletsObjectId of rootletsObjectIds) {
-          const [objsSeries1, objsSeries4] = await Promise.all([
-            getOwnedObjectsOfType(
-              suiClient,
-              rootletsObjectId,
-              `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_1_COINTYPE}>`,
-            ),
-            getOwnedObjectsOfType(
-              suiClient,
-              rootletsObjectId,
-              `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
-            ),
-          ]);
+          },
+        ][];
+        const result = Object.fromEntries(resultEntries);
 
-          const ownedMsendMap: Record<string, BigNumber> = {};
-          ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE] = objsSeries1
-            .reduce(
-              (acc, obj) =>
-                acc.plus(
-                  new BigNumber((obj.data?.content as any).fields.balance),
-                ),
-              new BigNumber(0),
-            )
-            .div(10 ** _mSendCoinMetadata.decimals);
-          ownedMsendMap[NORMALIZED_mSEND_SERIES_4_COINTYPE] = objsSeries4
-            .reduce(
-              (acc, obj) =>
-                acc.plus(
-                  new BigNumber((obj.data?.content as any).fields.balance),
-                ),
-              new BigNumber(0),
-            )
-            .div(10 ** _mSendCoinMetadata.decimals);
-          if (Object.values(ownedMsendMap).every((owned) => owned.eq(0)))
-            continue;
-
-          result[rootletsObjectId] = {
-            objs: [...objsSeries1, ...objsSeries4],
-            ownedMsendMap,
-          };
-        }
+        setRootletsOwnedMsendObjectsMapMap((prev) => ({
+          ...prev,
+          [_address]: result,
+        }));
 
         setRootletsOwnedMsendObjectsMapMap((prev) => ({
           ...prev,

@@ -828,6 +828,12 @@ export const redeemRootletsMsend = async (
 
     for (const kioskItem of kioskItems) {
       if (count >= maxCount) break;
+      if (
+        (rootletsOwnedMsendObjectsMap[kioskItem.objectId]?.objs || []).every(
+          (obj) => (obj.data?.content as any).fields.balance === "0",
+        )
+      )
+        continue; // Skip Rootlets with no mSEND (either no objects, or all objects have 0 balance)
 
       // Borrow item from personal kiosk
       const [kioskOwnerCap, borrow] = transaction.moveCall({
@@ -849,15 +855,12 @@ export const redeemRootletsMsend = async (
       for (const obj of rootletsOwnedMsendObjectsMap[kioskItem.objectId].objs) {
         if ((obj.data?.content as any).fields.balance === "0") continue;
 
-        const mSendObjectType = (obj.data?.content as any).type;
-        if (!mSendObjectType) continue;
-
         // Take mSEND coin out of NFT
         const mSendCoin = transaction.moveCall({
           target:
             "0xbe7741c72669f1552d0912a4bc5cdadb5856bcb970350613df9b4362e4855dc5::rootlet::receive_obj",
           arguments: [item, transaction.object(obj.data?.objectId as string)],
-          typeArguments: [mSendObjectType],
+          typeArguments: [(obj.data?.content as any).type],
         });
 
         // Transfer mSEND to user
