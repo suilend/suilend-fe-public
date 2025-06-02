@@ -3,22 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Menu, RotateCw, X } from "lucide-react";
 
-import { useWalletContext } from "@suilend/sui-fe-next";
-
 import ConnectWalletButton from "@/components/layout/ConnectWalletButton";
 import HeaderBase from "@/components/layout/HeaderBase";
 import HeaderMenu from "@/components/layout/HeaderMenu";
 import Logo from "@/components/layout/Logo";
 import NavigationLinks from "@/components/layout/NavigationLinks";
 import SettingsDialog from "@/components/layout/SettingsDialog";
-import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Button from "@/components/shared/Button";
 import { useUserContext } from "@/contexts/UserContext";
 
 export default function AppHeader() {
   const router = useRouter();
 
-  const { address } = useWalletContext();
   const { refresh } = useUserContext();
 
   // Menu
@@ -69,12 +65,6 @@ export default function AppHeader() {
 
           <SettingsDialog />
         </div>
-
-        {address && (
-          <div className="hidden shrink-0 sm:flex">
-            <HeaderPointsPopover />
-          </div>
-        )}
 
         <ConnectWalletButton />
 

@@ -4,7 +4,6 @@ import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
-import HeaderPointsPopover from "@/components/points/HeaderPointsPopover";
 import Link from "@/components/shared/Link";
 import { getSwapUrl } from "@/contexts/SwapContext";
 import {
@@ -33,17 +32,7 @@ export default function NavigationLinks() {
       )}
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
 
-      <div className="flex h-[20px] shrink-0 flex-row items-center gap-4">
-        <Link className="flex-1" href={POINTS_URL}>
-          Points
-        </Link>
-
-        {address && (
-          <div className="sm:hidden">
-            <HeaderPointsPopover />
-          </div>
-        )}
-      </div>
+      <Link href={POINTS_URL}>Points</Link>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (
