@@ -6,7 +6,12 @@ import { intervalToDuration } from "date-fns";
 import { cloneDeep } from "lodash";
 import { VenetianMask } from "lucide-react";
 
-import { formatAddress, formatList, formatToken } from "@suilend/sui-fe";
+import {
+  NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  formatAddress,
+  formatList,
+  formatToken,
+} from "@suilend/sui-fe";
 import {
   WalletContextQueryParams,
   shallowPushQuery,
@@ -48,7 +53,14 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
 
   // User
   const userEligibleSend = allocations.reduce(
-    (acc, allocation) => acc.plus(allocation.userEligibleSend ?? 0),
+    (acc, allocation) =>
+      acc.plus(
+        allocation.id === AllocationIdS1.ROOTLETS
+          ? (allocation.userEligibleSendMap?.[
+              NORMALIZED_mSEND_SERIES_1_COINTYPE
+            ] ?? 0)
+          : (allocation.userEligibleSend ?? 0),
+      ),
     new BigNumber(0),
   );
   const userRedeemedMsend = allocations.reduce(

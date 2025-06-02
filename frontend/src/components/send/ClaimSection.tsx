@@ -392,9 +392,17 @@ function RedeemTabContent({
                     <div className="flex flex-row items-center gap-2">
                       <MsendTokenLogo className="h-5 w-5" />
                       <TBody>
-                        {formatToken(allocation.userEligibleSend!, {
-                          exact: false,
-                        })}
+                        {formatToken(
+                          allocation.id === AllocationIdS1.ROOTLETS
+                            ? Object.values(
+                                allocation.userEligibleSendMap!,
+                              ).reduce(
+                                (acc, curr) => acc.plus(curr),
+                                new BigNumber(0),
+                              )
+                            : allocation.userEligibleSend!,
+                          { exact: false },
+                        )}
                       </TBody>
                     </div>
                   </div>
@@ -996,10 +1004,22 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
       allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1
         ? allocation.userEligibleSend?.gte(minMsendAmount) &&
           Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS
-        : allocation.userEligibleSend?.gte(minMsendAmount),
+        : allocation.id === AllocationIdS1.ROOTLETS
+          ? Object.values(allocation.userEligibleSendMap ?? {}).some((value) =>
+              value.gte(minMsendAmount),
+            )
+          : allocation.userEligibleSend?.gte(minMsendAmount),
   );
   const userTotalRedeemableMsend = userRedeemableAllocations.reduce(
-    (acc, allocation) => acc.plus(allocation.userEligibleSend ?? 0),
+    (acc, allocation) =>
+      acc.plus(
+        allocation.id === AllocationIdS1.ROOTLETS
+          ? Object.values(allocation.userEligibleSendMap ?? {}).reduce(
+              (acc, curr) => acc.plus(curr),
+              new BigNumber(0),
+            )
+          : (allocation.userEligibleSend ?? 0),
+      ),
     new BigNumber(0),
   );
 

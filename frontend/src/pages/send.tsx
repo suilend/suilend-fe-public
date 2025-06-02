@@ -3,7 +3,10 @@ import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { NORMALIZED_mSEND_SERIES_1_COINTYPE } from "@suilend/sui-fe";
+import {
+  NORMALIZED_mSEND_SERIES_1_COINTYPE,
+  NORMALIZED_mSEND_SERIES_4_COINTYPE,
+} from "@suilend/sui-fe";
 
 import AllocationCard from "@/components/send/AllocationCard";
 import BlurbSection from "@/components/send/BlurbSection";
@@ -190,16 +193,22 @@ function Page() {
               ).length,
             )
           : undefined,
-      userEligibleSend:
+      userEligibleSendMap:
         rawUserAllocationsS1 !== undefined
-          ? Object.values(
-              rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
-            ).reduce(
-              (acc, curr) =>
-                acc.plus(
-                  curr.ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE],
+          ? [
+              NORMALIZED_mSEND_SERIES_1_COINTYPE,
+              NORMALIZED_mSEND_SERIES_4_COINTYPE,
+            ].reduce(
+              (acc, coinType) => ({
+                ...acc,
+                [coinType]: Object.values(
+                  rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
+                ).reduce(
+                  (acc2, curr) => acc2.plus(curr.ownedMsendMap[coinType]),
+                  new BigNumber(0),
                 ),
-              new BigNumber(0),
+              }),
+              {} as Record<string, BigNumber>,
             )
           : undefined,
       userRedeemedMsend:

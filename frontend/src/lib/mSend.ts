@@ -129,6 +129,7 @@ export type AllocationWithUserAllocation = Allocation & {
   owned?: BigNumber;
   ownedMap?: Record<string, BigNumber>; // Suilend Capsules only
   userEligibleSend?: BigNumber;
+  userEligibleSendMap?: Record<string, BigNumber>; // Rootlets only
   userRedeemedMsend?: BigNumber;
   userBridgedMsend?: BigNumber;
 };
