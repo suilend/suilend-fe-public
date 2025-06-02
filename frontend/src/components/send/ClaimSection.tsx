@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { KioskItem } from "@mysten/kiosk";
 import { Transaction } from "@mysten/sui/transactions";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 import { LENDING_MARKETS } from "@suilend/sdk";
 import {
+  API_URL,
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
@@ -23,7 +24,6 @@ import {
   formatToken,
   formatUsd,
   getBalanceChange,
-  issSui,
 } from "@suilend/sui-fe";
 import {
   showErrorToast,
@@ -66,7 +66,7 @@ import {
   redeemRootletsMsend,
   redeemSuilendCapsulesMsend,
 } from "@/lib/mSend";
-import { ROOT_URL } from "@/lib/navigation";
+import { STEAMM_URL } from "@/lib/navigation";
 import {
   S1_mSEND_REDEMPTION_END_TIMESTAMP_MS,
   SEND_TOTAL_SUPPLY,
@@ -132,7 +132,8 @@ function RedeemTabContent({
   const rawUserAllocationsS2 = restLoadedSendContext.rawUserAllocationsS2!;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
-  const userData = allUserData[LENDING_MARKETS[0].id];
+  const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
+  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
 
   // Redemption ends
   const redemptionEndsDuration = intervalToDuration({
@@ -177,7 +178,7 @@ function RedeemTabContent({
         redeemPointsMsend(
           "SEND_POINTS_S1",
           appData.suilendClient,
-          userData,
+          userDataMainMarket,
           address,
           transaction,
         ); // SERIES 1
@@ -214,7 +215,7 @@ function RedeemTabContent({
         redeemPointsMsend(
           "SEND_POINTS_S2",
           appData.suilendClient,
-          userData,
+          userDataMainMarket,
           address,
           transaction,
         ); // SERIES 4
@@ -222,7 +223,7 @@ function RedeemTabContent({
         redeemPointsMsend(
           "STEAMM_POINTS",
           appData.suilendClient,
-          userData,
+          userDataSteammLmMarket,
           address,
           transaction,
         ); // SERIES 4
@@ -480,7 +481,7 @@ function ClaimTabContent() {
   } = useLoadedSendContext();
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
-  const userData = allUserData[LENDING_MARKETS[0].id];
+  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
 
   // Reserves
   const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -490,16 +491,43 @@ function ClaimTabContent() {
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
   const mSendBalance = mSendBalanceMap[selectedMsendCoinType];
 
-  // Deposit sSUI
-  const ssuiDepositedAmount = (userData.obligations ?? []).reduce(
-    (acc, obligation) =>
-      acc.plus(
-        obligation.deposits.reduce(
-          (acc2, d) => acc2.plus(issSui(d.coinType) ? d.depositedAmount : 0),
-          new BigNumber(0),
-        ),
-      ),
-    new BigNumber(0),
+  // STEAMM deposit
+  const [steammPoolLpTokenCoinTypes, setSteammPoolLpTokenCoinTypes] = useState<
+    string[] | undefined
+  >(undefined);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const poolsRes = await fetch(`${API_URL}/steamm/pools/all`);
+        const poolsJson: any[] = await poolsRes.json();
+        if ((poolsJson as any)?.statusCode === 500)
+          throw new Error("Failed to fetch pools");
+
+        setSteammPoolLpTokenCoinTypes(
+          poolsJson.map((poolObj) => poolObj.poolInfo.lpTokenType),
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  const steammLpTokenBalances = useMemo(
+    () => steammPoolLpTokenCoinTypes?.map(getBalance),
+    [steammPoolLpTokenCoinTypes, getBalance],
+  );
+
+  const satisfiesSteammDepositTask =
+    steammLpTokenBalances?.some((balance) => balance.gt(0)) ||
+    (userDataSteammLmMarket.obligations ?? []).some((obligation) =>
+      obligation.deposits.some((d) => d.depositedAmount.gt(0)),
+    );
+  console.log(
+    "XXXX",
+    steammLpTokenBalances?.some((balance) => balance.gt(0)),
+    userDataSteammLmMarket.obligations,
+    satisfiesSteammDepositTask,
   );
 
   // Amount
@@ -651,21 +679,26 @@ function ClaimTabContent() {
 
   return (
     <>
-      {/* Deposit sSUI */}
+      {/* STEAMM deposit */}
       <div
         className={cn(
           "flex w-full flex-row items-center gap-4",
-          ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
+          satisfiesSteammDepositTask && "pointer-events-none opacity-50",
         )}
       >
         <div className="flex flex-1 flex-col gap-1">
-          <TBody className="text-[16px]">DEPOSIT sSUI</TBody>
+          <div className="flex flex-row items-center gap-3">
+            <TLabel className="flex h-6 w-6 flex-row items-center justify-center rounded-sm bg-border text-foreground">
+              1
+            </TLabel>
+            <TBody className="text-[16px] uppercase">Deposit on STEAMM</TBody>
+          </div>
           <TBodySans className="text-muted-foreground">
-            Deposit any amount of Spring Staked SUI
+            Deposit any amount into any STEAMM pool
           </TBodySans>
         </div>
 
-        <Link href={`${ROOT_URL}?asset=sSUI`}>
+        <Link href={STEAMM_URL} target="_blank">
           <Button labelClassName="uppercase" endIcon={<ArrowUpRight />}>
             Deposit
           </Button>
@@ -677,11 +710,16 @@ function ClaimTabContent() {
       <div
         className={cn(
           "flex w-full flex-col gap-6",
-          !ssuiDepositedAmount.gt(0) && "pointer-events-none opacity-50",
+          !satisfiesSteammDepositTask && "pointer-events-none opacity-50",
         )}
       >
         <div className="flex w-full flex-col gap-4">
-          <TBody className="text-[16px]">{"YOU'RE CLAIMING"}</TBody>
+          <div className="flex flex-row items-center gap-3">
+            <TLabel className="flex h-6 w-6 flex-row items-center justify-center rounded-sm bg-border text-foreground">
+              2
+            </TLabel>
+            <TBody className="text-[16px] uppercase">Claim SEND</TBody>
+          </div>
 
           {/* Select mSEND */}
           {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
