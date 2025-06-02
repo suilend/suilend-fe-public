@@ -104,8 +104,10 @@ interface SendContext {
         };
         save: { bridgedMsend: BigNumber | undefined };
         rootlets: {
-          owned: BigNumber;
-          ownedMsendObjectsMap: Record<string, SuiObjectResponse[]>; // SERIES 1 & 4
+          ownedMsendObjectsMap: Record<
+            string,
+            { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+          >; // SERIES 1 & 4
           redeemedMsend: Record<string, BigNumber> | undefined; // SERIES 1 & 4
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
@@ -124,8 +126,6 @@ interface SendContext {
         tism: { isInSnapshot: boolean };
       }
     | undefined;
-  refreshRawUserAllocationsS1: () => Promise<void>;
-
   rawUserAllocationsS2:
     | {
         sendPointsS2: { owned: BigNumber };
@@ -135,7 +135,7 @@ interface SendContext {
         };
       }
     | undefined;
-  refreshRawUserAllocationsS2: () => Promise<void>;
+  refreshRawUserAllocations: () => Promise<void>;
 
   selectedMsendCoinType: string;
   setSelectedMsendCoinType: (coinType: string) => void;
@@ -157,11 +157,8 @@ const SendContext = createContext<SendContext>({
   }),
   ownedKiosks: undefined,
   rawUserAllocationsS1: undefined,
-  refreshRawUserAllocationsS1: async () => {
-    throw Error("SendContextProvider not initialized");
-  },
   rawUserAllocationsS2: undefined,
-  refreshRawUserAllocationsS2: async () => {
+  refreshRawUserAllocations: async () => {
     throw Error("SendContextProvider not initialized");
   },
 
@@ -519,7 +516,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
   // User - Rootlets
   const [rootletsOwnedMsendObjectsMapMap, setRootletsOwnedMsendObjectsMapMap] =
-    useState<Record<string, Record<string, SuiObjectResponse[]>>>({});
+    useState<
+      Record<
+        string,
+        Record<string, { objs: SuiObjectResponse[]; ownedMsend: BigNumber }>
+      >
+    >({});
 
   const fetchRootletsOwnedMsendObjectsMap = useCallback(
     async (
@@ -543,7 +545,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           )
           .map((item) => item.objectId);
 
-        const result: Record<string, SuiObjectResponse[]> = {};
+        const result: Record<
+          string,
+          { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+        > = {};
         for (const rootletsObjectId of rootletsObjectIds) {
           const [objsSeries1, objsSeries4] = await Promise.all([
             getOwnedObjectsOfType(
@@ -559,16 +564,18 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           ]);
           const objs = [...objsSeries1, ...objsSeries4];
 
-          const ownedMsendRaw = objs.reduce(
-            (acc, obj) =>
-              acc.plus(
-                new BigNumber((obj.data?.content as any).fields.balance),
-              ),
-            new BigNumber(0),
-          );
-          if (ownedMsendRaw.eq(0)) continue;
+          const ownedMsend = objs
+            .reduce(
+              (acc, obj) =>
+                acc.plus(
+                  new BigNumber((obj.data?.content as any).fields.balance),
+                ),
+              new BigNumber(0),
+            )
+            .div(10 ** _mSendCoinMetadata.decimals);
+          if (ownedMsend.eq(0)) continue;
 
-          result[rootletsObjectId] = objs;
+          result[rootletsObjectId] = { objs, ownedMsend };
         }
 
         setRootletsOwnedMsendObjectsMapMap((prev) => ({
@@ -697,16 +704,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     );
 
     // Rootlets
-    const ownedRootlets = new BigNumber(
-      ownedKiosks.reduce(
-        (acc, { kiosk }) => [
-          ...acc,
-          ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
-        ],
-        [] as KioskItem[],
-      ).length,
-    );
-
     const redeemedRootletsMsend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
         const mSendCoinTypes = Object.keys(acc);
@@ -882,7 +879,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       },
       save: { bridgedMsend: bridgedSaveMsend },
       rootlets: {
-        owned: ownedRootlets,
         ownedMsendObjectsMap: rootletsOwnedMsendObjectsMap,
         redeemedMsend: redeemedRootletsMsend,
       },
@@ -910,29 +906,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     userDataMainMarket.obligations,
     ownedSuilendCapsulesObjectsMap,
     rootletsOwnedMsendObjectsMap,
-  ]);
-
-  const refreshRawUserAllocationsS1 = useCallback(async () => {
-    if (!address) return;
-
-    if (!mSendCoinMetadata) return;
-
-    fetchTransactionsSinceTge(address);
-    const newOwnedKiosks = await fetchOwnedKiosks(address);
-
-    fetchOwnedSuilendCapsulesObjectsMap(address);
-    fetchRootletsOwnedMsendObjectsMap(
-      address,
-      mSendCoinMetadata,
-      newOwnedKiosks!,
-    );
-  }, [
-    address,
-    mSendCoinMetadata,
-    fetchTransactionsSinceTge,
-    fetchOwnedSuilendCapsulesObjectsMap,
-    fetchOwnedKiosks,
-    fetchRootletsOwnedMsendObjectsMap,
   ]);
 
   // S2
@@ -1018,13 +991,29 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     userDataSteammLmMarket.obligations,
   ]);
 
-  const refreshRawUserAllocationsS2 = useCallback(async () => {
+  // Refresh
+  const refreshRawUserAllocations = useCallback(async () => {
     if (!address) return;
 
     if (!mSendCoinMetadata) return;
 
+    fetchTransactionsSinceTge(address);
+    const newOwnedKiosks = await fetchOwnedKiosks(address);
+
     fetchOwnedSuilendCapsulesObjectsMap(address);
-  }, [address, mSendCoinMetadata, fetchOwnedSuilendCapsulesObjectsMap]);
+    fetchRootletsOwnedMsendObjectsMap(
+      address,
+      mSendCoinMetadata,
+      newOwnedKiosks!,
+    );
+  }, [
+    address,
+    mSendCoinMetadata,
+    fetchTransactionsSinceTge,
+    fetchOwnedSuilendCapsulesObjectsMap,
+    fetchOwnedKiosks,
+    fetchRootletsOwnedMsendObjectsMap,
+  ]);
 
   // Selected mSEND
   const [selectedMsendCoinType, setSelectedMsendCoinType] = useState<string>(
@@ -1049,9 +1038,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       kioskClient,
       ownedKiosks,
       rawUserAllocationsS1,
-      refreshRawUserAllocationsS1,
       rawUserAllocationsS2,
-      refreshRawUserAllocationsS2,
+      refreshRawUserAllocations,
 
       selectedMsendCoinType,
       setSelectedMsendCoinType,
@@ -1064,9 +1052,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       kioskClient,
       ownedKiosks,
       rawUserAllocationsS1,
-      refreshRawUserAllocationsS1,
       rawUserAllocationsS2,
-      refreshRawUserAllocationsS2,
+      refreshRawUserAllocations,
       selectedMsendCoinType,
       setSelectedMsendCoinType,
     ],

@@ -108,6 +108,8 @@ export type Allocation = {
   id: AllocationIdS1 | AllocationIdS2;
   src: string;
   hoverSrc: string;
+  redeemSrc?: string;
+  redeemSrcMap?: Record<string, string>;
   title: string;
   description: string;
   allocationType: AllocationType;
@@ -180,8 +182,9 @@ export const allocations: {
     },
     [AllocationIdS1.SEND_POINTS_S1]: {
       id: AllocationIdS1.SEND_POINTS_S1,
-      src: `${ASSETS_URL}/send/points/send-points.png`,
-      hoverSrc: `${ASSETS_URL}/send/points/send-points-hover.mp4`,
+      src: `${ASSETS_URL}/send/points/send-points-s1.png`,
+      hoverSrc: `${ASSETS_URL}/send/points/send-points-s1-hover.mp4`,
+      redeemSrc: `${ASSETS_URL}/send/redeem/send-points/s1.png`,
       title: "SEND Points S1",
       description:
         "SEND Points (Season 1) were distributed as rewards for depositing/borrowing activity on Suilend.",
@@ -204,8 +207,13 @@ export const allocations: {
     },
     [AllocationIdS1.SUILEND_CAPSULES_S1]: {
       id: AllocationIdS1.SUILEND_CAPSULES_S1,
-      src: `${ASSETS_URL}/send/nft/suilend-capsules.png`,
-      hoverSrc: `${ASSETS_URL}/send/nft/suilend-capsules-hover.mp4`,
+      src: `${ASSETS_URL}/send/nft/suilend-capsules-s1.png`,
+      hoverSrc: `${ASSETS_URL}/send/nft/suilend-capsules-s1-hover.mp4`,
+      redeemSrcMap: {
+        [SuilendCapsuleS1Rarity.COMMON]: `${ASSETS_URL}/send/redeem/suilend-capsules/common-s1.png`,
+        [SuilendCapsuleS1Rarity.UNCOMMON]: `${ASSETS_URL}/send/redeem/suilend-capsules/uncommon-s1.png`,
+        [SuilendCapsuleS1Rarity.RARE]: `${ASSETS_URL}/send/redeem/suilend-capsules/rare-s1.png`,
+      },
       title: "Suilend Capsules S1",
       description:
         "A token of appreciation awarded for outstanding community contributions to Suilend.",
@@ -261,6 +269,7 @@ export const allocations: {
       id: AllocationIdS1.ROOTLETS,
       src: `${ASSETS_URL}/send/nft/rootlets.png`,
       hoverSrc: `${ASSETS_URL}/send/nft/rootlets-hover.mp4`,
+      redeemSrc: `${ASSETS_URL}/send/redeem/rootlets.png`,
       title: "Rootlets",
       description:
         "Rootlets are the companion NFT community to Suilend. It's the most premium art collection on Sui, but the art is good tho.",
@@ -573,6 +582,7 @@ export const allocations: {
       id: AllocationIdS2.SEND_POINTS_S2,
       src: "",
       hoverSrc: "",
+      redeemSrc: `${ASSETS_URL}/send/redeem/send-points/s2.png`,
       title: "SEND Points S2",
       description: "",
       allocationType: AllocationType.LINEAR,
@@ -596,6 +606,7 @@ export const allocations: {
       id: AllocationIdS2.STEAMM_POINTS,
       src: "",
       hoverSrc: "",
+      redeemSrc: `${ASSETS_URL}/send/redeem/steamm-points.png`,
       title: "STEAMM Points",
       description: "",
       allocationType: AllocationType.LINEAR,
@@ -619,6 +630,11 @@ export const allocations: {
       id: AllocationIdS2.SUILEND_CAPSULES_S2,
       src: "",
       hoverSrc: "",
+      redeemSrcMap: {
+        [SuilendCapsuleS2Rarity.COMMON]: `${ASSETS_URL}/send/redeem/suilend-capsules/common-s2.png`,
+        [SuilendCapsuleS2Rarity.UNCOMMON]: `${ASSETS_URL}/send/redeem/suilend-capsules/uncommon-s2.png`,
+        [SuilendCapsuleS2Rarity.RARE]: `${ASSETS_URL}/send/redeem/suilend-capsules/rare-s2.png`,
+      },
       title: "Suilend Capsules S2",
       description: "",
       allocationType: AllocationType.LINEAR,
@@ -784,7 +800,10 @@ export const redeemSuilendCapsulesMsend = (
 };
 
 export const redeemRootletsMsend = async (
-  rootletsOwnedMsendObjectsMap: Record<string, SuiObjectResponse[]>,
+  rootletsOwnedMsendObjectsMap: Record<
+    string,
+    { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+  >,
   kioskClient: KioskClient,
   ownedKiosks: {
     kiosk: KioskData;
@@ -826,7 +845,7 @@ export const redeemRootletsMsend = async (
         typeArguments: [ROOTLETS_TYPE],
       });
 
-      for (const obj of rootletsOwnedMsendObjectsMap[kioskItem.objectId]) {
+      for (const obj of rootletsOwnedMsendObjectsMap[kioskItem.objectId].objs) {
         if ((obj.data?.content as any).fields.balance === "0") continue;
 
         const mSendObjectType = (obj.data?.content as any).type;

@@ -55,9 +55,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
+import { TX_TOAST_DURATION } from "@/lib/constants";
 import {
   AllocationIdS1,
+  AllocationIdS2,
   AllocationWithUserAllocation,
   ROOTLETS_TYPE,
   allocations,
@@ -124,10 +125,11 @@ function RedeemTabContent({
     mSendCoinMetadata,
     kioskClient,
     ownedKiosks,
-    refreshRawUserAllocationsS1,
+    refreshRawUserAllocations,
     ...restLoadedSendContext
   } = useLoadedSendContext();
   const rawUserAllocationsS1 = restLoadedSendContext.rawUserAllocationsS1!;
+  const rawUserAllocationsS2 = restLoadedSendContext.rawUserAllocationsS2!;
 
   const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userData = allUserData[LENDING_MARKETS[0].id];
@@ -160,6 +162,7 @@ function RedeemTabContent({
     const transaction = new Transaction();
 
     try {
+      // S1
       const hasSendPointsS1ToRedeem = userRedeemableAllocations.some(
         (allocation) => allocation.id === AllocationIdS1.SEND_POINTS_S1,
       );
@@ -195,6 +198,43 @@ function RedeemTabContent({
           address,
           transaction,
         ); // SERIES 1 & 4
+
+      // S2
+      const hasSendPointsS2ToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS2.SEND_POINTS_S2,
+      );
+      const hasSteamPointsToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS2.STEAMM_POINTS,
+      );
+      const hasSuilendCapsulesS2ToRedeem = userRedeemableAllocations.some(
+        (allocation) => allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
+      );
+
+      if (hasSendPointsS2ToRedeem)
+        redeemPointsMsend(
+          "SEND_POINTS_S2",
+          appData.suilendClient,
+          userData,
+          address,
+          transaction,
+        ); // SERIES 4
+      if (hasSteamPointsToRedeem)
+        redeemPointsMsend(
+          "STEAMM_POINTS",
+          appData.suilendClient,
+          userData,
+          address,
+          transaction,
+        ); // SERIES 4
+      if (hasSuilendCapsulesS2ToRedeem)
+        redeemSuilendCapsulesMsend(
+          2,
+          Object.values(
+            rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap,
+          ).flat(),
+          address,
+          transaction,
+        ); // SERIES 4
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -241,7 +281,7 @@ function RedeemTabContent({
       showErrorToast("Failed to redeem mSEND", err as Error, undefined, true);
     } finally {
       setIsSubmitting(false);
-      await refreshRawUserAllocationsS1();
+      await refreshRawUserAllocations();
     }
   };
 
@@ -253,59 +293,77 @@ function RedeemTabContent({
           <div className="relative z-[2] flex w-full flex-col gap-4 rounded-md border bg-background p-4">
             {userRedeemableAllocations.map((allocation, index) => (
               <Fragment key={allocation.id}>
-                {allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ? (
+                {allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
+                allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2 ? (
                   Object.entries(allocation.ownedMap!)
                     .filter(([, owned]) => owned.gt(0))
-                    .map(([rarity, owned], index, array) => (
-                      <Fragment key={rarity}>
-                        <div className="flex w-full flex-row items-center justify-between gap-4">
-                          <div className="flex flex-row items-center gap-3">
-                            <Image
-                              src={`${ASSETS_URL}/send/nft/suilend-capsules/s1-${rarity}.png`}
-                              alt={[capitalize(rarity), allocation.title].join(
-                                " ",
-                              )}
-                              width={24}
-                              height={24}
-                            />
-                            <TBody>
-                              {formatInteger(+owned)}{" "}
-                              {[capitalize(rarity), allocation.title].join(" ")}
-                            </TBody>
-                          </div>
+                    .map(([rarityRaw, owned], index, array) => {
+                      const rarity = rarityRaw.split("_")[0];
 
-                          <div className="flex flex-row items-center gap-2">
-                            <MsendTokenLogo className="h-5 w-5" />
-                            <TBody>
-                              {formatToken(
-                                owned.times(
-                                  allocations.s1[
+                      return (
+                        <Fragment key={rarity}>
+                          <div className="flex w-full flex-row items-center justify-between gap-4">
+                            <div className="flex flex-row items-center gap-3">
+                              <Image
+                                src={allocation.redeemSrcMap![rarity]}
+                                alt={[
+                                  capitalize(rarity),
+                                  allocation.title,
+                                ].join(" ")}
+                                width={24}
+                                height={24}
+                              />
+                              <TBody>
+                                {formatInteger(+owned)}{" "}
+                                {[capitalize(rarity), allocation.title].join(
+                                  " ",
+                                )}
+                              </TBody>
+                            </div>
+
+                            <div className="flex flex-row items-center gap-2">
+                              <MsendTokenLogo className="h-5 w-5" />
+                              <TBody>
+                                {formatToken(
+                                  owned.times(
+                                    (allocation.id ===
                                     AllocationIdS1.SUILEND_CAPSULES_S1
-                                  ].totalAllocationBreakdownMap[rarity].percent
-                                    .times(SEND_TOTAL_SUPPLY)
-                                    .div(100),
-                                ),
-                                { exact: false },
-                              )}
-                            </TBody>
+                                      ? allocations.s1[
+                                          AllocationIdS1.SUILEND_CAPSULES_S1
+                                        ]
+                                      : allocations.s2[
+                                          AllocationIdS2.SUILEND_CAPSULES_S2
+                                        ]
+                                    ).totalAllocationBreakdownMap[
+                                      rarityRaw
+                                    ].percent
+                                      .times(SEND_TOTAL_SUPPLY)
+                                      .div(100),
+                                  ),
+                                  { exact: false },
+                                )}
+                              </TBody>
+                            </div>
                           </div>
-                        </div>
 
-                        {index !== array.length - 1 && <Separator />}
-                      </Fragment>
-                    ))
+                          {index !== array.length - 1 && <Separator />}
+                        </Fragment>
+                      );
+                    })
                 ) : (
                   <div className="flex w-full flex-row items-center justify-between gap-4">
                     <div className="flex flex-row items-center gap-3">
                       <Image
-                        src={allocation.src}
+                        src={allocation.redeemSrc!}
                         alt={allocation.title}
                         width={24}
                         height={24}
                       />
                       <div className="flex flex-col gap-1">
                         <TBody>
-                          {allocation.id === AllocationIdS1.SEND_POINTS_S1
+                          {allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+                          allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
+                          allocation.id === AllocationIdS2.STEAMM_POINTS
                             ? formatToken(allocation.owned!, { exact: false })
                             : formatInteger(+allocation.owned!)}{" "}
                           {allocation.title}
@@ -355,9 +413,7 @@ function RedeemTabContent({
             <div className="flex flex-row items-center gap-2">
               <MsendTokenLogo className="h-5 w-5" />
               <TBody>
-                {formatToken(userTotalRedeemableMsend, {
-                  dp: mSendCoinMetadata.decimals,
-                })}
+                {formatToken(userTotalRedeemableMsend, { exact: false })}
               </TBody>
             </div>
           </div>
@@ -873,6 +929,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     mSendObjectMap,
     mSendCoinMetadata,
     rawUserAllocationsS1,
+    rawUserAllocationsS2,
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
@@ -883,9 +940,15 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
 
   const redeemableAllocations = allocations.filter(
     (allocation) =>
+      // S1
       allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
       allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
-      allocation.id === AllocationIdS1.ROOTLETS,
+      allocation.id === AllocationIdS1.ROOTLETS ||
+      // S2
+      // allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
+      // allocation.id === AllocationIdS2.STEAMM_POINTS ||
+      // allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
+      false, // TEMP
   );
 
   const userRedeemableAllocations = redeemableAllocations.filter(
@@ -922,7 +985,9 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">
       <SectionHeading id="claim">Claim</SectionHeading>
 
-      {address && rawUserAllocationsS1 === undefined ? (
+      {address &&
+      (rawUserAllocationsS1 === undefined ||
+        rawUserAllocationsS2 === undefined) ? (
         <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
       ) : (
         <>

@@ -184,28 +184,17 @@ function Page() {
 
       owned:
         rawUserAllocationsS1 !== undefined
-          ? Date.now() >= TGE_TIMESTAMP_MS
-            ? new BigNumber(
-                Object.keys(
-                  rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
-                ).length,
-              )
-            : rawUserAllocationsS1.rootlets.owned
+          ? new BigNumber(
+              Object.keys(
+                rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
+              ).length,
+            )
           : undefined,
       userEligibleSend:
         rawUserAllocationsS1 !== undefined
-          ? (Date.now() >= TGE_TIMESTAMP_MS
-              ? new BigNumber(
-                  Object.keys(
-                    rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
-                  ).length,
-                )
-              : rawUserAllocationsS1.rootlets.owned
-            ).times(
-              rootlets.totalAllocationBreakdownMap.one.percent
-                .times(SEND_TOTAL_SUPPLY)
-                .div(100),
-            )
+          ? Object.values(
+              rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
+            ).reduce((acc, curr) => acc.plus(curr.ownedMsend), new BigNumber(0))
           : undefined,
       userRedeemedMsend:
         rawUserAllocationsS1 !== undefined
@@ -416,6 +405,10 @@ function Page() {
     [AllocationIdS2.SEND_POINTS_S2]: {
       ...sendPointsS2,
 
+      owned:
+        rawUserAllocationsS2 !== undefined
+          ? rawUserAllocationsS2.sendPointsS2.owned
+          : undefined,
       userEligibleSend:
         rawUserAllocationsS2 !== undefined
           ? rawUserAllocationsS2.sendPointsS2.owned
@@ -435,6 +428,10 @@ function Page() {
     [AllocationIdS2.STEAMM_POINTS]: {
       ...steammPoints,
 
+      owned:
+        rawUserAllocationsS2 !== undefined
+          ? rawUserAllocationsS2.steammPoints.owned
+          : undefined,
       userEligibleSend:
         rawUserAllocationsS2 !== undefined
           ? rawUserAllocationsS2.steammPoints.owned
@@ -454,6 +451,26 @@ function Page() {
     [AllocationIdS2.SUILEND_CAPSULES_S2]: {
       ...suilendCapsulesS2,
 
+      ownedMap:
+        rawUserAllocationsS2 !== undefined
+          ? {
+              [SuilendCapsuleS2Rarity.COMMON]: new BigNumber(
+                rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                  SuilendCapsuleS2Rarity.COMMON
+                ].length,
+              ),
+              [SuilendCapsuleS2Rarity.UNCOMMON]: new BigNumber(
+                rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                  SuilendCapsuleS2Rarity.UNCOMMON
+                ].length,
+              ),
+              [SuilendCapsuleS2Rarity.RARE]: new BigNumber(
+                rawUserAllocationsS2.suilendCapsulesS2.ownedObjectsMap[
+                  SuilendCapsuleS2Rarity.RARE
+                ].length,
+              ),
+            }
+          : undefined,
       userEligibleSend:
         rawUserAllocationsS2 !== undefined
           ? new BigNumber(
