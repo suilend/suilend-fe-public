@@ -691,7 +691,7 @@ function ClaimTabContent() {
             <TLabel className="flex h-6 w-6 flex-row items-center justify-center rounded-sm bg-border text-foreground">
               1
             </TLabel>
-            <TBody className="text-[16px] uppercase">Deposit on STEAMM</TBody>
+            <TBody className="text-[16px] uppercase">LP on STEAMM</TBody>
           </div>
           <TBodySans className="text-muted-foreground">
             Deposit any amount into any STEAMM pool
@@ -700,7 +700,7 @@ function ClaimTabContent() {
 
         <Link href={STEAMM_URL} target="_blank">
           <Button labelClassName="uppercase" endIcon={<ArrowUpRight />}>
-            Deposit
+            LP
           </Button>
         </Link>
       </div>
