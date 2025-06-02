@@ -45,7 +45,7 @@ export default function AppHeader() {
         <Logo />
 
         {/* Links */}
-        <div className="hidden flex-row gap-8 lg:flex">
+        <div className="flex flex-row items-center gap-8 max-xl:hidden">
           <NavigationLinks />
         </div>
       </div>
