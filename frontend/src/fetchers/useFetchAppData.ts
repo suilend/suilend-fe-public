@@ -1,9 +1,13 @@
 import BigNumber from "bignumber.js";
 import useSWR, { useSWRConfig } from "swr";
 
-import { initializeSuilend, initializeSuilendRewards } from "@suilend/sdk";
+import {
+  ParsedReserve,
+  initializeSuilend,
+  initializeSuilendRewards,
+} from "@suilend/sdk";
 import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
-import { API_URL } from "@suilend/sui-fe";
+import { API_URL, issSui } from "@suilend/sui-fe";
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
@@ -88,6 +92,40 @@ export default function useFetchAppData() {
         }
       })(),
     ]);
+
+    const isEcosystemLst = (coinType: string) =>
+      Object.keys(lstAprPercentMap).includes(coinType) && !issSui(coinType);
+
+    // Sort ecosystem LSTs by TVL (descending)
+    for (const lendingMarket of Object.values(allLendingMarketData)) {
+      // Sort
+      const ecosystemLstReserves = lendingMarket.lendingMarket.reserves.filter(
+        (r) => isEcosystemLst(r.coinType),
+      );
+      const sortedEcosystemLstReserves = ecosystemLstReserves
+        .slice()
+        .sort((a, b) => +b.depositedAmountUsd - +a.depositedAmountUsd);
+
+      // Update
+      const nonEcosystemLstReserves =
+        lendingMarket.lendingMarket.reserves.filter(
+          (r) => !isEcosystemLst(r.coinType),
+        );
+      const index = nonEcosystemLstReserves.findIndex((r) =>
+        issSui(r.coinType),
+      );
+
+      lendingMarket.lendingMarket.reserves = [
+        ...nonEcosystemLstReserves.slice(0, index + 1),
+        ...sortedEcosystemLstReserves,
+        ...nonEcosystemLstReserves.slice(index + 1),
+      ];
+
+      lendingMarket.reserveMap = lendingMarket.lendingMarket.reserves.reduce(
+        (acc, reserve) => ({ ...acc, [reserve.coinType]: reserve }),
+        {},
+      ) as Record<string, ParsedReserve>;
+    }
 
     return { allLendingMarketData, lstAprPercentMap };
   };
