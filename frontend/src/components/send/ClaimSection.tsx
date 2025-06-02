@@ -688,9 +688,9 @@ function ClaimTabContent() {
       >
         <div className="flex flex-1 flex-col gap-1">
           <div className="flex flex-row items-center gap-3">
-            <TLabel className="flex h-6 w-6 flex-row items-center justify-center rounded-sm bg-border text-foreground">
-              1
-            </TLabel>
+            <div className="flex h-5 w-5 flex-row items-center justify-center rounded-sm bg-border">
+              <TLabelSans className="text-foreground">1</TLabelSans>
+            </div>
             <TBody className="text-[16px] uppercase">LP on STEAMM</TBody>
           </div>
           <TBodySans className="text-muted-foreground">
@@ -715,9 +715,9 @@ function ClaimTabContent() {
       >
         <div className="flex w-full flex-col gap-4">
           <div className="flex flex-row items-center gap-3">
-            <TLabel className="flex h-6 w-6 flex-row items-center justify-center rounded-sm bg-border text-foreground">
-              2
-            </TLabel>
+            <div className="flex h-5 w-5 flex-row items-center justify-center rounded-sm bg-border">
+              <TLabelSans className="text-foreground">2</TLabelSans>
+            </div>
             <TBody className="text-[16px] uppercase">Claim SEND</TBody>
           </div>
 
