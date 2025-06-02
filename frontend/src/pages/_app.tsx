@@ -25,6 +25,8 @@ import { PointsContextProvider } from "@/contexts/PointsContext";
 import { UserContextProvider } from "@/contexts/UserContext";
 import { TITLE } from "@/lib/constants";
 import "@/styles/globals.scss";
+import { fontClassNames } from "@/lib/fonts";
+import { cn } from "@/lib/utils";
 
 function WalletContextProviderWrapper({ children }: PropsWithChildren) {
   // MSafe Wallet
@@ -71,7 +73,7 @@ export default function App({ Component, pageProps }: AppProps) {
         />
       </Head>
 
-      <main id="__app_main">
+      <main id="__app_main" className={cn(fontClassNames)}>
         <LDProvider
           clientSideID={
             process.env.NEXT_PUBLIC_LAUNCHDARKLY_CLIENT_SIDE_ID as string

@@ -1,8 +1,6 @@
 import { Head, Html, Main, NextScript } from "next/document";
 
 import { ASSETS_URL, DESCRIPTION, TITLE, TWITTER } from "@/lib/constants";
-import { fontClassNames } from "@/lib/fonts";
-import { cn } from "@/lib/utils";
 
 export default function Document() {
   return (
@@ -43,7 +41,7 @@ export default function Document() {
         <link rel="manifest" href={`${ASSETS_URL}/seo/site.webmanifest`} />
         <meta name="theme-color" content="#020A19" />
       </Head>
-      <body className={cn(fontClassNames)}>
+      <body>
         <Main />
         <NextScript />
       </body>
