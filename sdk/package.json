@@ -36,6 +36,6 @@
   "peerDependencies": {
     "@mysten/bcs": "1.6.0",
     "@mysten/sui": "1.28.2",
-    "@suilend/sui-fe": "^0.2.77"
+    "@suilend/sui-fe": "^0.2.78"
   }
 }
