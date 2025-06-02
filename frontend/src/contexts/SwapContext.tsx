@@ -21,6 +21,8 @@ import {
   AggregatorClient as CetusSdk,
   Env,
 } from "@cetusprotocol/aggregator-sdk";
+import { AggregatorQuoter as FlowXAggregatorQuoter } from "@flowx-finance/sdk";
+import { GetRoutesResult as FlowXGetRoutesResult } from "@flowx-finance/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import {
   RouterCompleteTradeRoute as AftermathQuote,
@@ -49,11 +51,13 @@ export enum QuoteProvider {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
   _7K = "7k",
+  FLOWX = "flowx",
 }
 export const QUOTE_PROVIDER_NAME_MAP = {
   [QuoteProvider.AFTERMATH]: "Aftermath",
   [QuoteProvider.CETUS]: "Cetus",
   [QuoteProvider._7K]: "7K",
+  [QuoteProvider.FLOWX]: "FlowX",
 };
 
 export type StandardizedRoutePath = {
@@ -96,6 +100,7 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
   | { provider: QuoteProvider.CETUS; quote: CetusQuote }
   | { provider: QuoteProvider._7K; quote: _7kQuote }
+  | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
 );
 
 export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
@@ -125,6 +130,7 @@ type HistoricalUsdPriceData = {
 interface SwapContext {
   aftermathSdk?: AftermathSdk;
   cetusSdk?: CetusSdk;
+  flowXSdk?: FlowXAggregatorQuoter;
 
   tokenHistoricalUsdPricesMap: Record<string, HistoricalUsdPriceData[]>;
   fetchTokenHistoricalUsdPrices: (token: SwapToken) => Promise<void>;
@@ -146,6 +152,7 @@ interface SwapContext {
 const defaultContextValue: SwapContext = {
   aftermathSdk: undefined,
   cetusSdk: undefined,
+  flowXSdk: undefined,
 
   tokenHistoricalUsdPricesMap: {},
   fetchTokenHistoricalUsdPrices: async () => {
@@ -212,6 +219,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     set7kSdkSuiClient(suiClient);
   }, [suiClient]);
+
+  // SDKs - FlowX
+  const flowXSdk = useMemo(() => {
+    const sdk = new FlowXAggregatorQuoter("mainnet");
+    return sdk;
+  }, []);
 
   // USD prices - Historical
   const [tokenHistoricalUsdPricesMap, setTokenHistoricalUsdPricesMap] =
@@ -491,6 +504,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     () => ({
       aftermathSdk,
       cetusSdk,
+      flowXSdk,
 
       tokenHistoricalUsdPricesMap,
       fetchTokenHistoricalUsdPrices,
@@ -511,6 +525,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     [
       aftermathSdk,
       cetusSdk,
+      flowXSdk,
       tokenHistoricalUsdPricesMap,
       fetchTokenHistoricalUsdPrices,
       tokenUsdPricesMap,

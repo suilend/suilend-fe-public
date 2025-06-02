@@ -16,6 +16,13 @@ import {
 } from "@7kprotocol/sdk-ts/cjs";
 import * as CetusAggregatorSdk from "@cetusprotocol/aggregator-sdk";
 import {
+  AggregatorQuoter as FlowXAggregatorQuoter,
+  Coin as FlowXCoin,
+  Commission as FlowXCommission,
+  CommissionType as FlowXCommissionType,
+  TradeBuilder as FlowXTradeBuilder,
+} from "@flowx-finance/sdk";
+import {
   Transaction,
   TransactionObjectArgument,
   coinWithBalance,
@@ -100,6 +107,7 @@ import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
+import { FLOWX_PARTNER_ID } from "@/lib/flowx";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +151,7 @@ function Page() {
   const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
   const cetusSdk =
     restSwapContext.cetusSdk as CetusAggregatorSdk.AggregatorClient;
+  const flowXSdk = restSwapContext.flowXSdk as FlowXAggregatorQuoter;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
 
@@ -254,6 +263,7 @@ function Page() {
       [QuoteProvider.AFTERMATH]: true, // W->W, W->D, D->D
       [QuoteProvider.CETUS]: true, // W->W, W->D, D->D
       [QuoteProvider._7K]: true, // W->W, W->D, D->D
+      [QuoteProvider.FLOWX]: true, // W->W, W->D, D->D
     }),
     [],
   );
@@ -535,8 +545,82 @@ function Page() {
           }
         })();
       }
+
+      // FlowX
+      if (activeProvidersMap[QuoteProvider.FLOWX]) {
+        (async () => {
+          console.log("Swap - fetching FlowX quote");
+
+          try {
+            const quote = await flowXSdk.getRoutes({
+              tokenIn: _tokenIn.coinType,
+              tokenOut: _tokenOut.coinType,
+              amountIn: amountIn,
+            });
+
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              provider: QuoteProvider.FLOWX,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.amountIn.toString()).div(
+                  10 ** _tokenIn.decimals,
+                ),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.amountOut.toString()).div(
+                  10 ** _tokenOut.decimals,
+                ),
+              },
+              routes: (quote.routes ?? []).map((route, routeIndex) => ({
+                percent: new BigNumber(route.amountIn.toString())
+                  .div(quote.amountIn.toString())
+                  .times(100),
+                path: route.paths.map((hop) => ({
+                  id: hop.pool.id,
+                  routeIndex,
+                  provider: hop.protocol(),
+                  in: {
+                    coinType: normalizeStructTag(hop.input.coinType),
+                    amount: new BigNumber(hop.amountIn.toString()).div(
+                      10 ** _tokenIn.decimals,
+                    ),
+                  },
+                  out: {
+                    coinType: normalizeStructTag(hop.output.coinType),
+                    amount: new BigNumber(hop.amountOut.toString()).div(
+                      10 ** _tokenOut.decimals,
+                    ),
+                  },
+                })),
+              })),
+              quote,
+            };
+
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log(
+              "Swap - set FlowX quote",
+              +standardizedQuote.out.amount,
+              "pool providers:",
+              getPoolProviders(standardizedQuote),
+              "quote:",
+              quote,
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+      }
     },
-    [activeProvidersMap, aftermathSdk, cetusSdk],
+    [activeProvidersMap, aftermathSdk, cetusSdk, flowXSdk],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -1077,6 +1161,36 @@ function Page() {
       } else {
         return { transaction: transaction2 as Transaction, coinOut };
       }
+    } else if (quote.provider === QuoteProvider.FLOWX) {
+      console.log("Swap - fetching transaction for FlowX quote");
+
+      if (!coinIn)
+        coinIn = coinWithBalance({
+          balance: BigInt(quote.quote.amountIn.toString()),
+          type: quote.in.coinType,
+          useGasCoin: isSui(quote.in.coinType),
+        })(transaction);
+
+      const trade = new FlowXTradeBuilder("mainnet", quote.quote.routes)
+        .slippage((+slippagePercent / 100) * 1e6)
+        .commission(
+          new FlowXCommission(
+            FLOWX_PARTNER_ID,
+            new FlowXCoin(quote.out.coinType),
+            FlowXCommissionType.PERCENTAGE,
+            0,
+            true,
+          ),
+        )
+        .build();
+
+      const coinOut = await trade.swap({
+        coinIn: coinIn,
+        client: appData.suilendClient.client,
+        tx: transaction,
+      });
+
+      return { transaction, coinOut: coinOut as TransactionObjectArgument };
     } else throw new Error("Unknown quote type");
   };
 
@@ -1849,13 +1963,21 @@ function Page() {
           >
             Cetus
           </TextLink>
-          {", and "}
+          {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://7k.ag"
             noIcon
           >
             7K
+          </TextLink>
+          {", and "}
+          <TextLink
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+            href="https://flowx.finance/swap"
+            noIcon
+          >
+            FlowX
           </TextLink>
         </TLabelSans>
       </div>
