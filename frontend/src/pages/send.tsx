@@ -200,7 +200,7 @@ function Page() {
         rawUserAllocationsS1 !== undefined
           ? rawUserAllocationsS1.rootlets.redeemedMsend?.[
               NORMALIZED_mSEND_SERIES_1_COINTYPE
-            ] // SERIES 1 only
+            ] // Series 1 only
           : undefined,
       userBridgedMsend: undefined,
     },

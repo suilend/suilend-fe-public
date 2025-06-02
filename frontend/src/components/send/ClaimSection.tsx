@@ -181,7 +181,7 @@ function RedeemTabContent({
           userDataMainMarket,
           address,
           transaction,
-        ); // SERIES 1
+        ); // Series 1
       if (hasSuilendCapsulesS1ToRedeem)
         redeemSuilendCapsulesMsend(
           1,
@@ -190,7 +190,7 @@ function RedeemTabContent({
           ).flat(),
           address,
           transaction,
-        ); // SERIES 1
+        ); // Series 1
       if (hasRootletsToRedeem)
         redeemRootletsMsend(
           rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
@@ -198,7 +198,7 @@ function RedeemTabContent({
           ownedKiosks,
           address,
           transaction,
-        ); // SERIES 1 & 4
+        ); // Series 1 & 4
 
       // S2
       const hasSendPointsS2ToRedeem = userRedeemableAllocations.some(
@@ -218,7 +218,7 @@ function RedeemTabContent({
           userDataMainMarket,
           address,
           transaction,
-        ); // SERIES 4
+        ); // Series 4
       if (hasSteamPointsToRedeem)
         redeemPointsMsend(
           "STEAMM_POINTS",
@@ -226,7 +226,7 @@ function RedeemTabContent({
           userDataSteammLmMarket,
           address,
           transaction,
-        ); // SERIES 4
+        ); // Series 4
       if (hasSuilendCapsulesS2ToRedeem)
         redeemSuilendCapsulesMsend(
           2,
@@ -235,7 +235,7 @@ function RedeemTabContent({
           ).flat(),
           address,
           transaction,
-        ); // SERIES 4
+        ); // Series 4
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);

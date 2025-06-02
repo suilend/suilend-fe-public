@@ -107,8 +107,8 @@ interface SendContext {
           ownedMsendObjectsMap: Record<
             string,
             { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
-          >; // SERIES 1 & 4
-          redeemedMsend: Record<string, BigNumber> | undefined; // SERIES 1 & 4
+          >; // Series 1 & 4
+          redeemedMsend: Record<string, BigNumber> | undefined; // Series 1 & 4
         };
         bluefinLeagues: { isInSnapshot: BluefinLeague | boolean };
         bluefinSendTraders: {
