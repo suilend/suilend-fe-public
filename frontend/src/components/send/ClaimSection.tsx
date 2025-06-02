@@ -824,7 +824,8 @@ function ClaimTabContent() {
           )}
 
           {/* Flash loan */}
-          {mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) &&
+          {false &&
+            mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) &&
             new BigNumber(sendReserve.price.div(suiReserve.price)).gt(
               mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
             ) && (
