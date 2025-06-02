@@ -194,7 +194,13 @@ function Page() {
         rawUserAllocationsS1 !== undefined
           ? Object.values(
               rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
-            ).reduce((acc, curr) => acc.plus(curr.ownedMsend), new BigNumber(0))
+            ).reduce(
+              (acc, curr) =>
+                acc.plus(
+                  curr.ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE],
+                ),
+              new BigNumber(0),
+            )
           : undefined,
       userRedeemedMsend:
         rawUserAllocationsS1 !== undefined

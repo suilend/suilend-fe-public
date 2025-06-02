@@ -802,7 +802,7 @@ export const redeemSuilendCapsulesMsend = (
 export const redeemRootletsMsend = async (
   rootletsOwnedMsendObjectsMap: Record<
     string,
-    { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+    { objs: SuiObjectResponse[]; ownedMsendMap: Record<string, BigNumber> }
   >,
   kioskClient: KioskClient,
   ownedKiosks: {

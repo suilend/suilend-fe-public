@@ -106,7 +106,10 @@ interface SendContext {
         rootlets: {
           ownedMsendObjectsMap: Record<
             string,
-            { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+            {
+              objs: SuiObjectResponse[];
+              ownedMsendMap: Record<string, BigNumber>;
+            }
           >; // Series 1 & 4
           redeemedMsend: Record<string, BigNumber> | undefined; // Series 1 & 4
         };
@@ -519,7 +522,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     useState<
       Record<
         string,
-        Record<string, { objs: SuiObjectResponse[]; ownedMsend: BigNumber }>
+        Record<
+          string,
+          {
+            objs: SuiObjectResponse[];
+            ownedMsendMap: Record<string, BigNumber>;
+          }
+        >
       >
     >({});
 
@@ -547,7 +556,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
         const result: Record<
           string,
-          { objs: SuiObjectResponse[]; ownedMsend: BigNumber }
+          {
+            objs: SuiObjectResponse[];
+            ownedMsendMap: Record<string, BigNumber>;
+          }
         > = {};
         for (const rootletsObjectId of rootletsObjectIds) {
           const [objsSeries1, objsSeries4] = await Promise.all([
@@ -562,9 +574,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
             ),
           ]);
-          const objs = [...objsSeries1, ...objsSeries4];
 
-          const ownedMsend = objs
+          const ownedMsendMap: Record<string, BigNumber> = {};
+          ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE] = objsSeries1
             .reduce(
               (acc, obj) =>
                 acc.plus(
@@ -573,9 +585,22 @@ export function SendContextProvider({ children }: PropsWithChildren) {
               new BigNumber(0),
             )
             .div(10 ** _mSendCoinMetadata.decimals);
-          if (ownedMsend.eq(0)) continue;
+          ownedMsendMap[NORMALIZED_mSEND_SERIES_4_COINTYPE] = objsSeries4
+            .reduce(
+              (acc, obj) =>
+                acc.plus(
+                  new BigNumber((obj.data?.content as any).fields.balance),
+                ),
+              new BigNumber(0),
+            )
+            .div(10 ** _mSendCoinMetadata.decimals);
+          if (Object.values(ownedMsendMap).every((owned) => owned.eq(0)))
+            continue;
 
-          result[rootletsObjectId] = { objs, ownedMsend };
+          result[rootletsObjectId] = {
+            objs: [...objsSeries1, ...objsSeries4],
+            ownedMsendMap,
+          };
         }
 
         setRootletsOwnedMsendObjectsMapMap((prev) => ({
