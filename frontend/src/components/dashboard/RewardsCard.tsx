@@ -1,5 +1,3 @@
-import NextLink from "next/link";
-
 import BigNumber from "bignumber.js";
 
 import { RewardSummary } from "@suilend/sdk";
@@ -8,19 +6,14 @@ import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
 import ClaimRewardsDropdownMenu from "@/components/dashboard/ClaimRewardsDropdownMenu";
-import RankStat from "@/components/points/RankStat";
-import TotalPointsStat from "@/components/points/TotalPointsStat";
 import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { usePointsContext } from "@/contexts/PointsContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
-import { POINTS_URL } from "@/lib/navigation";
-import { getPointsStats } from "@/lib/points";
 
 interface ClaimableRewardProps {
   coinType: string;
@@ -76,7 +69,6 @@ function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { userData, obligation } = useLoadedUserContext();
-  const { season, seasonMap, addressRowMap } = usePointsContext();
 
   // Rewards
   const rewardsMap: Record<string, RewardSummary[]> = {};
@@ -111,25 +103,18 @@ export default function RewardsCard() {
     (amount) => amount.gt(0),
   );
 
-  // Points
-  const pointsStats = getPointsStats(
-    seasonMap[season].coinType,
-    userData.rewardMap,
-    userData.obligations,
-  );
-
   return !address ? (
     <Card
       style={{
-        backgroundImage: `url('${ASSETS_URL}/dashboard/rewards-not-connected.png')`,
+        backgroundImage: `url('${ASSETS_URL}/leaderboard/header.png')`,
         backgroundPosition: "center",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
       }}
     >
-      <div className="flex flex-col items-center justify-center gap-4 p-4">
+      <div className="flex flex-col items-center justify-center gap-4 bg-card/75 p-4">
         <TBody className="text-center uppercase text-foreground">
-          Start earning points & rewards
+          Start earning rewards
         </TBody>
 
         <Button
@@ -158,34 +143,12 @@ export default function RewardsCard() {
           <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
         )}
 
-        {/* Points */}
-        <div className="flex w-full flex-row justify-between">
-          <RankStat season={season} rank={addressRowMap?.[season].rank} />
-
-          <TotalPointsStat
-            season={season}
-            amount={pointsStats.totalPoints.total}
-            isRightAligned
-          />
-        </div>
-
         {/* Actions */}
-        <div className="flex flex-row items-center justify-end gap-2">
-          <NextLink className="flex-1" href={POINTS_URL}>
-            <Button
-              className="w-full border-secondary text-primary-foreground"
-              labelClassName="uppercase"
-              variant="secondaryOutline"
-            >
-              Leaderboard
-            </Button>
-          </NextLink>
-          {hasClaimableRewards && (
-            <div className="flex-1">
-              <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-            </div>
-          )}
-        </div>
+        {hasClaimableRewards && (
+          <div className="w-max">
+            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

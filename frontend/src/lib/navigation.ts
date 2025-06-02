@@ -1,6 +1,7 @@
 export const ROOT_URL = "/";
 export const SWAP_URL = "/swap";
 export const BRIDGE_URL = "/bridge";
+export const LEADERBOARD_URL = "/leaderboard";
 export const POINTS_URL = "/points";
 export const SEND_URL = "/send";
 export const ABOUT_URL = "/about";

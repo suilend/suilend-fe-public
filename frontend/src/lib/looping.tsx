@@ -12,7 +12,7 @@ import { AppData } from "@/contexts/AppContext";
 
 const LOOPING_DEFINITION =
   "depositing and borrowing the same asset, different stablecoin assets, or different ETH assets";
-const REWARDS_DEFINITION = "rewards (including SEND Points)";
+const REWARDS_DEFINITION = "rewards";
 
 export const IS_LOOPING_MESSAGE = `You are looping (defined as ${LOOPING_DEFINITION}). Wallets with looped positions are not eligible for ${REWARDS_DEFINITION}.`;
 export const WAS_LOOPING_MESSAGE = (

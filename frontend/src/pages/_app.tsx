@@ -20,6 +20,7 @@ import Layout from "@/components/layout/Layout";
 import Toaster from "@/components/shared/Toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppContextProvider } from "@/contexts/AppContext";
+import { LeaderboardContextProvider } from "@/contexts/LeaderboardContext";
 import { PointsContextProvider } from "@/contexts/PointsContext";
 import { UserContextProvider } from "@/contexts/UserContext";
 import { TITLE } from "@/lib/constants";
@@ -80,14 +81,16 @@ export default function App({ Component, pageProps }: AppProps) {
             <WalletContextProviderWrapper>
               <AppContextProvider>
                 <UserContextProvider>
-                  <PointsContextProvider>
-                    <TooltipProvider>
-                      <Layout>
-                        <Component {...pageProps} />
-                      </Layout>
-                      <Toaster />
-                    </TooltipProvider>
-                  </PointsContextProvider>
+                  <LeaderboardContextProvider>
+                    <PointsContextProvider>
+                      <TooltipProvider>
+                        <Layout>
+                          <Component {...pageProps} />
+                        </Layout>
+                        <Toaster />
+                      </TooltipProvider>
+                    </PointsContextProvider>
+                  </LeaderboardContextProvider>
                 </UserContextProvider>
               </AppContextProvider>
             </WalletContextProviderWrapper>

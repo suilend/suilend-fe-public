@@ -10,6 +10,7 @@ import {
   ABOUT_URL,
   ADMIN_URL,
   BRIDGE_URL,
+  LEADERBOARD_URL,
   POINTS_URL,
   ROOT_URL,
   SEND_URL,
@@ -32,6 +33,7 @@ export default function NavigationLinks() {
       )}
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
 
+      <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={POINTS_URL}>Points</Link>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>

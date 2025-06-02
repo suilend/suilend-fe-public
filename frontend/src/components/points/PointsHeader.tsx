@@ -30,12 +30,17 @@ export default function PointsHeader({
               backgroundPosition: "top center",
               backgroundSize: "cover",
               backgroundRepeat: "no-repeat",
+            }}
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 z-[2] h-px bg-border/50 max-lg:![mask-image:none]"
+            style={{
               maskImage:
-                "linear-gradient(to bottom, black 50%, transparent 100%)",
+                "linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%)",
             }}
           />
 
-          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-end gap-8 pb-2">
+          <div className="relative z-[2] flex h-full w-full flex-col items-center justify-center gap-6 md:gap-8">
             <TDisplay className="text-center text-4xl uppercase md:text-5xl">
               SEND Points
             </TDisplay>
@@ -44,7 +49,7 @@ export default function PointsHeader({
               listClassName="mb-0 w-[200px] md:w-[240px] bg-border rounded-sm p-0"
               triggerClassName={(tab) =>
                 cn(
-                  "h-8 md:h-9 text-muted-foreground",
+                  "h-9 text-muted-foreground",
                   tab.id === Tab.SEASON_1 &&
                     "data-[state=active]:bg-[var(--points-season-1)] data-[state=active]:text-primary-foreground",
                   tab.id === Tab.SEASON_2 &&

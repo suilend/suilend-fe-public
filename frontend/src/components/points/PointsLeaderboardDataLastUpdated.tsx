@@ -4,13 +4,13 @@ import { formatDuration } from "@suilend/sui-fe";
 
 import { usePointsContext } from "@/contexts/PointsContext";
 
-interface LeaderboardDataLastUpdatedProps {
+interface PointsLeaderboardDataLastUpdatedProps {
   season: number;
 }
 
-export default function LeaderboardDataLastUpdated({
+export default function PointsLeaderboardDataLastUpdated({
   season,
-}: LeaderboardDataLastUpdatedProps) {
+}: PointsLeaderboardDataLastUpdatedProps) {
   const { updatedAtMap } = usePointsContext();
 
   if (!updatedAtMap?.[season]) return null;

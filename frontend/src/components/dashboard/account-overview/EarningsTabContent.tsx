@@ -20,7 +20,6 @@ import {
   formatToken,
   formatUsd,
   isSendPoints,
-  isSendPointsS2,
 } from "@suilend/sui-fe";
 
 import {
