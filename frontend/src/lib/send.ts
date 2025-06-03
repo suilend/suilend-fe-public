@@ -8,7 +8,12 @@ import { SUI_CLOCK_OBJECT_ID, SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Duration } from "date-fns";
 
-import { SuilendClient } from "@suilend/sdk";
+import {
+  SuilendClient,
+  createObligationIfNoneExists,
+  sendObligationToUser,
+} from "@suilend/sdk";
+import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -190,7 +195,7 @@ export const claimSend = async (
   flashLoanSlippagePercent: number,
   isDepositing: boolean,
   transaction: Transaction,
-  obligationOwnerCapId: string,
+  obligationOwnerCap?: ObligationOwnerCap<string>,
 ) => {
   const value = new BigNumber(claimAmount)
     .times(10 ** 6)
@@ -276,12 +281,19 @@ export const claimSend = async (
 
   if (isDepositing) {
     // Deposit SEND
+    const { obligationOwnerCapId, didCreate } = createObligationIfNoneExists(
+      suilendClient,
+      transaction,
+      obligationOwnerCap,
+    );
     suilendClient.deposit(
       finalSendCoin,
       NORMALIZED_SEND_COINTYPE,
       obligationOwnerCapId,
       transaction,
     );
+    if (didCreate)
+      sendObligationToUser(obligationOwnerCapId, address, transaction);
   } else {
     // Transfer SEND to user
     transaction.transferObjects(

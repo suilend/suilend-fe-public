@@ -126,7 +126,7 @@ export default function RewardsCard() {
         </Button>
       </div>
     </Card>
-  ) : (
+  ) : hasClaimableRewards ? (
     <Card
       id="rewards"
       className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]"
@@ -139,17 +139,13 @@ export default function RewardsCard() {
     >
       <CardContent className="flex flex-col gap-4 rounded-b-[3px] bg-card">
         {/* Rewards */}
-        {hasClaimableRewards && (
-          <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
-        )}
+        <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
 
         {/* Actions */}
-        {hasClaimableRewards && (
-          <div className="w-max">
-            <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
-          </div>
-        )}
+        <div className="w-max">
+          <ClaimRewardsDropdownMenu rewardsMap={rewardsMap} />
+        </div>
       </CardContent>
     </Card>
-  );
+  ) : null;
 }

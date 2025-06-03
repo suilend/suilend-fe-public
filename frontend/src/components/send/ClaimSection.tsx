@@ -630,7 +630,6 @@ function ClaimTabContent() {
 
   const submit = async (isDepositing: boolean) => {
     if (!address) return;
-    if (!obligationOwnerCap) return;
 
     if (isDepositing) {
       if (submitButtonState_claimAndDeposit.isDisabled) return;
@@ -657,7 +656,7 @@ function ClaimTabContent() {
         +flashLoanSlippagePercent,
         isDepositing,
         transaction,
-        obligationOwnerCap.id,
+        obligationOwnerCap,
       );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
