@@ -14,9 +14,18 @@ import { TBody, TBodySans } from "@/components/shared/Typography";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { formatCountdownDuration } from "@/lib/send";
 
+const getMsendCoinTypeName = (coinType: string) =>
+  coinType
+    .split("::")
+    .at(-1)!
+    .split("_")
+    .filter((s) => s !== "MSEND")
+    .join(" ");
+
 export default function MsendDropdownMenu() {
   const {
     mSendObjectMap,
+    mSendCoinMetadata,
     mSendBalanceMap,
     mSendCoinTypesWithBalance,
     selectedMsendCoinType,
@@ -41,11 +50,8 @@ export default function MsendDropdownMenu() {
           variant="secondary"
         >
           <div className="flex flex-row items-center gap-2">
-            <MsendTokenLogo className="h-5 w-5" />
-            <TBody className="text-[16px] text-inherit">
-              {formatToken(mSendBalanceMap[selectedMsendCoinType], {
-                exact: false,
-              })}
+            <TBody className="text-inherit">
+              {getMsendCoinTypeName(selectedMsendCoinType)}
             </TBody>
           </div>
         </Button>
@@ -65,15 +71,6 @@ export default function MsendDropdownMenu() {
         >
           {/* Left */}
           <div className="flex flex-col gap-1.5">
-            {/* Penalty */}
-            <div className="flex flex-row items-center gap-3">
-              <TBodySans className="text-muted-foreground">Penalty</TBodySans>
-              <TBody>
-                {formatToken(mSendObjectMap[coinType].currentPenaltySui)}
-                {" SUI"}
-              </TBody>
-            </div>
-
             {/* Maturity */}
             <div className="flex flex-row items-center gap-3">
               <TBodySans className="text-muted-foreground">Maturity</TBodySans>
@@ -90,14 +87,29 @@ export default function MsendDropdownMenu() {
                   : "--"}
               </TBody>
             </div>
+
+            {/* Penalty */}
+            <div className="flex flex-row items-center gap-3">
+              <TBodySans className="text-muted-foreground">Penalty</TBodySans>
+              <TBody>
+                {formatToken(mSendObjectMap[coinType].currentPenaltySui)}
+                {" SUI"}
+              </TBody>
+            </div>
           </div>
 
           {/* Right */}
-          <div className="flex flex-row items-center gap-2">
-            <MsendTokenLogo className="h-5 w-5" />
-            <TBody className="text-[16px]">
-              {formatToken(mSendBalanceMap[coinType], { exact: false })}
-            </TBody>
+          <div className="flex flex-col items-end gap-1.5">
+            <TBody>{getMsendCoinTypeName(coinType)}</TBody>
+            <div className="flex flex-row items-center gap-2">
+              <MsendTokenLogo className="h-5 w-5" />
+              <TBody>
+                {formatToken(mSendBalanceMap[coinType], {
+                  dp: mSendCoinMetadata.decimals,
+                  trimTrailingZeros: true,
+                })}
+              </TBody>
+            </div>
           </div>
         </DropdownMenuItem>
       ))}

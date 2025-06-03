@@ -44,10 +44,7 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   BURN_SEND_POINTS_S1_EVENT_TYPE,
-  BURN_SEND_POINTS_S2_EVENT_TYPE,
-  BURN_STEAMM_POINTS_EVENT_TYPE,
   BURN_SUILEND_CAPSULES_S1_EVENT_TYPE,
-  BURN_SUILEND_CAPSULES_S2_EVENT_TYPE,
   BluefinLeague,
   MsendObject,
   ROOTLETS_TYPE,
@@ -570,25 +567,30 @@ export function SendContextProvider({ children }: PropsWithChildren) {
                 ),
               ]);
 
-              const ownedMsendMap: Record<string, BigNumber> = {};
-              ownedMsendMap[NORMALIZED_mSEND_SERIES_1_COINTYPE] = objsSeries1
-                .reduce(
-                  (acc, obj) =>
-                    acc.plus(
-                      new BigNumber((obj.data?.content as any).fields.balance),
-                    ),
-                  new BigNumber(0),
-                )
-                .div(10 ** _mSendCoinMetadata.decimals);
-              ownedMsendMap[NORMALIZED_mSEND_SERIES_4_COINTYPE] = objsSeries4
-                .reduce(
-                  (acc, obj) =>
-                    acc.plus(
-                      new BigNumber((obj.data?.content as any).fields.balance),
-                    ),
-                  new BigNumber(0),
-                )
-                .div(10 ** _mSendCoinMetadata.decimals);
+              const ownedMsendMap: Record<string, BigNumber> = {
+                [NORMALIZED_mSEND_SERIES_1_COINTYPE]: objsSeries1
+                  .reduce(
+                    (acc, obj) =>
+                      acc.plus(
+                        new BigNumber(
+                          (obj.data?.content as any).fields.balance,
+                        ),
+                      ),
+                    new BigNumber(0),
+                  )
+                  .div(10 ** _mSendCoinMetadata.decimals),
+                [NORMALIZED_mSEND_SERIES_4_COINTYPE]: objsSeries4
+                  .reduce(
+                    (acc, obj) =>
+                      acc.plus(
+                        new BigNumber(
+                          (obj.data?.content as any).fields.balance,
+                        ),
+                      ),
+                    new BigNumber(0),
+                  )
+                  .div(10 ** _mSendCoinMetadata.decimals),
+              };
               if (Object.values(ownedMsendMap).every((owned) => owned.eq(0)))
                 return undefined;
 
@@ -810,22 +812,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
                 ),
               new BigNumber(0),
             ),
-          [NORMALIZED_mSEND_SERIES_4_COINTYPE]: (transaction.events ?? [])
-            .filter(
-              (event) =>
-                event.type === BURN_SEND_POINTS_S2_EVENT_TYPE ||
-                event.type === BURN_STEAMM_POINTS_EVENT_TYPE ||
-                event.type === BURN_SUILEND_CAPSULES_S2_EVENT_TYPE,
-            )
-            .reduce(
-              (acc2, event) =>
-                acc2.plus(
-                  new BigNumber((event.parsedJson as any).claim_amount).div(
-                    10 ** mSendCoinMetadata.decimals,
-                  ),
-                ),
-              new BigNumber(0),
-            ),
+          [NORMALIZED_mSEND_SERIES_4_COINTYPE]: new BigNumber(0),
         };
 
         const result: Record<string, BigNumber> = {};

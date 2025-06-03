@@ -189,16 +189,18 @@ export default function PenaltyLineChart({
             }}
           />
 
-          <Recharts.ReferenceLine
-            x={+mSendObject.penaltyEndTimeS}
-            stroke="#7CE3CB"
-            strokeWidth={2}
-            label={(props) => (
-              <Label fill="#7CE3CB" textAnchor="start" {...props}>
-                NO PENALTY
-              </Label>
-            )}
-          />
+          {mSendObject.endPenaltySui.eq(0) && (
+            <Recharts.ReferenceLine
+              x={+mSendObject.penaltyEndTimeS}
+              stroke="#7CE3CB"
+              strokeWidth={2}
+              label={(props) => (
+                <Label fill="#7CE3CB" textAnchor="start" {...props}>
+                  NO PENALTY
+                </Label>
+              )}
+            />
+          )}
           {/* TODO: This line's label will clash with the Current Penalty line's label when the dates get closer */}
           {Date.now() / 1000 < +mSendObject.penaltyEndTimeS && (
             <Recharts.ReferenceLine

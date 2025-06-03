@@ -19,6 +19,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
   NORMALIZED_mSEND_SERIES_4_COINTYPE,
+  NORMALIZED_mSEND_SERIES_5_COINTYPE,
   formatInteger,
   formatPercent,
   formatToken,
@@ -131,7 +132,11 @@ function RedeemTabContent({
   const rawUserAllocationsS1 = restLoadedSendContext.rawUserAllocationsS1!;
   const rawUserAllocationsS2 = restLoadedSendContext.rawUserAllocationsS2!;
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appDataMainMarket =
+    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appDataSteammLmMarket =
+    allAppData.allLendingMarketData[LENDING_MARKETS[1].id];
+
   const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
   const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
 
@@ -177,7 +182,7 @@ function RedeemTabContent({
       if (hasSendPointsS1ToRedeem)
         redeemPointsMsend(
           "SEND_POINTS_S1",
-          appData.suilendClient,
+          appDataMainMarket.suilendClient,
           userDataMainMarket,
           address,
           transaction,
@@ -214,19 +219,19 @@ function RedeemTabContent({
       if (hasSendPointsS2ToRedeem)
         redeemPointsMsend(
           "SEND_POINTS_S2",
-          appData.suilendClient,
+          appDataMainMarket.suilendClient,
           userDataMainMarket,
           address,
           transaction,
-        ); // Series 4
+        ); // Series 5
       if (hasSteamPointsToRedeem)
         redeemPointsMsend(
           "STEAMM_POINTS",
-          appData.suilendClient,
+          appDataSteammLmMarket.suilendClient,
           userDataSteammLmMarket,
           address,
           transaction,
-        ); // Series 4
+        ); // Series 5
       if (hasSuilendCapsulesS2ToRedeem)
         redeemSuilendCapsulesMsend(
           2,
@@ -235,7 +240,7 @@ function RedeemTabContent({
           ).flat(),
           address,
           transaction,
-        ); // Series 4
+        ); // Series 5
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -248,12 +253,19 @@ function RedeemTabContent({
         coinType: NORMALIZED_mSEND_SERIES_4_COINTYPE,
         ...mSendCoinMetadata,
       });
+      const balanceChangeSeries5 = getBalanceChange(res, address, {
+        coinType: NORMALIZED_mSEND_SERIES_5_COINTYPE,
+        ...mSendCoinMetadata,
+      });
       const balanceChange: BigNumber | undefined =
-        balanceChangeSeries1 === undefined && balanceChangeSeries4 === undefined
+        balanceChangeSeries1 === undefined &&
+        balanceChangeSeries4 === undefined &&
+        balanceChangeSeries5 === undefined
           ? undefined
           : [
               balanceChangeSeries1 ?? new BigNumber(0),
               balanceChangeSeries4 ?? new BigNumber(0),
+              balanceChangeSeries5 ?? new BigNumber(0),
             ].reduce(
               (acc, balanceChange) => acc.plus(balanceChange),
               new BigNumber(0),
@@ -306,7 +318,7 @@ function RedeemTabContent({
                           <div className="flex w-full flex-row items-center justify-between gap-4">
                             <div className="flex flex-row items-center gap-3">
                               <Image
-                                src={allocation.redeemSrcMap![rarity]}
+                                src={allocation.redeemSrcMap![rarityRaw]}
                                 alt={[
                                   capitalize(rarity),
                                   allocation.title,
@@ -341,7 +353,10 @@ function RedeemTabContent({
                                       .times(SEND_TOTAL_SUPPLY)
                                       .div(100),
                                   ),
-                                  { exact: false },
+                                  {
+                                    dp: mSendCoinMetadata.decimals,
+                                    trimTrailingZeros: true,
+                                  },
                                 )}
                               </TBody>
                             </div>
@@ -401,7 +416,10 @@ function RedeemTabContent({
                                 new BigNumber(0),
                               )
                             : allocation.userEligibleSend!,
-                          { exact: false },
+                          {
+                            dp: mSendCoinMetadata.decimals,
+                            trimTrailingZeros: true,
+                          },
                         )}
                       </TBody>
                     </div>
@@ -422,7 +440,10 @@ function RedeemTabContent({
             <div className="flex flex-row items-center gap-2">
               <MsendTokenLogo className="h-5 w-5" />
               <TBody>
-                {formatToken(userTotalRedeemableMsend, { exact: false })}
+                {formatToken(userTotalRedeemableMsend, {
+                  dp: mSendCoinMetadata.decimals,
+                  trimTrailingZeros: true,
+                })}
               </TBody>
             </div>
           </div>
@@ -488,12 +509,13 @@ function ClaimTabContent() {
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appDataMainMarket =
+    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
   const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
 
   // Reserves
-  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
-  const sendReserve = appData.reserveMap[NORMALIZED_SEND_COINTYPE];
+  const suiReserve = appDataMainMarket.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const sendReserve = appDataMainMarket.reserveMap[NORMALIZED_SEND_COINTYPE];
 
   // Balances
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
@@ -531,12 +553,6 @@ function ClaimTabContent() {
     (userDataSteammLmMarket.obligations ?? []).some((obligation) =>
       obligation.deposits.some((d) => d.depositedAmount.gt(0)),
     );
-  console.log(
-    "XXXX",
-    steammLpTokenBalances?.some((balance) => balance.gt(0)),
-    userDataSteammLmMarket.obligations,
-    satisfiesSteammDepositTask,
-  );
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
@@ -632,7 +648,7 @@ function ClaimTabContent() {
     try {
       await claimSend(
         rpc,
-        appData.suilendClient,
+        appDataMainMarket.suilendClient,
         address,
         selectedMsendCoinType,
         claimAmount,
@@ -992,10 +1008,9 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
       allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1 ||
       allocation.id === AllocationIdS1.ROOTLETS ||
       // S2
-      // allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
-      // allocation.id === AllocationIdS2.STEAMM_POINTS ||
-      // allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
-      false, // TEMP
+      allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
+      allocation.id === AllocationIdS2.STEAMM_POINTS ||
+      allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
   );
 
   const userRedeemableAllocations = redeemableAllocations.filter(
@@ -1097,13 +1112,13 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
                 <TBody className="text-[16px]">PENALTY</TBody>
 
                 <div className="flex w-full flex-col gap-3">
-                  {/* Penalty ends in */}
+                  {/* Maturity */}
                   {Date.now() <
                     +mSendObjectMap[selectedMsendCoinType].penaltyEndTimeS *
                       1000 && (
                     <div className="flex w-full flex-row justify-between gap-4">
                       <TBodySans className="text-muted-foreground">
-                        Penalty ends in
+                        Maturity
                       </TBodySans>
 
                       <div className="flex flex-row items-center gap-2">
@@ -1138,10 +1153,10 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
                     </div>
                   )}
 
-                  {/* Current penalty */}
+                  {/* Penalty */}
                   <div className="flex w-full flex-row justify-between gap-4">
                     <TBodySans className="text-muted-foreground">
-                      Current penalty
+                      Penalty
                     </TBodySans>
 
                     <div className="flex flex-col items-end gap-1">

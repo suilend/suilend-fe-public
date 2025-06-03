@@ -7,7 +7,7 @@ import BigNumber from "bignumber.js";
 import { SuilendClient } from "@suilend/sdk";
 import {
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
-  NORMALIZED_mSEND_SERIES_4_COINTYPE,
+  NORMALIZED_mSEND_SERIES_5_COINTYPE,
   formatInteger,
   isSendPointsS1,
   isSendPointsS2,
@@ -20,17 +20,23 @@ import { SEND_TOTAL_SUPPLY } from "@/lib/send";
 
 // IDs
 // IDs - Contracts
-const BURN_CONTRACT_PACKAGE_ID =
+const BURN_CONTRACT_S1_PACKAGE_ID =
   "0xf4e0686b311e9b9d6da7e61fc42dae4254828f5ee3ded8ab5480ecd27e46ff08";
+const BURN_CONTRACT_S2_PACKAGE_ID =
+  "0x1e1ccd013b8cceda2dadf4b8784750dae395f823c25130f752573d4c8a52aeac";
 
 // IDs - Managers
 const SEND_POINTS_S1_MANAGER_OBJECT_ID =
   "0x1236a2059bd24b46067cd6818469802b56a05920c9029c7b16c16a47efab2260";
-const SEND_POINTS_S2_MANAGER_OBJECT_ID = ""; // TODO_S2
-const STEAMM_POINTS_MANAGER_OBJECT_ID = ""; // TODO_S2
 const SUILEND_CAPSULES_S1_MANAGER_OBJECT_ID =
   "0x5307419ec2f76bb70a948d71adf22ffde99a102961a3aa61361cc233f6d31e6e";
-const SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID = ""; // TODO_S2
+
+const SEND_POINTS_S2_MANAGER_OBJECT_ID =
+  "0x1e333110f2275937fe9ce8145a54c9c390523d59fc181957624d306b63f139cb";
+const STEAMM_POINTS_MANAGER_OBJECT_ID =
+  "0x656672cf97be802f84015e406a2888e40123335615a41014f8d0d0ea7423bc83";
+const SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID =
+  "0x0328bceae9222fb8e34363b68991f3d332e2867c3c6bf90a4dc725259365a92f";
 
 // IDs - NFTs
 export const SUILEND_CAPSULE_TYPE =
@@ -39,11 +45,12 @@ export const ROOTLETS_TYPE =
   "0x8f74a7d632191e29956df3843404f22d27bd84d92cca1b1abde621d033098769::rootlet::Rootlet";
 
 // Events
-export const BURN_SEND_POINTS_S1_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::points::BurnEvent`;
-export const BURN_SEND_POINTS_S2_EVENT_TYPE = ``; // TODO_S2
-export const BURN_STEAMM_POINTS_EVENT_TYPE = ``; // TODO_S2
-export const BURN_SUILEND_CAPSULES_S1_EVENT_TYPE = `${BURN_CONTRACT_PACKAGE_ID}::capsule::BurnEvent`;
-export const BURN_SUILEND_CAPSULES_S2_EVENT_TYPE = ``; // TODO_S2
+export const BURN_SEND_POINTS_S1_EVENT_TYPE = `${BURN_CONTRACT_S1_PACKAGE_ID}::points::BurnEvent`;
+export const BURN_SUILEND_CAPSULES_S1_EVENT_TYPE = `${BURN_CONTRACT_S1_PACKAGE_ID}::capsule::BurnEvent`;
+
+export const BURN_SEND_POINTS_S2_EVENT_TYPE = `${BURN_CONTRACT_S2_PACKAGE_ID}::points_2::BurnEvent`;
+export const BURN_STEAMM_POINTS_EVENT_TYPE = `${BURN_CONTRACT_S2_PACKAGE_ID}::steamm_points::BurnEvent`;
+export const BURN_SUILEND_CAPSULES_S2_EVENT_TYPE = `${BURN_CONTRACT_S2_PACKAGE_ID}::capsule_2::BurnEvent`;
 
 // Types
 export type MsendObject = {
@@ -202,7 +209,7 @@ export const allocations: {
           title: "Per 1K SEND Points S1",
           percent: new BigNumber((18000 / 2764929) * 1000)
             .div(SEND_TOTAL_SUPPLY)
-            .times(100), //Linear
+            .times(100), // Linear
         },
       },
     },
@@ -593,13 +600,15 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(18), // TODO_S2
+      totalAllocationPercent: new BigNumber(1.8),
       totalAllocationBreakdownMap: {
         thousand: {
           title: "Per 1K SEND Points S2",
-          percent: new BigNumber((18000 / 2764929) * 1000)
+          percent: new BigNumber(
+            new BigNumber("1800000000000").div("3852665923134769").times(1000),
+          )
             .div(SEND_TOTAL_SUPPLY)
-            .times(100), //Linear
+            .times(100), // Linear
         },
       },
     },
@@ -617,13 +626,15 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(18), // TODO_S2
+      totalAllocationPercent: new BigNumber(0.2),
       totalAllocationBreakdownMap: {
         thousand: {
-          title: "Per 1K STEAMM Points", // TODO_S2
-          percent: new BigNumber((18000 / 2764929) * 1000)
+          title: "Per 1K STEAMM Points",
+          percent: new BigNumber(
+            new BigNumber("200000000000").div("7364578219946").times(1000),
+          )
             .div(SEND_TOTAL_SUPPLY)
-            .times(100), //Linear
+            .times(100), // Linear
         },
       },
     },
@@ -645,19 +656,19 @@ export const allocations: {
       snapshotTaken: false,
       airdropSent: false,
       eligibleWallets: undefined,
-      totalAllocationPercent: new BigNumber(0.3), // TODO_S2
+      totalAllocationPercent: new BigNumber(0.05),
       totalAllocationBreakdownMap: {
         [SuilendCapsuleS2Rarity.COMMON]: {
-          title: "Per Common", // TODO_S2
-          percent: new BigNumber(142).div(SEND_TOTAL_SUPPLY).times(100), // Linear
+          title: "Per Common",
+          percent: new BigNumber(100).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
         [SuilendCapsuleS2Rarity.UNCOMMON]: {
-          title: "Per Uncommon", // TODO_S2
-          percent: new BigNumber(500).div(SEND_TOTAL_SUPPLY).times(100), // Linear
+          title: "Per Uncommon",
+          percent: new BigNumber(250).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
         [SuilendCapsuleS2Rarity.RARE]: {
-          title: "Per Rare", // TODO_S2
-          percent: new BigNumber(2000).div(SEND_TOTAL_SUPPLY).times(100), // Linear
+          title: "Per Rare",
+          percent: new BigNumber(1000).div(SEND_TOTAL_SUPPLY).times(100), // Linear
         },
       },
     },
@@ -719,7 +730,7 @@ export const redeemPointsMsend = (
   const mSendCoin =
     type === "SEND_POINTS_S1"
       ? transaction.moveCall({
-          target: `${BURN_CONTRACT_PACKAGE_ID}::points::burn_points`,
+          target: `${BURN_CONTRACT_S1_PACKAGE_ID}::points::burn_points`,
           typeArguments: [NORMALIZED_mSEND_SERIES_1_COINTYPE],
           arguments: [
             transaction.object(SEND_POINTS_S1_MANAGER_OBJECT_ID),
@@ -728,16 +739,17 @@ export const redeemPointsMsend = (
         })
       : type === "SEND_POINTS_S2"
         ? transaction.moveCall({
-            target: ``, // TODO_S2
-            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            target:
+              "0xfbf0679696c15de2011d5e41dac15fa66100e6b766c49e9d7b20f035e4964837::points_2::burn_points",
+            typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(SEND_POINTS_S2_MANAGER_OBJECT_ID),
               transaction.object(mergedPointsCoin),
             ],
           })
         : transaction.moveCall({
-            target: ``, // TODO_S2
-            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            target: `${BURN_CONTRACT_S2_PACKAGE_ID}::steamm_points::burn_points`,
+            typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(STEAMM_POINTS_MANAGER_OBJECT_ID),
               transaction.object(mergedPointsCoin),
@@ -764,7 +776,7 @@ export const redeemSuilendCapsulesMsend = (
     const mSendCoin =
       season === 1
         ? transaction.moveCall({
-            target: `${BURN_CONTRACT_PACKAGE_ID}::capsule::burn_capsule`,
+            target: `${BURN_CONTRACT_S1_PACKAGE_ID}::capsule::burn_capsule`,
             typeArguments: [NORMALIZED_mSEND_SERIES_1_COINTYPE],
             arguments: [
               transaction.object(SUILEND_CAPSULES_S1_MANAGER_OBJECT_ID),
@@ -772,8 +784,8 @@ export const redeemSuilendCapsulesMsend = (
             ],
           })
         : transaction.moveCall({
-            target: ``, // TODO_S2
-            typeArguments: [NORMALIZED_mSEND_SERIES_4_COINTYPE],
+            target: `${BURN_CONTRACT_S2_PACKAGE_ID}::capsule_2::burn_capsule`,
+            typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID),
               transaction.object(obj.data?.objectId as string),
