@@ -93,7 +93,7 @@ export default function PenaltyLineChart({
   );
 
   const tickFormatterX = (timestampS: number) =>
-    formatDate(new Date(timestampS * 1000), "MMM yy").toUpperCase();
+    formatDate(new Date(timestampS * 1000), "dd MMM").toUpperCase();
   const tickFormatterY = (penaltySui: number) =>
     `${
       penaltySui === 0
@@ -189,19 +189,12 @@ export default function PenaltyLineChart({
             }}
           />
 
-          {mSendObject.endPenaltySui.eq(0) && (
-            <Recharts.ReferenceLine
-              x={+mSendObject.penaltyEndTimeS}
-              stroke="#7CE3CB"
-              strokeWidth={2}
-              label={(props) => (
-                <Label fill="#7CE3CB" textAnchor="start" {...props}>
-                  NO PENALTY
-                </Label>
-              )}
-            />
-          )}
-          {/* TODO: This line's label will clash with the Current Penalty line's label when the dates get closer */}
+          <Recharts.ReferenceLine
+            x={+mSendObject.penaltyEndTimeS}
+            stroke="#7CE3CB"
+            strokeWidth={2}
+          />
+
           {Date.now() / 1000 < +mSendObject.penaltyEndTimeS && (
             <Recharts.ReferenceLine
               x={Date.now() / 1000}
@@ -210,7 +203,7 @@ export default function PenaltyLineChart({
               label={(props) => (
                 <Label
                   fill="hsl(var(--foreground))"
-                  textAnchor="end"
+                  textAnchor="middle"
                   {...props}
                 >
                   NOW
