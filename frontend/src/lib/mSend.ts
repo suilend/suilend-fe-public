@@ -24,6 +24,8 @@ const BURN_CONTRACT_S1_PACKAGE_ID =
   "0xf4e0686b311e9b9d6da7e61fc42dae4254828f5ee3ded8ab5480ecd27e46ff08";
 const BURN_CONTRACT_S2_PACKAGE_ID =
   "0x1e1ccd013b8cceda2dadf4b8784750dae395f823c25130f752573d4c8a52aeac";
+const BURN_CONTRACT_S2_FIXED_PACKAGE_ID =
+  "0xfbf0679696c15de2011d5e41dac15fa66100e6b766c49e9d7b20f035e4964837";
 
 // IDs - Managers
 const SEND_POINTS_S1_MANAGER_OBJECT_ID =
@@ -739,8 +741,7 @@ export const redeemPointsMsend = (
         })
       : type === "SEND_POINTS_S2"
         ? transaction.moveCall({
-            target:
-              "0xfbf0679696c15de2011d5e41dac15fa66100e6b766c49e9d7b20f035e4964837::points_2::burn_points",
+            target: `${BURN_CONTRACT_S2_FIXED_PACKAGE_ID}::points_2::burn_points`,
             typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(SEND_POINTS_S2_MANAGER_OBJECT_ID),
@@ -748,7 +749,7 @@ export const redeemPointsMsend = (
             ],
           })
         : transaction.moveCall({
-            target: `${BURN_CONTRACT_S2_PACKAGE_ID}::steamm_points::burn_points`,
+            target: `${BURN_CONTRACT_S2_FIXED_PACKAGE_ID}::steamm_points::burn_points`,
             typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(STEAMM_POINTS_MANAGER_OBJECT_ID),
@@ -784,7 +785,7 @@ export const redeemSuilendCapsulesMsend = (
             ],
           })
         : transaction.moveCall({
-            target: `${BURN_CONTRACT_S2_PACKAGE_ID}::capsule_2::burn_capsule`,
+            target: `${BURN_CONTRACT_S2_FIXED_PACKAGE_ID}::capsule_2::burn_capsule`,
             typeArguments: [NORMALIZED_mSEND_SERIES_5_COINTYPE],
             arguments: [
               transaction.object(SUILEND_CAPSULES_S2_MANAGER_OBJECT_ID),
