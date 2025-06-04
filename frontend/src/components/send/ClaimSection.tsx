@@ -445,77 +445,79 @@ function RedeemTabContent({
         </div>
 
         {/* Redemption ends in */}
-        {userRedeemableAllocations.some(
-          (allocation) =>
-            allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
-            allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1,
-        ) && (
-          <div className="flex w-full flex-row items-center justify-between gap-4">
-            <TBodySans className="text-muted-foreground">
-              S1 redemption ends in
-            </TBodySans>
+        <div className="flex w-full flex-col gap-3">
+          {userRedeemableAllocations.some(
+            (allocation) =>
+              allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
+              allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1,
+          ) && (
+            <div className="flex w-full flex-row items-center justify-between gap-4">
+              <TBodySans className="text-muted-foreground">
+                S1 redemption ends in
+              </TBodySans>
 
-            <div className="flex flex-row items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <Tooltip
-                title={formatDate(
-                  new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
-                  "yyyy-MM-dd HH:mm:ss",
-                )}
-              >
-                <TBody
-                  className={cn(
-                    "decoration-foreground/50",
-                    hoverUnderlineClassName,
+              <div className="flex flex-row items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Tooltip
+                  title={formatDate(
+                    new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                    "yyyy-MM-dd HH:mm:ss",
                   )}
                 >
-                  {formatCountdownDuration(
-                    intervalToDuration({
-                      start: Date.now(),
-                      end: new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
-                    }),
-                  )}
-                </TBody>
-              </Tooltip>
+                  <TBody
+                    className={cn(
+                      "decoration-foreground/50",
+                      hoverUnderlineClassName,
+                    )}
+                  >
+                    {formatCountdownDuration(
+                      intervalToDuration({
+                        start: Date.now(),
+                        end: new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                      }),
+                    )}
+                  </TBody>
+                </Tooltip>
+              </div>
             </div>
-          </div>
-        )}
-        {userRedeemableAllocations.some(
-          (allocation) =>
-            allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
-            allocation.id === AllocationIdS2.STEAMM_POINTS ||
-            allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
-        ) && (
-          <div className="flex w-full flex-row items-center justify-between gap-4">
-            <TBodySans className="text-muted-foreground">
-              S2 redemption ends in
-            </TBodySans>
+          )}
+          {userRedeemableAllocations.some(
+            (allocation) =>
+              allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
+              allocation.id === AllocationIdS2.STEAMM_POINTS ||
+              allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
+          ) && (
+            <div className="flex w-full flex-row items-center justify-between gap-4">
+              <TBodySans className="text-muted-foreground">
+                S2 redemption ends in
+              </TBodySans>
 
-            <div className="flex flex-row items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <Tooltip
-                title={formatDate(
-                  new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
-                  "yyyy-MM-dd HH:mm:ss",
-                )}
-              >
-                <TBody
-                  className={cn(
-                    "decoration-foreground/50",
-                    hoverUnderlineClassName,
+              <div className="flex flex-row items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Tooltip
+                  title={formatDate(
+                    new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                    "yyyy-MM-dd HH:mm:ss",
                   )}
                 >
-                  {formatCountdownDuration(
-                    intervalToDuration({
-                      start: Date.now(),
-                      end: new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
-                    }),
-                  )}
-                </TBody>
-              </Tooltip>
+                  <TBody
+                    className={cn(
+                      "decoration-foreground/50",
+                      hoverUnderlineClassName,
+                    )}
+                  >
+                    {formatCountdownDuration(
+                      intervalToDuration({
+                        start: Date.now(),
+                        end: new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                      }),
+                    )}
+                  </TBody>
+                </Tooltip>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Submit */}
