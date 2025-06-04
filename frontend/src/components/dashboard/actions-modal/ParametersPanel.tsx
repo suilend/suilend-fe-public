@@ -209,8 +209,8 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
       </div>
 
       <LabelWithValue
-        labelEndDecorator={<div className="h-2 w-2 rounded-full bg-white" />}
         label="Current utilization"
+        labelEndDecorator={<div className="h-2 w-2 rounded-full bg-white" />}
         value={formatPercent(reserve.utilizationPercent)}
         horizontal
       />
@@ -266,6 +266,11 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         horizontal
       />
       <LabelWithValue label="Reserve" value={reserve.id} isId horizontal />
+      <LabelWithValue
+        label="Reserve index"
+        value={reserve.arrayIndex.toString()}
+        horizontal
+      />
 
       <Separator />
 

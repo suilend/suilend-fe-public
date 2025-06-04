@@ -12,8 +12,8 @@ interface LabelWithValueProps {
   labelClassName?: ClassValue;
   labelTooltip?: string;
   labelStartDecorator?: ReactNode;
-  labelEndDecorator?: ReactNode;
   label: string;
+  labelEndDecorator?: ReactNode;
   valueClassName?: ClassValue;
   valueStartDecorator?: ReactNode;
   value: string | number | BigNumber | ReactNode;
@@ -34,8 +34,8 @@ export default function LabelWithValue({
   labelClassName,
   labelTooltip,
   labelStartDecorator,
-  labelEndDecorator,
   label,
+  labelEndDecorator,
   valueClassName,
   valueStartDecorator,
   value,
