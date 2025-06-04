@@ -20,6 +20,10 @@ export default function SendHeader({ className }: SendHeaderProps) {
         "absolute -inset-x-4 -top-4 z-[1] flex flex-row justify-center overflow-hidden md:-inset-x-10 md:-top-6",
         className,
       )}
+      style={{
+        maskImage:
+          "linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%)",
+      }}
     >
       {md ? (
         <div className="w-full min-w-[1920px]">

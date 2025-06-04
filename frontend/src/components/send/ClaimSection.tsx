@@ -1061,7 +1061,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
       {address &&
       (rawUserAllocationsS1 === undefined ||
         rawUserAllocationsS2 === undefined) ? (
-        <Skeleton className="h-80 w-full max-w-[480px] rounded-md" />
+        <Skeleton className="h-96 w-full max-w-[480px] rounded-md" />
       ) : (
         <>
           <Card className="rounded-md">

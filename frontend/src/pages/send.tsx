@@ -546,6 +546,18 @@ function Page() {
         <SendHeader />
 
         <div className="relative z-[2] flex w-full flex-col items-center">
+          {/* Claim section */}
+          {Date.now() >= TGE_TIMESTAMP_MS && (
+            <ClaimSection
+              allocations={[
+                ...Object.values(allocationsWithUserAllocationS1Map),
+                ...Object.values(allocationsWithUserAllocationS2Map),
+              ]}
+            />
+          )}
+
+          {/* TGE allocation section */}
+          <Separator />
           <div className="flex w-full flex-col items-center gap-12 pb-16 pt-36 md:gap-16 md:pb-20 md:pt-12">
             <HeroSection
               allocations={Object.values(allocationsWithUserAllocationS1Map)}
@@ -596,18 +608,6 @@ function Page() {
               )}
             </div>
           </div>
-
-          {Date.now() >= TGE_TIMESTAMP_MS && (
-            <>
-              <Separator />
-              <ClaimSection
-                allocations={[
-                  ...Object.values(allocationsWithUserAllocationS1Map),
-                  ...Object.values(allocationsWithUserAllocationS2Map),
-                ]}
-              />
-            </>
-          )}
 
           <Separator />
           <BlurbSection />
