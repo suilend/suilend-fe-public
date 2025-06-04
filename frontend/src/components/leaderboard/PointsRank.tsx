@@ -2,7 +2,7 @@ import { Trophy } from "lucide-react";
 
 import { formatRank } from "@suilend/sui-fe";
 
-import PointsLeaderboardDataLastUpdated from "@/components/points/PointsLeaderboardDataLastUpdated";
+import PointsLeaderboardDataLastUpdated from "@/components/leaderboard/PointsLeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";

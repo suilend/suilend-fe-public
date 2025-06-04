@@ -2,25 +2,25 @@ import { Trophy } from "lucide-react";
 
 import { formatRank } from "@suilend/sui-fe";
 
-import LeaderboardDataLastUpdated from "@/components/leaderboard/LeaderboardDataLastUpdated";
+import TvlLeaderboardDataLastUpdated from "@/components/leaderboard/TvlLeaderboardDataLastUpdated";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
-interface LeaderboardRankProps {
+interface TvlLeaderboardRankProps {
   rank?: number;
   noTooltip?: boolean;
   isCentered?: boolean;
   isRightAligned?: boolean;
 }
 
-export default function LeaderboardRank({
+export default function TvlLeaderboardRank({
   rank,
   noTooltip,
   isCentered,
   isRightAligned,
-}: LeaderboardRankProps) {
+}: TvlLeaderboardRankProps) {
   return (
     <div
       className={cn(
@@ -35,7 +35,7 @@ export default function LeaderboardRank({
       {rank === undefined ? (
         <Skeleton className="h-5 w-full" />
       ) : (
-        <Tooltip title={!noTooltip && <LeaderboardDataLastUpdated />}>
+        <Tooltip title={!noTooltip && <TvlLeaderboardDataLastUpdated />}>
           {rank === -1 ? (
             <TBody
               className={cn(

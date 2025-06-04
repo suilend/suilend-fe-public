@@ -3,12 +3,12 @@ import { ClassValue } from "clsx";
 
 import { formatPoints } from "@suilend/sui-fe";
 
-import PointsLogo from "@/components/points/PointsLogo";
+import PointsLogo from "@/components/leaderboard/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
-import { usePointsContext } from "@/contexts/PointsContext";
+import { POINTS_SEASON_MAP } from "@/contexts/LeaderboardContext";
 import { cn } from "@/lib/utils";
 
 interface PointsCountProps {
@@ -23,9 +23,9 @@ export default function PointsCount({
   amount,
 }: PointsCountProps) {
   const { appData } = useAppContext();
-  const { seasonMap } = usePointsContext();
 
-  const coinMetadata = appData?.coinMetadataMap[seasonMap[season].coinType];
+  const coinMetadata =
+    appData?.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">

@@ -2,7 +2,7 @@ import BigNumber from "bignumber.js";
 
 import { formatDuration } from "@suilend/sui-fe";
 
-import { usePointsContext } from "@/contexts/PointsContext";
+import { useLeaderboardContext } from "@/contexts/LeaderboardContext";
 
 interface PointsLeaderboardDataLastUpdatedProps {
   season: number;
@@ -11,15 +11,15 @@ interface PointsLeaderboardDataLastUpdatedProps {
 export default function PointsLeaderboardDataLastUpdated({
   season,
 }: PointsLeaderboardDataLastUpdatedProps) {
-  const { updatedAtMap } = usePointsContext();
+  const { points } = useLeaderboardContext();
 
-  if (!updatedAtMap?.[season]) return null;
+  if (!points.updatedAtMap?.[season]) return null;
   return (
     <>
       {"Last updated "}
       {formatDuration(
         new BigNumber(
-          (new Date().getTime() - updatedAtMap[season].getTime()) / 1000,
+          (new Date().getTime() - points.updatedAtMap[season].getTime()) / 1000,
         ),
       )}
       {" ago"}

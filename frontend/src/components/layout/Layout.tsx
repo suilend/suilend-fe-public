@@ -9,7 +9,6 @@ import LaunchDarklyBanner from "@/components/layout/LaunchDarklyBanner";
 import Container from "@/components/shared/Container";
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useAppContext } from "@/contexts/AppContext";
-import { usePointsContext } from "@/contexts/PointsContext";
 import { ReserveAssetDataEventsContextProvider } from "@/contexts/ReserveAssetDataEventsContext";
 import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
@@ -18,7 +17,6 @@ export default function Layout({ children }: PropsWithChildren) {
   const { allAppData, filteredReservesMap, appData, filteredReserves } =
     useAppContext();
   const { allUserData, userData } = useUserContext();
-  const { season, seasonMap } = usePointsContext();
 
   // LaunchDarkly banner
   const launchDarklyBannerRef = useRef<HTMLDivElement>(null);
@@ -41,14 +39,6 @@ export default function Layout({ children }: PropsWithChildren) {
         {
           background: `url('${ASSETS_URL}/background.svg') bottom no-repeat`,
           "--header-top": `${launchDarklyBannerHeight ?? 0}px`,
-          "--points-season": seasonMap[season].color,
-          ...Object.entries(seasonMap).reduce(
-            (acc, [_season, { color }]) => ({
-              ...acc,
-              [`--points-season-${_season}`]: color,
-            }),
-            {},
-          ),
         } as CSSProperties
       }
     >

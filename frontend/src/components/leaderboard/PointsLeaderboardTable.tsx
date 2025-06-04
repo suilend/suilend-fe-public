@@ -10,41 +10,43 @@ import DataTable, {
   decimalSortingFn,
   tableHeader,
 } from "@/components/dashboard/DataTable";
-import LeaderboardRank from "@/components/leaderboard/LeaderboardRank";
-import TvlAmount from "@/components/leaderboard/TvlAmount";
+import PointsCount from "@/components/leaderboard/PointsCount";
+import PointsRank from "@/components/leaderboard/PointsRank";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import { LeaderboardRowData } from "@/contexts/LeaderboardContext";
+import { PointsLeaderboardRowData } from "@/contexts/LeaderboardContext";
 import { ROOT_URL } from "@/lib/navigation";
 
-interface LeaderboardTableProps {
-  data?: LeaderboardRowData[];
+interface PointsLeaderboardTableProps {
+  season: number;
+  data?: PointsLeaderboardRowData[];
   skeletonRows?: number;
   pageSize?: number;
   disableSorting?: boolean;
 }
 
-export default function LeaderboardTable({
+export default function PointsLeaderboardTable({
+  season,
   data,
   skeletonRows,
   pageSize,
   disableSorting,
-}: LeaderboardTableProps) {
+}: PointsLeaderboardTableProps) {
   const { explorer } = useSettingsContext();
 
   // Columns
   const columns = useMemo(() => {
-    const result: ColumnDef<LeaderboardRowData>[] = [
+    const result: ColumnDef<PointsLeaderboardRowData>[] = [
       {
         accessorKey: "rank",
         enableSorting: false,
         header: ({ column }) => tableHeader(column, "Rank"),
         cell: ({ row }) => {
           const { rank } = row.original;
-          return <LeaderboardRank rank={rank} noTooltip />;
+          return <PointsRank season={season} rank={rank} noTooltip />;
         },
       },
       {
@@ -77,17 +79,17 @@ export default function LeaderboardTable({
         },
       },
       {
-        accessorKey: "tvlUsd",
+        accessorKey: "totalPoints",
         enableSorting: !disableSorting,
-        sortingFn: decimalSortingFn("tvlUsd"),
+        sortingFn: decimalSortingFn("totalPoints"),
         header: ({ column }) =>
-          tableHeader(column, "TVL", { isNumerical: true }),
+          tableHeader(column, "Total points", { isNumerical: true }),
         cell: ({ row }) => {
-          const { tvlUsd } = row.original;
+          const { totalPoints } = row.original;
 
           return (
             <div className="flex flex-row justify-end">
-              <TvlAmount amount={tvlUsd} />
+              <PointsCount season={season} amount={totalPoints} />
             </div>
           );
         },
@@ -95,10 +97,10 @@ export default function LeaderboardTable({
     ];
 
     return result;
-  }, [explorer, disableSorting]);
+  }, [season, explorer, disableSorting]);
 
   return (
-    <DataTable<LeaderboardRowData>
+    <DataTable<PointsLeaderboardRowData>
       columns={columns}
       data={data}
       noDataMessage="No users"
