@@ -70,6 +70,7 @@ import {
 import { STEAMM_URL } from "@/lib/navigation";
 import {
   S1_mSEND_REDEMPTION_END_TIMESTAMP_MS,
+  S2_mSEND_REDEMPTION_END_TIMESTAMP_MS,
   SEND_TOTAL_SUPPLY,
   claimSend,
   formatCountdownDuration,
@@ -139,12 +140,6 @@ function RedeemTabContent({
 
   const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
   const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
-
-  // Redemption ends
-  const redemptionEndsDuration = intervalToDuration({
-    start: Date.now(),
-    end: new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
-  });
 
   // Submit
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -474,7 +469,48 @@ function RedeemTabContent({
                     hoverUnderlineClassName,
                   )}
                 >
-                  {formatCountdownDuration(redemptionEndsDuration)}
+                  {formatCountdownDuration(
+                    intervalToDuration({
+                      start: Date.now(),
+                      end: new Date(S1_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                    }),
+                  )}
+                </TBody>
+              </Tooltip>
+            </div>
+          </div>
+        )}
+        {userRedeemableAllocations.some(
+          (allocation) =>
+            allocation.id === AllocationIdS2.SEND_POINTS_S2 ||
+            allocation.id === AllocationIdS2.STEAMM_POINTS ||
+            allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2,
+        ) && (
+          <div className="flex w-full flex-row items-center justify-between gap-4">
+            <TBodySans className="text-muted-foreground">
+              S2 redemption ends in
+            </TBodySans>
+
+            <div className="flex flex-row items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Tooltip
+                title={formatDate(
+                  new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                  "yyyy-MM-dd HH:mm:ss",
+                )}
+              >
+                <TBody
+                  className={cn(
+                    "decoration-foreground/50",
+                    hoverUnderlineClassName,
+                  )}
+                >
+                  {formatCountdownDuration(
+                    intervalToDuration({
+                      start: Date.now(),
+                      end: new Date(S2_mSEND_REDEMPTION_END_TIMESTAMP_MS),
+                    }),
+                  )}
                 </TBody>
               </Tooltip>
             </div>
@@ -1013,16 +1049,42 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
   );
 
   const userRedeemableAllocations = redeemableAllocations.filter(
-    (allocation) =>
-      allocation.id === AllocationIdS1.SEND_POINTS_S1 ||
-      allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1
-        ? allocation.userEligibleSend?.gte(minMsendAmount) &&
+    (allocation) => {
+      // S1
+      if (allocation.id === AllocationIdS1.SEND_POINTS_S1)
+        return (
+          allocation.userEligibleSend?.gte(minMsendAmount) &&
           Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS
-        : allocation.id === AllocationIdS1.ROOTLETS
-          ? Object.values(allocation.userEligibleSendMap ?? {}).some((value) =>
-              value.gte(minMsendAmount),
-            )
-          : allocation.userEligibleSend?.gte(minMsendAmount),
+        );
+      if (allocation.id === AllocationIdS1.SUILEND_CAPSULES_S1)
+        return (
+          allocation.userEligibleSend?.gte(minMsendAmount) &&
+          Date.now() < S1_mSEND_REDEMPTION_END_TIMESTAMP_MS
+        );
+      if (allocation.id === AllocationIdS1.ROOTLETS)
+        return Object.values(allocation.userEligibleSendMap ?? {}).some(
+          (value) => value.gte(minMsendAmount),
+        );
+
+      // S2
+      if (allocation.id === AllocationIdS2.SEND_POINTS_S2)
+        return (
+          allocation.userEligibleSend?.gte(minMsendAmount) &&
+          Date.now() < S2_mSEND_REDEMPTION_END_TIMESTAMP_MS
+        );
+      if (allocation.id === AllocationIdS2.STEAMM_POINTS)
+        return (
+          allocation.userEligibleSend?.gte(minMsendAmount) &&
+          Date.now() < S2_mSEND_REDEMPTION_END_TIMESTAMP_MS
+        );
+      if (allocation.id === AllocationIdS2.SUILEND_CAPSULES_S2)
+        return (
+          allocation.userEligibleSend?.gte(minMsendAmount) &&
+          Date.now() < S2_mSEND_REDEMPTION_END_TIMESTAMP_MS
+        );
+
+      return false;
+    },
   );
   const userTotalRedeemableMsend = userRedeemableAllocations.reduce(
     (acc, allocation) =>

@@ -38,6 +38,7 @@ export const SEND_TOTAL_SUPPLY = 100_000_000;
 export const TGE_TIMESTAMP_MS = 1733979600000;
 export const S1_mSEND_REDEMPTION_END_TIMESTAMP_MS =
   TGE_TIMESTAMP_MS + 365 * 24 * 60 * 60 * 1000; // 1 year after TGE
+export const S2_mSEND_REDEMPTION_END_TIMESTAMP_MS = 1756857600000; // 3 months after S2 penalty start date
 
 export const mSEND_COINTYPE_MANAGER_MAP = {
   [NORMALIZED_mSEND_SERIES_1_COINTYPE]:
