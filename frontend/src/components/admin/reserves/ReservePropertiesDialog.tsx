@@ -125,6 +125,11 @@ export default function ReservePropertiesDialog({
         <LabelWithValue
           valueClassName="gap-1 flex-col"
           label="depositedAmount"
+          labelEndDecorator={
+            <Tooltip title="Derived">
+              <Calculator className="h-4 w-4" />
+            </Tooltip>
+          }
           value={formatToken(reserve.depositedAmount, {
             dp: reserve.mintDecimals,
           })}
