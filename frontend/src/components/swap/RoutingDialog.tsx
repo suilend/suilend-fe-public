@@ -247,13 +247,17 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
 
         <div className="flex flex-row items-center gap-1">
           <TBody className="uppercase">
-            <TextLink
-              className="font-normal"
-              href={explorer.buildObjectUrl(data.id)}
-              noIcon
-            >
-              {data.provider}
-            </TextLink>
+            {data.poolId ? (
+              <TextLink
+                className="font-normal"
+                href={explorer.buildObjectUrl(data.poolId)}
+                noIcon
+              >
+                {data.provider}
+              </TextLink>
+            ) : (
+              data.provider
+            )}
           </TBody>
         </div>
       </div>

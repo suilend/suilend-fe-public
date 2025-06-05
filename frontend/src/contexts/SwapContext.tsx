@@ -45,6 +45,7 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SWAP_URL } from "@/lib/navigation";
+import { OkxDexQuote } from "@/lib/okxDex";
 import { SwapToken } from "@/lib/types";
 
 export enum QuoteProvider {
@@ -52,16 +53,19 @@ export enum QuoteProvider {
   CETUS = "cetus",
   _7K = "7k",
   FLOWX = "flowx",
+  OKX_DEX = "okxDex",
 }
 export const QUOTE_PROVIDER_NAME_MAP = {
   [QuoteProvider.AFTERMATH]: "Aftermath",
   [QuoteProvider.CETUS]: "Cetus",
   [QuoteProvider._7K]: "7K",
   [QuoteProvider.FLOWX]: "FlowX",
+  [QuoteProvider.OKX_DEX]: "OKX DEX",
 };
 
 export type StandardizedRoutePath = {
   id: string;
+  poolId?: string;
   routeIndex: number;
   provider: string;
   in: {
@@ -101,6 +105,7 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.CETUS; quote: CetusQuote }
   | { provider: QuoteProvider._7K; quote: _7kQuote }
   | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
+  | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
 );
 
 export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";

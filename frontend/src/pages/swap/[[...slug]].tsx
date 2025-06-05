@@ -74,6 +74,7 @@ import Spinner from "@/components/shared/Spinner";
 import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import RoutingDialog from "@/components/swap/RoutingDialog";
@@ -108,6 +109,12 @@ import {
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { FLOWX_PARTNER_ID } from "@/lib/flowx";
+import {
+  OkxDexQuote,
+  cartesianProduct,
+  getQuote as getOkxDexQuote,
+  getSwapTransaction as getOkxDexSwapTransaction,
+} from "@/lib/okxDex";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -264,8 +271,9 @@ function Page() {
       [QuoteProvider.CETUS]: true, // W->W, W->D, D->D
       [QuoteProvider._7K]: true, // W->W, W->D, D->D
       [QuoteProvider.FLOWX]: true, // W->W, W->D, D->D
+      [QuoteProvider.OKX_DEX]: !swapInAccount, // W->W
     }),
-    [],
+    [swapInAccount],
   );
   const numActiveProviders = useMemo(
     () => Object.values(activeProvidersMap).filter(Boolean).length,
@@ -362,7 +370,8 @@ function Page() {
                   .div(WAD)
                   .times(100),
                 path: route.paths.map((path) => ({
-                  id: path.poolId,
+                  id: uuidv4(),
+                  poolId: path.poolId,
                   routeIndex,
                   provider: path.protocolName,
                   in: {
@@ -438,7 +447,8 @@ function Page() {
                   .div(quote.amountIn.toString())
                   .times(100),
                 path: route.path.map((path) => ({
-                  id: path.id,
+                  id: uuidv4(),
+                  poolId: path.id,
                   routeIndex,
                   provider: path.provider,
                   in: {
@@ -508,7 +518,8 @@ function Page() {
                   .div(quote.swapAmount)
                   .times(100),
                 path: route.hops.map((hop) => ({
-                  id: hop.poolId,
+                  id: uuidv4(),
+                  poolId: hop.poolId,
                   routeIndex,
                   provider: hop.pool.type,
                   in: {
@@ -578,7 +589,8 @@ function Page() {
                   .div(quote.amountIn.toString())
                   .times(100),
                 path: route.paths.map((hop) => ({
-                  id: hop.pool.id,
+                  id: uuidv4(),
+                  poolId: hop.pool.id,
                   routeIndex,
                   provider: hop.protocol(),
                   in: {
@@ -608,6 +620,116 @@ function Page() {
             );
             console.log(
               "Swap - set FlowX quote",
+              +standardizedQuote.out.amount,
+              "pool providers:",
+              getPoolProviders(standardizedQuote),
+              "quote:",
+              quote,
+            );
+          } catch (err) {
+            console.error(err);
+          }
+        })();
+      }
+
+      // OKX DEX
+      if (activeProvidersMap[QuoteProvider.OKX_DEX]) {
+        (async () => {
+          console.log("Swap - fetching OKX DEX quote");
+
+          try {
+            const quote = await getOkxDexQuote(amountIn, _tokenIn, _tokenOut);
+
+            const flattenedDexRouterList: OkxDexQuote["dexRouterList"] = [];
+            for (const dexRouter of quote.dexRouterList) {
+              const indexes: number[][] = [];
+              for (const subRouter of dexRouter.subRouterList) {
+                indexes.push(
+                  Array.from(
+                    { length: subRouter.dexProtocol.length },
+                    (_, j) => j,
+                  ),
+                );
+              }
+
+              const combinations = cartesianProduct(indexes);
+              for (const combination of combinations) {
+                const flattenedRouter: OkxDexQuote["dexRouterList"][number] = {
+                  ...dexRouter,
+                  routerPercent: "",
+                  subRouterList: dexRouter.subRouterList.map(
+                    (subRouter, index) => ({
+                      ...subRouter,
+                      dexProtocol: [subRouter.dexProtocol[combination[index]]],
+                    }),
+                  ),
+                };
+
+                let routerPercent = new BigNumber(dexRouter.routerPercent);
+                for (const subRouter of flattenedRouter.subRouterList) {
+                  const dexProtocol = subRouter.dexProtocol[0];
+
+                  routerPercent = routerPercent.times(
+                    new BigNumber(dexProtocol.percent).div(100),
+                  );
+                }
+                flattenedRouter.routerPercent = routerPercent.toString();
+
+                flattenedDexRouterList.push(flattenedRouter);
+              }
+            }
+
+            const standardizedQuote: StandardizedQuote = {
+              id: uuidv4(),
+              provider: QuoteProvider.OKX_DEX,
+              in: {
+                coinType: _tokenIn.coinType,
+                amount: new BigNumber(quote.fromTokenAmount).div(
+                  10 ** _tokenIn.decimals,
+                ),
+              },
+              out: {
+                coinType: _tokenOut.coinType,
+                amount: new BigNumber(quote.toTokenAmount).div(
+                  10 ** _tokenOut.decimals,
+                ),
+              },
+              routes: flattenedDexRouterList.map((dexRouter, routeIndex) => {
+                return {
+                  percent: new BigNumber(dexRouter.routerPercent),
+                  path: dexRouter.subRouterList.map((subRouter) => ({
+                    id: uuidv4(),
+                    poolId: undefined, // Missing data
+                    routeIndex,
+                    provider: subRouter.dexProtocol[0].dexName,
+                    in: {
+                      coinType: normalizeStructTag(
+                        subRouter.fromToken.tokenContractAddress,
+                      ),
+                      amount: new BigNumber(0).div(10 ** _tokenIn.decimals), // Missing data
+                    },
+                    out: {
+                      coinType: normalizeStructTag(
+                        subRouter.toToken.tokenContractAddress,
+                      ),
+                      amount: new BigNumber(0).div(10 ** _tokenIn.decimals), // Missing data
+                    },
+                  })),
+                };
+              }),
+              quote,
+            };
+
+            setQuotesMap((o) =>
+              o[_timestamp] === undefined
+                ? o
+                : {
+                    ...o,
+                    [_timestamp]: [...o[_timestamp], standardizedQuote],
+                  },
+            );
+            console.log(
+              "Swap - set OKX DEX quote",
               +standardizedQuote.out.amount,
               "pool providers:",
               getPoolProviders(standardizedQuote),
@@ -689,6 +811,12 @@ function Page() {
 
     inputRef.current?.focus();
   };
+
+  // Swap in account
+  useEffect(() => {
+    setValue("");
+    setQuotesMap({});
+  }, [swapInAccount]);
 
   // Swap in account - utilization
   const newObligation_deposit = useMemo(() => {
@@ -1025,7 +1153,9 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
-      isDisabled: buttonState_swap.isDisabled,
+      isDisabled:
+        buttonState_swap.isDisabled ||
+        quote?.provider === QuoteProvider.OKX_DEX,
     };
   })();
 
@@ -1159,7 +1289,7 @@ function Page() {
         // BluefinXTx
         throw new Error("BluefinXTx not supported");
       } else {
-        return { transaction: transaction2 as Transaction, coinOut };
+        return { transaction: transaction2, coinOut };
       }
     } else if (quote.provider === QuoteProvider.FLOWX) {
       console.log("Swap - fetching transaction for FlowX quote");
@@ -1191,6 +1321,18 @@ function Page() {
       });
 
       return { transaction, coinOut: coinOut as TransactionObjectArgument };
+    } else if (quote.provider === QuoteProvider.OKX_DEX) {
+      console.log("Swap - fetching transaction for OKX DEX quote");
+
+      const transaction2 = await getOkxDexSwapTransaction(
+        quote.quote.fromTokenAmount,
+        quote.in.coinType,
+        quote.out.coinType,
+        slippagePercent,
+        address,
+      ); // Does not use `transaction` or `coinIn`
+
+      return { transaction: transaction2, coinOut: undefined };
     } else throw new Error("Unknown quote type");
   };
 
@@ -1233,8 +1375,13 @@ function Page() {
 
       const { transaction: _transaction, coinOut } =
         await getTransactionForStandardizedQuote(transaction, coinIn);
-      if (!coinOut)
-        throw new Error("Missing coin to transfer to deposit/transfer to user");
+      if (
+        (swapInAccount ||
+          isSwapAndDeposit ||
+          quote.provider !== QuoteProvider.OKX_DEX) &&
+        !coinOut
+      )
+        throw new Error("Missing coin to deposit/transfer to user");
 
       transaction = _transaction;
 
@@ -1250,7 +1397,7 @@ function Page() {
               obligationOwnerCap,
             );
           appData.suilendClient.deposit(
-            coinOut,
+            coinOut!, // Checked above
             tokenOutReserve.coinType,
             obligationOwnerCapId,
             transaction,
@@ -1265,7 +1412,7 @@ function Page() {
           appData.suilendClient.repay(
             obligation.id,
             tokenOutReserve.coinType,
-            coinOut,
+            coinOut!, // Checked above
             transaction,
           );
 
@@ -1277,14 +1424,14 @@ function Page() {
 
           if (depositedAmount.gt(0)) {
             appData.suilendClient.deposit(
-              coinOut,
+              coinOut!, // Checked above
               tokenOutReserve.coinType,
               obligationOwnerCap!.id,
               transaction,
             ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
           } else {
             transaction.transferObjects(
-              [coinOut],
+              [coinOut!], // Checked above
               transaction.pure.address(address),
             ); // Transfer empty coin to user
           }
@@ -1301,7 +1448,7 @@ function Page() {
               obligationOwnerCap,
             );
           appData.suilendClient.deposit(
-            coinOut,
+            coinOut!, // Checked above
             tokenOutReserve.coinType,
             obligationOwnerCapId,
             transaction,
@@ -1309,11 +1456,13 @@ function Page() {
           if (didCreate)
             sendObligationToUser(obligationOwnerCapId, address, transaction);
         } else {
-          // TRANSFER out token
-          transaction.transferObjects(
-            [coinOut],
-            transaction.pure.address(address),
-          );
+          if (quote.provider !== QuoteProvider.OKX_DEX) {
+            // TRANSFER out token
+            transaction.transferObjects(
+              [coinOut!], // Checked above
+              transaction.pure.address(address),
+            );
+          }
         }
       }
     } catch (err) {
@@ -1657,93 +1806,97 @@ function Page() {
                 {/* Quotes list */}
                 {!isQuotesListCollapsed && (
                   <div className="flex w-full flex-col gap-2">
-                    {Object.values(QuoteProvider).map((provider) => {
-                      const _quote = (quotes ?? []).find(
-                        (q) => q.provider === provider,
-                      );
+                    {Object.entries(activeProvidersMap)
+                      .filter(([, isActive]) => isActive)
+                      .map(([provider]) => {
+                        const _quote = (quotes ?? []).find(
+                          (q) => q.provider === provider,
+                        );
 
-                      const bestQuote = (quotes ?? [])
-                        .slice()
-                        .sort((a, b) => +b.out.amount - +a.out.amount)[0];
+                        const bestQuote = (quotes ?? [])
+                          .slice()
+                          .sort((a, b) => +b.out.amount - +a.out.amount)[0];
 
-                      return (
-                        <Fragment key={provider}>
-                          {_quote === undefined ? (
-                            <Skeleton className="h-[54px] w-full rounded-sm bg-muted/10" />
-                          ) : (
-                            <button
-                              key={_quote.id}
-                              className={cn(
-                                "group flex w-full flex-col items-start gap-1 rounded-sm border px-3 py-2 transition-colors disabled:pointer-events-none",
-                                _quote.id === quote?.id
-                                  ? "border-transparent !bg-muted/15 transition-colors"
-                                  : "hover:border-transparent hover:bg-muted/10",
-                              )}
-                              onClick={() => setOverrideQuoteId(_quote.id)}
-                              disabled={isNaN(+_quote.out.amount)}
-                            >
-                              <div className="flex w-full flex-row items-center justify-between">
-                                <TLabelSans
-                                  className={cn(
-                                    !isNaN(+_quote.out.amount) &&
-                                      "text-foreground",
-                                  )}
-                                >
-                                  {isNaN(+_quote.out.amount) ? (
-                                    `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
-                                  ) : (
-                                    <>
-                                      {formatToken(_quote.out.amount, {
-                                        dp: tokenOut.decimals,
-                                      })}{" "}
-                                      {tokenOut.symbol}
-                                    </>
-                                  )}
-                                </TLabelSans>
-
-                                {!isNaN(+_quote.out.amount) && (
+                        return (
+                          <Fragment key={provider}>
+                            {_quote === undefined ? (
+                              <Skeleton className="h-[54px] w-full rounded-sm bg-muted/10" />
+                            ) : (
+                              <button
+                                key={_quote.id}
+                                className={cn(
+                                  "group flex w-full flex-col items-start gap-1 rounded-sm border px-3 py-2 transition-colors disabled:pointer-events-none",
+                                  _quote.id === quote?.id
+                                    ? "border-transparent !bg-muted/15 transition-colors"
+                                    : "hover:border-transparent hover:bg-muted/10",
+                                )}
+                                onClick={() => setOverrideQuoteId(_quote.id)}
+                                disabled={isNaN(+_quote.out.amount)}
+                              >
+                                <div className="flex w-full flex-row items-center justify-between">
                                   <TLabelSans
                                     className={cn(
-                                      "uppercase",
-                                      _quote.id === bestQuote.id
-                                        ? "text-success"
-                                        : "text-destructive",
+                                      !isNaN(+_quote.out.amount) &&
+                                        "text-foreground",
                                     )}
                                   >
-                                    {_quote.id === bestQuote.id
-                                      ? "Best"
-                                      : formatPercent(
-                                          new BigNumber(
-                                            _quote.out.amount
-                                              .div(bestQuote.out.amount)
-                                              .minus(1),
-                                          ).times(100),
-                                        )}
-                                  </TLabelSans>
-                                )}
-                              </div>
-
-                              <div className="flex h-4 w-full flex-row items-center justify-between">
-                                {!isNaN(+_quote.out.amount) && (
-                                  <TLabelSans>
-                                    {formatUsd(
-                                      _quote.out.amount.times(tokenOutUsdPrice),
+                                    {isNaN(+_quote.out.amount) ? (
+                                      `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
+                                    ) : (
+                                      <>
+                                        {formatToken(_quote.out.amount, {
+                                          dp: tokenOut.decimals,
+                                        })}{" "}
+                                        {tokenOut.symbol}
+                                      </>
                                     )}
                                   </TLabelSans>
-                                )}
 
-                                {/* Routing */}
-                                {!isNaN(+_quote.out.amount) && (
-                                  <ReactFlowProvider>
-                                    <RoutingDialog quote={_quote} />
-                                  </ReactFlowProvider>
-                                )}
-                              </div>
-                            </button>
-                          )}
-                        </Fragment>
-                      );
-                    })}
+                                  {!isNaN(+_quote.out.amount) && (
+                                    <TLabelSans
+                                      className={cn(
+                                        "uppercase",
+                                        _quote.id === bestQuote.id
+                                          ? "text-success"
+                                          : "text-destructive",
+                                      )}
+                                    >
+                                      {_quote.id === bestQuote.id
+                                        ? "Best"
+                                        : formatPercent(
+                                            new BigNumber(
+                                              _quote.out.amount
+                                                .div(bestQuote.out.amount)
+                                                .minus(1),
+                                            ).times(100),
+                                          )}
+                                    </TLabelSans>
+                                  )}
+                                </div>
+
+                                <div className="flex h-4 w-full flex-row items-center justify-between">
+                                  {!isNaN(+_quote.out.amount) && (
+                                    <TLabelSans>
+                                      {formatUsd(
+                                        _quote.out.amount.times(
+                                          tokenOutUsdPrice,
+                                        ),
+                                      )}
+                                    </TLabelSans>
+                                  )}
+
+                                  {/* Routing */}
+                                  {!isNaN(+_quote.out.amount) && (
+                                    <ReactFlowProvider>
+                                      <RoutingDialog quote={_quote} />
+                                    </ReactFlowProvider>
+                                  )}
+                                </div>
+                              </button>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                   </div>
                 )}
 
@@ -1849,24 +2002,34 @@ function Page() {
 
                 {/* Swap and deposit */}
                 {tokenOutReserve && (
-                  <Button
-                    className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
-                    labelClassName="uppercase text-wrap text-xs"
-                    variant="secondary"
-                    disabled={buttonState_swapAndDeposit.isDisabled}
-                    onClick={() => onSwapClick(true)}
+                  <Tooltip
+                    title={
+                      quote?.provider === QuoteProvider.OKX_DEX
+                        ? "OKX DEX does not support Swap and Deposit"
+                        : undefined
+                    }
                   >
-                    {buttonState_swapAndDeposit.isLoading ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      buttonState_swapAndDeposit.title
-                    )}
-                    {buttonState_swapAndDeposit.description && (
-                      <span className="block font-sans text-xs normal-case">
-                        {buttonState_swapAndDeposit.description}
-                      </span>
-                    )}
-                  </Button>
+                    <div className="w-full">
+                      <Button
+                        className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                        labelClassName="uppercase text-wrap text-xs"
+                        variant="secondary"
+                        disabled={buttonState_swapAndDeposit.isDisabled}
+                        onClick={() => onSwapClick(true)}
+                      >
+                        {buttonState_swapAndDeposit.isLoading ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          buttonState_swapAndDeposit.title
+                        )}
+                        {buttonState_swapAndDeposit.description && (
+                          <span className="block font-sans text-xs normal-case">
+                            {buttonState_swapAndDeposit.description}
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  </Tooltip>
                 )}
               </div>
 
@@ -1971,13 +2134,21 @@ function Page() {
           >
             7K
           </TextLink>
-          {", and "}
+          {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://flowx.finance/swap"
             noIcon
           >
             FlowX
+          </TextLink>
+          {", and "}
+          <TextLink
+            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+            href="https://web3.okx.com/dex-swap"
+            noIcon
+          >
+            OKX DEX
           </TextLink>
         </TLabelSans>
       </div>

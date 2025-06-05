@@ -52,6 +52,7 @@
     "bn.js": "^5.2.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "elkjs": "^0.9.3",
     "embla-carousel-react": "^8.3.1",
@@ -84,6 +85,7 @@
   },
   "devDependencies": {
     "@tsconfig/next": "^2.0.3",
+    "@types/crypto-js": "^4.2.2",
     "@types/lodash": "^4.17.13",
     "@types/mixpanel-browser": "^2.50.2",
     "@types/react": "^18.3.12",
