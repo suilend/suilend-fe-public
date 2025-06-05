@@ -638,7 +638,11 @@ function Page() {
           console.log("Swap - fetching OKX DEX quote");
 
           try {
-            const quote = await getOkxDexQuote(amountIn, _tokenIn, _tokenOut);
+            const quote = await getOkxDexQuote(
+              amountIn,
+              _tokenIn.coinType,
+              _tokenOut.coinType,
+            );
 
             const flattenedDexRouterList: OkxDexQuote["dexRouterList"] = [];
             for (const dexRouter of quote.dexRouterList) {
