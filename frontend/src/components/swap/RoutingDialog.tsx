@@ -22,6 +22,12 @@ import ReactFlow, {
   useReactFlow,
 } from "reactflow";
 
+import {
+  QUOTE_PROVIDER_NAME_MAP,
+  StandardizedPathWithToken,
+  StandardizedQuote,
+  StandardizedRoutePath,
+} from "@suilend/sdk";
 import { formatPercent, formatToken, getToken } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
@@ -34,16 +40,9 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import {
-  QUOTE_PROVIDER_NAME_MAP,
-  StandardizedPathWithToken,
-  StandardizedQuote,
-  StandardizedRoutePath,
-  useSwapContext,
-} from "@/contexts/SwapContext";
+import { useSwapContext } from "@/contexts/SwapContext";
 import { SwapToken } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
-
 import "reactflow/dist/style.css";
 
 const elk = new ELK();

@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { OkxDexSwap, getHeaders } from "@suilend/sdk";
 import { SUI_COINTYPE, isSui } from "@suilend/sui-fe";
-
-import { OkxDexSwap, getHeaders } from "@/lib/okxDex";
 
 const getSwap = async (
   amountIn: string,

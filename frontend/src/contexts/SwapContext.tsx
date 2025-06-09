@@ -12,22 +12,14 @@ import {
   useState,
 } from "react";
 
+import { setSuiClient as set7kSdkSuiClient } from "@7kprotocol/sdk-ts/cjs";
 import {
-  QuoteResponse as _7kQuote,
-  setSuiClient as set7kSdkSuiClient,
-} from "@7kprotocol/sdk-ts/cjs";
-import {
-  RouterData as CetusQuote,
   AggregatorClient as CetusSdk,
   Env,
 } from "@cetusprotocol/aggregator-sdk";
 import { AggregatorQuoter as FlowXAggregatorQuoter } from "@flowx-finance/sdk";
-import { GetRoutesResult as FlowXGetRoutesResult } from "@flowx-finance/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
-import {
-  RouterCompleteTradeRoute as AftermathQuote,
-  Aftermath as AftermathSdk,
-} from "aftermath-ts-sdk";
+import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
 import {
@@ -45,68 +37,7 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SWAP_URL } from "@/lib/navigation";
-import { OkxDexQuote } from "@/lib/okxDex";
 import { SwapToken } from "@/lib/types";
-
-export enum QuoteProvider {
-  AFTERMATH = "aftermath",
-  CETUS = "cetus",
-  _7K = "7k",
-  FLOWX = "flowx",
-  OKX_DEX = "okxDex",
-}
-export const QUOTE_PROVIDER_NAME_MAP = {
-  [QuoteProvider.AFTERMATH]: "Aftermath",
-  [QuoteProvider.CETUS]: "Cetus",
-  [QuoteProvider._7K]: "7K",
-  [QuoteProvider.FLOWX]: "FlowX",
-  [QuoteProvider.OKX_DEX]: "OKX DEX",
-};
-
-export type StandardizedRoutePath = {
-  id: string;
-  poolId?: string;
-  routeIndex: number;
-  provider: string;
-  in: {
-    coinType: string;
-    amount: BigNumber;
-  };
-  out: {
-    coinType: string;
-    amount: BigNumber;
-  };
-};
-export type StandardizedPathWithToken = StandardizedRoutePath & {
-  in: StandardizedRoutePath["in"] & {
-    token: SwapToken;
-  };
-  out: StandardizedRoutePath["out"] & {
-    token: SwapToken;
-  };
-};
-
-export type StandardizedQuote = {
-  id: string;
-  in: {
-    coinType: string;
-    amount: BigNumber;
-  };
-  out: {
-    coinType: string;
-    amount: BigNumber;
-  };
-  routes: {
-    percent: BigNumber;
-    path: StandardizedRoutePath[];
-  }[];
-} & (
-  | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
-  | { provider: QuoteProvider.CETUS; quote: CetusQuote }
-  | { provider: QuoteProvider._7K; quote: _7kQuote }
-  | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
-  | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
-);
 
 export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_IN_COINTYPE = NORMALIZED_SUI_COINTYPE;

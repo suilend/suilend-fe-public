@@ -52,7 +52,6 @@
     "bn.js": "^5.2.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
-    "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "elkjs": "^0.9.3",
     "embla-carousel-react": "^8.3.1",

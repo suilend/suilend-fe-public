@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
+import { OkxDexQuote, getHeaders } from "@suilend/sdk";
 import { SUI_COINTYPE, isSui } from "@suilend/sui-fe";
-
-import { OkxDexQuote, getHeaders } from "@/lib/okxDex";
 
 const getQuote = async (
   amountIn: string,

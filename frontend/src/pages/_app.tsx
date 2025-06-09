@@ -23,9 +23,9 @@ import { AppContextProvider } from "@/contexts/AppContext";
 import { LeaderboardContextProvider } from "@/contexts/LeaderboardContext";
 import { UserContextProvider } from "@/contexts/UserContext";
 import { TITLE } from "@/lib/constants";
-import "@/styles/globals.scss";
 import { fontClassNames } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
+import "@/styles/globals.scss";
 
 function WalletContextProviderWrapper({ children }: PropsWithChildren) {
   // MSafe Wallet
