@@ -18,6 +18,7 @@ import { linearlyInterpolate } from "@suilend/sdk/utils";
 import {
   NORMALIZED_LBTC_COINTYPE,
   NORMALIZED_flSUI_COINTYPE,
+  NORMALIZED_jugSUI_COINTYPE,
   formatPercent,
   formatPoints,
   formatPrice,
@@ -135,7 +136,11 @@ export default function AprWithRewardsBreakdown({
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);
   if (side === Side.DEPOSIT) {
-    if (reserve.coinType === NORMALIZED_flSUI_COINTYPE)
+    if (
+      [NORMALIZED_flSUI_COINTYPE, NORMALIZED_jugSUI_COINTYPE].includes(
+        reserve.coinType,
+      )
+    )
       filteredRewards.push({
         stats: {
           id: uuidv4(),
