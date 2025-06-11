@@ -87,7 +87,10 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
             ? "N/A"
             : isSendPoints(token.coinType)
               ? formatPoints(amount)
-              : formatToken(amount, { dp: decimals })}{" "}
+              : formatToken(amount, {
+                  dp: decimals,
+                  trimTrailingZeros: true,
+                })}{" "}
           {token.symbol}
         </TBody>
       </Tooltip>

@@ -9,12 +9,13 @@ import {
   useState,
 } from "react";
 
-import * as CetusAggregatorSdk from "@cetusprotocol/aggregator-sdk";
+import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import { AggregatorQuoter as FlowXAggregatorQuoter } from "@flowx-finance/sdk";
 import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
+import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
 import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
@@ -35,6 +36,7 @@ import {
   QUOTE_PROVIDER_NAME_MAP,
   QuoteProvider,
   StandardizedQuote,
+  WAD,
   createObligationIfNoneExists,
   fetchAggQuotes,
   getPoolProviders,
@@ -99,6 +101,13 @@ import { FLOWX_PARTNER_ID } from "@/lib/flowx";
 import { SubmitButtonState, SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const getCtokenExchangeRate = (eventData: any) =>
+  new BigNumber(eventData.ctoken_supply).eq(0)
+    ? new BigNumber(1)
+    : new BigNumber(eventData.supply_amount.value)
+        .div(WAD)
+        .div(eventData.ctoken_supply);
+
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 
 function Page() {
@@ -121,11 +130,19 @@ function Page() {
     ...restSwapContext
   } = useSwapContext();
   const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
-  const cetusSdk =
-    restSwapContext.cetusSdk as CetusAggregatorSdk.AggregatorClient;
+  const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
   const flowXSdk = restSwapContext.flowXSdk as FlowXAggregatorQuoter;
   const tokenIn = restSwapContext.tokenIn as SwapToken;
   const tokenOut = restSwapContext.tokenOut as SwapToken;
+
+  const sdkMap = useMemo(
+    () => ({
+      [QuoteProvider.AFTERMATH]: aftermathSdk,
+      [QuoteProvider.CETUS]: cetusSdk,
+      [QuoteProvider.FLOWX]: flowXSdk,
+    }),
+    [aftermathSdk, cetusSdk, flowXSdk],
+  );
 
   // Balances
   const tokenInBalance = getBalance(tokenIn.coinType);
@@ -139,12 +156,18 @@ function Page() {
   );
 
   // Positions
+  // In
   const tokenInDepositPosition = obligation?.deposits?.find(
     (d) => d.coinType === tokenIn.coinType,
   );
   const tokenInDepositPositionAmount = useMemo(
     () => tokenInDepositPosition?.depositedAmount ?? new BigNumber(0),
     [tokenInDepositPosition],
+  );
+
+  // Out
+  const tokenOutDepositPosition = obligation?.deposits?.find(
+    (d) => d.coinType === tokenOut.coinType,
   );
 
   const tokenOutBorrowPosition = obligation?.borrows?.find(
@@ -240,6 +263,13 @@ function Page() {
     }),
     [swapInAccount],
   );
+  const activeProviders = useMemo(
+    () =>
+      Object.entries(activeProvidersMap)
+        .filter(([, isActive]) => isActive)
+        .map(([provider]) => provider) as QuoteProvider[],
+    [activeProvidersMap],
+  );
   const numActiveProviders = useMemo(
     () => Object.values(activeProvidersMap).filter(Boolean).length,
     [activeProvidersMap],
@@ -285,6 +315,12 @@ function Page() {
 
   const fetchQuotes = useCallback(
     async (
+      _sdkMap: {
+        [QuoteProvider.AFTERMATH]: AftermathSdk;
+        [QuoteProvider.CETUS]: CetusSdk;
+        [QuoteProvider.FLOWX]: FlowXAggregatorQuoter;
+      },
+      _activeProviders: QuoteProvider[],
       _tokenIn: SwapToken,
       _tokenOut: SwapToken,
       _value: string,
@@ -294,12 +330,8 @@ function Page() {
       if (new BigNumber(_value || 0).lte(0)) return;
 
       await fetchAggQuotes(
-        {
-          [QuoteProvider.AFTERMATH]: aftermathSdk,
-          [QuoteProvider.CETUS]: cetusSdk,
-          [QuoteProvider.FLOWX]: flowXSdk,
-        },
-        Object.keys(activeProvidersMap).filter(Boolean) as QuoteProvider[],
+        _sdkMap,
+        _activeProviders,
         (timestamp, quotes) => {
           setQuotesMap((o) => ({ ...o, [timestamp]: quotes }));
         },
@@ -309,7 +341,7 @@ function Page() {
         _timestamp,
       );
     },
-    [activeProvidersMap, aftermathSdk, cetusSdk, flowXSdk],
+    [],
   );
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -323,7 +355,7 @@ function Page() {
     )
       return;
     refreshIntervalRef.current = setInterval(
-      () => fetchQuotes(tokenIn, tokenOut, value),
+      () => fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, value),
       60 * 1000,
     );
 
@@ -335,6 +367,8 @@ function Page() {
     isSubmitting_swapAndDeposit,
     isSubmitting_swapInAccount,
     fetchQuotes,
+    sdkMap,
+    activeProviders,
     tokenIn,
     tokenOut,
     value,
@@ -365,7 +399,7 @@ function Page() {
     formatAndSetValue(_value, tokenIn);
 
     if (new BigNumber(_value || 0).gt(0))
-      fetchQuotes(tokenIn, tokenOut, _value);
+      fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, _value);
     else setQuotesMap({});
   };
 
@@ -373,17 +407,28 @@ function Page() {
     formatAndSetValue(tokenInMaxAmount, tokenIn);
 
     if (new BigNumber(tokenInMaxAmount).gt(0))
-      fetchQuotes(tokenIn, tokenOut, tokenInMaxAmount);
+      fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, tokenInMaxAmount);
     else setQuotesMap({});
 
     inputRef.current?.focus();
   };
 
   // Swap in account
+  const prevSwapInAccountRef = useRef<boolean>(swapInAccount);
   useEffect(() => {
-    setValue("");
-    setQuotesMap({});
-  }, [swapInAccount]);
+    if (prevSwapInAccountRef.current === swapInAccount) return;
+    prevSwapInAccountRef.current = swapInAccount;
+
+    fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, value);
+  }, [
+    swapInAccount,
+    fetchQuotes,
+    sdkMap,
+    activeProviders,
+    tokenIn,
+    tokenOut,
+    value,
+  ]);
 
   // Swap in account - utilization
   const newObligation_deposit = useMemo(() => {
@@ -624,7 +669,8 @@ function Page() {
     formatAndSetValue(value, tokenOut);
     setQuotesMap({});
 
-    if (new BigNumber(value || 0).gt(0)) fetchQuotes(tokenOut, tokenIn, value);
+    if (new BigNumber(value || 0).gt(0))
+      fetchQuotes(sdkMap, activeProviders, tokenOut, tokenIn, value);
 
     reverseTokenSymbols();
 
@@ -653,6 +699,8 @@ function Page() {
       setTokenSymbol(isReserve ? _token.symbol : _token.coinType, direction);
 
       fetchQuotes(
+        sdkMap,
+        activeProviders,
         direction === TokenDirection.IN ? _token : tokenIn,
         direction === TokenDirection.IN ? tokenOut : _token,
         value,
@@ -989,32 +1037,74 @@ function Page() {
       const res = await swap(isSwapAndDeposit);
       const txUrl = explorer.buildTxUrl(res.digest);
 
-      const balanceChangeIn = getBalanceChange(
-        res,
-        address,
-        { ...tokenIn, description: "" },
-        -1,
-      );
-      const balanceChangeOut = getBalanceChange(res, address, {
-        ...tokenOut,
-        description: "",
-      });
-
       if (swapInAccount) {
-        const balanceChangeInFormatted = formatToken(quote.in.amount, {
-          dp: tokenIn.decimals,
-          trimTrailingZeros: true,
-        });
-        const balanceChangeOutFormatted = formatToken(quote.out.amount, {
-          dp: tokenOut.decimals,
-          trimTrailingZeros: true,
-        });
+        const withdrawnAmountIn = (() => {
+          const withdrawEvent = res.events?.find(
+            (event) =>
+              event.type ===
+                "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::WithdrawEvent" &&
+              normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                tokenIn.coinType,
+          );
+          const reserveAssetDataEvent = res.events?.find(
+            (event) =>
+              event.type ===
+                "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::reserve::ReserveAssetDataEvent" &&
+              normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                tokenIn.coinType,
+          );
+          if (!withdrawEvent || !reserveAssetDataEvent) return undefined;
+
+          return new BigNumber((withdrawEvent.parsedJson as any).ctoken_amount)
+            .times(
+              getCtokenExchangeRate(reserveAssetDataEvent.parsedJson as any),
+            )
+            .div(10 ** tokenIn.decimals);
+        })();
+        const depositedAmountOut = (() => {
+          const mintEvent = res.events?.find(
+            (event) =>
+              event.type ===
+                "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::MintEvent" &&
+              normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                tokenOut.coinType,
+          );
+          if (!mintEvent) return undefined;
+
+          return new BigNumber(
+            (mintEvent.parsedJson as any).liquidity_amount,
+          ).div(10 ** tokenOut.decimals);
+        })();
 
         if (tokenOutBorrowPositionAmount.eq(0)) {
           toast.success(
-            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            [
+              "Swapped",
+              withdrawnAmountIn !== undefined
+                ? formatToken(withdrawnAmountIn, {
+                    dp: tokenIn.decimals,
+                    trimTrailingZeros: true,
+                  })
+                : null,
+              tokenIn.symbol,
+              "for",
+              tokenOut.symbol,
+            ]
+              .filter(Boolean)
+              .join(" "),
             {
-              description: `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+              description: [
+                "Deposited",
+                depositedAmountOut !== undefined
+                  ? formatToken(depositedAmountOut, {
+                      dp: tokenOut.decimals,
+                      trimTrailingZeros: true,
+                    })
+                  : null,
+                tokenOut.symbol,
+              ]
+                .filter(Boolean)
+                .join(" "),
               icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
               action: (
                 <TextLink className="block" href={txUrl}>
@@ -1025,28 +1115,63 @@ function Page() {
             },
           );
         } else {
-          const repaidAmount = BigNumber.min(
-            quote.out.amount,
-            tokenOutBorrowPositionAmount,
-          );
-          const depositedAmount = quote.out.amount.minus(repaidAmount);
+          const repaidAmountOut = (() => {
+            const repayEvent = res.events?.find(
+              (event) =>
+                event.type ===
+                  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::RepayEvent" &&
+                normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                  tokenOut.coinType,
+            );
+            if (!repayEvent) return undefined;
 
-          const balanceChangeOutRepaidFormatted = formatToken(repaidAmount, {
-            dp: tokenOut.decimals,
-            trimTrailingZeros: true,
-          });
-          const balanceChangeOutDepositedFormatted = formatToken(
-            depositedAmount,
-            { dp: tokenOut.decimals, trimTrailingZeros: true },
-          );
+            return new BigNumber(
+              (repayEvent.parsedJson as any).liquidity_amount,
+            ).div(10 ** tokenOut.decimals);
+          })();
 
           toast.success(
-            `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+            [
+              "Swapped",
+              withdrawnAmountIn !== undefined
+                ? formatToken(withdrawnAmountIn, {
+                    dp: tokenIn.decimals,
+                    trimTrailingZeros: true,
+                  })
+                : null,
+              tokenIn.symbol,
+              "for",
+              tokenOut.symbol,
+            ]
+              .filter(Boolean)
+              .join(" "),
             {
               description: [
-                `Repaid ${balanceChangeOutRepaidFormatted} ${tokenOut.symbol}`,
-                depositedAmount.gt(0)
-                  ? `deposited ${balanceChangeOutDepositedFormatted} ${tokenOut.symbol}`
+                [
+                  "Repaid",
+                  repaidAmountOut !== undefined
+                    ? formatToken(repaidAmountOut, {
+                        dp: tokenOut.decimals,
+                        trimTrailingZeros: true,
+                      })
+                    : null,
+                  tokenOut.symbol,
+                ]
+                  .filter(Boolean)
+                  .join(" "),
+                depositedAmountOut !== undefined && depositedAmountOut.gt(0)
+                  ? [
+                      "deposited",
+                      depositedAmountOut !== undefined
+                        ? formatToken(depositedAmountOut, {
+                            dp: tokenOut.decimals,
+                            trimTrailingZeros: true,
+                          })
+                        : null,
+                      tokenOut.symbol,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
                   : null,
               ]
                 .filter(Boolean)
@@ -1062,22 +1187,58 @@ function Page() {
           );
         }
       } else {
-        const balanceChangeInFormatted = formatToken(
-          balanceChangeIn !== undefined ? balanceChangeIn : quote.in.amount,
-          { dp: tokenIn.decimals, trimTrailingZeros: true },
-        );
-        const balanceChangeOutFormatted = formatToken(
-          !isSwapAndDeposit && balanceChangeOut !== undefined
-            ? balanceChangeOut
-            : quote.out.amount, // When swapping+depositing, the out asset doesn't reach the wallet as it is immediately deposited
-          { dp: tokenOut.decimals, trimTrailingZeros: true },
-        );
+        const balanceChangeIn = getBalanceChange(res, address, tokenIn, -1);
+        const balanceChangeOut = getBalanceChange(res, address, tokenOut);
+        const depositedAmountOut = (() => {
+          const mintEvent = res.events?.find(
+            (event) =>
+              event.type ===
+                "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::MintEvent" &&
+              normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                tokenOut.coinType,
+          );
+          if (!mintEvent) return undefined;
+
+          return new BigNumber(
+            (mintEvent.parsedJson as any).liquidity_amount,
+          ).div(10 ** tokenOut.decimals);
+        })();
 
         toast.success(
-          `Swapped ${balanceChangeInFormatted} ${tokenIn.symbol} for ${balanceChangeOutFormatted} ${tokenOut.symbol}`,
+          [
+            "Swapped",
+            balanceChangeIn !== undefined
+              ? formatToken(balanceChangeIn, {
+                  dp: tokenIn.decimals,
+                  trimTrailingZeros: true,
+                })
+              : null,
+            tokenIn.symbol,
+            "for",
+            !isSwapAndDeposit && balanceChangeOut !== undefined
+              ? formatToken(balanceChangeOut, {
+                  dp: tokenOut.decimals,
+                  trimTrailingZeros: true,
+                })
+              : null,
+            tokenOut.symbol,
+          ]
+            .filter(Boolean)
+            .join(" "),
           {
             description: isSwapAndDeposit
-              ? `Deposited ${balanceChangeOutFormatted} ${tokenOut.symbol}`
+              ? [
+                  "Deposited",
+                  depositedAmountOut !== undefined
+                    ? formatToken(depositedAmountOut, {
+                        dp: tokenOut.decimals,
+                        trimTrailingZeros: true,
+                      })
+                    : null,
+                  tokenOut.symbol,
+                ]
+                  .filter(Boolean)
+                  .join(" ")
               : undefined,
             icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
             action: (
@@ -1169,7 +1330,9 @@ function Page() {
                 tooltip="Refresh"
                 icon={<RotateCw className="h-3 w-3" />}
                 variant="ghost"
-                onClick={() => fetchQuotes(tokenIn, tokenOut, value)}
+                onClick={() =>
+                  fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, value)
+                }
               >
                 Refresh
               </Button>
@@ -1206,6 +1369,11 @@ function Page() {
                 onSelectToken={(t: SwapToken) =>
                   onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
                 }
+                disabledCoinTypes={
+                  swapInAccount && !tokenInDepositPosition
+                    ? [tokenOut.coinType]
+                    : undefined
+                }
                 onAmountClick={useMaxValueWrapper}
               />
             </div>
@@ -1218,6 +1386,7 @@ function Page() {
                 variant="secondary"
                 size="icon"
                 onClick={reverseTokens}
+                disabled={swapInAccount && !tokenOutDepositPosition}
               >
                 Reverse
               </Button>
@@ -1241,6 +1410,11 @@ function Page() {
                 token={tokenOut}
                 onSelectToken={(t: SwapToken) =>
                   onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
+                }
+                disabledCoinTypes={
+                  swapInAccount && !tokenOutDepositPosition
+                    ? [tokenIn.coinType]
+                    : undefined
                 }
               />
             </div>
@@ -1294,97 +1468,93 @@ function Page() {
                 {/* Quotes list */}
                 {!isQuotesListCollapsed && (
                   <div className="flex w-full flex-col gap-2">
-                    {Object.entries(activeProvidersMap)
-                      .filter(([, isActive]) => isActive)
-                      .map(([provider]) => {
-                        const _quote = (quotes ?? []).find(
-                          (q) => q.provider === provider,
-                        );
+                    {activeProviders.map((provider) => {
+                      const _quote = (quotes ?? []).find(
+                        (q) => q.provider === provider,
+                      );
 
-                        const bestQuote = (quotes ?? [])
-                          .slice()
-                          .sort((a, b) => +b.out.amount - +a.out.amount)[0];
+                      const bestQuote = (quotes ?? [])
+                        .slice()
+                        .sort((a, b) => +b.out.amount - +a.out.amount)[0];
 
-                        return (
-                          <Fragment key={provider}>
-                            {_quote === undefined ? (
-                              <Skeleton className="h-[54px] w-full rounded-sm bg-muted/10" />
-                            ) : (
-                              <button
-                                key={_quote.id}
-                                className={cn(
-                                  "group flex w-full flex-col items-start gap-1 rounded-sm border px-3 py-2 transition-colors disabled:pointer-events-none",
-                                  _quote.id === quote?.id
-                                    ? "border-transparent !bg-muted/15 transition-colors"
-                                    : "hover:border-transparent hover:bg-muted/10",
-                                )}
-                                onClick={() => setOverrideQuoteId(_quote.id)}
-                                disabled={isNaN(+_quote.out.amount)}
-                              >
-                                <div className="flex w-full flex-row items-center justify-between">
+                      return (
+                        <Fragment key={provider}>
+                          {_quote === undefined ? (
+                            <Skeleton className="h-[54px] w-full rounded-sm bg-muted/10" />
+                          ) : (
+                            <button
+                              key={_quote.id}
+                              className={cn(
+                                "group flex w-full flex-col items-start gap-1 rounded-sm border px-3 py-2 transition-colors disabled:pointer-events-none",
+                                _quote.id === quote?.id
+                                  ? "border-transparent !bg-muted/15 transition-colors"
+                                  : "hover:border-transparent hover:bg-muted/10",
+                              )}
+                              onClick={() => setOverrideQuoteId(_quote.id)}
+                              disabled={isNaN(+_quote.out.amount)}
+                            >
+                              <div className="flex w-full flex-row items-center justify-between">
+                                <TLabelSans
+                                  className={cn(
+                                    !isNaN(+_quote.out.amount) &&
+                                      "text-foreground",
+                                  )}
+                                >
+                                  {isNaN(+_quote.out.amount) ? (
+                                    `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
+                                  ) : (
+                                    <>
+                                      {formatToken(_quote.out.amount, {
+                                        dp: tokenOut.decimals,
+                                      })}{" "}
+                                      {tokenOut.symbol}
+                                    </>
+                                  )}
+                                </TLabelSans>
+
+                                {!isNaN(+_quote.out.amount) && (
                                   <TLabelSans
                                     className={cn(
-                                      !isNaN(+_quote.out.amount) &&
-                                        "text-foreground",
+                                      "uppercase",
+                                      _quote.id === bestQuote.id
+                                        ? "text-success"
+                                        : "text-destructive",
                                     )}
                                   >
-                                    {isNaN(+_quote.out.amount) ? (
-                                      `No ${QUOTE_PROVIDER_NAME_MAP[_quote.provider]} quote found`
-                                    ) : (
-                                      <>
-                                        {formatToken(_quote.out.amount, {
-                                          dp: tokenOut.decimals,
-                                        })}{" "}
-                                        {tokenOut.symbol}
-                                      </>
+                                    {_quote.id === bestQuote.id
+                                      ? "Best"
+                                      : formatPercent(
+                                          new BigNumber(
+                                            _quote.out.amount
+                                              .div(bestQuote.out.amount)
+                                              .minus(1),
+                                          ).times(100),
+                                        )}
+                                  </TLabelSans>
+                                )}
+                              </div>
+
+                              <div className="flex h-4 w-full flex-row items-center justify-between">
+                                {!isNaN(+_quote.out.amount) && (
+                                  <TLabelSans>
+                                    {formatUsd(
+                                      _quote.out.amount.times(tokenOutUsdPrice),
                                     )}
                                   </TLabelSans>
+                                )}
 
-                                  {!isNaN(+_quote.out.amount) && (
-                                    <TLabelSans
-                                      className={cn(
-                                        "uppercase",
-                                        _quote.id === bestQuote.id
-                                          ? "text-success"
-                                          : "text-destructive",
-                                      )}
-                                    >
-                                      {_quote.id === bestQuote.id
-                                        ? "Best"
-                                        : formatPercent(
-                                            new BigNumber(
-                                              _quote.out.amount
-                                                .div(bestQuote.out.amount)
-                                                .minus(1),
-                                            ).times(100),
-                                          )}
-                                    </TLabelSans>
-                                  )}
-                                </div>
-
-                                <div className="flex h-4 w-full flex-row items-center justify-between">
-                                  {!isNaN(+_quote.out.amount) && (
-                                    <TLabelSans>
-                                      {formatUsd(
-                                        _quote.out.amount.times(
-                                          tokenOutUsdPrice,
-                                        ),
-                                      )}
-                                    </TLabelSans>
-                                  )}
-
-                                  {/* Routing */}
-                                  {!isNaN(+_quote.out.amount) && (
-                                    <ReactFlowProvider>
-                                      <RoutingDialog quote={_quote} />
-                                    </ReactFlowProvider>
-                                  )}
-                                </div>
-                              </button>
-                            )}
-                          </Fragment>
-                        );
-                      })}
+                                {/* Routing */}
+                                {!isNaN(+_quote.out.amount) && (
+                                  <ReactFlowProvider>
+                                    <RoutingDialog quote={_quote} />
+                                  </ReactFlowProvider>
+                                )}
+                              </div>
+                            </button>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </div>
                 )}
 

@@ -258,7 +258,11 @@ export default function HistoryTabContent({
                 />
 
                 <TLabelSans className="w-max">
-                  +{formatToken(feesAmount, { dp: coinMetadata.decimals })}{" "}
+                  +
+                  {formatToken(feesAmount, {
+                    dp: coinMetadata.decimals,
+                    trimTrailingZeros: true,
+                  })}{" "}
                   {coinMetadata.symbol} in fees
                 </TLabelSans>
               </div>
@@ -406,6 +410,7 @@ export default function HistoryTabContent({
                   Liquidation penalty:{" "}
                   {formatToken(liquidatorBonusAmount, {
                     dp: withdrawReserve.mintDecimals,
+                    trimTrailingZeros: true,
                   })}{" "}
                   {withdrawReserve.token.symbol}
                 </TLabelSans>
@@ -413,6 +418,7 @@ export default function HistoryTabContent({
                   Protocol liquidation fee:{" "}
                   {formatToken(protocolFeeAmount, {
                     dp: withdrawReserve.mintDecimals,
+                    trimTrailingZeros: true,
                   })}{" "}
                   {withdrawReserve.token.symbol}
                 </TLabelSans>

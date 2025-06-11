@@ -41,9 +41,10 @@ interface TokenRowProps {
   token: SwapToken;
   isSelected: boolean;
   onClick: () => void;
+  isDisabled?: boolean;
 }
 
-function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
+function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
@@ -67,12 +68,13 @@ function TokenRow({ token, isSelected, onClick }: TokenRowProps) {
   return (
     <div
       className={cn(
-        "relative z-[1] flex w-full cursor-pointer px-4 py-3",
+        "relative z-[1] flex w-full px-4 py-3",
+        isDisabled ? "pointer-events-none opacity-50" : "cursor-pointer",
         isSelected
           ? "bg-muted/10 shadow-[inset_2px_0_0_0_hsl(var(--foreground))]"
           : "transition-colors hover:bg-muted/10",
       )}
-      onClick={onClick}
+      onClick={isDisabled ? undefined : onClick}
     >
       <div className="flex w-full flex-row items-center gap-3">
         <TokenLogo
@@ -190,6 +192,7 @@ interface TokenSelectionDialogProps {
   token?: SwapToken;
   tokens: SwapToken[];
   onSelectToken: (token: SwapToken) => void;
+  disabledCoinTypes?: string[];
 }
 
 export default function TokenSelectionDialog({
@@ -202,6 +205,7 @@ export default function TokenSelectionDialog({
   token,
   tokens,
   onSelectToken,
+  disabledCoinTypes,
 }: TokenSelectionDialogProps) {
   const { filteredReservesMap, filteredReserves } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
@@ -526,6 +530,7 @@ export default function TokenSelectionDialog({
               }
               variant="ghost"
               onClick={() => onTokenClick(t)}
+              disabled={(disabledCoinTypes ?? []).includes(t.coinType)}
             >
               {/* TODO: Truncate symbol if the list of top tokens includes non-reserves */}
               {t.symbol}
@@ -561,6 +566,9 @@ export default function TokenSelectionDialog({
                       token={t}
                       isSelected={t.coinType === token?.coinType}
                       onClick={() => onTokenClick(t)}
+                      isDisabled={(disabledCoinTypes ?? []).includes(
+                        t.coinType,
+                      )}
                     />
                   ))}
                 </div>

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_USDC_COINTYPE,
   NORMALIZED_WAL_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   TX_TOAST_DURATION,
@@ -189,22 +188,28 @@ export default function AssetCell({
         -1,
       );
 
-      const balanceChangeOutFormatted = formatToken(
-        balanceChangeOut !== undefined ? balanceChangeOut : balance,
+      toast.success(
+        [
+          "Staked",
+          balanceChangeOut !== undefined
+            ? formatToken(balanceChangeOut, {
+                dp: appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+                trimTrailingZeros: true,
+              })
+            : null,
+          "WAL",
+        ]
+          .filter(Boolean)
+          .join(" "),
         {
-          dp: appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
-          trimTrailingZeros: true,
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
         },
       );
-
-      toast.success(`Staked ${balanceChangeOutFormatted} WAL`, {
-        action: (
-          <TextLink className="block" href={txUrl}>
-            View tx on {explorer.name}
-          </TextLink>
-        ),
-        duration: TX_TOAST_DURATION,
-      });
     } catch (err) {
       showErrorToast("Failed to stake WAL", err as Error, undefined, true);
     } finally {

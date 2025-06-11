@@ -27,6 +27,7 @@ interface SwapInputProps {
   direction: TokenDirection;
   token: SwapToken;
   onSelectToken: (token: SwapToken) => void;
+  disabledCoinTypes?: string[];
   onAmountClick?: () => void;
 }
 
@@ -42,6 +43,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       direction,
       token,
       onSelectToken,
+      disabledCoinTypes,
       onAmountClick,
     },
     ref,
@@ -136,6 +138,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 token={token}
                 tokens={tokens}
                 onSelectToken={onSelectToken}
+                disabledCoinTypes={disabledCoinTypes}
               />
 
               <div

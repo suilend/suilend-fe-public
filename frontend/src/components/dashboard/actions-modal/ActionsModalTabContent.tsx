@@ -315,13 +315,20 @@ export default function ActionsModalTabContent({
         reserve.token,
         [Action.DEPOSIT, Action.REPAY].includes(action) ? -1 : 1,
       );
-      const balanceChangeFormatted = formatToken(
-        balanceChange !== undefined ? balanceChange : new BigNumber(value),
-        { dp: reserve.mintDecimals, trimTrailingZeros: true },
-      );
 
       toast.success(
-        `${capitalize(actionPastTense)} ${balanceChangeFormatted} ${reserve.token.symbol}`,
+        [
+          capitalize(actionPastTense),
+          balanceChange !== undefined
+            ? formatToken(balanceChange, {
+                dp: reserve.mintDecimals,
+                trimTrailingZeros: true,
+              })
+            : null,
+          reserve.token.symbol,
+        ]
+          .filter(Boolean)
+          .join(" "),
         {
           action: (
             <TextLink className="block" href={txUrl}>
