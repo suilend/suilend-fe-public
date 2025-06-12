@@ -111,14 +111,14 @@ export const fetchAggQuotes = async (
   activeProviders: QuoteProvider[],
   setQuotesForTimestamp: (
     timestamp: number,
-    quotes: StandardizedQuote[],
+    quotes: (StandardizedQuote | null)[],
   ) => void,
   _tokenIn: Token,
   _tokenOut: Token,
   _value: string,
   _timestamp = new Date().getTime(),
 ) => {
-  const quotesForTimestamp: StandardizedQuote[] = [];
+  const quotesForTimestamp: (StandardizedQuote | null)[] = [];
   setQuotesForTimestamp(_timestamp, quotesForTimestamp);
 
   const amountIn = new BigNumber(_value)
@@ -195,6 +195,9 @@ export const fetchAggQuotes = async (
         );
       } catch (err) {
         console.error(err);
+
+        quotesForTimestamp.push(null);
+        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
       }
     })();
   }
@@ -267,6 +270,9 @@ export const fetchAggQuotes = async (
         );
       } catch (err) {
         console.error(err);
+
+        quotesForTimestamp.push(null);
+        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
       }
     })();
   }
@@ -331,6 +337,9 @@ export const fetchAggQuotes = async (
         );
       } catch (err) {
         console.error(err);
+
+        quotesForTimestamp.push(null);
+        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
       }
     })();
   }
@@ -401,6 +410,9 @@ export const fetchAggQuotes = async (
         );
       } catch (err) {
         console.error(err);
+
+        quotesForTimestamp.push(null);
+        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
       }
     })();
   }
@@ -507,6 +519,9 @@ export const fetchAggQuotes = async (
         );
       } catch (err) {
         console.error(err);
+
+        quotesForTimestamp.push(null);
+        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
       }
     })();
   }

@@ -276,7 +276,7 @@ function Page() {
   );
 
   const [quotesMap, setQuotesMap] = useState<
-    Record<number, StandardizedQuote[]>
+    Record<number, (StandardizedQuote | null)[]>
   >({});
 
   const quotes = useMemo(() => {
@@ -286,9 +286,11 @@ function Page() {
     if (timestampsS.length === 0) return undefined;
 
     const maxTimestampS = Math.max(...timestampsS);
-    if (quotesMap[maxTimestampS].length === 0) return undefined;
+    if (quotesMap[maxTimestampS].filter(Boolean).length === 0) return undefined;
 
-    const sortedQuotes = quotesMap[maxTimestampS]
+    const sortedQuotes = (
+      quotesMap[maxTimestampS].filter(Boolean) as StandardizedQuote[]
+    )
       .slice()
       .sort((a, b) => +b.out.amount.minus(a.out.amount));
     return sortedQuotes;
@@ -310,7 +312,7 @@ function Page() {
     if (timestampsS.length === 0) return false;
 
     const maxTimestampS = Math.max(...timestampsS);
-    return quotesMap[maxTimestampS].length < 1; // < numActiveProviders;
+    return quotesMap[maxTimestampS].filter(Boolean).length < 1; // < numActiveProviders;
   }, [quotesMap]);
 
   const fetchQuotes = useCallback(
