@@ -11,6 +11,7 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   API_URL,
   MAX_U64,
+  MS_PER_YEAR,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
@@ -287,17 +288,23 @@ export default function ActionsModalTabContent({
         break;
       }
       case Action.REPAY: {
-        if (useMaxAmount)
+        if (useMaxAmount) {
+          const threeMinsBorrowAprPercent = reserve.borrowAprPercent
+            .div(MS_PER_YEAR)
+            .times(3 * 60 * 1000);
+
           submitAmount = BigNumber.min(
             balance.minus(
               isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
             ),
-            new BigNumber(value).times(2),
+            new BigNumber(value).times(
+              new BigNumber(1).plus(threeMinsBorrowAprPercent.div(100)),
+            ),
           )
             .times(10 ** reserve.mintDecimals)
-            .integerValue(BigNumber.ROUND_DOWN)
+            .integerValue(BigNumber.ROUND_UP)
             .toString();
-
+        }
         break;
       }
       default: {
