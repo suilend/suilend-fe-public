@@ -102,6 +102,329 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
 );
 
+const fetchAggQuoteWrapper = async (
+  provider: QuoteProvider,
+  fetchAggQuote: () => Promise<StandardizedQuote | null>,
+) => {
+  console.log(`[fetchAggQuoteWrapper] fetching ${provider} quote`);
+
+  try {
+    const standardizedQuote = await fetchAggQuote();
+    if (!standardizedQuote) throw new Error("No quote returned");
+
+    console.log(
+      `[fetchAggQuoteWrapper] fetched ${provider} quote`,
+      +standardizedQuote.out.amount,
+      "pool providers:",
+      getPoolProviders(standardizedQuote),
+      "quote:",
+      standardizedQuote.quote,
+    );
+
+    return standardizedQuote;
+  } catch (err) {
+    console.error(err);
+
+    return null;
+  }
+};
+
+const fetchAftermathQuote = async (
+  sdk: AftermathSdk,
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
+) => {
+  const quote = await sdk.Router().getCompleteTradeRouteGivenAmountIn({
+    coinInType: tokenIn.coinType,
+    coinOutType: tokenOut.coinType,
+    coinInAmount: BigInt(amountIn),
+  });
+
+  const standardizedQuote: StandardizedQuote = {
+    id: uuidv4(),
+    provider: QuoteProvider.AFTERMATH,
+    in: {
+      coinType: tokenIn.coinType,
+      amount: new BigNumber(quote.coinIn.amount.toString()).div(
+        10 ** tokenIn.decimals,
+      ),
+    },
+    out: {
+      coinType: tokenOut.coinType,
+      amount: new BigNumber(quote.coinOut.amount.toString()).div(
+        10 ** tokenOut.decimals,
+      ),
+    },
+    routes: quote.routes.map((route, routeIndex) => ({
+      percent: new BigNumber(route.portion.toString()).div(WAD).times(100),
+      path: route.paths.map((path) => ({
+        id: uuidv4(),
+        poolId: path.poolId,
+        routeIndex,
+        provider: path.protocolName,
+        in: {
+          coinType: normalizeStructTag(path.coinIn.type),
+          amount: new BigNumber(path.coinIn.amount.toString()).div(
+            10 ** tokenIn.decimals,
+          ),
+        },
+        out: {
+          coinType: normalizeStructTag(path.coinOut.type),
+          amount: new BigNumber(path.coinOut.amount.toString()).div(
+            10 ** tokenOut.decimals,
+          ),
+        },
+      })),
+    })),
+    quote,
+  };
+
+  return standardizedQuote;
+};
+const fetchCetusQuote = async (
+  sdk: CetusSdk,
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
+) => {
+  const quote = await sdk.findRouters({
+    from: tokenIn.coinType,
+    target: tokenOut.coinType,
+    amount: new BN(amountIn),
+    byAmountIn: true,
+  });
+  if (!quote) return null;
+
+  const standardizedQuote: StandardizedQuote = {
+    id: uuidv4(),
+    provider: QuoteProvider.CETUS,
+    in: {
+      coinType: tokenIn.coinType,
+      amount: new BigNumber(quote.amountIn.toString()).div(
+        10 ** tokenIn.decimals,
+      ),
+    },
+    out: {
+      coinType: tokenOut.coinType,
+      amount: new BigNumber(quote.amountOut.toString()).div(
+        10 ** tokenOut.decimals,
+      ),
+    },
+    routes: quote.routes.map((route, routeIndex) => ({
+      percent: new BigNumber(route.amountIn.toString())
+        .div(quote.amountIn.toString())
+        .times(100),
+      path: route.path.map((path) => ({
+        id: uuidv4(),
+        poolId: path.id,
+        routeIndex,
+        provider: path.provider,
+        in: {
+          coinType: normalizeStructTag(path.from),
+          amount: new BigNumber(path.amountIn.toString()).div(
+            10 ** tokenIn.decimals,
+          ),
+        },
+        out: {
+          coinType: normalizeStructTag(path.target),
+          amount: new BigNumber(path.amountOut.toString()).div(
+            10 ** tokenOut.decimals,
+          ),
+        },
+      })),
+    })),
+    quote,
+  };
+
+  return standardizedQuote;
+};
+const fetch7kQuote = async (
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
+) => {
+  const quote = await get7kQuote({
+    tokenIn: tokenIn.coinType,
+    tokenOut: tokenOut.coinType,
+    amountIn,
+  });
+
+  const standardizedQuote: StandardizedQuote = {
+    id: uuidv4(),
+    provider: QuoteProvider._7K,
+    in: {
+      coinType: tokenIn.coinType,
+      amount: new BigNumber(quote.swapAmount),
+    },
+    out: {
+      coinType: tokenOut.coinType,
+      amount: new BigNumber(quote.returnAmount),
+    },
+    routes: (quote.routes ?? []).map((route: any, routeIndex: number) => ({
+      percent: new BigNumber(route.tokenInAmount)
+        .div(quote.swapAmount)
+        .times(100),
+      path: route.hops.map((hop: any) => ({
+        id: uuidv4(),
+        poolId: hop.poolId,
+        routeIndex,
+        provider: hop.pool.type,
+        in: {
+          coinType: normalizeStructTag(hop.tokenIn),
+          amount: new BigNumber(hop.tokenInAmount),
+        },
+        out: {
+          coinType: normalizeStructTag(hop.tokenOut),
+          amount: new BigNumber(hop.tokenOutAmount),
+        },
+      })),
+    })),
+    quote,
+  };
+
+  return standardizedQuote;
+};
+const fetchFlowXQuote = async (
+  sdk: FlowXAggregatorQuoter,
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
+) => {
+  const quote = await sdk.getRoutes({
+    tokenIn: tokenIn.coinType,
+    tokenOut: tokenOut.coinType,
+    amountIn: amountIn,
+  });
+
+  const standardizedQuote: StandardizedQuote = {
+    id: uuidv4(),
+    provider: QuoteProvider.FLOWX,
+    in: {
+      coinType: tokenIn.coinType,
+      amount: new BigNumber(quote.amountIn.toString()).div(
+        10 ** tokenIn.decimals,
+      ),
+    },
+    out: {
+      coinType: tokenOut.coinType,
+      amount: new BigNumber(quote.amountOut.toString()).div(
+        10 ** tokenOut.decimals,
+      ),
+    },
+    routes: (quote.routes ?? []).map((route, routeIndex) => ({
+      percent: new BigNumber(route.amountIn.toString())
+        .div(quote.amountIn.toString())
+        .times(100),
+      path: route.paths.map((hop) => ({
+        id: uuidv4(),
+        poolId: hop.pool.id,
+        routeIndex,
+        provider: hop.protocol(),
+        in: {
+          coinType: normalizeStructTag(hop.input.coinType),
+          amount: new BigNumber(hop.amountIn.toString()).div(
+            10 ** tokenIn.decimals,
+          ),
+        },
+        out: {
+          coinType: normalizeStructTag(hop.output.coinType),
+          amount: new BigNumber(hop.amountOut.toString()).div(
+            10 ** tokenOut.decimals,
+          ),
+        },
+      })),
+    })),
+    quote,
+  };
+
+  return standardizedQuote;
+};
+const fetchOkxDexQuote = async (
+  amountIn: string,
+  tokenIn: Token,
+  tokenOut: Token,
+) => {
+  const quote = await getOkxDexQuote(
+    amountIn,
+    tokenIn.coinType,
+    tokenOut.coinType,
+  );
+
+  const flattenedDexRouterList: OkxDexQuote["dexRouterList"] = [];
+  for (const dexRouter of quote.dexRouterList) {
+    const indexes: number[][] = [];
+    for (const subRouter of dexRouter.subRouterList) {
+      indexes.push(
+        Array.from({ length: subRouter.dexProtocol.length }, (_, j) => j),
+      );
+    }
+
+    const combinations = cartesianProduct(indexes);
+    for (const combination of combinations) {
+      const flattenedRouter: OkxDexQuote["dexRouterList"][number] = {
+        ...dexRouter,
+        routerPercent: "",
+        subRouterList: dexRouter.subRouterList.map((subRouter, index) => ({
+          ...subRouter,
+          dexProtocol: [subRouter.dexProtocol[combination[index]]],
+        })),
+      };
+
+      let routerPercent = new BigNumber(dexRouter.routerPercent);
+      for (const subRouter of flattenedRouter.subRouterList) {
+        const dexProtocol = subRouter.dexProtocol[0];
+
+        routerPercent = routerPercent.times(
+          new BigNumber(dexProtocol.percent).div(100),
+        );
+      }
+      flattenedRouter.routerPercent = routerPercent.toString();
+
+      flattenedDexRouterList.push(flattenedRouter);
+    }
+  }
+
+  const standardizedQuote: StandardizedQuote = {
+    id: uuidv4(),
+    provider: QuoteProvider.OKX_DEX,
+    in: {
+      coinType: tokenIn.coinType,
+      amount: new BigNumber(quote.fromTokenAmount).div(10 ** tokenIn.decimals),
+    },
+    out: {
+      coinType: tokenOut.coinType,
+      amount: new BigNumber(quote.toTokenAmount).div(10 ** tokenOut.decimals),
+    },
+    routes: flattenedDexRouterList.map((dexRouter, routeIndex) => {
+      return {
+        percent: new BigNumber(dexRouter.routerPercent),
+        path: dexRouter.subRouterList.map((subRouter) => ({
+          id: uuidv4(),
+          poolId: undefined, // Missing data
+          routeIndex,
+          provider: subRouter.dexProtocol[0].dexName,
+          in: {
+            coinType: normalizeStructTag(
+              subRouter.fromToken.tokenContractAddress,
+            ),
+            amount: new BigNumber(0).div(10 ** tokenIn.decimals), // Missing data
+          },
+          out: {
+            coinType: normalizeStructTag(
+              subRouter.toToken.tokenContractAddress,
+            ),
+            amount: new BigNumber(0).div(10 ** tokenIn.decimals), // Missing data
+          },
+        })),
+      };
+    }),
+    quote,
+  };
+
+  return standardizedQuote;
+};
+
 export const fetchAggQuotes = async (
   sdkMap: {
     [QuoteProvider.AFTERMATH]: AftermathSdk;
@@ -109,420 +432,144 @@ export const fetchAggQuotes = async (
     [QuoteProvider.FLOWX]: FlowXAggregatorQuoter;
   },
   activeProviders: QuoteProvider[],
-  setQuotesForTimestamp: (
-    timestamp: number,
-    quotes: (StandardizedQuote | null)[],
-  ) => void,
-  _tokenIn: Token,
-  _tokenOut: Token,
-  _value: string,
-  _timestamp = new Date().getTime(),
+  onFetchAggQuote: (quote: StandardizedQuote | null) => void,
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
 ) => {
-  const quotesForTimestamp: (StandardizedQuote | null)[] = [];
-  setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-  const amountIn = new BigNumber(_value)
-    .times(10 ** _tokenIn.decimals)
-    .integerValue(BigNumber.ROUND_DOWN)
-    .toString();
-
   // Fetch quotes in parallel
   // Aftermath
   if (activeProviders.includes(QuoteProvider.AFTERMATH)) {
     (async () => {
-      console.log("[fetchAggQuotes] fetching Aftermath quote");
+      const standardizedQuote = await fetchAggQuoteWrapper(
+        QuoteProvider.AFTERMATH,
+        () =>
+          fetchAftermathQuote(
+            sdkMap[QuoteProvider.AFTERMATH],
+            tokenIn,
+            tokenOut,
+            amountIn,
+          ),
+      );
 
-      try {
-        const quote = await sdkMap[QuoteProvider.AFTERMATH]
-          .Router()
-          .getCompleteTradeRouteGivenAmountIn({
-            coinInType: _tokenIn.coinType,
-            coinOutType: _tokenOut.coinType,
-            coinInAmount: BigInt(amountIn),
-          });
-
-        const standardizedQuote: StandardizedQuote = {
-          id: uuidv4(),
-          provider: QuoteProvider.AFTERMATH,
-          in: {
-            coinType: _tokenIn.coinType,
-            amount: new BigNumber(quote.coinIn.amount.toString()).div(
-              10 ** _tokenIn.decimals,
-            ),
-          },
-          out: {
-            coinType: _tokenOut.coinType,
-            amount: new BigNumber(quote.coinOut.amount.toString()).div(
-              10 ** _tokenOut.decimals,
-            ),
-          },
-          routes: quote.routes.map((route, routeIndex) => ({
-            percent: new BigNumber(route.portion.toString())
-              .div(WAD)
-              .times(100),
-            path: route.paths.map((path) => ({
-              id: uuidv4(),
-              poolId: path.poolId,
-              routeIndex,
-              provider: path.protocolName,
-              in: {
-                coinType: normalizeStructTag(path.coinIn.type),
-                amount: new BigNumber(path.coinIn.amount.toString()).div(
-                  10 ** _tokenIn.decimals,
-                ),
-              },
-              out: {
-                coinType: normalizeStructTag(path.coinOut.type),
-                amount: new BigNumber(path.coinOut.amount.toString()).div(
-                  10 ** _tokenOut.decimals,
-                ),
-              },
-            })),
-          })),
-          quote,
-        };
-
-        quotesForTimestamp.push(standardizedQuote);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-        console.log(
-          "[fetchAggQuotes] set Aftermath quote",
-          +standardizedQuote.out.amount,
-          "pool providers:",
-          getPoolProviders(standardizedQuote),
-          "quote:",
-          quote,
-        );
-      } catch (err) {
-        console.error(err);
-
-        quotesForTimestamp.push(null);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-      }
+      onFetchAggQuote(standardizedQuote);
     })();
   }
 
   // Cetus
   if (activeProviders.includes(QuoteProvider.CETUS)) {
     (async () => {
-      console.log("[fetchAggQuotes] fetching Cetus quote");
+      const standardizedQuote = await fetchAggQuoteWrapper(
+        QuoteProvider.CETUS,
+        () =>
+          fetchCetusQuote(
+            sdkMap[QuoteProvider.CETUS],
+            tokenIn,
+            tokenOut,
+            amountIn,
+          ),
+      );
 
-      try {
-        const quote = await sdkMap[QuoteProvider.CETUS].findRouters({
-          from: _tokenIn.coinType,
-          target: _tokenOut.coinType,
-          amount: new BN(amountIn),
-          byAmountIn: true,
-        });
-        if (!quote) return;
-
-        const standardizedQuote: StandardizedQuote = {
-          id: uuidv4(),
-          provider: QuoteProvider.CETUS,
-          in: {
-            coinType: _tokenIn.coinType,
-            amount: new BigNumber(quote.amountIn.toString()).div(
-              10 ** _tokenIn.decimals,
-            ),
-          },
-          out: {
-            coinType: _tokenOut.coinType,
-            amount: new BigNumber(quote.amountOut.toString()).div(
-              10 ** _tokenOut.decimals,
-            ),
-          },
-          routes: quote.routes.map((route, routeIndex) => ({
-            percent: new BigNumber(route.amountIn.toString())
-              .div(quote.amountIn.toString())
-              .times(100),
-            path: route.path.map((path) => ({
-              id: uuidv4(),
-              poolId: path.id,
-              routeIndex,
-              provider: path.provider,
-              in: {
-                coinType: normalizeStructTag(path.from),
-                amount: new BigNumber(path.amountIn.toString()).div(
-                  10 ** _tokenIn.decimals,
-                ),
-              },
-              out: {
-                coinType: normalizeStructTag(path.target),
-                amount: new BigNumber(path.amountOut.toString()).div(
-                  10 ** _tokenOut.decimals,
-                ),
-              },
-            })),
-          })),
-          quote,
-        };
-
-        quotesForTimestamp.push(standardizedQuote);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-        console.log(
-          "[fetchAggQuotes] set Cetus quote",
-          +standardizedQuote.out.amount,
-          "pool providers:",
-          getPoolProviders(standardizedQuote),
-          "quote:",
-          quote,
-        );
-      } catch (err) {
-        console.error(err);
-
-        quotesForTimestamp.push(null);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-      }
+      onFetchAggQuote(standardizedQuote);
     })();
   }
 
   // 7K
   if (activeProviders.includes(QuoteProvider._7K)) {
     (async () => {
-      console.log("[fetchAggQuotes] fetching 7K quote");
+      const standardizedQuote = await fetchAggQuoteWrapper(
+        QuoteProvider._7K,
+        () => fetch7kQuote(tokenIn, tokenOut, amountIn),
+      );
 
-      try {
-        const quote = await get7kQuote({
-          tokenIn: _tokenIn.coinType,
-          tokenOut: _tokenOut.coinType,
-          amountIn,
-        });
-
-        const standardizedQuote: StandardizedQuote = {
-          id: uuidv4(),
-          provider: QuoteProvider._7K,
-          in: {
-            coinType: _tokenIn.coinType,
-            amount: new BigNumber(quote.swapAmount),
-          },
-          out: {
-            coinType: _tokenOut.coinType,
-            amount: new BigNumber(quote.returnAmount),
-          },
-          routes: (quote.routes ?? []).map(
-            (route: any, routeIndex: number) => ({
-              percent: new BigNumber(route.tokenInAmount)
-                .div(quote.swapAmount)
-                .times(100),
-              path: route.hops.map((hop: any) => ({
-                id: uuidv4(),
-                poolId: hop.poolId,
-                routeIndex,
-                provider: hop.pool.type,
-                in: {
-                  coinType: normalizeStructTag(hop.tokenIn),
-                  amount: new BigNumber(hop.tokenInAmount),
-                },
-                out: {
-                  coinType: normalizeStructTag(hop.tokenOut),
-                  amount: new BigNumber(hop.tokenOutAmount),
-                },
-              })),
-            }),
-          ),
-          quote,
-        };
-
-        quotesForTimestamp.push(standardizedQuote);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-        console.log(
-          "[fetchAggQuotes] set 7K quote",
-          +standardizedQuote.out.amount,
-          "pool providers:",
-          getPoolProviders(standardizedQuote),
-          "quote:",
-          quote,
-        );
-      } catch (err) {
-        console.error(err);
-
-        quotesForTimestamp.push(null);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-      }
+      onFetchAggQuote(standardizedQuote);
     })();
   }
 
   // FlowX
   if (activeProviders.includes(QuoteProvider.FLOWX)) {
     (async () => {
-      console.log("[fetchAggQuotes] fetching FlowX quote");
+      const standardizedQuote = await fetchAggQuoteWrapper(
+        QuoteProvider.FLOWX,
+        () =>
+          fetchFlowXQuote(
+            sdkMap[QuoteProvider.FLOWX],
+            tokenIn,
+            tokenOut,
+            amountIn,
+          ),
+      );
 
-      try {
-        const quote = await sdkMap[QuoteProvider.FLOWX].getRoutes({
-          tokenIn: _tokenIn.coinType,
-          tokenOut: _tokenOut.coinType,
-          amountIn: amountIn,
-        });
-
-        const standardizedQuote: StandardizedQuote = {
-          id: uuidv4(),
-          provider: QuoteProvider.FLOWX,
-          in: {
-            coinType: _tokenIn.coinType,
-            amount: new BigNumber(quote.amountIn.toString()).div(
-              10 ** _tokenIn.decimals,
-            ),
-          },
-          out: {
-            coinType: _tokenOut.coinType,
-            amount: new BigNumber(quote.amountOut.toString()).div(
-              10 ** _tokenOut.decimals,
-            ),
-          },
-          routes: (quote.routes ?? []).map((route, routeIndex) => ({
-            percent: new BigNumber(route.amountIn.toString())
-              .div(quote.amountIn.toString())
-              .times(100),
-            path: route.paths.map((hop) => ({
-              id: uuidv4(),
-              poolId: hop.pool.id,
-              routeIndex,
-              provider: hop.protocol(),
-              in: {
-                coinType: normalizeStructTag(hop.input.coinType),
-                amount: new BigNumber(hop.amountIn.toString()).div(
-                  10 ** _tokenIn.decimals,
-                ),
-              },
-              out: {
-                coinType: normalizeStructTag(hop.output.coinType),
-                amount: new BigNumber(hop.amountOut.toString()).div(
-                  10 ** _tokenOut.decimals,
-                ),
-              },
-            })),
-          })),
-          quote,
-        };
-
-        quotesForTimestamp.push(standardizedQuote);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-        console.log(
-          "[fetchAggQuotes] set FlowX quote",
-          +standardizedQuote.out.amount,
-          "pool providers:",
-          getPoolProviders(standardizedQuote),
-          "quote:",
-          quote,
-        );
-      } catch (err) {
-        console.error(err);
-
-        quotesForTimestamp.push(null);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-      }
+      onFetchAggQuote(standardizedQuote);
     })();
   }
 
   // OKX DEX
   if (activeProviders.includes(QuoteProvider.OKX_DEX)) {
     (async () => {
-      console.log("[fetchAggQuotes] fetching OKX DEX quote");
+      const standardizedQuote = await fetchAggQuoteWrapper(
+        QuoteProvider.OKX_DEX,
+        () => fetchOkxDexQuote(amountIn, tokenIn, tokenOut),
+      );
 
-      try {
-        const quote = await getOkxDexQuote(
-          amountIn,
-          _tokenIn.coinType,
-          _tokenOut.coinType,
-        );
-
-        const flattenedDexRouterList: OkxDexQuote["dexRouterList"] = [];
-        for (const dexRouter of quote.dexRouterList) {
-          const indexes: number[][] = [];
-          for (const subRouter of dexRouter.subRouterList) {
-            indexes.push(
-              Array.from({ length: subRouter.dexProtocol.length }, (_, j) => j),
-            );
-          }
-
-          const combinations = cartesianProduct(indexes);
-          for (const combination of combinations) {
-            const flattenedRouter: OkxDexQuote["dexRouterList"][number] = {
-              ...dexRouter,
-              routerPercent: "",
-              subRouterList: dexRouter.subRouterList.map(
-                (subRouter, index) => ({
-                  ...subRouter,
-                  dexProtocol: [subRouter.dexProtocol[combination[index]]],
-                }),
-              ),
-            };
-
-            let routerPercent = new BigNumber(dexRouter.routerPercent);
-            for (const subRouter of flattenedRouter.subRouterList) {
-              const dexProtocol = subRouter.dexProtocol[0];
-
-              routerPercent = routerPercent.times(
-                new BigNumber(dexProtocol.percent).div(100),
-              );
-            }
-            flattenedRouter.routerPercent = routerPercent.toString();
-
-            flattenedDexRouterList.push(flattenedRouter);
-          }
-        }
-
-        const standardizedQuote: StandardizedQuote = {
-          id: uuidv4(),
-          provider: QuoteProvider.OKX_DEX,
-          in: {
-            coinType: _tokenIn.coinType,
-            amount: new BigNumber(quote.fromTokenAmount).div(
-              10 ** _tokenIn.decimals,
-            ),
-          },
-          out: {
-            coinType: _tokenOut.coinType,
-            amount: new BigNumber(quote.toTokenAmount).div(
-              10 ** _tokenOut.decimals,
-            ),
-          },
-          routes: flattenedDexRouterList.map((dexRouter, routeIndex) => {
-            return {
-              percent: new BigNumber(dexRouter.routerPercent),
-              path: dexRouter.subRouterList.map((subRouter) => ({
-                id: uuidv4(),
-                poolId: undefined, // Missing data
-                routeIndex,
-                provider: subRouter.dexProtocol[0].dexName,
-                in: {
-                  coinType: normalizeStructTag(
-                    subRouter.fromToken.tokenContractAddress,
-                  ),
-                  amount: new BigNumber(0).div(10 ** _tokenIn.decimals), // Missing data
-                },
-                out: {
-                  coinType: normalizeStructTag(
-                    subRouter.toToken.tokenContractAddress,
-                  ),
-                  amount: new BigNumber(0).div(10 ** _tokenIn.decimals), // Missing data
-                },
-              })),
-            };
-          }),
-          quote,
-        };
-
-        quotesForTimestamp.push(standardizedQuote);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-
-        console.log(
-          "Swap - set OKX DEX quote",
-          +standardizedQuote.out.amount,
-          "pool providers:",
-          getPoolProviders(standardizedQuote),
-          "quote:",
-          quote,
-        );
-      } catch (err) {
-        console.error(err);
-
-        quotesForTimestamp.push(null);
-        setQuotesForTimestamp(_timestamp, quotesForTimestamp);
-      }
+      onFetchAggQuote(standardizedQuote);
     })();
   }
+};
+export const fetchAggQuotesAll = async (
+  sdkMap: {
+    [QuoteProvider.AFTERMATH]: AftermathSdk;
+    [QuoteProvider.CETUS]: CetusSdk;
+    [QuoteProvider.FLOWX]: FlowXAggregatorQuoter;
+  },
+  activeProviders: QuoteProvider[],
+  tokenIn: Token,
+  tokenOut: Token,
+  amountIn: string,
+) => {
+  // Fetch quotes in parallel
+  return Promise.all(
+    [
+      activeProviders.includes(QuoteProvider.AFTERMATH)
+        ? fetchAggQuoteWrapper(QuoteProvider.AFTERMATH, () =>
+            fetchAftermathQuote(
+              sdkMap[QuoteProvider.AFTERMATH],
+              tokenIn,
+              tokenOut,
+              amountIn,
+            ),
+          )
+        : null,
+      activeProviders.includes(QuoteProvider.CETUS)
+        ? fetchAggQuoteWrapper(QuoteProvider.CETUS, () =>
+            fetchCetusQuote(
+              sdkMap[QuoteProvider.CETUS],
+              tokenIn,
+              tokenOut,
+              amountIn,
+            ),
+          )
+        : null,
+      activeProviders.includes(QuoteProvider._7K)
+        ? fetchAggQuoteWrapper(QuoteProvider._7K, () =>
+            fetch7kQuote(tokenIn, tokenOut, amountIn),
+          )
+        : null,
+      activeProviders.includes(QuoteProvider.FLOWX)
+        ? fetchAggQuoteWrapper(QuoteProvider.FLOWX, () =>
+            fetchFlowXQuote(
+              sdkMap[QuoteProvider.FLOWX],
+              tokenIn,
+              tokenOut,
+              amountIn,
+            ),
+          )
+        : null,
+      activeProviders.includes(QuoteProvider.OKX_DEX)
+        ? fetchAggQuoteWrapper(QuoteProvider.OKX_DEX, () =>
+            fetchOkxDexQuote(amountIn, tokenIn, tokenOut),
+          )
+        : null,
+    ].filter(Boolean),
+  );
 };

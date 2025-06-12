@@ -326,21 +326,30 @@ function Page() {
       _tokenIn: SwapToken,
       _tokenOut: SwapToken,
       _value: string,
-      _timestamp = new Date().getTime(),
     ) => {
       if (_tokenIn.coinType === _tokenOut.coinType) return;
       if (new BigNumber(_value || 0).lte(0)) return;
 
+      const amountIn = new BigNumber(_value)
+        .times(10 ** _tokenIn.decimals)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString();
+
+      const timestamp = new Date().getTime();
+      setQuotesMap((o) => ({ ...o, [timestamp]: [] }));
+
       await fetchAggQuotes(
         _sdkMap,
         _activeProviders,
-        (timestamp, quotes) => {
-          setQuotesMap((o) => ({ ...o, [timestamp]: quotes }));
+        (quote) => {
+          setQuotesMap((o) => ({
+            ...o,
+            [timestamp]: [...o[timestamp], quote],
+          }));
         },
         _tokenIn,
         _tokenOut,
-        _value,
-        _timestamp,
+        amountIn,
       );
     },
     [],
