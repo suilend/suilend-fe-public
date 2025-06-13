@@ -344,7 +344,7 @@ function Page() {
         (quote) => {
           setQuotesMap((o) => ({
             ...(o ?? {}),
-            [timestamp]: [...o[timestamp], quote],
+            [timestamp]: [...((o ?? {})[timestamp] ?? []), quote],
           }));
         },
         _tokenIn,
