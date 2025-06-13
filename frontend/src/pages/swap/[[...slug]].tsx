@@ -894,131 +894,122 @@ function Page() {
 
     let transaction = new Transaction();
 
-    try {
-      let coinIn: TransactionObjectArgument | undefined;
-      if (swapInAccount) {
-        if (!obligation || !obligationOwnerCap)
-          throw new Error("Obligation or ObligationOwnerCap not found");
-        if (!tokenInReserve || !tokenInDepositPosition)
-          throw new Error("Cannot withdraw this token");
+    let coinIn: TransactionObjectArgument | undefined;
+    if (swapInAccount) {
+      if (!obligation || !obligationOwnerCap)
+        throw new Error("Obligation or ObligationOwnerCap not found");
+      if (!tokenInReserve || !tokenInDepositPosition)
+        throw new Error("Cannot withdraw this token");
 
-        submitAmount = BigNumber.min(
-          new BigNumber(submitAmount)
-            .div(tokenInReserve.cTokenExchangeRate)
-            .integerValue(BigNumber.ROUND_UP),
-          tokenInDepositPosition.depositedCtokenAmount,
-        ).toString();
+      submitAmount = BigNumber.min(
+        new BigNumber(submitAmount)
+          .div(tokenInReserve.cTokenExchangeRate)
+          .integerValue(BigNumber.ROUND_UP),
+        tokenInDepositPosition.depositedCtokenAmount,
+      ).toString();
 
-        // TODO: Support MAX
-        const [_coinIn] = await appData.suilendClient.withdraw(
-          obligationOwnerCap.id,
-          obligation.id,
-          tokenIn.coinType,
-          submitAmount,
+      // TODO: Support MAX
+      const [_coinIn] = await appData.suilendClient.withdraw(
+        obligationOwnerCap.id,
+        obligation.id,
+        tokenIn.coinType,
+        submitAmount,
+        transaction,
+      );
+      coinIn = _coinIn;
+    }
+
+    const { transaction: _transaction, coinOut } =
+      await getTransactionForStandardizedQuote(transaction, coinIn);
+    if (
+      (swapInAccount ||
+        isSwapAndDeposit ||
+        quote.provider !== QuoteProvider.OKX_DEX) &&
+      !coinOut
+    )
+      throw new Error("Missing coin to deposit/transfer to user");
+
+    transaction = _transaction;
+
+    if (swapInAccount) {
+      if (tokenOutBorrowPositionAmount.eq(0)) {
+        // DEPOSIT out token
+        if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+
+        const { obligationOwnerCapId, didCreate } =
+          createObligationIfNoneExists(
+            appData.suilendClient,
+            transaction,
+            obligationOwnerCap,
+          );
+        appData.suilendClient.deposit(
+          coinOut!, // Checked above
+          tokenOutReserve.coinType,
+          obligationOwnerCapId,
           transaction,
         );
-        coinIn = _coinIn;
-      }
-
-      const { transaction: _transaction, coinOut } =
-        await getTransactionForStandardizedQuote(transaction, coinIn);
-      if (
-        (swapInAccount ||
-          isSwapAndDeposit ||
-          quote.provider !== QuoteProvider.OKX_DEX) &&
-        !coinOut
-      )
-        throw new Error("Missing coin to deposit/transfer to user");
-
-      transaction = _transaction;
-
-      if (swapInAccount) {
-        if (tokenOutBorrowPositionAmount.eq(0)) {
-          // DEPOSIT out token
-          if (!tokenOutReserve) throw new Error("Cannot deposit this token");
-
-          const { obligationOwnerCapId, didCreate } =
-            createObligationIfNoneExists(
-              appData.suilendClient,
-              transaction,
-              obligationOwnerCap,
-            );
-          appData.suilendClient.deposit(
-            coinOut!, // Checked above
-            tokenOutReserve.coinType,
-            obligationOwnerCapId,
-            transaction,
-          );
-          if (didCreate)
-            sendObligationToUser(obligationOwnerCapId, address, transaction);
-        } else {
-          // REPAY out token
-          if (!tokenOutReserve) throw new Error("Cannot repay this token");
-          if (!obligation) throw new Error("Obligation not found");
-
-          appData.suilendClient.repay(
-            obligation.id,
-            tokenOutReserve.coinType,
-            coinOut!, // Checked above
-            transaction,
-          );
-
-          const repaidAmount = BigNumber.min(
-            quote.out.amount,
-            tokenOutBorrowPositionAmount,
-          );
-          const depositedAmount = quote.out.amount.minus(repaidAmount);
-
-          if (depositedAmount.gt(0)) {
-            appData.suilendClient.deposit(
-              coinOut!, // Checked above
-              tokenOutReserve.coinType,
-              obligationOwnerCap!.id,
-              transaction,
-            ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
-          } else {
-            transaction.transferObjects(
-              [coinOut!], // Checked above
-              transaction.pure.address(address),
-            ); // Transfer empty coin to user
-          }
-        }
+        if (didCreate)
+          sendObligationToUser(obligationOwnerCapId, address, transaction);
       } else {
-        if (isSwapAndDeposit) {
-          // DEPOSIT out token
-          if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+        // REPAY out token
+        if (!tokenOutReserve) throw new Error("Cannot repay this token");
+        if (!obligation) throw new Error("Obligation not found");
 
-          const { obligationOwnerCapId, didCreate } =
-            createObligationIfNoneExists(
-              appData.suilendClient,
-              transaction,
-              obligationOwnerCap,
-            );
+        appData.suilendClient.repay(
+          obligation.id,
+          tokenOutReserve.coinType,
+          coinOut!, // Checked above
+          transaction,
+        );
+
+        const repaidAmount = BigNumber.min(
+          quote.out.amount,
+          tokenOutBorrowPositionAmount,
+        );
+        const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+        if (depositedAmount.gt(0)) {
           appData.suilendClient.deposit(
             coinOut!, // Checked above
             tokenOutReserve.coinType,
-            obligationOwnerCapId,
+            obligationOwnerCap!.id,
             transaction,
-          );
-          if (didCreate)
-            sendObligationToUser(obligationOwnerCapId, address, transaction);
+          ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
         } else {
-          if (quote.provider !== QuoteProvider.OKX_DEX) {
-            // TRANSFER out token
-            transaction.transferObjects(
-              [coinOut!], // Checked above
-              transaction.pure.address(address),
-            );
-          }
+          transaction.transferObjects(
+            [coinOut!], // Checked above
+            transaction.pure.address(address),
+          ); // Transfer empty coin to user
         }
       }
-    } catch (err) {
-      Sentry.captureException(err, {
-        provider: quote.provider,
-        poolProviders: getPoolProviders(quote),
-      } as any);
-      console.error(err);
-      throw err;
+    } else {
+      if (isSwapAndDeposit) {
+        // DEPOSIT out token
+        if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+
+        const { obligationOwnerCapId, didCreate } =
+          createObligationIfNoneExists(
+            appData.suilendClient,
+            transaction,
+            obligationOwnerCap,
+          );
+        appData.suilendClient.deposit(
+          coinOut!, // Checked above
+          tokenOutReserve.coinType,
+          obligationOwnerCapId,
+          transaction,
+        );
+        if (didCreate)
+          sendObligationToUser(obligationOwnerCapId, address, transaction);
+      } else {
+        if (quote.provider !== QuoteProvider.OKX_DEX) {
+          // TRANSFER out token
+          transaction.transferObjects(
+            [coinOut!], // Checked above
+            transaction.pure.address(address),
+          );
+        }
+      }
     }
 
     const res = await signExecuteAndWaitForTransaction(transaction, {

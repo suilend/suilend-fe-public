@@ -11,6 +11,7 @@ import {
   GetRoutesResult as FlowXGetRoutesResult,
 } from "@flowx-finance/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
+import * as Sentry from "@sentry/nextjs";
 import {
   RouterCompleteTradeRoute as AftermathQuote,
   Aftermath as AftermathSdk,
@@ -24,23 +25,6 @@ import { Token } from "@suilend/sui-fe";
 import { WAD } from "../lib";
 
 import { OkxDexQuote, cartesianProduct, getOkxDexQuote } from "./okxDex";
-
-export const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
-  return Array.from(
-    new Set(
-      standardizedQuote.routes.reduce(
-        (acc, route) => [
-          ...acc,
-          ...route.path.reduce(
-            (acc2, p) => [...acc2, p.provider],
-            [] as string[],
-          ),
-        ],
-        [] as string[],
-      ),
-    ),
-  );
-};
 
 export enum QuoteProvider {
   AFTERMATH = "aftermath",
@@ -102,10 +86,27 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
 );
 
+export const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
+  return Array.from(
+    new Set(
+      standardizedQuote.routes.reduce(
+        (acc, route) => [
+          ...acc,
+          ...route.path.reduce(
+            (acc2, p) => [...acc2, p.provider],
+            [] as string[],
+          ),
+        ],
+        [] as string[],
+      ),
+    ),
+  );
+};
+
 const fetchAggQuoteWrapper = async (
   provider: QuoteProvider,
   fetchAggQuote: () => Promise<StandardizedQuote | null>,
-) => {
+): Promise<StandardizedQuote | null> => {
   console.log(`[fetchAggQuoteWrapper] fetching ${provider} quote`);
 
   try {
@@ -123,6 +124,7 @@ const fetchAggQuoteWrapper = async (
 
     return standardizedQuote;
   } catch (err) {
+    Sentry.captureException(err, { provider } as any);
     console.error(err);
 
     return null;
