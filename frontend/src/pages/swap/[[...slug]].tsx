@@ -336,14 +336,14 @@ function Page() {
         .toString();
 
       const timestamp = new Date().getTime();
-      setQuotesMap((o) => ({ ...o, [timestamp]: [] }));
+      setQuotesMap((o) => ({ ...(o ?? {}), [timestamp]: [] }));
 
       await fetchAggQuotes(
         _sdkMap,
         _activeProviders,
         (quote) => {
           setQuotesMap((o) => ({
-            ...o,
+            ...(o ?? {}),
             [timestamp]: [...o[timestamp], quote],
           }));
         },
