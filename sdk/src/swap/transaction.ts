@@ -39,11 +39,10 @@ const getSwapTransactionWrapper = async (
   );
 
   try {
-    const res = getSwapTransaction();
+    const res = await getSwapTransaction();
 
     console.log(
       `[getSwapTransactionWrapper] fetched transaction for ${provider} quote`,
-      res,
     );
 
     return res;
