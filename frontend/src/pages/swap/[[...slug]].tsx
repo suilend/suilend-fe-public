@@ -887,7 +887,7 @@ function Page() {
     if (!address) throw new Error("Wallet not connected");
     if (!quote) throw new Error("Quote not found");
 
-    let submitAmount = quote.in.amount
+    const submitAmount = quote.in.amount
       .times(10 ** tokenIn.decimals)
       .integerValue(BigNumber.ROUND_DOWN)
       .toString();
@@ -901,7 +901,7 @@ function Page() {
       if (!tokenInReserve || !tokenInDepositPosition)
         throw new Error("Cannot withdraw this token");
 
-      submitAmount = BigNumber.min(
+      const withdrawAmount = BigNumber.min(
         new BigNumber(submitAmount)
           .div(tokenInReserve.cTokenExchangeRate)
           .integerValue(BigNumber.ROUND_UP),
@@ -913,10 +913,14 @@ function Page() {
         obligationOwnerCap.id,
         obligation.id,
         tokenIn.coinType,
-        submitAmount,
+        withdrawAmount,
         transaction,
       );
-      coinIn = _coinIn;
+
+      const coinToSwap = transaction.splitCoins(_coinIn, [submitAmount]);
+      transaction.transferObjects([_coinIn], address);
+
+      coinIn = coinToSwap;
     }
 
     const { transaction: _transaction, coinOut } =
