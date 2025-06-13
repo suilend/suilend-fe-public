@@ -19,6 +19,7 @@ import {
 } from "@suilend/sdk/lib/types";
 import {
   API_URL,
+  Token,
   formatPoints,
   formatToken,
   isSendPoints,
@@ -35,7 +36,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { EventType, eventSortAsc } from "@/lib/events";
-import { Token } from "@/lib/types";
 
 export enum QueryParams {
   TAB = "accountOverviewTab",
@@ -65,10 +65,9 @@ export type EventsData = {
 interface TokenAmountProps {
   amount?: BigNumber;
   token: Token;
-  decimals: number;
 }
 
-export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
+export function TokenAmount({ amount, token }: TokenAmountProps) {
   return (
     <div className="flex w-max flex-row items-center gap-2">
       <TokenLogo className="h-4 w-4" token={token} />
@@ -77,7 +76,7 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
         title={
           amount !== undefined && isSendPoints(token.coinType) ? (
             <>
-              {formatPoints(amount, { dp: decimals })} {token.symbol}
+              {formatPoints(amount, { dp: token.decimals })} {token.symbol}
             </>
           ) : undefined
         }
@@ -88,7 +87,7 @@ export function TokenAmount({ amount, token, decimals }: TokenAmountProps) {
             : isSendPoints(token.coinType)
               ? formatPoints(amount)
               : formatToken(amount, {
-                  dp: decimals,
+                  dp: token.decimals,
                   trimTrailingZeros: true,
                 })}{" "}
           {token.symbol}

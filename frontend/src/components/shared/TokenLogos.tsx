@@ -1,7 +1,8 @@
 import { ClassValue } from "clsx";
 
+import { Token } from "@suilend/sui-fe";
+
 import TokenLogo from "@/components/shared/TokenLogo";
-import { Token } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenLogosProps {
@@ -37,7 +38,6 @@ export default function TokenLogos({ className, tokens }: TokenLogosProps) {
 
             <TokenLogo
               className={cn("relative z-[2]", className)}
-              imageProps={{ className: "rounded-full" }}
               token={token}
             />
           </div>

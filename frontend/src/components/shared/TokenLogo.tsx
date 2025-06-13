@@ -11,6 +11,7 @@ import {
   NORMALIZED_wBTC_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
+  Token,
 } from "@suilend/sui-fe";
 
 import TextLink from "@/components/shared/TextLink";
@@ -18,7 +19,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ASSETS_URL } from "@/lib/constants";
 import { DOCS_BRIDGE_LEARN_MORE_URL } from "@/lib/navigation";
-import { Token } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface TokenLogoProps {
@@ -88,7 +88,7 @@ export default function TokenLogo({
             <Image
               key={token.iconUrl}
               className={cn(
-                "shrink-0 rounded-[50%] rounded-full object-cover",
+                "shrink-0 rounded-full object-cover",
                 imageClassName,
               )}
               src={token.iconUrl}

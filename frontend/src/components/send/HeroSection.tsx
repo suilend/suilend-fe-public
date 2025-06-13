@@ -19,8 +19,8 @@ import {
 } from "@suilend/sui-fe-next";
 
 import SectionHeading from "@/components/send/SectionHeading";
-import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
+import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import {
   TBody,
   TBodySans,

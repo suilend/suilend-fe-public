@@ -4,12 +4,14 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { RewardSummary } from "@suilend/sdk";
+import { NORMALIZED_SEND_COINTYPE, Token, getToken } from "@suilend/sui-fe";
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
+import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TLabelSans } from "@/components/shared/Typography";
@@ -17,7 +19,6 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
-import { Token } from "@/lib/types";
 
 interface ClaimRewardsDropdownMenuProps {
   rewardsMap: Record<string, RewardSummary[]>;
@@ -28,31 +29,84 @@ export default function ClaimRewardsDropdownMenu({
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
   const { appData } = useLoadedAppContext();
-  const { refresh } = useLoadedUserContext();
+  const { refresh, obligation } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
 
-  const tokens: Token[] = Object.values(rewardsMap).map((r) => ({
-    coinType: r[0].stats.rewardCoinType,
-    symbol: r[0].stats.symbol,
-    iconUrl: r[0].stats.iconUrl,
-  }));
-  const tokensWithReserves = tokens.filter((token) =>
-    appData.reserveCoinTypes.includes(token.coinType),
+  const tokens: Token[] = Object.values(rewardsMap).map((r) =>
+    getToken(
+      r[0].stats.rewardCoinType,
+      appData.coinMetadataMap[r[0].stats.rewardCoinType],
+    ),
   );
+
+  // Deposit as SEND
+  const canDepositAsSend = !obligation
+    ? 1 <= 5
+    : obligation.deposits.some(
+        (d) => d.coinType === NORMALIZED_SEND_COINTYPE,
+      ) || obligation.deposits.length + 1 <= 5;
+
+  // Deposit
+  const tokensThatCanBeDeposited = (() => {
+    const tokensWithReserves = tokens.filter((t) =>
+      Object.keys(appData.reserveMap).includes(t.coinType),
+    );
+
+    return !obligation
+      ? tokensWithReserves.slice(0, 5)
+      : [
+          ...tokensWithReserves.filter((t) =>
+            obligation.deposits.some((d) => d.coinType === t.coinType),
+          ),
+          ...tokensWithReserves
+            .filter(
+              (t) =>
+                !obligation.deposits.some((d) => d.coinType === t.coinType),
+            )
+            .slice(0, 5 - obligation.deposits.length),
+        ];
+  })();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const Icon = isOpen ? ChevronUp : ChevronDown;
 
   // Claim
-  const submit = async (isDepositing: boolean) => {
+  const submit = async (args?: {
+    isDepositing?: boolean;
+    asSend?: boolean;
+  }) => {
     try {
-      const res = await claimRewards(rewardsMap, isDepositing);
+      const filteredRewardsMap: Record<string, RewardSummary[]> = (() => {
+        const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
+          if (args?.isDepositing) {
+            if (args?.asSend) return canDepositAsSend;
+            else
+              return tokensThatCanBeDeposited.some(
+                (t) => t.coinType === coinType,
+              );
+          } else {
+            if (args?.asSend) return true;
+            else return true;
+          }
+        });
+
+        return Object.fromEntries(
+          coinTypes.map((coinType) => [coinType, rewardsMap[coinType]]),
+        );
+      })();
+
+      const res = await claimRewards(filteredRewardsMap, args);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(
-        `${isDepositing ? "Claimed and deposited" : "Claimed"} rewards`,
+        [
+          `${args?.isDepositing ? "Claimed and deposited" : "Claimed"} rewards`,
+          args?.asSend ? "as SEND" : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
         {
           action: (
             <TextLink className="block" href={txUrl}>
@@ -64,7 +118,13 @@ export default function ClaimRewardsDropdownMenu({
       );
     } catch (err) {
       showErrorToast(
-        `Failed to ${isDepositing ? "claim and deposit" : "claim"} rewards`,
+        [
+          "Failed to",
+          `${args?.isDepositing ? "claim and deposit" : "claim"} rewards`,
+          args?.asSend ? "as SEND" : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
         err as Error,
         undefined,
         true,
@@ -88,27 +148,56 @@ export default function ClaimRewardsDropdownMenu({
       }
       contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
       items={
-        <div className="flex w-full flex-row items-center gap-2">
-          <DropdownMenuItem
-            className="flex flex-1 flex-col items-start gap-1.5"
-            onClick={() => submit(false)}
+        <>
+          {/* SEND */}
+          {/* <DropdownMenuItem
+            className="mt-2 flex w-full flex-row items-center justify-between gap-2"
+            onClick={() => submit({ asSend: true })}
           >
-            <TLabelSans className="text-foreground">Claim to wallet</TLabelSans>
+            <TLabelSans className="text-foreground">Claim as SEND</TLabelSans>
+            <SendTokenLogo />
+          </DropdownMenuItem> */}
+
+          {/* {canDepositAsSend && (
+            <DropdownMenuItem
+              className="flex w-full flex-row items-center justify-between gap-2"
+              onClick={() => submit({ isDepositing: true, asSend: true })}
+            >
+              <TLabelSans className="text-foreground">
+                Claim and deposit as SEND
+              </TLabelSans>
+              <SendTokenLogo />
+            </DropdownMenuItem>
+          )} */}
+
+          {/* Actual */}
+          <DropdownMenuItem
+            className="flex w-full flex-row items-center justify-between gap-2"
+            onClick={() => submit()}
+          >
+            <TLabelSans className="text-foreground">Claim</TLabelSans>
             <TokenLogos className="h-4 w-4" tokens={tokens} />
           </DropdownMenuItem>
 
-          {tokensWithReserves.length > 0 && (
+          {tokensThatCanBeDeposited.length > 0 && (
             <DropdownMenuItem
-              className="flex flex-1 flex-col items-start gap-1.5"
-              onClick={() => submit(true)}
+              className="flex w-full flex-row items-center justify-between gap-2"
+              onClick={() => submit({ isDepositing: true })}
             >
               <TLabelSans className="text-foreground">
                 Claim and deposit
               </TLabelSans>
-              <TokenLogos className="h-4 w-4" tokens={tokensWithReserves} />
+              <TokenLogos
+                className="h-4 w-4"
+                tokens={tokens.filter((t) =>
+                  tokensThatCanBeDeposited
+                    .map((_t) => _t.coinType)
+                    .includes(t.coinType),
+                )}
+              />
             </DropdownMenuItem>
           )}
-        </div>
+        </>
       }
     />
   );

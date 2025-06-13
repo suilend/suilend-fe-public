@@ -16,6 +16,8 @@ import {
   NORMALIZED_LOFI_COINTYPE,
   NORMALIZED_NS_COINTYPE,
   NORMALIZED_SEND_COINTYPE,
+  NORMALIZED_SEND_POINTS_S1_COINTYPE,
+  NORMALIZED_SEND_POINTS_S2_COINTYPE,
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_UP_COINTYPE,
@@ -121,6 +123,11 @@ export const initializeSuilend = async (
     new SuiPriceServiceConnection("https://hermes.pyth.network"),
   );
 
+  const miscCoinTypes: string[] = [
+    NORMALIZED_SEND_POINTS_S1_COINTYPE,
+    NORMALIZED_SEND_POINTS_S2_COINTYPE,
+    NORMALIZED_SEND_COINTYPE,
+  ];
   const reserveCoinTypes: string[] = [];
   const rewardCoinTypes: string[] = [];
   const activeRewardCoinTypes: string[] = [];
@@ -141,17 +148,22 @@ export const initializeSuilend = async (
         activeRewardCoinTypes.push(normalizeStructTag(pr.coinType.name));
     });
   });
+
+  const uniqueMiscCoinTypes = Array.from(new Set(miscCoinTypes));
   const uniqueReserveCoinTypes = Array.from(new Set(reserveCoinTypes));
   const uniqueRewardCoinTypes = Array.from(new Set(rewardCoinTypes));
   const uniqueActiveRewardsCoinTypes = Array.from(
     new Set(activeRewardCoinTypes),
   );
 
-  const [reserveCoinMetadataMap, rewardCoinMetadataMap] = await Promise.all([
-    getCoinMetadataMap(uniqueReserveCoinTypes),
-    getCoinMetadataMap(uniqueRewardCoinTypes),
-  ]);
+  const [miscCoinMetadataMap, reserveCoinMetadataMap, rewardCoinMetadataMap] =
+    await Promise.all([
+      getCoinMetadataMap(uniqueMiscCoinTypes),
+      getCoinMetadataMap(uniqueReserveCoinTypes),
+      getCoinMetadataMap(uniqueRewardCoinTypes),
+    ]);
   const coinMetadataMap: Record<string, CoinMetadata> = {
+    ...miscCoinMetadataMap,
     ...reserveCoinMetadataMap,
     ...rewardCoinMetadataMap,
   };

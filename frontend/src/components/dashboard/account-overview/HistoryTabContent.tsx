@@ -16,7 +16,7 @@ import {
   ApiWithdrawEvent,
 } from "@suilend/sdk/lib/types";
 import { reserveSort } from "@suilend/sdk/utils";
-import { formatToken } from "@suilend/sui-fe";
+import { formatToken, getToken } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import {
@@ -222,12 +222,7 @@ export default function HistoryTabContent({
                     <TokenAmount
                       key={coinType}
                       amount={value}
-                      token={{
-                        coinType,
-                        symbol: coinMetadata.symbol,
-                        iconUrl: coinMetadata.iconUrl,
-                      }}
-                      decimals={coinMetadata.decimals}
+                      token={getToken(coinType, coinMetadata)}
                     />
                   );
                 })}
@@ -249,12 +244,7 @@ export default function HistoryTabContent({
               <div className="flex w-max flex-col gap-1">
                 <TokenAmount
                   amount={amount}
-                  token={{
-                    coinType: borrowEvent.coinType,
-                    symbol: coinMetadata.symbol,
-                    iconUrl: coinMetadata.iconUrl,
-                  }}
-                  decimals={coinMetadata.decimals}
+                  token={getToken(borrowEvent.coinType, coinMetadata)}
                 />
 
                 <TLabelSans className="w-max">
@@ -287,12 +277,7 @@ export default function HistoryTabContent({
             return (
               <TokenAmount
                 amount={amount}
-                token={{
-                  coinType: withdrawEvent.coinType,
-                  symbol: coinMetadata.symbol,
-                  iconUrl: coinMetadata.iconUrl,
-                }}
-                decimals={coinMetadata.decimals}
+                token={getToken(withdrawEvent.coinType, coinMetadata)}
               />
             );
           } else if (eventType === EventType.REPAY) {
@@ -306,12 +291,7 @@ export default function HistoryTabContent({
             return (
               <TokenAmount
                 amount={amount}
-                token={{
-                  coinType: repayEvent.coinType,
-                  symbol: coinMetadata.symbol,
-                  iconUrl: coinMetadata.iconUrl,
-                }}
-                decimals={coinMetadata.decimals}
+                token={getToken(repayEvent.coinType, coinMetadata)}
               />
             );
           } else if (eventType === EventType.LIQUIDATE) {
@@ -382,12 +362,7 @@ export default function HistoryTabContent({
                   </TLabelSans>
                   <TokenAmount
                     amount={withdrawAmount}
-                    token={{
-                      coinType: withdrawReserve.coinType,
-                      symbol: withdrawReserve.symbol,
-                      iconUrl: withdrawReserve.iconUrl,
-                    }}
-                    decimals={withdrawReserve.mintDecimals}
+                    token={withdrawReserve.token}
                   />
                 </div>
 
@@ -397,12 +372,7 @@ export default function HistoryTabContent({
                   </TLabelSans>
                   <TokenAmount
                     amount={repayAmount}
-                    token={{
-                      coinType: repayReserve.coinType,
-                      symbol: repayReserve.symbol,
-                      iconUrl: repayReserve.iconUrl,
-                    }}
-                    decimals={repayReserve.mintDecimals}
+                    token={repayReserve.token}
                   />
                 </div>
 
@@ -452,12 +422,7 @@ export default function HistoryTabContent({
                     <TokenAmount
                       key={coinType}
                       amount={value}
-                      token={{
-                        coinType,
-                        symbol: coinMetadata.symbol,
-                        iconUrl: coinMetadata.iconUrl,
-                      }}
-                      decimals={coinMetadata.decimals}
+                      token={getToken(coinType, coinMetadata)}
                     />
                   );
                 })}
@@ -722,13 +687,7 @@ export default function HistoryTabContent({
                     )}
                     startIcon={isSelected ? <Check /> : undefined}
                     icon={
-                      <TokenLogo
-                        token={{
-                          coinType,
-                          symbol: coinMetadata.symbol,
-                          iconUrl: coinMetadata.iconUrl,
-                        }}
-                      />
+                      <TokenLogo token={getToken(coinType, coinMetadata)} />
                     }
                     variant="ghost"
                     size="sm"

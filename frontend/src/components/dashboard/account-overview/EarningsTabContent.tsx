@@ -19,6 +19,7 @@ import {
   MS_PER_YEAR,
   formatToken,
   formatUsd,
+  getToken,
   isSendPoints,
 } from "@suilend/sui-fe";
 
@@ -762,20 +763,16 @@ export default function EarningsTabContent({
         cell: ({ row }) => {
           const { coinType } = row.original;
 
-          const coinMetadata = appData.coinMetadataMap[coinType];
-
           return (
             <div className="flex w-max flex-row items-center gap-2">
               <TokenLogo
                 className="h-4 w-4"
-                token={{
-                  coinType,
-                  symbol: coinMetadata.symbol,
-                  iconUrl: coinMetadata.iconUrl,
-                }}
+                token={getToken(coinType, appData.coinMetadataMap[coinType])}
               />
 
-              <TBody className="w-max">{coinMetadata.symbol}</TBody>
+              <TBody className="w-max">
+                {appData.coinMetadataMap[coinType].symbol}
+              </TBody>
             </div>
           );
         },
@@ -821,12 +818,7 @@ export default function EarningsTabContent({
                     <TokenAmount
                       key={coinType}
                       amount={rewardsEarned[coinType]}
-                      token={{
-                        coinType,
-                        symbol: coinMetadata.symbol,
-                        iconUrl: coinMetadata.iconUrl,
-                      }}
-                      decimals={coinMetadata.decimals}
+                      token={getToken(coinType, coinMetadata)}
                     />
                   );
                 })}

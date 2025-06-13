@@ -11,6 +11,7 @@ import {
   formatAddress,
   formatToken,
   getCoinMetadataMap,
+  getToken,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
@@ -129,11 +130,7 @@ export default function CetusCard() {
                 >
                   <TokenLogo
                     className="h-4 w-4 shrink-0"
-                    token={{
-                      coinType,
-                      symbol: coinMetadata.symbol,
-                      iconUrl: coinMetadata.iconUrl,
-                    }}
+                    token={getToken(coinType, coinMetadata)}
                   />
 
                   <TBody className="overflow-hidden text-ellipsis text-nowrap">

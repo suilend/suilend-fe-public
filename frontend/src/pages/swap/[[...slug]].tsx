@@ -16,7 +16,6 @@ import {
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
 import { normalizeStructTag } from "@mysten/sui/utils";
-import * as Sentry from "@sentry/nextjs";
 import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import {
@@ -39,7 +38,6 @@ import {
   WAD,
   createObligationIfNoneExists,
   fetchAggQuotes,
-  getPoolProviders,
   getSwapTransaction,
   sendObligationToUser,
 } from "@suilend/sdk";
@@ -47,6 +45,7 @@ import { Action } from "@suilend/sdk/lib/types";
 import {
   MAX_U64,
   SUI_COINTYPE,
+  Token,
   formatInteger,
   formatPercent,
   formatToken,
@@ -98,7 +97,7 @@ import {
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { FLOWX_PARTNER_ID } from "@/lib/flowx";
-import { SubmitButtonState, SwapToken } from "@/lib/types";
+import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const getCtokenExchangeRate = (eventData: any) =>
@@ -132,8 +131,8 @@ function Page() {
   const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
   const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
   const flowXSdk = restSwapContext.flowXSdk as FlowXAggregatorQuoter;
-  const tokenIn = restSwapContext.tokenIn as SwapToken;
-  const tokenOut = restSwapContext.tokenOut as SwapToken;
+  const tokenIn = restSwapContext.tokenIn as Token;
+  const tokenOut = restSwapContext.tokenOut as Token;
 
   const sdkMap = useMemo(
     () => ({
@@ -323,8 +322,8 @@ function Page() {
         [QuoteProvider.FLOWX]: FlowXAggregatorQuoter;
       },
       _activeProviders: QuoteProvider[],
-      _tokenIn: SwapToken,
-      _tokenOut: SwapToken,
+      _tokenIn: Token,
+      _tokenOut: Token,
       _value: string,
     ) => {
       if (_tokenIn.coinType === _tokenOut.coinType) return;
@@ -386,7 +385,7 @@ function Page() {
   ]);
 
   // Value
-  const formatAndSetValue = useCallback((_value: string, token: SwapToken) => {
+  const formatAndSetValue = useCallback((_value: string, token: Token) => {
     let formattedValue;
     if (new BigNumber(_value || 0).lt(0)) formattedValue = _value;
     else if (!_value.includes(".")) formattedValue = _value;
@@ -1372,7 +1371,7 @@ function Page() {
                 usdValue={tokenInUsdValue}
                 direction={TokenDirection.IN}
                 token={tokenIn}
-                onSelectToken={(t: SwapToken) =>
+                onSelectToken={(t: Token) =>
                   onTokenCoinTypeChange(t.coinType, TokenDirection.IN)
                 }
                 disabledCoinTypes={
@@ -1414,7 +1413,7 @@ function Page() {
                 usdValue={tokenOutUsdValue}
                 direction={TokenDirection.OUT}
                 token={tokenOut}
-                onSelectToken={(t: SwapToken) =>
+                onSelectToken={(t: Token) =>
                   onTokenCoinTypeChange(t.coinType, TokenDirection.OUT)
                 }
                 disabledCoinTypes={
@@ -1675,7 +1674,7 @@ function Page() {
                   >
                     <div className="w-full">
                       <Button
-                        className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                        className="block h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
                         labelClassName="uppercase text-wrap text-xs"
                         variant="secondary"
                         disabled={buttonState_swapAndDeposit.isDisabled}

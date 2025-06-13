@@ -10,7 +10,7 @@ import { getDedupedAprRewards } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { COINTYPE_COLOR_MAP, formatPercent } from "@suilend/sui-fe";
+import { COINTYPE_COLOR_MAP, formatPercent, getToken } from "@suilend/sui-fe";
 import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
@@ -109,11 +109,10 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
                   <TLabelSans>Rewards in</TLabelSans>
                   <TokenLogo
                     className="h-4 w-4"
-                    token={{
+                    token={getToken(
                       coinType,
-                      symbol: appData.coinMetadataMap[coinType].symbol,
-                      iconUrl: appData.coinMetadataMap[coinType].iconUrl,
-                    }}
+                      appData.coinMetadataMap[coinType],
+                    )}
                   />
                   <TLabelSans>
                     {appData.coinMetadataMap[coinType].symbol}

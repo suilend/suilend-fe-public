@@ -7,9 +7,9 @@ import { formatToken } from "@suilend/sui-fe";
 import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import styles from "@/components/send/AllocationCard.module.scss";
-import SendTokenLogo from "@/components/send/SendTokenLogo";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
+import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import { TBody, TBodySans, TDisplay } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";

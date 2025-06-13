@@ -7,7 +7,7 @@ import PointsLogo from "@/components/leaderboard/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { POINTS_SEASON_MAP } from "@/contexts/LeaderboardContext";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +22,10 @@ export default function PointsCount({
   season,
   amount,
 }: PointsCountProps) {
-  const { appData } = useAppContext();
+  const { appData } = useLoadedAppContext();
 
   const coinMetadata =
-    appData?.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
+    appData.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">
@@ -37,7 +37,7 @@ export default function PointsCount({
         <TBody className={cn(labelClassName)}>N/A</TBody>
       ) : (
         <Tooltip
-          title={`${formatPoints(amount, { dp: coinMetadata?.decimals })} ${coinMetadata?.symbol}`}
+          title={`${formatPoints(amount, { dp: coinMetadata.decimals })} ${coinMetadata.symbol}`}
         >
           <TBody className={cn(labelClassName)}>{formatPoints(amount)}</TBody>
         </Tooltip>

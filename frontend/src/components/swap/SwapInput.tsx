@@ -4,14 +4,13 @@ import BigNumber from "bignumber.js";
 import { Download, Upload, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
-import { formatToken, formatUsd } from "@suilend/sui-fe";
+import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
 
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { SwapToken } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const INPUT_HEIGHT = 70; // px
@@ -25,8 +24,8 @@ interface SwapInputProps {
   onChange?: (value: string) => void;
   usdValue?: BigNumber;
   direction: TokenDirection;
-  token: SwapToken;
-  onSelectToken: (token: SwapToken) => void;
+  token: Token;
+  onSelectToken: (token: Token) => void;
   disabledCoinTypes?: string[];
   onAmountClick?: () => void;
 }
@@ -51,7 +50,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     const { getBalance, obligation } = useLoadedUserContext();
 
     const { swapInAccount, ...restSwapContext } = useSwapContext();
-    const tokens = restSwapContext.tokens as SwapToken[];
+    const tokens = restSwapContext.tokens as Token[];
 
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);

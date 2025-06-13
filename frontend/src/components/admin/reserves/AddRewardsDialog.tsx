@@ -210,14 +210,7 @@ export default function AddRewardsDialog() {
                   index === 0 && "pt-6",
                 )}
               >
-                <TokenLogo
-                  className="h-4 w-4"
-                  token={{
-                    coinType: reserve.coinType,
-                    symbol: reserve.token.symbol,
-                    iconUrl: reserve.token.iconUrl,
-                  }}
-                />
+                <TokenLogo className="h-4 w-4" token={reserve.token} />
                 <TBody>
                   {reserve.token.symbol}
                   {poolInfo && (

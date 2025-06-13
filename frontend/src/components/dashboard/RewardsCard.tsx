@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
 import { RewardSummary } from "@suilend/sdk";
-import { formatToken, isSendPoints } from "@suilend/sui-fe";
+import { formatToken, getToken, isSendPoints } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
@@ -23,25 +23,20 @@ interface ClaimableRewardProps {
 function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
   const { appData } = useLoadedAppContext();
 
-  const coinMetadata = appData.coinMetadataMap[coinType];
-
   return (
     <div className="flex flex-row items-center gap-1.5">
       <TokenLogo
         className="h-4 w-4"
-        token={{
-          coinType,
-          symbol: coinMetadata.symbol,
-          iconUrl: coinMetadata.iconUrl,
-        }}
+        token={getToken(coinType, appData.coinMetadataMap[coinType])}
       />
       <Tooltip
         title={`${formatToken(amount, {
-          dp: coinMetadata.decimals,
-        })} ${coinMetadata.symbol}`}
+          dp: appData.coinMetadataMap[coinType].decimals,
+        })} ${appData.coinMetadataMap[coinType].symbol}`}
       >
         <TBody>
-          {formatToken(amount, { exact: false })} {coinMetadata.symbol}
+          {formatToken(amount, { exact: false })}{" "}
+          {appData.coinMetadataMap[coinType].symbol}
         </TBody>
       </Tooltip>
     </div>

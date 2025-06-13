@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import * as Recharts from "recharts";
 
 import { Side } from "@suilend/sdk/lib/types";
-import { COINTYPE_COLOR_MAP, formatToken } from "@suilend/sui-fe";
+import { COINTYPE_COLOR_MAP, formatToken, getToken } from "@suilend/sui-fe";
 import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
@@ -68,39 +68,33 @@ function TooltipContent({
           {coinTypes
             .slice()
             .sort((a, b) => d[b] - d[a])
-            .map((coinType) => {
-              const coinMetadata = appData.coinMetadataMap[coinType];
-
-              return (
-                <div
-                  key={coinType}
-                  className="flex w-full flex-row items-center justify-between gap-4"
-                >
-                  <div className="flex flex-row items-center gap-1.5">
-                    <TokenLogo
-                      className="h-4 w-4"
-                      token={{
-                        coinType,
-                        symbol: coinMetadata.symbol,
-                        iconUrl: coinMetadata.iconUrl,
-                      }}
-                    />
-                    <TLabel>{coinMetadata.symbol}</TLabel>
-                  </div>
-
-                  <TBody
-                    style={{
-                      color:
-                        COINTYPE_COLOR_MAP[coinType] ?? "hsl(var(--muted))",
-                    }}
-                  >
-                    {formatToken(new BigNumber(d[coinType] as number), {
-                      exact: false,
-                    })}
-                  </TBody>
+            .map((coinType) => (
+              <div
+                key={coinType}
+                className="flex w-full flex-row items-center justify-between gap-4"
+              >
+                <div className="flex flex-row items-center gap-1.5">
+                  <TokenLogo
+                    className="h-4 w-4"
+                    token={getToken(
+                      coinType,
+                      appData.coinMetadataMap[coinType],
+                    )}
+                  />
+                  <TLabel>{appData.coinMetadataMap[coinType].symbol}</TLabel>
                 </div>
-              );
-            })}
+
+                <TBody
+                  style={{
+                    color: COINTYPE_COLOR_MAP[coinType] ?? "hsl(var(--muted))",
+                  }}
+                >
+                  {formatToken(new BigNumber(d[coinType] as number), {
+                    exact: false,
+                  })}
+                </TBody>
+              </div>
+            ))}
         </div>
       </div>
     </div>

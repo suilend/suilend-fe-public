@@ -23,6 +23,7 @@ import {
   formatPoints,
   formatPrice,
   formatToken,
+  getToken,
   isSendPoints,
 } from "@suilend/sui-fe";
 
@@ -339,8 +340,12 @@ export default function AprWithRewardsBreakdown({
                         className="h-4 w-4"
                         token={{
                           coinType: reward.stats.rewardCoinType,
-                          symbol: reward.stats.symbol,
+                          decimals: reward.stats.mintDecimals,
+                          description: "",
                           iconUrl: reward.stats.iconUrl,
+                          id: "",
+                          name: "",
+                          symbol: reward.stats.symbol,
                         }}
                       />
                       <TLabelSans>{reward.stats.symbol}</TLabelSans>
@@ -432,8 +437,12 @@ export default function AprWithRewardsBreakdown({
                       className="h-4 w-4"
                       token={{
                         coinType: reward.stats.rewardCoinType,
-                        symbol: reward.stats.symbol,
+                        decimals: reward.stats.mintDecimals,
+                        description: "",
                         iconUrl: reward.stats.iconUrl,
+                        id: "",
+                        name: "",
+                        symbol: reward.stats.symbol,
                       }}
                     />
                     <TLabelSans>{reward.stats.symbol}</TLabelSans>
@@ -449,8 +458,12 @@ export default function AprWithRewardsBreakdown({
             className="h-4 w-4"
             tokens={[...perDayRewards, ...aprRewards].map((reward) => ({
               coinType: reward.stats.rewardCoinType,
-              symbol: reward.stats.symbol,
+              decimals: reward.stats.mintDecimals,
+              description: "",
               iconUrl: reward.stats.iconUrl,
+              id: "",
+              name: "",
+              symbol: reward.stats.symbol,
             }))}
           />
 

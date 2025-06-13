@@ -28,7 +28,7 @@ import {
   StandardizedQuote,
   StandardizedRoutePath,
 } from "@suilend/sdk";
-import { formatPercent, formatToken, getToken } from "@suilend/sui-fe";
+import { Token, formatPercent, formatToken, getToken } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 
@@ -41,7 +41,6 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useSwapContext } from "@/contexts/SwapContext";
-import { SwapToken } from "@/lib/types";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 import "reactflow/dist/style.css";
 
@@ -131,7 +130,7 @@ function CustomEdge(props: EdgeProps) {
 // StartEndNode
 type StartEndNodeData = {
   isStart?: boolean;
-  token: SwapToken;
+  token: Token;
   amount: BigNumber;
 };
 
@@ -272,8 +271,8 @@ interface NodeChartProps {
 
 function NodeChart({ quote, pathsWithTokens }: NodeChartProps) {
   const swapContext = useSwapContext();
-  const tokenIn = swapContext.tokenIn as SwapToken;
-  const tokenOut = swapContext.tokenOut as SwapToken;
+  const tokenIn = swapContext.tokenIn as Token;
+  const tokenOut = swapContext.tokenOut as Token;
 
   // Layout
   const [nodes, setNodes] = useNodesState([]);

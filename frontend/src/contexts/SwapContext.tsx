@@ -25,6 +25,7 @@ import BigNumber from "bignumber.js";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
+  Token,
   getCoinMetadataMap,
   getHistoryPrice,
   getPrice,
@@ -37,7 +38,6 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SWAP_URL } from "@/lib/navigation";
-import { SwapToken } from "@/lib/types";
 
 export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_IN_COINTYPE = NORMALIZED_SUI_COINTYPE;
@@ -69,18 +69,18 @@ interface SwapContext {
   flowXSdk?: FlowXAggregatorQuoter;
 
   tokenHistoricalUsdPricesMap: Record<string, HistoricalUsdPriceData[]>;
-  fetchTokenHistoricalUsdPrices: (token: SwapToken) => Promise<void>;
+  fetchTokenHistoricalUsdPrices: (token: Token) => Promise<void>;
   tokenUsdPricesMap: Record<string, BigNumber>;
-  fetchTokenUsdPrice: (token: SwapToken) => Promise<void>;
+  fetchTokenUsdPrice: (token: Token) => Promise<void>;
 
   swapInAccount: boolean;
   setSwapInAccount: Dispatch<SetStateAction<boolean>>;
 
-  tokens?: SwapToken[];
+  tokens?: Token[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
-  tokenIn?: SwapToken;
-  tokenOut?: SwapToken;
+  tokenIn?: Token;
+  tokenOut?: Token;
   setTokenSymbol: (newTokenSymbol: string, direction: TokenDirection) => void;
   reverseTokenSymbols: () => void;
 }
@@ -133,14 +133,14 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
     useLoadedUserContext();
 
-  // SDKs - Aftermath
+  // send.ag
+  // SDKs
   const aftermathSdk = useMemo(() => {
     const sdk = new AftermathSdk("MAINNET");
     sdk.init();
     return sdk;
   }, []);
 
-  // SDKs - Cetus
   const cetusSdk = useMemo(() => {
     const sdk = new CetusSdk({
       endpoint: "https://api-sui.cetus.zone/router_v2/find_routes",
@@ -151,12 +151,10 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     return sdk;
   }, [address, suiClient]);
 
-  // SDKs - 7K
   useEffect(() => {
     set7kSdkSuiClient(suiClient);
   }, [suiClient]);
 
-  // SDKs - FlowX
   const flowXSdk = useMemo(() => {
     const sdk = new FlowXAggregatorQuoter("mainnet");
     return sdk;
@@ -166,38 +164,35 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const [tokenHistoricalUsdPricesMap, setTokenHistoricalUsdPricesMap] =
     useState<Record<string, HistoricalUsdPriceData[]>>({});
 
-  const fetchTokenHistoricalUsdPrices = useCallback(
-    async (token: SwapToken) => {
-      console.log("fetchTokenHistoricalUsdPrices", token.symbol);
+  const fetchTokenHistoricalUsdPrices = useCallback(async (token: Token) => {
+    console.log("fetchTokenHistoricalUsdPrices", token.symbol);
 
-      try {
-        const currentTimeS = Math.floor(new Date().getTime() / 1000);
+    try {
+      const currentTimeS = Math.floor(new Date().getTime() / 1000);
 
-        const result = await getHistoryPrice(
-          token.coinType,
-          HISTORICAL_USD_PRICES_INTERVAL,
-          currentTimeS - 24 * 60 * 60,
-          currentTimeS,
-        );
-        if (result === undefined) return;
+      const result = await getHistoryPrice(
+        token.coinType,
+        HISTORICAL_USD_PRICES_INTERVAL,
+        currentTimeS - 24 * 60 * 60,
+        currentTimeS,
+      );
+      if (result === undefined) return;
 
-        setTokenHistoricalUsdPricesMap((o) => ({
-          ...o,
-          [token.coinType]: result,
-        }));
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    [],
-  );
+      setTokenHistoricalUsdPricesMap((o) => ({
+        ...o,
+        [token.coinType]: result,
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
 
   // USD prices - Current
   const [tokenUsdPricesMap, setTokenUsdPriceMap] = useState<
     Record<string, BigNumber>
   >({});
 
-  const fetchTokenUsdPrice = useCallback(async (token: SwapToken) => {
+  const fetchTokenUsdPrice = useCallback(async (token: Token) => {
     console.log("fetchTokenUsdPrice", token.symbol);
 
     try {
@@ -219,7 +214,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   );
 
   // Tokens
-  const [tokens, setTokens] = useState<SwapToken[] | undefined>(undefined);
+  const [tokens, setTokens] = useState<Token[] | undefined>(undefined);
 
   const fetchingTokensMetadataRef = useRef<string[]>([]);
   const fetchTokensMetadata = useCallback(
