@@ -240,10 +240,7 @@ export default function AssetCell({
 
       setStakedWalCanBeWithdrawnEarly(Boolean(result));
     } catch (err) {
-      showErrorToast(
-        "Failed to determine if staked WAL can be withdrawn early",
-        err as Error,
-      );
+      console.error(err);
     }
   }, [extra, dryRunTransaction]);
 

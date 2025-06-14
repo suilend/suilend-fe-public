@@ -16,7 +16,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import { ParsedObligation, RewardMap } from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
-import { NORMALIZED_WAL_COINTYPE } from "@suilend/sui-fe";
+import { NORMALIZED_WAL_COINTYPE, getAllOwnedObjects } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
   useSettingsContext,
@@ -31,7 +31,6 @@ import {
   useAppContext,
 } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
-import { getOwnedObjectsOfType } from "@/lib/transactions";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
 export interface UserData {
@@ -129,11 +128,9 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       console.log("Fetching ownedStakedWalObjectsMap", _address);
 
       try {
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          _address,
-          STAKED_WAL_TYPE,
-        );
+        const objs = await getAllOwnedObjects(suiClient, _address, {
+          StructType: STAKED_WAL_TYPE,
+        });
 
         setOwnedStakedWalObjectsMap((prev) => ({
           ...prev,

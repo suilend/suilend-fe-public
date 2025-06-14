@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
+import { getAllOwnedObjects } from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
@@ -26,7 +27,6 @@ import {
 } from "@/components/shared/Typography";
 import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
 import { SUILEND_URL } from "@/lib/navigation";
-import { getOwnedObjectsOfType } from "@/lib/transactions";
 import { cn } from "@/lib/utils";
 
 enum QueryParams {
@@ -96,11 +96,9 @@ export default function Basecamp2025() {
       console.log("Fetching ownedBasecamp2025NftObjectsMap", _address);
 
       try {
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          _address,
-          `${BASECAMP_2025_NFT_PACKAGE_ID}::suilend_basecamp_nft::SuilendBasecampNft`,
-        );
+        const objs = await getAllOwnedObjects(suiClient, _address, {
+          StructType: `${BASECAMP_2025_NFT_PACKAGE_ID}::suilend_basecamp_nft::SuilendBasecampNft`,
+        });
 
         setOwnedBasecamp2025NftObjectsMap((prev) => ({
           ...prev,
@@ -145,11 +143,9 @@ export default function Basecamp2025() {
       console.log("Fetching ownedRootSauceNftObjectsMap", _address);
 
       try {
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          _address,
-          `${ROOT_SAUCE_NFT_PACKAGE_ID}::rootlets_basecamp_nft::RootletsBasecampNft`,
-        );
+        const objs = await getAllOwnedObjects(suiClient, _address, {
+          StructType: `${ROOT_SAUCE_NFT_PACKAGE_ID}::rootlets_basecamp_nft::RootletsBasecampNft`,
+        });
 
         setOwnedRootSauceNftObjectsMap((prev) => ({
           ...prev,

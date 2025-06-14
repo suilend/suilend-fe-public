@@ -36,6 +36,7 @@ import {
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
   NORMALIZED_mSEND_SERIES_3_COINTYPE,
   NORMALIZED_mSEND_SERIES_4_COINTYPE,
+  getAllOwnedObjects,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
@@ -58,10 +59,7 @@ import {
   WORMHOLE_TRANSFER_REDEEMED_EVENT_TYPE,
   mSEND_COINTYPE_MANAGER_MAP,
 } from "@/lib/send";
-import {
-  getOwnedObjectsOfType,
-  queryTransactionBlocksAfter,
-} from "@/lib/transactions";
+import { queryTransactionBlocksAfter } from "@/lib/transactions";
 
 import earlyUsersJson from "../pages/send/lending/early-users.json";
 import animaJson from "../pages/send/nft/anima.json";
@@ -439,11 +437,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       console.log("Fetching ownedSuilendCapsulesObjectsMap", _address);
 
       try {
-        const objs = await getOwnedObjectsOfType(
-          suiClient,
-          _address,
-          SUILEND_CAPSULE_TYPE,
-        );
+        const objs = await getAllOwnedObjects(suiClient, _address, {
+          StructType: SUILEND_CAPSULE_TYPE,
+        });
 
         const resultS1: Record<SuilendCapsuleS1Rarity, SuiObjectResponse[]> = {
           [SuilendCapsuleS1Rarity.COMMON]: objs.filter(
@@ -555,16 +551,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           await Promise.all(
             rootletsObjectIds.map(async (rootletsObjectId) => {
               const [objsSeries1, objsSeries4] = await Promise.all([
-                getOwnedObjectsOfType(
-                  suiClient,
-                  rootletsObjectId,
-                  `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_1_COINTYPE}>`,
-                ),
-                getOwnedObjectsOfType(
-                  suiClient,
-                  rootletsObjectId,
-                  `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
-                ),
+                getAllOwnedObjects(suiClient, rootletsObjectId, {
+                  StructType: `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_1_COINTYPE}>`,
+                }),
+                getAllOwnedObjects(suiClient, rootletsObjectId, {
+                  StructType: `0x2::coin::Coin<${NORMALIZED_mSEND_SERIES_4_COINTYPE}>`,
+                }),
               ]);
 
               const ownedMsendMap: Record<string, BigNumber> = {
