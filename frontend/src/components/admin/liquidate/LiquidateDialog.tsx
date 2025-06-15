@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
@@ -50,10 +50,12 @@ interface RowData {
 
 interface LiquidateDialogProps {
   fixedObligation?: ParsedObligation;
+  initialObligationId?: string;
 }
 
 export default function LiquidateDialog({
   fixedObligation,
+  initialObligationId,
 }: LiquidateDialogProps) {
   const { suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
@@ -63,7 +65,9 @@ export default function LiquidateDialog({
 
   const [refreshedObligation, setRefreshedObligation] =
     useState<Obligation<string> | null>(null);
-  const [obligationId, setObligationId] = useState<string>("");
+  const [obligationId, setObligationId] = useState<string>(
+    initialObligationId || "",
+  );
   const [selectedWithdrawAsset, setSelectedWithdrawAsset] =
     useState<string>("");
   const [selectedRepayAsset, setSelectedRepayAsset] = useState<string>("");
@@ -73,6 +77,12 @@ export default function LiquidateDialog({
   const [obligationHistory, setObligationHistory] = useState<
     FormattedObligationHistory[]
   >([]);
+
+  useEffect(() => {
+    if (initialObligationId && !fixedObligation) {
+      fetchObligationDetails(initialObligationId);
+    }
+  }, [initialObligationId, fixedObligation]);
 
   const fetchObligationOwner = async (obligationId: string) => {
     if (obligationId === "") {
