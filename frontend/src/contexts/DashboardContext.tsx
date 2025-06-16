@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { RouterData as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import {
   Transaction,
@@ -19,16 +20,9 @@ import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import {
-  ClaimRewardsReward,
-  QuoteProvider,
-  RewardSummary,
-  StandardizedQuote,
-  getAggSortedQuotesAll,
-  getSwapTransaction,
-} from "@suilend/sdk";
-import { NORMALIZED_SEND_COINTYPE, getToken } from "@suilend/sui-fe";
-import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import { ClaimRewardsReward, QuoteProvider, RewardSummary } from "@suilend/sdk";
+import { NORMALIZED_SEND_COINTYPE } from "@suilend/sui-fe";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -36,7 +30,6 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { useAggSdks } from "@/lib/swap";
 
 const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
-const DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -64,7 +57,6 @@ const DashboardContext = createContext<DashboardContext>(defaultContextValue);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
-  const { suiClient } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { appData } = useLoadedAppContext();
@@ -72,17 +64,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
   // send.ag
   const { sdkMap, partnerIdMap } = useAggSdks();
-
-  const activeProviders = useMemo(
-    () => [
-      QuoteProvider.AFTERMATH,
-      QuoteProvider.CETUS,
-      QuoteProvider._7K,
-      QuoteProvider.FLOWX,
-      // QuoteProvider.OKX_DEX,
-    ],
-    [],
-  );
 
   // Helpers
   const getClaimRewardSimulatedAmount = useCallback(
@@ -143,142 +124,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  const depositOrSendToUser = useCallback(
-    (
-      isDepositing: boolean,
-      coinType: string,
-      coin: TransactionObjectArgument,
-      transaction: Transaction,
-    ) => {
-      if (!address) throw Error("Wallet not connected");
-      if (!obligationOwnerCap || !obligation)
-        throw Error("Obligation not found");
-
-      const innerTransaction = Transaction.from(transaction);
-
-      if (isDepositing) {
-        // Deposit SEND
-        appData.suilendClient.deposit(
-          coin,
-          coinType,
-          obligationOwnerCap.id,
-          innerTransaction,
-        );
-      } else {
-        // Transfer SEND to user
-        innerTransaction.transferObjects(
-          [coin],
-          innerTransaction.pure.address(address),
-        );
-      }
-
-      return innerTransaction;
-    },
-    [address, obligationOwnerCap, obligation, appData.suilendClient],
-  );
-
-  const swapToSendAndDepositOrSendToUser = useCallback(
-    async (
-      isDepositing: boolean,
-      coinIn: TransactionObjectArgument,
-      quote: StandardizedQuote,
-      transaction: Transaction,
-    ) => {
-      if (!address) throw Error("Wallet not connected");
-      if (!obligationOwnerCap || !obligation)
-        throw Error("Obligation not found");
-
-      let innerTransaction = Transaction.from(transaction);
-
-      const { transaction: _transaction2, coinOut } = await getSwapTransaction(
-        suiClient,
-        address,
-        quote,
-        SWAP_TO_SEND_SLIPPAGE_PERCENT,
-        sdkMap,
-        partnerIdMap,
-        innerTransaction,
-        coinIn,
-      );
-      if (!coinOut) throw new Error("Missing coin to transfer to user");
-
-      innerTransaction = _transaction2;
-
-      innerTransaction = depositOrSendToUser(
-        isDepositing,
-        NORMALIZED_SEND_COINTYPE,
-        coinOut,
-        innerTransaction,
-      );
-
-      return innerTransaction;
-    },
-    [
-      address,
-      obligationOwnerCap,
-      obligation,
-      suiClient,
-      sdkMap,
-      partnerIdMap,
-      depositOrSendToUser,
-    ],
-  );
-
-  const swapDustToSendAndDepositOrSendToUser = useCallback(
-    async (
-      isDepositing: boolean,
-      coinType: string,
-      coinIn: TransactionObjectArgument,
-      transaction: Transaction,
-    ) => {
-      if (!address) throw Error("Wallet not connected");
-      // if (!obligationOwnerCap || !obligation)
-      //   throw Error("Obligation not found");
-
-      const innerTransaction = Transaction.from(transaction);
-
-      innerTransaction.transferObjects([coinIn], address);
-      return innerTransaction; // TEMP
-
-      // const routers = await sdkMap[QuoteProvider.CETUS].findRouters({
-      //   from: coinType,
-      //   target: NORMALIZED_SEND_COINTYPE,
-      //   amount: new BN(0.01 * 10 ** appData.coinMetadataMap[coinType].decimals), // Just an estimate (an upper bound)
-      //   byAmountIn: true,
-      //   splitCount: 1,
-      // });
-
-      // if (!routers) throw new Error("No routers found");
-      // console.log("[swapDustToSendAndSendToUser]", { routers });
-
-      // const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap({
-      //   routers,
-      //   inputCoin: coinIn,
-      //   slippage: DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT,
-      //   txb: innerTransaction,
-      //   partner: partnerIdMap[QuoteProvider.CETUS],
-      // });
-
-      // innerTransaction = depositOrSendToUser(
-      //   isDepositing,
-      //   NORMALIZED_SEND_COINTYPE,
-      //   coinOut,
-      //   innerTransaction,
-      // );
-
-      // return innerTransaction;
-    },
-    [
-      address,
-      // obligationOwnerCap,
-      // obligation,
-      // sdkMap,
-      // appData.coinMetadataMap,
-      // partnerIdMap,
-      // depositOrSendToUser,
-    ],
-  );
-
   //
 
   // First deposit
@@ -324,13 +169,12 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             );
           transaction = _transaction1;
 
-          // Get amounts and quotes
+          // Get amounts and routers
           const amountsAndSortedQuotesMap: Record<
             string,
             {
               coin: TransactionObjectArgument;
-              amount: string;
-              sortedQuotes: StandardizedQuote[];
+              routers: CetusRouterData;
             }
           > = Object.fromEntries(
             await Promise.all(
@@ -341,75 +185,57 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                     rewards.filter((r) => r.rewardCoinType === coinType),
                   );
 
-                  // Get quotes
-                  const sortedQuotes = await getAggSortedQuotesAll(
-                    sdkMap,
-                    activeProviders,
-                    getToken(coinType, appData.coinMetadataMap[coinType]),
-                    getToken(
-                      NORMALIZED_SEND_COINTYPE,
-                      appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
-                    ),
-                    amount,
+                  // Get routes
+                  const routers = await sdkMap[QuoteProvider.CETUS].findRouters(
+                    {
+                      from: coinType,
+                      target: NORMALIZED_SEND_COINTYPE,
+                      amount: new BN(amount), // Estimate (lower bound)
+                      byAmountIn: true,
+                      splitCount: new BigNumber(amount)
+                        .times(rewardsMap[coinType][0].stats.price ?? 1)
+                        .gte(10)
+                        ? undefined // Don't limit splitCount if amount is >= $10
+                        : 1,
+                    },
                   );
-                  if (sortedQuotes.length === 0)
-                    throw new Error("No quotes found");
+                  if (!routers) throw new Error("No routes found");
+                  console.log("[claimRewards] routers", { coinType, routers });
 
-                  return [coinType, { coin, amount, sortedQuotes }];
+                  return [coinType, { coin, routers }];
                 })(),
               ),
             ),
           );
 
-          // Make swaps
-          for (const [
-            coinType,
-            { coin, amount, sortedQuotes },
-          ] of Object.entries(amountsAndSortedQuotesMap)) {
-            // Split coin
-            const swapCoinIn = transaction.splitCoins(coin, [amount]);
-            const dustCoinIn = coin;
+          // Swap
+          for (const [coinType, { coin: coinIn, routers }] of Object.entries(
+            amountsAndSortedQuotesMap,
+          )) {
+            // Swap
+            const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap(
+              {
+                routers,
+                inputCoin: coinIn,
+                slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT / 100,
+                txb: transaction,
+                partner: partnerIdMap[QuoteProvider.CETUS],
+              },
+            );
 
-            // Swap - main
-            let quote: StandardizedQuote | undefined = undefined;
-            for (const _quote of sortedQuotes) {
-              try {
-                console.log("[claimRewards] dryRunTransaction for swap", {
-                  coinType,
-                  amount,
-                  quote: _quote,
-                });
-                const testTransaction = await swapToSendAndDepositOrSendToUser(
-                  args?.isDepositing,
-                  swapCoinIn,
-                  _quote,
-                  Transaction.from(transaction),
-                );
-
-                await dryRunTransaction(testTransaction);
-                quote = _quote;
-                break;
-              } catch (err) {
-                console.error(err);
-                continue;
-              }
+            if (args?.isDepositing) {
+              appData.suilendClient.deposit(
+                coinOut,
+                NORMALIZED_SEND_COINTYPE,
+                obligationOwnerCap.id,
+                transaction,
+              );
+            } else {
+              transaction.transferObjects(
+                [coinOut],
+                transaction.pure.address(address),
+              );
             }
-            if (quote === undefined) throw new Error("No valid quotes found");
-
-            transaction = await swapToSendAndDepositOrSendToUser(
-              args?.isDepositing,
-              swapCoinIn,
-              quote,
-              transaction,
-            );
-
-            // Swap - dust
-            transaction = await swapDustToSendAndDepositOrSendToUser(
-              args?.isDepositing,
-              coinType,
-              dustCoinIn,
-              transaction,
-            );
           }
         } else {
           if (args?.isDepositing) {
@@ -444,11 +270,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
       sdkMap,
-      activeProviders,
-      appData.coinMetadataMap,
-      dryRunTransaction,
-      swapToSendAndDepositOrSendToUser,
-      swapDustToSendAndDepositOrSendToUser,
+      partnerIdMap,
       signExecuteAndWaitForTransaction,
     ],
   );
