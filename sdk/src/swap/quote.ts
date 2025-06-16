@@ -549,7 +549,7 @@ export const getAggSortedQuotesAll = async (
   tokenOut: Token,
   amountIn: string,
 ) => {
-  const timeoutMs = 2500;
+  const timeoutMs = 1500;
 
   // Get quotes in parallel
   const quotes = await Promise.all(

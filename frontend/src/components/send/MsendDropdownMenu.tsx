@@ -56,11 +56,13 @@ export default function MsendDropdownMenu() {
           </div>
         </Button>
       }
-      contentStyle={{
-        padding: "8px",
-        gap: 0,
-        maxWidth: "none",
-        width: "var(--radix-dropdown-menu-trigger-width)",
+      contentProps={{
+        style: {
+          padding: "8px",
+          gap: 0,
+          maxWidth: "none",
+          width: "var(--radix-dropdown-menu-trigger-width)",
+        },
       }}
       items={mSendCoinTypesWithBalance.map((coinType) => (
         <DropdownMenuItem

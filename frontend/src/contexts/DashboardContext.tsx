@@ -36,6 +36,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { useAggSdks } from "@/lib/swap";
 
 const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
+const DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -236,11 +237,15 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
       let innerTransaction = Transaction.from(transaction);
 
+      innerTransaction.transferObjects([coinIn], address);
+      return innerTransaction; // TEMP
+
       const routers = await sdkMap[QuoteProvider.CETUS].findRouters({
         from: coinType,
         target: NORMALIZED_SEND_COINTYPE,
         amount: new BN(0.01 * 10 ** appData.coinMetadataMap[coinType].decimals), // Just an estimate (an upper bound)
         byAmountIn: true,
+        splitCount: 1,
       });
 
       if (!routers) throw new Error("No routers found");
@@ -249,7 +254,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap({
         routers,
         inputCoin: coinIn,
-        slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT,
+        slippage: DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT,
         txb: innerTransaction,
         partner: partnerIdMap[QuoteProvider.CETUS],
       });

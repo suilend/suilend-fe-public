@@ -1,6 +1,9 @@
-import { CSSProperties, PropsWithChildren, ReactNode } from "react";
+import { PropsWithChildren, ReactNode } from "react";
 
-import { DropdownMenuProps as DropdownMenuRootProps } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenuContentProps,
+  DropdownMenuProps as DropdownMenuRootProps,
+} from "@radix-ui/react-dropdown-menu";
 import { ClassValue } from "clsx";
 import { merge } from "lodash";
 
@@ -17,6 +20,7 @@ import { cn } from "@/lib/utils";
 interface DropdownMenuItemProps extends PropsWithChildren {
   className?: ClassValue;
   isSelected?: boolean;
+  isDisabled?: boolean;
   onClick: () => void;
 }
 
@@ -24,6 +28,7 @@ export function DropdownMenuItem({
   className,
   onClick,
   isSelected,
+  isDisabled,
   children,
 }: DropdownMenuItemProps) {
   return (
@@ -33,6 +38,7 @@ export function DropdownMenuItem({
         isSelected && "border-transparent !bg-muted/15 text-foreground",
         className,
       )}
+      disabled={isDisabled}
       onClick={onClick}
     >
       {children}
@@ -47,7 +53,7 @@ export function DropdownMenuSeparator() {
 interface DropdownMenuProps {
   rootProps?: DropdownMenuRootProps;
   trigger: ReactNode;
-  contentStyle?: CSSProperties;
+  contentProps?: DropdownMenuContentProps;
   title?: string;
   description?: ReactNode;
   noItems?: boolean;
@@ -57,12 +63,14 @@ interface DropdownMenuProps {
 export default function DropdownMenu({
   rootProps,
   trigger,
-  contentStyle,
+  contentProps,
   title,
   description,
   noItems,
   items,
 }: DropdownMenuProps) {
+  const { style: contentStyle, ...restContentProps } = contentProps ?? {};
+
   return (
     <DropdownMenuRoot {...rootProps}>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
@@ -79,6 +87,7 @@ export default function DropdownMenu({
           },
           contentStyle,
         )}
+        {...restContentProps}
       >
         {title && (
           <div className={cn("flex flex-col gap-1", !noItems && "mb-4")}>

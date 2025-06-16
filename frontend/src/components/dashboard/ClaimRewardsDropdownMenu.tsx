@@ -16,6 +16,7 @@ import Button from "@/components/shared/Button";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
+import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
@@ -207,68 +208,84 @@ export default function ClaimRewardsDropdownMenu({
           className="w-[150px]"
           labelClassName="uppercase"
           endIcon={isClaiming ? undefined : <Icon />}
+          disabled={isClaiming}
         >
           {isClaiming ? <Spinner size="sm" /> : "Claim rewards"}
         </Button>
       }
-      contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
+      contentProps={{
+        align: "start",
+        style: { "--bg-color": "hsl(var(--popover))" } as CSSProperties,
+      }}
       items={
         <>
-          {/* SEND - Claim */}
+          {/* Actual - claim */}
           <DropdownMenuItem
-            className="flex w-full flex-row items-center gap-1.5"
-            onClick={() => submit({ asSend: true, isDepositing: false })}
+            className="flex w-full flex-row items-center justify-between gap-1.5"
+            onClick={() => submit({ asSend: false, isDepositing: false })}
           >
-            <TLabelSans className="text-foreground">Claim as SEND</TLabelSans>
+            <TLabelSans className="text-foreground">Claim</TLabelSans>
             <TokenLogos className="h-4 w-4" tokens={tokens} />
           </DropdownMenuItem>
 
-          {/* SEND - Claim and deposit */}
-          {canDepositAsSend && (
+          {/* SEND - claim */}
+          <DropdownMenuItem
+            className="flex w-full flex-row items-center justify-between gap-1.5"
+            onClick={() => submit({ asSend: true, isDepositing: false })}
+          >
+            <TLabelSans className="text-foreground">Claim as SEND</TLabelSans>
+            <SendTokenLogo className="h-4 w-4" />
+          </DropdownMenuItem>
+
+          {/* Actual - claim and deposit */}
+          <div className="flex w-full flex-col gap-1.5">
             <DropdownMenuItem
-              className="flex w-full flex-row items-center gap-1.5"
+              className="flex w-full flex-row items-center justify-between gap-1.5"
+              isDisabled={tokensThatCanBeDeposited.length === 0}
+              onClick={() => submit({ asSend: false, isDepositing: true })}
+            >
+              <TLabelSans className="text-foreground">
+                Claim and deposit
+              </TLabelSans>
+              <TokenLogos className="h-4 w-4" tokens={tokens} />
+            </DropdownMenuItem>
+            {tokensThatCanBeDeposited.length < tokens.length && (
+              <TLabelSans className="mb-1 pl-3 text-[10px]">
+                {`Cannot claim and deposit ${formatList(
+                  tokens
+                    .filter(
+                      (t) =>
+                        !tokensThatCanBeDeposited
+                          .map((_t) => _t.coinType)
+                          .includes(t.coinType),
+                    )
+                    .map((t) => t.symbol),
+                ).replace("and", "or")} (max 5 deposit positions).`}
+                {tokensThatCanBeDeposited.length > 0 &&
+                  ` Only ${formatList(tokensThatCanBeDeposited.map((t) => t.symbol))} will be claimed and deposited.`}
+              </TLabelSans>
+            )}
+          </div>
+
+          {/* SEND - claim and deposit */}
+          <div className="flex w-full flex-col gap-1.5">
+            <DropdownMenuItem
+              className="flex w-full flex-row items-center justify-between gap-1.5"
+              isDisabled={!canDepositAsSend}
               onClick={() => submit({ asSend: true, isDepositing: true })}
             >
               <TLabelSans className="text-foreground">
                 Claim and deposit as SEND
               </TLabelSans>
-              <TokenLogos className="h-4 w-4" tokens={tokens} />
+              <SendTokenLogo className="h-4 w-4" />
             </DropdownMenuItem>
-          )}
 
-          {/* Actual */}
-          {tokens.length > 0 && (
-            <>
-              {/* Claim */}
-              <DropdownMenuItem
-                className="flex w-full flex-row items-center gap-1.5"
-                onClick={() => submit({ asSend: false, isDepositing: false })}
-              >
-                <TLabelSans className="text-foreground">Claim</TLabelSans>
-                <TokenLogos className="h-4 w-4" tokens={tokens} />
-              </DropdownMenuItem>
-
-              {/* Claim and deposit */}
-              {tokensThatCanBeDeposited.length > 0 && (
-                <DropdownMenuItem
-                  className="flex w-full flex-row items-center gap-1.5"
-                  onClick={() => submit({ asSend: false, isDepositing: true })}
-                >
-                  <TLabelSans className="text-foreground">
-                    Claim and deposit
-                  </TLabelSans>
-                  <TokenLogos
-                    className="h-4 w-4"
-                    tokens={tokens.filter((t) =>
-                      tokensThatCanBeDeposited
-                        .map((_t) => _t.coinType)
-                        .includes(t.coinType),
-                    )}
-                  />
-                </DropdownMenuItem>
-              )}
-            </>
-          )}
+            {!canDepositAsSend && (
+              <TLabelSans className="pl-3 text-[10px]">
+                Cannot claim and deposit SEND (max 5 deposit positions).
+              </TLabelSans>
+            )}
+          </div>
         </>
       }
     />
