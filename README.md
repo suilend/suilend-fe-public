@@ -1,4 +1,4 @@
-# suilend-public
+# suilend-fe-private
 
 - frontend, a TypeScript frontend for interacting with the Suilend program
 - sdk, a TypeScript SDK for interacting with the Suilend program published on npm as [`@suilend/sdk`](https://www.npmjs.com/package/@suilend/sdk)
