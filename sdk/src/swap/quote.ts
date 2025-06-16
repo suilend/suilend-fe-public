@@ -1,6 +1,6 @@
 import {
   QuoteResponse as _7kQuote,
-  getQuote as get7kQuote,
+  getQuote as get7kQuoteOriginal,
 } from "@7kprotocol/sdk-ts/cjs";
 import {
   RouterData as CetusQuote,
@@ -24,7 +24,11 @@ import { Token } from "@suilend/sui-fe";
 
 import { WAD } from "../lib";
 
-import { OkxDexQuote, cartesianProduct, getOkxDexQuote } from "./okxDex";
+import {
+  OkxDexQuote,
+  cartesianProduct,
+  getOkxDexQuote as getOkxDexQuoteOriginal,
+} from "./okxDex";
 
 export enum QuoteProvider {
   AFTERMATH = "aftermath",
@@ -86,7 +90,7 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
 );
 
-export const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
+const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
   return Array.from(
     new Set(
       standardizedQuote.routes.reduce(
@@ -103,21 +107,30 @@ export const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
   );
 };
 
-const fetchAggQuoteWrapper = async (
+const getAggQuoteWrapper = async (
   provider: QuoteProvider,
-  fetchAggQuote: () => Promise<StandardizedQuote | null>,
+  getAggQuote: () => Promise<StandardizedQuote | null>,
+  timeoutMs: number,
 ): Promise<StandardizedQuote | null> => {
-  console.log(`[fetchAggQuoteWrapper] fetching ${provider} quote`);
+  console.log(`[getAggQuoteWrapper] getting ${provider} quote`);
 
   try {
-    const standardizedQuote = await fetchAggQuote();
-    if (!standardizedQuote) throw new Error("No quote returned");
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), timeoutMs);
+    });
+
+    const standardizedQuote = await Promise.race<StandardizedQuote | null>([
+      getAggQuote(),
+      timeoutPromise,
+    ]);
+    if (!standardizedQuote)
+      throw new Error(`No ${provider} quote returned within ${timeoutMs}ms`);
 
     console.log(
-      `[fetchAggQuoteWrapper] fetched ${provider} quote`,
+      `[getAggQuoteWrapper] got ${provider} quote`,
       +standardizedQuote.out.amount,
       "pool providers:",
-      getPoolProviders(standardizedQuote),
+      standardizedQuote,
       "quote:",
       standardizedQuote.quote,
     );
@@ -131,7 +144,7 @@ const fetchAggQuoteWrapper = async (
   }
 };
 
-const fetchAftermathQuote = async (
+const getAftermathQuote = async (
   sdk: AftermathSdk,
   tokenIn: Token,
   tokenOut: Token,
@@ -184,7 +197,7 @@ const fetchAftermathQuote = async (
 
   return standardizedQuote;
 };
-const fetchCetusQuote = async (
+const getCetusQuote = async (
   sdk: CetusSdk,
   tokenIn: Token,
   tokenOut: Token,
@@ -241,12 +254,12 @@ const fetchCetusQuote = async (
 
   return standardizedQuote;
 };
-const fetch7kQuote = async (
+const get7kQuote = async (
   tokenIn: Token,
   tokenOut: Token,
   amountIn: string,
 ) => {
-  const quote = await get7kQuote({
+  const quote = await get7kQuoteOriginal({
     tokenIn: tokenIn.coinType,
     tokenOut: tokenOut.coinType,
     amountIn,
@@ -287,7 +300,7 @@ const fetch7kQuote = async (
 
   return standardizedQuote;
 };
-const fetchFlowXQuote = async (
+const getFlowXQuote = async (
   sdk: FlowXAggregatorQuoter,
   tokenIn: Token,
   tokenOut: Token,
@@ -342,12 +355,12 @@ const fetchFlowXQuote = async (
 
   return standardizedQuote;
 };
-const fetchOkxDexQuote = async (
+const getOkxDexQuote = async (
   amountIn: string,
   tokenIn: Token,
   tokenOut: Token,
 ) => {
-  const quote = await getOkxDexQuote(
+  const quote = await getOkxDexQuoteOriginal(
     amountIn,
     tokenIn.coinType,
     tokenOut.coinType,
@@ -427,98 +440,105 @@ const fetchOkxDexQuote = async (
   return standardizedQuote;
 };
 
-export const fetchAggQuotes = async (
+export const getAggQuotes = async (
   sdkMap: {
     [QuoteProvider.AFTERMATH]: AftermathSdk;
     [QuoteProvider.CETUS]: CetusSdk;
     [QuoteProvider.FLOWX]: FlowXAggregatorQuoter;
   },
   activeProviders: QuoteProvider[],
-  onFetchAggQuote: (quote: StandardizedQuote | null) => void,
+  onGetAggQuote: (quote: StandardizedQuote | null) => void,
   tokenIn: Token,
   tokenOut: Token,
   amountIn: string,
 ) => {
-  // Fetch quotes in parallel
+  const timeoutMs = 5000;
+
+  // Get quotes in parallel
   // Aftermath
   if (activeProviders.includes(QuoteProvider.AFTERMATH)) {
     (async () => {
-      const standardizedQuote = await fetchAggQuoteWrapper(
+      const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider.AFTERMATH,
         () =>
-          fetchAftermathQuote(
+          getAftermathQuote(
             sdkMap[QuoteProvider.AFTERMATH],
             tokenIn,
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
-      onFetchAggQuote(standardizedQuote);
+      onGetAggQuote(standardizedQuote);
     })();
   }
 
   // Cetus
   if (activeProviders.includes(QuoteProvider.CETUS)) {
     (async () => {
-      const standardizedQuote = await fetchAggQuoteWrapper(
+      const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider.CETUS,
         () =>
-          fetchCetusQuote(
+          getCetusQuote(
             sdkMap[QuoteProvider.CETUS],
             tokenIn,
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
-      onFetchAggQuote(standardizedQuote);
+      onGetAggQuote(standardizedQuote);
     })();
   }
 
   // 7K
   if (activeProviders.includes(QuoteProvider._7K)) {
     (async () => {
-      const standardizedQuote = await fetchAggQuoteWrapper(
+      const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider._7K,
-        () => fetch7kQuote(tokenIn, tokenOut, amountIn),
+        () => get7kQuote(tokenIn, tokenOut, amountIn),
+        timeoutMs,
       );
 
-      onFetchAggQuote(standardizedQuote);
+      onGetAggQuote(standardizedQuote);
     })();
   }
 
   // FlowX
   if (activeProviders.includes(QuoteProvider.FLOWX)) {
     (async () => {
-      const standardizedQuote = await fetchAggQuoteWrapper(
+      const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider.FLOWX,
         () =>
-          fetchFlowXQuote(
+          getFlowXQuote(
             sdkMap[QuoteProvider.FLOWX],
             tokenIn,
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
-      onFetchAggQuote(standardizedQuote);
+      onGetAggQuote(standardizedQuote);
     })();
   }
 
   // OKX DEX
   if (activeProviders.includes(QuoteProvider.OKX_DEX)) {
     (async () => {
-      const standardizedQuote = await fetchAggQuoteWrapper(
+      const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider.OKX_DEX,
-        () => fetchOkxDexQuote(amountIn, tokenIn, tokenOut),
+        () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
+        timeoutMs,
       );
 
-      onFetchAggQuote(standardizedQuote);
+      onGetAggQuote(standardizedQuote);
     })();
   }
 };
-export const fetchAggQuotesAll = async (
+export const getAggSortedQuotesAll = async (
   sdkMap: {
     [QuoteProvider.AFTERMATH]: AftermathSdk;
     [QuoteProvider.CETUS]: CetusSdk;
@@ -529,49 +549,69 @@ export const fetchAggQuotesAll = async (
   tokenOut: Token,
   amountIn: string,
 ) => {
-  // Fetch quotes in parallel
-  return Promise.all(
+  const timeoutMs = 2500;
+
+  // Get quotes in parallel
+  const quotes = await Promise.all(
     [
       activeProviders.includes(QuoteProvider.AFTERMATH)
-        ? fetchAggQuoteWrapper(QuoteProvider.AFTERMATH, () =>
-            fetchAftermathQuote(
-              sdkMap[QuoteProvider.AFTERMATH],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.AFTERMATH,
+            () =>
+              getAftermathQuote(
+                sdkMap[QuoteProvider.AFTERMATH],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.CETUS)
-        ? fetchAggQuoteWrapper(QuoteProvider.CETUS, () =>
-            fetchCetusQuote(
-              sdkMap[QuoteProvider.CETUS],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.CETUS,
+            () =>
+              getCetusQuote(
+                sdkMap[QuoteProvider.CETUS],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider._7K)
-        ? fetchAggQuoteWrapper(QuoteProvider._7K, () =>
-            fetch7kQuote(tokenIn, tokenOut, amountIn),
+        ? getAggQuoteWrapper(
+            QuoteProvider._7K,
+            () => get7kQuote(tokenIn, tokenOut, amountIn),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.FLOWX)
-        ? fetchAggQuoteWrapper(QuoteProvider.FLOWX, () =>
-            fetchFlowXQuote(
-              sdkMap[QuoteProvider.FLOWX],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.FLOWX,
+            () =>
+              getFlowXQuote(
+                sdkMap[QuoteProvider.FLOWX],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.OKX_DEX)
-        ? fetchAggQuoteWrapper(QuoteProvider.OKX_DEX, () =>
-            fetchOkxDexQuote(amountIn, tokenIn, tokenOut),
+        ? getAggQuoteWrapper(
+            QuoteProvider.OKX_DEX,
+            () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
+            timeoutMs,
           )
         : null,
     ].filter(Boolean),
   );
+  const sortedQuotes = (quotes.filter(Boolean) as StandardizedQuote[])
+    .slice()
+    .sort((a, b) => +b.out.amount.minus(a.out.amount));
+
+  return sortedQuotes;
 };

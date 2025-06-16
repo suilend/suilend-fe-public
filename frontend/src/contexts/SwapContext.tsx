@@ -12,14 +12,7 @@ import {
   useState,
 } from "react";
 
-import { setSuiClient as set7kSdkSuiClient } from "@7kprotocol/sdk-ts/cjs";
-import {
-  AggregatorClient as CetusSdk,
-  Env,
-} from "@cetusprotocol/aggregator-sdk";
-import { AggregatorQuoter as FlowXAggregatorQuoter } from "@flowx-finance/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
-import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 
 import {
@@ -32,12 +25,13 @@ import {
   getToken,
   isCoinType,
 } from "@suilend/sui-fe";
-import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SWAP_URL } from "@/lib/navigation";
+import { PartnerIdMap, SdkMap, useAggSdks } from "@/lib/swap";
 
 export const DEFAULT_TOKEN_IN_SYMBOL = "SUI";
 const DEFAULT_TOKEN_IN_COINTYPE = NORMALIZED_SUI_COINTYPE;
@@ -64,9 +58,8 @@ type HistoricalUsdPriceData = {
 };
 
 interface SwapContext {
-  aftermathSdk?: AftermathSdk;
-  cetusSdk?: CetusSdk;
-  flowXSdk?: FlowXAggregatorQuoter;
+  sdkMap: SdkMap;
+  partnerIdMap: PartnerIdMap;
 
   tokenHistoricalUsdPricesMap: Record<string, HistoricalUsdPriceData[]>;
   fetchTokenHistoricalUsdPrices: (token: Token) => Promise<void>;
@@ -86,9 +79,8 @@ interface SwapContext {
 }
 
 const defaultContextValue: SwapContext = {
-  aftermathSdk: undefined,
-  cetusSdk: undefined,
-  flowXSdk: undefined,
+  sdkMap: {} as SdkMap,
+  partnerIdMap: {} as PartnerIdMap,
 
   tokenHistoricalUsdPricesMap: {},
   fetchTokenHistoricalUsdPrices: async () => {
@@ -128,37 +120,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
   const { appData, filteredReserves } = useLoadedAppContext();
   const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
     useLoadedUserContext();
 
   // send.ag
-  // SDKs
-  const aftermathSdk = useMemo(() => {
-    const sdk = new AftermathSdk("MAINNET");
-    sdk.init();
-    return sdk;
-  }, []);
-
-  const cetusSdk = useMemo(() => {
-    const sdk = new CetusSdk({
-      endpoint: "https://api-sui.cetus.zone/router_v2/find_routes",
-      signer: address,
-      client: suiClient,
-      env: Env.Mainnet,
-    });
-    return sdk;
-  }, [address, suiClient]);
-
-  useEffect(() => {
-    set7kSdkSuiClient(suiClient);
-  }, [suiClient]);
-
-  const flowXSdk = useMemo(() => {
-    const sdk = new FlowXAggregatorQuoter("mainnet");
-    return sdk;
-  }, []);
+  const { sdkMap, partnerIdMap } = useAggSdks();
 
   // USD prices - Historical
   const [tokenHistoricalUsdPricesMap, setTokenHistoricalUsdPricesMap] =
@@ -281,16 +248,16 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const coinTypes = (await aftermathSdk.Coin().getVerifiedCoins()).map(
-          normalizeStructTag,
-        );
+        const coinTypes = (
+          await sdkMap.aftermath.Coin().getVerifiedCoins()
+        ).map(normalizeStructTag);
 
         setVerifiedCoinTypes(coinTypes);
 
         fetchTokensMetadata(coinTypes);
       } catch (err) {}
     })();
-  }, [aftermathSdk, fetchTokensMetadata]);
+  }, [sdkMap.aftermath, fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {
@@ -433,9 +400,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: SwapContext = useMemo(
     () => ({
-      aftermathSdk,
-      cetusSdk,
-      flowXSdk,
+      sdkMap,
+      partnerIdMap,
 
       tokenHistoricalUsdPricesMap,
       fetchTokenHistoricalUsdPrices,
@@ -454,9 +420,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       reverseTokenSymbols,
     }),
     [
-      aftermathSdk,
-      cetusSdk,
-      flowXSdk,
+      sdkMap,
+      partnerIdMap,
       tokenHistoricalUsdPricesMap,
       fetchTokenHistoricalUsdPrices,
       tokenUsdPricesMap,
@@ -475,11 +440,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SwapContext.Provider value={contextValue}>
-      {aftermathSdk && cetusSdk && tokenIn && tokenOut ? (
-        children
-      ) : (
-        <FullPageSpinner />
-      )}
+      {tokenIn && tokenOut ? children : <FullPageSpinner />}
     </SwapContext.Provider>
   );
 }
