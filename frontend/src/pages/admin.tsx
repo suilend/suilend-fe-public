@@ -21,12 +21,16 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 
 enum QueryParams {
   TAB = "tab",
+  OBLIGATION_ID = "obligationId",
 }
 
 function Page() {
   const router = useRouter();
   const queryParams = {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
+    [QueryParams.OBLIGATION_ID]: router.query[QueryParams.OBLIGATION_ID] as
+      | string
+      | undefined,
   };
 
   const { explorer } = useSettingsContext();
@@ -55,13 +59,23 @@ function Page() {
     [{ id: Tab.THIRD_PARTY_FEES, title: "3rd party fees" }],
   ];
 
-  const selectedTab =
-    queryParams[QueryParams.TAB] &&
-    Object.values(Tab).includes(queryParams[QueryParams.TAB])
+  // Auto-switch to liquidate tab if obligation_id is provided
+  const selectedTab = queryParams[QueryParams.OBLIGATION_ID]
+    ? Tab.LIQUIDATE
+    : queryParams[QueryParams.TAB] &&
+        Object.values(Tab).includes(queryParams[QueryParams.TAB])
       ? queryParams[QueryParams.TAB]
       : Object.values(Tab)[0];
   const onSelectedTabChange = (tab: Tab) => {
-    shallowPushQuery(router, { ...router.query, [QueryParams.TAB]: tab });
+    // Clear obligationId when navigating away from liquidate tab
+    const newQuery: Record<string, string | string[] | undefined> = {
+      ...router.query,
+      [QueryParams.TAB]: tab,
+    };
+    if (tab !== Tab.LIQUIDATE) {
+      delete newQuery[QueryParams.OBLIGATION_ID];
+    }
+    shallowPushQuery(router, newQuery);
   };
 
   return (
@@ -109,7 +123,11 @@ function Page() {
 
           {selectedTab === Tab.RESERVES && <ReservesTab />}
           {selectedTab === Tab.LENDING_MARKET && <LendingMarketTab />}
-          {selectedTab === Tab.LIQUIDATE && <LiquidateTab />}
+          {selectedTab === Tab.LIQUIDATE && (
+            <LiquidateTab
+              obligationId={queryParams[QueryParams.OBLIGATION_ID]}
+            />
+          )}
           {selectedTab === Tab.OBLIGATIONS && <ObligationsTab />}
           {selectedTab === Tab.THIRD_PARTY_FEES && <ThirdPartyFeesTab />}
         </div>
