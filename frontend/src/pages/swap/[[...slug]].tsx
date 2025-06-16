@@ -37,7 +37,7 @@ import {
   StandardizedQuote,
   WAD,
   createObligationIfNoneExists,
-  fetchAggQuotes,
+  getAggQuotes,
   getSwapTransaction,
   sendObligationToUser,
 } from "@suilend/sdk";
@@ -117,6 +117,8 @@ function Page() {
     useLoadedUserContext();
 
   const {
+    sdkMap,
+    partnerIdMap,
     tokenHistoricalUsdPricesMap,
     fetchTokenHistoricalUsdPrices,
     tokenUsdPricesMap,
@@ -128,19 +130,20 @@ function Page() {
     reverseTokenSymbols,
     ...restSwapContext
   } = useSwapContext();
-  const aftermathSdk = restSwapContext.aftermathSdk as AftermathSdk;
-  const cetusSdk = restSwapContext.cetusSdk as CetusSdk;
-  const flowXSdk = restSwapContext.flowXSdk as FlowXAggregatorQuoter;
   const tokenIn = restSwapContext.tokenIn as Token;
   const tokenOut = restSwapContext.tokenOut as Token;
 
-  const sdkMap = useMemo(
-    () => ({
-      [QuoteProvider.AFTERMATH]: aftermathSdk,
-      [QuoteProvider.CETUS]: cetusSdk,
-      [QuoteProvider.FLOWX]: flowXSdk,
-    }),
-    [aftermathSdk, cetusSdk, flowXSdk],
+  // send.ag
+  const activeProviders = useMemo(
+    () =>
+      [
+        QuoteProvider.AFTERMATH,
+        QuoteProvider.CETUS,
+        QuoteProvider._7K,
+        QuoteProvider.FLOWX,
+        !swapInAccount ? QuoteProvider.OKX_DEX : null,
+      ].filter(Boolean) as QuoteProvider[],
+    [swapInAccount],
   );
 
   // Balances
@@ -252,28 +255,6 @@ function Page() {
   const [value, setValue] = useState<string>("");
 
   // Quote
-  const activeProvidersMap = useMemo(
-    () => ({
-      [QuoteProvider.AFTERMATH]: true, // W->W, W->D, D->D
-      [QuoteProvider.CETUS]: true, // W->W, W->D, D->D
-      [QuoteProvider._7K]: true, // W->W, W->D, D->D
-      [QuoteProvider.FLOWX]: true, // W->W, W->D, D->D
-      [QuoteProvider.OKX_DEX]: !swapInAccount, // W->W
-    }),
-    [swapInAccount],
-  );
-  const activeProviders = useMemo(
-    () =>
-      Object.entries(activeProvidersMap)
-        .filter(([, isActive]) => isActive)
-        .map(([provider]) => provider) as QuoteProvider[],
-    [activeProvidersMap],
-  );
-  const numActiveProviders = useMemo(
-    () => Object.values(activeProvidersMap).filter(Boolean).length,
-    [activeProvidersMap],
-  );
-
   const [quotesMap, setQuotesMap] = useState<
     Record<number, (StandardizedQuote | null)[]>
   >({});
@@ -337,7 +318,7 @@ function Page() {
       const timestamp = new Date().getTime();
       setQuotesMap((o) => ({ ...(o ?? {}), [timestamp]: [] }));
 
-      await fetchAggQuotes(
+      await getAggQuotes(
         _sdkMap,
         _activeProviders,
         (quote) => {
@@ -867,16 +848,8 @@ function Page() {
       address,
       quote,
       +slippagePercent,
-      {
-        [QuoteProvider.AFTERMATH]: aftermathSdk,
-        [QuoteProvider.CETUS]: cetusSdk,
-        [QuoteProvider.FLOWX]: flowXSdk,
-      },
-      {
-        [QuoteProvider.CETUS]: CETUS_PARTNER_ID,
-        [QuoteProvider._7K]: _7K_PARTNER_ADDRESS,
-        [QuoteProvider.FLOWX]: FLOWX_PARTNER_ID,
-      },
+      sdkMap,
+      partnerIdMap,
       transaction,
       coinIn,
     );

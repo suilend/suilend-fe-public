@@ -5,29 +5,26 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from "react";
 
-import { setSuiClient as set7kSdkSuiClient } from "@7kprotocol/sdk-ts/cjs";
-import {
-  AggregatorClient as CetusSdk,
-  Env,
-} from "@cetusprotocol/aggregator-sdk";
-import { AggregatorQuoter as FlowXAggregatorQuoter } from "@flowx-finance/sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import {
+  Transaction,
+  TransactionObjectArgument,
+} from "@mysten/sui/transactions";
+import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
-import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
+import { BN } from "bn.js";
 
 import {
   ClaimRewardsReward,
   QuoteProvider,
   RewardSummary,
   StandardizedQuote,
-  fetchAggQuotesAll,
+  getAggSortedQuotesAll,
   getSwapTransaction,
 } from "@suilend/sdk";
 import { NORMALIZED_SEND_COINTYPE, getToken } from "@suilend/sui-fe";
@@ -36,9 +33,9 @@ import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
-import { CETUS_PARTNER_ID } from "@/lib/cetus";
-import { FLOWX_PARTNER_ID } from "@/lib/flowx";
+import { useAggSdks } from "@/lib/swap";
+
+const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -46,7 +43,7 @@ interface DashboardContext {
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
-    args?: { isDepositing?: boolean; asSend?: boolean },
+    args: { asSend: boolean; isDepositing: boolean },
   ) => Promise<SuiTransactionBlockResponse>;
 }
 
@@ -67,46 +64,13 @@ export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
+    useWalletContext();
   const { appData } = useLoadedAppContext();
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // send.ag
-  // SDKs
-  const aftermathSdk = useMemo(() => {
-    const sdk = new AftermathSdk("MAINNET");
-    sdk.init();
-    return sdk;
-  }, []);
-
-  const cetusSdk = useMemo(() => {
-    const sdk = new CetusSdk({
-      endpoint: "https://api-sui.cetus.zone/router_v2/find_routes",
-      signer: address,
-      client: suiClient,
-      env: Env.Mainnet,
-    });
-    return sdk;
-  }, [address, suiClient]);
-
-  useEffect(() => {
-    set7kSdkSuiClient(suiClient);
-  }, [suiClient]);
-
-  const flowXSdk = useMemo(() => {
-    const sdk = new FlowXAggregatorQuoter("mainnet");
-    return sdk;
-  }, []);
-
-  // Config
-  const sdkMap = useMemo(
-    () => ({
-      [QuoteProvider.AFTERMATH]: aftermathSdk,
-      [QuoteProvider.CETUS]: cetusSdk,
-      [QuoteProvider.FLOWX]: flowXSdk,
-    }),
-    [aftermathSdk, cetusSdk, flowXSdk],
-  );
+  const { sdkMap, partnerIdMap } = useAggSdks();
 
   const activeProviders = useMemo(
     () => [
@@ -119,15 +83,201 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     [],
   );
 
-  // SEND
-  const sendToken = useMemo(
-    () =>
-      getToken(
-        NORMALIZED_SEND_COINTYPE,
-        appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
-      ),
-    [appData.coinMetadataMap],
+  // Helpers
+  const getClaimRewardSimulatedAmount = useCallback(
+    async (rewards: ClaimRewardsReward[]): Promise<string> => {
+      if (!address) throw Error("Wallet not connected");
+      if (!obligationOwnerCap || !obligation)
+        throw Error("Obligation not found");
+
+      let transaction = new Transaction();
+
+      // Claim
+      const { transaction: _transaction, mergedCoinsMap } =
+        appData.suilendClient.claimRewards(
+          address,
+          obligationOwnerCap.id,
+          rewards,
+          transaction,
+        );
+      transaction = _transaction;
+
+      const [coinType, coin] = Object.entries(mergedCoinsMap)[0];
+
+      // Get amount
+      transaction.transferObjects([coin], transaction.pure.address(address));
+      const inspectResults = await dryRunTransaction(transaction);
+
+      console.log("[getClaimRewardSimulatedAmount]", {
+        inspectResults,
+      });
+
+      const claimEvents = inspectResults.events.filter(
+        (event) =>
+          event.type ===
+            "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::ClaimRewardEvent" &&
+          normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+            coinType,
+      );
+      if (claimEvents.length === 0) throw new Error("Claim event not found");
+
+      const amount = claimEvents
+        .reduce(
+          (acc, claimEvent) =>
+            acc.plus((claimEvent.parsedJson as any).liquidity_amount),
+          new BigNumber(0),
+        )
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString();
+      console.log("[getClaimRewardSimulatedAmount]", {
+        amount,
+        claimEvents,
+      });
+
+      return amount;
+    },
+    [
+      address,
+      obligationOwnerCap,
+      obligation,
+      appData.suilendClient,
+      dryRunTransaction,
+    ],
   );
+
+  const depositOrSendToUser = useCallback(
+    (
+      isDepositing: boolean,
+      coinType: string,
+      coin: TransactionObjectArgument,
+      transaction: Transaction,
+    ) => {
+      if (!address) throw Error("Wallet not connected");
+      if (!obligationOwnerCap || !obligation)
+        throw Error("Obligation not found");
+
+      const innerTransaction = Transaction.from(transaction);
+
+      if (isDepositing) {
+        // Deposit SEND
+        appData.suilendClient.deposit(
+          coin,
+          coinType,
+          obligationOwnerCap.id,
+          innerTransaction,
+        );
+      } else {
+        // Transfer SEND to user
+        innerTransaction.transferObjects(
+          [coin],
+          innerTransaction.pure.address(address),
+        );
+      }
+
+      return innerTransaction;
+    },
+    [address, obligationOwnerCap, obligation, appData.suilendClient],
+  );
+
+  const swapToSendAndDepositOrSendToUser = useCallback(
+    async (
+      isDepositing: boolean,
+      coinIn: TransactionObjectArgument,
+      quote: StandardizedQuote,
+      transaction: Transaction,
+    ) => {
+      if (!address) throw Error("Wallet not connected");
+      if (!obligationOwnerCap || !obligation)
+        throw Error("Obligation not found");
+
+      let innerTransaction = Transaction.from(transaction);
+
+      const { transaction: _transaction2, coinOut } = await getSwapTransaction(
+        suiClient,
+        address,
+        quote,
+        SWAP_TO_SEND_SLIPPAGE_PERCENT,
+        sdkMap,
+        partnerIdMap,
+        innerTransaction,
+        coinIn,
+      );
+      if (!coinOut) throw new Error("Missing coin to transfer to user");
+
+      innerTransaction = _transaction2;
+
+      innerTransaction = depositOrSendToUser(
+        isDepositing,
+        NORMALIZED_SEND_COINTYPE,
+        coinOut,
+        innerTransaction,
+      );
+
+      return innerTransaction;
+    },
+    [
+      address,
+      obligationOwnerCap,
+      obligation,
+      suiClient,
+      sdkMap,
+      partnerIdMap,
+      depositOrSendToUser,
+    ],
+  );
+
+  const swapDustToSendAndDepositOrSendToUser = useCallback(
+    async (
+      isDepositing: boolean,
+      coinType: string,
+      coinIn: TransactionObjectArgument,
+      transaction: Transaction,
+    ) => {
+      if (!address) throw Error("Wallet not connected");
+      if (!obligationOwnerCap || !obligation)
+        throw Error("Obligation not found");
+
+      let innerTransaction = Transaction.from(transaction);
+
+      const routers = await sdkMap[QuoteProvider.CETUS].findRouters({
+        from: coinType,
+        target: NORMALIZED_SEND_COINTYPE,
+        amount: new BN(0.01 * 10 ** appData.coinMetadataMap[coinType].decimals), // Just an estimate (an upper bound)
+        byAmountIn: true,
+      });
+
+      if (!routers) throw new Error("No routers found");
+      console.log("[swapDustToSendAndSendToUser]", { routers });
+
+      const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap({
+        routers,
+        inputCoin: coinIn,
+        slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT,
+        txb: innerTransaction,
+        partner: partnerIdMap[QuoteProvider.CETUS],
+      });
+
+      innerTransaction = depositOrSendToUser(
+        isDepositing,
+        NORMALIZED_SEND_COINTYPE,
+        coinOut,
+        innerTransaction,
+      );
+
+      return innerTransaction;
+    },
+    [
+      address,
+      obligationOwnerCap,
+      obligation,
+      sdkMap,
+      appData.coinMetadataMap,
+      partnerIdMap,
+      depositOrSendToUser,
+    ],
+  );
+
+  //
 
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
@@ -137,10 +287,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const claimRewards = useCallback(
     async (
       rewardsMap: Record<string, RewardSummary[]>,
-      args?: {
-        isDepositing?: boolean;
-        asSend?: boolean;
-      },
+      args: { asSend: boolean; isDepositing: boolean },
     ) => {
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
@@ -157,109 +304,91 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             rewardIndex: BigInt(r.stats.rewardIndex),
             rewardCoinType: r.stats.rewardCoinType,
             side: r.stats.side,
-            amount: r.obligationClaims[obligation.id].claimableAmount
-              .times(10 ** r.stats.mintDecimals)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
           }));
 
-        if (args?.isDepositing) {
-          if (args?.asSend) {
-          } else {
-            appData.suilendClient.claimRewardsAndDeposit(
+        if (args?.asSend) {
+          if (Object.keys(rewardsMap).length > 1)
+            throw new Error(
+              "Cannot claim multiple rewards as SEND in one transaction",
+            ); // TODO
+
+          // Claim
+          const { transaction: _transaction1, mergedCoinsMap } =
+            appData.suilendClient.claimRewards(
               address,
               obligationOwnerCap.id,
               rewards,
               transaction,
             );
+          transaction = _transaction1;
+
+          const [coinType, coin] = Object.entries(mergedCoinsMap)[0];
+
+          // Get amount
+          const amount = await getClaimRewardSimulatedAmount(rewards);
+
+          // Get quotes
+          const sortedQuotes = await getAggSortedQuotesAll(
+            sdkMap,
+            activeProviders,
+            getToken(coinType, appData.coinMetadataMap[coinType]),
+            getToken(
+              NORMALIZED_SEND_COINTYPE,
+              appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
+            ),
+            amount,
+          );
+          if (sortedQuotes.length === 0) throw new Error("No quotes found");
+
+          // Make swap
+          const swapCoinIn = transaction.splitCoins(coin, [amount]);
+          const dustCoinIn = coin;
+
+          // Swap - main
+          let quote: StandardizedQuote | undefined = undefined;
+          for (const _quote of sortedQuotes) {
+            try {
+              console.log("[claimRewards] dryRunTransaction for swap", {
+                quote: _quote,
+              });
+              const testTransaction = await swapToSendAndDepositOrSendToUser(
+                args?.isDepositing,
+                swapCoinIn,
+                _quote,
+                Transaction.from(transaction),
+              );
+
+              await dryRunTransaction(testTransaction);
+              quote = _quote;
+              break;
+            } catch (err) {
+              console.error(err);
+              continue;
+            }
           }
+          if (quote === undefined) throw new Error("No valid quotes found");
+
+          transaction = await swapToSendAndDepositOrSendToUser(
+            args?.isDepositing,
+            swapCoinIn,
+            quote,
+            transaction,
+          );
+
+          // Swap - dust
+          transaction = await swapDustToSendAndDepositOrSendToUser(
+            args?.isDepositing,
+            coinType,
+            dustCoinIn,
+            transaction,
+          );
         } else {
-          if (args?.asSend) {
-            const { transaction: _transaction, mergedCoinsMap } =
-              appData.suilendClient.claimRewards(
-                address,
-                obligationOwnerCap.id,
-                rewards,
-                transaction,
-              );
-            transaction = _transaction;
-
-            // Get swap quotes for all rewards in parallel
-            const swapQuotes: StandardizedQuote[] = await Promise.all(
-              Object.entries(mergedCoinsMap).map(
-                ([coinType, { coin, amount }]) =>
-                  (async () => {
-                    const quotes = await fetchAggQuotesAll(
-                      sdkMap,
-                      activeProviders,
-                      getToken(coinType, appData.coinMetadataMap[coinType]),
-                      sendToken,
-                      amount,
-                    );
-                    if (quotes.length === 0) throw new Error("No quotes found");
-
-                    const sortedQuotes = (
-                      quotes.filter(Boolean) as StandardizedQuote[]
-                    )
-                      .slice()
-                      .sort((a, b) => +b.out.amount.minus(a.out.amount));
-
-                    const quote = sortedQuotes[0]; // Best quote by amount out
-
-                    return quote;
-                  })(),
-              ),
-            );
-
-            // Add swap calls for each quote sequentially
-            const sendCoins = [];
-            for (const [coinType, { coin, amount }] of Object.entries(
-              mergedCoinsMap,
-            )) {
-              const swapQuote = swapQuotes.find(
-                (q) => q.in.coinType === coinType,
-              );
-              if (!swapQuote) throw new Error("No quote found"); // Should never happen
-
-              console.log(
-                "xxx swapQuote",
-                swapQuote.in.amount.toString(),
-                swapQuote.out.amount.toString(),
-              );
-
-              const coinToSwap = transaction.splitCoins(coin, [amount]);
-              transaction.transferObjects([coin], address);
-
-              const { transaction: _transaction, coinOut } =
-                await getSwapTransaction(
-                  suiClient,
-                  address,
-                  swapQuote,
-                  1,
-                  sdkMap,
-                  {
-                    [QuoteProvider.CETUS]: CETUS_PARTNER_ID,
-                    [QuoteProvider._7K]: _7K_PARTNER_ADDRESS,
-                    [QuoteProvider.FLOWX]: FLOWX_PARTNER_ID,
-                  },
-                  transaction,
-                  coinToSwap,
-                );
-              if (!coinOut) throw new Error("Missing coin to transfer to user");
-
-              transaction = _transaction;
-              sendCoins.push(coinOut);
-            }
-
-            // Merge and transfer SEND to user
-            const mergedSendCoin = sendCoins[0];
-            if (sendCoins.length > 1) {
-              transaction.mergeCoins(mergedSendCoin, sendCoins.slice(1));
-            }
-
-            transaction.transferObjects(
-              [mergedSendCoin],
-              transaction.pure.address(address),
+          if (args?.isDepositing) {
+            appData.suilendClient.claimRewardsAndDeposit(
+              address,
+              obligationOwnerCap.id,
+              rewards,
+              transaction,
             );
           } else {
             appData.suilendClient.claimRewardsAndSendToUser(
@@ -284,11 +413,13 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       obligationOwnerCap,
       obligation,
       appData.suilendClient,
+      getClaimRewardSimulatedAmount,
       sdkMap,
       activeProviders,
       appData.coinMetadataMap,
-      sendToken,
-      suiClient,
+      dryRunTransaction,
+      swapToSendAndDepositOrSendToUser,
+      swapDustToSendAndDepositOrSendToUser,
       signExecuteAndWaitForTransaction,
     ],
   );

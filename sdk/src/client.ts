@@ -165,7 +165,6 @@ export type ClaimRewardsReward = {
   rewardIndex: bigint;
   rewardCoinType: string;
   side: Side;
-  amount: string;
 };
 
 export class SuilendClient {
@@ -538,9 +537,9 @@ export class SuilendClient {
     transaction: Transaction,
   ): {
     transaction: Transaction;
-    mergedCoinsMap: Record<string, { coin: any; amount: string }>;
+    mergedCoinsMap: Record<string, any>;
   } {
-    const mergeCoinsMap: Record<string, { coin: any; amount: string }[]> = {};
+    const mergeCoinsMap: Record<string, any[]> = {};
     for (const reward of rewards) {
       const [claimedCoin] = this.claimReward(
         obligationOwnerCapId,
@@ -553,22 +552,15 @@ export class SuilendClient {
 
       if (mergeCoinsMap[reward.rewardCoinType] === undefined)
         mergeCoinsMap[reward.rewardCoinType] = [];
-      mergeCoinsMap[reward.rewardCoinType].push({
-        coin: claimedCoin,
-        amount: reward.amount,
-      });
+      mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
     }
 
-    const mergedCoinsMap: Record<string, { coin: any; amount: string }> = {};
-    for (const [rewardCoinType, objs] of Object.entries(mergeCoinsMap)) {
-      const mergedCoin = objs[0].coin;
-      if (objs.length > 1)
-        transaction.mergeCoins(mergedCoin, objs.map((o) => o.coin).slice(1));
-      const amount = objs
-        .reduce((acc, o) => acc.plus(o.amount), new BigNumber(0))
-        .toString();
+    const mergedCoinsMap: Record<string, any> = {};
+    for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+      const mergedCoin = coins[0];
+      if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
 
-      mergedCoinsMap[rewardCoinType] = { coin: mergedCoin, amount };
+      mergedCoinsMap[rewardCoinType] = mergedCoin;
     }
 
     return { transaction, mergedCoinsMap };
@@ -587,11 +579,8 @@ export class SuilendClient {
       transaction,
     );
 
-    for (const [rewardCoinType, obj] of Object.entries(mergedCoinsMap)) {
-      transaction_.transferObjects(
-        [obj.coin],
-        transaction_.pure.address(ownerId),
-      );
+    for (const [rewardCoinType, coin] of Object.entries(mergedCoinsMap)) {
+      transaction_.transferObjects([coin], transaction_.pure.address(ownerId));
     }
 
     return transaction_;
@@ -610,13 +599,8 @@ export class SuilendClient {
       transaction,
     );
 
-    for (const [rewardCoinType, obj] of Object.entries(mergedCoinsMap)) {
-      this.deposit(
-        obj.coin,
-        rewardCoinType,
-        obligationOwnerCapId,
-        transaction_,
-      );
+    for (const [rewardCoinType, coin] of Object.entries(mergedCoinsMap)) {
+      this.deposit(coin, rewardCoinType, obligationOwnerCapId, transaction_);
     }
 
     return transaction_;

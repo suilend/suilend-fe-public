@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -11,6 +12,7 @@ import NavigationLinks from "@/components/layout/NavigationLinks";
 import SettingsDialog from "@/components/layout/SettingsDialog";
 import Button from "@/components/shared/Button";
 import { useUserContext } from "@/contexts/UserContext";
+import { ROOT_URL } from "@/lib/navigation";
 
 export default function AppHeader() {
   const router = useRouter();
@@ -42,7 +44,9 @@ export default function AppHeader() {
     <HeaderBase>
       {/* Start */}
       <div className="flex shrink-0 flex-row items-center gap-12">
-        <Logo />
+        <Link href={ROOT_URL}>
+          <Logo />
+        </Link>
 
         {/* Links */}
         <div className="flex flex-row items-center gap-8 max-lg:hidden">
