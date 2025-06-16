@@ -232,50 +232,50 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       transaction: Transaction,
     ) => {
       if (!address) throw Error("Wallet not connected");
-      if (!obligationOwnerCap || !obligation)
-        throw Error("Obligation not found");
+      // if (!obligationOwnerCap || !obligation)
+      //   throw Error("Obligation not found");
 
-      let innerTransaction = Transaction.from(transaction);
+      const innerTransaction = Transaction.from(transaction);
 
       innerTransaction.transferObjects([coinIn], address);
       return innerTransaction; // TEMP
 
-      const routers = await sdkMap[QuoteProvider.CETUS].findRouters({
-        from: coinType,
-        target: NORMALIZED_SEND_COINTYPE,
-        amount: new BN(0.01 * 10 ** appData.coinMetadataMap[coinType].decimals), // Just an estimate (an upper bound)
-        byAmountIn: true,
-        splitCount: 1,
-      });
+      // const routers = await sdkMap[QuoteProvider.CETUS].findRouters({
+      //   from: coinType,
+      //   target: NORMALIZED_SEND_COINTYPE,
+      //   amount: new BN(0.01 * 10 ** appData.coinMetadataMap[coinType].decimals), // Just an estimate (an upper bound)
+      //   byAmountIn: true,
+      //   splitCount: 1,
+      // });
 
-      if (!routers) throw new Error("No routers found");
-      console.log("[swapDustToSendAndSendToUser]", { routers });
+      // if (!routers) throw new Error("No routers found");
+      // console.log("[swapDustToSendAndSendToUser]", { routers });
 
-      const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap({
-        routers,
-        inputCoin: coinIn,
-        slippage: DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT,
-        txb: innerTransaction,
-        partner: partnerIdMap[QuoteProvider.CETUS],
-      });
+      // const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap({
+      //   routers,
+      //   inputCoin: coinIn,
+      //   slippage: DUST_SWAP_TO_SEND_SLIPPAGE_PERCENT,
+      //   txb: innerTransaction,
+      //   partner: partnerIdMap[QuoteProvider.CETUS],
+      // });
 
-      innerTransaction = depositOrSendToUser(
-        isDepositing,
-        NORMALIZED_SEND_COINTYPE,
-        coinOut,
-        innerTransaction,
-      );
+      // innerTransaction = depositOrSendToUser(
+      //   isDepositing,
+      //   NORMALIZED_SEND_COINTYPE,
+      //   coinOut,
+      //   innerTransaction,
+      // );
 
-      return innerTransaction;
+      // return innerTransaction;
     },
     [
       address,
-      obligationOwnerCap,
-      obligation,
-      sdkMap,
-      appData.coinMetadataMap,
-      partnerIdMap,
-      depositOrSendToUser,
+      // obligationOwnerCap,
+      // obligation,
+      // sdkMap,
+      // appData.coinMetadataMap,
+      // partnerIdMap,
+      // depositOrSendToUser,
     ],
   );
 
