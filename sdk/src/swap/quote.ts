@@ -110,12 +110,21 @@ const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
 const getAggQuoteWrapper = async (
   provider: QuoteProvider,
   getAggQuote: () => Promise<StandardizedQuote | null>,
+  timeoutMs: number,
 ): Promise<StandardizedQuote | null> => {
   console.log(`[getAggQuoteWrapper] getting ${provider} quote`);
 
   try {
-    const standardizedQuote = await getAggQuote();
-    if (!standardizedQuote) throw new Error("No quote returned");
+    const timeoutPromise = new Promise<null>((resolve) => {
+      setTimeout(() => resolve(null), timeoutMs);
+    });
+
+    const standardizedQuote = await Promise.race<StandardizedQuote | null>([
+      getAggQuote(),
+      timeoutPromise,
+    ]);
+    if (!standardizedQuote)
+      throw new Error(`No ${provider} quote returned within ${timeoutMs}ms`);
 
     console.log(
       `[getAggQuoteWrapper] got ${provider} quote`,
@@ -443,6 +452,8 @@ export const getAggQuotes = async (
   tokenOut: Token,
   amountIn: string,
 ) => {
+  const timeoutMs = 5000;
+
   // Get quotes in parallel
   // Aftermath
   if (activeProviders.includes(QuoteProvider.AFTERMATH)) {
@@ -456,6 +467,7 @@ export const getAggQuotes = async (
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
       onGetAggQuote(standardizedQuote);
@@ -474,6 +486,7 @@ export const getAggQuotes = async (
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
       onGetAggQuote(standardizedQuote);
@@ -486,6 +499,7 @@ export const getAggQuotes = async (
       const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider._7K,
         () => get7kQuote(tokenIn, tokenOut, amountIn),
+        timeoutMs,
       );
 
       onGetAggQuote(standardizedQuote);
@@ -504,6 +518,7 @@ export const getAggQuotes = async (
             tokenOut,
             amountIn,
           ),
+        timeoutMs,
       );
 
       onGetAggQuote(standardizedQuote);
@@ -516,6 +531,7 @@ export const getAggQuotes = async (
       const standardizedQuote = await getAggQuoteWrapper(
         QuoteProvider.OKX_DEX,
         () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
+        timeoutMs,
       );
 
       onGetAggQuote(standardizedQuote);
@@ -533,47 +549,62 @@ export const getAggSortedQuotesAll = async (
   tokenOut: Token,
   amountIn: string,
 ) => {
+  const timeoutMs = 2500;
+
   // Get quotes in parallel
   const quotes = await Promise.all(
     [
       activeProviders.includes(QuoteProvider.AFTERMATH)
-        ? getAggQuoteWrapper(QuoteProvider.AFTERMATH, () =>
-            getAftermathQuote(
-              sdkMap[QuoteProvider.AFTERMATH],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.AFTERMATH,
+            () =>
+              getAftermathQuote(
+                sdkMap[QuoteProvider.AFTERMATH],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.CETUS)
-        ? getAggQuoteWrapper(QuoteProvider.CETUS, () =>
-            getCetusQuote(
-              sdkMap[QuoteProvider.CETUS],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.CETUS,
+            () =>
+              getCetusQuote(
+                sdkMap[QuoteProvider.CETUS],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider._7K)
-        ? getAggQuoteWrapper(QuoteProvider._7K, () =>
-            get7kQuote(tokenIn, tokenOut, amountIn),
+        ? getAggQuoteWrapper(
+            QuoteProvider._7K,
+            () => get7kQuote(tokenIn, tokenOut, amountIn),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.FLOWX)
-        ? getAggQuoteWrapper(QuoteProvider.FLOWX, () =>
-            getFlowXQuote(
-              sdkMap[QuoteProvider.FLOWX],
-              tokenIn,
-              tokenOut,
-              amountIn,
-            ),
+        ? getAggQuoteWrapper(
+            QuoteProvider.FLOWX,
+            () =>
+              getFlowXQuote(
+                sdkMap[QuoteProvider.FLOWX],
+                tokenIn,
+                tokenOut,
+                amountIn,
+              ),
+            timeoutMs,
           )
         : null,
       activeProviders.includes(QuoteProvider.OKX_DEX)
-        ? getAggQuoteWrapper(QuoteProvider.OKX_DEX, () =>
-            getOkxDexQuote(amountIn, tokenIn, tokenOut),
+        ? getAggQuoteWrapper(
+            QuoteProvider.OKX_DEX,
+            () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
+            timeoutMs,
           )
         : null,
     ].filter(Boolean),

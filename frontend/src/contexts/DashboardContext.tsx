@@ -102,15 +102,11 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         );
       transaction = _transaction;
 
-      const [coinType, coin] = Object.entries(mergedCoinsMap)[0];
+      const [coinType, coin] = Object.entries(mergedCoinsMap)[0]; // There should be only be one entry
 
       // Get amount
       transaction.transferObjects([coin], transaction.pure.address(address));
       const inspectResults = await dryRunTransaction(transaction);
-
-      console.log("[getClaimRewardSimulatedAmount]", {
-        inspectResults,
-      });
 
       const claimEvents = inspectResults.events.filter(
         (event) =>
@@ -130,6 +126,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         .integerValue(BigNumber.ROUND_DOWN)
         .toString();
       console.log("[getClaimRewardSimulatedAmount]", {
+        coinType,
         amount,
         claimEvents,
       });
@@ -322,66 +319,93 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             );
           transaction = _transaction1;
 
-          const [coinType, coin] = Object.entries(mergedCoinsMap)[0];
-
-          // Get amount
-          const amount = await getClaimRewardSimulatedAmount(rewards);
-
-          // Get quotes
-          const sortedQuotes = await getAggSortedQuotesAll(
-            sdkMap,
-            activeProviders,
-            getToken(coinType, appData.coinMetadataMap[coinType]),
-            getToken(
-              NORMALIZED_SEND_COINTYPE,
-              appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
-            ),
-            amount,
-          );
-          if (sortedQuotes.length === 0) throw new Error("No quotes found");
-
-          // Make swap
-          const swapCoinIn = transaction.splitCoins(coin, [amount]);
-          const dustCoinIn = coin;
-
-          // Swap - main
-          let quote: StandardizedQuote | undefined = undefined;
-          for (const _quote of sortedQuotes) {
-            try {
-              console.log("[claimRewards] dryRunTransaction for swap", {
-                quote: _quote,
-              });
-              const testTransaction = await swapToSendAndDepositOrSendToUser(
-                args?.isDepositing,
-                swapCoinIn,
-                _quote,
-                Transaction.from(transaction),
-              );
-
-              await dryRunTransaction(testTransaction);
-              quote = _quote;
-              break;
-            } catch (err) {
-              console.error(err);
-              continue;
+          // Get amounts and quotes
+          const amountsAndSortedQuotesMap: Record<
+            string,
+            {
+              coin: TransactionObjectArgument;
+              amount: string;
+              sortedQuotes: StandardizedQuote[];
             }
-          }
-          if (quote === undefined) throw new Error("No valid quotes found");
+          > = Object.fromEntries(
+            await Promise.all(
+              Object.entries(mergedCoinsMap).map(([coinType, coin]) =>
+                (async () => {
+                  // Get amount
+                  const amount = await getClaimRewardSimulatedAmount(
+                    rewards.filter((r) => r.rewardCoinType === coinType),
+                  );
 
-          transaction = await swapToSendAndDepositOrSendToUser(
-            args?.isDepositing,
-            swapCoinIn,
-            quote,
-            transaction,
+                  // Get quotes
+                  const sortedQuotes = await getAggSortedQuotesAll(
+                    sdkMap,
+                    activeProviders,
+                    getToken(coinType, appData.coinMetadataMap[coinType]),
+                    getToken(
+                      NORMALIZED_SEND_COINTYPE,
+                      appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
+                    ),
+                    amount,
+                  );
+                  if (sortedQuotes.length === 0)
+                    throw new Error("No quotes found");
+
+                  return [coinType, { coin, amount, sortedQuotes }];
+                })(),
+              ),
+            ),
           );
 
-          // Swap - dust
-          transaction = await swapDustToSendAndDepositOrSendToUser(
-            args?.isDepositing,
+          // Make swaps
+          for (const [
             coinType,
-            dustCoinIn,
-            transaction,
-          );
+            { coin, amount, sortedQuotes },
+          ] of Object.entries(amountsAndSortedQuotesMap)) {
+            // Split coin
+            const swapCoinIn = transaction.splitCoins(coin, [amount]);
+            const dustCoinIn = coin;
+
+            // Swap - main
+            let quote: StandardizedQuote | undefined = undefined;
+            for (const _quote of sortedQuotes) {
+              try {
+                console.log("[claimRewards] dryRunTransaction for swap", {
+                  coinType,
+                  amount,
+                  quote: _quote,
+                });
+                const testTransaction = await swapToSendAndDepositOrSendToUser(
+                  args?.isDepositing,
+                  swapCoinIn,
+                  _quote,
+                  Transaction.from(transaction),
+                );
+
+                await dryRunTransaction(testTransaction);
+                quote = _quote;
+                break;
+              } catch (err) {
+                console.error(err);
+                continue;
+              }
+            }
+            if (quote === undefined) throw new Error("No valid quotes found");
+
+            transaction = await swapToSendAndDepositOrSendToUser(
+              args?.isDepositing,
+              swapCoinIn,
+              quote,
+              transaction,
+            );
+
+            // Swap - dust
+            transaction = await swapDustToSendAndDepositOrSendToUser(
+              args?.isDepositing,
+              coinType,
+              dustCoinIn,
+              transaction,
+            );
+          }
         } else {
           if (args?.isDepositing) {
             appData.suilendClient.claimRewardsAndDeposit(

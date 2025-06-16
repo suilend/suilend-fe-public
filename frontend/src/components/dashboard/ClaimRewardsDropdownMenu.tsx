@@ -4,13 +4,19 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { RewardSummary } from "@suilend/sdk";
-import { NORMALIZED_SEND_COINTYPE, Token, getToken } from "@suilend/sui-fe";
+import {
+  NORMALIZED_SEND_COINTYPE,
+  Token,
+  formatList,
+  getToken,
+} from "@suilend/sui-fe";
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
+import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TLabelSans } from "@/components/shared/Typography";
@@ -72,36 +78,43 @@ export default function ClaimRewardsDropdownMenu({
   const Icon = isOpen ? ChevronUp : ChevronDown;
 
   // Claim
+  const [isClaiming, setIsClaiming] = useState<boolean>(false);
+
   const submit = async (args: { asSend: boolean; isDepositing: boolean }) => {
-    try {
-      const filteredRewardsMap: Record<string, RewardSummary[]> = (() => {
-        const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
-          if (args?.asSend) {
-            if (args?.isDepositing) return canDepositAsSend;
-            return true;
-          } else {
-            if (args?.isDepositing)
-              return tokensThatCanBeDeposited.some(
-                (t) => t.coinType === coinType,
-              );
-            return true;
-          }
-        });
+    if (isClaiming) return;
 
-        return Object.fromEntries(
-          coinTypes.map((coinType) => [coinType, rewardsMap[coinType]]),
-        );
-      })();
+    setIsClaiming(true);
 
-      if (args?.asSend) {
-        for (const [coinType, rewards] of Object.entries(filteredRewardsMap)) {
+    const filteredRewardsMap: Record<string, RewardSummary[]> = (() => {
+      const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
+        if (args?.asSend) {
+          if (args?.isDepositing) return canDepositAsSend;
+          return true;
+        } else {
+          if (args?.isDepositing)
+            return tokensThatCanBeDeposited.some(
+              (t) => t.coinType === coinType,
+            );
+          return true;
+        }
+      });
+
+      return Object.fromEntries(
+        coinTypes.map((coinType) => [coinType, rewardsMap[coinType]]),
+      );
+    })();
+
+    if (args?.asSend) {
+      for (const [coinType, rewards] of Object.entries(filteredRewardsMap)) {
+        try {
           const res = await claimRewards({ [coinType]: rewards }, args);
           const txUrl = explorer.buildTxUrl(res.digest);
 
           toast.success(
             [
-              `${args?.isDepositing ? "Claimed and deposited" : "Claimed"} ${appData.coinMetadataMap[coinType].symbol} rewards`,
-              args?.asSend ? "as SEND" : null,
+              args?.isDepositing ? "Claimed and deposited" : "Claimed",
+              appData.coinMetadataMap[coinType].symbol,
+              "rewards as SEND",
             ]
               .filter(Boolean)
               .join(" "),
@@ -114,15 +127,41 @@ export default function ClaimRewardsDropdownMenu({
               duration: TX_TOAST_DURATION,
             },
           );
+        } catch (err) {
+          showErrorToast(
+            [
+              "Failed to",
+              args?.isDepositing ? "claim and deposit" : "claim",
+              appData.coinMetadataMap[coinType].symbol,
+              "rewards as SEND",
+            ]
+              .filter(Boolean)
+              .join(" "),
+            err as Error,
+            undefined,
+            true,
+          );
+          break;
+        } finally {
+          refresh();
         }
-      } else {
+      }
+
+      setIsClaiming(false);
+    } else {
+      try {
         const res = await claimRewards(filteredRewardsMap, args);
         const txUrl = explorer.buildTxUrl(res.digest);
 
         toast.success(
           [
-            `${args?.isDepositing ? "Claimed and deposited" : "Claimed"} rewards`,
-            args?.asSend ? "as SEND" : null,
+            args?.isDepositing ? "Claimed and deposited" : "Claimed",
+            formatList(
+              Object.keys(filteredRewardsMap).map(
+                (coinType) => appData.coinMetadataMap[coinType].symbol,
+              ),
+            ),
+            "rewards",
           ]
             .filter(Boolean)
             .join(" "),
@@ -135,22 +174,28 @@ export default function ClaimRewardsDropdownMenu({
             duration: TX_TOAST_DURATION,
           },
         );
+      } catch (err) {
+        showErrorToast(
+          [
+            "Failed to",
+            args?.isDepositing ? "claim and deposit" : "claim",
+            formatList(
+              Object.keys(filteredRewardsMap).map(
+                (coinType) => appData.coinMetadataMap[coinType].symbol,
+              ),
+            ),
+            "rewards",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          err as Error,
+          undefined,
+          true,
+        );
+      } finally {
+        setIsClaiming(false);
+        refresh();
       }
-    } catch (err) {
-      showErrorToast(
-        [
-          "Failed to",
-          `${args?.isDepositing ? "claim and deposit" : "claim"} rewards`,
-          args?.asSend ? "as SEND" : null,
-        ]
-          .filter(Boolean)
-          .join(" "),
-        err as Error,
-        undefined,
-        true,
-      );
-    } finally {
-      refresh();
     }
   };
 
@@ -159,11 +204,11 @@ export default function ClaimRewardsDropdownMenu({
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={
         <Button
-          className="w-full"
+          className="w-[150px]"
           labelClassName="uppercase"
-          endIcon={<Icon />}
+          endIcon={isClaiming ? undefined : <Icon />}
         >
-          Claim rewards
+          {isClaiming ? <Spinner size="sm" /> : "Claim rewards"}
         </Button>
       }
       contentStyle={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}

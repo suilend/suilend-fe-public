@@ -83,7 +83,6 @@ import {
   useSwapContext,
 } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import {
   getMaxValue,
   getNewBorrowUtilizationCalculations,
@@ -91,12 +90,10 @@ import {
   getSubmitButtonState,
   getSubmitWarningMessages,
 } from "@/lib/actions";
-import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
-import { FLOWX_PARTNER_ID } from "@/lib/flowx";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

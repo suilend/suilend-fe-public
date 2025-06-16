@@ -1,6 +1,7 @@
 import { CoinStruct, SuiClient } from "@mysten/sui/client";
 import {
   Transaction,
+  TransactionObjectArgument,
   TransactionObjectInput,
   TransactionResult,
 } from "@mysten/sui/transactions";
@@ -537,9 +538,9 @@ export class SuilendClient {
     transaction: Transaction,
   ): {
     transaction: Transaction;
-    mergedCoinsMap: Record<string, any>;
+    mergedCoinsMap: Record<string, TransactionObjectArgument>;
   } {
-    const mergeCoinsMap: Record<string, any[]> = {};
+    const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
     for (const reward of rewards) {
       const [claimedCoin] = this.claimReward(
         obligationOwnerCapId,
@@ -555,7 +556,7 @@ export class SuilendClient {
       mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
     }
 
-    const mergedCoinsMap: Record<string, any> = {};
+    const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
     for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
       const mergedCoin = coins[0];
       if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
@@ -579,7 +580,7 @@ export class SuilendClient {
       transaction,
     );
 
-    for (const [rewardCoinType, coin] of Object.entries(mergedCoinsMap)) {
+    for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
       transaction_.transferObjects([coin], transaction_.pure.address(ownerId));
     }
 
@@ -599,8 +600,8 @@ export class SuilendClient {
       transaction,
     );
 
-    for (const [rewardCoinType, coin] of Object.entries(mergedCoinsMap)) {
-      this.deposit(coin, rewardCoinType, obligationOwnerCapId, transaction_);
+    for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
+      this.deposit(coin, coinType, obligationOwnerCapId, transaction_);
     }
 
     return transaction_;

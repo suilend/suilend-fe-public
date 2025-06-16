@@ -11,9 +11,7 @@ import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import { QuoteProvider } from "@suilend/sdk";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
-import { _7K_PARTNER_ADDRESS } from "@/lib/7k";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
-import { FLOWX_PARTNER_ID } from "@/lib/flowx";
 
 export type SdkMap = {
   [QuoteProvider.AFTERMATH]: AftermathSdk;
@@ -72,8 +70,10 @@ export const useAggSdks = (): {
   const partnerIdMap = useMemo(
     () => ({
       [QuoteProvider.CETUS]: CETUS_PARTNER_ID,
-      [QuoteProvider._7K]: _7K_PARTNER_ADDRESS,
-      [QuoteProvider.FLOWX]: FLOWX_PARTNER_ID,
+      [QuoteProvider._7K]:
+        "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e",
+      [QuoteProvider.FLOWX]:
+        "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e",
     }),
     [],
   );
