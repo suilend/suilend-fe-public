@@ -1642,9 +1642,9 @@ function Page() {
                         : undefined
                     }
                   >
-                    <div className="w-full">
+                    <div className="flex h-max w-full flex-col">
                       <Button
-                        className="block h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                        className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
                         labelClassName="uppercase text-wrap text-xs"
                         variant="secondary"
                         disabled={buttonState_swapAndDeposit.isDisabled}
