@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
@@ -78,72 +78,87 @@ export default function LiquidateDialog({
     FormattedObligationHistory[]
   >([]);
 
+  const fetchObligationHistory = useCallback(
+    async (obligationId: string) => {
+      const historyPage = await getObligationHistoryPage(
+        suiClient,
+        obligationId,
+        10,
+        historyCursor,
+      );
+      setHistoryCursor(historyPage.cursor || null);
+      setObligationHistory([...obligationHistory, ...historyPage.history]);
+    },
+    [suiClient, historyCursor, obligationHistory],
+  );
+
+  const fetchObligationOwner = useCallback(
+    async (obligationId: string) => {
+      if (obligationId === "") {
+        return;
+      }
+      const obligationObject = await suiClient.getObject({
+        id: obligationId,
+        options: {
+          showOwner: true,
+        },
+      });
+      if (!obligationObject?.data?.owner) {
+        return;
+      }
+      setObligationOwner(
+        (obligationObject.data.owner as { ObjectOwner: string }).ObjectOwner,
+      );
+    },
+    [suiClient],
+  );
+
+  const fetchObligationDetails = useCallback(
+    async (obligationId: string) => {
+      await fetchObligationOwner(obligationId);
+      const rawLendingMarket = await LendingMarket.fetch(
+        suiClient,
+        phantom(appData.lendingMarket.type),
+        appData.lendingMarket.id,
+      );
+      const rawObligation = await SuilendClient.getObligation(
+        obligationId,
+        [appData.lendingMarket.type],
+        suiClient,
+      );
+      let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];
+      const connection = new SuiPriceServiceConnection(
+        "https://hermes.pyth.network",
+      );
+      refreshedReserves = await simulate.refreshReservePrice(
+        rawLendingMarket.reserves.map((r) =>
+          simulate.compoundReserveInterest(r, Math.round(Date.now() / 1000)),
+        ),
+        connection,
+      );
+      const refreshedObligation = simulate.refreshObligation(
+        rawObligation,
+        refreshedReserves,
+      );
+      setRefreshedObligation(refreshedObligation);
+      setObligationHistory([]);
+      setHistoryCursor(null);
+      await fetchObligationHistory(obligationId);
+    },
+    [
+      fetchObligationOwner,
+      suiClient,
+      appData.lendingMarket.type,
+      appData.lendingMarket.id,
+      fetchObligationHistory,
+    ],
+  );
+
   useEffect(() => {
     if (!fixedObligation && !!initialObligationId) {
       fetchObligationDetails(initialObligationId);
     }
-  }, [fixedObligation, initialObligationId]);
-
-  const fetchObligationOwner = async (obligationId: string) => {
-    if (obligationId === "") {
-      return;
-    }
-    const obligationObject = await suiClient.getObject({
-      id: obligationId,
-      options: {
-        showOwner: true,
-      },
-    });
-    if (!obligationObject?.data?.owner) {
-      return;
-    }
-    setObligationOwner(
-      (obligationObject.data.owner as { ObjectOwner: string }).ObjectOwner,
-    );
-  };
-
-  const fetchObligationDetails = async (obligationId: string) => {
-    await fetchObligationOwner(obligationId);
-    const rawLendingMarket = await LendingMarket.fetch(
-      suiClient,
-      phantom(appData.lendingMarket.type),
-      appData.lendingMarket.id,
-    );
-    const rawObligation = await SuilendClient.getObligation(
-      obligationId,
-      [appData.lendingMarket.type],
-      suiClient,
-    );
-    let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];
-    const connection = new SuiPriceServiceConnection(
-      "https://hermes.pyth.network",
-    );
-    refreshedReserves = await simulate.refreshReservePrice(
-      rawLendingMarket.reserves.map((r) =>
-        simulate.compoundReserveInterest(r, Math.round(Date.now() / 1000)),
-      ),
-      connection,
-    );
-    const refreshedObligation = simulate.refreshObligation(
-      rawObligation,
-      refreshedReserves,
-    );
-    setRefreshedObligation(refreshedObligation);
-    setObligationHistory([]);
-    setHistoryCursor(null);
-    await fetchObligationHistory(obligationId);
-  };
-
-  const fetchObligationHistory = async (obligationId: string) => {
-    const historyPage = await getObligationHistoryPage(
-      suiClient,
-      obligationId,
-      10,
-      historyCursor,
-    );
-    setHistoryCursor(historyPage.cursor || null);
-    setObligationHistory([...obligationHistory, ...historyPage.history]);
-  };
+  }, [fixedObligation, initialObligationId, fetchObligationDetails]);
 
   // Liquidate
   const [liquidateAmount, setLiquidateAmount] = useState<string>("");
