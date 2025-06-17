@@ -122,19 +122,15 @@ export const initializeSuilend = async (
     );
 
   // Split the reserves into two arrays
-  const reservesWithoutTemporaryPythPriceFeeds =
-    interestCompoundedRawReserves.filter(
-      (r) =>
-        !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
-          normalizeStructTag(r.coinType.name),
-        ),
-    );
-  const reservesWithTemporaryPythPriceFeeds =
-    interestCompoundedRawReserves.filter((r) =>
-      TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
-        normalizeStructTag(r.coinType.name),
-      ),
-    );
+  const reservesWithoutTemporaryPythPriceFeeds = [];
+  const reservesWithTemporaryPythPriceFeeds = [];
+  for (const reserve of interestCompoundedRawReserves) {
+    if (TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(normalizeStructTag(reserve.coinType.name))) {
+      reservesWithTemporaryPythPriceFeeds.push(reserve);
+    } else {
+      reservesWithoutTemporaryPythPriceFeeds.push(reserve);
+    }
+  }
 
   const [refreshedReservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
     simulate.refreshReservePrice(
