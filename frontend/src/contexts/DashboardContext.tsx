@@ -20,14 +20,15 @@ import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { ClaimRewardsReward, QuoteProvider, RewardSummary } from "@suilend/sdk";
+import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
 import { NORMALIZED_SEND_COINTYPE } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { useAggSdks } from "@/lib/swap";
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { useCetusSdk } from "@/lib/swap";
 
 const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
 
@@ -63,7 +64,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // send.ag
-  const { sdkMap, partnerIdMap } = useAggSdks();
+  const cetusSdk = useCetusSdk();
 
   // Helpers
   const getClaimRewardSimulatedAmount = useCallback(
@@ -186,19 +187,17 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                   );
 
                   // Get routes
-                  const routers = await sdkMap[QuoteProvider.CETUS].findRouters(
-                    {
-                      from: coinType,
-                      target: NORMALIZED_SEND_COINTYPE,
-                      amount: new BN(amount), // Estimate (lower bound)
-                      byAmountIn: true,
-                      splitCount: new BigNumber(amount)
-                        .times(rewardsMap[coinType][0].stats.price ?? 1)
-                        .gte(10)
-                        ? undefined // Don't limit splitCount if amount is >= $10
-                        : 1,
-                    },
-                  );
+                  const routers = await cetusSdk.findRouters({
+                    from: coinType,
+                    target: NORMALIZED_SEND_COINTYPE,
+                    amount: new BN(amount), // Estimate (lower bound)
+                    byAmountIn: true,
+                    splitCount: new BigNumber(amount)
+                      .times(rewardsMap[coinType][0].stats.price ?? 1)
+                      .gte(10)
+                      ? undefined // Don't limit splitCount if amount is >= $10
+                      : 1,
+                  });
                   if (!routers) throw new Error("No routes found");
                   console.log("[claimRewards] routers", { coinType, routers });
 
@@ -213,15 +212,13 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             amountsAndSortedQuotesMap,
           )) {
             // Swap
-            const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap(
-              {
-                routers,
-                inputCoin: coinIn,
-                slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT / 100,
-                txb: transaction,
-                partner: partnerIdMap[QuoteProvider.CETUS],
-              },
-            );
+            const coinOut = await cetusSdk.fixableRouterSwap({
+              routers,
+              inputCoin: coinIn,
+              slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT / 100,
+              txb: transaction,
+              partner: CETUS_PARTNER_ID,
+            });
 
             if (args?.isDepositing) {
               appData.suilendClient.deposit(
@@ -269,8 +266,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
-      sdkMap,
-      partnerIdMap,
+      cetusSdk,
       signExecuteAndWaitForTransaction,
     ],
   );

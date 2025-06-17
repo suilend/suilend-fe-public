@@ -24,19 +24,9 @@ export type PartnerIdMap = {
   [QuoteProvider.FLOWX]: string;
 };
 
-export const useAggSdks = (): {
-  sdkMap: SdkMap;
-  partnerIdMap: PartnerIdMap;
-} => {
+export const useCetusSdk = () => {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-
-  // SDKs
-  const aftermathSdk = useMemo(() => {
-    const sdk = new AftermathSdk("MAINNET");
-    sdk.init();
-    return sdk;
-  }, []);
 
   const cetusSdk = useMemo(() => {
     const sdk = new CetusSdk({
@@ -47,6 +37,24 @@ export const useAggSdks = (): {
     });
     return sdk;
   }, [address, suiClient]);
+
+  return cetusSdk;
+};
+
+export const useAggSdks = (): {
+  sdkMap: SdkMap;
+  partnerIdMap: PartnerIdMap;
+} => {
+  const { suiClient } = useSettingsContext();
+
+  // SDKs
+  const aftermathSdk = useMemo(() => {
+    const sdk = new AftermathSdk("MAINNET");
+    sdk.init();
+    return sdk;
+  }, []);
+
+  const cetusSdk = useCetusSdk();
 
   useEffect(() => {
     set7kSdkSuiClient(suiClient);
