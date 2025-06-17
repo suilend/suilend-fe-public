@@ -22,54 +22,62 @@ export default function useFetchAppData() {
     const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
       // Lending markets
       (async () => {
-        const result: AllAppData["allLendingMarketData"] = {};
+        const allLendingMarketData: AllAppData["allLendingMarketData"] =
+          Object.fromEntries(
+            await Promise.all(
+              LENDING_MARKETS.map((LENDING_MARKET) =>
+                (async () => {
+                  const suilendClient = await SuilendClient.initialize(
+                    LENDING_MARKET.id,
+                    LENDING_MARKET.type,
+                    suiClient,
+                    true,
+                  );
 
-        for (const LENDING_MARKET of LENDING_MARKETS) {
-          const suilendClient = await SuilendClient.initialize(
-            LENDING_MARKET.id,
-            LENDING_MARKET.type,
-            suiClient,
-            true,
+                  const {
+                    lendingMarket,
+                    coinMetadataMap,
+
+                    refreshedRawReserves,
+                    reserveMap,
+                    reserveCoinTypes,
+                    reserveCoinMetadataMap,
+
+                    rewardCoinTypes,
+                    activeRewardCoinTypes,
+                    rewardCoinMetadataMap,
+                  } = await initializeSuilend(suiClient, suilendClient);
+
+                  const { rewardPriceMap } = await initializeSuilendRewards(
+                    reserveMap,
+                    activeRewardCoinTypes,
+                  );
+
+                  return [
+                    LENDING_MARKET.id,
+                    {
+                      suilendClient,
+
+                      lendingMarket,
+                      coinMetadataMap,
+
+                      refreshedRawReserves,
+                      reserveMap,
+                      reserveCoinTypes,
+                      reserveCoinMetadataMap,
+
+                      rewardPriceMap,
+                      rewardCoinTypes,
+                      activeRewardCoinTypes,
+                      rewardCoinMetadataMap,
+                    },
+                  ];
+                })(),
+              ),
+            ),
           );
 
-          const {
-            lendingMarket,
-            coinMetadataMap,
-
-            refreshedRawReserves,
-            reserveMap,
-            reserveCoinTypes,
-            reserveCoinMetadataMap,
-
-            rewardCoinTypes,
-            activeRewardCoinTypes,
-            rewardCoinMetadataMap,
-          } = await initializeSuilend(suiClient, suilendClient);
-
-          const { rewardPriceMap } = await initializeSuilendRewards(
-            reserveMap,
-            activeRewardCoinTypes,
-          );
-
-          result[lendingMarket.id] = {
-            suilendClient,
-
-            lendingMarket,
-            coinMetadataMap,
-
-            refreshedRawReserves,
-            reserveMap,
-            reserveCoinTypes,
-            reserveCoinMetadataMap,
-
-            rewardPriceMap,
-            rewardCoinTypes,
-            activeRewardCoinTypes,
-            rewardCoinMetadataMap,
-          };
-        }
-
-        return result;
+        return allLendingMarketData;
       })(),
 
       // LSTs (won't throw on error)
