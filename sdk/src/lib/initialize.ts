@@ -196,9 +196,6 @@ export const initializeSuilend = async (
       })(),
     ),
   );
-  for (const reserve of reservesWithTemporaryPythPriceFeeds) {
-    console.log("XXX", reserve.coinType.name, reserve.price.value);
-  }
 
   // const walReserve = refreshedRawReserves.find(
   //   (r) => normalizeStructTag(r.coinType.name) === NORMALIZED_WAL_COINTYPE,
