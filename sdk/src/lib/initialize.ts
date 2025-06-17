@@ -116,24 +116,28 @@ export const initializeSuilend = async (
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
 
-  const interestCompoundedRawReserves = suilendClient.lendingMarket.reserves.map((r) =>
-    simulate.compoundReserveInterest(r, nowS),
-  );
+  const interestCompoundedRawReserves =
+    suilendClient.lendingMarket.reserves.map((r) =>
+      simulate.compoundReserveInterest(r, nowS),
+    );
   // split the reserves into two arrays
   // could this be done in a better way
-  let reservesWithoutTemporaryPythPriceFeeds = interestCompoundedRawReserves.filter((r) =>
-    !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
-      normalizeStructTag(r.coinType.name),
-    ),
-  );
-  const reservesWithTemporaryPythPriceFeeds = interestCompoundedRawReserves.filter((r) =>
-    TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
-      normalizeStructTag(r.coinType.name),
-    ),
-  );
-  [, reservesWithoutTemporaryPythPriceFeeds] = await Promise.all(
-    [
-      Promise.all(reservesWithTemporaryPythPriceFeeds.map((reserve) =>
+  let reservesWithoutTemporaryPythPriceFeeds =
+    interestCompoundedRawReserves.filter(
+      (r) =>
+        !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
+          normalizeStructTag(r.coinType.name),
+        ),
+    );
+  const reservesWithTemporaryPythPriceFeeds =
+    interestCompoundedRawReserves.filter((r) =>
+      TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
+        normalizeStructTag(r.coinType.name),
+      ),
+    );
+  [, reservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
+    Promise.all(
+      reservesWithTemporaryPythPriceFeeds.map((reserve) =>
         (async () => {
           let cachedUsdPrice;
           try {
@@ -153,16 +157,19 @@ export const initializeSuilend = async (
           (reserve.price.value as bigint) = parsedCachedUsdPrice;
           (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
         })(),
-      )),
-      simulate.refreshReservePrice(
-        reservesWithoutTemporaryPythPriceFeeds,
-        new SuiPriceServiceConnection("https://hermes.pyth.network"),
-      )
-    ]
-  );
+      ),
+    ),
+    simulate.refreshReservePrice(
+      reservesWithoutTemporaryPythPriceFeeds,
+      new SuiPriceServiceConnection("https://hermes.pyth.network"),
+    ),
+  ]);
 
   // recombine reserves back into a single array
-  const refreshedRawReserves = [reservesWithTemporaryPythPriceFeeds, reservesWithoutTemporaryPythPriceFeeds].flat();
+  const refreshedRawReserves = [
+    reservesWithTemporaryPythPriceFeeds,
+    reservesWithoutTemporaryPythPriceFeeds,
+  ].flat();
 
   const miscCoinTypes: string[] = [
     NORMALIZED_SEND_POINTS_S1_COINTYPE,
