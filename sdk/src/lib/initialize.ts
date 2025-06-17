@@ -120,9 +120,9 @@ export const initializeSuilend = async (
     suilendClient.lendingMarket.reserves.map((r) =>
       simulate.compoundReserveInterest(r, nowS),
     );
-  // split the reserves into two arrays
-  // could this be done in a better way
-  let reservesWithoutTemporaryPythPriceFeeds =
+
+  // Split the reserves into two arrays
+  const reservesWithoutTemporaryPythPriceFeeds =
     interestCompoundedRawReserves.filter(
       (r) =>
         !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
@@ -135,7 +135,12 @@ export const initializeSuilend = async (
         normalizeStructTag(r.coinType.name),
       ),
     );
-  [, reservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
+
+  const [refreshedReservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
+    simulate.refreshReservePrice(
+      reservesWithoutTemporaryPythPriceFeeds,
+      new SuiPriceServiceConnection("https://hermes.pyth.network"),
+    ),
     Promise.all(
       reservesWithTemporaryPythPriceFeeds.map((reserve) =>
         (async () => {
@@ -147,7 +152,7 @@ export const initializeSuilend = async (
           } catch (err) {
             console.error(err);
           }
-          if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
+          if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override if no price
 
           const parsedCachedUsdPrice = BigInt(
             +new BigNumber(cachedUsdPrice)
@@ -165,11 +170,11 @@ export const initializeSuilend = async (
     ),
   ]);
 
-  // recombine reserves back into a single array
+  // Recombine reserves back into a single array
   const refreshedRawReserves = [
-    reservesWithTemporaryPythPriceFeeds,
-    reservesWithoutTemporaryPythPriceFeeds,
-  ].flat();
+    ...refreshedReservesWithoutTemporaryPythPriceFeeds,
+    ...reservesWithTemporaryPythPriceFeeds,
+  ];
 
   const miscCoinTypes: string[] = [
     NORMALIZED_SEND_POINTS_S1_COINTYPE,
