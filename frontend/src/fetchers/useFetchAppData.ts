@@ -75,7 +75,7 @@ export default function useFetchAppData() {
       // LSTs (won't throw on error)
       (async () => {
         try {
-          const lstAprPercentMapRes = await fetch(`${API_URL}/springsui/all`);
+          const lstAprPercentMapRes = await fetch(`${API_URL}/springsui/apy`);
           const lstAprPercentMapJson: Record<string, string> =
             await lstAprPercentMapRes.json();
           if ((lstAprPercentMapRes as any)?.statusCode === 500)
