@@ -164,10 +164,6 @@ export const initializeSuilend = async (
         })(),
       ),
     ),
-    simulate.refreshReservePrice(
-      reservesWithoutTemporaryPythPriceFeeds,
-      new SuiPriceServiceConnection("https://hermes.pyth.network"),
-    ),
   ]);
 
   // Recombine reserves back into a single array
