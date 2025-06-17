@@ -173,26 +173,31 @@ export const initializeSuilend = async (
       normalizeStructTag(r.coinType.name),
     ),
   );
-  for (const reserve of reservesWithTemporaryPythPriceFeeds) {
-    (async () => {
-      let cachedUsdPrice;
-      try {
-        cachedUsdPrice = await getPrice(
-          normalizeStructTag(reserve.coinType.name),
-        );
-      } catch (err) {
-        console.error(err);
-      }
-      if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
+  await Promise.all(
+    reservesWithTemporaryPythPriceFeeds.map((reserve) =>
+      (async () => {
+        let cachedUsdPrice;
+        try {
+          cachedUsdPrice = await getPrice(
+            normalizeStructTag(reserve.coinType.name),
+          );
+        } catch (err) {
+          console.error(err);
+        }
+        if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
 
-      const parsedCachedUsdPrice = BigInt(
-        +new BigNumber(cachedUsdPrice)
-          .times(WAD)
-          .integerValue(BigNumber.ROUND_DOWN),
-      );
-      (reserve.price.value as bigint) = parsedCachedUsdPrice;
-      (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
-    })();
+        const parsedCachedUsdPrice = BigInt(
+          +new BigNumber(cachedUsdPrice)
+            .times(WAD)
+            .integerValue(BigNumber.ROUND_DOWN),
+        );
+        (reserve.price.value as bigint) = parsedCachedUsdPrice;
+        (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
+      })(),
+    ),
+  );
+  for (const reserve of reservesWithTemporaryPythPriceFeeds) {
+    console.log("XXX", reserve.coinType.name, reserve.price.value);
   }
 
   // const walReserve = refreshedRawReserves.find(
