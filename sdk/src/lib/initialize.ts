@@ -116,12 +116,61 @@ export const initializeSuilend = async (
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
 
-  const refreshedRawReserves = await simulate.refreshReservePrice(
+  const interestCompoundedRawReserves =
     suilendClient.lendingMarket.reserves.map((r) =>
       simulate.compoundReserveInterest(r, nowS),
+    );
+
+  // Split the reserves into two arrays
+  const reservesWithoutTemporaryPythPriceFeeds =
+    interestCompoundedRawReserves.filter(
+      (r) =>
+        !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
+          normalizeStructTag(r.coinType.name),
+        ),
+    );
+  const reservesWithTemporaryPythPriceFeeds =
+    interestCompoundedRawReserves.filter((r) =>
+      TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
+        normalizeStructTag(r.coinType.name),
+      ),
+    );
+
+  const [refreshedReservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
+    simulate.refreshReservePrice(
+      reservesWithoutTemporaryPythPriceFeeds,
+      new SuiPriceServiceConnection("https://hermes.pyth.network"),
     ),
-    new SuiPriceServiceConnection("https://hermes.pyth.network"),
-  );
+    Promise.all(
+      reservesWithTemporaryPythPriceFeeds.map((reserve) =>
+        (async () => {
+          let cachedUsdPrice;
+          try {
+            cachedUsdPrice = await getPrice(
+              normalizeStructTag(reserve.coinType.name),
+            );
+          } catch (err) {
+            console.error(err);
+          }
+          if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override if no price
+
+          const parsedCachedUsdPrice = BigInt(
+            +new BigNumber(cachedUsdPrice)
+              .times(WAD)
+              .integerValue(BigNumber.ROUND_DOWN),
+          );
+          (reserve.price.value as bigint) = parsedCachedUsdPrice;
+          (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
+        })(),
+      ),
+    ),
+  ]);
+
+  // Recombine reserves back into a single array
+  const refreshedRawReserves = [
+    ...refreshedReservesWithoutTemporaryPythPriceFeeds,
+    ...reservesWithTemporaryPythPriceFeeds,
+  ];
 
   const miscCoinTypes: string[] = [
     NORMALIZED_SEND_POINTS_S1_COINTYPE,
@@ -167,35 +216,6 @@ export const initializeSuilend = async (
     ...reserveCoinMetadataMap,
     ...rewardCoinMetadataMap,
   };
-
-  const reservesWithTemporaryPythPriceFeeds = refreshedRawReserves.filter((r) =>
-    TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
-      normalizeStructTag(r.coinType.name),
-    ),
-  );
-  await Promise.all(
-    reservesWithTemporaryPythPriceFeeds.map((reserve) =>
-      (async () => {
-        let cachedUsdPrice;
-        try {
-          cachedUsdPrice = await getPrice(
-            normalizeStructTag(reserve.coinType.name),
-          );
-        } catch (err) {
-          console.error(err);
-        }
-        if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
-
-        const parsedCachedUsdPrice = BigInt(
-          +new BigNumber(cachedUsdPrice)
-            .times(WAD)
-            .integerValue(BigNumber.ROUND_DOWN),
-        );
-        (reserve.price.value as bigint) = parsedCachedUsdPrice;
-        (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
-      })(),
-    ),
-  );
 
   // const walReserve = refreshedRawReserves.find(
   //   (r) => normalizeStructTag(r.coinType.name) === NORMALIZED_WAL_COINTYPE,
