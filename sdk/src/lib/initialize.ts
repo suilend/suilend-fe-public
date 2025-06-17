@@ -174,18 +174,25 @@ export const initializeSuilend = async (
     ),
   );
   for (const reserve of reservesWithTemporaryPythPriceFeeds) {
-    let cachedUsdPrice = await getPrice(
-      normalizeStructTag(reserve.coinType.name),
-    );
-    if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
+    (async () => {
+      let cachedUsdPrice;
+      try {
+        cachedUsdPrice = await getPrice(
+          normalizeStructTag(reserve.coinType.name),
+        );
+      } catch (err) {
+        console.error(err);
+      }
+      if (cachedUsdPrice === undefined) cachedUsdPrice = 0.0001; // Non-zero price override for coinTypes with price feed overrides
 
-    const parsedCachedUsdPrice = BigInt(
-      +new BigNumber(cachedUsdPrice)
-        .times(WAD)
-        .integerValue(BigNumber.ROUND_DOWN),
-    );
-    (reserve.price.value as bigint) = parsedCachedUsdPrice;
-    (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
+      const parsedCachedUsdPrice = BigInt(
+        +new BigNumber(cachedUsdPrice)
+          .times(WAD)
+          .integerValue(BigNumber.ROUND_DOWN),
+      );
+      (reserve.price.value as bigint) = parsedCachedUsdPrice;
+      (reserve.smoothedPrice.value as bigint) = parsedCachedUsdPrice;
+    })();
   }
 
   // const walReserve = refreshedRawReserves.find(
