@@ -21,7 +21,10 @@ import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
-import { NORMALIZED_SEND_COINTYPE } from "@suilend/sui-fe";
+import {
+  NORMALIZED_SEND_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
+} from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
@@ -30,15 +33,13 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { useCetusSdk } from "@/lib/swap";
 
-const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
-
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
   setIsFirstDepositDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
-    args: { asSend: boolean; isDepositing: boolean },
+    args: { asSend: boolean; asUSDC: boolean; isDepositing: boolean },
   ) => Promise<SuiTransactionBlockResponse>;
 }
 
@@ -135,7 +136,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const claimRewards = useCallback(
     async (
       rewardsMap: Record<string, RewardSummary[]>,
-      args: { asSend: boolean; isDepositing: boolean },
+      args: { asSend: boolean; asUSDC: boolean; isDepositing: boolean },
     ) => {
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
@@ -154,10 +155,10 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             side: r.stats.side,
           }));
 
-        if (args?.asSend) {
+        if (args.asSend || args.asUSDC) {
           if (Object.keys(rewardsMap).length > 1)
             throw new Error(
-              "Cannot claim multiple rewards as SEND in one transaction",
+              `Cannot claim multiple rewards as ${args.asSend ? "SEND" : "USDC"} in one transaction`,
             ); // TODO
 
           // Claim
@@ -189,7 +190,9 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                   // Get routes
                   const routers = await cetusSdk.findRouters({
                     from: coinType,
-                    target: NORMALIZED_SEND_COINTYPE,
+                    target: args.asSend
+                      ? NORMALIZED_SEND_COINTYPE
+                      : NORMALIZED_USDC_COINTYPE,
                     amount: new BN(amount), // Estimate (lower bound)
                     byAmountIn: true,
                     splitCount: new BigNumber(amount)
@@ -212,18 +215,22 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             amountsAndSortedQuotesMap,
           )) {
             // Swap
+            const slippagePercent = 1;
+
             const coinOut = await cetusSdk.fixableRouterSwap({
               routers,
               inputCoin: coinIn,
-              slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT / 100,
+              slippage: slippagePercent / 100,
               txb: transaction,
               partner: CETUS_PARTNER_ID,
             });
 
-            if (args?.isDepositing) {
+            if (args.isDepositing) {
               appData.suilendClient.deposit(
                 coinOut,
-                NORMALIZED_SEND_COINTYPE,
+                args.asSend
+                  ? NORMALIZED_SEND_COINTYPE
+                  : NORMALIZED_USDC_COINTYPE,
                 obligationOwnerCap.id,
                 transaction,
               );
@@ -235,7 +242,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             }
           }
         } else {
-          if (args?.isDepositing) {
+          if (args.isDepositing) {
             appData.suilendClient.claimRewardsAndDeposit(
               address,
               obligationOwnerCap.id,

@@ -125,7 +125,11 @@ export const initializeSuilend = async (
   const reservesWithoutTemporaryPythPriceFeeds = [];
   const reservesWithTemporaryPythPriceFeeds = [];
   for (const reserve of interestCompoundedRawReserves) {
-    if (TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(normalizeStructTag(reserve.coinType.name))) {
+    if (
+      TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(
+        normalizeStructTag(reserve.coinType.name),
+      )
+    ) {
       reservesWithTemporaryPythPriceFeeds.push(reserve);
     } else {
       reservesWithoutTemporaryPythPriceFeeds.push(reserve);

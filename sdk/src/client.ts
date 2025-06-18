@@ -511,14 +511,14 @@ export class SuilendClient {
     obligationId: string,
     rewardReserveArrayIndex: bigint,
     rewardIndex: bigint,
-    rewardType: string,
+    rewardCoinType: string,
     side: Side,
     depositReserveArrayIndex: bigint,
     transaction: Transaction,
   ) {
     return claimRewardsAndDeposit(
       transaction,
-      [this.lendingMarket.$typeArgs[0], rewardType],
+      [this.lendingMarket.$typeArgs[0], rewardCoinType],
       {
         lendingMarket: transaction.object(this.lendingMarket.id),
         obligationId: transaction.pure.id(obligationId),
