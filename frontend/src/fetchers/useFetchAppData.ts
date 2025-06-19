@@ -3,7 +3,6 @@ import useSWR, { useSWRConfig } from "swr";
 
 import {
   ParsedReserve,
-  Side,
   initializeSuilend,
   initializeSuilendRewards,
 } from "@suilend/sdk";
@@ -20,11 +19,7 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    const [
-      allLendingMarketData,
-      lstAprPercentMap,
-      obligationsWithUnclaimedRewards,
-    ] = await Promise.all([
+    const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
       // Lending markets
       (async () => {
         const allLendingMarketData: AllAppData["allLendingMarketData"] =
@@ -104,41 +99,6 @@ export default function useFetchAppData() {
           return {} as AllAppData["lstAprPercentMap"];
         }
       })(),
-
-      // Obligations with unclaimed rewards (won't throw on error)
-      (async () => {
-        try {
-          const res = await fetch(
-            `${API_URL}/obligations/unclaimed-rewards?limit=3`,
-          );
-          const json: {
-            obligations: {
-              id: string;
-              unclaimedRewards: {
-                rewardReserveArrayIndex: string;
-                rewardIndex: string;
-                rewardCoinType: string;
-                side: Side;
-                depositReserveArrayIndex: string;
-              }[];
-            }[];
-          } = await res.json();
-
-          return json.obligations.map((o) => ({
-            ...o,
-            unclaimedRewards: o.unclaimedRewards.map((r) => ({
-              rewardReserveArrayIndex: BigInt(r.rewardReserveArrayIndex),
-              rewardIndex: BigInt(r.rewardIndex),
-              rewardCoinType: r.rewardCoinType,
-              side: r.side,
-              depositReserveArrayIndex: BigInt(r.depositReserveArrayIndex),
-            })),
-          }));
-        } catch (err) {
-          console.error(err);
-          return {} as AllAppData["obligationsWithUnclaimedRewards"];
-        }
-      })(),
     ]);
 
     const isEcosystemLst = (coinType: string) =>
@@ -178,7 +138,6 @@ export default function useFetchAppData() {
     return {
       allLendingMarketData,
       lstAprPercentMap,
-      obligationsWithUnclaimedRewards,
     };
   };
 

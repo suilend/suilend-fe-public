@@ -260,8 +260,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      // transaction = autoclaimRewards(transaction);
-
+      transaction = autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -272,7 +271,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
       cetusSdk,
-      // autoclaimRewards,
+      autoclaimRewards,
       signExecuteAndWaitForTransaction,
     ],
   );
