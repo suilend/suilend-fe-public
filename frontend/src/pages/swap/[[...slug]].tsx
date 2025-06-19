@@ -840,7 +840,7 @@ function Page() {
     coinOut?: TransactionObjectArgument;
   }> => {
     if (!address) throw new Error("Wallet not connected");
-    if (!quote) throw new Error("Quote not found");
+    if (!quote) throw new Error("No quote found");
 
     return getSwapTransaction(
       suiClient,
@@ -856,7 +856,7 @@ function Page() {
 
   const swap = async (isSwapAndDeposit?: boolean) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!quote) throw new Error("Quote not found");
+    if (!quote) throw new Error("No quote found");
 
     const submitAmount = quote.in.amount
       .times(10 ** tokenIn.decimals)
@@ -995,7 +995,7 @@ function Page() {
 
   const onSwapClick = async (isSwapAndDeposit?: boolean) => {
     if (!address) throw new Error("Wallet not connected");
-    if (!quote) throw new Error("Quote not found");
+    if (!quote) throw new Error("No quote found");
 
     if (swapInAccount) {
       if (buttonState_swapInAccount.isDisabled) return;
