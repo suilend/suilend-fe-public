@@ -135,7 +135,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     console.log("fetchTokenHistoricalUsdPrices", token.symbol);
 
     try {
-      const currentTimeS = Math.floor(new Date().getTime() / 1000);
+      // round to the nearest 100 second interval
+      const currentTimeS = Math.floor(new Date().getTime() / (1000 * 100)) * 100;
 
       const result = await getHistoryPrice(
         token.coinType,
