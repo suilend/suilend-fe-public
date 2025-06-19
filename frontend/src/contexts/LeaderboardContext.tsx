@@ -171,6 +171,7 @@ export function LeaderboardContextProvider({ children }: PropsWithChildren) {
   const [pointsAddressRowMap, setPointsAddressRowMap] = useState<
     LeaderboardContext["points"]["addressRowMap"]
   >(defaultContextValue["points"]["addressRowMap"]);
+
   const [tvlAddressRow, setTvlAddressRow] = useState<
     LeaderboardContext["tvl"]["addressRow"]
   >(defaultContextValue["tvl"]["addressRow"]);

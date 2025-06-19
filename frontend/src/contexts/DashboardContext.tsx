@@ -61,13 +61,17 @@ export const useDashboardContext = () => useContext(DashboardContext);
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, autoclaimRewards } = useLoadedAppContext();
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
 
-  // Helpers
+  // First deposit
+  const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
+    useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
+
+  // Actions
   const getClaimRewardSimulatedAmount = useCallback(
     async (rewards: ClaimRewardsReward[]): Promise<string> => {
       if (!address) throw Error("Wallet not connected");
@@ -126,13 +130,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  //
-
-  // First deposit
-  const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
-    useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
-
-  // Actions
   const claimRewards = useCallback(
     async (
       rewardsMap: Record<string, RewardSummary[]>,
@@ -263,6 +260,8 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      // transaction = autoclaimRewards(transaction);
+
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -273,6 +272,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
       cetusSdk,
+      // autoclaimRewards,
       signExecuteAndWaitForTransaction,
     ],
   );

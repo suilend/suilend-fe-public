@@ -10,11 +10,17 @@ import {
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
+import {
+  ADMIN_ADDRESS,
+  LENDING_MARKETS,
+  ObligationWithUnclaimedRewards,
+  SuilendClient,
+} from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
@@ -51,6 +57,7 @@ export interface AppData {
 export interface AllAppData {
   allLendingMarketData: Record<string, AppData>;
   lstAprPercentMap: Record<string, BigNumber>;
+  obligationsWithUnclaimedRewards: ObligationWithUnclaimedRewards[];
 }
 
 interface AppContext {
@@ -67,6 +74,8 @@ interface AppContext {
 
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
+
+  autoclaimRewards: (transaction: Transaction) => Transaction;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -96,6 +105,10 @@ const AppContext = createContext<AppContext>({
 
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
+
+  autoclaimRewards: () => {
+    throw Error("AppContextProvider not initialized");
+  },
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -228,6 +241,39 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     })();
   }, [suiClient]);
 
+  // Obligations with unclaimed rewards
+  const [hasAutoclaimedRewards, setHasAutoclaimedRewards] =
+    useState<boolean>(false);
+
+  const autoclaimRewards = useCallback(
+    (transaction: Transaction) => {
+      if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not
+
+      if (hasAutoclaimedRewards) return transaction;
+      setHasAutoclaimedRewards(true);
+
+      const suilendClient =
+        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
+
+      for (const obligation of allAppData.obligationsWithUnclaimedRewards) {
+        for (const reward of obligation.unclaimedRewards) {
+          suilendClient.claimRewardAndDeposit(
+            obligation.id,
+            reward.rewardReserveArrayIndex,
+            reward.rewardIndex,
+            reward.rewardCoinType,
+            reward.side,
+            reward.depositReserveArrayIndex,
+            transaction,
+          );
+        }
+      }
+
+      return transaction;
+    },
+    [allAppData, hasAutoclaimedRewards],
+  );
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -244,6 +290,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
       walrusEpoch,
       walrusEpochProgressPercent,
+
+      autoclaimRewards,
     }),
     [
       allAppData,
@@ -256,6 +304,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isEcosystemLst,
       walrusEpoch,
       walrusEpochProgressPercent,
+      autoclaimRewards,
     ],
   );
 
