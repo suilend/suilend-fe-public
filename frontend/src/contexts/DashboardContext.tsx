@@ -214,7 +214,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           for (const [coinType, { coin: coinIn, routers }] of Object.entries(
             amountsAndSortedQuotesMap,
           )) {
-            // Swap
             const slippagePercent = 1;
 
             const coinOut = await cetusSdk.fixableRouterSwap({
