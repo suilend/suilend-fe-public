@@ -205,34 +205,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                       .gte(10)
                       ? undefined // Don't limit splitCount if amount is >= $10
                       : 1,
-                    providers: [
-                      Cetus.CETUS,
-                      Cetus.DEEPBOOKV2,
-                      Cetus.KRIYA,
-                      Cetus.FLOWXV2,
-                      Cetus.FLOWXV3,
-                      Cetus.KRIYAV3,
-                      Cetus.TURBOS,
-                      Cetus.AFTERMATH,
-                      Cetus.HAEDAL,
-                      Cetus.VOLO,
-                      Cetus.AFSUI,
-                      Cetus.BLUEMOVE,
-                      Cetus.DEEPBOOKV3,
-                      Cetus.SCALLOP,
-                      Cetus.SUILEND,
-                      Cetus.BLUEFIN,
-                      // Cetus.HAEDALPMM,
-                      Cetus.ALPHAFI,
-                      Cetus.SPRINGSUI,
-                      Cetus.STEAMM,
-                      // Cetus.METASTABLE,
-                      Cetus.OBRIC,
-                      Cetus.HAWAL,
-                      // Cetus.STEAMM_OMM,
-                      Cetus.MOMENTUM,
-                      // Cetus.STEAMM_OMM_V2,
-                    ],
                   });
                   if (!routers) throw new Error("No quote found");
                   console.log("[claimRewards] routers", { coinType, routers });
