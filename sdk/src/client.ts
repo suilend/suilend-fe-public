@@ -761,17 +761,17 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    const priceInfoObjectIds = [];
-    for (let i = 0; i < priceIdentifiers.length; i++) {
+    const priceInfoObjectIds: string[] = [];
+    await Promise.all(priceIdentifiers.map((_,i) => {(async () => {
       const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
         priceIdentifiers[i],
       );
-      priceInfoObjectIds.push(priceInfoObjectId!);
-    }
+      priceInfoObjectIds[i] = priceInfoObjectId!;
+    })()}));
 
-    const stalePriceIdentifiers = [];
+    const stalePriceIdentifiers: string[] = [];
 
-    for (let i = 0; i < priceInfoObjectIds.length; i++) {
+    await Promise.all(priceInfoObjectIds.map((_,i) => {(async () => {
       const priceInfoObject = await PriceInfoObject.fetch(
         this.client,
         priceInfoObjectIds[i],
@@ -786,7 +786,7 @@ export class SuilendClient {
 
         stalePriceIdentifiers.push(priceIdentifiers[i]);
       }
-    }
+    })()}));
 
     if (stalePriceIdentifiers.length > 0) {
       const stalePriceUpdateData =
