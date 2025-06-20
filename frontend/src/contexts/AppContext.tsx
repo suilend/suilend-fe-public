@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
@@ -19,7 +18,6 @@ import { Side } from "@suilend/sdk";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import {
   ADMIN_ADDRESS,
-  LENDING_MARKETS,
   ObligationWithUnclaimedRewards,
   SuilendClient,
 } from "@suilend/sdk/client";
@@ -77,7 +75,7 @@ interface AppContext {
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
 
-  autoclaimRewards: (transaction: Transaction) => Promise<Transaction>;
+  obligationsWithUnclaimedRewards: ObligationWithUnclaimedRewards[] | undefined;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -108,9 +106,7 @@ const AppContext = createContext<AppContext>({
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
 
-  autoclaimRewards: async () => {
-    throw Error("AppContextProvider not initialized");
-  },
+  obligationsWithUnclaimedRewards: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -128,7 +124,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   )();
 
   const { suiClient } = useSettingsContext();
-  const { address, dryRunTransaction } = useWalletContext();
+  const { address } = useWalletContext();
 
   // All app data
   const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
@@ -289,40 +285,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     })();
   }, []);
 
-  const autoclaimRewards = useCallback(
-    async (transaction: Transaction) => {
-      if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
-      if (!obligationsWithUnclaimedRewards) return transaction; // Can happen if the data is not loaded yet (low chance)
-
-      const innerTransaction = Transaction.from(transaction);
-
-      const suilendClient =
-        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
-
-      for (const obligation of obligationsWithUnclaimedRewards) {
-        for (const reward of obligation.unclaimedRewards) {
-          suilendClient.claimRewardAndDeposit(
-            obligation.id,
-            reward.rewardReserveArrayIndex,
-            reward.rewardIndex,
-            reward.rewardCoinType,
-            reward.side,
-            reward.depositReserveArrayIndex,
-            innerTransaction,
-          );
-        }
-      }
-
-      try {
-        await dryRunTransaction(innerTransaction);
-        return innerTransaction;
-      } catch (err) {
-        return transaction;
-      }
-    },
-    [allAppData, obligationsWithUnclaimedRewards, dryRunTransaction],
-  );
-
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -340,7 +302,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       walrusEpoch,
       walrusEpochProgressPercent,
 
-      autoclaimRewards,
+      obligationsWithUnclaimedRewards,
     }),
     [
       allAppData,
@@ -353,7 +315,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isEcosystemLst,
       walrusEpoch,
       walrusEpochProgressPercent,
-      autoclaimRewards,
+      obligationsWithUnclaimedRewards,
     ],
   );
 

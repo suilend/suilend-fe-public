@@ -67,8 +67,9 @@ export const useDashboardContext = () => useContext(DashboardContext);
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData, autoclaimRewards } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap } = useLoadedUserContext();
+  const { appData } = useLoadedAppContext();
+  const { obligation, obligationOwnerCap, autoclaimRewards } =
+    useLoadedUserContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
@@ -275,7 +276,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = autoclaimRewards(transaction);
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },

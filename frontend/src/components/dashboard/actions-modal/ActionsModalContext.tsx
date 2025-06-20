@@ -126,8 +126,9 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData, autoclaimRewards } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap } = useLoadedUserContext();
+  const { appData } = useLoadedAppContext();
+  const { obligation, obligationOwnerCap, autoclaimRewards } =
+    useLoadedUserContext();
 
   // Open
   const [isOpen, setIsOpen] = useState<boolean>(
@@ -248,7 +249,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = autoclaimRewards(transaction);
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -284,7 +285,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = autoclaimRewards(transaction);
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -321,7 +322,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = autoclaimRewards(transaction);
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -356,7 +357,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = autoclaimRewards(transaction);
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
