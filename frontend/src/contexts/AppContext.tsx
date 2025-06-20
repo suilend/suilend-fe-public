@@ -77,7 +77,7 @@ interface AppContext {
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
 
-  autoclaimRewards: (transaction: Transaction) => Transaction;
+  autoclaimRewards: (transaction: Transaction) => Promise<Transaction>;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -108,7 +108,7 @@ const AppContext = createContext<AppContext>({
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
 
-  autoclaimRewards: () => {
+  autoclaimRewards: async () => {
     throw Error("AppContextProvider not initialized");
   },
 });
@@ -128,7 +128,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   )();
 
   const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
+  const { address, dryRunTransaction } = useWalletContext();
 
   // All app data
   const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
@@ -288,15 +288,13 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       }
     })();
   }, []);
-  console.log(
-    "XXX obligationsWithUnclaimedRewards:",
-    obligationsWithUnclaimedRewards,
-  );
 
   const autoclaimRewards = useCallback(
-    (transaction: Transaction) => {
+    async (transaction: Transaction) => {
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
-      if (!obligationsWithUnclaimedRewards) return transaction; // ~0% chance of happening
+      if (!obligationsWithUnclaimedRewards) return transaction; // Can happen if the data is not loaded yet (low chance)
+
+      const innerTransaction = Transaction.from(transaction);
 
       const suilendClient =
         allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
@@ -310,14 +308,19 @@ export function AppContextProvider({ children }: PropsWithChildren) {
             reward.rewardCoinType,
             reward.side,
             reward.depositReserveArrayIndex,
-            transaction,
+            innerTransaction,
           );
         }
       }
 
-      return transaction;
+      try {
+        await dryRunTransaction(innerTransaction);
+        return innerTransaction;
+      } catch (err) {
+        return transaction;
+      }
     },
-    [allAppData, obligationsWithUnclaimedRewards],
+    [allAppData, obligationsWithUnclaimedRewards, dryRunTransaction],
   );
 
   // Context
