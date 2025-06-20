@@ -145,10 +145,10 @@ export default function AccountOverviewDialog() {
       clearEventsData();
 
       try {
-        const [json1, json2, json3] = await Promise.all(
-          [
-            (async () => {
-              const url1 = `${API_URL}/events?${new URLSearchParams({
+        const [json1, json2, json3] = await Promise.all([
+          // Deposit, borrow, withdraw, repay, and liquidate events joined with reserve asset data
+          (async () => {
+            const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: [
                 EventType.DEPOSIT,
                 EventType.BORROW,
@@ -159,27 +159,30 @@ export default function AccountOverviewDialog() {
               joinEventTypes: EventType.RESERVE_ASSET_DATA,
               obligationId,
             })}`;
-            const res1 = await fetch(url1);
-            return res1.json();
+            const res = await fetch(url);
+            return res.json();
           })(),
+
+          // Claim reward events
           (async () => {
-            const url2 = `${API_URL}/events?${new URLSearchParams({
+            const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: EventType.CLAIM_REWARD,
               obligationId,
             })}`;
-            const res2 = await fetch(url2);
-            return res2.json();
+            const res = await fetch(url);
+            return res.json();
           })(),
+
+          // Obligation data events
           (async () => {
-            const url3 = `${API_URL}/events?${new URLSearchParams({
+            const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: EventType.OBLIGATION_DATA,
               obligationId,
             })}`;
-            const res3 = await fetch(url3);
-            return res3.json();
-          })()
-          ]
-        )
+            const res = await fetch(url);
+            return res.json();
+          })(),
+        ]);
 
         // Parse
         const data = { ...json1, ...json2, ...json3 } as EventsData;
