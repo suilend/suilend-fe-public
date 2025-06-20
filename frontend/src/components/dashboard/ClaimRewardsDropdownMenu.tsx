@@ -197,12 +197,8 @@ export default function ClaimRewardsDropdownMenu({
       items={
         <>
           {/* Claim */}
-          <DropdownMenuItem
-            className="flex w-full flex-row items-center justify-between gap-1.5"
-            onClick={() => submit()}
-          >
+          <DropdownMenuItem className="w-full" onClick={() => submit()}>
             <TLabelSans className="text-foreground">Claim</TLabelSans>
-            <TokenLogos className="h-4 w-4" tokens={tokens} />
           </DropdownMenuItem>
 
           {/* Claim as SEND/SUI/USDC */}
@@ -239,14 +235,13 @@ export default function ClaimRewardsDropdownMenu({
           {/* Claim and deposit */}
           <div className="mt-2 flex w-full flex-col gap-1.5">
             <DropdownMenuItem
-              className="flex w-full flex-row items-center justify-between gap-1.5"
+              className="w-full"
               isDisabled={tokensThatCanBeDeposited.length === 0}
               onClick={() => submit({ isDepositing: true })}
             >
               <TLabelSans className="text-foreground">
                 Claim and deposit
               </TLabelSans>
-              <TokenLogos className="h-4 w-4" tokens={tokens} />
             </DropdownMenuItem>
 
             {tokensThatCanBeDeposited.length < tokens.length && (

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useMemo } from "react";
 
 import { ColumnDef, Row } from "@tanstack/react-table";
@@ -31,6 +32,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { ASSETS_URL } from "@/lib/constants";
 import {
   EventType,
   EventTypeNameMap,
@@ -62,10 +64,12 @@ enum ColumnId {
 
 interface HistoryTabContentProps {
   eventsData?: EventsData;
+  autoclaimDigests?: string[];
 }
 
 export default function HistoryTabContent({
   eventsData,
+  autoclaimDigests,
 }: HistoryTabContentProps) {
   const { explorer } = useSettingsContext();
   const { appData } = useLoadedAppContext();
@@ -107,17 +111,34 @@ export default function HistoryTabContent({
           tableHeader(column, "Action", { borderBottom: true }),
         cell: ({ row }) => {
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          const { eventType } = row.original;
+          const { eventType, event } = row.original;
 
           return (
-            <TBodySans className="w-max">
-              {EventTypeNameMap[eventType]}
-              {isGroupRow && eventType === EventType.LIQUIDATE && (
-                <span className="ml-1.5 text-muted-foreground">
-                  ({row.subRows.length})
-                </span>
-              )}
-            </TBodySans>
+            <>
+              <TBodySans className="w-max">
+                {EventTypeNameMap[eventType]}
+                {isGroupRow && eventType === EventType.LIQUIDATE && (
+                  <span className="ml-1.5 text-muted-foreground">
+                    ({row.subRows.length})
+                  </span>
+                )}
+              </TBodySans>
+              {(eventType === EventType.CLAIM_REWARD ||
+                eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) &&
+                autoclaimDigests?.includes(event.digest) && (
+                  <div className="flex flex-row items-center gap-[5px]">
+                    <Image
+                      className="opacity-55"
+                      src={`${ASSETS_URL}/Suilend.svg`}
+                      alt="Suilend logo"
+                      width={10}
+                      height={10}
+                      quality={100}
+                    />
+                    <TLabelSans>Autoclaim</TLabelSans>
+                  </div>
+                )}
+            </>
           );
         },
       },
@@ -614,6 +635,7 @@ export default function HistoryTabContent({
       },
     ],
     [
+      autoclaimDigests,
       appData.coinMetadataMap,
       eventsData?.reserveAssetData,
       appData.lendingMarket.reserves,

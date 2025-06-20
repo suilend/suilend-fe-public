@@ -247,10 +247,14 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // Obligations with unclaimed rewards
+  const [hasAutoclaimedRewards, setHasAutoclaimedRewards] =
+    useState<boolean>(false);
+
   const autoclaimRewards = useCallback(
     async (transaction: Transaction) => {
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
       if (!obligationsWithUnclaimedRewards) return transaction; // Can happen if the data is not loaded yet (unlikely)
+      if (hasAutoclaimedRewards) return transaction; // Already autoclaimed rewards
 
       const innerTransaction = Transaction.from(transaction);
 
@@ -275,6 +279,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
       try {
         await dryRunTransaction(innerTransaction);
+        setHasAutoclaimedRewards(true);
         return innerTransaction;
       } catch (err) {
         return transaction;
@@ -283,11 +288,11 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     [
       allAppData,
       obligationsWithUnclaimedRewards,
+      hasAutoclaimedRewards,
       userData?.obligations,
       dryRunTransaction,
     ],
   );
-  console.log("XXX", obligationsWithUnclaimedRewards);
 
   // Context
   const contextValue = useMemo(
