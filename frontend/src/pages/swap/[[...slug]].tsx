@@ -502,8 +502,6 @@ function Page() {
     [tokenUsdPricesMap, tokenOut.coinType],
   );
 
-  console.log("XXX", +tokenInUsdPrice, +tokenOutUsdPrice);
-
   const fetchedInitialTokenUsdPricesRef = useRef<boolean>(false);
   useEffect(() => {
     if (fetchedInitialTokenUsdPricesRef.current) return;

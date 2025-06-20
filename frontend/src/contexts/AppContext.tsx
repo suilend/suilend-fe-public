@@ -6,24 +6,25 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
+import { Side } from "@suilend/sdk";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import {
   ADMIN_ADDRESS,
-  LENDING_MARKETS,
   ObligationWithUnclaimedRewards,
   SuilendClient,
 } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
+  API_URL,
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
@@ -57,7 +58,6 @@ export interface AppData {
 export interface AllAppData {
   allLendingMarketData: Record<string, AppData>;
   lstAprPercentMap: Record<string, BigNumber>;
-  obligationsWithUnclaimedRewards: ObligationWithUnclaimedRewards[];
 }
 
 interface AppContext {
@@ -75,7 +75,7 @@ interface AppContext {
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
 
-  autoclaimRewards: (transaction: Transaction) => Transaction;
+  obligationsWithUnclaimedRewards: ObligationWithUnclaimedRewards[] | undefined;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -106,9 +106,7 @@ const AppContext = createContext<AppContext>({
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
 
-  autoclaimRewards: () => {
-    throw Error("AppContextProvider not initialized");
-  },
+  obligationsWithUnclaimedRewards: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -242,37 +240,50 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   }, [suiClient]);
 
   // Obligations with unclaimed rewards
-  const [hasAutoclaimedRewards, setHasAutoclaimedRewards] =
-    useState<boolean>(false);
+  const [obligationsWithUnclaimedRewards, setObligationsWithUnclaimedRewards] =
+    useState<ObligationWithUnclaimedRewards[] | undefined>(undefined);
 
-  const autoclaimRewards = useCallback(
-    (transaction: Transaction) => {
-      if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not
+  const hasFetchedObligationsWithUnclaimedRewardsRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (hasFetchedObligationsWithUnclaimedRewardsRef.current) return;
+    hasFetchedObligationsWithUnclaimedRewardsRef.current = true;
 
-      if (hasAutoclaimedRewards) return transaction;
-      setHasAutoclaimedRewards(true);
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/obligations/unclaimed-rewards?limit=3`,
+        );
+        const json: {
+          obligations: {
+            id: string;
+            unclaimedRewards: {
+              rewardReserveArrayIndex: string;
+              rewardIndex: string;
+              rewardCoinType: string;
+              side: Side;
+              depositReserveArrayIndex: string;
+            }[];
+          }[];
+        } = await res.json();
 
-      const suilendClient =
-        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
-
-      for (const obligation of allAppData.obligationsWithUnclaimedRewards) {
-        for (const reward of obligation.unclaimedRewards) {
-          suilendClient.claimRewardAndDeposit(
-            obligation.id,
-            reward.rewardReserveArrayIndex,
-            reward.rewardIndex,
-            reward.rewardCoinType,
-            reward.side,
-            reward.depositReserveArrayIndex,
-            transaction,
-          );
-        }
+        const result: ObligationWithUnclaimedRewards[] = json.obligations.map(
+          (o) => ({
+            ...o,
+            unclaimedRewards: o.unclaimedRewards.map((r) => ({
+              rewardReserveArrayIndex: BigInt(r.rewardReserveArrayIndex),
+              rewardIndex: BigInt(r.rewardIndex),
+              rewardCoinType: r.rewardCoinType,
+              side: r.side,
+              depositReserveArrayIndex: BigInt(r.depositReserveArrayIndex),
+            })),
+          }),
+        );
+        setObligationsWithUnclaimedRewards(result);
+      } catch (err) {
+        console.error(err);
       }
-
-      return transaction;
-    },
-    [allAppData, hasAutoclaimedRewards],
-  );
+    })();
+  }, []);
 
   // Context
   const contextValue: AppContext = useMemo(
@@ -291,7 +302,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       walrusEpoch,
       walrusEpochProgressPercent,
 
-      autoclaimRewards,
+      obligationsWithUnclaimedRewards,
     }),
     [
       allAppData,
@@ -304,7 +315,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isEcosystemLst,
       walrusEpoch,
       walrusEpochProgressPercent,
-      autoclaimRewards,
+      obligationsWithUnclaimedRewards,
     ],
   );
 

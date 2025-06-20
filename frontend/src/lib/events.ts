@@ -16,7 +16,11 @@ export enum EventType {
   REPAY = "repay",
   LIQUIDATE = "liquidate",
   CLAIM_REWARD = "claimReward",
+  CLAIM_AND_DEPOSIT_REWARDS = "claimAndDepositRewards",
   OBLIGATION_DATA = "obligationData",
+
+  DEPOSIT_SUB_ROW = "depositSubRow",
+  CLAIM_REWARD_SUB_ROW = "claimRewardSubRow",
 }
 
 export const EventTypeNameMap: Record<EventType, string> = {
@@ -30,7 +34,11 @@ export const EventTypeNameMap: Record<EventType, string> = {
   [EventType.REPAY]: "Repay",
   [EventType.LIQUIDATE]: "Liquidation",
   [EventType.CLAIM_REWARD]: "Claim rewards",
+  [EventType.CLAIM_AND_DEPOSIT_REWARDS]: "Claim and deposit",
   [EventType.OBLIGATION_DATA]: "Obligation data",
+
+  [EventType.DEPOSIT_SUB_ROW]: "",
+  [EventType.CLAIM_REWARD_SUB_ROW]: "",
 };
 
 type EventRow = {

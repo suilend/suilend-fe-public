@@ -11,10 +11,11 @@ import {
 } from "react";
 
 import { CoinMetadata, SuiObjectResponse } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { ParsedObligation, RewardMap } from "@suilend/sdk";
+import { LENDING_MARKETS, ParsedObligation, RewardMap } from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { NORMALIZED_WAL_COINTYPE, getAllOwnedObjects } from "@suilend/sui-fe";
 import {
@@ -53,6 +54,8 @@ interface UserContext {
   obligation: ParsedObligation | undefined; // Depends on userData
   obligationOwnerCap: ObligationOwnerCap<string> | undefined; // Depends on userData
   setObligationId: (lendingMarketSlug: string, obligationId: string) => void;
+
+  autoclaimRewards: (transaction: Transaction) => Promise<Transaction>;
 }
 type LoadedUserContext = UserContext & {
   allUserData: Record<string, UserData>;
@@ -79,6 +82,10 @@ const UserContext = createContext<UserContext>({
   setObligationId: () => {
     throw Error("UserContextProvider not initialized");
   },
+
+  autoclaimRewards: async () => {
+    throw Error("UserContextProvider not initialized");
+  },
 });
 
 export const useUserContext = () => useContext(UserContext);
@@ -88,8 +95,13 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
 
   const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
-  const { appData, refreshAllAppData } = useAppContext();
+  const { address, dryRunTransaction } = useWalletContext();
+  const {
+    allAppData,
+    appData,
+    refreshAllAppData,
+    obligationsWithUnclaimedRewards,
+  } = useAppContext();
 
   // Balances
   const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
@@ -234,6 +246,54 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     [userData?.obligationOwnerCaps, obligation?.id],
   );
 
+  // Obligations with unclaimed rewards
+  const [hasAutoclaimedRewards, setHasAutoclaimedRewards] =
+    useState<boolean>(false);
+
+  const autoclaimRewards = useCallback(
+    async (transaction: Transaction) => {
+      if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
+      if (!obligationsWithUnclaimedRewards) return transaction; // Can happen if the data is not loaded yet (unlikely)
+      if (hasAutoclaimedRewards) return transaction; // Already autoclaimed rewards
+
+      const innerTransaction = Transaction.from(transaction);
+
+      const suilendClient =
+        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
+
+      for (const obligation of obligationsWithUnclaimedRewards) {
+        if (userData?.obligations.some((o) => o.id === obligation.id)) continue;
+
+        for (const reward of obligation.unclaimedRewards) {
+          suilendClient.claimRewardAndDeposit(
+            obligation.id,
+            reward.rewardReserveArrayIndex,
+            reward.rewardIndex,
+            reward.rewardCoinType,
+            reward.side,
+            reward.depositReserveArrayIndex,
+            innerTransaction,
+          );
+        }
+      }
+
+      try {
+        await dryRunTransaction(innerTransaction);
+        setHasAutoclaimedRewards(true);
+        return innerTransaction;
+      } catch (err) {
+        return transaction;
+      }
+    },
+    [
+      allAppData,
+      obligationsWithUnclaimedRewards,
+      hasAutoclaimedRewards,
+      userData?.obligations,
+      dryRunTransaction,
+    ],
+  );
+
   // Context
   const contextValue = useMemo(
     () => ({
@@ -256,6 +316,8 @@ export function UserContextProvider({ children }: PropsWithChildren) {
         });
         setObligationId(obligationId);
       },
+
+      autoclaimRewards,
     }),
     [
       rawBalancesMap,
@@ -269,6 +331,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       obligationOwnerCap,
       router,
       setObligationId,
+      autoclaimRewards,
     ],
   );
 

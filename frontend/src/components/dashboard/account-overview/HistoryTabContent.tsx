@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useMemo } from "react";
 
 import { ColumnDef, Row } from "@tanstack/react-table";
@@ -31,6 +32,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { ASSETS_URL } from "@/lib/constants";
 import {
   EventType,
   EventTypeNameMap,
@@ -62,10 +64,12 @@ enum ColumnId {
 
 interface HistoryTabContentProps {
   eventsData?: EventsData;
+  autoclaimDigests?: string[];
 }
 
 export default function HistoryTabContent({
   eventsData,
+  autoclaimDigests,
 }: HistoryTabContentProps) {
   const { explorer } = useSettingsContext();
   const { appData } = useLoadedAppContext();
@@ -107,17 +111,34 @@ export default function HistoryTabContent({
           tableHeader(column, "Action", { borderBottom: true }),
         cell: ({ row }) => {
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-          const { eventType } = row.original;
+          const { eventType, event } = row.original;
 
           return (
-            <TBodySans className="w-max">
-              {EventTypeNameMap[eventType]}
-              {isGroupRow && eventType === EventType.LIQUIDATE && (
-                <span className="ml-1.5 text-muted-foreground">
-                  ({row.subRows.length})
-                </span>
-              )}
-            </TBodySans>
+            <>
+              <TBodySans className="w-max">
+                {EventTypeNameMap[eventType]}
+                {isGroupRow && eventType === EventType.LIQUIDATE && (
+                  <span className="ml-1.5 text-muted-foreground">
+                    ({row.subRows.length})
+                  </span>
+                )}
+              </TBodySans>
+              {(eventType === EventType.CLAIM_REWARD ||
+                eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) &&
+                autoclaimDigests?.includes(event.digest) && (
+                  <div className="flex flex-row items-center gap-[5px]">
+                    <Image
+                      className="opacity-55"
+                      src={`${ASSETS_URL}/Suilend.svg`}
+                      alt="Suilend logo"
+                      width={10}
+                      height={10}
+                      quality={100}
+                    />
+                    <TLabelSans>Autoclaim</TLabelSans>
+                  </div>
+                )}
+            </>
           );
         },
       },
@@ -176,7 +197,30 @@ export default function HistoryTabContent({
 
               return coinTypes.some((coinType) => value.includes(coinType));
             } else return true;
+          } else if (eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) {
+            if (row.subRows.length > 0) {
+              const coinTypes = row.subRows.reduce(
+                (acc, subRow) => [
+                  ...acc,
+                  (
+                    subRow.original.event as
+                      | ApiDepositEvent
+                      | ApiClaimRewardEvent
+                  ).coinType,
+                ],
+                [] as string[],
+              );
+
+              return coinTypes.some((coinType) => value.includes(coinType));
+            } else return true;
           }
+
+          // Sub rows are only not shown if the parent row is filtered out
+          if (
+            eventType === EventType.DEPOSIT_SUB_ROW ||
+            eventType === EventType.CLAIM_REWARD_SUB_ROW
+          )
+            return true;
 
           return false;
         },
@@ -428,6 +472,136 @@ export default function HistoryTabContent({
                 })}
               </div>
             );
+          } else if (eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) {
+            const depositSubRows = row.subRows.filter(
+              (subRow) =>
+                subRow.original.eventType === EventType.DEPOSIT_SUB_ROW,
+            );
+            const claimRewardSubRows = row.subRows.filter(
+              (subRow) =>
+                subRow.original.eventType === EventType.CLAIM_REWARD_SUB_ROW,
+            );
+
+            const depositCoinTypes = depositSubRows.reduce(
+              (acc, subRow) => [
+                ...acc,
+                (subRow.original.event as ApiDepositEvent).coinType,
+              ],
+              [] as string[],
+            );
+            const claimCoinTypes = claimRewardSubRows.reduce(
+              (acc, subRow) => [
+                ...acc,
+                (subRow.original.event as ApiClaimRewardEvent).coinType,
+              ],
+              [] as string[],
+            );
+
+            const swapAndDepositCoinType = depositCoinTypes.find(
+              (coinType) => !claimCoinTypes.includes(coinType),
+            ); // SEND, SUI, USDC, etc
+
+            const depositedAmountMap: Record<string, BigNumber> = {};
+            const claimedAmountMap: Record<string, BigNumber> = {};
+
+            for (const subRow of depositSubRows) {
+              const subRowDepositEvent = subRow.original
+                .event as ApiDepositEvent;
+              const coinMetadata =
+                appData.coinMetadataMap[subRowDepositEvent.coinType];
+
+              const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
+                (e) =>
+                  e.digest === subRowDepositEvent.digest &&
+                  e.coinType === subRowDepositEvent.coinType,
+              );
+              if (!reserveAssetDataEvent)
+                return <TLabelSans className="w-max">N/A</TLabelSans>;
+
+              depositedAmountMap[subRowDepositEvent.coinType] = (
+                depositedAmountMap[subRowDepositEvent.coinType] ??
+                new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowDepositEvent.ctokenAmount)
+                  .times(getCtokenExchangeRate(reserveAssetDataEvent))
+                  .div(10 ** coinMetadata.decimals),
+              );
+            }
+
+            for (const subRow of claimRewardSubRows) {
+              const subRowClaimRewardEvent = subRow.original
+                .event as ApiClaimRewardEvent;
+              const coinMetadata =
+                appData.coinMetadataMap[subRowClaimRewardEvent.coinType];
+
+              claimedAmountMap[subRowClaimRewardEvent.coinType] = (
+                claimedAmountMap[subRowClaimRewardEvent.coinType] ??
+                new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowClaimRewardEvent.liquidityAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
+
+            return (
+              <div className="flex w-max flex-col gap-2">
+                {/* Deposited */}
+                {swapAndDepositCoinType && (
+                  <>
+                    <div className="flex w-max flex-row gap-4">
+                      <TLabelSans className="my-[2px] w-[58px]">
+                        Deposited
+                      </TLabelSans>
+
+                      <div className="flex w-max flex-col gap-1">
+                        {Object.entries(depositedAmountMap).map(
+                          ([coinType, value]) => {
+                            const coinMetadata =
+                              appData.coinMetadataMap[coinType];
+
+                            return (
+                              <TokenAmount
+                                key={coinType}
+                                amount={value}
+                                token={getToken(coinType, coinMetadata)}
+                              />
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="h-px w-full bg-border" />
+                  </>
+                )}
+
+                {/* Claimed */}
+                <div className="flex w-max flex-row gap-4">
+                  {swapAndDepositCoinType && (
+                    <TLabelSans className="my-[2px] w-[58px]">
+                      Claimed
+                    </TLabelSans>
+                  )}
+
+                  <div className="flex w-max flex-col gap-1">
+                    {Object.entries(claimedAmountMap).map(
+                      ([coinType, value]) => {
+                        const coinMetadata = appData.coinMetadataMap[coinType];
+
+                        return (
+                          <TokenAmount
+                            key={coinType}
+                            amount={value}
+                            token={getToken(coinType, coinMetadata)}
+                          />
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
           }
 
           return null;
@@ -461,87 +635,13 @@ export default function HistoryTabContent({
       },
     ],
     [
+      autoclaimDigests,
       appData.coinMetadataMap,
       eventsData?.reserveAssetData,
       appData.lendingMarket.reserves,
       explorer,
     ],
   );
-
-  // Filters
-  const [filteredOutEventTypes, setFilteredOutEventTypes] = useLocalStorage<
-    EventType[]
-  >("accountDetailsHistoryFilteredOutEventTypes", []);
-  const toggleEventTypeFilter = (eventType: EventType) => {
-    setFilteredOutEventTypes((arr) =>
-      arr.includes(eventType)
-        ? arr.filter((f) => f !== eventType)
-        : [...arr, eventType],
-    );
-  };
-
-  const [filteredOutCoinTypes, setFilteredOutCoinTypes] = useLocalStorage<
-    string[]
-  >("accountDetailsHistoryFilteredOutCoinTypes", []);
-  const toggleCoinTypeFilter = (coinType: string) => {
-    setFilteredOutCoinTypes((arr) =>
-      arr.includes(coinType)
-        ? arr.filter((f) => f !== coinType)
-        : [...arr, coinType],
-    );
-  };
-
-  const eventTypes = useMemo(() => {
-    if (eventsData === undefined) return [];
-
-    const result: EventType[] = [];
-    if (eventsData.deposit.length > 0) result.push(EventType.DEPOSIT);
-    if (eventsData.borrow.length > 0) result.push(EventType.BORROW);
-    if (eventsData.withdraw.length > 0) result.push(EventType.WITHDRAW);
-    if (eventsData.repay.length > 0) result.push(EventType.REPAY);
-    if (eventsData.liquidate.length > 0) result.push(EventType.LIQUIDATE);
-    if (eventsData.claimReward.length > 0) result.push(EventType.CLAIM_REWARD);
-
-    return result;
-  }, [eventsData]);
-  const isNotFilteredOutEventType = (eventType: EventType) =>
-    !filteredOutEventTypes.includes(eventType);
-
-  const coinTypes = useMemo(
-    () =>
-      eventsData === undefined
-        ? []
-        : Array.from(
-            new Set([
-              ...[
-                ...eventsData.deposit,
-                ...eventsData.borrow,
-                ...eventsData.withdraw,
-                ...eventsData.repay,
-                ...eventsData.claimReward,
-              ].map((event) => event.coinType),
-              ...eventsData.liquidate
-                .map((liquidateEvent) => {
-                  const withdrawReserve = appData.lendingMarket.reserves.find(
-                    (reserve) =>
-                      reserve.id === liquidateEvent.withdrawReserveId,
-                  );
-                  const repayReserve = appData.lendingMarket.reserves.find(
-                    (reserve) => reserve.id === liquidateEvent.repayReserveId,
-                  );
-
-                  return [
-                    withdrawReserve?.coinType,
-                    repayReserve?.coinType,
-                  ].filter(Boolean) as string[];
-                })
-                .flat(),
-            ]),
-          ).sort((a, b) => reserveSort(appData.lendingMarket.reserves, a, b)),
-    [eventsData, appData.lendingMarket.reserves],
-  );
-  const isNotFilteredOutCoinType = (coinType: string) =>
-    !filteredOutCoinTypes.includes(coinType);
 
   // Rows
   const rows = useMemo(() => {
@@ -581,14 +681,23 @@ export default function HistoryTabContent({
           const depositEvent = row.event as ApiDepositEvent;
 
           const lastRow = finalRows[finalRows.length - 1];
-          if (!lastRow || lastRow.eventType !== EventType.DEPOSIT)
+          if (
+            !lastRow ||
+            (lastRow.eventType !== EventType.DEPOSIT &&
+              lastRow.eventType !== EventType.CLAIM_REWARD &&
+              lastRow.eventType !== EventType.CLAIM_AND_DEPOSIT_REWARDS)
+          )
             finalRows.push({ ...row, subRows: [row] });
           else {
-            const lastDepositEvent = lastRow.event as ApiDepositEvent;
+            const lastEvent = lastRow.event as
+              | ApiDepositEvent
+              | ApiClaimRewardEvent;
 
-            if (lastDepositEvent.digest !== depositEvent.digest) {
+            if (lastEvent.digest !== depositEvent.digest) {
               finalRows.push({ ...row, subRows: [row] });
             } else {
+              if (lastRow.eventType === EventType.CLAIM_REWARD)
+                lastRow.eventType = EventType.CLAIM_AND_DEPOSIT_REWARDS;
               (lastRow.subRows as RowData[]).push(row);
             }
           }
@@ -613,7 +722,9 @@ export default function HistoryTabContent({
                 liquidateEvent.withdrawReserveId
             )
               finalRows.push({ ...row, subRows: [row] });
-            else (lastRow.subRows as RowData[]).push(row);
+            else {
+              (lastRow.subRows as RowData[]).push(row);
+            }
           }
 
           break;
@@ -624,27 +735,158 @@ export default function HistoryTabContent({
           const claimRewardEvent = row.event as ApiClaimRewardEvent;
 
           const lastRow = finalRows[finalRows.length - 1];
-          if (!lastRow || lastRow.eventType !== EventType.CLAIM_REWARD)
+          if (
+            !lastRow ||
+            (lastRow.eventType !== EventType.DEPOSIT &&
+              lastRow.eventType !== EventType.CLAIM_REWARD &&
+              lastRow.eventType !== EventType.CLAIM_AND_DEPOSIT_REWARDS)
+          )
             finalRows.push({ ...row, subRows: [row] });
           else {
-            const lastClaimRewardEvent = lastRow.event as ApiClaimRewardEvent;
+            const lastEvent = lastRow.event as
+              | ApiDepositEvent
+              | ApiClaimRewardEvent;
 
-            if (lastClaimRewardEvent.digest !== claimRewardEvent.digest) {
+            if (lastEvent.digest !== claimRewardEvent.digest) {
               finalRows.push({ ...row, subRows: [row] });
             } else {
+              if (lastRow.eventType === EventType.DEPOSIT)
+                lastRow.eventType = EventType.CLAIM_AND_DEPOSIT_REWARDS;
               (lastRow.subRows as RowData[]).push(row);
             }
           }
 
           break;
         }
+
         default:
           finalRows.push(row);
       }
     }
 
-    return finalRows;
+    return finalRows.map((row) =>
+      row.eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS
+        ? {
+            ...row,
+            subRows: (row.subRows as RowData[]).map((subRow) => ({
+              ...subRow,
+              eventType:
+                subRow.eventType === EventType.DEPOSIT
+                  ? EventType.DEPOSIT_SUB_ROW
+                  : EventType.CLAIM_REWARD_SUB_ROW,
+            })),
+          }
+        : row,
+    );
   }, [eventsData]);
+
+  // Filters
+  const [filteredOutEventTypes, setFilteredOutEventTypes] = useLocalStorage<
+    EventType[]
+  >("accountDetailsHistoryFilteredOutEventTypes", []);
+  const toggleEventTypeFilter = (eventType: EventType) => {
+    setFilteredOutEventTypes((arr) =>
+      arr.includes(eventType)
+        ? arr.filter((f) => f !== eventType)
+        : [...arr, eventType],
+    );
+  };
+
+  const [filteredOutCoinTypes, setFilteredOutCoinTypes] = useLocalStorage<
+    string[]
+  >("accountDetailsHistoryFilteredOutCoinTypes", []);
+  const toggleCoinTypeFilter = (coinType: string) => {
+    setFilteredOutCoinTypes((arr) =>
+      arr.includes(coinType)
+        ? arr.filter((f) => f !== coinType)
+        : [...arr, coinType],
+    );
+  };
+
+  const eventTypes = useMemo(() => {
+    if (rows === undefined) return [];
+
+    const result: EventType[] = [];
+    if (rows.filter((row) => row.eventType === EventType.DEPOSIT).length > 0)
+      result.push(EventType.DEPOSIT);
+    if (rows.filter((row) => row.eventType === EventType.BORROW).length > 0)
+      result.push(EventType.BORROW);
+    if (rows.filter((row) => row.eventType === EventType.WITHDRAW).length > 0)
+      result.push(EventType.WITHDRAW);
+    if (rows.filter((row) => row.eventType === EventType.REPAY).length > 0)
+      result.push(EventType.REPAY);
+    if (rows.filter((row) => row.eventType === EventType.LIQUIDATE).length > 0)
+      result.push(EventType.LIQUIDATE);
+    if (
+      rows.filter((row) => row.eventType === EventType.CLAIM_REWARD).length > 0
+    )
+      result.push(EventType.CLAIM_REWARD);
+    if (
+      rows.filter(
+        (row) => row.eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS,
+      ).length > 0
+    )
+      result.push(EventType.CLAIM_AND_DEPOSIT_REWARDS);
+
+    return result;
+  }, [rows]);
+  const isNotFilteredOutEventType = (eventType: EventType) =>
+    !filteredOutEventTypes.includes(eventType);
+
+  const coinTypes = useMemo(
+    () =>
+      rows === undefined
+        ? []
+        : Array.from(
+            new Set([
+              ...[
+                ...rows.filter((row) => row.eventType === EventType.DEPOSIT),
+                ...rows.filter((row) => row.eventType === EventType.BORROW),
+                ...rows.filter((row) => row.eventType === EventType.WITHDRAW),
+                ...rows.filter((row) => row.eventType === EventType.REPAY),
+                ...rows.filter(
+                  (row) => row.eventType === EventType.CLAIM_REWARD,
+                ),
+                ...rows.filter(
+                  (row) =>
+                    row.eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS, // Deposit and ClaimReward events are grouped together
+                ),
+              ].map(
+                (row) =>
+                  (
+                    row.event as
+                      | ApiDepositEvent
+                      | ApiBorrowEvent
+                      | ApiWithdrawEvent
+                      | ApiRepayEvent
+                      | ApiClaimRewardEvent
+                  ).coinType,
+              ),
+              ...rows
+                .filter((row) => row.eventType === EventType.LIQUIDATE)
+                .map((row) => {
+                  const liquidateEvent = row.event as ApiLiquidateEvent;
+
+                  const withdrawReserve = appData.lendingMarket.reserves.find(
+                    (reserve) =>
+                      reserve.id === liquidateEvent.withdrawReserveId,
+                  );
+                  const repayReserve = appData.lendingMarket.reserves.find(
+                    (reserve) => reserve.id === liquidateEvent.repayReserveId,
+                  );
+
+                  return [
+                    withdrawReserve?.coinType,
+                    repayReserve?.coinType,
+                  ].filter(Boolean) as string[];
+                })
+                .flat(),
+            ]),
+          ).sort((a, b) => reserveSort(appData.lendingMarket.reserves, a, b)),
+    [rows, appData.lendingMarket.reserves],
+  );
+  const isNotFilteredOutCoinType = (coinType: string) =>
+    !filteredOutCoinTypes.includes(coinType);
 
   return (
     <>
@@ -725,7 +967,11 @@ export default function HistoryTabContent({
             columnFilters={[
               {
                 id: ColumnId.EVENT_TYPE,
-                value: eventTypes.filter(isNotFilteredOutEventType),
+                value: [
+                  ...eventTypes,
+                  EventType.DEPOSIT_SUB_ROW,
+                  EventType.CLAIM_REWARD_SUB_ROW,
+                ].filter(isNotFilteredOutEventType),
               },
               {
                 id: ColumnId.DETAILS,
@@ -763,6 +1009,7 @@ export default function HistoryTabContent({
                     EventType.BORROW,
                     EventType.LIQUIDATE,
                     EventType.CLAIM_REWARD,
+                    EventType.CLAIM_AND_DEPOSIT_REWARDS,
                   ].includes(cell.row.original.eventType)
                   ? "py-2 h-auto"
                   : "py-0 h-12",

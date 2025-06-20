@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { MoveCallSuiTransaction, SuiTransaction } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
@@ -24,7 +25,11 @@ import {
   formatToken,
   isSendPoints,
 } from "@suilend/sui-fe";
-import { shallowPushQuery } from "@suilend/sui-fe-next";
+import {
+  shallowPushQuery,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/sui-fe-next";
 
 import EarningsTabContent from "@/components/dashboard/account-overview/EarningsTabContent";
 import HistoryTabContent from "@/components/dashboard/account-overview/HistoryTabContent";
@@ -103,6 +108,8 @@ export default function AccountOverviewDialog() {
     [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
   };
 
+  const { suiClient } = useSettingsContext();
+  const { address } = useWalletContext();
   const { refresh, obligation } = useLoadedUserContext();
 
   // Open
@@ -135,17 +142,25 @@ export default function AccountOverviewDialog() {
   const [eventsData, setEventsData] = useState<EventsData | undefined>(
     undefined,
   );
+  const [autoclaimDigests, setAutoclaimDigests] = useState<
+    string[] | undefined
+  >(undefined);
 
   const clearEventsData = useCallback(() => {
     setEventsData(undefined);
+    setAutoclaimDigests(undefined);
   }, []);
 
   const fetchEventsData = useCallback(
-    async (obligationId: string) => {
+    async (address: string, obligationId: string) => {
       clearEventsData();
 
       try {
-        const [json1, json2, json3] = await Promise.all([
+        const [
+          json1,
+          { claimReward, autoclaimDigests: _autoclaimDigests },
+          json3,
+        ] = await Promise.all([
           // Deposit, borrow, withdraw, repay, and liquidate events joined with reserve asset data
           (async () => {
             const url = `${API_URL}/events?${new URLSearchParams({
@@ -160,7 +175,15 @@ export default function AccountOverviewDialog() {
               obligationId,
             })}`;
             const res = await fetch(url);
-            return res.json();
+            const json: {
+              deposit: ApiDepositEvent[];
+              borrow: ApiBorrowEvent[];
+              withdraw: ApiWithdrawEvent[];
+              repay: ApiRepayEvent[];
+              liquidate: ApiLiquidateEvent[];
+            } = await res.json();
+
+            return json;
           })(),
 
           // Claim reward events
@@ -170,7 +193,39 @@ export default function AccountOverviewDialog() {
               obligationId,
             })}`;
             const res = await fetch(url);
-            return res.json();
+            const json: {
+              claimReward: ApiClaimRewardEvent[];
+            } = await res.json();
+
+            const autoclaimDigests = (
+              await suiClient.multiGetTransactionBlocks({
+                digests: Array.from(
+                  new Set(
+                    json.claimReward
+                      .filter((y) => y.sender !== address)
+                      .map((t) => t.digest),
+                  ),
+                ),
+                options: {
+                  showInput: true,
+                },
+              })
+            )
+              .filter((transaction) =>
+                (
+                  transaction.transaction?.data.transaction as any
+                )?.transactions?.some(
+                  (t: SuiTransaction) =>
+                    ((t as any)?.MoveCall as MoveCallSuiTransaction)
+                      ?.function === "claim_rewards_and_deposit",
+                ),
+              )
+              .map((transaction) => transaction.digest);
+
+            return {
+              claimReward: json.claimReward,
+              autoclaimDigests,
+            };
           })(),
 
           // Obligation data events
@@ -180,12 +235,16 @@ export default function AccountOverviewDialog() {
               obligationId,
             })}`;
             const res = await fetch(url);
-            return res.json();
+            const json: {
+              obligationData: ApiObligationDataEvent[];
+            } = await res.json();
+
+            return json;
           })(),
         ]);
 
         // Parse
-        const data = { ...json1, ...json2, ...json3 } as EventsData;
+        const data = { ...json1, ...{ claimReward }, ...json3 } as EventsData;
         for (const event of [
           ...(data.reserveAssetData ?? []),
           ...(data.deposit ?? []),
@@ -211,34 +270,35 @@ export default function AccountOverviewDialog() {
             .slice()
             .sort(eventSortAsc),
         });
+        setAutoclaimDigests(_autoclaimDigests);
       } catch (err) {
         console.error(err);
       }
     },
-    [clearEventsData],
+    [clearEventsData, suiClient],
   );
 
   const fetchedDataObligationIdRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!obligation?.id) return;
+    if (!address || !obligation?.id) return;
 
     if (isOpen) {
       if (fetchedDataObligationIdRef.current === obligation.id) return;
-
-      fetchEventsData(obligation.id);
       fetchedDataObligationIdRef.current = obligation.id;
+
+      fetchEventsData(address, obligation.id);
     }
-  }, [obligation?.id, isOpen, fetchEventsData]);
+  }, [address, obligation?.id, isOpen, fetchEventsData]);
 
   // Refresh
   const getNowS = () => Math.floor(new Date().getTime() / 1000);
   const [nowS, setNowS] = useState<number>(getNowS);
 
   const refreshDialog = () => {
-    if (!obligation?.id) return;
+    if (!address || !obligation?.id) return;
 
     if (selectedTab === Tab.EARNINGS) refresh();
-    fetchEventsData(obligation.id);
+    fetchEventsData(address, obligation.id);
     setNowS(getNowS());
   };
 
@@ -273,7 +333,10 @@ export default function AccountOverviewDialog() {
         <EarningsTabContent eventsData={eventsData} nowS={nowS} />
       )}
       {selectedTab === Tab.HISTORY && (
-        <HistoryTabContent eventsData={eventsData} />
+        <HistoryTabContent
+          eventsData={eventsData}
+          autoclaimDigests={autoclaimDigests}
+        />
       )}
     </Dialog>
   );

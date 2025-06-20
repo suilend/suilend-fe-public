@@ -127,7 +127,8 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { appData } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap } = useLoadedUserContext();
+  const { obligation, obligationOwnerCap, autoclaimRewards } =
+    useLoadedUserContext();
 
   // Open
   const [isOpen, setIsOpen] = useState<boolean>(
@@ -224,7 +225,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     async (coinType: string, value: string) => {
       if (!address) throw Error("Wallet not connected");
 
-      const transaction = new Transaction();
+      let transaction = new Transaction();
 
       try {
         const { obligationOwnerCapId, didCreate } =
@@ -248,14 +249,16 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
     [
       address,
       appData.suilendClient,
-      signExecuteAndWaitForTransaction,
       obligationOwnerCap,
+      autoclaimRewards,
+      signExecuteAndWaitForTransaction,
     ],
   );
 
@@ -265,7 +268,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
 
-      const transaction = new Transaction();
+      let transaction = new Transaction();
 
       try {
         await appData.suilendClient.borrowAndSendToUser(
@@ -282,15 +285,17 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
     [
       address,
-      appData.suilendClient,
-      signExecuteAndWaitForTransaction,
       obligationOwnerCap,
       obligation,
+      appData.suilendClient,
+      autoclaimRewards,
+      signExecuteAndWaitForTransaction,
     ],
   );
 
@@ -300,7 +305,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
 
-      const transaction = new Transaction();
+      let transaction = new Transaction();
 
       try {
         await appData.suilendClient.withdrawAndSendToUser(
@@ -317,15 +322,17 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
     [
       address,
-      appData.suilendClient,
-      signExecuteAndWaitForTransaction,
       obligationOwnerCap,
       obligation,
+      appData.suilendClient,
+      autoclaimRewards,
+      signExecuteAndWaitForTransaction,
     ],
   );
 
@@ -334,7 +341,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       if (!address) throw Error("Wallet not connected");
       if (!obligation) throw Error("Obligation not found");
 
-      const transaction = new Transaction();
+      let transaction = new Transaction();
 
       try {
         await appData.suilendClient.repayIntoObligation(
@@ -350,14 +357,16 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      transaction = await autoclaimRewards(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
     [
       address,
-      appData.suilendClient,
-      signExecuteAndWaitForTransaction,
       obligation,
+      appData.suilendClient,
+      autoclaimRewards,
+      signExecuteAndWaitForTransaction,
     ],
   );
 
