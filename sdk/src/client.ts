@@ -16,7 +16,6 @@ import {
   SuiPriceServiceConnection,
   SuiPythClient,
 } from "@pythnetwork/pyth-sui-js";
-import BigNumber from "bignumber.js";
 
 import { extractCTokenCoinType } from "@suilend/sui-fe";
 
@@ -772,25 +771,25 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    const priceInfoObjectIds: string[] = [];
+    const priceInfoObjectIds: Record<number, string> = {};
     await Promise.all(
-      priceIdentifiers.map((_, i) => {
+      priceIdentifiers.map((_, i) =>
         (async () => {
           const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
             priceIdentifiers[i],
           );
           priceInfoObjectIds[i] = priceInfoObjectId!;
-        })();
-      }),
+        })(),
+      ),
     );
 
     const stalePriceIdentifiers: string[] = [];
     await Promise.all(
-      priceInfoObjectIds.map((_, i) => {
+      Object.entries(priceInfoObjectIds).map(([i, priceInfoObjectId]) =>
         (async () => {
           const priceInfoObject = await PriceInfoObject.fetch(
             this.client,
-            priceInfoObjectIds[i],
+            priceInfoObjectId,
           );
 
           const publishTime =
@@ -799,12 +798,12 @@ export class SuilendClient {
 
           if (stalenessSeconds > 20) {
             const reserve =
-              this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
+              this.lendingMarket.reserves[Number(reserveArrayIndexes[+i])];
 
-            stalePriceIdentifiers.push(priceIdentifiers[i]);
+            stalePriceIdentifiers.push(priceIdentifiers[+i]);
           }
-        })();
-      }),
+        })(),
+      ),
     );
 
     if (stalePriceIdentifiers.length > 0) {
