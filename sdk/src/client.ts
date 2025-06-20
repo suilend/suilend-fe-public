@@ -772,32 +772,40 @@ export class SuilendClient {
     const reserveArrayIndexes = tuples.map((tuple) => tuple[0]);
     const priceIdentifiers = tuples.map((tuple) => tuple[1]);
 
-    const priceInfoObjectIds = [];
-    for (let i = 0; i < priceIdentifiers.length; i++) {
-      const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
-        priceIdentifiers[i],
-      );
-      priceInfoObjectIds.push(priceInfoObjectId!);
-    }
+    const priceInfoObjectIds: string[] = [];
+    await Promise.all(
+      priceIdentifiers.map((_, i) => {
+        (async () => {
+          const priceInfoObjectId = await this.pythClient.getPriceFeedObjectId(
+            priceIdentifiers[i],
+          );
+          priceInfoObjectIds[i] = priceInfoObjectId!;
+        })();
+      }),
+    );
 
-    const stalePriceIdentifiers = [];
+    const stalePriceIdentifiers: string[] = [];
+    await Promise.all(
+      priceInfoObjectIds.map((_, i) => {
+        (async () => {
+          const priceInfoObject = await PriceInfoObject.fetch(
+            this.client,
+            priceInfoObjectIds[i],
+          );
 
-    for (let i = 0; i < priceInfoObjectIds.length; i++) {
-      const priceInfoObject = await PriceInfoObject.fetch(
-        this.client,
-        priceInfoObjectIds[i],
-      );
+          const publishTime =
+            priceInfoObject.priceInfo.priceFeed.price.timestamp;
+          const stalenessSeconds = Date.now() / 1000 - Number(publishTime);
 
-      const publishTime = priceInfoObject.priceInfo.priceFeed.price.timestamp;
-      const stalenessSeconds = Date.now() / 1000 - Number(publishTime);
+          if (stalenessSeconds > 20) {
+            const reserve =
+              this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
 
-      if (stalenessSeconds > 20) {
-        const reserve =
-          this.lendingMarket.reserves[Number(reserveArrayIndexes[i])];
-
-        stalePriceIdentifiers.push(priceIdentifiers[i]);
-      }
-    }
+            stalePriceIdentifiers.push(priceIdentifiers[i]);
+          }
+        })();
+      }),
+    );
 
     if (stalePriceIdentifiers.length > 0) {
       const stalePriceUpdateData =

@@ -145,33 +145,44 @@ export default function AccountOverviewDialog() {
       clearEventsData();
 
       try {
-        const url1 = `${API_URL}/events?${new URLSearchParams({
-          eventTypes: [
-            EventType.DEPOSIT,
-            EventType.BORROW,
-            EventType.WITHDRAW,
-            EventType.REPAY,
-            EventType.LIQUIDATE,
-          ].join(","),
-          joinEventTypes: EventType.RESERVE_ASSET_DATA,
-          obligationId,
-        })}`;
-        const res1 = await fetch(url1);
-        const json1 = await res1.json();
+        const [json1, json2, json3] = await Promise.all([
+          // Deposit, borrow, withdraw, repay, and liquidate events joined with reserve asset data
+          (async () => {
+            const url = `${API_URL}/events?${new URLSearchParams({
+              eventTypes: [
+                EventType.DEPOSIT,
+                EventType.BORROW,
+                EventType.WITHDRAW,
+                EventType.REPAY,
+                EventType.LIQUIDATE,
+              ].join(","),
+              joinEventTypes: EventType.RESERVE_ASSET_DATA,
+              obligationId,
+            })}`;
+            const res = await fetch(url);
+            return res.json();
+          })(),
 
-        const url2 = `${API_URL}/events?${new URLSearchParams({
-          eventTypes: EventType.CLAIM_REWARD,
-          obligationId,
-        })}`;
-        const res2 = await fetch(url2);
-        const json2 = await res2.json();
+          // Claim reward events
+          (async () => {
+            const url = `${API_URL}/events?${new URLSearchParams({
+              eventTypes: EventType.CLAIM_REWARD,
+              obligationId,
+            })}`;
+            const res = await fetch(url);
+            return res.json();
+          })(),
 
-        const url3 = `${API_URL}/events?${new URLSearchParams({
-          eventTypes: EventType.OBLIGATION_DATA,
-          obligationId,
-        })}`;
-        const res3 = await fetch(url3);
-        const json3 = await res3.json();
+          // Obligation data events
+          (async () => {
+            const url = `${API_URL}/events?${new URLSearchParams({
+              eventTypes: EventType.OBLIGATION_DATA,
+              obligationId,
+            })}`;
+            const res = await fetch(url);
+            return res.json();
+          })(),
+        ]);
 
         // Parse
         const data = { ...json1, ...json2, ...json3 } as EventsData;
