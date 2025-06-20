@@ -251,7 +251,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     (async () => {
       try {
         const res = await fetch(
-          `${API_URL}/obligations/unclaimed-rewards?limit=3`,
+          `${API_URL}/obligations/unclaimed-rewards?limit=1`,
         );
         const json: {
           obligations: {
