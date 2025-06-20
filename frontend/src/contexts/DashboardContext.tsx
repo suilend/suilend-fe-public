@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-import { RouterData as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
+import * as Cetus from "@cetusprotocol/aggregator-sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import {
   Transaction,
@@ -20,16 +20,19 @@ import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
-import { ClaimRewardsReward, QuoteProvider, RewardSummary } from "@suilend/sdk";
-import { NORMALIZED_SEND_COINTYPE } from "@suilend/sui-fe";
+import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
+import {
+  NORMALIZED_SEND_COINTYPE,
+  NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
+} from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { useAggSdks } from "@/lib/swap";
-
-const SWAP_TO_SEND_SLIPPAGE_PERCENT = 1;
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { useCetusSdk } from "@/lib/swap";
 
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
@@ -37,7 +40,12 @@ interface DashboardContext {
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
-    args: { asSend: boolean; isDepositing: boolean },
+    args?: {
+      asSend?: boolean;
+      asSui?: boolean;
+      asUsdc?: boolean;
+      isDepositing?: boolean;
+    },
   ) => Promise<SuiTransactionBlockResponse>;
 }
 
@@ -59,13 +67,17 @@ export const useDashboardContext = () => useContext(DashboardContext);
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, autoclaimRewards } = useLoadedAppContext();
   const { obligation, obligationOwnerCap } = useLoadedUserContext();
 
   // send.ag
-  const { sdkMap, partnerIdMap } = useAggSdks();
+  const cetusSdk = useCetusSdk();
 
-  // Helpers
+  // First deposit
+  const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
+    useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
+
+  // Actions
   const getClaimRewardSimulatedAmount = useCallback(
     async (rewards: ClaimRewardsReward[]): Promise<string> => {
       if (!address) throw Error("Wallet not connected");
@@ -124,17 +136,15 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  //
-
-  // First deposit
-  const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
-    useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
-
-  // Actions
   const claimRewards = useCallback(
     async (
       rewardsMap: Record<string, RewardSummary[]>,
-      args: { asSend: boolean; isDepositing: boolean },
+      args?: {
+        asSend?: boolean;
+        asSui?: boolean;
+        asUsdc?: boolean;
+        isDepositing?: boolean;
+      },
     ) => {
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
@@ -153,12 +163,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             side: r.stats.side,
           }));
 
-        if (args?.asSend) {
-          if (Object.keys(rewardsMap).length > 1)
-            throw new Error(
-              "Cannot claim multiple rewards as SEND in one transaction",
-            ); // TODO
-
+        if (args?.asSend || args?.asSui || args?.asUsdc) {
           // Claim
           const { transaction: _transaction1, mergedCoinsMap } =
             appData.suilendClient.claimRewards(
@@ -174,7 +179,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             string,
             {
               coin: TransactionObjectArgument;
-              routers: CetusRouterData;
+              routers: Cetus.RouterData;
             }
           > = Object.fromEntries(
             await Promise.all(
@@ -186,20 +191,22 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                   );
 
                   // Get routes
-                  const routers = await sdkMap[QuoteProvider.CETUS].findRouters(
-                    {
-                      from: coinType,
-                      target: NORMALIZED_SEND_COINTYPE,
-                      amount: new BN(amount), // Estimate (lower bound)
-                      byAmountIn: true,
-                      splitCount: new BigNumber(amount)
-                        .times(rewardsMap[coinType][0].stats.price ?? 1)
-                        .gte(10)
-                        ? undefined // Don't limit splitCount if amount is >= $10
-                        : 1,
-                    },
-                  );
-                  if (!routers) throw new Error("No routes found");
+                  const routers = await cetusSdk.findRouters({
+                    from: coinType,
+                    target: args?.asSend
+                      ? NORMALIZED_SEND_COINTYPE
+                      : args?.asSui
+                        ? NORMALIZED_SUI_COINTYPE
+                        : NORMALIZED_USDC_COINTYPE,
+                    amount: new BN(amount), // Underestimate (rewards keep accruing)
+                    byAmountIn: true,
+                    splitCount: new BigNumber(amount)
+                      .times(rewardsMap[coinType][0].stats.price ?? 1)
+                      .gte(10)
+                      ? undefined // Don't limit splitCount if amount is >= $10
+                      : 1,
+                  });
+                  if (!routers) throw new Error("No quote found");
                   console.log("[claimRewards] routers", { coinType, routers });
 
                   return [coinType, { coin, routers }];
@@ -212,21 +219,29 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           for (const [coinType, { coin: coinIn, routers }] of Object.entries(
             amountsAndSortedQuotesMap,
           )) {
-            // Swap
-            const coinOut = await sdkMap[QuoteProvider.CETUS].fixableRouterSwap(
-              {
+            const slippagePercent = 3;
+
+            let coinOut: TransactionObjectArgument;
+            try {
+              coinOut = await cetusSdk.fixableRouterSwap({
                 routers,
                 inputCoin: coinIn,
-                slippage: SWAP_TO_SEND_SLIPPAGE_PERCENT / 100,
+                slippage: slippagePercent / 100,
                 txb: transaction,
-                partner: partnerIdMap[QuoteProvider.CETUS],
-              },
-            );
+                partner: CETUS_PARTNER_ID,
+              });
+            } catch (err) {
+              throw new Error("No quote found");
+            }
 
             if (args?.isDepositing) {
               appData.suilendClient.deposit(
                 coinOut,
-                NORMALIZED_SEND_COINTYPE,
+                args?.asSend
+                  ? NORMALIZED_SEND_COINTYPE
+                  : args?.asSui
+                    ? NORMALIZED_SUI_COINTYPE
+                    : NORMALIZED_USDC_COINTYPE,
                 obligationOwnerCap.id,
                 transaction,
               );
@@ -260,6 +275,8 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
+      // transaction = autoclaimRewards(transaction);
+
       const res = await signExecuteAndWaitForTransaction(transaction);
       return res;
     },
@@ -269,8 +286,8 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
-      sdkMap,
-      partnerIdMap,
+      cetusSdk,
+      // autoclaimRewards,
       signExecuteAndWaitForTransaction,
     ],
   );

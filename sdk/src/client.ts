@@ -161,6 +161,17 @@ async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   return (object.data?.content as any).fields.package;
 }
 
+export type ObligationWithUnclaimedRewards = {
+  id: string;
+  unclaimedRewards: {
+    rewardReserveArrayIndex: bigint;
+    rewardIndex: bigint;
+    rewardCoinType: string;
+    side: Side;
+    depositReserveArrayIndex: bigint;
+  }[];
+};
+
 export type ClaimRewardsReward = {
   reserveArrayIndex: bigint;
   rewardIndex: bigint;
@@ -511,14 +522,14 @@ export class SuilendClient {
     obligationId: string,
     rewardReserveArrayIndex: bigint,
     rewardIndex: bigint,
-    rewardType: string,
+    rewardCoinType: string,
     side: Side,
     depositReserveArrayIndex: bigint,
     transaction: Transaction,
   ) {
     return claimRewardsAndDeposit(
       transaction,
-      [this.lendingMarket.$typeArgs[0], rewardType],
+      [this.lendingMarket.$typeArgs[0], rewardCoinType],
       {
         lendingMarket: transaction.object(this.lendingMarket.id),
         obligationId: transaction.pure.id(obligationId),

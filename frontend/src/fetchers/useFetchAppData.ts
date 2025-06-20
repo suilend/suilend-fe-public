@@ -3,6 +3,7 @@ import useSWR, { useSWRConfig } from "swr";
 
 import {
   ParsedReserve,
+  Side,
   initializeSuilend,
   initializeSuilendRewards,
 } from "@suilend/sdk";
@@ -19,7 +20,11 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
+    const [
+      allLendingMarketData,
+      lstAprPercentMap,
+      obligationsWithUnclaimedRewards,
+    ] = await Promise.all([
       // Lending markets
       (async () => {
         const allLendingMarketData: AllAppData["allLendingMarketData"] =
@@ -83,20 +88,55 @@ export default function useFetchAppData() {
       // LSTs (won't throw on error)
       (async () => {
         try {
-          const lstAprPercentMapRes = await fetch(`${API_URL}/springsui/apy`);
-          const lstAprPercentMapJson: Record<string, string> =
-            await lstAprPercentMapRes.json();
-          if ((lstAprPercentMapRes as any)?.statusCode === 500)
+          const res = await fetch(`${API_URL}/springsui/apy`);
+          const json: Record<string, string> = await res.json();
+          if ((res as any)?.statusCode === 500)
             throw new Error("Failed to fetch SpringSui LST APRs");
 
           return Object.fromEntries(
-            Object.entries(lstAprPercentMapJson).map(
-              ([coinType, aprPercent]) => [coinType, new BigNumber(aprPercent)],
-            ),
-          ) as AllAppData["lstAprPercentMap"];
+            Object.entries(json).map(([coinType, aprPercent]) => [
+              coinType,
+              new BigNumber(aprPercent),
+            ]),
+          );
         } catch (err) {
           console.error(err);
           return {} as AllAppData["lstAprPercentMap"];
+        }
+      })(),
+
+      // Obligations with unclaimed rewards (won't throw on error)
+      (async () => {
+        try {
+          const res = await fetch(
+            `${API_URL}/obligations/unclaimed-rewards?limit=3`,
+          );
+          const json: {
+            obligations: {
+              id: string;
+              unclaimedRewards: {
+                rewardReserveArrayIndex: string;
+                rewardIndex: string;
+                rewardCoinType: string;
+                side: Side;
+                depositReserveArrayIndex: string;
+              }[];
+            }[];
+          } = await res.json();
+
+          return json.obligations.map((o) => ({
+            ...o,
+            unclaimedRewards: o.unclaimedRewards.map((r) => ({
+              rewardReserveArrayIndex: BigInt(r.rewardReserveArrayIndex),
+              rewardIndex: BigInt(r.rewardIndex),
+              rewardCoinType: r.rewardCoinType,
+              side: r.side,
+              depositReserveArrayIndex: BigInt(r.depositReserveArrayIndex),
+            })),
+          }));
+        } catch (err) {
+          console.error(err);
+          return {} as AllAppData["obligationsWithUnclaimedRewards"];
         }
       })(),
     ]);
@@ -135,7 +175,11 @@ export default function useFetchAppData() {
       ) as Record<string, ParsedReserve>;
     }
 
-    return { allLendingMarketData, lstAprPercentMap };
+    return {
+      allLendingMarketData,
+      lstAprPercentMap,
+      obligationsWithUnclaimedRewards,
+    };
   };
 
   const { data, mutate } = useSWR<AllAppData>("appData", dataFetcher, {

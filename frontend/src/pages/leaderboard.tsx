@@ -7,9 +7,9 @@ import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 import LeaderboardHeader from "@/components/leaderboard/LeaderboardHeader";
 import PointsLeaderboardTable from "@/components/leaderboard/PointsLeaderboardTable";
 import TvlLeaderboardTable from "@/components/leaderboard/TvlLeaderboardTable";
-import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { TBody } from "@/components/shared/Typography";
 import {
+  LeaderboardContextProvider,
   TAB_POINTS_SEASON_MAP,
   Tab,
   useLeaderboardContext,
@@ -19,7 +19,7 @@ enum QueryParams {
   TAB = "tab",
 }
 
-export default function Leaderboard() {
+function Page() {
   const router = useRouter();
   const queryParams = useMemo(
     () => ({
@@ -57,13 +57,11 @@ export default function Leaderboard() {
   return (
     <>
       <Head>
-        <title>Suilend | Points</title>
+        <title>Suilend | Leaderboard</title>
       </Head>
 
       <div className="flex w-full flex-col items-center gap-8">
         <div className="flex w-full flex-col items-center gap-6">
-          <ImpersonationModeBanner className="max-w-[960px]" />
-
           <LeaderboardHeader
             selectedTab={selectedTab}
             onSelectedTabChange={onSelectedTabChange}
@@ -73,6 +71,7 @@ export default function Leaderboard() {
         {address && (
           <div className="flex w-full max-w-[960px] flex-col gap-4">
             <TBody className="px-4 text-[16px] uppercase">Your position</TBody>
+
             {selectedTab === Tab.TVL ? (
               <TvlLeaderboardTable
                 data={
@@ -103,6 +102,7 @@ export default function Leaderboard() {
 
         <div className="flex w-full max-w-[960px] flex-col gap-4">
           <TBody className="px-4 text-[16px] uppercase">Leaderboard</TBody>
+
           {selectedTab === Tab.TVL ? (
             <TvlLeaderboardTable data={tvl.leaderboardRows} pageSize={100} />
           ) : (
@@ -117,5 +117,13 @@ export default function Leaderboard() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function Leaderboard() {
+  return (
+    <LeaderboardContextProvider>
+      <Page />
+    </LeaderboardContextProvider>
   );
 }
