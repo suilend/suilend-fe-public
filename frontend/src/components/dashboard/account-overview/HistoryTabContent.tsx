@@ -114,7 +114,7 @@ export default function HistoryTabContent({
           const { eventType, event } = row.original;
 
           return (
-            <>
+            <div className="flex w-max flex-col gap-1">
               <TBodySans className="w-max">
                 {EventTypeNameMap[eventType]}
                 {isGroupRow && eventType === EventType.LIQUIDATE && (
@@ -138,7 +138,7 @@ export default function HistoryTabContent({
                     <TLabelSans>Autoclaim</TLabelSans>
                   </div>
                 )}
-            </>
+            </div>
           );
         },
       },
