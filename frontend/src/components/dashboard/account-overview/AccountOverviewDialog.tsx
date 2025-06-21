@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { MoveCallSuiTransaction, SuiTransaction } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import { cloneDeep } from "lodash";
+import { chunk, cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
 import { WAD } from "@suilend/sdk/lib/constants";
@@ -197,30 +197,40 @@ export default function AccountOverviewDialog() {
               claimReward: ApiClaimRewardEvent[];
             } = await res.json();
 
+            const allDigests = Array.from(
+              new Set(
+                json.claimReward
+                  .filter((y) => y.sender !== address)
+                  .map((t) => t.digest),
+              ),
+            );
+            const chunkedDigests = chunk(allDigests, 50);
+
             const autoclaimDigests = (
-              await suiClient.multiGetTransactionBlocks({
-                digests: Array.from(
-                  new Set(
-                    json.claimReward
-                      .filter((y) => y.sender !== address)
-                      .map((t) => t.digest),
-                  ),
-                ),
-                options: {
-                  showInput: true,
-                },
-              })
-            )
-              .filter((transaction) =>
-                (
-                  transaction.transaction?.data.transaction as any
-                )?.transactions?.some(
-                  (t: SuiTransaction) =>
-                    ((t as any)?.MoveCall as MoveCallSuiTransaction)
-                      ?.function === "claim_rewards_and_deposit",
+              await Promise.all(
+                chunkedDigests.map((digests) =>
+                  (async () =>
+                    (
+                      await suiClient.multiGetTransactionBlocks({
+                        digests,
+                        options: {
+                          showInput: true,
+                        },
+                      })
+                    )
+                      .filter((transaction) =>
+                        (
+                          transaction.transaction?.data.transaction as any
+                        )?.transactions?.some(
+                          (t: SuiTransaction) =>
+                            ((t as any)?.MoveCall as MoveCallSuiTransaction)
+                              ?.function === "claim_rewards_and_deposit",
+                        ),
+                      )
+                      .map((transaction) => transaction.digest))(),
                 ),
               )
-              .map((transaction) => transaction.digest);
+            ).flat();
 
             return {
               claimReward: json.claimReward,
