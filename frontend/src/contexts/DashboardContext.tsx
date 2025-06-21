@@ -276,8 +276,13 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         throw err;
       }
 
-      transaction = await autoclaimRewards(transaction);
+      const { transaction: _transaction, onSuccess: onAutoclaimSuccess } =
+        await autoclaimRewards(transaction);
+      transaction = _transaction;
+
       const res = await signExecuteAndWaitForTransaction(transaction);
+      onAutoclaimSuccess();
+
       return res;
     },
     [

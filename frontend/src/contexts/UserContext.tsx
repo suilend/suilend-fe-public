@@ -34,6 +34,21 @@ import {
 import useFetchUserData from "@/fetchers/useFetchUserData";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
+const MAX_REWARDS_PER_TRANSACTION = 5;
+
+const getCombinedAutoclaimedRewards = (
+  prevRewards: Record<string, number[]>,
+  newRewards: Record<string, number[]>,
+) => {
+  const result: Record<string, number[]> = {
+    ...prevRewards,
+  };
+  for (const [obligationId, rewards] of Object.entries(newRewards))
+    result[obligationId] = [...(result[obligationId] ?? []), ...rewards];
+
+  return result;
+};
+
 export interface UserData {
   obligationOwnerCaps: ObligationOwnerCap<string>[];
   obligations: ParsedObligation[];
@@ -55,7 +70,9 @@ interface UserContext {
   obligationOwnerCap: ObligationOwnerCap<string> | undefined; // Depends on userData
   setObligationId: (lendingMarketSlug: string, obligationId: string) => void;
 
-  autoclaimRewards: (transaction: Transaction) => Promise<Transaction>;
+  autoclaimRewards: (
+    transaction: Transaction,
+  ) => Promise<{ transaction: Transaction; onSuccess: () => void }>;
 }
 type LoadedUserContext = UserContext & {
   allUserData: Record<string, UserData>;
@@ -247,24 +264,46 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // Obligations with unclaimed rewards
-  const [hasAutoclaimedRewards, setHasAutoclaimedRewards] =
-    useState<boolean>(false);
+  const [autoclaimedRewards, setAutoclaimedRewards] = useState<
+    Record<string, number[]>
+  >({});
 
   const autoclaimRewards = useCallback(
     async (transaction: Transaction) => {
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
-      if (!obligationsWithUnclaimedRewards) return transaction; // Can happen if the data is not loaded yet (unlikely)
-      if (hasAutoclaimedRewards) return transaction; // Already autoclaimed rewards
+      if (!obligationsWithUnclaimedRewards)
+        return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet (unlikely)
 
       const innerTransaction = Transaction.from(transaction);
 
+      // Prepare
       const suilendClient =
         allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
 
-      for (const obligation of obligationsWithUnclaimedRewards) {
-        if (userData?.obligations.some((o) => o.id === obligation.id)) continue;
+      const filteredObligationsWithUnclaimedRewards =
+        obligationsWithUnclaimedRewards.filter(
+          (obligation) =>
+            !userData?.obligations.some((o) => o.id === obligation.id),
+        );
+      const newAutoclaimedRewards =
+        filteredObligationsWithUnclaimedRewards.reduce(
+          (acc, obligation) => ({ ...acc, [obligation.id]: [] }),
+          {} as Record<string, number[]>,
+        );
 
-        for (const reward of obligation.unclaimedRewards) {
+      // Iterate over obligations and rewards
+      for (const obligation of filteredObligationsWithUnclaimedRewards) {
+        for (let i = 0; i < obligation.unclaimedRewards.length; i++) {
+          const reward = obligation.unclaimedRewards[i];
+
+          const count = Object.values(newAutoclaimedRewards).reduce(
+            (acc, rewards) => acc + rewards.length,
+            0,
+          );
+          if (count >= MAX_REWARDS_PER_TRANSACTION) break; // Skip if we've reached the max number of rewards for this transaction
+
+          if ((autoclaimedRewards[obligation.id] ?? []).includes(i)) continue; // Skip if already autoclaimed in a previous transaction
+
           suilendClient.claimRewardAndDeposit(
             obligation.id,
             reward.rewardReserveArrayIndex,
@@ -274,22 +313,36 @@ export function UserContextProvider({ children }: PropsWithChildren) {
             reward.depositReserveArrayIndex,
             innerTransaction,
           );
+          newAutoclaimedRewards[obligation.id].push(i);
         }
       }
 
+      const count = Object.values(newAutoclaimedRewards).reduce(
+        (acc, rewards) => acc + rewards.length,
+        0,
+      );
+      if (count === 0)
+        return { transaction: innerTransaction, onSuccess: () => {} }; // Skip if no rewards to autoclaim
+
       try {
         await dryRunTransaction(innerTransaction);
-        setHasAutoclaimedRewards(true);
-        return innerTransaction;
+        return {
+          transaction: innerTransaction,
+          onSuccess: () => {
+            setAutoclaimedRewards((prev) =>
+              getCombinedAutoclaimedRewards(prev, newAutoclaimedRewards),
+            );
+          },
+        };
       } catch (err) {
-        return transaction;
+        return { transaction: innerTransaction, onSuccess: () => {} };
       }
     },
     [
       allAppData,
       obligationsWithUnclaimedRewards,
-      hasAutoclaimedRewards,
       userData?.obligations,
+      autoclaimedRewards,
       dryRunTransaction,
     ],
   );
