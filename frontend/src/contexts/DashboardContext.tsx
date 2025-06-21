@@ -26,6 +26,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
 } from "@suilend/sui-fe";
+import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
@@ -281,7 +282,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       transaction = _transaction;
 
       const res = await signExecuteAndWaitForTransaction(transaction);
+
       onAutoclaimSuccess();
+      track(
+        "claim_rewards",
+        Object.fromEntries(
+          Object.entries(args ?? {}).map(([k, v]) => [k, String(v)]),
+        ),
+      );
 
       return res;
     },
