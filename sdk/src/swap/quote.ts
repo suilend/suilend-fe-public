@@ -452,7 +452,7 @@ export const getAggQuotes = async (
   tokenOut: Token,
   amountIn: string,
 ) => {
-  const timeoutMs = 5000;
+  const timeoutMs = 15000;
 
   // Get quotes in parallel
   // Aftermath
