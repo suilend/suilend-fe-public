@@ -45,14 +45,14 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
           {wallet.iconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className="h-4 w-4 min-w-4 shrink-0"
+              className="h-5 w-5 min-w-5 shrink-0"
               src={wallet.iconUrl}
               alt={`${wallet.name} logo`}
-              width={16}
-              height={16}
+              width={20}
+              height={20}
             />
           ) : (
-            <div className="h-4 w-4" />
+            <div className="h-5 w-5" />
           )}
 
           <TLabelSans className="text-foreground">{wallet.name}</TLabelSans>
