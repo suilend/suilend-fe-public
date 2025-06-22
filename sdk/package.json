@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.69",
+  "version": "1.1.70",
   "private": false,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -25,7 +25,7 @@
     "url": "https://github.com/suilend/suilend-fe-public/issues"
   },
   "dependencies": {
-    "@7kprotocol/sdk-ts": "^3.0.2",
+    "@7kprotocol/sdk-ts": "^3.2.0",
     "@cetusprotocol/aggregator-sdk": "^0.12.1",
     "@flowx-finance/sdk": "^1.11.0",
     "@pythnetwork/pyth-sui-js": "^2.1.0",
