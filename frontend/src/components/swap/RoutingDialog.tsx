@@ -159,11 +159,7 @@ function StartEndNode({ data }: StartEndNodeProps) {
       {!isStart && <CustomHandle type="target" position={Position.Left} />}
 
       <div className="flex flex-row items-center gap-1.5 rounded-md bg-border px-2.5 py-2">
-        <TokenLogo
-          className="h-4 w-4"
-          imageProps={{ className: "rounded-full" }}
-          token={token}
-        />
+        <TokenLogo token={token} size={16} />
 
         <TBody>
           <Tooltip title={formatToken(amount, { dp: token.decimals })}>
@@ -236,10 +232,7 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
           }
         >
           <div>
-            <TokenLogos
-              className="h-4 w-4"
-              tokens={[data.in.token, data.out.token]}
-            />
+            <TokenLogos tokens={[data.in.token, data.out.token]} size={16} />
           </div>
         </Tooltip>
 

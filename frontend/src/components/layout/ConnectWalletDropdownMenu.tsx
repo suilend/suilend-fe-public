@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { isInMsafeApp } from "@suilend/sui-fe";
@@ -45,16 +43,16 @@ function WalletDropdownItem({ wallet }: WalletDropdownItemProps) {
       <div className="flex w-full flex-row items-center justify-between gap-2">
         <div className="flex flex-row items-center gap-2">
           {wallet.iconUrl ? (
-            <Image
-              className="h-6 w-6"
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              className="h-4 w-4 min-w-4 shrink-0"
               src={wallet.iconUrl}
               alt={`${wallet.name} logo`}
-              width={24}
-              height={24}
-              quality={100}
+              width={16}
+              height={16}
             />
           ) : (
-            <div className="h-6 w-6" />
+            <div className="h-4 w-4" />
           )}
 
           <TLabelSans className="text-foreground">{wallet.name}</TLabelSans>

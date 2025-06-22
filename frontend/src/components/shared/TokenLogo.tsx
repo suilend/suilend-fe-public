@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CSSProperties } from "react";
+import { useEffect } from "react";
 
 import { ClassValue } from "clsx";
 
@@ -16,54 +16,76 @@ import {
 
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ASSETS_URL } from "@/lib/constants";
 import { DOCS_BRIDGE_LEARN_MORE_URL } from "@/lib/navigation";
+import { isInvalidIconUrl } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
 interface TokenLogoProps {
-  showTooltip?: boolean;
   className?: ClassValue;
-  style?: CSSProperties;
-  imageProps?: React.HTMLAttributes<HTMLImageElement>;
-  token: Token;
+  token?: Token;
+  size: number;
+  showBridgedAssetTooltip?: boolean;
 }
 
 export default function TokenLogo({
-  showTooltip,
   className,
-  style,
-  imageProps,
   token,
+  size,
+  showBridgedAssetTooltip,
 }: TokenLogoProps) {
-  const { className: imageClassName, ...restImageProps } = imageProps || {};
+  const { tokenIconImageLoadErrorMap, loadTokenIconImage } =
+    useLoadedAppContext();
 
+  useEffect(() => {
+    if (!token) return;
+    if (isInvalidIconUrl(token.iconUrl)) return;
+
+    loadTokenIconImage(token);
+  }, [token, loadTokenIconImage]);
+
+  // Bridged asset
   const wormholeAssetMap: Record<string, string> = {
     [NORMALIZED_wUSDC_COINTYPE]: "Wormhole Wrapped Ethereum-native USDC",
     [NORMALIZED_wUSDT_COINTYPE]: "Wormhole Wrapped Ethereum-native USDT",
     [NORMALIZED_WETH_COINTYPE]: "Wormhole Wrapped Ethereum-native WETH",
     [NORMALIZED_SOL_COINTYPE]: "Wormhole Wrapped Solana-native SOL",
   };
-  const wormholeAsset = wormholeAssetMap[token.coinType];
+  const wormholeAsset = token ? wormholeAssetMap[token.coinType] : undefined;
 
   const suiBridgeAssetMap: Record<string, string> = {
     [NORMALIZED_suiUSDT_COINTYPE]: "USDT by Sui Bridge (Ethereum-native)",
     [NORMALIZED_wBTC_COINTYPE]: "wBTC by Sui Bridge (Ethereum-native)",
     [NORMALIZED_suiETH_COINTYPE]: "ETH by Sui Bridge (Ethereum-native)",
   };
-  const suiBridgeAsset = suiBridgeAssetMap[token.coinType];
+  const suiBridgeAsset = token ? suiBridgeAssetMap[token.coinType] : undefined;
 
-  const isSmall = className
-    ? className.toString().includes("h-4") ||
-      className.toString().includes("h-5") ||
-      className.toString().includes("h-6")
-    : false;
+  const isSmall = size <= 24;
   const bridgeLogoSize = isSmall ? 8 : 12;
 
+  if (!token)
+    return (
+      <Skeleton
+        className={cn("shrink-0 rounded-[50%] border", className)}
+        style={{ width: size, height: size }}
+      />
+    );
+  if (
+    isInvalidIconUrl(token.iconUrl) ||
+    tokenIconImageLoadErrorMap[token.coinType]
+  )
+    return (
+      <div
+        className={cn("shrink-0 rounded-[50%] border", className)}
+        style={{ width: size, height: size }}
+      />
+    );
   return (
     <Tooltip
       title={
-        showTooltip && (wormholeAsset || suiBridgeAsset) ? (
+        showBridgedAssetTooltip && (wormholeAsset || suiBridgeAsset) ? (
           <>
             {wormholeAsset || suiBridgeAsset}
             {wormholeAsset && (
@@ -78,28 +100,7 @@ export default function TokenLogo({
         ) : undefined
       }
     >
-      <div className={cn("relative h-7 w-7 shrink-0", className)} style={style}>
-        <AspectRatio ratio={1} className="relative z-[1]">
-          {!token.iconUrl ||
-          token.iconUrl === "" ||
-          token.iconUrl === "TODO" ? (
-            <div className="h-full w-full shrink-0 rounded-[50%] bg-muted/15" />
-          ) : (
-            <Image
-              key={token.iconUrl}
-              className={cn(
-                "shrink-0 rounded-full object-cover",
-                imageClassName,
-              )}
-              src={token.iconUrl}
-              alt={`${token.symbol} logo`}
-              fill
-              quality={100}
-              {...restImageProps}
-            />
-          )}
-        </AspectRatio>
-
+      <div className="relative shrink-0" style={{ width: size, height: size }}>
         {(wormholeAsset || suiBridgeAsset) && (
           <div className="absolute -bottom-0.5 -right-0.5 z-[2] rounded-full border border-[black] bg-[black]">
             {wormholeAsset ? (
@@ -121,6 +122,16 @@ export default function TokenLogo({
             )}
           </div>
         )}
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          className={cn("relative z-[1] rounded-[50%]", className)}
+          src={token.iconUrl!}
+          alt={`${token.symbol} logo`}
+          width={size}
+          height={size}
+          style={{ width: size, height: size }}
+        />
       </div>
     </Tooltip>
   );

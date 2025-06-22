@@ -29,7 +29,7 @@ export default function PointsCount({
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">
-      <PointsLogo season={season} />
+      <PointsLogo season={season} size={16} />
 
       {amount === undefined ? (
         <Skeleton className="h-5 w-10" />

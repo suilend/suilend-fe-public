@@ -107,8 +107,8 @@ export default function RedeemCTokensDialog() {
               >
                 <div className="flex flex-row items-center gap-2">
                   <TokenLogo
-                    className="h-4 w-4"
                     token={getToken(coinType, coinMetadata)}
+                    size={16}
                   />
                   <TBody>{coinMetadata.symbol}</TBody>
                 </div>

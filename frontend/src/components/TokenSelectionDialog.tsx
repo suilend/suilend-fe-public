@@ -77,12 +77,7 @@ function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
       onClick={isDisabled ? undefined : onClick}
     >
       <div className="flex w-full flex-row items-center gap-3">
-        <TokenLogo
-          showTooltip
-          className="shrink-0"
-          imageProps={{ className: "rounded-full" }}
-          token={token}
-        />
+        <TokenLogo token={token} size={28} showBridgedAssetTooltip />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/* Top */}
@@ -459,18 +454,10 @@ export default function TokenSelectionDialog({
           )}
           labelClassName={cn(
             token
-              ? cn("text-2xl", triggerLabelSelectedClassName)
+              ? cn("ml-1 text-2xl", triggerLabelSelectedClassName)
               : cn("text-sm", triggerLabelUnselectedClassName),
           )}
-          startIcon={
-            token && (
-              <TokenLogo
-                className="mr-1 h-5 w-5"
-                imageProps={{ className: "rounded-full" }}
-                token={token}
-              />
-            )
-          }
+          startIcon={token && <TokenLogo token={token} size={20} />}
           endIcon={
             <ChevronDown
               className={cn(
@@ -523,13 +510,7 @@ export default function TokenSelectionDialog({
                   ? "border border-white bg-muted/25"
                   : "border transition-colors hover:border-transparent",
               )}
-              startIcon={
-                <TokenLogo
-                  className="h-4 w-4"
-                  imageProps={{ className: "rounded-full" }}
-                  token={t}
-                />
-              }
+              startIcon={<TokenLogo token={t} size={16} />}
               variant="ghost"
               onClick={() => onTokenClick(t)}
               disabled={(disabledCoinTypes ?? []).includes(t.coinType)}

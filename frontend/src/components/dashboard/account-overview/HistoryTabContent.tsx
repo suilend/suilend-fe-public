@@ -929,7 +929,10 @@ export default function HistoryTabContent({
                     )}
                     startIcon={isSelected ? <Check /> : undefined}
                     icon={
-                      <TokenLogo token={getToken(coinType, coinMetadata)} />
+                      <TokenLogo
+                        token={getToken(coinType, coinMetadata)}
+                        size={16}
+                      />
                     }
                     variant="ghost"
                     size="sm"

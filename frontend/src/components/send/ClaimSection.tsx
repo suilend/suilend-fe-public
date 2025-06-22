@@ -40,6 +40,7 @@ import SectionHeading from "@/components/send/SectionHeading";
 import Button, { ButtonProps } from "@/components/shared/Button";
 import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import Spinner from "@/components/shared/Spinner";
+import SuiTokenLogo from "@/components/shared/SuiTokenLogo";
 import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -330,7 +331,7 @@ function RedeemTabContent({
                             </div>
 
                             <div className="flex flex-row items-center gap-2">
-                              <MsendTokenLogo className="h-5 w-5" />
+                              <MsendTokenLogo size={20} />
                               <TBody>
                                 {formatToken(
                                   owned.times(
@@ -400,7 +401,7 @@ function RedeemTabContent({
                     </div>
 
                     <div className="flex flex-row items-center gap-2">
-                      <MsendTokenLogo className="h-5 w-5" />
+                      <MsendTokenLogo size={20} />
                       <TBody>
                         {formatToken(
                           allocation.id === AllocationIdS1.ROOTLETS
@@ -433,7 +434,7 @@ function RedeemTabContent({
             <TBodySans className="text-muted-foreground">Total</TBodySans>
 
             <div className="flex flex-row items-center gap-2">
-              <MsendTokenLogo className="h-5 w-5" />
+              <MsendTokenLogo size={20} />
               <TBody>
                 {formatToken(userTotalRedeemableMsend, {
                   dp: mSendCoinMetadata.decimals,
@@ -843,7 +844,7 @@ function ClaimTabContent() {
               <TBodySans className="text-muted-foreground">Claimable</TBodySans>
 
               <div className="flex flex-row items-center gap-2">
-                <SendTokenLogo />
+                <SendTokenLogo size={16} />
                 <TBody>
                   {formatToken(mSendBalance, {
                     dp: sendReserve.token.decimals,
@@ -860,7 +861,7 @@ function ClaimTabContent() {
 
               <div className="flex flex-col items-end gap-1">
                 <div className="flex flex-row items-center gap-2">
-                  <TokenLogo className="h-4 w-4" token={suiReserve.token} />
+                  <SuiTokenLogo size={16} />
                   <Tooltip
                     title={`${formatToken(claimPenaltyAmountSui, {
                       dp: SUI_DECIMALS,
@@ -942,7 +943,7 @@ function ClaimTabContent() {
 
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo />
+                          <SendTokenLogo size={16} />
                           <TBody>
                             {formatToken(flashLoanDeductionAmountSend, {
                               exact: false,
@@ -970,7 +971,7 @@ function ClaimTabContent() {
 
                       <div className="flex flex-col items-end gap-1">
                         <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo />
+                          <SendTokenLogo size={16} />
                           <TBody>
                             {formatToken(flashLoanProceedsAmountSend, {
                               exact: false,
@@ -1224,10 +1225,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
 
                     <div className="flex flex-col items-end gap-1">
                       <div className="flex flex-row items-center gap-2">
-                        <TokenLogo
-                          className="h-4 w-4"
-                          token={suiReserve.token}
-                        />
+                        <TokenLogo token={suiReserve.token} size={16} />
                         <TBody>
                           <Tooltip
                             title={`${formatToken(

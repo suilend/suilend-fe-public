@@ -23,7 +23,6 @@ import {
   formatPoints,
   formatPrice,
   formatToken,
-  getToken,
   isSendPoints,
 } from "@suilend/sui-fe";
 
@@ -337,7 +336,6 @@ export default function AprWithRewardsBreakdown({
                       }
                     >
                       <TokenLogo
-                        className="h-4 w-4"
                         token={{
                           coinType: reward.stats.rewardCoinType,
                           decimals: reward.stats.mintDecimals,
@@ -347,6 +345,7 @@ export default function AprWithRewardsBreakdown({
                           name: "",
                           symbol: reward.stats.symbol,
                         }}
+                        size={16}
                       />
                       <TLabelSans>{reward.stats.symbol}</TLabelSans>
                     </AprRewardsBreakdownRow>
@@ -434,7 +433,6 @@ export default function AprWithRewardsBreakdown({
                   >
                     <TLabelSans>Rewards in</TLabelSans>
                     <TokenLogo
-                      className="h-4 w-4"
                       token={{
                         coinType: reward.stats.rewardCoinType,
                         decimals: reward.stats.mintDecimals,
@@ -444,6 +442,7 @@ export default function AprWithRewardsBreakdown({
                         name: "",
                         symbol: reward.stats.symbol,
                       }}
+                      size={16}
                     />
                     <TLabelSans>{reward.stats.symbol}</TLabelSans>
                   </AprRewardsBreakdownRow>
@@ -455,7 +454,6 @@ export default function AprWithRewardsBreakdown({
       >
         <div className="relative flex flex-row items-center gap-1.5">
           <TokenLogos
-            className="h-4 w-4"
             tokens={[...perDayRewards, ...aprRewards].map((reward) => ({
               coinType: reward.stats.rewardCoinType,
               decimals: reward.stats.mintDecimals,
@@ -465,6 +463,7 @@ export default function AprWithRewardsBreakdown({
               name: "",
               symbol: reward.stats.symbol,
             }))}
+            size={16}
           />
 
           <TBody

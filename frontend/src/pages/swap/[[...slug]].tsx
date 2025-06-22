@@ -1683,10 +1683,10 @@ function Page() {
                 onClick={() => setIsInverted((is) => !is)}
               >
                 <TokenLogos
-                  className="h-4 w-4"
                   tokens={
                     !isInverted ? [tokenIn, tokenOut] : [tokenOut, tokenIn]
                   }
+                  size={16}
                 />
 
                 <TBody>

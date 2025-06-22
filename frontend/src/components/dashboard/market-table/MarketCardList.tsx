@@ -193,8 +193,8 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                             </div>
 
                             <TokenLogos
-                              className="h-4 w-4"
                               tokens={subRows.map((subRow) => subRow.token)}
+                              size={16}
                             />
                           </div>
                         </button>

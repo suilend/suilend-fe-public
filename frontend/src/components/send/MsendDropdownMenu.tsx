@@ -104,7 +104,7 @@ export default function MsendDropdownMenu() {
           <div className="flex flex-col items-end gap-1.5">
             <TBody>{getMsendCoinTypeName(coinType)}</TBody>
             <div className="flex flex-row items-center gap-2">
-              <MsendTokenLogo className="h-5 w-5" />
+              <MsendTokenLogo size={20} />
               <TBody>
                 {formatToken(mSendBalanceMap[coinType], {
                   dp: mSendCoinMetadata.decimals,

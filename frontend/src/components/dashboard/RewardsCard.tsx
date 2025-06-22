@@ -26,8 +26,8 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
   return (
     <div className="flex flex-row items-center gap-1.5">
       <TokenLogo
-        className="h-4 w-4"
         token={getToken(coinType, appData.coinMetadataMap[coinType])}
+        size={16}
       />
       <Tooltip
         title={`${formatToken(amount, {

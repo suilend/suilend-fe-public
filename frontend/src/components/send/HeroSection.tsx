@@ -169,7 +169,7 @@ export default function HeroSection({ allocations }: HeroSectionProps) {
         ) : (
           <div className="relative flex flex-col">
             <div className="z-[2] flex flex-row items-center justify-center gap-4 rounded-md border border-2 border-primary bg-[#0E1932] px-6 py-4 md:px-10">
-              <SendTokenLogo className="h-8 w-8" />
+              <SendTokenLogo size={32} />
 
               {rawUserAllocationsS1 === undefined ? (
                 <Skeleton className="h-10 w-48" />

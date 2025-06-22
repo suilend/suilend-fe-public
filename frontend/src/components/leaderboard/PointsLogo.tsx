@@ -6,18 +6,19 @@ import { POINTS_SEASON_MAP } from "@/contexts/LeaderboardContext";
 
 interface PointsLogoProps {
   season: number;
+  size: number;
 }
 
-export default function PointsLogo({ season }: PointsLogoProps) {
+export default function PointsLogo({ season, size }: PointsLogoProps) {
   const { appData } = useLoadedAppContext();
 
   return (
     <TokenLogo
-      className="h-4 w-4"
       token={getToken(
         POINTS_SEASON_MAP[season].coinType,
         appData.coinMetadataMap[POINTS_SEASON_MAP[season].coinType],
       )}
+      size={size}
     />
   );
 }

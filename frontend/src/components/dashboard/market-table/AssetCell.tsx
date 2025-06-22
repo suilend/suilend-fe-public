@@ -344,7 +344,7 @@ export default function AssetCell({
 
   return (
     <div className="flex flex-row items-center gap-3">
-      <TokenLogo showTooltip token={token} />
+      <TokenLogo token={token} size={28} showBridgedAssetTooltip />
 
       <div className="flex flex-col gap-1">
         <div className="flex flex-row flex-wrap items-baseline gap-x-2 gap-y-1">

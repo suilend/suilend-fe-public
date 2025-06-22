@@ -88,7 +88,9 @@ function Status({
           </TBody>
 
           <div className="flex flex-row items-center gap-2">
-            <SendTokenLogo className="rounded-[50%] bg-background outline outline-[0.5px] outline-background" />
+            <div className="h-4 w-4 rounded-[50%] bg-background outline outline-[0.5px] outline-background">
+              <SendTokenLogo size={16} />
+            </div>
             <TBody
               className={cn(
                 "text-[16px]",
@@ -293,7 +295,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
               <div className="relative flex flex-1 flex-row items-center justify-center rounded-t-md bg-background">
                 {/* Total allocation */}
                 <div className="absolute left-4 top-4 z-[2] flex h-7 flex-row items-center gap-2 rounded-sm bg-muted/15 px-2 backdrop-blur-md">
-                  <SendTokenLogo />
+                  <SendTokenLogo size={16} />
                   <TBody className="text-[16px]">
                     {formatToken(
                       allocation.totalAllocationPercent
@@ -388,7 +390,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                     labelClassName="text-sm"
                     label="Total allocation"
                     valueClassName="gap-2 items-center"
-                    valueStartDecorator={<SendTokenLogo />}
+                    valueStartDecorator={<SendTokenLogo size={16} />}
                     value={formatToken(
                       allocation.totalAllocationPercent
                         .times(SEND_TOTAL_SUPPLY)
@@ -407,7 +409,7 @@ export default function AllocationCard({ allocation }: AllocationCardProps) {
                         }
                         label={breakdown.title}
                         valueClassName="gap-2 items-center"
-                        valueStartDecorator={<SendTokenLogo />}
+                        valueStartDecorator={<SendTokenLogo size={16} />}
                         value={formatToken(
                           breakdown.percent.times(SEND_TOTAL_SUPPLY).div(100),
                           { exact: false },

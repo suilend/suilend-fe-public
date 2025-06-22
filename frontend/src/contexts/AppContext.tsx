@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -21,11 +22,13 @@ import {
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  Token,
   isInMsafeApp,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import useFetchAppData from "@/fetchers/useFetchAppData";
+import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
 export enum QueryParams {
@@ -67,6 +70,9 @@ interface AppContext {
 
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
+
+  tokenIconImageLoadErrorMap: Record<string, boolean>;
+  loadTokenIconImage: (token: Token) => void;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -96,6 +102,11 @@ const AppContext = createContext<AppContext>({
 
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
+
+  tokenIconImageLoadErrorMap: {},
+  loadTokenIconImage: () => {
+    throw Error("AppContextProvider not initialized");
+  },
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -228,6 +239,31 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     })();
   }, [suiClient]);
 
+  // Token images
+  const [tokenIconImageLoadErrorMap, setTokenIconImageLoadErrorMap] = useState<
+    Record<string, boolean>
+  >({});
+
+  const loadedTokenIconsRef = useRef<string[]>([]);
+  const loadTokenIconImage = useCallback((token: Token) => {
+    if (isInvalidIconUrl(token.iconUrl)) return;
+
+    if (loadedTokenIconsRef.current.includes(token.coinType)) return;
+    loadedTokenIconsRef.current.push(token.coinType);
+
+    const image = new Image();
+    image.src = token.iconUrl!;
+    image.onerror = () => {
+      console.error(
+        `Failed to load iconUrl for ${token.coinType}: ${token.iconUrl}`,
+      );
+      setTokenIconImageLoadErrorMap((prev) => ({
+        ...prev,
+        [token.coinType]: true,
+      }));
+    };
+  }, []);
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -244,6 +280,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
       walrusEpoch,
       walrusEpochProgressPercent,
+
+      tokenIconImageLoadErrorMap,
+      loadTokenIconImage,
     }),
     [
       allAppData,
@@ -256,6 +295,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isEcosystemLst,
       walrusEpoch,
       walrusEpochProgressPercent,
+      tokenIconImageLoadErrorMap,
+      loadTokenIconImage,
     ],
   );
 

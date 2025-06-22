@@ -178,8 +178,8 @@ export default function MarketTable() {
                   </div>
 
                   <TokenLogos
-                    className="h-4 w-4"
                     tokens={subRows.map((subRow) => subRow.token)}
+                    size={16}
                   />
                 </div>
               </div>

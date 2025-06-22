@@ -75,7 +75,7 @@ interface TokenAmountProps {
 export function TokenAmount({ amount, token }: TokenAmountProps) {
   return (
     <div className="flex w-max flex-row items-center gap-2">
-      <TokenLogo className="h-4 w-4" token={token} />
+      <TokenLogo token={token} size={16} />
 
       <Tooltip
         title={

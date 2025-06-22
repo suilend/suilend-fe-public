@@ -129,8 +129,8 @@ export default function CetusCard() {
                   className="flex w-full flex-row items-center gap-2"
                 >
                   <TokenLogo
-                    className="h-4 w-4 shrink-0"
                     token={getToken(coinType, coinMetadata)}
+                    size={16}
                   />
 
                   <TBody className="overflow-hidden text-ellipsis text-nowrap">

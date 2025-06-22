@@ -22,7 +22,6 @@ import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import Spinner from "@/components/shared/Spinner";
 import SuiTokenLogo from "@/components/shared/SuiTokenLogo";
 import TextLink from "@/components/shared/TextLink";
-import TokenLogos from "@/components/shared/TokenLogos";
 import { TLabelSans } from "@/components/shared/Typography";
 import UsdcTokenLogo from "@/components/shared/UsdcTokenLogo";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -211,7 +210,7 @@ export default function ClaimRewardsDropdownMenu({
                 className="flex h-[34px] w-[34px] flex-row items-center justify-center"
                 onClick={() => submit({ asSend: true })}
               >
-                <SendTokenLogo className="h-4 w-4" />
+                <SendTokenLogo size={16} />
               </DropdownMenuItem>
 
               {/* SUI */}
@@ -219,7 +218,7 @@ export default function ClaimRewardsDropdownMenu({
                 className="flex h-[34px] w-[34px] flex-row items-center justify-center"
                 onClick={() => submit({ asSui: true })}
               >
-                <SuiTokenLogo className="h-4 w-4" />
+                <SuiTokenLogo size={16} />
               </DropdownMenuItem>
 
               {/* USDC */}
@@ -227,7 +226,7 @@ export default function ClaimRewardsDropdownMenu({
                 className="flex h-[34px] w-[34px] flex-row items-center justify-center"
                 onClick={() => submit({ asUsdc: true })}
               >
-                <UsdcTokenLogo className="h-4 w-4" />
+                <UsdcTokenLogo size={16} />
               </DropdownMenuItem>
             </div>
           </div>
@@ -276,7 +275,7 @@ export default function ClaimRewardsDropdownMenu({
                   isDisabled={!canDepositAsSend}
                   onClick={() => submit({ asSend: true, isDepositing: true })}
                 >
-                  <SendTokenLogo className="h-4 w-4" />
+                  <SendTokenLogo size={16} />
                 </DropdownMenuItem>
 
                 {/* SUI */}
@@ -285,7 +284,7 @@ export default function ClaimRewardsDropdownMenu({
                   isDisabled={!canDepositAsSui}
                   onClick={() => submit({ asSui: true, isDepositing: true })}
                 >
-                  <SuiTokenLogo className="h-4 w-4" />
+                  <SuiTokenLogo size={16} />
                 </DropdownMenuItem>
 
                 {/* USDC */}
@@ -294,7 +293,7 @@ export default function ClaimRewardsDropdownMenu({
                   isDisabled={!canDepositAsUsdc}
                   onClick={() => submit({ asUsdc: true, isDepositing: true })}
                 >
-                  <UsdcTokenLogo className="h-4 w-4" />
+                  <UsdcTokenLogo size={16} />
                 </DropdownMenuItem>
               </div>
             </div>

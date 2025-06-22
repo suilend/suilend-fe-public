@@ -766,8 +766,8 @@ export default function EarningsTabContent({
           return (
             <div className="flex w-max flex-row items-center gap-2">
               <TokenLogo
-                className="h-4 w-4"
                 token={getToken(coinType, appData.coinMetadataMap[coinType])}
+                size={16}
               />
 
               <TBody className="w-max">

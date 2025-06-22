@@ -174,7 +174,7 @@ export default function ClaimFeesDialog({ reserve }: ClaimFeesDialogProps) {
           <Fragment key={r.coinType}>
             <div className="flex flex-col gap-2">
               <div className="flex flex-row items-center gap-2">
-                <TokenLogo className="h-4 w-4" token={r.token} />
+                <TokenLogo token={r.token} size={16} />
                 <TBody>
                   {r.token.symbol}
                   {poolInfo && (

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Fragment, useEffect, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
@@ -135,13 +134,13 @@ export default function ConnectedWalletDropdownMenu({
                 </TLabelSans>
               </div>
             ) : wallet?.iconUrl ? (
-              <Image
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 className="h-4 w-4 min-w-4 shrink-0"
                 src={wallet.iconUrl}
                 alt={`${wallet.name} logo`}
                 width={16}
                 height={16}
-                quality={100}
               />
             ) : undefined
           }

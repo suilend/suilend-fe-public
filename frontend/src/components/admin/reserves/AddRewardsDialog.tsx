@@ -210,7 +210,7 @@ export default function AddRewardsDialog() {
                   index === 0 && "pt-6",
                 )}
               >
-                <TokenLogo className="h-4 w-4" token={reserve.token} />
+                <TokenLogo token={reserve.token} size={16} />
                 <TBody>
                   {reserve.token.symbol}
                   {poolInfo && (
