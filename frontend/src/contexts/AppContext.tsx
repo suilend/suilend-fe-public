@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -14,17 +13,11 @@ import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
-import { Side } from "@suilend/sdk";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import {
-  ADMIN_ADDRESS,
-  ObligationWithUnclaimedRewards,
-  SuilendClient,
-} from "@suilend/sdk/client";
+import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
-  API_URL,
   NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
@@ -74,8 +67,6 @@ interface AppContext {
 
   walrusEpoch: number | undefined;
   walrusEpochProgressPercent: number | undefined;
-
-  obligationsWithUnclaimedRewards: ObligationWithUnclaimedRewards[] | undefined;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -105,8 +96,6 @@ const AppContext = createContext<AppContext>({
 
   walrusEpoch: undefined,
   walrusEpochProgressPercent: undefined,
-
-  obligationsWithUnclaimedRewards: undefined,
 });
 
 export const useAppContext = () => useContext(AppContext);
@@ -239,52 +228,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     })();
   }, [suiClient]);
 
-  // Obligations with unclaimed rewards
-  const [obligationsWithUnclaimedRewards, setObligationsWithUnclaimedRewards] =
-    useState<ObligationWithUnclaimedRewards[] | undefined>(undefined);
-
-  const hasFetchedObligationsWithUnclaimedRewardsRef = useRef<boolean>(false);
-  useEffect(() => {
-    if (hasFetchedObligationsWithUnclaimedRewardsRef.current) return;
-    hasFetchedObligationsWithUnclaimedRewardsRef.current = true;
-
-    (async () => {
-      try {
-        const res = await fetch(
-          `${API_URL}/obligations/unclaimed-rewards?limit=3`,
-        );
-        const json: {
-          obligations: {
-            id: string;
-            unclaimedRewards: {
-              rewardReserveArrayIndex: string;
-              rewardIndex: string;
-              rewardCoinType: string;
-              side: Side;
-              depositReserveArrayIndex: string;
-            }[];
-          }[];
-        } = await res.json();
-
-        const result: ObligationWithUnclaimedRewards[] = json.obligations.map(
-          (o) => ({
-            ...o,
-            unclaimedRewards: o.unclaimedRewards.map((r) => ({
-              rewardReserveArrayIndex: BigInt(r.rewardReserveArrayIndex),
-              rewardIndex: BigInt(r.rewardIndex),
-              rewardCoinType: r.rewardCoinType,
-              side: r.side,
-              depositReserveArrayIndex: BigInt(r.depositReserveArrayIndex),
-            })),
-          }),
-        );
-        setObligationsWithUnclaimedRewards(result);
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, []);
-
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -301,8 +244,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
       walrusEpoch,
       walrusEpochProgressPercent,
-
-      obligationsWithUnclaimedRewards,
     }),
     [
       allAppData,
@@ -315,7 +256,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isEcosystemLst,
       walrusEpoch,
       walrusEpochProgressPercent,
-      obligationsWithUnclaimedRewards,
     ],
   );
 

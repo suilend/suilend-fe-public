@@ -15,9 +15,20 @@ import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
-import { LENDING_MARKETS, ParsedObligation, RewardMap } from "@suilend/sdk";
+import {
+  LENDING_MARKETS,
+  ObligationWithUnclaimedRewards,
+  ParsedObligation,
+  RewardMap,
+  Side,
+} from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
-import { NORMALIZED_WAL_COINTYPE, getAllOwnedObjects } from "@suilend/sui-fe";
+import {
+  API_URL,
+  NORMALIZED_WAL_COINTYPE,
+  getAllOwnedObjects,
+} from "@suilend/sui-fe";
+import track from "@suilend/sui-fe/lib/track";
 import {
   shallowPushQuery,
   useSettingsContext,
@@ -113,12 +124,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address, dryRunTransaction } = useWalletContext();
-  const {
-    allAppData,
-    appData,
-    refreshAllAppData,
-    obligationsWithUnclaimedRewards,
-  } = useAppContext();
+  const { allAppData, appData, refreshAllAppData } = useAppContext();
 
   // Balances
   const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
@@ -264,6 +270,53 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // Obligations with unclaimed rewards
+  // Fetch
+  const [obligationsWithUnclaimedRewards, setObligationsWithUnclaimedRewards] =
+    useState<ObligationWithUnclaimedRewards[] | undefined>(undefined);
+
+  const hasFetchedObligationsWithUnclaimedRewardsRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (hasFetchedObligationsWithUnclaimedRewardsRef.current) return;
+    hasFetchedObligationsWithUnclaimedRewardsRef.current = true;
+
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/obligations/unclaimed-rewards?limit=3`,
+        );
+        const json: {
+          obligations: {
+            id: string;
+            unclaimedRewards: {
+              rewardReserveArrayIndex: string;
+              rewardIndex: string;
+              rewardCoinType: string;
+              side: Side;
+              depositReserveArrayIndex: string;
+            }[];
+          }[];
+        } = await res.json();
+
+        const result: ObligationWithUnclaimedRewards[] = json.obligations.map(
+          (o) => ({
+            ...o,
+            unclaimedRewards: o.unclaimedRewards.map((r) => ({
+              rewardReserveArrayIndex: BigInt(r.rewardReserveArrayIndex),
+              rewardIndex: BigInt(r.rewardIndex),
+              rewardCoinType: r.rewardCoinType,
+              side: r.side,
+              depositReserveArrayIndex: BigInt(r.depositReserveArrayIndex),
+            })),
+          }),
+        );
+        setObligationsWithUnclaimedRewards(result);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  // Autoclaim
   const [autoclaimedRewards, setAutoclaimedRewards] = useState<
     Record<string, number[]>
   >({});
@@ -272,7 +325,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     async (transaction: Transaction) => {
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
       if (!obligationsWithUnclaimedRewards)
-        return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet (unlikely)
+        return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet or fails to load
 
       const innerTransaction = Transaction.from(transaction);
 
@@ -335,6 +388,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
           },
         };
       } catch (err) {
+        track("autoclaim_rewards_dry_run_error");
         return { transaction: innerTransaction, onSuccess: () => {} };
       }
     },
