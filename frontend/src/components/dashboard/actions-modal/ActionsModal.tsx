@@ -1,5 +1,8 @@
 import { useMemo } from "react";
 
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
+
 import { Action, Side } from "@suilend/sdk/lib/types";
 
 import ActionsModalContainer from "@/components/dashboard/actions-modal/ActionsModalContainer";
@@ -9,6 +12,7 @@ import {
 } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import ActionsModalTabContent from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import ParametersPanel from "@/components/dashboard/actions-modal/ParametersPanel";
+import Button from "@/components/shared/Button";
 import Tabs from "@/components/shared/Tabs";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -209,11 +213,23 @@ export default function ActionsModal() {
         tabs={tabs}
         selectedTab={selectedTab}
         onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
+        topEndDecorator={
+          <DialogPrimitive.Close asChild>
+            <Button
+              className="shrink-0 text-muted-foreground"
+              icon={<X className="h-5 w-5" />}
+              variant="ghost"
+              size="icon"
+            >
+              Close
+            </Button>
+          </DialogPrimitive.Close>
+        }
       >
         <div
           className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
           style={{
-            height: `calc(100dvh - ${2 * 4 /* Margin top */}px - ${0 /* Drawer border-top */}px - ${16 /* Dialog padding-top */}px - ${62 /* Tabs */}px - ${16 /* Dialog padding-bottom */}px - ${2 * 4 /* Margin bottom */}px - ${1 /* Dialog border-bottom */}px)`,
+            height: `calc(100dvh - ${2 * 4 /* Margin top */}px - ${0 /* Drawer border-top */}px - ${16 /* Dialog padding-top */}px - ${62 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${16 /* Dialog padding-bottom */}px - ${2 * 4 /* Margin bottom */}px - ${1 /* Dialog border-bottom */}px)`,
           }}
         >
           {reserve && tabConfig && (
