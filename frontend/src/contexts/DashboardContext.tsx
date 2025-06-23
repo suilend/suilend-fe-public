@@ -5,7 +5,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -40,6 +42,7 @@ interface DashboardContext {
   setIsFirstDepositDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   isAutoclaimNotificationDialogOpen: boolean;
+  setIsAutoclaimNotificationDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
@@ -59,6 +62,9 @@ const defaultContextValue: DashboardContext = {
   },
 
   isAutoclaimNotificationDialogOpen: false,
+  setIsAutoclaimNotificationDialogOpen: () => {
+    throw Error("DashboardContextProvider not initialized");
+  },
 
   claimRewards: async () => {
     throw Error("DashboardContextProvider not initialized");
@@ -79,6 +85,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     autoclaimRewards,
     latestAutoclaimDigestMap,
     lastSeenAutoclaimDigestMap,
+    setLastSeenAutoclaimDigest,
   } = useLoadedUserContext();
 
   // send.ag
@@ -89,15 +96,36 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
 
   // Autoclaim
-  const isAutoclaimNotificationDialogOpen = useMemo(
-    () =>
-      !!obligation?.id &&
-      latestAutoclaimDigestMap[obligation.id] !== undefined &&
-      lastSeenAutoclaimDigestMap[obligation.id] !==
-        latestAutoclaimDigestMap[obligation.id],
+  const [
+    isAutoclaimNotificationDialogOpen,
+    setIsAutoclaimNotificationDialogOpen,
+  ] = useState<boolean>(defaultContextValue.isAutoclaimNotificationDialogOpen);
 
-    [obligation?.id, latestAutoclaimDigestMap, lastSeenAutoclaimDigestMap],
+  const didOpenAutoclaimNotificationDialogMap = useRef<Record<string, boolean>>(
+    {},
   );
+  useEffect(() => {
+    if (!obligation?.id) return;
+
+    const lastSeenAutoclaimDigest = lastSeenAutoclaimDigestMap[obligation.id];
+    const latestAutoclaimDigest = latestAutoclaimDigestMap[obligation.id];
+    if (
+      latestAutoclaimDigest === undefined ||
+      lastSeenAutoclaimDigest === latestAutoclaimDigest
+    )
+      return;
+
+    if (didOpenAutoclaimNotificationDialogMap.current[obligation.id]) return;
+    didOpenAutoclaimNotificationDialogMap.current[obligation.id] = true;
+
+    setIsAutoclaimNotificationDialogOpen(true);
+    setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
+  }, [
+    obligation?.id,
+    lastSeenAutoclaimDigestMap,
+    latestAutoclaimDigestMap,
+    setLastSeenAutoclaimDigest,
+  ]);
 
   // Actions
   const getClaimRewardSimulatedAmount = useCallback(
@@ -332,6 +360,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       setIsFirstDepositDialogOpen,
 
       isAutoclaimNotificationDialogOpen,
+      setIsAutoclaimNotificationDialogOpen,
 
       claimRewards,
     }),
@@ -339,6 +368,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       isFirstDepositDialogOpen,
       setIsFirstDepositDialogOpen,
       isAutoclaimNotificationDialogOpen,
+      setIsAutoclaimNotificationDialogOpen,
       claimRewards,
     ],
   );

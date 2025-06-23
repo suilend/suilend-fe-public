@@ -209,13 +209,12 @@ export class SuilendClient {
       lendingMarketId,
     );
 
-    const latestPackageId = await getLatestPackageId(
+    const publishedAt = await getLatestPackageId(
       client,
       SUILEND_UPGRADE_CAP_ID,
     );
-    if (logPackageId)
-      console.log("@suilend/sdk | latestPackageId:", latestPackageId);
-    setPublishedAt(latestPackageId);
+    if (logPackageId) console.log("@suilend/sdk | publishedAt:", publishedAt);
+    setPublishedAt(publishedAt);
 
     return new SuilendClient(lendingMarket, client);
   }

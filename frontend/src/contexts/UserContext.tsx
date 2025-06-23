@@ -412,36 +412,12 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  // Autoclaim - latest digest
+  // Autoclaim - last seen & latest digests
+  const [lastSeenAutoclaimDigestMap, setLastSeenAutoclaimDigestMap] =
+    useLocalStorage<Record<string, string>>("lastSeenAutoclaimDigestMap", {});
   const [latestAutoclaimDigestMap, setLatestAutoclaimDigestMap] = useState<
     Record<string, string>
   >({});
-
-  const hasFetchedAutoclaimDigestsMapRef = useRef<Record<string, boolean>>({});
-  useEffect(() => {
-    if (!address || !obligation?.id) return;
-
-    if (hasFetchedAutoclaimDigestsMapRef.current[obligation.id]) return;
-    hasFetchedAutoclaimDigestsMapRef.current[obligation.id] = true;
-
-    (async () => {
-      const { autoclaimDigests } = await fetchClaimRewardEvents(
-        suiClient,
-        address,
-        obligation.id,
-      );
-      if (autoclaimDigests.length === 0) return;
-
-      setLatestAutoclaimDigestMap((prev) => ({
-        ...prev,
-        [obligation.id]: autoclaimDigests[0],
-      }));
-    })();
-  }, [address, obligation?.id, suiClient, setLatestAutoclaimDigestMap]);
-
-  // Autoclaim - last seen digest
-  const [lastSeenAutoclaimDigestMap, setLastSeenAutoclaimDigestMap] =
-    useLocalStorage<Record<string, string>>("lastSeenAutoclaimDigestMap", {});
 
   const setLastSeenAutoclaimDigest = useCallback(
     (_obligationId: string, digest: string) => {
@@ -452,6 +428,31 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     },
     [setLastSeenAutoclaimDigestMap],
   );
+
+  const hasFetchedAutoclaimDigestsMapRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!address || !obligation?.id) return;
+
+    if (hasFetchedAutoclaimDigestsMapRef.current[obligation.id]) return;
+    hasFetchedAutoclaimDigestsMapRef.current[obligation.id] = true;
+
+    (async () => {
+      const { autoclaimDigests, lastClaimRewardDigest } =
+        await fetchClaimRewardEvents(suiClient, address, obligation.id);
+      if (autoclaimDigests.length === 0) return;
+
+      const latestAutoclaimDigest = autoclaimDigests[0];
+      if (latestAutoclaimDigest !== lastClaimRewardDigest) {
+        setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
+        return;
+      }
+
+      setLatestAutoclaimDigestMap((prev) => ({
+        ...prev,
+        [obligation.id]: latestAutoclaimDigest,
+      }));
+    })();
+  }, [address, obligation?.id, suiClient, setLastSeenAutoclaimDigest]);
 
   // Context
   const contextValue = useMemo(
