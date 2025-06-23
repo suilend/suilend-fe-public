@@ -1,9 +1,15 @@
+import {
+  MoveCallSuiTransaction,
+  SuiClient,
+  SuiTransaction,
+} from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
+import { chunk } from "lodash";
 
-import { Side } from "@suilend/sdk/lib/types";
+import { ApiClaimRewardEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { MS_PER_YEAR } from "@suilend/sui-fe";
+import { API_URL, MS_PER_YEAR } from "@suilend/sui-fe";
 
 export enum EventType {
   INTEREST_UPDATE = "interestUpdate",
@@ -119,4 +125,63 @@ export const calculateRewardAprPercent = (
   );
 
   return +rewardAprPercent;
+};
+
+export const fetchClaimRewardEvents = async (
+  suiClient: SuiClient,
+  address: string,
+  obligationId: string,
+) => {
+  const url = `${API_URL}/events?${new URLSearchParams({
+    eventTypes: EventType.CLAIM_REWARD,
+    obligationId,
+  })}`;
+  const res = await fetch(url);
+  const json: {
+    claimReward: ApiClaimRewardEvent[];
+  } = await res.json();
+
+  const sortedJson = {
+    claimReward: json.claimReward.sort((a, b) => b.timestamp - a.timestamp),
+  }; // Desc
+
+  const allDigests = Array.from(
+    new Set(
+      sortedJson.claimReward
+        .filter((y) => y.sender !== address)
+        .map((t) => t.digest),
+    ),
+  );
+  const chunkedDigests = chunk(allDigests, 50);
+
+  const autoclaimDigests = (
+    await Promise.all(
+      chunkedDigests.map((digests) =>
+        (async () =>
+          (
+            await suiClient.multiGetTransactionBlocks({
+              digests,
+              options: {
+                showInput: true,
+              },
+            })
+          )
+            .filter((transaction) =>
+              (
+                transaction.transaction?.data.transaction as any
+              )?.transactions?.some(
+                (t: SuiTransaction) =>
+                  ((t as any)?.MoveCall as MoveCallSuiTransaction)?.function ===
+                  "claim_rewards_and_deposit",
+              ),
+            )
+            .map((transaction) => transaction.digest))(),
+      ),
+    )
+  ).flat();
+
+  return {
+    claimReward: sortedJson.claimReward,
+    autoclaimDigests,
+  };
 };

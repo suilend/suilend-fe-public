@@ -43,6 +43,7 @@ import {
   useAppContext,
 } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
+import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
 const MAX_REWARDS_PER_TRANSACTION = 5;
@@ -84,6 +85,10 @@ interface UserContext {
   autoclaimRewards: (
     transaction: Transaction,
   ) => Promise<{ transaction: Transaction; onSuccess: () => void }>;
+
+  latestAutoclaimDigestMap: Record<string, string>;
+  lastSeenAutoclaimDigestMap: Record<string, string>;
+  setLastSeenAutoclaimDigest: (obligationId: string, digest: string) => void;
 }
 type LoadedUserContext = UserContext & {
   allUserData: Record<string, UserData>;
@@ -112,6 +117,12 @@ const UserContext = createContext<UserContext>({
   },
 
   autoclaimRewards: async () => {
+    throw Error("UserContextProvider not initialized");
+  },
+
+  latestAutoclaimDigestMap: {},
+  lastSeenAutoclaimDigestMap: {},
+  setLastSeenAutoclaimDigest: () => {
     throw Error("UserContextProvider not initialized");
   },
 });
@@ -401,6 +412,47 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
+  // Autoclaim - latest digest
+  const [latestAutoclaimDigestMap, setLatestAutoclaimDigestMap] = useState<
+    Record<string, string>
+  >({});
+
+  const hasFetchedAutoclaimDigestsMapRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!address || !obligationId) return;
+
+    if (hasFetchedAutoclaimDigestsMapRef.current[obligationId]) return;
+    hasFetchedAutoclaimDigestsMapRef.current[obligationId] = true;
+
+    (async () => {
+      const { autoclaimDigests } = await fetchClaimRewardEvents(
+        suiClient,
+        address,
+        obligationId,
+      );
+      if (autoclaimDigests.length === 0) return;
+
+      setLatestAutoclaimDigestMap((prev) => ({
+        ...prev,
+        [obligationId]: autoclaimDigests[0],
+      }));
+    })();
+  }, [address, obligationId, suiClient, setLatestAutoclaimDigestMap]);
+
+  // Autoclaim - last seen digest
+  const [lastSeenAutoclaimDigestMap, setLastSeenAutoclaimDigestMap] =
+    useLocalStorage<Record<string, string>>("lastSeenAutoclaimDigestMap", {});
+
+  const setLastSeenAutoclaimDigest = useCallback(
+    (_obligationId: string, digest: string) => {
+      setLastSeenAutoclaimDigestMap((prev) => ({
+        ...prev,
+        [_obligationId]: digest,
+      }));
+    },
+    [setLastSeenAutoclaimDigestMap],
+  );
+
   // Context
   const contextValue = useMemo(
     () => ({
@@ -425,6 +477,10 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       },
 
       autoclaimRewards,
+
+      latestAutoclaimDigestMap,
+      lastSeenAutoclaimDigestMap,
+      setLastSeenAutoclaimDigest,
     }),
     [
       rawBalancesMap,
@@ -439,6 +495,9 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       router,
       setObligationId,
       autoclaimRewards,
+      latestAutoclaimDigestMap,
+      lastSeenAutoclaimDigestMap,
+      setLastSeenAutoclaimDigest,
     ],
   );
 

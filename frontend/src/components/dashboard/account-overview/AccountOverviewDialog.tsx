@@ -1,10 +1,9 @@
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { MoveCallSuiTransaction, SuiTransaction } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
-import { chunk, cloneDeep } from "lodash";
+import { cloneDeep } from "lodash";
 import { FileClock, RotateCw } from "lucide-react";
 
 import { WAD } from "@suilend/sdk/lib/constants";
@@ -40,7 +39,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { EventType, eventSortAsc } from "@/lib/events";
+import { EventType, eventSortAsc, fetchClaimRewardEvents } from "@/lib/events";
 
 export enum QueryParams {
   TAB = "accountOverviewTab",
@@ -183,60 +182,21 @@ export default function AccountOverviewDialog() {
               liquidate: ApiLiquidateEvent[];
             } = await res.json();
 
-            return json;
+            const sortedJson = {
+              deposit: json.deposit.sort((a, b) => b.timestamp - a.timestamp),
+              borrow: json.borrow.sort((a, b) => b.timestamp - a.timestamp),
+              withdraw: json.withdraw.sort((a, b) => b.timestamp - a.timestamp),
+              repay: json.repay.sort((a, b) => b.timestamp - a.timestamp),
+              liquidate: json.liquidate.sort(
+                (a, b) => b.timestamp - a.timestamp,
+              ),
+            }; // Desc
+
+            return sortedJson;
           })(),
 
           // Claim reward events
-          (async () => {
-            const url = `${API_URL}/events?${new URLSearchParams({
-              eventTypes: EventType.CLAIM_REWARD,
-              obligationId,
-            })}`;
-            const res = await fetch(url);
-            const json: {
-              claimReward: ApiClaimRewardEvent[];
-            } = await res.json();
-
-            const allDigests = Array.from(
-              new Set(
-                json.claimReward
-                  .filter((y) => y.sender !== address)
-                  .map((t) => t.digest),
-              ),
-            );
-            const chunkedDigests = chunk(allDigests, 50);
-
-            const autoclaimDigests = (
-              await Promise.all(
-                chunkedDigests.map((digests) =>
-                  (async () =>
-                    (
-                      await suiClient.multiGetTransactionBlocks({
-                        digests,
-                        options: {
-                          showInput: true,
-                        },
-                      })
-                    )
-                      .filter((transaction) =>
-                        (
-                          transaction.transaction?.data.transaction as any
-                        )?.transactions?.some(
-                          (t: SuiTransaction) =>
-                            ((t as any)?.MoveCall as MoveCallSuiTransaction)
-                              ?.function === "claim_rewards_and_deposit",
-                        ),
-                      )
-                      .map((transaction) => transaction.digest))(),
-                ),
-              )
-            ).flat();
-
-            return {
-              claimReward: json.claimReward,
-              autoclaimDigests,
-            };
-          })(),
+          fetchClaimRewardEvents(suiClient, address, obligationId),
 
           // Obligation data events
           (async () => {
@@ -249,7 +209,13 @@ export default function AccountOverviewDialog() {
               obligationData: ApiObligationDataEvent[];
             } = await res.json();
 
-            return json;
+            const sortedJson = {
+              obligationData: json.obligationData.sort(
+                (a, b) => b.timestamp - a.timestamp,
+              ),
+            }; // Desc
+
+            return sortedJson;
           })(),
         ]);
 

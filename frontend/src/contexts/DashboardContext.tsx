@@ -69,8 +69,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { appData } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap, autoclaimRewards } =
-    useLoadedUserContext();
+  const {
+    obligation,
+    obligationOwnerCap,
+    autoclaimRewards,
+    latestAutoclaimDigestMap,
+    lastSeenAutoclaimDigestMap,
+    setLastSeenAutoclaimDigest,
+  } = useLoadedUserContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
@@ -78,6 +84,17 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
+
+  // Autoclaim
+  console.log("XXX", {
+    obligationId: obligation?.id,
+    latestAutoclaimDigest: obligation
+      ? latestAutoclaimDigestMap[obligation?.id]
+      : undefined,
+    lastSeenAutoclaimDigest: obligation
+      ? lastSeenAutoclaimDigestMap[obligation?.id]
+      : undefined,
+  });
 
   // Actions
   const getClaimRewardSimulatedAmount = useCallback(
