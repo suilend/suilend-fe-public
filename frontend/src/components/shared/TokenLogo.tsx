@@ -2,6 +2,7 @@ import Image from "next/image";
 import { useEffect } from "react";
 
 import { ClassValue } from "clsx";
+import DOMPurify from "dompurify";
 
 import {
   NORMALIZED_SOL_COINTYPE,
@@ -126,7 +127,7 @@ export default function TokenLogo({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={cn("relative z-[1] rounded-[50%]", className)}
-          src={token.iconUrl!}
+          src={DOMPurify.sanitize(token.iconUrl!)}
           alt={`${token.symbol} logo`}
           width={size}
           height={size}
