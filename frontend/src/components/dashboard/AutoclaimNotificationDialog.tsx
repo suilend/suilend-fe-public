@@ -38,7 +38,7 @@ export default function AutoclaimNotificationDialog() {
         {`Some of your unclaimed rewards were autoclaimed and deposited.`}
       </TBodySans>
       <TBodySans className="text-muted-foreground">
-        {`You can view the transactions in Account overview -> History.`}
+        {`View the transaction(s) in Account overview -> History.`}
       </TBodySans>
     </Dialog>
   );
