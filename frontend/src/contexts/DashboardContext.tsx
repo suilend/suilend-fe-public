@@ -39,6 +39,8 @@ interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
   setIsFirstDepositDialogOpen: Dispatch<SetStateAction<boolean>>;
 
+  isAutoclaimNotificationDialogOpen: boolean;
+
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
     args?: {
@@ -56,6 +58,8 @@ const defaultContextValue: DashboardContext = {
     throw Error("DashboardContextProvider not initialized");
   },
 
+  isAutoclaimNotificationDialogOpen: false,
+
   claimRewards: async () => {
     throw Error("DashboardContextProvider not initialized");
   },
@@ -69,8 +73,13 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { appData } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap, autoclaimRewards } =
-    useLoadedUserContext();
+  const {
+    obligation,
+    obligationOwnerCap,
+    autoclaimRewards,
+    latestAutoclaimDigestMap,
+    lastSeenAutoclaimDigestMap,
+  } = useLoadedUserContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
@@ -78,6 +87,17 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
+
+  // Autoclaim
+  const isAutoclaimNotificationDialogOpen = useMemo(
+    () =>
+      !!obligation?.id &&
+      latestAutoclaimDigestMap[obligation.id] !== undefined &&
+      lastSeenAutoclaimDigestMap[obligation.id] !==
+        latestAutoclaimDigestMap[obligation.id],
+
+    [obligation?.id, latestAutoclaimDigestMap, lastSeenAutoclaimDigestMap],
+  );
 
   // Actions
   const getClaimRewardSimulatedAmount = useCallback(
@@ -311,9 +331,16 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       isFirstDepositDialogOpen,
       setIsFirstDepositDialogOpen,
 
+      isAutoclaimNotificationDialogOpen,
+
       claimRewards,
     }),
-    [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen, claimRewards],
+    [
+      isFirstDepositDialogOpen,
+      setIsFirstDepositDialogOpen,
+      isAutoclaimNotificationDialogOpen,
+      claimRewards,
+    ],
   );
 
   return (

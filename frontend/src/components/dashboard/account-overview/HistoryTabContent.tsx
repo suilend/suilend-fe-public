@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { useMemo } from "react";
 
 import { ColumnDef, Row } from "@tanstack/react-table";
@@ -26,13 +25,13 @@ import {
   getCtokenExchangeRate,
 } from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import DataTable, { tableHeader } from "@/components/dashboard/DataTable";
+import SuilendLogo from "@/components/layout/SuilendLogo";
 import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { ASSETS_URL } from "@/lib/constants";
 import {
   EventType,
   EventTypeNameMap,
@@ -127,14 +126,9 @@ export default function HistoryTabContent({
                 eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) &&
                 autoclaimDigests?.includes(event.digest) && (
                   <div className="flex flex-row items-center gap-[5px]">
-                    <Image
-                      className="opacity-55"
-                      src={`${ASSETS_URL}/Suilend.svg`}
-                      alt="Suilend logo"
-                      width={10}
-                      height={10}
-                      quality={100}
-                    />
+                    <div className="h-max w-max opacity-55">
+                      <SuilendLogo size={10} />
+                    </div>
                     <TLabelSans>Autoclaim</TLabelSans>
                   </div>
                 )}
