@@ -21,6 +21,7 @@ import {
 } from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import Card from "@/components/dashboard/Card";
 import Button from "@/components/shared/Button";
+import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import Tooltip from "@/components/shared/Tooltip";
@@ -187,7 +188,12 @@ export default function AccountPositionCard() {
       headerProps={{
         title: "Account",
         startContent: obligation && (
-          <OpenOnExplorerButton url={explorer.buildObjectUrl(obligation.id)} />
+          <div className="flex h-4 flex-row items-center">
+            <CopyToClipboardButton value={obligation.id} />
+            <OpenOnExplorerButton
+              url={explorer.buildObjectUrl(obligation.id)}
+            />
+          </div>
         ),
         endContent: address && obligation && (
           <>
