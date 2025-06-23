@@ -57,7 +57,7 @@ const DialogContent = forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-8 z-50 flex flex-col items-center justify-center data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "fixed inset-2 z-50 flex flex-col items-center justify-center data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 md:inset-8",
         className,
       )}
       {...props}
@@ -87,11 +87,11 @@ const DialogHeader = ({
   const { className: titleClassName, ...restTitleProps } = title;
 
   return (
-    <div className="flex w-full flex-col gap-1.5 border-b p-4">
+    <div className="flex w-full flex-col gap-1 p-4">
       {/* Title */}
       <div
         className={cn(
-          "flex h-4 w-full flex-row items-center justify-between gap-4",
+          "flex h-5 w-full flex-row items-center justify-between gap-4",
           className,
         )}
       >

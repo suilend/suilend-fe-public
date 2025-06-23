@@ -516,7 +516,6 @@ export default function RoutingDialog({ quote }: RoutingDialogProps) {
           </>
         ),
       }}
-      drawerContentProps={{ className: "h-dvh" }}
       dialogContentInnerClassName="h-[800px]"
       dialogContentInnerChildrenWrapperClassName="w-full h-full overflow-hidden"
     >

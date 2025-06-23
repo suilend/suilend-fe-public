@@ -524,5 +524,3 @@ export default function ActionsModalTabContent({
     </>
   );
 }
-
-// Note you cannot borrow other assets in this account when borrowing MEW.

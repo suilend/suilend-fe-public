@@ -29,7 +29,6 @@ export default function FirstDepositDialog() {
           children: "Congrats on your deposit!",
         },
       }}
-      drawerContentProps={{ className: "border-success/50" }}
       dialogContentInnerClassName="max-w-md border-success/50"
     >
       <TBodySans>
