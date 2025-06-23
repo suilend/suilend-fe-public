@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
+import { isValidSuiAddress } from "@mysten/sui/utils";
 import { Eraser, Replace } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,9 +26,11 @@ export default function RemintObligationOwnerCapDialog() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const [obligationId, setObligationId] = useState<string>("");
+  const [destinationAddress, setDestinationAddress] = useState<string>("");
 
   const reset = () => {
     setObligationId("");
+    setDestinationAddress("");
   };
 
   // Submit
@@ -40,6 +43,10 @@ export default function RemintObligationOwnerCapDialog() {
       toast.error("Enter an obligation id");
       return;
     }
+    if (destinationAddress !== "" && !isValidSuiAddress(destinationAddress)) {
+      toast.error("Invalid destination address");
+      return;
+    }
 
     const transaction = new Transaction();
 
@@ -47,17 +54,19 @@ export default function RemintObligationOwnerCapDialog() {
       appData.suilendClient.newObligationOwnerCap(
         transaction,
         appData.lendingMarket.ownerCapId,
-        address,
+        destinationAddress !== "" ? destinationAddress : address,
         obligationId,
       );
 
       await signExecuteAndWaitForTransaction(transaction);
 
-      toast.success("Reminted obligation owner cap");
+      toast.success("Reminted ObligationOwnerCap", {
+        description: `ObligationOwnerCap transferred to ${destinationAddress !== "" ? destinationAddress : address}`,
+      });
       setIsDialogOpen(false);
       reset();
     } catch (err) {
-      toast.error("Failed to remint obligation owner cap", {
+      toast.error("Failed to remint ObligationOwnerCap", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
@@ -75,11 +84,11 @@ export default function RemintObligationOwnerCapDialog() {
           startIcon={<Replace />}
           variant="secondaryOutline"
         >
-          Remint owner cap
+          Remint Owner Cap
         </Button>
       }
       headerProps={{
-        title: { icon: <Replace />, children: "Remint owner cap" },
+        title: { icon: <Replace />, children: "Remint Owner Cap" },
       }}
       dialogContentInnerClassName="max-w-md"
       footerProps={{
@@ -113,6 +122,12 @@ export default function RemintObligationOwnerCapDialog() {
         value={obligationId}
         onChange={setObligationId}
         inputProps={{ autoFocus: true }}
+      />
+      <Input
+        label="Destination address (optional)"
+        id="destinationAddress"
+        value={destinationAddress}
+        onChange={setDestinationAddress}
       />
     </Dialog>
   );

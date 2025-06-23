@@ -74,7 +74,7 @@ export default function MintObligationOwnerCapDialog() {
         ),
       }}
     >
-      <TLabelSans>Mint a new ObligationOwnerCap object.</TLabelSans>
+      <TLabelSans>Mint a new ObligationOwnerCap</TLabelSans>
     </Dialog>
   );
 }
