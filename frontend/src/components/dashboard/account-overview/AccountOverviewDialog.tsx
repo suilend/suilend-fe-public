@@ -182,17 +182,7 @@ export default function AccountOverviewDialog() {
               liquidate: ApiLiquidateEvent[];
             } = await res.json();
 
-            const sortedJson = {
-              deposit: json.deposit.sort((a, b) => b.timestamp - a.timestamp),
-              borrow: json.borrow.sort((a, b) => b.timestamp - a.timestamp),
-              withdraw: json.withdraw.sort((a, b) => b.timestamp - a.timestamp),
-              repay: json.repay.sort((a, b) => b.timestamp - a.timestamp),
-              liquidate: json.liquidate.sort(
-                (a, b) => b.timestamp - a.timestamp,
-              ),
-            }; // Desc
-
-            return sortedJson;
+            return json;
           })(),
 
           // Claim reward events
@@ -209,13 +199,7 @@ export default function AccountOverviewDialog() {
               obligationData: ApiObligationDataEvent[];
             } = await res.json();
 
-            const sortedJson = {
-              obligationData: json.obligationData.sort(
-                (a, b) => b.timestamp - a.timestamp,
-              ),
-            }; // Desc
-
-            return sortedJson;
+            return json;
           })(),
         ]);
 

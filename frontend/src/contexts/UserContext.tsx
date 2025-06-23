@@ -419,25 +419,25 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const hasFetchedAutoclaimDigestsMapRef = useRef<Record<string, boolean>>({});
   useEffect(() => {
-    if (!address || !obligationId) return;
+    if (!address || !obligation?.id) return;
 
-    if (hasFetchedAutoclaimDigestsMapRef.current[obligationId]) return;
-    hasFetchedAutoclaimDigestsMapRef.current[obligationId] = true;
+    if (hasFetchedAutoclaimDigestsMapRef.current[obligation.id]) return;
+    hasFetchedAutoclaimDigestsMapRef.current[obligation.id] = true;
 
     (async () => {
       const { autoclaimDigests } = await fetchClaimRewardEvents(
         suiClient,
         address,
-        obligationId,
+        obligation.id,
       );
       if (autoclaimDigests.length === 0) return;
 
       setLatestAutoclaimDigestMap((prev) => ({
         ...prev,
-        [obligationId]: autoclaimDigests[0],
+        [obligation.id]: autoclaimDigests[0],
       }));
     })();
-  }, [address, obligationId, suiClient, setLatestAutoclaimDigestMap]);
+  }, [address, obligation?.id, suiClient, setLatestAutoclaimDigestMap]);
 
   // Autoclaim - last seen digest
   const [lastSeenAutoclaimDigestMap, setLastSeenAutoclaimDigestMap] =

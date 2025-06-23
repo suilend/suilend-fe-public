@@ -141,14 +141,12 @@ export const fetchClaimRewardEvents = async (
     claimReward: ApiClaimRewardEvent[];
   } = await res.json();
 
-  const sortedJson = {
-    claimReward: json.claimReward.sort((a, b) => b.timestamp - a.timestamp),
-  }; // Desc
-
   const allDigests = Array.from(
     new Set(
-      sortedJson.claimReward
-        .filter((y) => y.sender !== address)
+      json.claimReward
+        .slice()
+        .sort(apiEventSortDesc)
+        .filter((event) => event.sender !== address)
         .map((t) => t.digest),
     ),
   );
@@ -181,7 +179,7 @@ export const fetchClaimRewardEvents = async (
   ).flat();
 
   return {
-    claimReward: sortedJson.claimReward,
+    claimReward: json.claimReward,
     autoclaimDigests,
   };
 };

@@ -6,6 +6,7 @@ import { shallowPushQuery } from "@suilend/sui-fe-next";
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
+import AutoclaimNotificationDialog from "@/components/dashboard/AutoclaimNotificationDialog";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
 import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
@@ -34,7 +35,7 @@ function Cards() {
   );
 }
 
-export default function Home() {
+function Page() {
   const router = useRouter();
 
   const { lg } = useBreakpoint();
@@ -58,7 +59,7 @@ export default function Home() {
   };
 
   return (
-    <DashboardContextProvider>
+    <>
       <Head>
         <title>Suilend | Lend</title>
       </Head>
@@ -112,9 +113,18 @@ export default function Home() {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <DashboardContextProvider>
+      <Page />
 
       <ActionsModal />
       <FirstDepositDialog />
+      <AutoclaimNotificationDialog />
     </DashboardContextProvider>
   );
 }
