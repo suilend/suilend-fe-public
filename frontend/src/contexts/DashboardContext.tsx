@@ -330,7 +330,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       transaction = _transaction;
 
       const res = await signExecuteAndWaitForTransaction(transaction);
-
       onAutoclaimSuccess();
       track(
         "claim_rewards",
