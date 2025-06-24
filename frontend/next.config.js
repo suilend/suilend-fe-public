@@ -8,7 +8,7 @@ module.exports = {
   transpilePackages: ["geist", "@suilend/sui-fe-next"],
   images: {
     remotePatterns: [
-      new URL("https://suilend-assets.s3.us-east-2.amazonaws.com/suilend/**"),
+      new URL("https://https://d29k09wtkr1a3e.cloudfront.net/suilend/**"),
     ],
   },
   webpack: (config) => {
