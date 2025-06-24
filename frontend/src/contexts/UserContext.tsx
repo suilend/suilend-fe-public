@@ -46,7 +46,8 @@ import useFetchUserData from "@/fetchers/useFetchUserData";
 import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
-const MAX_REWARDS_PER_TRANSACTION = 5;
+const AUTOCLAIM_OBLIGATIONS_LIMIT = 5;
+const MAX_REWARDS_PER_TRANSACTION = 10;
 
 const getCombinedAutoclaimedRewards = (
   prevRewards: Record<string, number[]>,
@@ -293,7 +294,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     (async () => {
       try {
         const res = await fetch(
-          `${API_URL}/obligations/unclaimed-rewards?limit=3`,
+          `${API_URL}/obligations/unclaimed-rewards?limit=${AUTOCLAIM_OBLIGATIONS_LIMIT}`,
         );
         const json: {
           obligations: {
