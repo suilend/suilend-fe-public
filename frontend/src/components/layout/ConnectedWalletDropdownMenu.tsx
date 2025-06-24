@@ -2,7 +2,6 @@ import { Fragment, useEffect, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
-import DOMPurify from "dompurify";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
 import { API_URL, formatAddress, formatUsd } from "@suilend/sui-fe";
@@ -138,7 +137,7 @@ export default function ConnectedWalletDropdownMenu({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 className="h-4 w-4 min-w-4 shrink-0"
-                src={DOMPurify.sanitize(wallet.iconUrl)}
+                src={wallet.iconUrl}
                 alt={`${wallet.name} logo`}
                 width={16}
                 height={16}
