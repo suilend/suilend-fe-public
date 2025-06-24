@@ -137,7 +137,7 @@ function Page() {
         QuoteProvider.AFTERMATH,
         QuoteProvider.CETUS,
         QuoteProvider._7K,
-        QuoteProvider.FLOWX,
+        // QuoteProvider.FLOWX,
         !swapInAccount ? QuoteProvider.OKX_DEX : null,
       ].filter(Boolean) as QuoteProvider[],
     [swapInAccount],
