@@ -194,7 +194,11 @@ export default function PoolRewardsTable({
               variant="secondary"
               size="icon"
               onClick={() => onCloseReward(poolReward)}
-              disabled={!isClosable || !isEditable}
+              disabled={
+                !isClosable ||
+                !isEditable ||
+                +poolReward.numUserRewardManagers.toString() !== 0
+              }
             >
               Close reward
             </Button>
