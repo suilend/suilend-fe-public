@@ -47,7 +47,7 @@ import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
 const AUTOCLAIM_OBLIGATIONS_LIMIT = 5;
-const MAX_REWARDS_PER_TRANSACTION = 10;
+const MAX_REWARDS_PER_TRANSACTION = 3;
 
 const getCombinedAutoclaimedRewards = (
   prevRewards: Record<string, number[]>,
