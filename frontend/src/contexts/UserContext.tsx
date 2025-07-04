@@ -335,83 +335,83 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const autoclaimRewards = useCallback(
     async (transaction: Transaction) => {
-      return { transaction, onSuccess: () => {} }; // turning off autoclaim while running the script
+      // return { transaction, onSuccess: () => {} }; // turning off autoclaim while running the script
 
-      // if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
-      // if (!obligationsWithUnclaimedRewards)
-      //   return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet or fails to load
+      if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
+      if (!obligationsWithUnclaimedRewards)
+        return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet or fails to load
 
-      // const innerTransaction = Transaction.from(transaction);
+      const innerTransaction = Transaction.from(transaction);
 
-      // // Prepare
-      // const suilendClient =
-      //   allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
+      // Prepare
+      const suilendClient =
+        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
 
-      // const filteredObligationsWithUnclaimedRewards =
-      //   obligationsWithUnclaimedRewards.filter(
-      //     (obligation) =>
-      //       !userData?.obligations.some((o) => o.id === obligation.id),
-      //   );
-      // const newAutoclaimedRewards =
-      //   filteredObligationsWithUnclaimedRewards.reduce(
-      //     (acc, obligation) => ({ ...acc, [obligation.id]: [] }),
-      //     {} as Record<string, number[]>,
-      //   );
+      const filteredObligationsWithUnclaimedRewards =
+        obligationsWithUnclaimedRewards.filter(
+          (obligation) =>
+            !userData?.obligations.some((o) => o.id === obligation.id),
+        );
+      const newAutoclaimedRewards =
+        filteredObligationsWithUnclaimedRewards.reduce(
+          (acc, obligation) => ({ ...acc, [obligation.id]: [] }),
+          {} as Record<string, number[]>,
+        );
 
-      // // Iterate over obligations and rewards
-      // for (const obligation of filteredObligationsWithUnclaimedRewards) {
-      //   for (let i = 0; i < obligation.unclaimedRewards.length; i++) {
-      //     const reward = obligation.unclaimedRewards[i];
+      // Iterate over obligations and rewards
+      for (const obligation of filteredObligationsWithUnclaimedRewards) {
+        for (let i = 0; i < obligation.unclaimedRewards.length; i++) {
+          const reward = obligation.unclaimedRewards[i];
 
-      //     const count = Object.values(newAutoclaimedRewards).reduce(
-      //       (acc, rewards) => acc + rewards.length,
-      //       0,
-      //     );
-      //     if (count >= MAX_REWARDS_PER_TRANSACTION) break; // Skip if we've reached the max number of rewards for this transaction
+          const count = Object.values(newAutoclaimedRewards).reduce(
+            (acc, rewards) => acc + rewards.length,
+            0,
+          );
+          if (count >= MAX_REWARDS_PER_TRANSACTION) break; // Skip if we've reached the max number of rewards for this transaction
 
-      //     if ((autoclaimedRewards[obligation.id] ?? []).includes(i)) continue; // Skip if already autoclaimed in a previous transaction
+          if ((autoclaimedRewards[obligation.id] ?? []).includes(i)) continue; // Skip if already autoclaimed in a previous transaction
 
-      //     suilendClient.claimRewardAndDeposit(
-      //       obligation.id,
-      //       reward.rewardReserveArrayIndex,
-      //       reward.rewardIndex,
-      //       reward.rewardCoinType,
-      //       reward.side,
-      //       reward.depositReserveArrayIndex,
-      //       innerTransaction,
-      //     );
-      //     newAutoclaimedRewards[obligation.id].push(i);
-      //   }
-      // }
+          suilendClient.claimRewardAndDeposit(
+            obligation.id,
+            reward.rewardReserveArrayIndex,
+            reward.rewardIndex,
+            reward.rewardCoinType,
+            reward.side,
+            reward.depositReserveArrayIndex,
+            innerTransaction,
+          );
+          newAutoclaimedRewards[obligation.id].push(i);
+        }
+      }
 
-      // const count = Object.values(newAutoclaimedRewards).reduce(
-      //   (acc, rewards) => acc + rewards.length,
-      //   0,
-      // );
-      // if (count === 0)
-      //   return { transaction: innerTransaction, onSuccess: () => {} }; // Skip if no rewards to autoclaim
+      const count = Object.values(newAutoclaimedRewards).reduce(
+        (acc, rewards) => acc + rewards.length,
+        0,
+      );
+      if (count === 0)
+        return { transaction: innerTransaction, onSuccess: () => {} }; // Skip if no rewards to autoclaim
 
-      // try {
-      //   await dryRunTransaction(innerTransaction);
-      //   return {
-      //     transaction: innerTransaction,
-      //     onSuccess: () => {
-      //       setAutoclaimedRewards((prev) =>
-      //         getCombinedAutoclaimedRewards(prev, newAutoclaimedRewards),
-      //       );
-      //     },
-      //   };
-      // } catch (err) {
-      //   track("autoclaim_rewards_dry_run_error");
-      //   return { transaction: innerTransaction, onSuccess: () => {} };
-      // }
+      try {
+        await dryRunTransaction(innerTransaction);
+        return {
+          transaction: innerTransaction,
+          onSuccess: () => {
+            setAutoclaimedRewards((prev) =>
+              getCombinedAutoclaimedRewards(prev, newAutoclaimedRewards),
+            );
+          },
+        };
+      } catch (err) {
+        track("autoclaim_rewards_dry_run_error");
+        return { transaction: innerTransaction, onSuccess: () => {} };
+      }
     },
     [
-      // allAppData,
-      // obligationsWithUnclaimedRewards,
-      // userData?.obligations,
-      // autoclaimedRewards,
-      // dryRunTransaction,
+      allAppData,
+      obligationsWithUnclaimedRewards,
+      userData?.obligations,
+      autoclaimedRewards,
+      dryRunTransaction,
     ],
   );
 
