@@ -102,9 +102,9 @@ function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
                             token.coinType,
                           ),
                       )
-                        ? "This asset is listed on Suilend"
+                        ? "Available on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
-                          ? "This asset appears on the list of Aftermath verified assets"
+                          ? "Appears on the list of Aftermath verified coins"
                           : ""
                     }
                   >
@@ -382,22 +382,22 @@ export default function TokenSelectionDialog({
       if (direction === TokenDirection.IN)
         result = {
           deposit: {
-            title: "Deposited assets",
+            title: "Deposited",
             tokens: filteredDepositTokens,
           },
         };
       else
         result = {
           deposit: {
-            title: "Deposited assets",
+            title: "Deposited",
             tokens: filteredDepositTokens,
           },
           borrow: {
-            title: "Borrowed assets",
+            title: "Borrowed",
             tokens: filteredBorrowTokens,
           },
           suilend: {
-            title: "Assets listed on Suilend",
+            title: "Available on Suilend",
             tokens: filteredReserveTokens,
           },
         };
