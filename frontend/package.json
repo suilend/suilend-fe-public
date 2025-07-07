@@ -23,7 +23,7 @@
     "@mysten/bcs": "1.6.0",
     "@mysten/dapp-kit": "0.16.0",
     "@mysten/kiosk": "0.12.3",
-    "@mysten/move-bytecode-template": "^0.1.0",
+    "@mysten/move-bytecode-template": "0.1.0",
     "@mysten/sui": "1.28.2",
     "@mysten/sui.js": "0.54.1",
     "@mysten/wallet-standard": "0.14.7",
