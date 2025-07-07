@@ -319,9 +319,13 @@ export const formatCountdownDuration = (duration: Duration) =>
           `${duration.hours ?? 0}h`,
           `${duration.minutes ?? 0}m`,
         ]
-      : [
-          `${duration.hours}h`,
-          `${duration.minutes ?? 0}m`,
-          `${duration.seconds ?? 0}s`,
-        ]
+      : duration.hours
+        ? [
+            `${duration.hours}h`,
+            `${duration.minutes ?? 0}m`,
+            `${duration.seconds ?? 0}s`,
+          ]
+        : duration.minutes
+          ? [`${duration.minutes}m`, `${duration.seconds ?? 0}s`]
+          : [`${duration.seconds}s`]
   ).join(" ");
