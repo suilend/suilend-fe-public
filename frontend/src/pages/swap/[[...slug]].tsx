@@ -1229,6 +1229,7 @@ function Page() {
       setQuotesMap({});
 
       const properties: Record<string, string | number> = {
+        agg: QUOTE_PROVIDER_NAME_MAP[quote.provider],
         assetIn: tokenIn.symbol,
         assetOut: tokenOut.symbol,
         amountIn: quote.in.amount.toFixed(
