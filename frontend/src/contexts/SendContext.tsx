@@ -1045,7 +1045,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       setSelectedMsendCoinType(mSendCoinTypesWithBalance[0]);
   }, [mSendCoinTypesWithBalance, selectedMsendCoinType]);
 
-  console.log("XXXX", ownedKiosks, rawUserAllocationsS1);
   // Context
   const contextValue: SendContext = useMemo(
     () => ({
