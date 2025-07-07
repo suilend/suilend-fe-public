@@ -404,11 +404,11 @@ export default function TokenSelectionDialog({
     } else
       result = {
         deposit: {
-          title: "Deposited assets",
+          title: "Deposited",
           tokens: filteredDepositTokens,
         },
         borrow: {
-          title: "Borrowed assets",
+          title: "Borrowed",
           tokens: filteredBorrowTokens,
         },
         balance: {
@@ -416,11 +416,11 @@ export default function TokenSelectionDialog({
           tokens: filteredBalanceTokens,
         },
         suilend: {
-          title: "Assets listed on Suilend",
+          title: "Available on Suilend",
           tokens: filteredReserveTokens,
         },
         other: {
-          title: "Other known assets",
+          title: "Other",
           tokens: filteredOtherTokens,
         },
       };
