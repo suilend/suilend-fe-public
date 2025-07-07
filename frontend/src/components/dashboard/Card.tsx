@@ -101,11 +101,12 @@ export default function Card({
             )}
           </div>
 
-          {!isCollapsed && !headerProps.noSeparator && <Separator />}
+          {(isCollapsible ? !isCollapsed : true) &&
+            !headerProps.noSeparator && <Separator />}
         </CardHeader>
       )}
 
-      {!isCollapsed && children}
+      {(isCollapsible ? !isCollapsed : true) && children}
     </CardRoot>
   );
 }

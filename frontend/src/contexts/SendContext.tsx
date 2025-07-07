@@ -541,7 +541,9 @@ export function SendContextProvider({ children }: PropsWithChildren) {
           .reduce(
             (acc, { kiosk }) => [
               ...acc,
-              ...kiosk.items.filter((item) => item.type === ROOTLETS_TYPE),
+              ...kiosk.items.filter(
+                (item) => item.type === ROOTLETS_TYPE && !item.listing, // Filter out listed Rootlets
+              ),
             ],
             [] as KioskItem[],
           )
@@ -1043,6 +1045,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
       setSelectedMsendCoinType(mSendCoinTypesWithBalance[0]);
   }, [mSendCoinTypesWithBalance, selectedMsendCoinType]);
 
+  console.log("XXXX", ownedKiosks, rawUserAllocationsS1);
   // Context
   const contextValue: SendContext = useMemo(
     () => ({
