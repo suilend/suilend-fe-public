@@ -73,22 +73,29 @@ export default function ClaimRewardsDropdownMenu({
   // SEND
   const canDepositAsSend = !obligation
     ? 1 <= 5
-    : obligation.deposits.some(
+    : (obligation.deposits.some(
         (d) => d.coinType === NORMALIZED_SEND_COINTYPE,
-      ) || obligation.deposits.length + 1 <= 5;
+      ) ||
+        obligation.deposits.length + 1 <= 5) &&
+      !obligation.borrows.some((b) => b.coinType === NORMALIZED_SEND_COINTYPE);
 
   // SUI
   const canDepositAsSui = !obligation
     ? 1 <= 5
-    : obligation.deposits.some((d) => d.coinType === NORMALIZED_SUI_COINTYPE) ||
-      obligation.deposits.length + 1 <= 5;
+    : (obligation.deposits.some(
+        (d) => d.coinType === NORMALIZED_SUI_COINTYPE,
+      ) ||
+        obligation.deposits.length + 1 <= 5) &&
+      !obligation.borrows.some((b) => b.coinType === NORMALIZED_SUI_COINTYPE);
 
   // USDC
   const canDepositAsUsdc = !obligation
     ? 1 <= 5
-    : obligation.deposits.some(
+    : (obligation.deposits.some(
         (d) => d.coinType === NORMALIZED_USDC_COINTYPE,
-      ) || obligation.deposits.length + 1 <= 5;
+      ) ||
+        obligation.deposits.length + 1 <= 5) &&
+      !obligation.borrows.some((b) => b.coinType === NORMALIZED_USDC_COINTYPE);
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -140,6 +147,9 @@ export default function ClaimRewardsDropdownMenu({
             ),
           ),
           "rewards",
+          args?.asSend || args?.asSui || args?.asUsdc
+            ? `as ${args?.asSend ? "SEND" : args?.asSui ? "SUI" : "USDC"}`
+            : null,
         ]
           .filter(Boolean)
           .join(" "),
@@ -163,6 +173,9 @@ export default function ClaimRewardsDropdownMenu({
             ),
           ),
           "rewards",
+          args?.asSend || args?.asSui || args?.asUsdc
+            ? `as ${args?.asSend ? "SEND" : args?.asSui ? "SUI" : "USDC"}`
+            : null,
         ]
           .filter(Boolean)
           .join(" "),
@@ -306,7 +319,7 @@ export default function ClaimRewardsDropdownMenu({
                     !canDepositAsSui ? "SUI" : null,
                     !canDepositAsUsdc ? "USDC" : null,
                   ].filter(Boolean) as string[],
-                ).replace("and", "or")} (max 5 deposit positions).`}
+                ).replace("and", "or")} (max 5 deposit positions, no borrows).`}
               </TLabelSans>
             )}
           </div>
