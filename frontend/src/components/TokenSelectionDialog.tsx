@@ -38,13 +38,20 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 interface TokenRowProps {
+  direction?: TokenDirection;
   token: Token;
   isSelected: boolean;
   onClick: () => void;
   isDisabled?: boolean;
 }
 
-function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
+function TokenRow({
+  direction,
+  token,
+  isSelected,
+  onClick,
+  isDisabled,
+}: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
 
@@ -122,26 +129,7 @@ function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
 
             {/* Top right */}
             <div className="flex shrink-0 flex-row items-center gap-3">
-              {!swapInAccount ? (
-                <>
-                  {/* Balance */}
-                  <div
-                    className={cn(
-                      "flex flex-row items-center gap-1.5",
-                      tokenBalance.gt(0)
-                        ? "text-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    <Wallet className="h-3 w-3 text-inherit" />
-                    <TBody className="text-inherit">
-                      {tokenBalance.eq(0)
-                        ? "--"
-                        : formatToken(tokenBalance, { exact: false })}
-                    </TBody>
-                  </div>
-                </>
-              ) : (
+              {(swapInAccount || direction === TokenDirection.OUT) && (
                 <>
                   {/* Deposited */}
                   {tokenDepositedAmount.gt(0) && (
@@ -163,6 +151,25 @@ function TokenRow({ token, isSelected, onClick, isDisabled }: TokenRowProps) {
                     </div>
                   )}
                 </>
+              )}
+
+              {/* Balance */}
+              {!swapInAccount && (
+                <div
+                  className={cn(
+                    "flex flex-row items-center gap-1.5",
+                    tokenBalance.gt(0)
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Wallet className="h-3 w-3 text-inherit" />
+                  <TBody className="text-inherit">
+                    {tokenBalance.eq(0)
+                      ? "--"
+                      : formatToken(tokenBalance, { exact: false })}
+                  </TBody>
+                </div>
               )}
             </div>
           </div>
@@ -546,6 +553,7 @@ export default function TokenSelectionDialog({
                   {list.tokens.map((t) => (
                     <TokenRow
                       key={t.coinType}
+                      direction={direction}
                       token={t}
                       isSelected={t.coinType === token?.coinType}
                       onClick={() => onTokenClick(t)}

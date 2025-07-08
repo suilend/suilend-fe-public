@@ -724,21 +724,30 @@ function Page() {
     };
   })();
 
-  // Swap and deposit
+  // Swap and deposit/repay
+  const action_swapAndDeposit = tokenOutBorrowPositionAmount.eq(0)
+    ? Action.DEPOSIT
+    : Action.REPAY;
+
   const buttonState_swapAndDeposit: SubmitButtonState = (() => {
     if (!tokenOutReserve)
-      return { isDisabled: true, title: "Cannot deposit this token" };
+      return {
+        isDisabled: true,
+        title: `Cannot ${action_swapAndDeposit} this token`,
+      };
 
     if (!address)
       return {
         isDisabled: true,
-        title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
+        title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${
+          action_swapAndDeposit
+        }`,
       };
     if (isSubmitting_swapAndDeposit)
       return { isDisabled: true, isLoading: true };
 
     const buttonNoValueState = getSubmitButtonNoValueState(
-      Action.DEPOSIT,
+      action_swapAndDeposit,
       appData.lendingMarket.reserves,
       tokenOutReserve,
       obligation,
@@ -746,16 +755,23 @@ function Page() {
     if (buttonNoValueState !== undefined) return buttonNoValueState;
 
     const buttonState = getSubmitButtonState(
-      Action.DEPOSIT,
+      action_swapAndDeposit,
       tokenOutReserve,
       MAX_U64,
       appData,
       obligation,
-    )(quote?.out.amount ?? new BigNumber(0));
+    )(
+      BigNumber.min(
+        quote?.out.amount ?? new BigNumber(0),
+        action_swapAndDeposit === Action.DEPOSIT
+          ? 0
+          : tokenOutBorrowPositionAmount,
+      ),
+    );
     if (buttonState !== undefined) return buttonState;
 
     return {
-      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and deposit`,
+      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${action_swapAndDeposit}`,
       isDisabled:
         buttonState_swap.isDisabled ||
         quote?.provider === QuoteProvider.OKX_DEX,
@@ -764,7 +780,7 @@ function Page() {
 
   const warningMessages_swapAndDeposit = tokenOutReserve
     ? getSubmitWarningMessages(
-        Action.DEPOSIT,
+        action_swapAndDeposit,
         appData.lendingMarket.reserves,
         tokenOutReserve,
         obligation,
@@ -772,16 +788,23 @@ function Page() {
     : undefined;
 
   // Swap in account
+  const action_swapInAccount = tokenOutBorrowPositionAmount.eq(0)
+    ? Action.DEPOSIT
+    : Action.REPAY;
+
   const buttonState_swapInAccount: SubmitButtonState = (() => {
     if (!tokenOutReserve)
-      return { isDisabled: true, title: "Cannot deposit or repay this token" };
+      return {
+        isDisabled: true,
+        title: `Cannot ${action_swapInAccount} this token`,
+      };
 
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSubmitting_swapInAccount)
       return { isDisabled: true, isLoading: true };
 
     const buttonNoValueState = getSubmitButtonNoValueState(
-      tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
+      action_swapInAccount,
       appData.lendingMarket.reserves,
       tokenOutReserve,
       obligation,
@@ -800,7 +823,7 @@ function Page() {
     }
 
     const buttonState = getSubmitButtonState(
-      tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
+      action_swapInAccount,
       tokenOutReserve,
       MAX_U64,
       appData,
@@ -808,20 +831,22 @@ function Page() {
     )(
       BigNumber.min(
         quote?.out.amount ?? new BigNumber(0),
-        tokenOutBorrowPositionAmount.eq(0) ? 0 : tokenOutBorrowPositionAmount,
+        action_swapInAccount === Action.DEPOSIT
+          ? 0
+          : tokenOutBorrowPositionAmount,
       ),
     );
     if (buttonState !== undefined) return buttonState;
 
     return {
-      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
+      title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${action_swapInAccount}`,
       isDisabled: !quote || isFetchingQuotes,
     };
   })();
 
   const warningMessages_swapInAccount = tokenOutReserve
     ? getSubmitWarningMessages(
-        tokenOutBorrowPositionAmount.eq(0) ? Action.DEPOSIT : Action.REPAY,
+        action_swapInAccount,
         appData.lendingMarket.reserves,
         tokenOutReserve,
         obligation,
@@ -905,7 +930,7 @@ function Page() {
     transaction = _transaction;
 
     if (swapInAccount) {
-      if (tokenOutBorrowPositionAmount.eq(0)) {
+      if (action_swapInAccount === Action.DEPOSIT) {
         // DEPOSIT out token
         if (!tokenOutReserve) throw new Error("Cannot deposit this token");
 
@@ -942,12 +967,19 @@ function Page() {
         const depositedAmount = quote.out.amount.minus(repaidAmount);
 
         if (depositedAmount.gt(0)) {
-          appData.suilendClient.deposit(
-            coinOut!, // Checked above
-            tokenOutReserve.coinType,
-            obligationOwnerCap!.id,
-            transaction,
-          ); // Deposit the remainder (if no borrows, this should work assuming don't already have 5/MAX other deposits)
+          if (obligation.deposits.length < 5) {
+            appData.suilendClient.deposit(
+              coinOut!, // Checked above
+              tokenOutReserve.coinType,
+              obligationOwnerCap!.id,
+              transaction,
+            ); // Deposit remainder
+          } else {
+            transaction.transferObjects(
+              [coinOut!], // Checked above
+              transaction.pure.address(address),
+            ); // Transfer remainder to user
+          }
         } else {
           transaction.transferObjects(
             [coinOut!], // Checked above
@@ -957,23 +989,63 @@ function Page() {
       }
     } else {
       if (isSwapAndDeposit) {
-        // DEPOSIT out token
-        if (!tokenOutReserve) throw new Error("Cannot deposit this token");
+        if (action_swapInAccount === Action.DEPOSIT) {
+          // DEPOSIT out token
+          if (!tokenOutReserve) throw new Error("Cannot deposit this token");
 
-        const { obligationOwnerCapId, didCreate } =
-          createObligationIfNoneExists(
-            appData.suilendClient,
+          const { obligationOwnerCapId, didCreate } =
+            createObligationIfNoneExists(
+              appData.suilendClient,
+              transaction,
+              obligationOwnerCap,
+            );
+          appData.suilendClient.deposit(
+            coinOut!, // Checked above
+            tokenOutReserve.coinType,
+            obligationOwnerCapId,
             transaction,
-            obligationOwnerCap,
           );
-        appData.suilendClient.deposit(
-          coinOut!, // Checked above
-          tokenOutReserve.coinType,
-          obligationOwnerCapId,
-          transaction,
-        );
-        if (didCreate)
-          sendObligationToUser(obligationOwnerCapId, address, transaction);
+          if (didCreate)
+            sendObligationToUser(obligationOwnerCapId, address, transaction);
+        } else {
+          // REPAY out token
+          if (!tokenOutReserve) throw new Error("Cannot repay this token");
+          if (!obligation) throw new Error("Obligation not found");
+
+          appData.suilendClient.repay(
+            obligation.id,
+            tokenOutReserve.coinType,
+            coinOut!, // Checked above
+            transaction,
+          );
+
+          const repaidAmount = BigNumber.min(
+            quote.out.amount,
+            tokenOutBorrowPositionAmount,
+          );
+          const depositedAmount = quote.out.amount.minus(repaidAmount);
+
+          if (depositedAmount.gt(0)) {
+            if (obligation.deposits.length < 5) {
+              appData.suilendClient.deposit(
+                coinOut!, // Checked above
+                tokenOutReserve.coinType,
+                obligationOwnerCap!.id,
+                transaction,
+              ); // Deposit remainder
+            } else {
+              transaction.transferObjects(
+                [coinOut!], // Checked above
+                transaction.pure.address(address),
+              ); // Transfer remainder to user
+            }
+          } else {
+            transaction.transferObjects(
+              [coinOut!], // Checked above
+              transaction.pure.address(address),
+            ); // Transfer empty coin to user
+          }
+        }
       } else {
         if (quote.provider !== QuoteProvider.OKX_DEX) {
           // TRANSFER out token
@@ -1051,7 +1123,7 @@ function Page() {
           ).div(10 ** tokenOut.decimals);
         })();
 
-        if (tokenOutBorrowPositionAmount.eq(0)) {
+        if (action_swapInAccount === Action.DEPOSIT) {
           toast.success(
             [
               "Swapped",
@@ -1162,47 +1234,41 @@ function Page() {
           );
         }
       } else {
-        const balanceChangeIn = getBalanceChange(res, address, tokenIn, -1);
-        const balanceChangeOut = getBalanceChange(res, address, tokenOut);
-        const depositedAmountOut = (() => {
-          const mintEvent = res.events?.find(
-            (event) =>
-              event.type ===
-                "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::MintEvent" &&
-              normalizeStructTag((event.parsedJson as any).coin_type.name) ===
-                tokenOut.coinType,
-          );
-          if (!mintEvent) return undefined;
+        if (isSwapAndDeposit) {
+          const balanceChangeIn = getBalanceChange(res, address, tokenIn, -1);
+          const depositedAmountOut = (() => {
+            const mintEvent = res.events?.find(
+              (event) =>
+                event.type ===
+                  "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::MintEvent" &&
+                normalizeStructTag((event.parsedJson as any).coin_type.name) ===
+                  tokenOut.coinType,
+            );
+            if (!mintEvent) return undefined;
 
-          return new BigNumber(
-            (mintEvent.parsedJson as any).liquidity_amount,
-          ).div(10 ** tokenOut.decimals);
-        })();
+            return new BigNumber(
+              (mintEvent.parsedJson as any).liquidity_amount,
+            ).div(10 ** tokenOut.decimals);
+          })();
 
-        toast.success(
-          [
-            "Swapped",
-            balanceChangeIn !== undefined
-              ? formatToken(balanceChangeIn, {
-                  dp: tokenIn.decimals,
-                  trimTrailingZeros: true,
-                })
-              : null,
-            tokenIn.symbol,
-            "for",
-            !isSwapAndDeposit && balanceChangeOut !== undefined
-              ? formatToken(balanceChangeOut, {
-                  dp: tokenOut.decimals,
-                  trimTrailingZeros: true,
-                })
-              : null,
-            tokenOut.symbol,
-          ]
-            .filter(Boolean)
-            .join(" "),
-          {
-            description: isSwapAndDeposit
-              ? [
+          if (action_swapAndDeposit === Action.DEPOSIT) {
+            toast.success(
+              [
+                "Swapped",
+                balanceChangeIn !== undefined
+                  ? formatToken(balanceChangeIn, {
+                      dp: tokenIn.decimals,
+                      trimTrailingZeros: true,
+                    })
+                  : null,
+                tokenIn.symbol,
+                "for",
+                tokenOut.symbol,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              {
+                description: [
                   "Deposited",
                   depositedAmountOut !== undefined
                     ? formatToken(depositedAmountOut, {
@@ -1213,18 +1279,127 @@ function Page() {
                   tokenOut.symbol,
                 ]
                   .filter(Boolean)
-                  .join(" ")
-              : undefined,
-            icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
-            action: (
-              <TextLink className="block" href={txUrl}>
-                View tx on {explorer.name}
-              </TextLink>
-            ),
-            duration: TX_TOAST_DURATION,
-          },
-        );
+                  .join(" "),
+                icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+                action: (
+                  <TextLink className="block" href={txUrl}>
+                    View tx on {explorer.name}
+                  </TextLink>
+                ),
+                duration: TX_TOAST_DURATION,
+              },
+            );
+          } else {
+            const repaidAmountOut = (() => {
+              const repayEvent = res.events?.find(
+                (event) =>
+                  event.type ===
+                    "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::RepayEvent" &&
+                  normalizeStructTag(
+                    (event.parsedJson as any).coin_type.name,
+                  ) === tokenOut.coinType,
+              );
+              if (!repayEvent) return undefined;
+
+              return new BigNumber(
+                (repayEvent.parsedJson as any).liquidity_amount,
+              ).div(10 ** tokenOut.decimals);
+            })();
+
+            toast.success(
+              [
+                "Swapped",
+                balanceChangeIn !== undefined
+                  ? formatToken(balanceChangeIn, {
+                      dp: tokenIn.decimals,
+                      trimTrailingZeros: true,
+                    })
+                  : null,
+                tokenIn.symbol,
+                "for",
+                tokenOut.symbol,
+              ]
+                .filter(Boolean)
+                .join(" "),
+              {
+                description: [
+                  [
+                    "Repaid",
+                    repaidAmountOut !== undefined
+                      ? formatToken(repaidAmountOut, {
+                          dp: tokenOut.decimals,
+                          trimTrailingZeros: true,
+                        })
+                      : null,
+                    tokenOut.symbol,
+                  ]
+                    .filter(Boolean)
+                    .join(" "),
+                  depositedAmountOut !== undefined && depositedAmountOut.gt(0)
+                    ? [
+                        "deposited",
+                        depositedAmountOut !== undefined
+                          ? formatToken(depositedAmountOut, {
+                              dp: tokenOut.decimals,
+                              trimTrailingZeros: true,
+                            })
+                          : null,
+                        tokenOut.symbol,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(", "),
+                icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+                action: (
+                  <TextLink className="block" href={txUrl}>
+                    View tx on {explorer.name}
+                  </TextLink>
+                ),
+                duration: TX_TOAST_DURATION,
+              },
+            );
+          }
+        } else {
+          const balanceChangeIn = getBalanceChange(res, address, tokenIn, -1);
+          const balanceChangeOut = getBalanceChange(res, address, tokenOut);
+
+          toast.success(
+            [
+              "Swapped",
+              balanceChangeIn !== undefined
+                ? formatToken(balanceChangeIn, {
+                    dp: tokenIn.decimals,
+                    trimTrailingZeros: true,
+                  })
+                : null,
+              tokenIn.symbol,
+              "for",
+              balanceChangeOut !== undefined
+                ? formatToken(balanceChangeOut, {
+                    dp: tokenOut.decimals,
+                    trimTrailingZeros: true,
+                  })
+                : null,
+              tokenOut.symbol,
+            ]
+              .filter(Boolean)
+              .join(" "),
+            {
+              icon: <ArrowRightLeft className="h-5 w-5 text-success" />,
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        }
       }
+
       formatAndSetValue("", tokenIn);
       setQuotesMap({});
 
@@ -1240,11 +1415,11 @@ function Page() {
           tokenOut.decimals,
           BigNumber.ROUND_DOWN,
         ),
-        deposit: (
-          swapInAccount ? tokenOutBorrowPositionAmount.eq(0) : isSwapAndDeposit
-        )
-          ? "true"
-          : "false",
+        deposit:
+          (swapInAccount && action_swapInAccount === Action.DEPOSIT) ||
+          (isSwapAndDeposit && action_swapAndDeposit === Action.DEPOSIT)
+            ? "true"
+            : "false",
       };
       if (tokenInUsdValue !== undefined)
         properties.amountInUsd = tokenInUsdValue.toFixed(
@@ -1261,18 +1436,22 @@ function Page() {
     } catch (err) {
       if (swapInAccount) {
         showErrorToast(
-          `Failed to swap and ${tokenOutBorrowPositionAmount.eq(0) ? "deposit" : "repay"}`,
+          `Failed to swap and ${action_swapInAccount}`,
           err as Error,
           undefined,
           true,
         );
       } else {
-        showErrorToast(
-          `Failed to ${isSwapAndDeposit ? "swap and deposit" : "swap"}`,
-          err as Error,
-          undefined,
-          true,
-        );
+        if (isSwapAndDeposit) {
+          showErrorToast(
+            `Failed to swap and ${action_swapAndDeposit}`,
+            err as Error,
+            undefined,
+            true,
+          );
+        } else {
+          showErrorToast("Failed to swap", err as Error, undefined, true);
+        }
       }
     } finally {
       if (swapInAccount) {
@@ -1585,7 +1764,7 @@ function Page() {
                   <YourUtilizationLabel
                     obligation={obligation}
                     newObligation={
-                      tokenOutBorrowPositionAmount.eq(0)
+                      action_swapInAccount === Action.DEPOSIT
                         ? newObligation_deposit
                         : newObligation_repay
                     }
@@ -1635,7 +1814,7 @@ function Page() {
                   <Tooltip
                     title={
                       quote?.provider === QuoteProvider.OKX_DEX
-                        ? "OKX DEX does not support Swap and Deposit"
+                        ? `OKX DEX does not support swap and ${action_swapAndDeposit}`
                         : undefined
                     }
                   >

@@ -147,19 +147,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 )}
                 onClick={onAmountClick}
               >
-                {!swapInAccount ? (
-                  <>
-                    {/* Balance */}
-                    <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
-                      <Wallet className="h-3 w-3 text-inherit" />
-                      <TLabel className="text-inherit">
-                        {tokenBalance.eq(0)
-                          ? "--"
-                          : formatToken(tokenBalance, { exact: false })}
-                      </TLabel>
-                    </div>
-                  </>
-                ) : (
+                {(swapInAccount || direction === TokenDirection.OUT) && (
                   <>
                     {/* Deposited */}
                     {tokenDepositedAmount.gt(0) && (
@@ -181,6 +169,18 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Balance */}
+                {!swapInAccount && (
+                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                    <Wallet className="h-3 w-3 text-inherit" />
+                    <TLabel className="text-inherit">
+                      {tokenBalance.eq(0)
+                        ? "--"
+                        : formatToken(tokenBalance, { exact: false })}
+                    </TLabel>
+                  </div>
                 )}
               </div>
             </div>
