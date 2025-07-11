@@ -147,7 +147,7 @@ export const getSwapTransaction = async (
             new FlowXCoin(quote.out.coinType),
             FlowXCommissionType.PERCENTAGE,
             0,
-            true,
+            false,
           ),
         )
         .build();
