@@ -1,9 +1,12 @@
+import { ClassValue } from "clsx";
+
 import { TLabelSans } from "@/components/shared/Typography";
 import { cn } from "@/lib/utils";
 
 export const getSwitchId = (id: string) => `switch.${id}`;
 
 interface SwitchProps {
+  className?: ClassValue;
   id: string;
   label?: string;
   horizontal?: boolean;
@@ -13,6 +16,7 @@ interface SwitchProps {
 }
 
 export default function Switch({
+  className,
   id,
   label,
   horizontal,
@@ -28,6 +32,7 @@ export default function Switch({
         "flex gap-2",
         horizontal ? "flex-row items-center" : "flex-col",
         !isDisabled ? "cursor-pointer" : "pointer-events-none opacity-50",
+        className,
       )}
       onClick={!isDisabled ? () => onToggle(!isChecked) : undefined}
     >

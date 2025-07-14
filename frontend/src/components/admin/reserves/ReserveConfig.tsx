@@ -290,8 +290,8 @@ export default function ReserveConfig({
         endDecorator="bps"
       />
       <Switch
-        label="isolated"
         id="isolated"
+        label="isolated"
         isChecked={configState.isolated}
         onToggle={setConfigStateKeyValue("isolated")}
       />

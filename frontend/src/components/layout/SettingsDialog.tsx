@@ -10,6 +10,7 @@ import RpcSelect from "@/components/layout/RpcSelect";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
+import Switch from "@/components/shared/Switch";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 
@@ -22,6 +23,8 @@ export default function SettingsDialog() {
     setExplorerId,
     gasBudget,
     setGasBudget,
+    isUsingLedger,
+    setIsUsingLedger,
   } = useSettingsContext();
 
   // Custom RPC URL
@@ -109,6 +112,16 @@ export default function SettingsDialog() {
           />
         </div>
       </div>
+
+      {/* Ledger */}
+      <Switch
+        className="w-full justify-between"
+        id="isUsingLedger"
+        label="Using a Ledger"
+        horizontal
+        isChecked={isUsingLedger}
+        onToggle={setIsUsingLedger}
+      />
     </Dialog>
   );
 }

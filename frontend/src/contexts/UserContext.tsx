@@ -46,9 +46,6 @@ import useFetchUserData from "@/fetchers/useFetchUserData";
 import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
 
-const AUTOCLAIM_OBLIGATIONS_LIMIT = 5;
-const MAX_REWARDS_PER_TRANSACTION = 3;
-
 const getCombinedAutoclaimedRewards = (
   prevRewards: Record<string, number[]>,
   newRewards: Record<string, number[]>,
@@ -134,7 +131,7 @@ export const useLoadedUserContext = () => useUserContext() as LoadedUserContext;
 export function UserContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
 
-  const { suiClient } = useSettingsContext();
+  const { isUsingLedger, suiClient } = useSettingsContext();
   const { address, dryRunTransaction } = useWalletContext();
   const { allAppData, appData, refreshAllAppData } = useAppContext();
 
@@ -282,6 +279,12 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // Obligations with unclaimed rewards
+  const AUTOCLAIM_OBLIGATIONS_LIMIT = 10;
+  const MAX_REWARDS_PER_TRANSACTION = useMemo(
+    () => (isUsingLedger ? 3 : 15),
+    [isUsingLedger],
+  );
+
   // Fetch
   const [obligationsWithUnclaimedRewards, setObligationsWithUnclaimedRewards] =
     useState<ObligationWithUnclaimedRewards[] | undefined>(undefined);
@@ -410,6 +413,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       allAppData,
       obligationsWithUnclaimedRewards,
       userData?.obligations,
+      MAX_REWARDS_PER_TRANSACTION,
       autoclaimedRewards,
       dryRunTransaction,
     ],
