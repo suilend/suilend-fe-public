@@ -79,7 +79,6 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   HISTORICAL_USD_PRICES_INTERVAL_S,
   SwapContextProvider,
-  TokenDirection,
   useSwapContext,
 } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -94,6 +93,7 @@ import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
+import { TokenDirection } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

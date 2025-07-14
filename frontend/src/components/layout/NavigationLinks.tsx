@@ -5,7 +5,6 @@ import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Link from "@/components/shared/Link";
-import { getSwapUrl } from "@/contexts/SwapContext";
 import {
   ABOUT_URL,
   ADMIN_URL,
@@ -26,7 +25,7 @@ export default function NavigationLinks() {
       {/* Internal */}
       <Link href={ROOT_URL}>Lend</Link>
       {!isInMsafeApp() && (
-        <Link href={getSwapUrl()} startsWithHref={SWAP_URL}>
+        <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
           Swap
         </Link>
       )}

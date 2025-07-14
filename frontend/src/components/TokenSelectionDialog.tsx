@@ -33,8 +33,9 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
+import { useSwapContext } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { TokenDirection } from "@/lib/swap";
 import { cn } from "@/lib/utils";
 
 interface TokenRowProps {

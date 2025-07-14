@@ -9,8 +9,9 @@ import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import TokenSelectionDialog from "@/components/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
-import { TokenDirection, useSwapContext } from "@/contexts/SwapContext";
+import { useSwapContext } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { TokenDirection } from "@/lib/swap";
 import { cn } from "@/lib/utils";
 
 const INPUT_HEIGHT = 70; // px

@@ -12,6 +12,7 @@ import { QuoteProvider } from "@suilend/sdk";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { SWAP_URL } from "@/lib/navigation";
 
 export type SdkMap = {
   [QuoteProvider.AFTERMATH]: AftermathSdk;
@@ -88,3 +89,13 @@ export const useAggSdks = (): {
 
   return { sdkMap, partnerIdMap };
 };
+
+//
+
+export const getSwapUrl = (inSymbol: string, outSymbol: string) =>
+  `${SWAP_URL}/${inSymbol}-${outSymbol}`;
+
+export enum TokenDirection {
+  IN = "in",
+  OUT = "out",
+}
