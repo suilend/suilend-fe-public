@@ -27,12 +27,12 @@ import {
   isInMsafeApp,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
 import LedgerHashDialog from "@/components/shared/LedgerHashDialog";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
-import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
 export enum QueryParams {
   LENDING_MARKET = "market",
