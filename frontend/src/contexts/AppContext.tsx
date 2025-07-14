@@ -24,7 +24,6 @@ import {
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   Token,
-  getLedgerHash,
   isInMsafeApp,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
@@ -33,6 +32,7 @@ import LedgerHashDialog from "@/components/shared/LedgerHashDialog";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
+import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
 export enum QueryParams {
   LENDING_MARKET = "market",
@@ -278,27 +278,13 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   }, []);
 
   // Ledger hash
-  const [ledgerHash, setLedgerHash] = useState<string | undefined>(undefined);
-  const [isLedgerHashDialogOpen, setIsLedgerHashDialogOpen] =
-    useState<boolean>(false);
-
-  const openLedgerHashDialog = useCallback(
-    async (transaction: Transaction) => {
-      if (!address) return;
-
-      const transactionLedgerHash = await getLedgerHash(
-        address,
-        transaction,
-        suiClient,
-      );
-      setLedgerHash(transactionLedgerHash);
-      setIsLedgerHashDialogOpen(true);
-    },
-    [address, suiClient],
-  );
-  const closeLedgerHashDialog = useCallback(() => {
-    setIsLedgerHashDialogOpen(false);
-  }, []);
+  const {
+    ledgerHash,
+    isLedgerHashDialogOpen,
+    doNotShowLedgerHashDialogAgain,
+    openLedgerHashDialog,
+    closeLedgerHashDialog,
+  } = useLedgerHashDialog();
 
   // Context
   const contextValue: AppContext = useMemo(
