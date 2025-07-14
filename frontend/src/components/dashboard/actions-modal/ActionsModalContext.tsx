@@ -126,7 +126,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, openLedgerHashDialog } = useLoadedAppContext();
   const { obligation, obligationOwnerCap, autoclaimRewards } =
     useLoadedUserContext();
 
@@ -253,6 +253,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         await autoclaimRewards(transaction);
       transaction = _transaction;
 
+      await openLedgerHashDialog(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       onAutoclaimSuccess();
 
@@ -263,6 +264,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       appData.suilendClient,
       obligationOwnerCap,
       autoclaimRewards,
+      openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
     ],
   );
@@ -294,6 +296,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         await autoclaimRewards(transaction);
       transaction = _transaction;
 
+      await openLedgerHashDialog(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       onAutoclaimSuccess();
 
@@ -305,6 +308,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       autoclaimRewards,
+      openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
     ],
   );
@@ -336,6 +340,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         await autoclaimRewards(transaction);
       transaction = _transaction;
 
+      await openLedgerHashDialog(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       onAutoclaimSuccess();
 
@@ -347,6 +352,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       autoclaimRewards,
+      openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
     ],
   );
@@ -376,6 +382,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         await autoclaimRewards(transaction);
       transaction = _transaction;
 
+      await openLedgerHashDialog(transaction);
       const res = await signExecuteAndWaitForTransaction(transaction);
       onAutoclaimSuccess();
 
@@ -386,6 +393,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       autoclaimRewards,
+      openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
     ],
   );

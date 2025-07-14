@@ -109,7 +109,8 @@ const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, openLedgerHashDialog, closeLedgerHashDialog } =
+    useLoadedAppContext();
   const { getBalance, refresh, obligation, obligationOwnerCap } =
     useLoadedUserContext();
 
@@ -1057,6 +1058,7 @@ function Page() {
       }
     }
 
+    await openLedgerHashDialog(transaction);
     const res = await signExecuteAndWaitForTransaction(transaction, {
       auction: true,
     });
@@ -1465,6 +1467,8 @@ function Page() {
       }
       inputRef.current?.focus();
       refresh();
+
+      closeLedgerHashDialog();
     }
   };
 

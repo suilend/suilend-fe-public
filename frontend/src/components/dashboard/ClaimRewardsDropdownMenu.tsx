@@ -37,7 +37,7 @@ export default function ClaimRewardsDropdownMenu({
   rewardsMap,
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { appData, closeLedgerHashDialog } = useLoadedAppContext();
   const { refresh, obligation } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
@@ -186,6 +186,8 @@ export default function ClaimRewardsDropdownMenu({
     } finally {
       setIsClaiming(false);
       refresh();
+
+      closeLedgerHashDialog();
     }
   };
 

@@ -3,8 +3,8 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
+import TokenSelectionDialog from "@/components/shared/TokenSelectionDialog";
 import { TLabelSans } from "@/components/shared/Typography";
-import TokenSelectionDialog from "@/components/TokenSelectionDialog";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface AdminTokenSelectionDialogProps {

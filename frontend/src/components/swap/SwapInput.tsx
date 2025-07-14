@@ -6,8 +6,8 @@ import { mergeRefs } from "react-merge-refs";
 
 import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
 
+import TokenSelectionDialog from "@/components/shared/TokenSelectionDialog";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
-import TokenSelectionDialog from "@/components/TokenSelectionDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { useSwapContext } from "@/contexts/SwapContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";

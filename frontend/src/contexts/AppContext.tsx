@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { CoinMetadata } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
@@ -23,10 +24,12 @@ import {
   NORMALIZED_KOBAN_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   Token,
+  getLedgerHash,
   isInMsafeApp,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
+import LedgerHashDialog from "@/components/shared/LedgerHashDialog";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
@@ -73,6 +76,9 @@ interface AppContext {
 
   tokenIconImageLoadErrorMap: Record<string, boolean>;
   loadTokenIconImage: (token: Token) => void;
+
+  openLedgerHashDialog: (transaction: Transaction) => Promise<void>;
+  closeLedgerHashDialog: () => void;
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
@@ -105,6 +111,13 @@ const AppContext = createContext<AppContext>({
 
   tokenIconImageLoadErrorMap: {},
   loadTokenIconImage: () => {
+    throw Error("AppContextProvider not initialized");
+  },
+
+  openLedgerHashDialog: async () => {
+    throw Error("AppContextProvider not initialized");
+  },
+  closeLedgerHashDialog: () => {
     throw Error("AppContextProvider not initialized");
   },
 });
@@ -264,6 +277,29 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  // Ledger hash
+  const [ledgerHash, setLedgerHash] = useState<string | undefined>(undefined);
+  const [isLedgerHashDialogOpen, setIsLedgerHashDialogOpen] =
+    useState<boolean>(false);
+
+  const openLedgerHashDialog = useCallback(
+    async (transaction: Transaction) => {
+      if (!address) return;
+
+      const transactionLedgerHash = await getLedgerHash(
+        address,
+        transaction,
+        suiClient,
+      );
+      setLedgerHash(transactionLedgerHash);
+      setIsLedgerHashDialogOpen(true);
+    },
+    [address, suiClient],
+  );
+  const closeLedgerHashDialog = useCallback(() => {
+    setIsLedgerHashDialogOpen(false);
+  }, []);
+
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
@@ -283,6 +319,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
       tokenIconImageLoadErrorMap,
       loadTokenIconImage,
+
+      openLedgerHashDialog,
+      closeLedgerHashDialog,
     }),
     [
       allAppData,
@@ -297,10 +336,19 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       walrusEpochProgressPercent,
       tokenIconImageLoadErrorMap,
       loadTokenIconImage,
+      openLedgerHashDialog,
+      closeLedgerHashDialog,
     ],
   );
 
   return (
-    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
+    <AppContext.Provider value={contextValue}>
+      <LedgerHashDialog
+        isOpen={isLedgerHashDialogOpen}
+        ledgerHash={ledgerHash ?? ""}
+      />
+
+      {children}
+    </AppContext.Provider>
   );
 }
