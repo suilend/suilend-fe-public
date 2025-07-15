@@ -1,4 +1,5 @@
 export const ROOT_URL = "/";
+export const STRATEGIES_URL = "/strategies";
 export const SWAP_URL = "/swap";
 export const BRIDGE_URL = "/bridge";
 export const LEADERBOARD_URL = "/leaderboard";
