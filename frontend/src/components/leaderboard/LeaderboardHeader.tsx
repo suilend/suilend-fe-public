@@ -64,7 +64,7 @@ export default function LeaderboardHeader({
             </TDisplay>
 
             <Tabs
-              listClassName="mb-0 w-[300px] md:w-[320px] bg-border rounded-sm"
+              listClassName="w-[300px] md:w-[320px] bg-border rounded-sm"
               triggerClassName={(tab) =>
                 cn(
                   "h-9 text-muted-foreground",

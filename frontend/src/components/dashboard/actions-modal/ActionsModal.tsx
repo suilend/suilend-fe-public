@@ -210,6 +210,7 @@ export default function ActionsModal() {
   return (
     <ActionsModalContainer>
       <Tabs
+        className="-mr-2 mb-4"
         tabs={tabs}
         selectedTab={selectedTab}
         onTabChange={(tab) => onSelectedTabChange(tab as Tab)}

@@ -77,7 +77,6 @@ function Page() {
             <div className="flex w-full flex-col gap-4">
               {tabs.length > 1 && (
                 <Tabs
-                  listClassName="mb-0"
                   tabs={tabs}
                   selectedTab={selectedTab}
                   onTabChange={(tab) => onSelectedTabChange(tab)}
@@ -95,7 +94,7 @@ function Page() {
             >
               {tabs.length > 1 && (
                 <Tabs
-                  listClassName="mb-0 w-max"
+                  listClassName="w-max"
                   triggerClassName={() => "px-4"}
                   tabs={tabs}
                   selectedTab={selectedTab}
