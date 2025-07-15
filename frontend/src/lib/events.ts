@@ -182,6 +182,6 @@ export const fetchClaimRewardEvents = async (
   return {
     claimReward: json.claimReward,
     autoclaimDigests,
-    lastClaimRewardDigest: sortedClaimRewardEvents[0].digest,
+    lastClaimRewardDigest: sortedClaimRewardEvents[0]?.digest,
   };
 };
