@@ -93,6 +93,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onWheel={(e) => e.currentTarget.blur()}
+            autoComplete="off"
             {...restInputProps}
           />
 

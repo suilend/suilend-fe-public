@@ -81,6 +81,7 @@ const ActionsModalInput = forwardRef<HTMLInputElement, ActionsModalInputProps>(
             paddingBottom: `${(INPUT_INNER_HEIGHT - MAX_BUTTON_HEIGHT) / 2 + USD_LABEL_HEIGHT}px`,
           }}
           step="any"
+          autoComplete="off"
         />
 
         <div

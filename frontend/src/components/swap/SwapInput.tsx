@@ -113,6 +113,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 paddingBottom: `${INPUT_HEIGHT - 32}px`,
               }}
               step="any"
+              autoComplete="off"
             />
 
             {new BigNumber(value || 0).gt(0) &&
