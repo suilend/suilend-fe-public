@@ -17,6 +17,7 @@ interface Tab {
 }
 
 interface TabsProps extends PropsWithChildren {
+  className?: ClassValue;
   listClassName?: ClassValue;
   triggerClassName?: (tab: Tab) => ClassValue;
   tabs: Tab[];
@@ -26,6 +27,7 @@ interface TabsProps extends PropsWithChildren {
 }
 
 export default function Tabs({
+  className,
   listClassName,
   triggerClassName,
   tabs,
@@ -36,7 +38,12 @@ export default function Tabs({
 }: TabsProps) {
   return (
     <TabsRoot value={selectedTab as string} onValueChange={onTabChange}>
-      <div className="-mr-2 mb-4 flex flex-row items-center justify-between gap-2">
+      <div
+        className={cn(
+          "flex flex-row items-center justify-between gap-2",
+          className,
+        )}
+      >
         <TabsList
           className={cn(
             "flex h-fit w-full flex-row rounded-[5px] bg-card p-[1px]",

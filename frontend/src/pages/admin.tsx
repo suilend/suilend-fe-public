@@ -113,7 +113,6 @@ function Page() {
             {tabs.map((tabsRow, index) => (
               <Tabs
                 key={index}
-                listClassName="mb-0"
                 tabs={tabsRow}
                 selectedTab={selectedTab}
                 onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
