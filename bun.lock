@@ -47,6 +47,7 @@
         "@radix-ui/react-tabs": "^1.1.1",
         "@radix-ui/react-tooltip": "^1.1.4",
         "@sentry/nextjs": "^8.38.0",
+        "@suilend/springsui-sdk": "^1.0.25",
         "@suilend/sui-fe": "^0.3.9",
         "@suilend/sui-fe-next": "^0.1.55",
         "@tanstack/react-table": "^8.20.5",
@@ -1504,6 +1505,8 @@
     "@suchipi/femver": ["@suchipi/femver@1.0.0", "", {}, "sha512-bprE8+K5V+DPX7q2e2K57ImqNBdfGHDIWaGI5xHxZoxbKOuQZn4wzPiUxOAHnsUr3w3xHrWXwN7gnG/iIuEMIg=="],
 
     "@suilend/sdk-local": ["@suilend/sdk-local@workspace:sdk"],
+
+    "@suilend/springsui-sdk": ["@suilend/springsui-sdk@1.0.25", "", { "dependencies": { "bignumber.js": "^9.1.2" }, "peerDependencies": { "@mysten/bcs": "1.6.0", "@mysten/sui": "1.28.2" } }, "sha512-bb6m1ESWiGd/hk5Obsp2cxto6J1rgs30Dfbs1pGKKSDa/oTeHmLBWj54sHaHe0yFmKVvXl2s44AKYJWEBp/ElA=="],
 
     "@suilend/sui-fe": ["@suilend/sui-fe@0.3.9", "", { "dependencies": { "@mysten/wallet-standard": "0.14.7", "@pythnetwork/pyth-sui-js": "^2.1.0", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.56.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.28.2", "date-fns": "^4.1.0" } }, "sha512-5TwmiBgWm8B0wwB+sy7cCmI+8BXLkrSZYIGjVB4GLuNM5i1CJO0x9WqoukKMaTR4rPVLv7EomYUZ5YrTvr9dlg=="],
 

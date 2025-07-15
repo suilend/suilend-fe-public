@@ -732,7 +732,7 @@ export class SuilendClient {
   async refreshAll(
     transaction: Transaction,
     obligation: Obligation<string>,
-    extraReserveArrayIndex?: bigint,
+    extraReserveArrayIndexes?: bigint[],
   ) {
     const reserveArrayIndexToPriceId = new Map<bigint, string>();
     obligation.deposits.forEach((deposit) => {
@@ -753,17 +753,23 @@ export class SuilendClient {
       );
     });
 
-    if (
-      extraReserveArrayIndex != undefined &&
-      extraReserveArrayIndex >= 0 &&
-      extraReserveArrayIndex < this.lendingMarket.reserves.length
-    ) {
-      const reserve =
-        this.lendingMarket.reserves[Number(extraReserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        extraReserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
+    if (extraReserveArrayIndexes !== undefined) {
+      for (const extraReserveArrayIndex of extraReserveArrayIndexes) {
+        if (
+          !(
+            extraReserveArrayIndex >= 0 &&
+            extraReserveArrayIndex < this.lendingMarket.reserves.length
+          )
+        )
+          continue;
+
+        const reserve =
+          this.lendingMarket.reserves[Number(extraReserveArrayIndex)];
+        reserveArrayIndexToPriceId.set(
+          extraReserveArrayIndex,
+          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+        );
+      }
     }
 
     const tuples = Array.from(reserveArrayIndexToPriceId.entries()).sort();
@@ -1075,11 +1081,9 @@ export class SuilendClient {
     const obligation = await this.getObligation(obligationId);
     if (!obligation) throw new Error("Error: no obligation");
 
-    await this.refreshAll(
-      transaction,
-      obligation,
+    await this.refreshAll(transaction, obligation, [
       this.findReserveArrayIndex(coinType),
-    );
+    ]);
     const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
