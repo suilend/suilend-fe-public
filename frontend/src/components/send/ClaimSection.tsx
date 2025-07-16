@@ -682,6 +682,7 @@ function ClaimTabContent() {
     setIsSubmitting(true);
 
     const transaction = new Transaction();
+    transaction.setSender(address);
 
     try {
       await claimSend(

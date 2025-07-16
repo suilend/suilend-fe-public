@@ -189,6 +189,7 @@ export default function LiquidateDialog({
     if (!address) throw new Error("Wallet not connected");
 
     const transaction = new Transaction();
+    transaction.setSender(address);
 
     try {
       const deposit = obligation.deposits.find(
