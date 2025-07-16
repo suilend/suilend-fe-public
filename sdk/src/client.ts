@@ -976,11 +976,15 @@ export class SuilendClient {
     coinType: string,
     value: string,
     transaction: Transaction,
+    addRefreshCalls: boolean = true,
   ) {
-    const obligation = await this.getObligation(obligationId);
-    if (!obligation) throw new Error("Error: no obligation");
+    if (addRefreshCalls) {
+      const obligation = await this.getObligation(obligationId);
+      if (!obligation) throw new Error("Error: no obligation");
 
-    await this.refreshAll(transaction, obligation);
+      await this.refreshAll(transaction, obligation);
+    }
+
     const [ctokens] = withdrawCtokens(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
