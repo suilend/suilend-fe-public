@@ -32,13 +32,16 @@ import TextLink from "@/components/shared/TextLink";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
+const E = 10 ** -3;
+const sSUI_DECIMALS = 9;
+
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { appData } = useLoadedAppContext();
   const { userData, refresh } = useLoadedUserContext();
 
-  // sSUI LST client and liquid staking info
+  // sSUI -  LST client and liquid staking info
   const [lstClient, setLstClient] = useState<LstClient | undefined>(undefined);
   const [liquidStakingInfo, setLiquidStakingInfo] = useState<
     LiquidStakingInfo<string> | undefined
@@ -79,7 +82,7 @@ function Page() {
     })();
   }, [suiClient]);
 
-  // sSUI reserve
+  // sSUI - reserve
   const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
 
   // Obligation
@@ -102,8 +105,6 @@ function Page() {
         throw Error("sSUI LST client not found");
 
       // Exchange rate
-      const sSUI_DECIMALS = 9;
-
       const totalSuiSupply = new BigNumber(
         liquidStakingInfo.storage.totalSuiSupply.toString(),
       ).div(10 ** SUI_DECIMALS);
@@ -111,24 +112,31 @@ function Page() {
         liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
       ).div(10 ** sSUI_DECIMALS);
 
-      const suiToLstExchangeRate = !totalSuiSupply.eq(0)
+      const mintFeePercent = new BigNumber(
+        liquidStakingInfo.feeConfig.element?.suiMintFeeBps.toString() ?? 0,
+      ).div(100);
+
+      const getStakingFee = (suiAmount: BigNumber) =>
+        suiAmount
+          .times(mintFeePercent.div(100))
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP);
+
+      const suiToSsuiExchangeRate = !totalSuiSupply.eq(0)
         ? totalSsuiSupply.div(totalSuiSupply)
         : new BigNumber(1);
-      const sSuiToSuiExchangeRate = !totalSsuiSupply.eq(0)
-        ? totalSuiSupply.div(totalSsuiSupply)
-        : new BigNumber(1);
+      console.log("XXX suiToSsuiExchangeRate", +suiToSsuiExchangeRate);
 
       // Exposure
       const minExposure = new BigNumber(1);
-      const maxExposure = new BigNumber(1).div(
-        1 - sSuiReserve.config.openLtvPct / 100,
+      const maxExposure = new BigNumber(
+        1 / (1 - sSuiReserve.config.openLtvPct / 100),
       ); // 3.33333...x
-      if (targetExposure.lte(minExposure) || targetExposure.gte(maxExposure))
+      if (!(targetExposure.gt(minExposure) && targetExposure.lt(maxExposure)))
         throw Error(
           `Target exposure must be greater than ${minExposure}x and less than ${maxExposure}x`,
         );
       console.log(
-        `XXX amount: ${sSuiAmount} sSUI, target exposure: ${targetExposure}x, (min, max): (${minExposure}x, ${maxExposure}x)`,
+        `XXX sSuiAmount: ${sSuiAmount}, targetExposure: ${targetExposure}x, (min, max): (${minExposure}x, ${maxExposure}x)`,
       );
 
       const transaction = new Transaction();
@@ -157,24 +165,63 @@ function Page() {
         let currentExposure = sSuiDepositedAmount.div(sSuiAmount);
         let pendingExposure = targetExposure.minus(currentExposure);
         console.log(
-          `XXX ${i} start | sSuiDepositedAmount: ${sSuiDepositedAmount}, suiBorrowedAmount: ${suiBorrowedAmount}, currentExposure: ${currentExposure}, pendingExposure: ${pendingExposure}`,
+          `XXX ${i} start |`,
+          JSON.stringify(
+            {
+              sSuiDepositedAmount,
+              suiBorrowedAmount,
+              currentExposure,
+              pendingExposure,
+            },
+            null,
+            2,
+          ),
         );
-        if (currentExposure.gte(targetExposure)) break;
+        if (currentExposure.times(1 + E).gte(targetExposure)) break;
 
         // 3.1) Borrow SUI
         const stepMaxBorrowedSuiAmount = new BigNumber(
           new BigNumber(sSuiReserve.config.openLtvPct / 100).times(
-            sSuiDepositedAmount.times(sSuiToSuiExchangeRate),
+            sSuiDepositedAmount,
           ),
-        ).minus(suiBorrowedAmount);
+        )
+          .minus(suiBorrowedAmount)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // SUI and sSUI use the same pyth feeds (=> same USD prices)
+        const stepMaxBorrowedSuiAmount_stakedForSsuiAmount = new BigNumber(
+          stepMaxBorrowedSuiAmount.minus(
+            getStakingFee(stepMaxBorrowedSuiAmount),
+          ),
+        )
+          .times(suiToSsuiExchangeRate)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const stepMaxBorrowedAdditionalExposure =
+          stepMaxBorrowedSuiAmount_stakedForSsuiAmount.div(sSuiAmount);
+
         const stepBorrowedSuiAmount = pendingExposure.gt(
-          stepMaxBorrowedSuiAmount.div(sSuiAmount.times(sSuiToSuiExchangeRate)),
+          stepMaxBorrowedAdditionalExposure,
         )
           ? stepMaxBorrowedSuiAmount
-          : pendingExposure.times(sSuiAmount.times(sSuiToSuiExchangeRate));
+          : pendingExposure
+              .times(
+                sSuiAmount
+                  .div(suiToSsuiExchangeRate)
+                  .div(new BigNumber(1).minus(mintFeePercent.div(100))),
+              )
+              .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const isMaxBorrow = stepBorrowedSuiAmount.eq(stepMaxBorrowedSuiAmount);
         console.log(
-          `XXX ${i} borrow | stepMaxBorrowedSuiAmount: ${stepMaxBorrowedSuiAmount}, stepBorrowedSuiAmount: ${stepBorrowedSuiAmount}, isMaxBorrow: ${isMaxBorrow}`,
+          `XXX ${i} borrow |`,
+          JSON.stringify(
+            {
+              stepMaxBorrowedSuiAmount,
+              stepMaxBorrowedSuiAmount_stakedForSsuiAmount,
+              stepMaxBorrowedAdditionalExposure,
+              stepBorrowedSuiAmount,
+              isMaxBorrow,
+            },
+            null,
+            2,
+          ),
         );
 
         const [borrowCoin] = await appData.suilendClient.borrow(
@@ -200,28 +247,46 @@ function Page() {
         );
 
         // 3.3) Deposit sSUI
+        const stepDepositedSsuiAmount = new BigNumber(
+          stepBorrowedSuiAmount.minus(getStakingFee(stepBorrowedSuiAmount)),
+        )
+          .times(suiToSsuiExchangeRate)
+          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        console.log(
+          `XXX ${i} deposit |`,
+          JSON.stringify({ stepDepositedSsuiAmount }, null, 2),
+        );
+
         appData.suilendClient.deposit(
           sSuiCoin,
           NORMALIZED_sSUI_COINTYPE,
           obligationOwnerCap.id,
           transaction,
         );
-        sSuiDepositedAmount = sSuiDepositedAmount.plus(
-          stepBorrowedSuiAmount.div(sSuiToSuiExchangeRate),
-        );
+        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepDepositedSsuiAmount);
 
         currentExposure = sSuiDepositedAmount.div(sSuiAmount);
         pendingExposure = targetExposure.minus(currentExposure);
         console.log(
-          `XXX ${i} end | sSuiDepositedAmount: ${sSuiDepositedAmount}, suiBorrowedAmount: ${suiBorrowedAmount}, currentExposure: ${currentExposure}, pendingExposure: ${pendingExposure}`,
+          `XXX ${i} end |`,
+          JSON.stringify(
+            {
+              sSuiDepositedAmount,
+              suiBorrowedAmount,
+              currentExposure,
+              pendingExposure,
+            },
+            null,
+            2,
+          ),
         );
-        if (currentExposure.gte(targetExposure)) break;
+        if (currentExposure.times(1 + E).gte(targetExposure)) break;
       }
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Deposited sSUI and borrowed SUI", {
+      toast.success("Looped", {
         action: (
           <TextLink className="block" href={txUrl}>
             View tx on {explorer.name}
@@ -230,12 +295,7 @@ function Page() {
         duration: TX_TOAST_DURATION,
       });
     } catch (err) {
-      showErrorToast(
-        `Failed to set up looped position`,
-        err as Error,
-        undefined,
-        true,
-      );
+      showErrorToast("Failed to loop", err as Error, undefined, true);
     } finally {
       refresh();
     }
@@ -249,7 +309,7 @@ function Page() {
 
       <div className="flex w-full flex-col items-center gap-8">
         <Button
-          onClick={() => loop(new BigNumber(0.050000517), new BigNumber(3.23))}
+          onClick={() => loop(new BigNumber(0.01), new BigNumber(3))}
           disabled={!lstClient}
         >
           Loop
