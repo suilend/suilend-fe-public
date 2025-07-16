@@ -761,7 +761,7 @@ export class SuilendClient {
         const reserveArrayIndex = this.findReserveArrayIndex(coinType);
         if (
           reserveArrayIndex >= 0 &&
-          reserveArrayIndex <= BigInt(this.lendingMarket.reserves.length - 1)
+          reserveArrayIndex < BigInt(this.lendingMarket.reserves.length)
         ) {
           const reserve =
             this.lendingMarket.reserves[Number(reserveArrayIndex)];
