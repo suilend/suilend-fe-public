@@ -21,16 +21,11 @@ import {
 } from "@/lib/navigation";
 
 function More() {
-  const { address } = useWalletContext();
-
   return (
     <>
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>
-      {address === ADMIN_ADDRESS && !isInMsafeApp() && (
-        <Link href={ADMIN_URL}>Admin</Link>
-      )}
 
       {/* External */}
       <Link
@@ -54,6 +49,8 @@ function More() {
 }
 
 export default function NavigationLinks() {
+  const { address } = useWalletContext();
+
   return (
     <>
       {/* Internal */}
@@ -65,6 +62,9 @@ export default function NavigationLinks() {
         </Link>
       )}
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
+      {address === ADMIN_ADDRESS && !isInMsafeApp() && (
+        <Link href={ADMIN_URL}>Admin</Link>
+      )}
 
       {/* More */}
       <Tooltip
