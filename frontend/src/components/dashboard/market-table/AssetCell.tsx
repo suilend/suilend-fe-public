@@ -142,6 +142,7 @@ export default function AssetCell({
     if (!address) return;
 
     const transaction = new Transaction();
+    transaction.setSender(address);
 
     try {
       const balance = getBalance(NORMALIZED_WAL_COINTYPE);

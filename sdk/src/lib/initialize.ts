@@ -143,7 +143,9 @@ export const initializeSuilend = async (
   const [refreshedReservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
     simulate.refreshReservePrice(
       reservesWithoutTemporaryPythPriceFeeds,
-      new SuiPriceServiceConnection("https://hermes.pyth.network"),
+      new SuiPriceServiceConnection("https://hermes.pyth.network", {
+        timeout: 30 * 1000,
+      }),
     ),
     Promise.all(
       reservesWithTemporaryPythPriceFeeds.map((reserve) =>

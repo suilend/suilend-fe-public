@@ -75,6 +75,7 @@ export class LiquidationDispatcher {
     this.lastObligationRefresh = null;
     this.pythConnection = new SuiPriceServiceConnection(
       "https://hermes.pyth.network",
+      { timeout: 30 * 1000 },
     );
     this.statsd = this.config.statsd;
   }
@@ -157,6 +158,7 @@ export class LiquidationWorker {
     this.swapper = config.swapper;
     this.pythConnection = new SuiPriceServiceConnection(
       "https://hermes.pyth.network",
+      { timeout: 30 * 1000 },
     );
   }
 

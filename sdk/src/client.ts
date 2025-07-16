@@ -194,6 +194,7 @@ export class SuilendClient {
     );
     this.pythConnection = new SuiPriceServiceConnection(
       "https://hermes.pyth.network",
+      { timeout: 30 * 1000 },
     );
   }
 

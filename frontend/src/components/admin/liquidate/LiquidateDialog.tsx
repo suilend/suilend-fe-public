@@ -129,6 +129,7 @@ export default function LiquidateDialog({
       let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];
       const connection = new SuiPriceServiceConnection(
         "https://hermes.pyth.network",
+        { timeout: 30 * 1000 },
       );
       refreshedReserves = await simulate.refreshReservePrice(
         rawLendingMarket.reserves.map((r) =>
@@ -189,6 +190,7 @@ export default function LiquidateDialog({
     if (!address) throw new Error("Wallet not connected");
 
     const transaction = new Transaction();
+    transaction.setSender(address);
 
     try {
       const deposit = obligation.deposits.find(
