@@ -760,16 +760,16 @@ export class SuilendClient {
       for (const coinType of coinTypes) {
         const reserveArrayIndex = this.findReserveArrayIndex(coinType);
         if (
-          reserveArrayIndex < 0 ||
-          reserveArrayIndex > BigInt(this.lendingMarket.reserves.length - 1)
-        )
-          continue;
-
-        const reserve = this.lendingMarket.reserves[Number(reserveArrayIndex)];
-        reserveArrayIndexToPriceId.set(
-          reserveArrayIndex,
-          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-        );
+          reserveArrayIndex >= 0 &&
+          reserveArrayIndex <= BigInt(this.lendingMarket.reserves.length - 1)
+        ) {
+          const reserve =
+            this.lendingMarket.reserves[Number(reserveArrayIndex)];
+          reserveArrayIndexToPriceId.set(
+            reserveArrayIndex,
+            toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+          );
+        }
       }
     }
 
