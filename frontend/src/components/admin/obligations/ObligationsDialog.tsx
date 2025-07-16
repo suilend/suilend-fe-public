@@ -58,7 +58,9 @@ export default function ObligationsDialog() {
       rawLendingMarket.reserves.map((r) =>
         simulate.compoundReserveInterest(r, Math.round(Date.now() / 1000)),
       ),
-      new SuiPriceServiceConnection("https://hermes.pyth.network"),
+      new SuiPriceServiceConnection("https://hermes.pyth.network", {
+        timeout: 30 * 1000,
+      }),
     );
     async function chunkHandler(obligationsChunk: Obligation<string>[]) {
       setObligations((obligations) => [
