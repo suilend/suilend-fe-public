@@ -2,6 +2,8 @@ import Head from "next/head";
 import { useEffect, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
+import { SUI_DECIMALS } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
 import {
@@ -36,8 +38,12 @@ function Page() {
   const { appData } = useLoadedAppContext();
   const { userData, refresh } = useLoadedUserContext();
 
-  // sSUI LST client
+  // sSUI LST client and liquid staking info
   const [lstClient, setLstClient] = useState<LstClient | undefined>(undefined);
+  const [liquidStakingInfo, setLiquidStakingInfo] = useState<
+    LiquidStakingInfo<string> | undefined
+  >(undefined);
+
   useEffect(() => {
     (async () => {
       try {
@@ -66,62 +72,151 @@ function Page() {
           publishedAt,
         );
         setLstClient(_lstClient);
+        setLiquidStakingInfo(lstInfoJson.liquidStakingInfo);
       } catch (err) {
         console.error(err);
       }
     })();
   }, [suiClient]);
 
+  // sSUI reserve
+  const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
+
   // Obligation
   const obligation = userData.obligations.find(
     (o) =>
       o.id ===
-      "0x9d0bf4ea905a4965c4a914c3a1506c597310efc33fb8552d503a31a04a8e9ff7",
+      "0xb3efca4da772f62489dccae0ef7a519a21cfbfc7e4adcd4f70015389df353431",
   );
   const obligationOwnerCap = userData.obligationOwnerCaps.find(
     (o) => o.obligationId === obligation?.id,
   );
-  console.log("XXX", obligation, obligationOwnerCap, lstClient);
 
-  const setUpLoopedPosition = async () => {
+  // Loop and unloop
+  const loop = async (sSuiAmount: BigNumber, targetExposure: BigNumber) => {
     try {
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
+      if (!lstClient || !liquidStakingInfo)
+        throw Error("sSUI LST client not found");
 
-      if (!lstClient) throw Error("sSUI LST client not found");
+      // Exchange rate
+      const sSUI_DECIMALS = 9;
+
+      const totalSuiSupply = new BigNumber(
+        liquidStakingInfo.storage.totalSuiSupply.toString(),
+      ).div(10 ** SUI_DECIMALS);
+      const totalSsuiSupply = new BigNumber(
+        liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
+      ).div(10 ** sSUI_DECIMALS);
+
+      const suiToLstExchangeRate = !totalSuiSupply.eq(0)
+        ? totalSsuiSupply.div(totalSuiSupply)
+        : new BigNumber(1);
+      const sSuiToSuiExchangeRate = !totalSsuiSupply.eq(0)
+        ? totalSuiSupply.div(totalSsuiSupply)
+        : new BigNumber(1);
+
+      // Exposure
+      const minExposure = new BigNumber(1);
+      const maxExposure = new BigNumber(1).div(
+        1 - sSuiReserve.config.openLtvPct / 100,
+      ); // 3.33333...x
+      if (targetExposure.lte(minExposure) || targetExposure.gte(maxExposure))
+        throw Error(
+          `Target exposure must be greater than ${minExposure}x and less than ${maxExposure}x`,
+        );
+      console.log(
+        `XXX amount: ${sSuiAmount} sSUI, target exposure: ${targetExposure}x, (min, max): (${minExposure}x, ${maxExposure}x)`,
+      );
 
       const transaction = new Transaction();
 
-      // 1) Deposit sSUI
+      // 1) Deposit sSUI (1x exposure)
       await appData.suilendClient.depositIntoObligation(
         address,
         NORMALIZED_sSUI_COINTYPE,
-        `${0.1 * 10 ** 9}`,
+        sSuiAmount
+          .times(10 ** sSUI_DECIMALS)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString(),
         transaction,
         obligationOwnerCap.id,
       );
 
-      // 2) Borrow SUI (MAX)
-      await appData.suilendClient.refreshAll(transaction, obligation.original, [
-        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+      // 2) Refresh pyth oracles (sSUI and SUI)
+      await appData.suilendClient.refreshAll(transaction, undefined, [
+        NORMALIZED_sSUI_COINTYPE,
+        NORMALIZED_SUI_COINTYPE,
       ]);
 
-      const [borrowCoin] = await appData.suilendClient.borrow(
-        obligationOwnerCap.id,
-        obligation.id,
-        NORMALIZED_SUI_COINTYPE,
-        MAX_U64.toString(),
-        transaction,
-      );
+      let sSuiDepositedAmount = sSuiAmount;
+      let suiBorrowedAmount = new BigNumber(0);
+      for (let i = 0; i < 10; i++) {
+        let currentExposure = sSuiDepositedAmount.div(sSuiAmount);
+        let pendingExposure = targetExposure.minus(currentExposure);
+        console.log(
+          `XXX ${i} start | sSuiDepositedAmount: ${sSuiDepositedAmount}, suiBorrowedAmount: ${suiBorrowedAmount}, currentExposure: ${currentExposure}, pendingExposure: ${pendingExposure}`,
+        );
+        if (currentExposure.gte(targetExposure)) break;
 
-      // 3) Stake for sSUI
-      const sSuiCoin = lstClient.mint(transaction, borrowCoin);
-      lstClient.rebalance(
-        transaction,
-        lstClient.liquidStakingObject.weightHookId,
-      );
-      transaction.transferObjects([sSuiCoin], address);
+        // 3.1) Borrow SUI
+        const stepMaxBorrowedSuiAmount = new BigNumber(
+          new BigNumber(sSuiReserve.config.openLtvPct / 100).times(
+            sSuiDepositedAmount.times(sSuiToSuiExchangeRate),
+          ),
+        ).minus(suiBorrowedAmount);
+        const stepBorrowedSuiAmount = pendingExposure.gt(
+          stepMaxBorrowedSuiAmount.div(sSuiAmount.times(sSuiToSuiExchangeRate)),
+        )
+          ? stepMaxBorrowedSuiAmount
+          : pendingExposure.times(sSuiAmount.times(sSuiToSuiExchangeRate));
+        const isMaxBorrow = stepBorrowedSuiAmount.eq(stepMaxBorrowedSuiAmount);
+        console.log(
+          `XXX ${i} borrow | stepMaxBorrowedSuiAmount: ${stepMaxBorrowedSuiAmount}, stepBorrowedSuiAmount: ${stepBorrowedSuiAmount}, isMaxBorrow: ${isMaxBorrow}`,
+        );
+
+        const [borrowCoin] = await appData.suilendClient.borrow(
+          obligationOwnerCap.id,
+          obligation.id,
+          NORMALIZED_SUI_COINTYPE,
+          isMaxBorrow
+            ? MAX_U64.toString()
+            : stepBorrowedSuiAmount
+                .times(10 ** SUI_DECIMALS)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+          transaction,
+          false,
+        );
+        suiBorrowedAmount = suiBorrowedAmount.plus(stepBorrowedSuiAmount);
+
+        // 3.2) Stake borrowed SUI for sSUI
+        const sSuiCoin = lstClient.mint(transaction, borrowCoin);
+        lstClient.rebalance(
+          transaction,
+          lstClient.liquidStakingObject.weightHookId,
+        );
+
+        // 3.3) Deposit sSUI
+        appData.suilendClient.deposit(
+          sSuiCoin,
+          NORMALIZED_sSUI_COINTYPE,
+          obligationOwnerCap.id,
+          transaction,
+        );
+        sSuiDepositedAmount = sSuiDepositedAmount.plus(
+          stepBorrowedSuiAmount.div(sSuiToSuiExchangeRate),
+        );
+
+        currentExposure = sSuiDepositedAmount.div(sSuiAmount);
+        pendingExposure = targetExposure.minus(currentExposure);
+        console.log(
+          `XXX ${i} end | sSuiDepositedAmount: ${sSuiDepositedAmount}, suiBorrowedAmount: ${suiBorrowedAmount}, currentExposure: ${currentExposure}, pendingExposure: ${pendingExposure}`,
+        );
+        if (currentExposure.gte(targetExposure)) break;
+      }
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -153,9 +248,15 @@ function Page() {
       </Head>
 
       <div className="flex w-full flex-col items-center gap-8">
-        <Button onClick={setUpLoopedPosition} disabled={!lstClient}>
-          Set up looped position
+        <Button
+          onClick={() => loop(new BigNumber(0.050000517), new BigNumber(3.23))}
+          disabled={!lstClient}
+        >
+          Loop
         </Button>
+        {/* <Button onClick={() => unloop()} disabled={!lstClient}>
+          Unloop
+        </Button> */}
       </div>
     </>
   );

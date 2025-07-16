@@ -731,42 +731,42 @@ export class SuilendClient {
 
   async refreshAll(
     transaction: Transaction,
-    obligation: Obligation<string>,
-    extraReserveArrayIndexes?: bigint[],
+    obligation?: Obligation<string>,
+    coinTypes?: string[],
   ) {
     const reserveArrayIndexToPriceId = new Map<bigint, string>();
-    obligation.deposits.forEach((deposit) => {
-      const reserve =
-        this.lendingMarket.reserves[Number(deposit.reserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        deposit.reserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
-    });
+    if (obligation) {
+      obligation.deposits.forEach((deposit) => {
+        const reserve =
+          this.lendingMarket.reserves[Number(deposit.reserveArrayIndex)];
+        reserveArrayIndexToPriceId.set(
+          deposit.reserveArrayIndex,
+          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+        );
+      });
 
-    obligation.borrows.forEach((borrow) => {
-      const reserve =
-        this.lendingMarket.reserves[Number(borrow.reserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        borrow.reserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
-    });
+      obligation.borrows.forEach((borrow) => {
+        const reserve =
+          this.lendingMarket.reserves[Number(borrow.reserveArrayIndex)];
+        reserveArrayIndexToPriceId.set(
+          borrow.reserveArrayIndex,
+          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+        );
+      });
+    }
 
-    if (extraReserveArrayIndexes !== undefined) {
-      for (const extraReserveArrayIndex of extraReserveArrayIndexes) {
+    if (coinTypes !== undefined) {
+      for (const coinType of coinTypes) {
+        const reserveArrayIndex = this.findReserveArrayIndex(coinType);
         if (
-          !(
-            extraReserveArrayIndex >= 0 &&
-            extraReserveArrayIndex < this.lendingMarket.reserves.length
-          )
+          reserveArrayIndex < 0 ||
+          reserveArrayIndex > BigInt(this.lendingMarket.reserves.length - 1)
         )
           continue;
 
-        const reserve =
-          this.lendingMarket.reserves[Number(extraReserveArrayIndex)];
+        const reserve = this.lendingMarket.reserves[Number(reserveArrayIndex)];
         reserveArrayIndexToPriceId.set(
-          extraReserveArrayIndex,
+          reserveArrayIndex,
           toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
         );
       }
@@ -1077,13 +1077,15 @@ export class SuilendClient {
     coinType: string,
     value: string,
     transaction: Transaction,
+    addRefreshCalls: boolean = true,
   ) {
-    const obligation = await this.getObligation(obligationId);
-    if (!obligation) throw new Error("Error: no obligation");
+    if (addRefreshCalls) {
+      const obligation = await this.getObligation(obligationId);
+      if (!obligation) throw new Error("Error: no obligation");
 
-    await this.refreshAll(transaction, obligation, [
-      this.findReserveArrayIndex(coinType),
-    ]);
+      await this.refreshAll(transaction, obligation, [coinType]);
+    }
+
     const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
