@@ -131,8 +131,8 @@ export const useLoadedUserContext = () => useUserContext() as LoadedUserContext;
 export function UserContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
 
-  const { isUsingLedger, suiClient } = useSettingsContext();
-  const { address, dryRunTransaction } = useWalletContext();
+  const { suiClient } = useSettingsContext();
+  const { address, dryRunTransaction, isUsingLedger } = useWalletContext();
   const { allAppData, appData, refreshAllAppData } = useAppContext();
 
   // Balances

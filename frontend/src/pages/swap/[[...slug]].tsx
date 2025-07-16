@@ -1058,10 +1058,11 @@ function Page() {
       }
     }
 
-    await openLedgerHashDialog(transaction);
-    const res = await signExecuteAndWaitForTransaction(transaction, {
-      auction: true,
-    });
+    const res = await signExecuteAndWaitForTransaction(
+      transaction,
+      { auction: true },
+      (tx: Transaction) => openLedgerHashDialog(tx),
+    );
     return res;
   };
 

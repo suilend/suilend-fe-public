@@ -329,8 +329,11 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         await autoclaimRewards(transaction);
       transaction = _transaction;
 
-      await openLedgerHashDialog(transaction);
-      const res = await signExecuteAndWaitForTransaction(transaction);
+      const res = await signExecuteAndWaitForTransaction(
+        transaction,
+        undefined,
+        (tx: Transaction) => openLedgerHashDialog(tx),
+      );
       onAutoclaimSuccess();
       track(
         "claim_rewards",
