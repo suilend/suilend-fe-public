@@ -71,9 +71,6 @@ export const getSwapTransaction = async (
   transaction: Transaction,
   coinIn: TransactionObjectArgument | undefined,
 ) => {
-  const allCoinsIn = await getAllCoins(suiClient, address, quote.in.coinType);
-  const mergeCoinIn = mergeAllCoins(quote.in.coinType, transaction, allCoinsIn);
-
   if (quote.provider === QuoteProvider.AFTERMATH) {
     return getSwapTransactionWrapper(QuoteProvider.AFTERMATH, async () => {
       const { tx: transaction2, coinOutId: coinOut } = await sdkMap[
@@ -92,13 +89,25 @@ export const getSwapTransaction = async (
     });
   } else if (quote.provider === QuoteProvider.CETUS) {
     return getSwapTransactionWrapper(QuoteProvider.CETUS, async () => {
-      if (!coinIn)
+      if (!coinIn) {
+        const allCoinsIn = await getAllCoins(
+          suiClient,
+          address,
+          quote.in.coinType,
+        );
+        const mergeCoinIn = mergeAllCoins(
+          quote.in.coinType,
+          transaction,
+          allCoinsIn,
+        );
+
         [coinIn] = transaction.splitCoins(
           isSui(quote.in.coinType)
             ? transaction.gas
             : transaction.object(mergeCoinIn.coinObjectId),
           [BigInt(quote.quote.amountIn.toString())],
         );
+      }
 
       const coinOut = await sdkMap[QuoteProvider.CETUS].routerSwap({
         routers: quote.quote,
@@ -135,13 +144,25 @@ export const getSwapTransaction = async (
     });
   } else if (quote.provider === QuoteProvider.FLOWX) {
     return getSwapTransactionWrapper(QuoteProvider.FLOWX, async () => {
-      if (!coinIn)
+      if (!coinIn) {
+        const allCoinsIn = await getAllCoins(
+          suiClient,
+          address,
+          quote.in.coinType,
+        );
+        const mergeCoinIn = mergeAllCoins(
+          quote.in.coinType,
+          transaction,
+          allCoinsIn,
+        );
+
         [coinIn] = transaction.splitCoins(
           isSui(quote.in.coinType)
             ? transaction.gas
             : transaction.object(mergeCoinIn.coinObjectId),
           [BigInt(quote.quote.amountIn.toString())],
         );
+      }
 
       const trade = new FlowXTradeBuilder("mainnet", quote.quote.routes)
         .slippage((slippagePercent / 100) * 1e6)
