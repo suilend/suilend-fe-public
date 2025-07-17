@@ -682,10 +682,8 @@ function Page() {
     else {
       setQuotesMap({});
 
-      const isReserve = !!appData.lendingMarket.reserves.find(
-        (r) => r.coinType === coinType,
-      );
-      setTokenSymbol(isReserve ? _token.symbol : _token.coinType, direction);
+      const hasReserve = !!appData.reserveMap[coinType];
+      setTokenSymbol(hasReserve ? _token.symbol : _token.coinType, direction);
 
       fetchQuotes(
         sdkMap,

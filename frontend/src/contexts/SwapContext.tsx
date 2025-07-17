@@ -115,26 +115,45 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   // Swap URL
   const [DEFAULT_TOKEN_IN, setDefaultTokenIn] = useLocalStorage<{
+    hasReserve: boolean;
     symbol: string;
     coinType: string;
   }>("swap_defaultTokenIn", {
+    hasReserve: true,
     symbol: "SUI",
     coinType: NORMALIZED_SUI_COINTYPE,
   });
   const [DEFAULT_TOKEN_OUT, setDefaultTokenOut] = useLocalStorage<{
+    hasReserve: boolean;
     symbol: string;
     coinType: string;
   }>("swap_defaultTokenOut", {
+    hasReserve: true,
     symbol: "SEND",
     coinType: NORMALIZED_SEND_COINTYPE,
   });
 
   const getSwapUrl = useCallback(
-    (
-      inSymbol: string = DEFAULT_TOKEN_IN.symbol,
-      outSymbol: string = DEFAULT_TOKEN_OUT.symbol,
-    ) => `${SWAP_URL}/${inSymbol}-${outSymbol}`,
-    [DEFAULT_TOKEN_IN.symbol, DEFAULT_TOKEN_OUT.symbol],
+    (inSymbol?: string, outSymbol?: string) =>
+      `${SWAP_URL}/${
+        inSymbol ??
+        (DEFAULT_TOKEN_IN.hasReserve
+          ? DEFAULT_TOKEN_IN.symbol
+          : DEFAULT_TOKEN_IN.coinType)
+      }-${
+        outSymbol ??
+        (DEFAULT_TOKEN_OUT.hasReserve
+          ? DEFAULT_TOKEN_OUT.symbol
+          : DEFAULT_TOKEN_OUT.coinType)
+      }`,
+    [
+      DEFAULT_TOKEN_IN.hasReserve,
+      DEFAULT_TOKEN_IN.symbol,
+      DEFAULT_TOKEN_IN.coinType,
+      DEFAULT_TOKEN_OUT.hasReserve,
+      DEFAULT_TOKEN_OUT.symbol,
+      DEFAULT_TOKEN_OUT.coinType,
+    ],
   );
 
   // USD prices - Historical
@@ -413,16 +432,21 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Tokens - defaults
   useEffect(() => {
     if (!tokenIn) return;
-    setDefaultTokenIn({ symbol: tokenIn.symbol, coinType: tokenIn.coinType });
-  }, [tokenIn, setDefaultTokenIn]);
+    setDefaultTokenIn({
+      hasReserve: !!appData.reserveMap[tokenIn.coinType],
+      symbol: tokenIn.symbol,
+      coinType: tokenIn.coinType,
+    });
+  }, [tokenIn, setDefaultTokenIn, appData.reserveMap]);
 
   useEffect(() => {
     if (!tokenOut) return;
     setDefaultTokenOut({
+      hasReserve: !!appData.reserveMap[tokenOut.coinType],
       symbol: tokenOut.symbol,
       coinType: tokenOut.coinType,
     });
-  }, [tokenOut, setDefaultTokenOut]);
+  }, [tokenOut, setDefaultTokenOut, appData.reserveMap]);
 
   // Context
   const contextValue: SwapContext = useMemo(
