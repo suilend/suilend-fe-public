@@ -13,6 +13,7 @@ import {
   ParsedObligation,
   Side,
   getFilteredRewards,
+  getNetAprPercent,
   getStakingYieldAprPercent,
   getTotalAprPercent,
 } from "@suilend/sdk";
@@ -34,6 +35,7 @@ import {
   formatList,
   formatPercent,
   formatToken,
+  formatUsd,
 } from "@suilend/sui-fe";
 import {
   showErrorToast,
@@ -44,7 +46,13 @@ import {
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
-import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
+import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -161,25 +169,25 @@ function LoopCard({
         if (currentExposure.times(1 + E).gte(targetExposure)) break;
 
         // 3.1) Borrow SUI
-        const stepMaxBorrowedSuiAmount = new BigNumber(
+        const stepMaxSuiBorrowedAmount = new BigNumber(
           new BigNumber(+sSuiOpenLtvPercent / 100).times(sSuiDepositedAmount),
         )
           .minus(suiBorrowedAmount)
           .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // SUI and sSUI use the same pyth feeds (=> same USD prices)
-        const stepMaxBorrowedSuiAmount_stakedForSsuiAmount = new BigNumber(
-          stepMaxBorrowedSuiAmount.minus(
-            getStakingFee(stepMaxBorrowedSuiAmount),
+        const stepMaxSuiBorrowedAmount_stakedForSsui = new BigNumber(
+          stepMaxSuiBorrowedAmount.minus(
+            getStakingFee(stepMaxSuiBorrowedAmount),
           ),
         )
           .times(suiToSsuiExchangeRate)
           .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxBorrowedAdditionalExposure =
-          stepMaxBorrowedSuiAmount_stakedForSsuiAmount.div(sSuiAmount);
+          stepMaxSuiBorrowedAmount_stakedForSsui.div(sSuiAmount);
 
-        const stepBorrowedSuiAmount = pendingExposure.gt(
+        const stepSuiBorrowedAmount = pendingExposure.gt(
           stepMaxBorrowedAdditionalExposure,
         )
-          ? stepMaxBorrowedSuiAmount
+          ? stepMaxSuiBorrowedAmount
           : pendingExposure
               .times(
                 sSuiAmount
@@ -187,15 +195,15 @@ function LoopCard({
                   .div(new BigNumber(1).minus(sSuiMintFeePercent.div(100))),
               )
               .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-        const isMaxBorrow = stepBorrowedSuiAmount.eq(stepMaxBorrowedSuiAmount);
+        const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
         console.log(
           `[LoopCard] loop - ${i} borrow |`,
           JSON.stringify(
             {
-              stepMaxBorrowedSuiAmount,
-              stepMaxBorrowedSuiAmount_stakedForSsuiAmount,
+              stepMaxSuiBorrowedAmount,
+              stepMaxSuiBorrowedAmount_stakedForSsui,
               stepMaxBorrowedAdditionalExposure,
-              stepBorrowedSuiAmount,
+              stepSuiBorrowedAmount,
               isMaxBorrow,
             },
             null,
@@ -209,27 +217,27 @@ function LoopCard({
           NORMALIZED_SUI_COINTYPE,
           isMaxBorrow
             ? MAX_U64.toString()
-            : stepBorrowedSuiAmount
+            : stepSuiBorrowedAmount
                 .times(10 ** SUI_DECIMALS)
                 .integerValue(BigNumber.ROUND_DOWN)
                 .toString(),
           transaction,
           false,
         );
-        suiBorrowedAmount = suiBorrowedAmount.plus(stepBorrowedSuiAmount);
+        suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
         // 3.2) Stake borrowed SUI for sSUI
         const sSuiCoin = lstClient.mint(transaction, borrowedSuiCoin);
 
         // 3.3) Deposit sSUI
-        const stepDepositedSsuiAmount = new BigNumber(
-          stepBorrowedSuiAmount.minus(getStakingFee(stepBorrowedSuiAmount)),
+        const stepSsuiDepositedAmount = new BigNumber(
+          stepSuiBorrowedAmount.minus(getStakingFee(stepSuiBorrowedAmount)),
         )
           .times(suiToSsuiExchangeRate)
           .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
         console.log(
           `[LoopCard] loop - ${i} deposit |`,
-          JSON.stringify({ stepDepositedSsuiAmount }, null, 2),
+          JSON.stringify({ stepSsuiDepositedAmount }, null, 2),
         );
 
         appData.suilendClient.deposit(
@@ -238,7 +246,7 @@ function LoopCard({
           obligationOwnerCap.id,
           transaction,
         );
-        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepDepositedSsuiAmount);
+        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
 
         currentExposure = sSuiDepositedAmount.div(sSuiAmount);
         pendingExposure = targetExposure.minus(currentExposure);
@@ -287,38 +295,38 @@ function LoopCard({
   const [exposure, setExposure] = useState<string>("3.00");
 
   // Calculations
-  const depositedSsuiAmount = useMemo(
+  const sSuiDepositedAmount = useMemo(
     () =>
       new BigNumber(amount || 0).times(exposure).times(suiToSsuiExchangeRate),
     [amount, exposure, suiToSsuiExchangeRate],
   );
-  const depositedSsuiAmountUsd = useMemo(
-    () => depositedSsuiAmount.times(sSuiReserve.price),
-    [depositedSsuiAmount, sSuiReserve.price],
+  const sSuiDepositedAmountUsd = useMemo(
+    () => sSuiDepositedAmount.times(sSuiReserve.price),
+    [sSuiDepositedAmount, sSuiReserve.price],
   );
 
-  const borrowedSuiAmount = useMemo(
+  const suiBorrowedAmount = useMemo(
     () =>
       new BigNumber(amount || 0).times(new BigNumber(exposure || 1).minus(1)),
     [amount, exposure],
   );
-  const borrowedSuiAmountUsd = useMemo(
-    () => borrowedSuiAmount.times(suiReserve.price),
-    [borrowedSuiAmount, suiReserve.price],
+  const suiBorrowedAmountUsd = useMemo(
+    () => suiBorrowedAmount.times(suiReserve.price),
+    [suiBorrowedAmount, suiReserve.price],
   );
 
   // Fees
-  const openFeesSuiAmount = useMemo(
-    () => borrowedSuiAmount.times(new BigNumber(suiBorrowFeePercent).div(100)),
-    [borrowedSuiAmount, suiBorrowFeePercent],
+  const suiOpenFeesAmount = useMemo(
+    () => suiBorrowedAmount.times(new BigNumber(suiBorrowFeePercent).div(100)),
+    [suiBorrowedAmount, suiBorrowFeePercent],
   );
 
-  const closeFeesSuiAmount = useMemo(
+  const suiCloseFeesAmount = useMemo(
     () =>
-      depositedSsuiAmount
+      sSuiDepositedAmount
         .times(sSuiRedeemFeePercent.div(100))
         .div(suiToSsuiExchangeRate),
-    [depositedSsuiAmount, sSuiRedeemFeePercent, suiToSsuiExchangeRate],
+    [sSuiDepositedAmount, sSuiRedeemFeePercent, suiToSsuiExchangeRate],
   );
 
   // APR
@@ -334,7 +342,7 @@ function LoopCard({
       ),
     );
     const weightedDepositAprPercent = depositAprPercent.times(
-      depositedSsuiAmountUsd,
+      sSuiDepositedAmountUsd,
     );
 
     const borrowAprPercent = getTotalAprPercent(
@@ -343,9 +351,9 @@ function LoopCard({
       getFilteredRewards(userData.rewardMap[NORMALIZED_SUI_COINTYPE].borrow),
     );
     const weightedBorrowAprPercent =
-      borrowAprPercent.times(borrowedSuiAmountUsd);
+      borrowAprPercent.times(suiBorrowedAmountUsd);
 
-    const tvlUsd = depositedSsuiAmountUsd.minus(borrowedSuiAmountUsd);
+    const tvlUsd = sSuiDepositedAmountUsd.minus(suiBorrowedAmountUsd);
 
     return !tvlUsd.eq(0)
       ? new BigNumber(
@@ -353,11 +361,11 @@ function LoopCard({
         ).div(tvlUsd)
       : new BigNumber(0);
   }, [
-    depositedSsuiAmountUsd,
+    sSuiDepositedAmountUsd,
     sSuiReserve.depositAprPercent,
     userData.rewardMap,
     allAppData.lstAprPercentMap,
-    borrowedSuiAmountUsd,
+    suiBorrowedAmountUsd,
     suiReserve.borrowAprPercent,
   ]);
 
@@ -397,7 +405,7 @@ function LoopCard({
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>Open fees (added to borrows)</TLabelSans>
           <TBody>
-            {formatToken(openFeesSuiAmount, { dp: SUI_DECIMALS })} SUI
+            {formatToken(suiOpenFeesAmount, { dp: SUI_DECIMALS })} SUI
           </TBody>
         </div>
 
@@ -405,7 +413,7 @@ function LoopCard({
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>Close fees (deducted when closing)</TLabelSans>
           <TBody>
-            {formatToken(closeFeesSuiAmount, { dp: SUI_DECIMALS })} SUI
+            {formatToken(suiCloseFeesAmount, { dp: SUI_DECIMALS })} SUI
           </TBody>
         </div>
 
@@ -453,10 +461,14 @@ function UnloopCard({
   const { explorer } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { refresh } = useLoadedUserContext();
+  const { allAppData, appData } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
-  // Unloop (fee: mintFee * exposure, e.g. 0.02% * 2.2x = 0.044%)
+  // Reserves
+  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
+
+  // Unloop
   const unloop = async () => {
     try {
       if (!address) throw Error("Wallet not connected");
@@ -550,7 +562,7 @@ function UnloopCard({
     }
   };
 
-  // Obligation
+  // Calculations
   const sSuiDeposit = obligation.deposits.find(
     (d) => d.coinType === NORMALIZED_sSUI_COINTYPE,
   )!;
@@ -558,13 +570,12 @@ function UnloopCard({
     (b) => b.coinType === NORMALIZED_SUI_COINTYPE,
   )!;
 
-  const sSuiDepositedAmount_inSui = sSuiDeposit.depositedAmount.div(
-    suiToSsuiExchangeRate,
-  );
+  const sSuiDepositedAmount = sSuiDeposit.depositedAmount;
   const suiBorrowedAmount = suiBorrow.borrowedAmount;
-  const tvlSui = sSuiDepositedAmount_inSui.minus(suiBorrowedAmount);
 
-  const currentExposure = sSuiDepositedAmount_inSui.div(tvlSui);
+  const currentExposure = obligation.depositedAmountUsd.div(
+    obligation.netValueUsd,
+  );
 
   return (
     <div className="flex w-full max-w-md flex-col gap-6">
@@ -575,24 +586,31 @@ function UnloopCard({
           <TLabelSans className="my-[2px]">Deposited</TLabelSans>
           <div className="flex flex-col items-end gap-1">
             <TBody>
-              {formatToken(sSuiDepositedAmount_inSui, { dp: SUI_DECIMALS })} SUI
+              {formatToken(sSuiDepositedAmount, { dp: SUI_DECIMALS })} sSUI
             </TBody>
-            <TLabelSans>in sSUI</TLabelSans>
+            <TLabel>
+              {formatUsd(sSuiDepositedAmount.times(sSuiReserve.price))}
+            </TLabel>
           </div>
         </div>
 
         {/* Borrowed SUI */}
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>Borrowed</TLabelSans>
-          <TBody>
-            {formatToken(suiBorrowedAmount, { dp: SUI_DECIMALS })} SUI
-          </TBody>
+          <div className="flex flex-col items-end gap-1">
+            <TBody>
+              {formatToken(suiBorrowedAmount, { dp: SUI_DECIMALS })} SUI
+            </TBody>
+            <TLabel>
+              {formatUsd(suiBorrowedAmount.times(suiReserve.price))}
+            </TLabel>
+          </div>
         </div>
 
-        {/* TVL SUI */}
+        {/* TVL */}
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>TVL</TLabelSans>
-          <TBody>{formatToken(tvlSui, { dp: SUI_DECIMALS })} SUI</TBody>
+          <TBody>{formatUsd(obligation.netValueUsd)}</TBody>
         </div>
 
         {/* Exposure */}
@@ -600,6 +618,22 @@ function UnloopCard({
           <TLabelSans>Exposure</TLabelSans>
           <TBody>
             {currentExposure.decimalPlaces(6, BigNumber.ROUND_DOWN).toString()}x
+          </TBody>
+        </div>
+
+        <UtilizationBar obligation={obligation} />
+
+        {/* Net APR */}
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <TLabelSans>APR</TLabelSans>
+          <TBody>
+            {formatPercent(
+              getNetAprPercent(
+                obligation,
+                userData.rewardMap,
+                allAppData.lstAprPercentMap,
+              ),
+            )}
           </TBody>
         </div>
       </div>
