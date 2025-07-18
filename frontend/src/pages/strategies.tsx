@@ -513,6 +513,7 @@ function LoopCard({
 interface UnloopCardProps {
   lstClient: LstClient;
   sSuiRedeemFeePercent: BigNumber;
+  suiToSsuiExchangeRate: BigNumber;
   obligation: ParsedObligation;
   obligationOwnerCap: ObligationOwnerCap<string>;
 }
@@ -520,6 +521,7 @@ interface UnloopCardProps {
 function UnloopCard({
   lstClient,
   sSuiRedeemFeePercent,
+  suiToSsuiExchangeRate,
   obligation,
   obligationOwnerCap,
 }: UnloopCardProps) {
@@ -544,6 +546,10 @@ function UnloopCard({
   // Stats
   const sSuiDepositedAmount = sSuiDeposit.depositedAmount;
   const suiBorrowedAmount = suiBorrow.borrowedAmount;
+
+  const sizeSuiAmount = new BigNumber(
+    sSuiDepositedAmount.div(suiToSsuiExchangeRate),
+  ).minus(suiBorrowedAmount);
 
   const aprPercent = getNetAprPercent(
     obligation,
@@ -676,11 +682,11 @@ function UnloopCard({
       {/* Stats */}
       <div className="flex w-full flex-col gap-3">
         {/* Deposited sSUI */}
-        <div className="flex w-full flex-row items-start justify-between gap-2">
+        <div className="flex w-full flex-row items-start justify-between gap-2 opacity-50">
           <TLabelSans className="my-[2px]">Deposited</TLabelSans>
           <div className="flex flex-col items-end gap-1">
             <TBody>
-              {formatToken(sSuiDepositedAmount, { dp: SUI_DECIMALS })} sSUI
+              {formatToken(sSuiDepositedAmount, { dp: sSUI_DECIMALS })} sSUI
             </TBody>
             <TLabel>
               {formatUsd(sSuiDepositedAmount.times(sSuiReserve.price))}
@@ -689,7 +695,7 @@ function UnloopCard({
         </div>
 
         {/* Borrowed SUI */}
-        <div className="flex w-full flex-row items-center justify-between gap-2">
+        <div className="flex w-full flex-row items-center justify-between gap-2 opacity-50">
           <TLabelSans>Borrowed</TLabelSans>
           <div className="flex flex-col items-end gap-1">
             <TBody>
@@ -698,6 +704,17 @@ function UnloopCard({
             <TLabel>
               {formatUsd(suiBorrowedAmount.times(suiReserve.price))}
             </TLabel>
+          </div>
+        </div>
+
+        {/* Size */}
+        <div className="flex w-full flex-row items-start justify-between gap-2">
+          <TLabelSans className="my-[2px]">Size</TLabelSans>
+          <div className="flex flex-col items-end gap-1">
+            <TBody>
+              {formatToken(sizeSuiAmount, { dp: SUI_DECIMALS })} SUI
+            </TBody>
+            <TLabel>{formatUsd(sizeSuiAmount.times(suiReserve.price))}</TLabel>
           </div>
         </div>
 
@@ -714,7 +731,7 @@ function UnloopCard({
         </div>
 
         {/* Health */}
-        <div className="flex w-full flex-col gap-1.5">
+        <div className="flex w-full flex-col gap-2">
           <div className="flex w-full flex-row items-center justify-between gap-2">
             <TLabelSans>Health</TLabelSans>
             <TBody>{formatPercent(healthPercent)}</TBody>
@@ -921,6 +938,7 @@ function Page() {
           <>
             {!lstClient ||
             !redeemFeePercent ||
+            !suiToSsuiExchangeRate ||
             !obligation ||
             !obligationOwnerCap ? (
               <Skeleton className="h-16 w-64" />
@@ -928,6 +946,7 @@ function Page() {
               <UnloopCard
                 lstClient={lstClient}
                 sSuiRedeemFeePercent={redeemFeePercent}
+                suiToSsuiExchangeRate={suiToSsuiExchangeRate}
                 obligation={obligation}
                 obligationOwnerCap={obligationOwnerCap}
               />
