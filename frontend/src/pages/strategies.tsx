@@ -9,7 +9,13 @@ import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { ParsedObligation } from "@suilend/sdk";
+import {
+  ParsedObligation,
+  Side,
+  getFilteredRewards,
+  getStakingYieldAprPercent,
+  getTotalAprPercent,
+} from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import {
   LiquidStakingObjectInfo,
@@ -26,6 +32,7 @@ import {
   NORMALIZED_sSUI_COINTYPE,
   TX_TOAST_DURATION,
   formatList,
+  formatPercent,
   formatToken,
 } from "@suilend/sui-fe";
 import {
@@ -66,8 +73,8 @@ function LoopCard({
 }: LoopCardProps) {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { refresh } = useLoadedUserContext();
+  const { allAppData, appData } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
   // Reserves
   const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -277,25 +284,87 @@ function LoopCard({
 
   // State
   const [amount, setAmount] = useState<string>("0.5");
-  const [exposure, setExposure] = useState<string>("2.50");
+  const [exposure, setExposure] = useState<string>("3.00");
+
+  // Calculations
+  const depositedSsuiAmount = useMemo(
+    () =>
+      new BigNumber(amount || 0).times(exposure).times(suiToSsuiExchangeRate),
+    [amount, exposure, suiToSsuiExchangeRate],
+  );
+  const depositedSsuiAmountUsd = useMemo(
+    () => depositedSsuiAmount.times(sSuiReserve.price),
+    [depositedSsuiAmount, sSuiReserve.price],
+  );
+
+  const borrowedSuiAmount = useMemo(
+    () =>
+      new BigNumber(amount || 0).times(new BigNumber(exposure || 1).minus(1)),
+    [amount, exposure],
+  );
+  const borrowedSuiAmountUsd = useMemo(
+    () => borrowedSuiAmount.times(suiReserve.price),
+    [borrowedSuiAmount, suiReserve.price],
+  );
 
   // Fees
-  const openFees = useMemo(() => {
-    return new BigNumber(amount || 0)
-      .times(new BigNumber(exposure).minus(1))
-      .times(new BigNumber(suiBorrowFeePercent).div(100));
-  }, [amount, exposure, suiBorrowFeePercent]);
+  const openFeesSuiAmount = useMemo(
+    () => borrowedSuiAmount.times(new BigNumber(suiBorrowFeePercent).div(100)),
+    [borrowedSuiAmount, suiBorrowFeePercent],
+  );
 
-  const closeFees = useMemo(() => {
-    return new BigNumber(amount || 0)
-      .times(new BigNumber(exposure))
-      .times(new BigNumber(sSuiRedeemFeePercent).div(100));
-  }, [amount, exposure, sSuiRedeemFeePercent]);
+  const closeFeesSuiAmount = useMemo(
+    () =>
+      depositedSsuiAmount
+        .times(sSuiRedeemFeePercent.div(100))
+        .div(suiToSsuiExchangeRate),
+    [depositedSsuiAmount, sSuiRedeemFeePercent, suiToSsuiExchangeRate],
+  );
+
+  // APR
+  const netAprPercent = useMemo(() => {
+    const depositAprPercent = getTotalAprPercent(
+      Side.DEPOSIT,
+      sSuiReserve.depositAprPercent,
+      getFilteredRewards(userData.rewardMap[NORMALIZED_sSUI_COINTYPE].deposit),
+      getStakingYieldAprPercent(
+        Side.DEPOSIT,
+        NORMALIZED_sSUI_COINTYPE,
+        allAppData.lstAprPercentMap,
+      ),
+    );
+    const weightedDepositAprPercent = depositAprPercent.times(
+      depositedSsuiAmountUsd,
+    );
+
+    const borrowAprPercent = getTotalAprPercent(
+      Side.BORROW,
+      suiReserve.borrowAprPercent,
+      getFilteredRewards(userData.rewardMap[NORMALIZED_SUI_COINTYPE].borrow),
+    );
+    const weightedBorrowAprPercent =
+      borrowAprPercent.times(borrowedSuiAmountUsd);
+
+    const tvlUsd = depositedSsuiAmountUsd.minus(borrowedSuiAmountUsd);
+
+    return !tvlUsd.eq(0)
+      ? new BigNumber(
+          weightedDepositAprPercent.minus(weightedBorrowAprPercent),
+        ).div(tvlUsd)
+      : new BigNumber(0);
+  }, [
+    depositedSsuiAmountUsd,
+    sSuiReserve.depositAprPercent,
+    userData.rewardMap,
+    allAppData.lstAprPercentMap,
+    borrowedSuiAmountUsd,
+    suiReserve.borrowAprPercent,
+  ]);
 
   return (
     <div className="flex w-full max-w-md flex-col gap-6">
       <div className="flex w-full flex-col gap-1">
-        <TBodySans>2.5x sSUI/SUI</TBodySans>
+        <TBodySans>3x sSUI/SUI</TBodySans>
         <TLabelSans>
           Loops sSUI/SUI by depositing sSUI and borrowing SUI
         </TLabelSans>
@@ -322,18 +391,28 @@ function LoopCard({
         />
       </div>
 
-      {/* Fees */}
+      {/* Stats */}
       <div className="flex w-full flex-col gap-3">
-        {/* Open */}
+        {/* Open fees */}
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>Open fees (added to borrows)</TLabelSans>
-          <TBody>{formatToken(openFees, { dp: SUI_DECIMALS })} SUI</TBody>
+          <TBody>
+            {formatToken(openFeesSuiAmount, { dp: SUI_DECIMALS })} SUI
+          </TBody>
         </div>
 
-        {/* Close */}
+        {/* Close fees */}
         <div className="flex w-full flex-row items-center justify-between gap-2">
           <TLabelSans>Close fees (deducted when closing)</TLabelSans>
-          <TBody>{formatToken(closeFees, { dp: SUI_DECIMALS })} SUI</TBody>
+          <TBody>
+            {formatToken(closeFeesSuiAmount, { dp: SUI_DECIMALS })} SUI
+          </TBody>
+        </div>
+
+        {/* Net APR */}
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <TLabelSans>APR</TLabelSans>
+          <TBody>{formatPercent(netAprPercent)}</TBody>
         </div>
       </div>
 
