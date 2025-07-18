@@ -5,7 +5,7 @@ import { Ban, X } from "lucide-react";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { ParsedPoolReward } from "@suilend/sdk/parsers/reserve";
-import { formatNumber } from "@suilend/sui-fe";
+import { formatInteger, formatNumber } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import DataTable, {
@@ -25,6 +25,7 @@ interface RowData {
   totalRewards: BigNumber;
   allocatedRewards: BigNumber;
   cumulativeRewardsPerShare: BigNumber;
+  numUserRewardManagers: number;
   mintDecimals: number;
   symbol: string;
   poolReward: ParsedPoolReward;
@@ -162,6 +163,26 @@ export default function PoolRewardsTable({
             )}
           >
             {formatNumber(cumulativeRewardsPerShare, { dp: 20, exact: true })}
+          </TBody>
+        );
+      },
+    },
+    {
+      accessorKey: "numUserRewardManagers",
+      sortingFn: decimalSortingFn("numUserRewardManagers"),
+      header: ({ column }) =>
+        tableHeader(column, "# User Reward Managers", { isNumerical: true }),
+      cell: ({ row }) => {
+        const { endTime, numUserRewardManagers } = row.original;
+
+        return (
+          <TBody
+            className={cn(
+              "text-right",
+              endTime.getTime() < Date.now() && "opacity-25",
+            )}
+          >
+            {formatInteger(numUserRewardManagers)}
           </TBody>
         );
       },
