@@ -123,7 +123,8 @@ export default function HistoryTabContent({
                 )}
               </TBodySans>
               {(eventType === EventType.CLAIM_REWARD ||
-                eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS) &&
+                eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS ||
+                eventType === EventType.CLAIM_AND_REPAY_REWARDS) &&
                 autoclaimDigests?.includes(event.digest) && (
                   <div className="flex flex-row items-center gap-[5px]">
                     <div className="h-max w-max opacity-55">
@@ -207,11 +208,25 @@ export default function HistoryTabContent({
 
               return coinTypes.some((coinType) => value.includes(coinType));
             } else return true;
+          } else if (eventType === EventType.CLAIM_AND_REPAY_REWARDS) {
+            if (row.subRows.length > 0) {
+              const coinTypes = row.subRows.reduce(
+                (acc, subRow) => [
+                  ...acc,
+                  (subRow.original.event as ApiRepayEvent | ApiClaimRewardEvent)
+                    .coinType,
+                ],
+                [] as string[],
+              );
+
+              return coinTypes.some((coinType) => value.includes(coinType));
+            } else return true;
           }
 
           // Sub rows are only not shown if the parent row is filtered out
           if (
             eventType === EventType.DEPOSIT_SUB_ROW ||
+            eventType === EventType.REPAY_SUB_ROW ||
             eventType === EventType.CLAIM_REWARD_SUB_ROW
           )
             return true;
@@ -596,6 +611,78 @@ export default function HistoryTabContent({
                 </div>
               </div>
             );
+          } else if (eventType === EventType.CLAIM_AND_REPAY_REWARDS) {
+            const repaySubRows = row.subRows.filter(
+              (subRow) => subRow.original.eventType === EventType.REPAY_SUB_ROW,
+            );
+            const claimRewardSubRows = row.subRows.filter(
+              (subRow) =>
+                subRow.original.eventType === EventType.CLAIM_REWARD_SUB_ROW,
+            );
+
+            const repaidAmountMap: Record<string, BigNumber> = {};
+            const claimedAmountMap: Record<string, BigNumber> = {};
+
+            for (const subRow of repaySubRows) {
+              const subRowRepayEvent = subRow.original.event as ApiRepayEvent;
+              const coinMetadata =
+                appData.coinMetadataMap[subRowRepayEvent.coinType];
+
+              const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
+                (e) =>
+                  e.digest === subRowRepayEvent.digest &&
+                  e.coinType === subRowRepayEvent.coinType,
+              );
+              if (!reserveAssetDataEvent)
+                return <TLabelSans className="w-max">N/A</TLabelSans>;
+
+              repaidAmountMap[subRowRepayEvent.coinType] = (
+                repaidAmountMap[subRowRepayEvent.coinType] ?? new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowRepayEvent.liquidityAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
+
+            for (const subRow of claimRewardSubRows) {
+              const subRowClaimRewardEvent = subRow.original
+                .event as ApiClaimRewardEvent;
+              const coinMetadata =
+                appData.coinMetadataMap[subRowClaimRewardEvent.coinType];
+
+              claimedAmountMap[subRowClaimRewardEvent.coinType] = (
+                claimedAmountMap[subRowClaimRewardEvent.coinType] ??
+                new BigNumber(0)
+              ).plus(
+                new BigNumber(subRowClaimRewardEvent.liquidityAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
+
+            return (
+              <div className="flex w-max flex-col gap-2">
+                {/* Claimed */}
+                <div className="flex w-max flex-row gap-4">
+                  <div className="flex w-max flex-col gap-1">
+                    {Object.entries(claimedAmountMap).map(
+                      ([coinType, value]) => {
+                        const coinMetadata = appData.coinMetadataMap[coinType];
+
+                        return (
+                          <TokenAmount
+                            key={coinType}
+                            amount={value}
+                            token={getToken(coinType, coinMetadata)}
+                          />
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
           }
 
           return null;
@@ -669,6 +756,17 @@ export default function HistoryTabContent({
     for (let i = 0; i < sortedRows.length; i++) {
       const row = sortedRows[i];
 
+      // console.log(
+      //   "XXXX",
+      //   i,
+      //   row.eventType,
+      //   JSON.stringify(
+      //     finalRows.map((r) => r.eventType),
+      //     null,
+      //     2,
+      //   ),
+      // );
+
       switch (row.eventType) {
         // Group DEPOSIT events by digest
         case EventType.DEPOSIT: {
@@ -692,6 +790,35 @@ export default function HistoryTabContent({
             } else {
               if (lastRow.eventType === EventType.CLAIM_REWARD)
                 lastRow.eventType = EventType.CLAIM_AND_DEPOSIT_REWARDS;
+              (lastRow.subRows as RowData[]).push(row);
+            }
+          }
+
+          break;
+        }
+
+        // Group REPAY events by digest
+        case EventType.REPAY: {
+          const repayEvent = row.event as ApiRepayEvent;
+
+          const lastRow = finalRows[finalRows.length - 1];
+          if (
+            !lastRow ||
+            (lastRow.eventType !== EventType.REPAY &&
+              lastRow.eventType !== EventType.CLAIM_REWARD &&
+              lastRow.eventType !== EventType.CLAIM_AND_REPAY_REWARDS)
+          )
+            finalRows.push({ ...row, subRows: [row] });
+          else {
+            const lastEvent = lastRow.event as
+              | ApiRepayEvent
+              | ApiClaimRewardEvent;
+
+            if (lastEvent.digest !== repayEvent.digest) {
+              finalRows.push({ ...row, subRows: [row] });
+            } else {
+              if (lastRow.eventType === EventType.CLAIM_REWARD)
+                lastRow.eventType = EventType.CLAIM_AND_REPAY_REWARDS;
               (lastRow.subRows as RowData[]).push(row);
             }
           }
@@ -732,13 +859,16 @@ export default function HistoryTabContent({
           if (
             !lastRow ||
             (lastRow.eventType !== EventType.DEPOSIT &&
+              lastRow.eventType !== EventType.REPAY &&
               lastRow.eventType !== EventType.CLAIM_REWARD &&
-              lastRow.eventType !== EventType.CLAIM_AND_DEPOSIT_REWARDS)
+              lastRow.eventType !== EventType.CLAIM_AND_DEPOSIT_REWARDS &&
+              lastRow.eventType !== EventType.CLAIM_AND_REPAY_REWARDS)
           )
             finalRows.push({ ...row, subRows: [row] });
           else {
             const lastEvent = lastRow.event as
               | ApiDepositEvent
+              | ApiRepayEvent
               | ApiClaimRewardEvent;
 
             if (lastEvent.digest !== claimRewardEvent.digest) {
@@ -746,6 +876,8 @@ export default function HistoryTabContent({
             } else {
               if (lastRow.eventType === EventType.DEPOSIT)
                 lastRow.eventType = EventType.CLAIM_AND_DEPOSIT_REWARDS;
+              else if (lastRow.eventType === EventType.REPAY)
+                lastRow.eventType = EventType.CLAIM_AND_REPAY_REWARDS;
               (lastRow.subRows as RowData[]).push(row);
             }
           }
@@ -770,9 +902,22 @@ export default function HistoryTabContent({
                   : EventType.CLAIM_REWARD_SUB_ROW,
             })),
           }
-        : row,
+        : row.eventType === EventType.CLAIM_AND_REPAY_REWARDS
+          ? {
+              ...row,
+              subRows: (row.subRows as RowData[]).map((subRow) => ({
+                ...subRow,
+                eventType:
+                  subRow.eventType === EventType.REPAY
+                    ? EventType.REPAY_SUB_ROW
+                    : EventType.CLAIM_REWARD_SUB_ROW,
+              })),
+            }
+          : row,
     );
   }, [eventsData]);
+
+  console.log("XXX", rows);
 
   // Filters
   const [filteredOutEventTypes, setFilteredOutEventTypes] = useLocalStorage<
@@ -821,6 +966,11 @@ export default function HistoryTabContent({
       ).length > 0
     )
       result.push(EventType.CLAIM_AND_DEPOSIT_REWARDS);
+    if (
+      rows.filter((row) => row.eventType === EventType.CLAIM_AND_REPAY_REWARDS)
+        .length > 0
+    )
+      result.push(EventType.CLAIM_AND_REPAY_REWARDS);
 
     return result;
   }, [rows]);
@@ -967,6 +1117,7 @@ export default function HistoryTabContent({
                 value: [
                   ...eventTypes,
                   EventType.DEPOSIT_SUB_ROW,
+                  EventType.REPAY_SUB_ROW,
                   EventType.CLAIM_REWARD_SUB_ROW,
                 ].filter(isNotFilteredOutEventType),
               },
@@ -1007,6 +1158,7 @@ export default function HistoryTabContent({
                     EventType.LIQUIDATE,
                     EventType.CLAIM_REWARD,
                     EventType.CLAIM_AND_DEPOSIT_REWARDS,
+                    EventType.CLAIM_AND_REPAY_REWARDS,
                   ].includes(cell.row.original.eventType)
                   ? "py-2 h-auto"
                   : "py-0 h-12",
