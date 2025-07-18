@@ -37,7 +37,7 @@ import {
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -47,8 +47,8 @@ const sSUI_DECIMALS = 9;
 
 interface LoopCardProps {
   lstClient: LstClient;
-  sSuiOpenLtvPercent: BigNumber;
   sSuiMintFeePercent: BigNumber;
+  sSuiRedeemFeePercent: BigNumber;
   suiToSsuiExchangeRate: BigNumber;
   getStakingFee: (suiAmount: BigNumber) => BigNumber;
   obligation: ParsedObligation;
@@ -57,8 +57,8 @@ interface LoopCardProps {
 
 function LoopCard({
   lstClient,
-  sSuiOpenLtvPercent,
   sSuiMintFeePercent,
+  sSuiRedeemFeePercent,
   suiToSsuiExchangeRate,
   getStakingFee,
   obligation,
@@ -69,7 +69,18 @@ function LoopCard({
   const { appData } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
 
-  // Loop (no fees)
+  // Reserves
+  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
+
+  const suiBorrowFeePercent = new BigNumber(suiReserve.config.borrowFeeBps).div(
+    100,
+  );
+  const sSuiOpenLtvPercent = new BigNumber(sSuiReserve.config.openLtvPct).times(
+    sSuiReserve.minPrice.div(sSuiReserve.maxPrice),
+  );
+
+  // Loop
   const loop = async (suiAmount: BigNumber, targetExposure: BigNumber) => {
     try {
       if (!address) throw Error("Wallet not connected");
@@ -266,10 +277,30 @@ function LoopCard({
 
   // State
   const [amount, setAmount] = useState<string>("0.5");
-  const [exposure, setExposure] = useState<string>("3.00");
+  const [exposure, setExposure] = useState<string>("2.50");
+
+  // Fees
+  const openFees = useMemo(() => {
+    return new BigNumber(amount || 0)
+      .times(new BigNumber(exposure).minus(1))
+      .times(new BigNumber(suiBorrowFeePercent).div(100));
+  }, [amount, exposure, suiBorrowFeePercent]);
+
+  const closeFees = useMemo(() => {
+    return new BigNumber(amount || 0)
+      .times(new BigNumber(exposure))
+      .times(new BigNumber(sSuiRedeemFeePercent).div(100));
+  }, [amount, exposure, sSuiRedeemFeePercent]);
 
   return (
     <div className="flex w-full max-w-md flex-col gap-6">
+      <div className="flex w-full flex-col gap-1">
+        <TBodySans>2.5x sSUI/SUI</TBodySans>
+        <TLabelSans>
+          Loops sSUI/SUI by depositing sSUI and borrowing SUI
+        </TLabelSans>
+      </div>
+
       {/* Config */}
       <div className="flex w-full flex-col gap-3">
         {/* Amount */}
@@ -289,6 +320,21 @@ function LoopCard({
           onChange={setExposure}
           endDecorator="x"
         />
+      </div>
+
+      {/* Fees */}
+      <div className="flex w-full flex-col gap-3">
+        {/* Open */}
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <TLabelSans>Open fees (added to borrows)</TLabelSans>
+          <TBody>{formatToken(openFees, { dp: SUI_DECIMALS })} SUI</TBody>
+        </div>
+
+        {/* Close */}
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <TLabelSans>Close fees (deducted when closing)</TLabelSans>
+          <TBody>{formatToken(closeFees, { dp: SUI_DECIMALS })} SUI</TBody>
+        </div>
       </div>
 
       {/* Submit */}
@@ -494,12 +540,9 @@ function UnloopCard({
 
 function Page() {
   const { suiClient } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
 
   // sSUI
-  const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
-
   const [lstClient, setLstClient] = useState<LstClient | undefined>(undefined);
   const [liquidStakingInfo, setLiquidStakingInfo] = useState<
     LiquidStakingInfo<string> | undefined
@@ -546,6 +589,15 @@ function Page() {
         ? undefined
         : new BigNumber(
             liquidStakingInfo.feeConfig.element?.suiMintFeeBps.toString() ?? 0,
+          ).div(100),
+    [liquidStakingInfo],
+  );
+  const redeemFeePercent = useMemo(
+    () =>
+      liquidStakingInfo === undefined
+        ? undefined
+        : new BigNumber(
+            liquidStakingInfo.feeConfig.element?.redeemFeeBps.toString() ?? 0,
           ).div(100),
     [liquidStakingInfo],
   );
@@ -600,6 +652,7 @@ function Page() {
           <>
             {!lstClient ||
             !mintFeePercent ||
+            !redeemFeePercent ||
             !suiToSsuiExchangeRate ||
             !obligation ||
             !obligationOwnerCap ? (
@@ -607,10 +660,8 @@ function Page() {
             ) : (
               <LoopCard
                 lstClient={lstClient}
-                sSuiOpenLtvPercent={new BigNumber(
-                  sSuiReserve.config.openLtvPct,
-                ).times(sSuiReserve.minPrice.div(sSuiReserve.maxPrice))}
                 sSuiMintFeePercent={mintFeePercent}
+                sSuiRedeemFeePercent={redeemFeePercent}
                 getStakingFee={getStakingFee}
                 suiToSsuiExchangeRate={suiToSsuiExchangeRate}
                 obligation={obligation}
