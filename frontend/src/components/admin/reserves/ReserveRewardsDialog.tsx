@@ -208,6 +208,7 @@ export default function ReserveRewardsDialog({
                     totalRewards: pr.totalRewards,
                     allocatedRewards: pr.allocatedRewards,
                     cumulativeRewardsPerShare: pr.cumulativeRewardsPerShare,
+                    numUserRewardManagers: Number(pr.numUserRewardManagers),
                     mintDecimals: pr.mintDecimals,
                     symbol: pr.symbol,
                     poolReward: pr,
