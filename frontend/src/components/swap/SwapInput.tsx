@@ -28,7 +28,8 @@ interface SwapInputProps {
   token: Token;
   onSelectToken: (token: Token) => void;
   disabledCoinTypes?: string[];
-  onAmountClick?: () => void;
+  onMaxClick?: () => void;
+  onHalfClick?: () => void;
 }
 
 const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
@@ -44,7 +45,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       token,
       onSelectToken,
       disabledCoinTypes,
-      onAmountClick,
+      onMaxClick,
+      onHalfClick,
     },
     ref,
   ) => {
@@ -142,13 +144,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                 disabledCoinTypes={disabledCoinTypes}
               />
 
-              <div
-                className={cn(
-                  "flex flex-row items-center gap-3 pr-1",
-                  onAmountClick && "cursor-pointer",
-                )}
-                onClick={onAmountClick}
-              >
+              <div className="flex flex-row items-center gap-3 pr-1.5">
                 {(swapInAccount || direction === TokenDirection.OUT) && (
                   <>
                     {/* Deposited */}
@@ -183,6 +179,26 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                         : formatToken(tokenBalance, { exact: false })}
                     </TLabel>
                   </div>
+                )}
+
+                {/* MAX */}
+                {direction === TokenDirection.IN && (
+                  <>
+                    <div className="h-3.5 w-px bg-muted/50" />
+
+                    <TLabel
+                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border px-1.5 py-[3px] transition-colors hover:text-secondary"
+                      onClick={() => onHalfClick?.()}
+                    >
+                      HALF
+                    </TLabel>
+                    <TLabel
+                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border p-1 px-1.5 py-[3px] transition-colors hover:text-secondary"
+                      onClick={() => onMaxClick?.()}
+                    >
+                      MAX
+                    </TLabel>
+                  </>
                 )}
               </div>
             </div>

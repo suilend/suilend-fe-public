@@ -348,10 +348,15 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         ? tokenOut
         : tokens?.find((t) => t.coinType === DEFAULT_TOKEN_OUT.coinType);
 
-      if (newTokenIn?.coinType === newTokenOut?.coinType)
+      if (newTokenIn?.coinType === newTokenOut?.coinType) {
         newTokenOut = tokens?.find(
           (t) => t.coinType === DEFAULT_TOKEN_IN.coinType,
         );
+        if (newTokenIn?.coinType === newTokenOut?.coinType)
+          newTokenOut = tokens?.find(
+            (t) => t.coinType === DEFAULT_TOKEN_OUT.coinType,
+          );
+      }
 
       if (!newTokenIn || !newTokenOut) return [undefined, undefined];
 

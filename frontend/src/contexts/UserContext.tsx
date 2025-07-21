@@ -338,8 +338,6 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const autoclaimRewards = useCallback(
     async (transaction: Transaction) => {
-      // return { transaction, onSuccess: () => {} }; // turning off autoclaim while running the script
-
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
       if (!obligationsWithUnclaimedRewards)
         return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet or fails to load
