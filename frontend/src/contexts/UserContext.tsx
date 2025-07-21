@@ -389,8 +389,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
         (acc, rewards) => acc + rewards.length,
         0,
       );
-      if (count === 0)
-        return { transaction: innerTransaction, onSuccess: () => {} }; // Skip if no rewards to autoclaim
+      if (count === 0) return { transaction, onSuccess: () => {} }; // Skip if no rewards to autoclaim
 
       try {
         await dryRunTransaction(innerTransaction);
@@ -404,7 +403,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
         };
       } catch (err) {
         track("autoclaim_rewards_dry_run_error");
-        return { transaction: innerTransaction, onSuccess: () => {} };
+        return { transaction, onSuccess: () => {} };
       }
     },
     [
