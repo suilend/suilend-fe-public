@@ -187,16 +187,16 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                     <div className="h-3.5 w-px bg-muted/50" />
 
                     <TLabel
-                      className="-m-1.5 cursor-pointer p-1.5 transition-colors hover:text-secondary"
-                      onClick={() => onMaxClick?.()}
-                    >
-                      MAX
-                    </TLabel>
-                    <TLabel
-                      className="-m-1.5 cursor-pointer p-1.5 transition-colors hover:text-secondary"
+                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border px-1.5 py-[3px] transition-colors hover:text-secondary"
                       onClick={() => onHalfClick?.()}
                     >
                       HALF
+                    </TLabel>
+                    <TLabel
+                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border p-1 px-1.5 py-[3px] transition-colors hover:text-secondary"
+                      onClick={() => onMaxClick?.()}
+                    >
+                      MAX
                     </TLabel>
                   </>
                 )}
