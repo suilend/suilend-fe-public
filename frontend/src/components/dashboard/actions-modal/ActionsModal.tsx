@@ -230,7 +230,7 @@ export default function ActionsModal() {
         <div
           className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
           style={{
-            height: `calc(100dvh - ${2 * 4 /* Margin top */}px - ${0 /* Drawer border-top */}px - ${16 /* Dialog padding-top */}px - ${62 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${16 /* Dialog padding-bottom */}px - ${2 * 4 /* Margin bottom */}px - ${1 /* Dialog border-bottom */}px)`,
+            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
         >
           {reserve && tabConfig && (
