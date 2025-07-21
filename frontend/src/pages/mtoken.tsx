@@ -221,7 +221,7 @@ function Page() {
               <br />
               - Publish a new mToken type for the new series
               <br />
-              - On Suiscan, find the necesssary fields for the new series
+              - On Suiscan, find the necessary fields for the new series
               <br />- Mint the new mTokens with those fields
             </p>
           </div>
