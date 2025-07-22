@@ -205,12 +205,6 @@ function Page() {
     return result;
   })();
 
-  const tokenInMaxAmount = BigNumber.max(
-    new BigNumber(0),
-    BigNumber.min(
-      ...Object.values(tokenInMaxCalculations).map((calc) => calc.value),
-    ),
-  ).toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
   const tokenInHalfAmount = BigNumber.max(
     new BigNumber(0),
     BigNumber.min(
@@ -219,6 +213,12 @@ function Page() {
   )
     .div(2)
     .toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
+  const tokenInMaxAmount = BigNumber.max(
+    new BigNumber(0),
+    BigNumber.min(
+      ...Object.values(tokenInMaxCalculations).map((calc) => calc.value),
+    ),
+  ).toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
 
   // Slippage
   const [slippagePercent, setSlippagePercent] = useLocalStorage<string>(
@@ -400,15 +400,6 @@ function Page() {
     else setQuotesMap({});
   };
 
-  const useMaxValueWrapper = () => {
-    formatAndSetValue(tokenInMaxAmount, tokenIn);
-
-    if (new BigNumber(tokenInMaxAmount).gt(0))
-      fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, tokenInMaxAmount);
-    else setQuotesMap({});
-
-    inputRef.current?.focus();
-  };
   const useHalfValueWrapper = () => {
     formatAndSetValue(tokenInHalfAmount, tokenIn);
 
@@ -420,6 +411,15 @@ function Page() {
         tokenOut,
         tokenInHalfAmount,
       );
+    else setQuotesMap({});
+
+    inputRef.current?.focus();
+  };
+  const useMaxValueWrapper = () => {
+    formatAndSetValue(tokenInMaxAmount, tokenIn);
+
+    if (new BigNumber(tokenInMaxAmount).gt(0))
+      fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, tokenInMaxAmount);
     else setQuotesMap({});
 
     inputRef.current?.focus();
@@ -1555,8 +1555,8 @@ function Page() {
                     ? [tokenOut.coinType]
                     : undefined
                 }
-                onMaxClick={useMaxValueWrapper}
                 onHalfClick={useHalfValueWrapper}
+                onMaxClick={useMaxValueWrapper}
               />
             </div>
 

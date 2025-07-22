@@ -457,7 +457,7 @@ export default function TokenSelectionDialog({
       trigger={
         <Button
           className={cn(
-            "group h-auto p-0 hover:bg-transparent",
+            "group/token-selection-dialog-trigger h-auto p-0 hover:bg-transparent",
             triggerClassName,
           )}
           labelClassName={cn(
@@ -469,7 +469,7 @@ export default function TokenSelectionDialog({
           endIcon={
             <ChevronDown
               className={cn(
-                "h-4 w-4 text-foreground/50 transition-colors group-hover:text-foreground",
+                "h-4 w-4 text-foreground/50 transition-colors group-hover/token-selection-dialog-trigger:text-foreground",
                 triggerChevronClassName,
               )}
             />
