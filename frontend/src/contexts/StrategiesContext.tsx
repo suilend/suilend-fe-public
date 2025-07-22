@@ -72,9 +72,7 @@ interface StrategiesContext {
     suiAmount: BigNumber,
     targetExposure: BigNumber,
   ) => [BigNumber, BigNumber];
-  getSsuiSuiStrategyDepositedSuiAmount: (
-    obligation?: ParsedObligation,
-  ) => BigNumber;
+  getSsuiSuiStrategyTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
   getSsuiSuiStrategyAprPercent: (obligation?: ParsedObligation) => BigNumber;
   getSsuiSuiStrategyHealthPercent: (obligation?: ParsedObligation) => BigNumber;
 }
@@ -110,7 +108,7 @@ const defaultContextValue: StrategiesContext = {
   getDepositedBorrowedAmounts: () => {
     throw Error("StrategiesContextProvider not initialized");
   },
-  getSsuiSuiStrategyDepositedSuiAmount: () => {
+  getSsuiSuiStrategyTvlSuiAmount: () => {
     throw Error("StrategiesContextProvider not initialized");
   },
   getSsuiSuiStrategyAprPercent: () => {
@@ -342,8 +340,8 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  // sSUI - Deposited
-  const getSsuiSuiStrategyDepositedSuiAmount = useCallback(
+  // sSUI - TVL
+  const getSsuiSuiStrategyTvlSuiAmount = useCallback(
     (_obligation?: ParsedObligation) => {
       if (isObligationSsuiSuiLooping(_obligation))
         return new BigNumber(
@@ -458,7 +456,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       getStepMaxSuiBorrowedAmount,
       getStepMaxSsuiDepositedAmount,
       getDepositedBorrowedAmounts,
-      getSsuiSuiStrategyDepositedSuiAmount,
+      getSsuiSuiStrategyTvlSuiAmount,
       getSsuiSuiStrategyAprPercent,
       getSsuiSuiStrategyHealthPercent,
     }),
@@ -474,7 +472,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       getStepMaxSuiBorrowedAmount,
       getStepMaxSsuiDepositedAmount,
       getDepositedBorrowedAmounts,
-      getSsuiSuiStrategyDepositedSuiAmount,
+      getSsuiSuiStrategyTvlSuiAmount,
       getSsuiSuiStrategyAprPercent,
       getSsuiSuiStrategyHealthPercent,
     ],

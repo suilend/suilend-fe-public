@@ -15,7 +15,7 @@ export default function SsuiStrategyCard() {
 
   const {
     isObligationSsuiSuiLooping,
-    getSsuiSuiStrategyDepositedSuiAmount,
+    getSsuiSuiStrategyTvlSuiAmount,
     getSsuiSuiStrategyAprPercent,
     getSsuiSuiStrategyHealthPercent,
   } = useLoadedStrategiesContext();
@@ -25,8 +25,8 @@ export default function SsuiStrategyCard() {
     "0xf8dfef417a82155d5cbf485c4e7e061ff11dc1ddfa1370c6a46f0d7dfe4017f0";
   const obligation = userData.obligations.find((o) => o.id === OBLIGATION_ID);
 
-  // Deposited
-  const depositedSuiAmount = getSsuiSuiStrategyDepositedSuiAmount(obligation);
+  // TVL
+  const tvlSuiAmount = getSsuiSuiStrategyTvlSuiAmount(obligation);
 
   // APR
   const aprPercent = getSsuiSuiStrategyAprPercent(obligation);
@@ -43,14 +43,14 @@ export default function SsuiStrategyCard() {
 
           {/* Right */}
           <div className="flex flex-row justify-end gap-6">
-            {depositedSuiAmount.gt(0) && (
+            {tvlSuiAmount.gt(0) && (
               <div className="flex w-fit flex-col items-end gap-1">
                 <TLabelSans>Deposited</TLabelSans>
                 <Tooltip
-                  title={`${formatToken(depositedSuiAmount, { dp: SUI_DECIMALS })} SUI`}
+                  title={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
                 >
                   <TBody className="text-right">
-                    {formatToken(depositedSuiAmount, { exact: false })} SUI
+                    {formatToken(tvlSuiAmount, { exact: false })} SUI
                   </TBody>
                 </Tooltip>
               </div>
