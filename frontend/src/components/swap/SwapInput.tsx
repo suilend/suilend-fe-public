@@ -28,8 +28,8 @@ interface SwapInputProps {
   token: Token;
   onSelectToken: (token: Token) => void;
   disabledCoinTypes?: string[];
-  onMaxClick?: () => void;
   onHalfClick?: () => void;
+  onMaxClick?: () => void;
 }
 
 const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
@@ -45,8 +45,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       token,
       onSelectToken,
       disabledCoinTypes,
-      onMaxClick,
       onHalfClick,
+      onMaxClick,
     },
     ref,
   ) => {
@@ -83,7 +83,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     return (
       <div
         className={cn(
-          "w-full rounded-md border bg-background",
+          "group w-full rounded-md border bg-background",
           !isReadOnly && "border-primary",
         )}
       >
@@ -135,6 +135,24 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               className="absolute right-3 z-[2] flex flex-col items-end justify-center gap-1"
               style={{ top: 0 }}
             >
+              {/* HALF and MAX */}
+              {direction === TokenDirection.IN && (
+                <div className="absolute -top-[21px] right-0 flex flex-row items-center gap-1 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <TLabel
+                    className="cursor-pointer rounded-full bg-muted/10 px-2 py-[1px] transition-colors hover:text-secondary"
+                    onClick={() => onHalfClick?.()}
+                  >
+                    50%
+                  </TLabel>
+                  <TLabel
+                    className="cursor-pointer rounded-full bg-muted/10 px-2 py-[1px] transition-colors hover:text-secondary"
+                    onClick={() => onMaxClick?.()}
+                  >
+                    MAX
+                  </TLabel>
+                </div>
+              )}
+
               <TokenSelectionDialog
                 isSwapInput
                 direction={direction}
@@ -179,26 +197,6 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                         : formatToken(tokenBalance, { exact: false })}
                     </TLabel>
                   </div>
-                )}
-
-                {/* MAX */}
-                {direction === TokenDirection.IN && (
-                  <>
-                    <div className="h-3.5 w-px bg-muted/50" />
-
-                    <TLabel
-                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border px-1.5 py-[3px] transition-colors hover:text-secondary"
-                      onClick={() => onHalfClick?.()}
-                    >
-                      HALF
-                    </TLabel>
-                    <TLabel
-                      className="-mx-1 -my-[3px] cursor-pointer rounded-md border p-1 px-1.5 py-[3px] transition-colors hover:text-secondary"
-                      onClick={() => onMaxClick?.()}
-                    >
-                      MAX
-                    </TLabel>
-                  </>
                 )}
               </div>
             </div>
