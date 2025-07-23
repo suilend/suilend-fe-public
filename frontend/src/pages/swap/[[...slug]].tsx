@@ -178,7 +178,7 @@ function Page() {
     [tokenOutBorrowPosition],
   );
 
-  // Max/half
+  // Max/percent
   const tokenInMaxCalculations = (() => {
     const result = [
       {
@@ -205,20 +205,15 @@ function Page() {
     return result;
   })();
 
-  const tokenInHalfAmount = BigNumber.max(
-    new BigNumber(0),
-    BigNumber.min(
-      ...Object.values(tokenInMaxCalculations).map((calc) => calc.value),
-    ),
-  )
-    .div(2)
-    .toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
-  const tokenInMaxAmount = BigNumber.max(
-    new BigNumber(0),
-    BigNumber.min(
-      ...Object.values(tokenInMaxCalculations).map((calc) => calc.value),
-    ),
-  ).toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
+  const getTokenInPercentAmount = (percent: number) =>
+    BigNumber.max(
+      new BigNumber(0),
+      BigNumber.min(
+        ...Object.values(tokenInMaxCalculations).map((calc) => calc.value),
+      ),
+    )
+      .times(percent / 100)
+      .toFixed(tokenIn.decimals, BigNumber.ROUND_DOWN);
 
   // Slippage
   const [slippagePercent, setSlippagePercent] = useLocalStorage<string>(
@@ -400,26 +395,18 @@ function Page() {
     else setQuotesMap({});
   };
 
-  const useHalfValueWrapper = () => {
-    formatAndSetValue(tokenInHalfAmount, tokenIn);
+  const usePercentValueWrapper = (percent: number) => {
+    const tokenInPercentAmount = getTokenInPercentAmount(percent);
+    formatAndSetValue(tokenInPercentAmount, tokenIn);
 
-    if (new BigNumber(tokenInHalfAmount).gt(0))
+    if (new BigNumber(tokenInPercentAmount).gt(0))
       fetchQuotes(
         sdkMap,
         activeProviders,
         tokenIn,
         tokenOut,
-        tokenInHalfAmount,
+        tokenInPercentAmount,
       );
-    else setQuotesMap({});
-
-    inputRef.current?.focus();
-  };
-  const useMaxValueWrapper = () => {
-    formatAndSetValue(tokenInMaxAmount, tokenIn);
-
-    if (new BigNumber(tokenInMaxAmount).gt(0))
-      fetchQuotes(sdkMap, activeProviders, tokenIn, tokenOut, tokenInMaxAmount);
     else setQuotesMap({});
 
     inputRef.current?.focus();
@@ -1555,8 +1542,7 @@ function Page() {
                     ? [tokenOut.coinType]
                     : undefined
                 }
-                onHalfClick={useHalfValueWrapper}
-                onMaxClick={useMaxValueWrapper}
+                onPercentClick={usePercentValueWrapper}
               />
             </div>
 
