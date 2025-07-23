@@ -279,7 +279,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   })();
 
   const deposit = async (
-    suiAmount: BigNumber, // SSUI amount to loop
+    transaction: Transaction,
+    suiAmount: BigNumber,
+    sSuiCoin: TransactionObjectArgument,
   ) => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
@@ -299,6 +301,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     );
 
     // Current deposited and borrowed amounts
+    const sSuiAmount = suiAmount
+      .minus(getSsuiMintFee(suiAmount))
+      .times(suiToSsuiExchangeRate);
+
     const _sSuiDepositedAmount = isObligationSsuiSuiLooping(obligation)
       ? obligation!.deposits[0].depositedAmount
       : new BigNumber(0);
@@ -307,7 +313,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       : new BigNumber(0);
 
     console.log(
-      `[SsuiStrategyDialog] deposit - suiAmount: ${suiAmount}, _sSuiDepositedAmount: ${_sSuiDepositedAmount}, _suiBorrowedAmount: ${_suiBorrowedAmount}`,
+      `[SsuiStrategyDialog] deposit - suiAmount: ${suiAmount}, sSuiAmount: ${sSuiAmount}, _sSuiDepositedAmount: ${_sSuiDepositedAmount}, _suiBorrowedAmount: ${_suiBorrowedAmount}`,
     );
 
     //
@@ -317,31 +323,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
     //
 
-    const transaction = new Transaction();
-
-    // 1) Refresh pyth oracles (sSUI and SUI) - required when borrowing
-    await appData.suilendClient.refreshAll(transaction, undefined, [
-      NORMALIZED_sSUI_COINTYPE,
-      NORMALIZED_SUI_COINTYPE,
-    ]);
-
-    // 2.1) Stake SUI for sSUI
-    const sSuiAmount = suiAmount
-      .minus(getSsuiMintFee(suiAmount))
-      .times(suiToSsuiExchangeRate);
-    console.log(`[SsuiStrategyDialog] deposit - sSuiAmount: ${sSuiAmount}`);
-
-    const suiCoinToStake = transaction.splitCoins(transaction.gas, [
-      suiAmount
-        .times(10 ** SUI_DECIMALS)
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString(),
-    ]);
-    const sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
-
-    // 2.2) Deposit sSUI (1x exposure)
+    // 1) Deposit sSUI (1x exposure)
     appData.suilendClient.deposit(
-      sSuiCoinToDeposit,
+      sSuiCoin,
       NORMALIZED_sSUI_COINTYPE,
       obligationOwnerCap.id,
       transaction,
@@ -358,10 +342,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         `[SsuiStrategyDialog] deposit - ${i} start |`,
         JSON.stringify(
           {
-            sSuiDepositedAmount,
-            suiBorrowedAmount,
-            currentExposure,
-            pendingExposure,
+            sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+            suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+            currentExposure: currentExposure.toFixed(20),
+            pendingExposure: pendingExposure.toFixed(20),
           },
           null,
           2,
@@ -369,7 +353,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
       if (currentExposure.times(1 + E).gte(targetExposure)) break;
 
-      // 3.1) Max calculations
+      // 2.1) Max calculations
       const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
         sSuiDepositedAmount,
         suiBorrowedAmount,
@@ -385,16 +369,16 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         `[SsuiStrategyDialog] deposit - ${i} max |`,
         JSON.stringify(
           {
-            stepMaxSuiBorrowedAmount,
-            stepMaxSsuiDepositedAmount,
-            stepMaxExposure,
+            stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
+            stepMaxSsuiDepositedAmount: stepMaxSsuiDepositedAmount.toFixed(20),
+            stepMaxExposure: stepMaxExposure.toFixed(20),
           },
           null,
           2,
         ),
       );
 
-      // 3.2) Borrow SUI
+      // 2.2) Borrow SUI
       const stepSuiBorrowedAmount = pendingExposure.gte(stepMaxExposure)
         ? stepMaxSuiBorrowedAmount
         : stepMaxSuiBorrowedAmount
@@ -403,7 +387,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
       console.log(
         `[SsuiStrategyDialog] deposit - ${i} borrow |`,
-        JSON.stringify({ stepSuiBorrowedAmount, isMaxBorrow }, null, 2),
+        JSON.stringify(
+          {
+            stepSuiBorrowedAmount: stepSuiBorrowedAmount.toFixed(20),
+            isMaxBorrow,
+          },
+          null,
+          2,
+        ),
       );
 
       const [borrowedSuiCoin] = await appData.suilendClient.borrow(
@@ -421,10 +412,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
       suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
-      // 3.3) Stake borrowed SUI for sSUI
+      // 2.3) Stake borrowed SUI for sSUI
       const stepSsuiCoin = lstClient.mint(transaction, borrowedSuiCoin);
 
-      // 3.4) Deposit sSUI
+      // 2.4) Deposit sSUI
       const stepSsuiDepositedAmount = new BigNumber(
         stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
       )
@@ -432,7 +423,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
         `[SsuiStrategyDialog] deposit - ${i} deposit |`,
-        JSON.stringify({ stepSsuiDepositedAmount }, null, 2),
+        JSON.stringify(
+          { stepSsuiDepositedAmount: stepSsuiDepositedAmount.toFixed(20) },
+          null,
+          2,
+        ),
       );
 
       appData.suilendClient.deposit(
@@ -443,215 +438,56 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
       sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
     }
-
-    // 4) Rebalance sSUI
-    lstClient.rebalance(
-      transaction,
-      lstClient.liquidStakingObject.weightHookId,
-    );
-
-    const res = await signExecuteAndWaitForTransaction(transaction);
-    const txUrl = explorer.buildTxUrl(res.digest);
-
-    toast.success(
-      `Deposited ${formatToken(
-        new BigNumber(
-          new BigNumber(sSuiDepositedAmount.minus(_sSuiDepositedAmount)).times(
-            sSuiToSuiExchangeRate,
-          ),
-        ).minus(suiBorrowedAmount.minus(_suiBorrowedAmount)),
-        { dp: SUI_DECIMALS, trimTrailingZeros: true },
-      )} SUI into 3x sSUI/SUI loop strategy`,
-      {
-        action: (
-          <TextLink className="block" href={txUrl}>
-            View tx on {explorer.name}
-          </TextLink>
-        ),
-        duration: TX_TOAST_DURATION,
-      },
-    );
   };
 
-  const withdraw = async (tvlSuiAmount: BigNumber) => {
+  const maxWithdraw = async (
+    transaction: Transaction,
+  ): Promise<TransactionObjectArgument> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
 
-    // Current deposited and borrowed amounts
-    const _sSuiDepositedAmount = obligation!.deposits[0].depositedAmount;
-    const _suiBorrowedAmount = obligation!.borrows[0].borrowedAmount;
-
-    const currentExposure = getExposure(
-      _sSuiDepositedAmount,
-      _suiBorrowedAmount,
-    );
-    const T = currentExposure;
-    const T_MINUS_1 = currentExposure.minus(1);
-
-    // x=tvlSuiAmount
-    // M=sSuiToSuiExchangeRate
-    const targetSsuiWithdrawnAmount = tvlSuiAmount.div(
-      sSuiToSuiExchangeRate.minus(T_MINUS_1.div(T)),
-    ); // x / [M - (T-1)/T]
-
-    // w = targetSsuiWithdrawnAmount
-    const targetSuiRepaidAmount = targetSsuiWithdrawnAmount.times(
-      T_MINUS_1.div(T),
-    ); // w * [(T-1)/T]
-
-    //
-
-    let sSuiDepositedAmount = _sSuiDepositedAmount;
-    let suiBorrowedAmount = _suiBorrowedAmount;
-
-    let sSuiWithdrawnAmount = new BigNumber(0);
-    let suiRepaidAmount = new BigNumber(0);
-
-    //
-
-    const transaction = new Transaction();
-
-    // 1) Refresh pyth oracles (sSUI and SUI) - required when withdrawing
-    await appData.suilendClient.refreshAll(transaction, undefined, [
-      NORMALIZED_sSUI_COINTYPE,
-      NORMALIZED_SUI_COINTYPE,
-    ]);
-
+    let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
-      const currentExposure = getExposure(
-        sSuiDepositedAmount,
-        suiBorrowedAmount,
-      );
-      const pendingSsuiWithdrawnAmount =
-        targetSsuiWithdrawnAmount.minus(sSuiWithdrawnAmount);
-      const pendingSuiRepaidAmount =
-        targetSuiRepaidAmount.minus(suiRepaidAmount);
-      console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} start |`,
-        JSON.stringify(
-          {
-            currentExposure,
-            sSuiDepositedAmount,
-            suiBorrowedAmount,
-            sSuiWithdrawnAmount,
-            suiRepaidAmount,
-            pendingSsuiWithdrawnAmount,
-            pendingSuiRepaidAmount,
-          },
-          null,
-          2,
-        ),
-      );
-      if (sSuiDepositedAmount.eq(0) && suiBorrowedAmount.eq(0)) break; // All sSUI withdrawn and all SUI repaid (when withdrawing MAX)
-      if (pendingSsuiWithdrawnAmount.lte(E) && pendingSuiRepaidAmount.lte(E))
-        break;
+      console.log(`[SsuiStrategyDialog] maxWithdraw - ${i} start`);
 
-      // 2.1) Max calculations
-      const stepMaxSsuiWithdrawnAmount = getStepMaxSsuiWithdrawnAmount(
-        sSuiDepositedAmount,
-        suiBorrowedAmount,
-      );
-      const stepMaxSuiRepaidAmount = getStepMaxSuiRepaidAmount(
-        stepMaxSsuiWithdrawnAmount,
-        suiBorrowedAmount,
-      );
-      console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} max |`,
-        JSON.stringify(
-          { stepMaxSsuiWithdrawnAmount, stepMaxSuiRepaidAmount },
-          null,
-          2,
-        ),
-      );
-
-      // 2.2) Withdraw sSUI
-      const stepSsuiWithdrawnAmount = pendingSsuiWithdrawnAmount.gte(
-        stepMaxSsuiWithdrawnAmount,
-      )
-        ? stepMaxSsuiWithdrawnAmount
-        : pendingSsuiWithdrawnAmount.decimalPlaces(
-            sSUI_DECIMALS,
-            BigNumber.ROUND_DOWN,
-          );
-      const isMaxWithdraw = stepSsuiWithdrawnAmount.eq(
-        stepMaxSsuiWithdrawnAmount,
-      );
-      console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} withdraw |`,
-        JSON.stringify({ stepSsuiWithdrawnAmount, isMaxWithdraw }, null, 2),
-      );
-
+      // 2.1) Withdraw sSUI
       const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
         obligationOwnerCap.id,
         obligation.id,
         NORMALIZED_sSUI_COINTYPE,
-        isMaxWithdraw
-          ? MAX_U64.toString()
-          : stepSsuiWithdrawnAmount
-              .times(10 ** sSUI_DECIMALS)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
+        MAX_U64.toString(),
         transaction,
         false,
       );
-      sSuiDepositedAmount = sSuiDepositedAmount.minus(stepSsuiWithdrawnAmount);
-      sSuiWithdrawnAmount = sSuiWithdrawnAmount.plus(stepSsuiWithdrawnAmount);
 
-      // 2.3) Unstake withdrawn sSUI for SUI
+      // 2.2) Unstake withdrawn sSUI for SUI
       const stepSuiCoin = lstClient.redeem(transaction, withdrawnSsuiCoin);
+      if (suiCoin) transaction.mergeCoins(suiCoin, [stepSuiCoin]);
+      else suiCoin = stepSuiCoin;
 
-      // 2.4) Repay SUI
-      const stepSuiRepaidAmount = pendingSuiRepaidAmount.gte(
-        stepMaxSuiRepaidAmount,
-      )
-        ? stepMaxSuiRepaidAmount
-        : pendingSuiRepaidAmount.decimalPlaces(
-            SUI_DECIMALS,
-            BigNumber.ROUND_DOWN,
-          );
-      const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
-      console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} repay |`,
-        JSON.stringify({ stepSuiRepaidAmount, isMaxRepay }, null, 2),
-      );
-
-      if (stepSuiRepaidAmount.gt(0)) {
-        let repaySuiCoin;
-        try {
-          const txCopy = Transaction.from(transaction);
-          txCopy.splitCoins(stepSuiCoin, [
-            stepSuiRepaidAmount
-              .times(10 ** SUI_DECIMALS)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
-          ]);
-          await dryRunTransaction(txCopy); // Throws error if coin has insufficient balance
-
-          repaySuiCoin = transaction.splitCoins(stepSuiCoin, [
-            stepSuiRepaidAmount
-              .times(10 ** SUI_DECIMALS)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
-          ]);
-          transaction.transferObjects([stepSuiCoin], address); // Transfer remainder to user
-        } catch (err) {
-          repaySuiCoin = stepSuiCoin;
-        }
+      // 2.3) Repay SUI
+      try {
+        const txCopy = Transaction.from(transaction);
+        appData.suilendClient.repay(
+          obligation.id,
+          NORMALIZED_SUI_COINTYPE,
+          suiCoin,
+          txCopy,
+        );
+        txCopy.transferObjects([suiCoin], address);
+        await dryRunTransaction(txCopy); // Throws error if nothing to repay
 
         appData.suilendClient.repay(
           obligation.id,
           NORMALIZED_SUI_COINTYPE,
-          repaySuiCoin,
+          suiCoin,
           transaction,
         );
-        transaction.transferObjects([repaySuiCoin], address);
-
-        suiBorrowedAmount = suiBorrowedAmount.minus(stepSuiRepaidAmount);
-        suiRepaidAmount = suiRepaidAmount.plus(stepSuiRepaidAmount);
-      } else {
-        transaction.transferObjects([stepSuiCoin], address);
+      } catch (err) {
+        break;
       }
     }
+    if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
     // 3) Rebalance sSUI
     lstClient.rebalance(
@@ -659,37 +495,145 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       lstClient.liquidStakingObject.weightHookId,
     );
 
-    const res = await signExecuteAndWaitForTransaction(transaction);
-    const txUrl = explorer.buildTxUrl(res.digest);
-
-    toast.success(
-      `Withdrew ${formatToken(
-        new BigNumber(sSuiWithdrawnAmount.times(sSuiToSuiExchangeRate)).minus(
-          suiRepaidAmount,
-        ),
-        { dp: SUI_DECIMALS, trimTrailingZeros: true },
-      )} SUI from 3x sSUI/SUI loop strategy`,
-      {
-        action: (
-          <TextLink className="block" href={txUrl}>
-            View tx on {explorer.name}
-          </TextLink>
-        ),
-        duration: TX_TOAST_DURATION,
-      },
-    );
+    return suiCoin;
   };
 
   const onSubmitClick = async () => {
+    if (!address) throw Error("Wallet not connected");
     if (submitButtonState.isDisabled) return;
 
     setIsSubmitting(true);
 
     try {
+      const transaction = new Transaction();
+
+      // 1) Refresh pyth oracles (sSUI and SUI) - required when borrowing
+      await appData.suilendClient.refreshAll(transaction, undefined, [
+        NORMALIZED_sSUI_COINTYPE,
+        NORMALIZED_SUI_COINTYPE,
+      ]);
+
       if (selectedTab === Tab.DEPOSIT) {
-        await deposit(new BigNumber(value));
+        const suiAmount = new BigNumber(value);
+
+        // 2.1) Stake SUI for sSUI
+        const suiCoinToStake = transaction.splitCoins(transaction.gas, [
+          suiAmount
+            .times(10 ** SUI_DECIMALS)
+            .integerValue(BigNumber.ROUND_DOWN)
+            .toString(),
+        ]);
+        const sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
+
+        // 2.2) Deposit sSUI and borrow SUI
+        await deposit(transaction, suiAmount, sSuiCoinToDeposit);
+
+        // 2.3) Rebalance sSUI
+        lstClient.rebalance(
+          transaction,
+          lstClient.liquidStakingObject.weightHookId,
+        );
+
+        const res = await signExecuteAndWaitForTransaction(transaction);
+        const txUrl = explorer.buildTxUrl(res.digest);
+
+        // TODO: deposited amount
+        toast.success(
+          `Deposited ${formatToken(suiAmount, {
+            dp: SUI_DECIMALS,
+            trimTrailingZeros: true,
+          })} SUI into 3x sSUI/SUI loop strategy`,
+          {
+            action: (
+              <TextLink className="block" href={txUrl}>
+                View tx on {explorer.name}
+              </TextLink>
+            ),
+            duration: TX_TOAST_DURATION,
+          },
+        );
       } else if (selectedTab === Tab.WITHDRAW) {
-        await withdraw(useMaxAmount ? MAX_U64 : new BigNumber(value));
+        if (!useMaxAmount) {
+          const withdrawnSuiAmount = new BigNumber(value);
+          const remainingSuiAmount = tvlSuiAmount.minus(withdrawnSuiAmount);
+
+          // 2.1) Max withdraw
+          const maxWithdrawSuiCoin = await maxWithdraw(transaction);
+
+          // 2.2) Transfer withdrawn SUI to user
+          const withdrawSuiCoin = transaction.splitCoins(maxWithdrawSuiCoin, [
+            new BigNumber(value)
+              .times(10 ** SUI_DECIMALS)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ]);
+          transaction.transferObjects([withdrawSuiCoin], address);
+
+          // 2.3) Stake withdrawn SUI for sSUI
+          const sSuiCoinToDeposit = lstClient.mint(
+            transaction,
+            maxWithdrawSuiCoin,
+          );
+
+          // 2.4) Deposit sSUI and borrow SUI
+          await deposit(transaction, remainingSuiAmount, sSuiCoinToDeposit);
+
+          // 2.5) Rebalance sSUI
+          lstClient.rebalance(
+            transaction,
+            lstClient.liquidStakingObject.weightHookId,
+          );
+
+          const res = await signExecuteAndWaitForTransaction(transaction);
+          const txUrl = explorer.buildTxUrl(res.digest);
+
+          // TODO: withdrawn amount
+          toast.success(
+            `Withdrew ${formatToken(withdrawnSuiAmount, {
+              dp: SUI_DECIMALS,
+              trimTrailingZeros: true,
+            })} SUI from 3x sSUI/SUI loop strategy`,
+            {
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        } else {
+          const _tvlSuiAmount = tvlSuiAmount;
+
+          // 2.1) Max withdraw
+          const suiCoin = await maxWithdraw(transaction);
+          transaction.transferObjects([suiCoin], address);
+
+          // 2.2) Rebalance sSUI
+          lstClient.rebalance(
+            transaction,
+            lstClient.liquidStakingObject.weightHookId,
+          );
+
+          const res = await signExecuteAndWaitForTransaction(transaction);
+          const txUrl = explorer.buildTxUrl(res.digest);
+
+          // TODO: withdrawn amount
+          toast.success(
+            `Withdrew ${formatToken(_tvlSuiAmount, {
+              dp: SUI_DECIMALS,
+              trimTrailingZeros: true,
+            })} SUI from 3x sSUI/SUI loop strategy`,
+            {
+              action: (
+                <TextLink className="block" href={txUrl}>
+                  View tx on {explorer.name}
+                </TextLink>
+              ),
+              duration: TX_TOAST_DURATION,
+            },
+          );
+        }
       } else if (selectedTab === Tab.ADJUST) {
         // TODO
       } else {
