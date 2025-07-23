@@ -1,11 +1,13 @@
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { useState } from "react";
+
+import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { getMsafeAppStoreUrl, isInMsafeApp } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Link from "@/components/shared/Link";
-import Tooltip from "@/components/shared/Tooltip";
+import Popover from "@/components/shared/Popover";
 import { TBodySans } from "@/components/shared/Typography";
 import {
   ABOUT_URL,
@@ -19,6 +21,7 @@ import {
   STRATEGIES_URL,
   SWAP_URL,
 } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 
 function More() {
   return (
@@ -51,6 +54,10 @@ function More() {
 export default function NavigationLinks() {
   const { address } = useWalletContext();
 
+  // More
+  const [isMoreOpen, setIsMoreOpen] = useState<boolean>(false);
+  const Icon = isMoreOpen ? ChevronUp : ChevronDown;
+
   return (
     <>
       {/* Internal */}
@@ -67,21 +74,40 @@ export default function NavigationLinks() {
       )}
 
       {/* More */}
-      <Tooltip
-        contentProps={{ className: "rounded-lg bg-background py-2 px-4" }}
-        content={
-          <div className="flex flex-col gap-3">
-            <More />
+      <Popover
+        className="max-lg:hidden"
+        id="more"
+        rootProps={{ open: isMoreOpen, onOpenChange: setIsMoreOpen }}
+        trigger={
+          <div className="group flex h-8 cursor-pointer flex-row items-center gap-1">
+            <TBodySans
+              className={cn(
+                "transition-colors",
+                isMoreOpen
+                  ? "text-foreground"
+                  : "text-muted-foreground group-hover:text-foreground",
+              )}
+            >
+              More
+            </TBodySans>
+            <Icon
+              className={cn(
+                "h-3 w-3 transition-colors",
+                isMoreOpen
+                  ? "text-foreground"
+                  : "text-muted-foreground group-hover:text-foreground",
+              )}
+            />
           </div>
         }
+        contentProps={{
+          className: "w-max rounded-lg bg-background py-2 px-4",
+        }}
       >
-        <div className="group flex h-8 cursor-pointer flex-row items-center gap-1 max-lg:hidden">
-          <TBodySans className="text-muted-foreground transition-colors group-hover:text-foreground">
-            More
-          </TBodySans>
-          <ChevronDown className="h-3 w-3 text-muted-foreground transition-colors group-hover:text-foreground" />
+        <div className="flex flex-col gap-3">
+          <More />
         </div>
-      </Tooltip>
+      </Popover>
 
       <div className="flex flex-col gap-6 lg:hidden">
         <More />
