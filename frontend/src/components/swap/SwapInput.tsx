@@ -28,8 +28,7 @@ interface SwapInputProps {
   token: Token;
   onSelectToken: (token: Token) => void;
   disabledCoinTypes?: string[];
-  onHalfClick?: () => void;
-  onMaxClick?: () => void;
+  onPercentClick?: (percent: number) => void;
 }
 
 const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
@@ -45,8 +44,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
       token,
       onSelectToken,
       disabledCoinTypes,
-      onHalfClick,
-      onMaxClick,
+      onPercentClick,
     },
     ref,
   ) => {
@@ -135,21 +133,18 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
               className="absolute right-3 z-[2] flex flex-col items-end justify-center gap-1"
               style={{ top: 0 }}
             >
-              {/* HALF and MAX */}
+              {/* 25%, 50%, 75%, 100% */}
               {direction === TokenDirection.IN && (
-                <div className="absolute -top-[21px] right-0 flex flex-row items-center gap-1 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <TLabel
-                    className="cursor-pointer rounded-full bg-muted/10 px-2 py-[1px] transition-colors hover:text-secondary"
-                    onClick={() => onHalfClick?.()}
-                  >
-                    50%
-                  </TLabel>
-                  <TLabel
-                    className="cursor-pointer rounded-full bg-muted/10 px-2 py-[1px] transition-colors hover:text-secondary"
-                    onClick={() => onMaxClick?.()}
-                  >
-                    MAX
-                  </TLabel>
+                <div className="absolute -top-[22px] right-0 flex flex-row items-center gap-1 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {[25, 50, 75, 100].map((percent) => (
+                    <TLabel
+                      key={percent}
+                      className="w-max cursor-pointer rounded-full bg-muted/10 px-2 py-[1px] transition-colors hover:text-secondary"
+                      onClick={() => onPercentClick?.(percent)}
+                    >
+                      {percent}%
+                    </TLabel>
+                  ))}
                 </div>
               )}
 

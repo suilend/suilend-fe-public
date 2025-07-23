@@ -4,6 +4,7 @@ import {
   PopoverContentProps,
   PopoverProps as PopoverRootProps,
 } from "@radix-ui/react-popover";
+import { ClassValue } from "clsx";
 import { merge } from "lodash";
 
 import { TLabelSans } from "@/components/shared/Typography";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 export const getPopoverId = (id: string) => `popover.${id}`;
 
 interface PopoverProps extends PropsWithChildren {
+  className?: ClassValue;
   label?: string;
   id: string;
   rootProps?: PopoverRootProps;
@@ -26,6 +28,7 @@ interface PopoverProps extends PropsWithChildren {
 }
 
 export default function Popover({
+  className,
   label,
   id,
   rootProps,
@@ -42,7 +45,7 @@ export default function Popover({
   const popoverId = getPopoverId(id);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", className)}>
       {label && (
         <label htmlFor={popoverId}>
           <TLabelSans>{label}</TLabelSans>
