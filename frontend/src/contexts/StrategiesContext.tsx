@@ -13,6 +13,7 @@ import BigNumber from "bignumber.js";
 
 import {
   ParsedObligation,
+  ParsedReserve,
   Side,
   getFilteredRewards,
   getNetAprPercent,
@@ -43,6 +44,8 @@ export const E = 10 ** -4;
 export const sSUI_DECIMALS = 9;
 
 export const sSUI_SUI_TARGET_EXPOSURE = new BigNumber(3);
+export const sSUI_MAX_MAX_EXPOSURE = (sSuiReserve: ParsedReserve) =>
+  new BigNumber(1 / (1 - sSuiReserve.config.openLtvPct / 100)); // 3.3333...
 
 const sSUI_SUI_TARGET_EXPOSURE_HEALTH_PERCENT = 88.87; // Approximate getWeightedBorrowsUsd(obligation) / obligation.unhealthyBorrowValueUsd for 3x exposure
 
@@ -79,10 +82,7 @@ interface StrategiesContext {
     stepMaxSsuiWithdrawnAmount: BigNumber,
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
-  getDepositedBorrowedAmounts: (
-    suiAmount: BigNumber,
-    targetExposure: BigNumber,
-  ) => [BigNumber, BigNumber];
+  getDepositedBorrowedAmounts: (suiAmount: BigNumber) => [BigNumber, BigNumber];
   getSsuiSuiStrategyTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
   getSsuiSuiStrategyAprPercent: (obligation?: ParsedObligation) => BigNumber;
   getSsuiSuiStrategyHealthPercent: (obligation?: ParsedObligation) => BigNumber;
@@ -299,7 +299,8 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         new BigNumber(
           new BigNumber(sSuiReserve.config.openLtvPct)
             .div(100)
-            .times(sSuiReserve.minPrice.div(sSuiReserve.maxPrice)),
+            .times(sSuiReserve.minPrice.div(sSuiReserve.maxPrice))
+            .times(0.99), // 1% buffer
         ).times(sSuiDepositedAmount),
       )
         .minus(suiBorrowedAmount)
@@ -360,20 +361,22 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
   );
 
   const getDepositedBorrowedAmounts = useCallback(
-    (
-      suiAmount: BigNumber,
-      targetExposure: BigNumber,
-    ): [BigNumber, BigNumber] => {
-      if (suiAmount.eq(0) || targetExposure.eq(0))
-        return [new BigNumber(0), new BigNumber(0)];
+    (suiAmount: BigNumber): [BigNumber, BigNumber] => {
+      if (suiAmount.eq(0)) return [new BigNumber(0), new BigNumber(0)];
 
+      const targetExposure = sSUI_SUI_TARGET_EXPOSURE;
       const sSuiAmount = suiAmount
         .minus(getSsuiMintFee(suiAmount))
         .times(suiToSsuiExchangeRate);
 
+      // Prepare
       let sSuiDepositedAmount = sSuiAmount;
       let suiBorrowedAmount = new BigNumber(0);
-      for (let i = 0; i < 20; i++) {
+
+      // 1) Deposit sSUI (1x exposure)
+      sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
+
+      for (let i = 0; i < 30; i++) {
         const currentExposure = getExposure(
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -381,7 +384,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         const pendingExposure = targetExposure.minus(currentExposure);
         if (currentExposure.times(1 + E).gte(targetExposure)) break;
 
-        // 1) Max calculations
+        // 2.1) Max calculations
         const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -394,16 +397,19 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
         ).minus(currentExposure);
 
-        // 2) Borrow
+        // 2.2) Borrow SUI
         const stepSuiBorrowedAmount = pendingExposure.gte(stepMaxExposure)
           ? stepMaxSuiBorrowedAmount
           : stepMaxSuiBorrowedAmount
               .times(pendingExposure.div(stepMaxExposure))
               .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
 
         suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
-        // 3) Deposit
+        // 2.3) Stake borrowed SUI for sSUI
+
+        // 2.4) Deposit sSUI
         const stepSsuiDepositedAmount = new BigNumber(
           stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
         )
@@ -418,9 +424,9 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
     [
       getSsuiMintFee,
       suiToSsuiExchangeRate,
+      getExposure,
       getStepMaxSuiBorrowedAmount,
       getStepMaxSsuiDepositedAmount,
-      getExposure,
     ],
   );
 
@@ -450,7 +456,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
 
       // Default value
       const [sSuiDepositedAmount, suiBorrowedAmount] =
-        getDepositedBorrowedAmounts(new BigNumber(1), sSUI_SUI_TARGET_EXPOSURE);
+        getDepositedBorrowedAmounts(new BigNumber(1));
       const sSuiDepositedAmountUsd = sSuiDepositedAmount.times(
         sSuiReserve.price,
       );
