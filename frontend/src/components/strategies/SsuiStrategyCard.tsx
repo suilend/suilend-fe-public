@@ -7,7 +7,7 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function SsuiStrategyCard() {
@@ -18,7 +18,7 @@ export default function SsuiStrategyCard() {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useLoadedSsuiStrategyContext();
+  } = useSsuiStrategyContext();
 
   // Obligation
   const OBLIGATION_ID =

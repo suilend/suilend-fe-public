@@ -31,7 +31,6 @@ import {
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
-import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { getWeightedBorrowsUsd } from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -53,9 +52,9 @@ interface SsuiStrategyContext {
   suiReserve: ParsedReserve;
   sSuiReserve: ParsedReserve;
 
-  lstClient: LstClient | undefined;
-  sSuiMintFeePercent: BigNumber | undefined;
-  sSuiRedeemFeePercent: BigNumber | undefined;
+  lstClient: LstClient;
+  sSuiMintFeePercent: BigNumber;
+  sSuiRedeemFeePercent: BigNumber;
   suiBorrowFeePercent: BigNumber;
   suiToSsuiExchangeRate: BigNumber;
   sSuiToSuiExchangeRate: BigNumber;
@@ -85,11 +84,6 @@ interface SsuiStrategyContext {
   getAprPercent: (obligation?: ParsedObligation) => BigNumber;
   getHealthPercent: (obligation?: ParsedObligation) => BigNumber;
 }
-type LoadedSsuiStrategyContext = SsuiStrategyContext & {
-  lstClient: LstClient;
-  sSuiMintFeePercent: BigNumber;
-  sSuiRedeemFeePercent: BigNumber;
-};
 
 const defaultContextValue: SsuiStrategyContext = {
   isObligationLooping: () => {
@@ -99,9 +93,9 @@ const defaultContextValue: SsuiStrategyContext = {
   suiReserve: {} as ParsedReserve,
   sSuiReserve: {} as ParsedReserve,
 
-  lstClient: undefined,
-  sSuiMintFeePercent: undefined,
-  sSuiRedeemFeePercent: undefined,
+  lstClient: {} as LstClient,
+  sSuiMintFeePercent: new BigNumber(0),
+  sSuiRedeemFeePercent: new BigNumber(0),
   suiBorrowFeePercent: new BigNumber(0),
   suiToSsuiExchangeRate: new BigNumber(0),
   sSuiToSuiExchangeRate: new BigNumber(0),
@@ -139,8 +133,6 @@ const SsuiStrategyContext =
   createContext<SsuiStrategyContext>(defaultContextValue);
 
 export const useSsuiStrategyContext = () => useContext(SsuiStrategyContext);
-export const useLoadedSsuiStrategyContext = () =>
-  useContext(SsuiStrategyContext) as LoadedSsuiStrategyContext;
 
 export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
@@ -501,9 +493,9 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       suiReserve,
       sSuiReserve,
 
-      lstClient,
-      sSuiMintFeePercent,
-      sSuiRedeemFeePercent,
+      lstClient: lstClient as LstClient,
+      sSuiMintFeePercent: sSuiMintFeePercent as BigNumber,
+      sSuiRedeemFeePercent: sSuiRedeemFeePercent as BigNumber,
       suiBorrowFeePercent,
       suiToSsuiExchangeRate,
       sSuiToSuiExchangeRate,
@@ -542,13 +534,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SsuiStrategyContext.Provider value={contextValue}>
-      {lstClient !== undefined &&
-      sSuiMintFeePercent !== undefined &&
-      sSuiRedeemFeePercent !== undefined ? (
-        children
-      ) : (
-        <FullPageSpinner />
-      )}
+      {children}
     </SsuiStrategyContext.Provider>
   );
 }

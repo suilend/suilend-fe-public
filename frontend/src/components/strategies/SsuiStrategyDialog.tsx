@@ -48,7 +48,7 @@ import {
   E,
   sSUI_DECIMALS,
   sSUI_SUI_TARGET_EXPOSURE,
-  useLoadedSsuiStrategyContext,
+  useSsuiStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
@@ -245,7 +245,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useLoadedSsuiStrategyContext();
+  } = useSsuiStrategyContext();
 
   // Tabs
   const tabs = [
