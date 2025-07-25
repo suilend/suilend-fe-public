@@ -277,9 +277,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const coinTypes = (
-          await sdkMap.aftermath.Coin().getVerifiedCoins()
-        ).map(normalizeStructTag);
+        const coinTypes = [
+          ...(await sdkMap.aftermath.Coin().getVerifiedCoins()).map(
+            normalizeStructTag,
+          ),
+          "0x0b559e66f39afcc202b7f529571eccad713402bc9fd4e3ecfa0956bbe24a3f51::cctoo::CCTOO",
+        ];
 
         setVerifiedCoinTypes(coinTypes);
 
