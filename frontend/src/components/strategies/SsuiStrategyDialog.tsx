@@ -351,11 +351,27 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   // Fees
   const depositFeesSuiAmount = useMemo(() => {
-    const { suiBorrowedAmount } = simulateDeposit(new BigNumber(value || 0));
+    const targetExposure = isObligationLooping(obligation)
+      ? getExposure(
+          obligation!.deposits[0].depositedAmount,
+          obligation!.borrows[0].borrowedAmount,
+        )
+      : sSUI_SUI_TARGET_EXPOSURE;
+    const { suiBorrowedAmount } = simulateDeposit(
+      new BigNumber(value || 0),
+      targetExposure,
+    );
 
     // TODO: Add sSUI mint fee
     return suiBorrowedAmount.times(suiBorrowFeePercent.div(100));
-  }, [simulateDeposit, value, suiBorrowFeePercent]);
+  }, [
+    isObligationLooping,
+    obligation,
+    getExposure,
+    simulateDeposit,
+    value,
+    suiBorrowFeePercent,
+  ]);
 
   const withdrawFeesSuiAmount = useMemo(() => {
     if (!isObligationLooping(obligation)) return new BigNumber(0);
@@ -436,7 +452,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
 
-    const targetExposure = sSUI_SUI_TARGET_EXPOSURE;
     const sSuiAmount = suiAmount
       .minus(getSsuiMintFee(suiAmount))
       .times(suiToSsuiExchangeRate)
@@ -445,7 +460,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       `[SsuiStrategyDialog] deposit |`,
       JSON.stringify(
         {
-          targetExposure: targetExposure.toFixed(20),
           suiAmount: suiAmount.toFixed(20),
           sSuiAmount: sSuiAmount.toFixed(20),
         },
@@ -467,6 +481,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           BigNumber.ROUND_DOWN,
         )
       : new BigNumber(0);
+    const targetExposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
 
     console.log(
       `[SsuiStrategyDialog] deposit |`,
@@ -474,6 +489,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         {
           sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+          targetExposure: targetExposure.toFixed(20),
         },
         null,
         2,

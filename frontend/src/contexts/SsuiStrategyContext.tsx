@@ -74,7 +74,10 @@ interface SsuiStrategyContext {
     sSuiDepositedAmount: BigNumber,
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
-  simulateDeposit: (suiAmount: BigNumber) => {
+  simulateDeposit: (
+    suiAmount: BigNumber,
+    targetExposure: BigNumber,
+  ) => {
     sSuiDepositedAmount: BigNumber;
     suiBorrowedAmount: BigNumber;
   };
@@ -325,9 +328,8 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const simulateDeposit = useCallback(
     (
       suiAmount: BigNumber,
+      targetExposure: BigNumber,
     ): { sSuiDepositedAmount: BigNumber; suiBorrowedAmount: BigNumber } => {
-      const targetExposure = sSUI_SUI_TARGET_EXPOSURE;
-
       const sSuiAmount = suiAmount
         .minus(getSsuiMintFee(suiAmount))
         .times(suiToSsuiExchangeRate)
@@ -425,6 +427,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       } else {
         const { sSuiDepositedAmount, suiBorrowedAmount } = simulateDeposit(
           new BigNumber(1), // Any number will do
+          sSUI_SUI_TARGET_EXPOSURE,
         );
 
         const _obligation = {
@@ -484,7 +487,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           100,
         );
       } else {
-        return new BigNumber(100);
+        return new BigNumber(100); // Shown as -- in the UI
       }
     },
     [isObligationLooping],
