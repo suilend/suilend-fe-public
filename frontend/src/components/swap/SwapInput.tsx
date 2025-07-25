@@ -135,7 +135,7 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
             >
               {/* 25%, 50%, 75%, 100% */}
               {direction === TokenDirection.IN && (
-                <div className="absolute -top-[22px] right-0 flex flex-row items-center gap-1 pr-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute -top-[22px] right-0 flex flex-row items-center gap-1 pr-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                   {[25, 50, 75, 100].map((percent) => (
                     <TLabel
                       key={percent}
