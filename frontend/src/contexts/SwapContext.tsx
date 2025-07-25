@@ -277,19 +277,22 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
       isFetchingVerifiedCoinTypesRef.current = true;
       try {
-        const coinTypes = [
-          ...(await sdkMap.aftermath.Coin().getVerifiedCoins()).map(
-            normalizeStructTag,
-          ),
-          "0x0b559e66f39afcc202b7f529571eccad713402bc9fd4e3ecfa0956bbe24a3f51::cctoo::CCTOO",
-        ];
+        const res = await fetch(
+          "https://api-sui.cetus.zone/v3/sui/clmm/verified_coins_info",
+        );
+        const json = await res.json();
+        console.log(json);
+
+        const coinTypes = json.data.list
+          .map((coin: any) => coin.coinType)
+          .map(normalizeStructTag);
 
         setVerifiedCoinTypes(coinTypes);
 
         fetchTokensMetadata(coinTypes);
       } catch (err) {}
     })();
-  }, [sdkMap.aftermath, fetchTokensMetadata]);
+  }, [fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {
