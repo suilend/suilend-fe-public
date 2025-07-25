@@ -39,14 +39,14 @@ export function InterestRateDiffLine({
     <LabelWithValue
       className="w-fit"
       label={label}
+      value="0"
+      horizontal
       customChild={
         <div className="flex flex-col">
           <TBody>{initialValueFormatted} →</TBody>
           <TBody>{newValueFormatted}</TBody>
         </div>
       }
-      value="0"
-      horizontal
     />
   );
 }

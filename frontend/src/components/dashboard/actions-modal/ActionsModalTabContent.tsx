@@ -447,6 +447,8 @@ export default function ActionsModalTabContent({
           />
           <LabelWithValue
             label={`${capitalize(side)} APR`}
+            value="0"
+            horizontal
             customChild={
               <AprWithRewardsBreakdown
                 side={side}
@@ -455,8 +457,6 @@ export default function ActionsModalTabContent({
                 changeAmount={value === "" ? undefined : new BigNumber(value)}
               />
             }
-            horizontal
-            value="0"
           />
           {[Action.DEPOSIT, Action.WITHDRAW].includes(action) && (
             <YourBorrowLimitlabel

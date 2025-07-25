@@ -21,6 +21,8 @@ export default function YourUtilizationLabel({
     <LabelWithValue
       labelClassName="my-0.5 shrink-0"
       label="Your utilization"
+      value="0"
+      horizontal
       customChild={
         !obligation ? (
           <TBody>N/A</TBody>
@@ -65,8 +67,6 @@ export default function YourUtilizationLabel({
           </div>
         )
       }
-      horizontal
-      value="0"
     />
   );
 }

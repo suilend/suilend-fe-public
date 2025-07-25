@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
+
 import { SUI_DECIMALS } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
@@ -7,6 +10,7 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
@@ -25,13 +29,20 @@ export default function SsuiStrategyCard() {
     "0xf8dfef417a82155d5cbf485c4e7e061ff11dc1ddfa1370c6a46f0d7dfe4017f0";
   const obligation = userData.obligations.find((o) => o.id === OBLIGATION_ID);
 
-  // TVL
+  // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
-  // APR
-  const aprPercent = getAprPercent(obligation);
+  // Stats - APR
+  const [aprPercent, setAprPercent] = useState<BigNumber | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (isObligationLooping(obligation)) {
+      setAprPercent(getAprPercent(obligation!));
+    }
+  }, [isObligationLooping, obligation, getAprPercent]);
 
-  // Health
+  // Stats - Health
   const healthPercent = getHealthPercent(obligation);
 
   return (
@@ -58,7 +69,13 @@ export default function SsuiStrategyCard() {
 
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>APR</TLabelSans>
-              <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
+              {aprPercent === undefined ? (
+                <Skeleton className="h-5 w-16" />
+              ) : (
+                <TBody className="text-right">
+                  {formatPercent(aprPercent)}
+                </TBody>
+              )}
             </div>
           </div>
         </div>
