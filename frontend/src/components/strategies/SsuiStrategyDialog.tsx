@@ -48,8 +48,8 @@ import {
   E,
   sSUI_DECIMALS,
   sSUI_SUI_TARGET_EXPOSURE,
-  useLoadedStrategiesContext,
-} from "@/contexts/StrategiesContext";
+  useLoadedSsuiStrategyContext,
+} from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { SubmitButtonState } from "@/lib/types";
@@ -171,7 +171,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
-    isObligationSsuiSuiLooping,
+    isObligationLooping,
     lstClient,
     sSuiMintFeePercent,
     sSuiRedeemFeePercent,
@@ -182,14 +182,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     getSsuiRedeemFee,
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxSsuiDepositedAmount,
     getStepMaxSsuiWithdrawnAmount,
     getStepMaxSuiRepaidAmount,
     getDepositedBorrowedAmounts,
-    getSsuiSuiStrategyTvlSuiAmount,
-    getSsuiSuiStrategyAprPercent,
-    getSsuiSuiStrategyHealthPercent,
-  } = useLoadedStrategiesContext();
+    getTvlSuiAmount,
+    getAprPercent,
+    getHealthPercent,
+  } = useLoadedSsuiStrategyContext();
 
   // Tabs
   const tabs = [
@@ -245,14 +244,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
     else if (selectedTab === Tab.WITHDRAW)
-      return BigNumber.max(
-        new BigNumber(0),
-        getSsuiSuiStrategyTvlSuiAmount(obligation),
-      );
+      return BigNumber.max(new BigNumber(0), getTvlSuiAmount(obligation));
     else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // TODO
 
     return new BigNumber(0); // Should not happen
-  }, [selectedTab, getBalance, getSsuiSuiStrategyTvlSuiAmount, obligation]);
+  }, [selectedTab, getBalance, getTvlSuiAmount, obligation]);
 
   const formatAndSetValue = useCallback((_value: string) => {
     let formattedValue;
@@ -292,13 +288,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   }, [useMaxAmount, maxAmount, formatAndSetValue]);
 
   // TVL
-  const tvlSuiAmount = getSsuiSuiStrategyTvlSuiAmount(obligation);
+  const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // APR
-  const aprPercent = getSsuiSuiStrategyAprPercent(obligation);
+  const aprPercent = getAprPercent(obligation);
 
   // Health
-  const healthPercent = getSsuiSuiStrategyHealthPercent(obligation);
+  const healthPercent = getHealthPercent(obligation);
 
   // Fees
   const depositFeesSuiAmount = getDepositedBorrowedAmounts(
@@ -390,41 +386,18 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     );
 
     // Prepare
-    let sSuiDepositedAmount = isObligationSsuiSuiLooping(obligation)
+    let sSuiDepositedAmount = isObligationLooping(obligation)
       ? obligation!.deposits[0].depositedAmount.decimalPlaces(
           sSUI_DECIMALS,
           BigNumber.ROUND_DOWN,
         )
       : new BigNumber(0);
-    let suiBorrowedAmount = isObligationSsuiSuiLooping(obligation)
+    let suiBorrowedAmount = isObligationLooping(obligation)
       ? obligation!.borrows[0].borrowedAmount.decimalPlaces(
           SUI_DECIMALS,
           BigNumber.ROUND_DOWN,
         )
       : new BigNumber(0);
-
-    const targetSsuiDepositedAmount = sSuiDepositedAmount
-      .plus(
-        suiAmount.div(
-          sSuiToSuiExchangeRate.minus(
-            new BigNumber(1).div(
-              sSUI_SUI_TARGET_EXPOSURE.div(sSUI_SUI_TARGET_EXPOSURE.minus(1)),
-            ),
-          ),
-        ), // T / [m - 1 / (E / (E - 1))], T = suiAmount, m = sSuiToSuiExchangeRate, E = sSUI_SUI_TARGET_EXPOSURE
-      )
-      .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-    const targetSuiBorrowedAmount = suiBorrowedAmount
-      .plus(
-        suiAmount.div(
-          new BigNumber(
-            new BigNumber(
-              sSUI_SUI_TARGET_EXPOSURE.div(sSUI_SUI_TARGET_EXPOSURE.minus(1)),
-            ).times(sSuiToSuiExchangeRate),
-          ).minus(1),
-        ), // T / [(E / (E - 1)) * m - 1], T = suiAmount, m = sSuiToSuiExchangeRate, E = sSUI_SUI_TARGET_EXPOSURE
-      )
-      .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     console.log(
       `[SsuiStrategyDialog] deposit |`,
@@ -432,8 +405,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         {
           sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-          targetSsuiDepositedAmount: targetSsuiDepositedAmount.toFixed(20),
-          targetSuiBorrowedAmount: targetSuiBorrowedAmount.toFixed(20),
         },
         null,
         2,
@@ -450,49 +421,63 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
 
     for (let i = 0; i < 30; i++) {
-      const currentExposure = getExposure(
-        sSuiDepositedAmount,
-        suiBorrowedAmount,
-      );
-      const pendingSsuiDepositedAmount =
-        targetSsuiDepositedAmount.minus(sSuiDepositedAmount);
-      const pendingSuiBorrowedAmount =
-        targetSuiBorrowedAmount.minus(suiBorrowedAmount);
-
+      const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+      const pendingExposure = targetExposure.minus(exposure);
       console.log(
         `[SsuiStrategyDialog] deposit - ${i} start |`,
         JSON.stringify(
           {
             sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-            currentExposure: currentExposure.toFixed(20),
-            pendingSsuiDepositedAmount: pendingSsuiDepositedAmount.toFixed(20),
-            pendingSuiBorrowedAmount: pendingSuiBorrowedAmount.toFixed(20),
+            exposure: exposure.toFixed(20),
+            pendingExposure: pendingExposure.toFixed(20),
           },
           null,
           2,
         ),
       );
-      if (pendingSsuiDepositedAmount.lte(E) && pendingSuiBorrowedAmount.lte(E))
-        break;
+      if (pendingExposure.lte(E)) break;
 
-      // 2.1) Borrow SUI
+      // 2.1) Max
       const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
         sSuiDepositedAmount,
         suiBorrowedAmount,
       )
         .times(0.99) // 1% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepSuiBorrowedAmount = BigNumber.min(
-        pendingSuiBorrowedAmount,
-        stepMaxSuiBorrowedAmount,
+      const stepMaxSsuiDepositedAmount = new BigNumber(
+        stepMaxSuiBorrowedAmount.minus(
+          getSsuiMintFee(stepMaxSuiBorrowedAmount),
+        ),
+      )
+        .times(suiToSsuiExchangeRate)
+        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+      const stepMaxExposure = getExposure(
+        sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
+        suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+      ).minus(exposure);
+      console.log(
+        `[SsuiStrategyDialog] deposit - ${i} max |`,
+        JSON.stringify(
+          {
+            stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
+            stepMaxSsuiDepositedAmount: stepMaxSsuiDepositedAmount.toFixed(20),
+            stepMaxExposure: stepMaxExposure.toFixed(20),
+          },
+          null,
+          2,
+        ),
       );
+
+      // 2.2) Borrow SUI
+      const stepSuiBorrowedAmount = stepMaxSuiBorrowedAmount
+        .times(BigNumber.min(1, pendingExposure.div(stepMaxExposure)))
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
       console.log(
         `[SsuiStrategyDialog] deposit - ${i} borrow |`,
         JSON.stringify(
           {
-            stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
             stepSuiBorrowedAmount: stepSuiBorrowedAmount.toFixed(20),
             isMaxBorrow,
           },
@@ -518,15 +503,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       const stepSsuiCoin = lstClient.mint(transaction, borrowedSuiCoin);
 
       // 2.4) Deposit sSUI
-      const stepMaxSsuiDepositedAmount = getStepMaxSsuiDepositedAmount(
-        stepSuiBorrowedAmount,
+      const stepSsuiDepositedAmount = new BigNumber(
+        stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
       )
-        .times(0.99) // 1% buffer
+        .times(suiToSsuiExchangeRate)
         .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepSsuiDepositedAmount = BigNumber.min(
-        pendingSsuiDepositedAmount,
-        stepMaxSsuiDepositedAmount,
-      );
       const isMaxDeposit = stepSsuiDepositedAmount.eq(
         stepMaxSsuiDepositedAmount,
       );
@@ -534,7 +515,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         `[SsuiStrategyDialog] deposit - ${i} deposit |`,
         JSON.stringify(
           {
-            stepMaxSsuiDepositedAmount: stepMaxSsuiDepositedAmount.toFixed(20),
             stepSsuiDepositedAmount: stepSsuiDepositedAmount.toFixed(20),
             isMaxDeposit,
           },
@@ -543,23 +523,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      if (stepSsuiDepositedAmount.eq(0)) {
-      } else {
-        const depositSuiCoin = transaction.splitCoins(stepSsuiCoin, [
-          stepSsuiDepositedAmount
-            .times(10 ** sSUI_DECIMALS)
-            .integerValue(BigNumber.ROUND_DOWN)
-            .toString(),
-        ]);
-
-        appData.suilendClient.deposit(
-          depositSuiCoin,
-          NORMALIZED_sSUI_COINTYPE,
-          obligationOwnerCap.id,
-          transaction,
-        );
-        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
-      }
+      appData.suilendClient.deposit(
+        stepSsuiCoin,
+        NORMALIZED_sSUI_COINTYPE,
+        obligationOwnerCap.id,
+        transaction,
+      );
+      sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
     }
   };
 
@@ -578,7 +548,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         {
           suiAmount: suiAmount.toFixed(20),
           sSuiAmount: sSuiAmount.toFixed(20),
-          unloopPercent: unloopPercent.toFixed(4),
+          unloopPercent: unloopPercent.toFixed(20),
         },
         null,
         2,
@@ -619,10 +589,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
-      const currentExposure = getExposure(
-        sSuiDepositedAmount,
-        suiBorrowedAmount,
-      );
       const pendingSsuiWithdrawAmount = sSuiDepositedAmount.minus(
         targetSsuiDepositedAmount,
       );
@@ -636,7 +602,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           {
             sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-            currentExposure: currentExposure.toFixed(20),
             pendingSsuiWithdrawAmount: pendingSsuiWithdrawAmount.toFixed(20),
             pendingSuiRepayAmount: pendingSuiRepayAmount.toFixed(20),
           },
@@ -694,9 +659,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       const stepMaxSuiRepaidAmount = getStepMaxSuiRepaidAmount(
         stepMaxSsuiWithdrawnAmount,
         suiBorrowedAmount,
-      )
-        .times(0.99) // 1% buffer
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepSuiRepaidAmount = BigNumber.min(
         pendingSuiRepayAmount,
         stepMaxSuiRepaidAmount,

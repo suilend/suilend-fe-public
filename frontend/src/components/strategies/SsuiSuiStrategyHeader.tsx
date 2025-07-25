@@ -7,7 +7,7 @@ import {
 import TokenLogos from "@/components/shared/TokenLogos";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { sSUI_SUI_TARGET_EXPOSURE } from "@/contexts/StrategiesContext";
+import { sSUI_SUI_TARGET_EXPOSURE } from "@/contexts/SsuiStrategyContext";
 
 export default function SsuiSuiStrategyHeader() {
   const { appData } = useLoadedAppContext();

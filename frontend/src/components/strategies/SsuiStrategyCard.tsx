@@ -7,18 +7,18 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedStrategiesContext } from "@/contexts/StrategiesContext";
+import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function SsuiStrategyCard() {
   const { userData } = useLoadedUserContext();
 
   const {
-    isObligationSsuiSuiLooping,
-    getSsuiSuiStrategyTvlSuiAmount,
-    getSsuiSuiStrategyAprPercent,
-    getSsuiSuiStrategyHealthPercent,
-  } = useLoadedStrategiesContext();
+    isObligationLooping,
+    getTvlSuiAmount,
+    getAprPercent,
+    getHealthPercent,
+  } = useLoadedSsuiStrategyContext();
 
   // Obligation
   const OBLIGATION_ID =
@@ -26,13 +26,13 @@ export default function SsuiStrategyCard() {
   const obligation = userData.obligations.find((o) => o.id === OBLIGATION_ID);
 
   // TVL
-  const tvlSuiAmount = getSsuiSuiStrategyTvlSuiAmount(obligation);
+  const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // APR
-  const aprPercent = getSsuiSuiStrategyAprPercent(obligation);
+  const aprPercent = getAprPercent(obligation);
 
   // Health
-  const healthPercent = getSsuiSuiStrategyHealthPercent(obligation);
+  const healthPercent = getHealthPercent(obligation);
 
   return (
     <SsuiStrategyDialog>
@@ -64,7 +64,7 @@ export default function SsuiStrategyCard() {
         </div>
 
         {/* Health */}
-        {isObligationSsuiSuiLooping(obligation) && (
+        {isObligationLooping(obligation) && (
           <>
             <Separator />
 

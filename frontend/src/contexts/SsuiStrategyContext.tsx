@@ -40,7 +40,7 @@ import { getWeightedBorrowsUsd } from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
-export const E = 10 ** -4;
+export const E = 10 ** -6;
 export const sSUI_DECIMALS = 9;
 
 export const sSUI_SUI_TARGET_EXPOSURE = new BigNumber(3);
@@ -49,9 +49,9 @@ export const sSUI_MAX_MAX_EXPOSURE = (sSuiReserve: ParsedReserve) =>
 
 const sSUI_SUI_TARGET_EXPOSURE_HEALTH_PERCENT = 88.87; // Approximate getWeightedBorrowsUsd(obligation) / obligation.unhealthyBorrowValueUsd for 3x exposure
 
-interface StrategiesContext {
+interface SsuiStrategyContext {
   // Obligation
-  isObligationSsuiSuiLooping: (obligation?: ParsedObligation) => boolean;
+  isObligationLooping: (obligation?: ParsedObligation) => boolean;
 
   // sSUI
   lstClient: LstClient | undefined;
@@ -71,9 +71,6 @@ interface StrategiesContext {
     sSuiDepositedAmount: BigNumber,
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
-  getStepMaxSsuiDepositedAmount: (
-    stepSuiBorrowedAmount: BigNumber,
-  ) => BigNumber;
   getStepMaxSsuiWithdrawnAmount: (
     sSuiDepositedAmount: BigNumber,
     suiBorrowedAmount: BigNumber,
@@ -83,19 +80,19 @@ interface StrategiesContext {
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
   getDepositedBorrowedAmounts: (suiAmount: BigNumber) => [BigNumber, BigNumber];
-  getSsuiSuiStrategyTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
-  getSsuiSuiStrategyAprPercent: (obligation?: ParsedObligation) => BigNumber;
-  getSsuiSuiStrategyHealthPercent: (obligation?: ParsedObligation) => BigNumber;
+  getTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
+  getAprPercent: (obligation?: ParsedObligation) => BigNumber;
+  getHealthPercent: (obligation?: ParsedObligation) => BigNumber;
 }
-type LoadedStrategiesContext = StrategiesContext & {
+type LoadedSsuiStrategyContext = SsuiStrategyContext & {
   lstClient: LstClient;
   sSuiMintFeePercent: BigNumber;
   sSuiRedeemFeePercent: BigNumber;
 };
 
-const defaultContextValue: StrategiesContext = {
-  isObligationSsuiSuiLooping: () => {
-    throw Error("StrategiesContextProvider not initialized");
+const defaultContextValue: SsuiStrategyContext = {
+  isObligationLooping: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
 
   lstClient: undefined,
@@ -106,47 +103,45 @@ const defaultContextValue: StrategiesContext = {
   sSuiToSuiExchangeRate: new BigNumber(0),
 
   getSsuiMintFee: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getSsuiRedeemFee: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getExposure: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getStepMaxSuiBorrowedAmount: () => {
-    throw Error("StrategiesContextProvider not initialized");
-  },
-  getStepMaxSsuiDepositedAmount: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getStepMaxSsuiWithdrawnAmount: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getStepMaxSuiRepaidAmount: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
   getDepositedBorrowedAmounts: () => {
-    throw Error("StrategiesContextProvider not initialized");
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
-  getSsuiSuiStrategyTvlSuiAmount: () => {
-    throw Error("StrategiesContextProvider not initialized");
+  getTvlSuiAmount: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
-  getSsuiSuiStrategyAprPercent: () => {
-    throw Error("StrategiesContextProvider not initialized");
+  getAprPercent: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
-  getSsuiSuiStrategyHealthPercent: () => {
-    throw Error("StrategiesContextProvider not initialized");
+  getHealthPercent: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
   },
 };
 
-const StrategiesContext = createContext<StrategiesContext>(defaultContextValue);
+const SsuiStrategyContext =
+  createContext<SsuiStrategyContext>(defaultContextValue);
 
-export const useStrategiesContext = () => useContext(StrategiesContext);
-export const useLoadedStrategiesContext = () =>
-  useContext(StrategiesContext) as LoadedStrategiesContext;
+export const useSsuiStrategyContext = () => useContext(SsuiStrategyContext);
+export const useLoadedSsuiStrategyContext = () =>
+  useContext(SsuiStrategyContext) as LoadedSsuiStrategyContext;
 
-export function StrategiesContextProvider({ children }: PropsWithChildren) {
+export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { userData } = useLoadedUserContext();
   const { allAppData, appData } = useLoadedAppContext();
@@ -156,19 +151,16 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
   const sSuiReserve = appData.reserveMap[NORMALIZED_sSUI_COINTYPE];
 
   // Obligation
-  const isObligationSsuiSuiLooping = useCallback(
-    (obligation?: ParsedObligation) => {
-      if (!obligation) return false;
+  const isObligationLooping = useCallback((obligation?: ParsedObligation) => {
+    if (!obligation) return false;
 
-      return (
-        obligation.deposits.length === 1 &&
-        obligation.deposits[0].coinType === NORMALIZED_sSUI_COINTYPE &&
-        obligation.borrows.length === 1 &&
-        obligation.borrows[0].coinType === NORMALIZED_SUI_COINTYPE
-      );
-    },
-    [],
-  );
+    return (
+      obligation.deposits.length === 1 &&
+      obligation.deposits[0].coinType === NORMALIZED_sSUI_COINTYPE &&
+      obligation.borrows.length === 1 &&
+      obligation.borrows[0].coinType === NORMALIZED_SUI_COINTYPE
+    );
+  }, []);
 
   // sSUI
   const [lstClient, setLstClient] = useState<LstClient | undefined>(undefined);
@@ -278,7 +270,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
     ];
   }, [liquidStakingInfo]);
   console.log(
-    `[StrategiesContextProvider] suiToSsuiExchangeRate: ${suiToSsuiExchangeRate}, sSuiToSuiExchangeRate: ${sSuiToSuiExchangeRate}`,
+    `[SsuiStrategyContextProvider] suiToSsuiExchangeRate: ${suiToSsuiExchangeRate}, sSuiToSuiExchangeRate: ${sSuiToSuiExchangeRate}`,
   );
 
   // sSUI - calculations
@@ -305,15 +297,6 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         .minus(suiBorrowedAmount)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN),
     [sSuiReserve.config.openLtvPct, sSuiReserve.minPrice, sSuiReserve.maxPrice],
-  );
-  const getStepMaxSsuiDepositedAmount = useCallback(
-    (stepSuiBorrowedAmount: BigNumber): BigNumber =>
-      new BigNumber(
-        stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
-      )
-        .times(suiToSsuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN),
-    [getSsuiMintFee, suiToSsuiExchangeRate],
   );
   const getStepMaxSsuiWithdrawnAmount = useCallback(
     (sSuiDepositedAmount: BigNumber, suiBorrowedAmount: BigNumber): BigNumber =>
@@ -366,7 +349,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         .minus(getSsuiMintFee(suiAmount))
         .times(suiToSsuiExchangeRate);
       // console.log(
-      //   `[StrategiesContextProvider] getDepositedBorrowedAmounts |`,
+      //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts |`,
       //   JSON.stringify(
       //     {
       //       targetExposure: targetExposure.toFixed(20),
@@ -383,7 +366,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       let suiBorrowedAmount = new BigNumber(0);
 
       // console.log(
-      //   `[StrategiesContextProvider] getDepositedBorrowedAmounts |`,
+      //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts |`,
       //   JSON.stringify(
       //     {
       //       sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
@@ -404,7 +387,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         );
         const pendingExposure = targetExposure.minus(currentExposure);
         // console.log(
-        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} start |`,
+        //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts - ${i} start |`,
         //   JSON.stringify(
         //     {
         //       sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
@@ -423,15 +406,13 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           sSuiDepositedAmount,
           suiBorrowedAmount,
         );
-        const stepMaxSsuiDepositedAmount = getStepMaxSsuiDepositedAmount(
-          stepMaxSuiBorrowedAmount,
-        );
+        const stepMaxSsuiDepositedAmount = new BigNumber(0);
         const stepMaxExposure = getExposure(
           sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
           suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
         ).minus(currentExposure);
         // console.log(
-        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} max |`,
+        //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts - ${i} max |`,
         //   JSON.stringify(
         //     {
         //       stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
@@ -452,7 +433,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
               .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
         // console.log(
-        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} borrow |`,
+        //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts - ${i} borrow |`,
         //   JSON.stringify(
         //     {
         //       stepSuiBorrowedAmount: stepSuiBorrowedAmount.toFixed(20),
@@ -474,7 +455,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           .times(suiToSsuiExchangeRate)
           .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
         // console.log(
-        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} deposit |`,
+        //   `[SsuiStrategyContextProvider] getDepositedBorrowedAmounts - ${i} deposit |`,
         //   JSON.stringify(
         //     { stepSsuiDepositedAmount: stepSsuiDepositedAmount.toFixed(20) },
         //     null,
@@ -492,14 +473,13 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       suiToSsuiExchangeRate,
       getExposure,
       getStepMaxSuiBorrowedAmount,
-      getStepMaxSsuiDepositedAmount,
     ],
   );
 
   // sSUI - TVL
-  const getSsuiSuiStrategyTvlSuiAmount = useCallback(
+  const getTvlSuiAmount = useCallback(
     (_obligation?: ParsedObligation) => {
-      if (isObligationSsuiSuiLooping(_obligation))
+      if (isObligationLooping(_obligation))
         return new BigNumber(
           _obligation!.deposits[0].depositedAmount.times(sSuiToSuiExchangeRate),
         ).minus(_obligation!.borrows[0].borrowedAmount);
@@ -507,13 +487,13 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       // Default value
       return new BigNumber(0);
     },
-    [isObligationSsuiSuiLooping, sSuiToSuiExchangeRate],
+    [isObligationLooping, sSuiToSuiExchangeRate],
   );
 
   // sSUI - APR
-  const getSsuiSuiStrategyAprPercent = useCallback(
+  const getAprPercent = useCallback(
     (_obligation?: ParsedObligation) => {
-      if (isObligationSsuiSuiLooping(_obligation))
+      if (isObligationLooping(_obligation))
         return getNetAprPercent(
           _obligation!,
           userData.rewardMap,
@@ -561,7 +541,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         : new BigNumber(0);
     },
     [
-      isObligationSsuiSuiLooping,
+      isObligationLooping,
       userData.rewardMap,
       allAppData.lstAprPercentMap,
       getDepositedBorrowedAmounts,
@@ -573,9 +553,9 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
   );
 
   // sSUI - Health
-  const getSsuiSuiStrategyHealthPercent = useCallback(
+  const getHealthPercent = useCallback(
     (_obligation?: ParsedObligation) => {
-      if (isObligationSsuiSuiLooping(_obligation)) {
+      if (isObligationLooping(_obligation)) {
         const utilizationPercent = getWeightedBorrowsUsd(_obligation!)
           .div(_obligation!.unhealthyBorrowValueUsd)
           .times(100);
@@ -593,13 +573,13 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       // Default value
       return new BigNumber(100);
     },
-    [isObligationSsuiSuiLooping],
+    [isObligationLooping],
   );
 
   // Context
-  const contextValue: StrategiesContext = useMemo(
+  const contextValue: SsuiStrategyContext = useMemo(
     () => ({
-      isObligationSsuiSuiLooping,
+      isObligationLooping,
 
       lstClient,
       sSuiMintFeePercent,
@@ -612,16 +592,15 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       getSsuiRedeemFee,
       getExposure,
       getStepMaxSuiBorrowedAmount,
-      getStepMaxSsuiDepositedAmount,
       getStepMaxSsuiWithdrawnAmount,
       getStepMaxSuiRepaidAmount,
       getDepositedBorrowedAmounts,
-      getSsuiSuiStrategyTvlSuiAmount,
-      getSsuiSuiStrategyAprPercent,
-      getSsuiSuiStrategyHealthPercent,
+      getTvlSuiAmount,
+      getAprPercent,
+      getHealthPercent,
     }),
     [
-      isObligationSsuiSuiLooping,
+      isObligationLooping,
       lstClient,
       sSuiMintFeePercent,
       sSuiRedeemFeePercent,
@@ -632,18 +611,17 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       getSsuiRedeemFee,
       getExposure,
       getStepMaxSuiBorrowedAmount,
-      getStepMaxSsuiDepositedAmount,
       getStepMaxSsuiWithdrawnAmount,
       getStepMaxSuiRepaidAmount,
       getDepositedBorrowedAmounts,
-      getSsuiSuiStrategyTvlSuiAmount,
-      getSsuiSuiStrategyAprPercent,
-      getSsuiSuiStrategyHealthPercent,
+      getTvlSuiAmount,
+      getAprPercent,
+      getHealthPercent,
     ],
   );
 
   return (
-    <StrategiesContext.Provider value={contextValue}>
+    <SsuiStrategyContext.Provider value={contextValue}>
       {lstClient !== undefined &&
       sSuiMintFeePercent !== undefined &&
       sSuiRedeemFeePercent !== undefined ? (
@@ -651,6 +629,6 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       ) : (
         <FullPageSpinner />
       )}
-    </StrategiesContext.Provider>
+    </SsuiStrategyContext.Provider>
   );
 }
