@@ -72,7 +72,7 @@ interface StrategiesContext {
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
   getStepMaxSsuiDepositedAmount: (
-    stepMaxSuiBorrowedAmount: BigNumber,
+    stepSuiBorrowedAmount: BigNumber,
   ) => BigNumber;
   getStepMaxSsuiWithdrawnAmount: (
     sSuiDepositedAmount: BigNumber,
@@ -299,8 +299,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         new BigNumber(
           new BigNumber(sSuiReserve.config.openLtvPct)
             .div(100)
-            .times(sSuiReserve.minPrice.div(sSuiReserve.maxPrice))
-            .times(0.99), // 1% buffer
+            .times(sSuiReserve.minPrice.div(sSuiReserve.maxPrice)),
         ).times(sSuiDepositedAmount),
       )
         .minus(suiBorrowedAmount)
@@ -308,11 +307,9 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
     [sSuiReserve.config.openLtvPct, sSuiReserve.minPrice, sSuiReserve.maxPrice],
   );
   const getStepMaxSsuiDepositedAmount = useCallback(
-    (stepMaxSuiBorrowedAmount: BigNumber): BigNumber =>
+    (stepSuiBorrowedAmount: BigNumber): BigNumber =>
       new BigNumber(
-        stepMaxSuiBorrowedAmount.minus(
-          getSsuiMintFee(stepMaxSuiBorrowedAmount),
-        ),
+        stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
       )
         .times(suiToSsuiExchangeRate)
         .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN),
@@ -334,7 +331,7 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           .div(sSuiReserve.minPrice)
           .div(sSuiReserve.config.openLtvPct / 100),
         sSuiDepositedAmount,
-      ),
+      ).decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN),
     [
       suiReserve.maxPrice,
       suiReserve.config.borrowWeightBps,
@@ -368,10 +365,34 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
       const sSuiAmount = suiAmount
         .minus(getSsuiMintFee(suiAmount))
         .times(suiToSsuiExchangeRate);
+      // console.log(
+      //   `[StrategiesContextProvider] getDepositedBorrowedAmounts |`,
+      //   JSON.stringify(
+      //     {
+      //       targetExposure: targetExposure.toFixed(20),
+      //       suiAmount: suiAmount.toFixed(20),
+      //       sSuiAmount: sSuiAmount.toFixed(20),
+      //     },
+      //     null,
+      //     2,
+      //   ),
+      // );
 
       // Prepare
-      let sSuiDepositedAmount = sSuiAmount;
+      let sSuiDepositedAmount = new BigNumber(0);
       let suiBorrowedAmount = new BigNumber(0);
+
+      // console.log(
+      //   `[StrategiesContextProvider] getDepositedBorrowedAmounts |`,
+      //   JSON.stringify(
+      //     {
+      //       sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+      //       suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+      //     },
+      //     null,
+      //     2,
+      //   ),
+      // );
 
       // 1) Deposit sSUI (1x exposure)
       sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
@@ -382,6 +403,19 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           suiBorrowedAmount,
         );
         const pendingExposure = targetExposure.minus(currentExposure);
+        // console.log(
+        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} start |`,
+        //   JSON.stringify(
+        //     {
+        //       sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+        //       suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+        //       currentExposure: currentExposure.toFixed(20),
+        //       pendingExposure: pendingExposure.toFixed(20),
+        //     },
+        //     null,
+        //     2,
+        //   ),
+        // );
         if (currentExposure.times(1 + E).gte(targetExposure)) break;
 
         // 2.1) Max calculations
@@ -396,6 +430,19 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
           sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
           suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
         ).minus(currentExposure);
+        // console.log(
+        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} max |`,
+        //   JSON.stringify(
+        //     {
+        //       stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
+        //       stepMaxSsuiDepositedAmount:
+        //         stepMaxSsuiDepositedAmount.toFixed(20),
+        //       stepMaxExposure: stepMaxExposure.toFixed(20),
+        //     },
+        //     null,
+        //     2,
+        //   ),
+        // );
 
         // 2.2) Borrow SUI
         const stepSuiBorrowedAmount = pendingExposure.gte(stepMaxExposure)
@@ -404,6 +451,17 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
               .times(pendingExposure.div(stepMaxExposure))
               .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
+        // console.log(
+        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} borrow |`,
+        //   JSON.stringify(
+        //     {
+        //       stepSuiBorrowedAmount: stepSuiBorrowedAmount.toFixed(20),
+        //       isMaxBorrow,
+        //     },
+        //     null,
+        //     2,
+        //   ),
+        // );
 
         suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
@@ -415,6 +473,14 @@ export function StrategiesContextProvider({ children }: PropsWithChildren) {
         )
           .times(suiToSsuiExchangeRate)
           .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        // console.log(
+        //   `[StrategiesContextProvider] getDepositedBorrowedAmounts - ${i} deposit |`,
+        //   JSON.stringify(
+        //     { stepSsuiDepositedAmount: stepSsuiDepositedAmount.toFixed(20) },
+        //     null,
+        //     2,
+        //   ),
+        // );
 
         sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
       }
