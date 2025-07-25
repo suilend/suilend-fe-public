@@ -43,7 +43,6 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
@@ -242,6 +241,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     getExposure,
     getStepMaxSuiBorrowedAmount,
     getStepMaxSsuiWithdrawnAmount,
+    simulateDeposit,
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -344,22 +344,18 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
-  const [aprPercent, setAprPercent] = useState<BigNumber | undefined>(
-    undefined,
-  );
-  useEffect(() => {
-    if (isObligationLooping(obligation))
-      setAprPercent(getAprPercent(obligation!));
-    else {
-      // TODO
-    }
-  }, [obligation, getAprPercent, isObligationLooping]);
+  const aprPercent = getAprPercent(obligation);
 
   // Stats - Health
   const healthPercent = getHealthPercent(obligation);
 
   // Fees
-  const depositFeesSuiAmount = new BigNumber(0); // TODO
+  const depositFeesSuiAmount = useMemo(() => {
+    const { suiBorrowedAmount } = simulateDeposit(new BigNumber(value || 0));
+
+    // TODO: Add sSUI mint fee
+    return suiBorrowedAmount.times(suiBorrowFeePercent.div(100));
+  }, [simulateDeposit, value, suiBorrowFeePercent]);
 
   const withdrawFeesSuiAmount = useMemo(() => {
     if (!isObligationLooping(obligation)) return new BigNumber(0);
@@ -1075,17 +1071,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
               >
                 <LabelWithValue
                   label="APR"
-                  value="0"
+                  value={formatPercent(aprPercent)}
                   horizontal
-                  customChild={
-                    aprPercent === undefined ? (
-                      <Skeleton className="h-5 w-16" />
-                    ) : (
-                      <TBody className="text-right">
-                        {formatPercent(aprPercent)}
-                      </TBody>
-                    )
-                  }
                 />
                 <LabelWithValue
                   label="Health"
@@ -1096,7 +1083,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 />
                 {selectedTab === Tab.DEPOSIT ? (
                   <LabelWithValue
-                    label="Deposit fees"
+                    label="Deposit fee"
                     value={`${formatToken(depositFeesSuiAmount, {
                       dp: SUI_DECIMALS,
                       trimTrailingZeros: true,
@@ -1105,7 +1092,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   />
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
-                    label="Withdraw fees"
+                    label="Withdraw fee"
                     value={`${formatToken(withdrawFeesSuiAmount, {
                       dp: SUI_DECIMALS,
                       trimTrailingZeros: true,

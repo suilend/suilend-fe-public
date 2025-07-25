@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
-
 import { SUI_DECIMALS } from "@mysten/sui/utils";
-import BigNumber from "bignumber.js";
 
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
@@ -10,7 +7,6 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
@@ -33,14 +29,7 @@ export default function SsuiStrategyCard() {
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
-  const [aprPercent, setAprPercent] = useState<BigNumber | undefined>(
-    undefined,
-  );
-  useEffect(() => {
-    if (isObligationLooping(obligation)) {
-      setAprPercent(getAprPercent(obligation!));
-    }
-  }, [isObligationLooping, obligation, getAprPercent]);
+  const aprPercent = getAprPercent(obligation!);
 
   // Stats - Health
   const healthPercent = getHealthPercent(obligation);
@@ -69,13 +58,7 @@ export default function SsuiStrategyCard() {
 
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>APR</TLabelSans>
-              {aprPercent === undefined ? (
-                <Skeleton className="h-5 w-16" />
-              ) : (
-                <TBody className="text-right">
-                  {formatPercent(aprPercent)}
-                </TBody>
-              )}
+              <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
             </div>
           </div>
         </div>
