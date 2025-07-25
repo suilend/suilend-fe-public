@@ -111,12 +111,9 @@ function TokenRow({
                           ),
                       )
                         ? "Available on Suilend"
-                        : token.coinType ===
-                            "0x0b559e66f39afcc202b7f529571eccad713402bc9fd4e3ecfa0956bbe24a3f51::cctoo::CCTOO"
-                          ? "Verified coin"
-                          : verifiedCoinTypes.includes(token.coinType)
-                            ? "Appears on the list of Aftermath verified coins"
-                            : ""
+                        : verifiedCoinTypes.includes(token.coinType)
+                          ? "Appears on the list of Cetus verified coins"
+                          : ""
                     }
                   >
                     <BadgeCheck className="h-4 w-4 text-verified" />
