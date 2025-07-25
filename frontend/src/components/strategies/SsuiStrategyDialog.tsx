@@ -430,6 +430,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
 
     return {
+      isDisabled: !lstClient,
       title: `${
         selectedTab === Tab.DEPOSIT
           ? "Deposit"

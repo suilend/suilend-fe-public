@@ -199,7 +199,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const sSuiMintFeePercent = useMemo(
     () =>
       liquidStakingInfo === undefined
-        ? undefined
+        ? new BigNumber(0)
         : new BigNumber(
             liquidStakingInfo.feeConfig.element?.suiMintFeeBps.toString() ?? 0,
           ).div(100),
@@ -208,7 +208,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const sSuiRedeemFeePercent = useMemo(
     () =>
       liquidStakingInfo === undefined
-        ? undefined
+        ? new BigNumber(0)
         : new BigNumber(
             liquidStakingInfo.feeConfig.element?.redeemFeeBps.toString() ?? 0,
           ).div(100),
@@ -220,25 +220,17 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   const getSsuiMintFee = useCallback(
-    (suiAmount: BigNumber) => {
-      if (sSuiMintFeePercent === undefined)
-        throw new Error("sSuiMintFeePercent is undefined");
-
-      return suiAmount
+    (suiAmount: BigNumber) =>
+      suiAmount
         .times(sSuiMintFeePercent.div(100))
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP);
-    },
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP),
     [sSuiMintFeePercent],
   );
   const getSsuiRedeemFee = useCallback(
-    (sSuiAmount: BigNumber) => {
-      if (sSuiRedeemFeePercent === undefined)
-        throw new Error("sSuiRedeemFeePercent is undefined");
-
-      return sSuiAmount
+    (sSuiAmount: BigNumber) =>
+      sSuiAmount
         .times(sSuiRedeemFeePercent.div(100))
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP);
-    },
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP),
     [sSuiRedeemFeePercent],
   );
 
@@ -494,8 +486,8 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       sSuiReserve,
 
       lstClient: lstClient as LstClient,
-      sSuiMintFeePercent: sSuiMintFeePercent as BigNumber,
-      sSuiRedeemFeePercent: sSuiRedeemFeePercent as BigNumber,
+      sSuiMintFeePercent,
+      sSuiRedeemFeePercent,
       suiBorrowFeePercent,
       suiToSsuiExchangeRate,
       sSuiToSuiExchangeRate,
