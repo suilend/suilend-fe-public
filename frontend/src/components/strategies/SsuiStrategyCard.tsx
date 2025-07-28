@@ -29,7 +29,7 @@ export default function SsuiStrategyCard() {
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
-  const aprPercent = getAprPercent(obligation!);
+  const aprPercent = getAprPercent(obligation);
 
   // Stats - Health
   const healthPercent = getHealthPercent(obligation);

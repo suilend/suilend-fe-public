@@ -42,8 +42,6 @@ export const sSUI_SUI_TARGET_EXPOSURE = new BigNumber(3);
 export const sSUI_MAX_MAX_EXPOSURE = (sSuiReserve: ParsedReserve) =>
   new BigNumber(1 / (1 - sSuiReserve.config.openLtvPct / 100)); // 3.3333...
 
-const sSUI_SUI_TARGET_EXPOSURE_HEALTH_PERCENT = 88.87; // Approximate getWeightedBorrowsUsd(obligation) / obligation.unhealthyBorrowValueUsd for 3x exposure
-
 interface SsuiStrategyContext {
   // Obligation
   isObligationLooping: (obligation?: ParsedObligation) => boolean;
@@ -440,7 +438,6 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           _obligation,
           userData.rewardMap,
           allAppData.lstAprPercentMap,
-          true,
         );
       }
     },
@@ -458,17 +455,10 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const getHealthPercent = useCallback(
     (obligation?: ParsedObligation) => {
       if (isObligationLooping(obligation)) {
-        const utilizationPercent = getWeightedBorrowsUsd(obligation!)
-          .div(obligation!.unhealthyBorrowValueUsd)
-          .times(100);
-
-        return BigNumber.min(
-          new BigNumber(100).minus(
-            new BigNumber(
-              utilizationPercent.minus(sSUI_SUI_TARGET_EXPOSURE_HEALTH_PERCENT),
-            ).div(100 - sSUI_SUI_TARGET_EXPOSURE_HEALTH_PERCENT),
-          ),
-          100,
+        return new BigNumber(100).minus(
+          getWeightedBorrowsUsd(obligation!)
+            .div(obligation!.unhealthyBorrowValueUsd)
+            .times(100),
         );
       } else {
         return new BigNumber(100); // Shown as -- in the UI
