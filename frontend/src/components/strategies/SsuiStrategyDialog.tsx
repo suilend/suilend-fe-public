@@ -47,12 +47,14 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
   sSUI_DECIMALS,
-  sSUI_SUI_TARGET_EXPOSURE,
   useSsuiStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { SubmitButtonState } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+import FromToArrow from "../shared/FromToArrow";
 
 const getTransactionMintAmounts = (res: SuiTransactionBlockResponse) => {
   const mintEvents = (res.events ?? []).filter(
@@ -228,6 +230,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
     suiReserve,
     sSuiReserve,
+    minExposure,
+    maxExposure,
+    defaultExposure,
 
     lstClient,
     sSuiMintFeePercent,
@@ -283,6 +288,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   // Balance
   const suiBalance = getBalance(suiReserve.coinType);
 
+  // Slider
+  const [depositSliderValue, setDepositSliderValue] = useState<string>(
+    defaultExposure.toFixed(1),
+  );
+
+  const [adjustSliderValue, setAdjustSliderValue] = useState<string>(
+    isObligationLooping(obligation)
+      ? BigNumber.min(
+          maxExposure,
+          getExposure(
+            obligation!.deposits[0].depositedAmount,
+            obligation!.borrows[0].borrowedAmount,
+          ),
+        ).toFixed(1)
+      : defaultExposure.toFixed(1),
+  );
+
   // Value
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>("");
@@ -298,7 +320,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
     else if (selectedTab === Tab.WITHDRAW)
       return BigNumber.max(new BigNumber(0), getTvlSuiAmount(obligation));
-    else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // TODO
+    else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // Not relevant (adjust tab only has a slider)
 
     return new BigNumber(0); // Should not happen
   }, [selectedTab, getBalance, getTvlSuiAmount, obligation]);
@@ -343,35 +365,40 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
+  // Stats - Exposure
+  const exposure = useMemo(
+    () =>
+      isObligationLooping(obligation)
+        ? getExposure(
+            obligation!.deposits[0].depositedAmount,
+            obligation!.borrows[0].borrowedAmount,
+          )
+        : new BigNumber(depositSliderValue || 0),
+    [isObligationLooping, obligation, getExposure, depositSliderValue],
+  );
+  const adjustExposure = useMemo(
+    () => new BigNumber(adjustSliderValue || 0),
+    [adjustSliderValue],
+  );
+
   // Stats - APR
-  const aprPercent = getAprPercent(obligation);
+  const aprPercent = getAprPercent(obligation, exposure);
+  const adjustAprPercent = getAprPercent(undefined, adjustExposure);
 
   // Stats - Health
-  const healthPercent = getHealthPercent(obligation);
+  const healthPercent = getHealthPercent(obligation, exposure);
+  const adjustHealthPercent = getHealthPercent(undefined, adjustExposure);
 
-  // Fees
+  // Stats - Fees
   const depositFeesSuiAmount = useMemo(() => {
-    const targetExposure = isObligationLooping(obligation)
-      ? getExposure(
-          obligation!.deposits[0].depositedAmount,
-          obligation!.borrows[0].borrowedAmount,
-        )
-      : sSUI_SUI_TARGET_EXPOSURE;
     const { suiBorrowedAmount } = simulateDeposit(
       new BigNumber(value || 0),
-      targetExposure,
+      exposure,
     );
 
     // TODO: Add sSUI mint fee
     return suiBorrowedAmount.times(suiBorrowFeePercent.div(100));
-  }, [
-    isObligationLooping,
-    obligation,
-    getExposure,
-    simulateDeposit,
-    value,
-    suiBorrowFeePercent,
-  ]);
+  }, [simulateDeposit, value, exposure, suiBorrowFeePercent]);
 
   const withdrawFeesSuiAmount = useMemo(() => {
     if (!isObligationLooping(obligation)) return new BigNumber(0);
@@ -395,6 +422,15 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     sSuiToSuiExchangeRate,
   ]);
 
+  const adjustFeesSuiAmount = useMemo(() => {
+    if (!isObligationLooping(obligation)) return new BigNumber(0);
+
+    const currentExposure = exposure;
+    const targetExposure = adjustExposure;
+
+    return new BigNumber(0); // TODO
+  }, [isObligationLooping, obligation, exposure, adjustExposure]);
+
   // Submit
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -402,47 +438,46 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!address) return { isDisabled: true, title: "Connect wallet" };
     if (isSubmitting) return { isDisabled: true, isLoading: true };
 
-    if (value === "") return { isDisabled: true, title: "Enter an amount" };
-    if (new BigNumber(value).lt(0))
-      return { isDisabled: true, title: "Enter a +ve amount" };
-    if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
-      return { isDisabled: true, title: "Enter a non-zero amount" };
+    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+      if (value === "") return { isDisabled: true, title: "Enter an amount" };
+      if (new BigNumber(value).lt(0))
+        return { isDisabled: true, title: "Enter a +ve amount" };
+      if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
+        return { isDisabled: true, title: "Enter a non-zero amount" };
 
-    if (selectedTab === Tab.DEPOSIT) {
-      if (
-        new BigNumber(value).gt(
-          suiBalance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
+      if (selectedTab === Tab.DEPOSIT) {
+        if (
+          new BigNumber(value).gt(
+            suiBalance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
+          )
         )
-      )
-        return {
-          isDisabled: true,
-          title: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
-        };
-      if (new BigNumber(value).gt(suiBalance))
-        return { isDisabled: true, title: "Insufficient SUI" };
-    } else if (selectedTab === Tab.WITHDRAW) {
-      if (new BigNumber(value).gt(tvlSuiAmount))
-        return { isDisabled: true, title: "Withdraw cannot exceed deposits" };
-    } else if (selectedTab === Tab.ADJUST) {
-      // TODO
-    } else {
-      throw new Error("Invalid tab");
+          return {
+            isDisabled: true,
+            title: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
+          };
+        if (new BigNumber(value).gt(suiBalance))
+          return { isDisabled: true, title: "Insufficient SUI" };
+      } else {
+        if (new BigNumber(value).gt(tvlSuiAmount))
+          return { isDisabled: true, title: "Withdraw cannot exceed deposits" };
+      }
     }
 
     return {
       isDisabled: !lstClient,
-      title: `${
-        selectedTab === Tab.DEPOSIT
-          ? "Deposit"
-          : selectedTab === Tab.WITHDRAW
-            ? "Withdraw"
-            : selectedTab === Tab.ADJUST
-              ? "Adjust"
-              : "--" // Should not happen
-      } ${formatToken(new BigNumber(value), {
-        dp: SUI_DECIMALS,
-        trimTrailingZeros: true,
-      })} SUI`,
+      title:
+        selectedTab === Tab.ADJUST
+          ? `Adjust to ${adjustExposure.toFixed(1)}x`
+          : `${
+              selectedTab === Tab.DEPOSIT
+                ? "Deposit"
+                : selectedTab === Tab.WITHDRAW
+                  ? "Withdraw"
+                  : "--" // Should not happen
+            } ${formatToken(new BigNumber(value), {
+              dp: SUI_DECIMALS,
+              trimTrailingZeros: true,
+            })} SUI`,
     };
   })();
 
@@ -452,6 +487,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!lstClient) throw Error("LST client not found");
 
     const sSuiAmount = suiAmount
       .minus(getSsuiMintFee(suiAmount))
@@ -482,7 +518,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           BigNumber.ROUND_DOWN,
         )
       : new BigNumber(0);
-    const targetExposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+    const targetExposure = isObligationLooping(obligation)
+      ? getExposure(
+          obligation!.deposits[0].depositedAmount,
+          obligation!.borrows[0].borrowedAmount,
+        )
+      : new BigNumber(depositSliderValue || 0);
 
     console.log(
       `[SsuiStrategyDialog] deposit |`,
@@ -636,6 +677,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!lstClient) throw Error("LST client not found");
 
     console.log(
       `[SsuiStrategyDialog] withdraw |`,
@@ -820,6 +862,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!lstClient) throw Error("LST client not found");
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
@@ -872,7 +915,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
-    if (submitButtonState.isDisabled) return;
+    if (submitButtonState.isDisabled || !lstClient) return;
 
     setIsSubmitting(true);
 
@@ -926,6 +969,17 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
             duration: TX_TOAST_DURATION,
           },
         );
+
+        // Set slider value
+        setAdjustSliderValue(
+          BigNumber.min(
+            maxExposure,
+            getExposure(
+              obligation!.deposits[0].depositedAmount,
+              obligation!.borrows[0].borrowedAmount,
+            ),
+          ).toFixed(1),
+        );
       } else if (selectedTab === Tab.WITHDRAW) {
         // 2) Withdraw
         transaction = !useMaxAmount
@@ -974,6 +1028,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
             duration: TX_TOAST_DURATION,
           },
         );
+
+        if (useMaxAmount) {
+          // Reset slider values
+          setDepositSliderValue(defaultExposure.toFixed(1));
+          setAdjustSliderValue(defaultExposure.toFixed(1));
+        }
       } else if (selectedTab === Tab.ADJUST) {
         // TODO
       } else {
@@ -1032,54 +1092,150 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           }}
         >
           <div className="flex h-full w-full flex-col gap-4 md:h-auto md:w-[28rem]">
-            <div className="relative flex w-full flex-col">
-              <div className="relative z-[2] w-full">
-                <StrategyInput
-                  ref={inputRef}
-                  value={value}
-                  onChange={onValueChange}
-                  reserve={suiReserve}
-                  tab={selectedTab}
-                  useMaxAmount={useMaxAmount}
-                  onMaxClick={useMaxValueWrapper}
-                />
-              </div>
-
-              <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-between gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
-                <div
-                  className="flex cursor-pointer flex-row items-center gap-1.5"
-                  onClick={useMaxValueWrapper}
-                >
-                  <Wallet className="h-3 w-3 text-foreground" />
-                  <Tooltip
-                    title={
-                      suiBalance.gt(0)
-                        ? `${formatToken(suiBalance, { dp: SUI_DECIMALS })} SUI`
-                        : undefined
-                    }
-                  >
-                    <TBody className="text-xs">
-                      {formatToken(suiBalance, { exact: false })} SUI
-                    </TBody>
-                  </Tooltip>
+            {/* Amount */}
+            {(selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) && (
+              <div className="relative flex w-full flex-col">
+                <div className="relative z-[2] w-full">
+                  <StrategyInput
+                    ref={inputRef}
+                    value={value}
+                    onChange={onValueChange}
+                    reserve={suiReserve}
+                    tab={selectedTab}
+                    useMaxAmount={useMaxAmount}
+                    onMaxClick={useMaxValueWrapper}
+                  />
                 </div>
 
-                <div className="flex flex-row items-center gap-1.5">
-                  <Download className="h-3 w-3 text-foreground" />
-                  <Tooltip
-                    title={
-                      tvlSuiAmount.gt(0)
-                        ? `${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`
-                        : undefined
-                    }
+                <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-between gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
+                  <div
+                    className="flex cursor-pointer flex-row items-center gap-1.5"
+                    onClick={useMaxValueWrapper}
                   >
-                    <TBody className="text-xs">
-                      {formatToken(tvlSuiAmount, { exact: false })} SUI
-                    </TBody>
-                  </Tooltip>
+                    <Wallet className="h-3 w-3 text-foreground" />
+                    <Tooltip
+                      title={
+                        suiBalance.gt(0)
+                          ? `${formatToken(suiBalance, { dp: SUI_DECIMALS })} SUI`
+                          : undefined
+                      }
+                    >
+                      <TBody className="text-xs">
+                        {formatToken(suiBalance, { exact: false })} SUI
+                      </TBody>
+                    </Tooltip>
+                  </div>
+
+                  <div className="flex flex-row items-center gap-1.5">
+                    <Download className="h-3 w-3 text-foreground" />
+                    <Tooltip
+                      title={
+                        isObligationLooping(obligation)
+                          ? `${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`
+                          : undefined
+                      }
+                    >
+                      <TBody className="text-xs">
+                        {formatToken(tvlSuiAmount, { exact: false })} SUI
+                      </TBody>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Exposure */}
+            {((selectedTab === Tab.DEPOSIT &&
+              !isObligationLooping(obligation)) ||
+              selectedTab === Tab.ADJUST) && (
+              <div className="flex w-full flex-col gap-2">
+                {/* Slider */}
+                <div className="relative flex h-4 w-full flex-row items-center">
+                  <div className="absolute inset-0 z-[1] rounded-full bg-card" />
+
+                  <div
+                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full bg-gradient-to-r from-primary/50 to-primary/75"
+                    style={{
+                      width: `calc(${16 / 2}px + ${new BigNumber(
+                        new BigNumber(
+                          (selectedTab === Tab.DEPOSIT
+                            ? depositSliderValue
+                            : adjustSliderValue) || 0,
+                        ).minus(minExposure),
+                      )
+                        .div(maxExposure.minus(minExposure))
+                        .times(100)}% - ${
+                        (16 / 2) *
+                        2 *
+                        +new BigNumber(
+                          new BigNumber(
+                            (selectedTab === Tab.DEPOSIT
+                              ? depositSliderValue
+                              : adjustSliderValue) || 0,
+                          ).minus(minExposure),
+                        ).div(maxExposure.minus(minExposure))
+                      }px)`,
+                    }}
+                  />
+                  <div className="absolute inset-x-[calc(16px/2)] inset-y-0 z-[3]">
+                    {Array.from({ length: 5 }).map((_, detentIndex, array) => (
+                      <div
+                        key={detentIndex}
+                        className={cn(
+                          "absolute inset-y-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2",
+                          detentIndex !== 0 &&
+                            detentIndex !== array.length - 1 &&
+                            "rounded-[calc(4px/2)] bg-foreground/50",
+                        )}
+                        style={{
+                          left: `${detentIndex * (100 / (array.length - 1))}%`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  <input
+                    className="relative z-[4] h-6 w-full min-w-0 appearance-none bg-[transparent] !shadow-none !outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-[calc(16px/2)] [&::-webkit-slider-thumb]:bg-foreground"
+                    type="range"
+                    min={+minExposure}
+                    max={+maxExposure}
+                    step={10 ** -1} // 1dp
+                    value={
+                      (selectedTab === Tab.DEPOSIT
+                        ? depositSliderValue
+                        : adjustSliderValue) || "0"
+                    }
+                    onChange={(e) =>
+                      (selectedTab === Tab.DEPOSIT
+                        ? setDepositSliderValue
+                        : setAdjustSliderValue)(e.target.value)
+                    }
+                    autoComplete="off"
+                    disabled={
+                      selectedTab === Tab.ADJUST &&
+                      !isObligationLooping(obligation)
+                    }
+                  />
+                </div>
+
+                {/* Labels */}
+                <div className="flex w-full flex-row items-center justify-between px-[calc(16px/2)]">
+                  {/* Min */}
+                  <div className="flex w-0 flex-row justify-center">
+                    <TBody className="text-muted-foreground">
+                      {minExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
+                    </TBody>
+                  </div>
+
+                  {/* Max */}
+                  <div className="flex w-0 flex-row justify-center">
+                    <TBody className="text-muted-foreground">
+                      {maxExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
+                    </TBody>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="-m-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overflow-x-hidden p-4 md:pb-6">
               <div
@@ -1087,14 +1243,54 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 style={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
               >
                 <LabelWithValue
+                  label="Leverage"
+                  value={
+                    <>
+                      {exposure.toFixed(1)}x
+                      {selectedTab === Tab.ADJUST &&
+                        `${adjustExposure.toFixed(1)}x` !==
+                          `${exposure.toFixed(1)}x` && (
+                          <>
+                            <FromToArrow />
+                            {adjustExposure.toFixed(1)}x
+                          </>
+                        )}
+                    </>
+                  }
+                  horizontal
+                />
+
+                <LabelWithValue
                   label="APR"
-                  value={formatPercent(aprPercent)}
+                  value={
+                    <>
+                      {formatPercent(aprPercent)}
+                      {selectedTab === Tab.ADJUST &&
+                        formatPercent(adjustAprPercent) !==
+                          formatPercent(aprPercent) && (
+                          <>
+                            <FromToArrow />
+                            {formatPercent(adjustAprPercent)}
+                          </>
+                        )}
+                    </>
+                  }
                   horizontal
                 />
                 <LabelWithValue
                   label="Health"
                   value={
-                    tvlSuiAmount.gt(0) ? formatPercent(healthPercent) : "--"
+                    <>
+                      {formatPercent(healthPercent)}
+                      {selectedTab === Tab.ADJUST &&
+                        formatPercent(adjustHealthPercent) !==
+                          formatPercent(healthPercent) && (
+                          <>
+                            <FromToArrow />
+                            {formatPercent(adjustHealthPercent)}
+                          </>
+                        )}
+                    </>
                   }
                   horizontal
                 />
@@ -1117,7 +1313,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     horizontal
                   />
                 ) : selectedTab === Tab.ADJUST ? (
-                  <></> // TODO
+                  <LabelWithValue
+                    label="Adjust fee"
+                    value={`${formatToken(adjustFeesSuiAmount, {
+                      dp: SUI_DECIMALS,
+                      trimTrailingZeros: true,
+                    })} SUI`}
+                    horizontal
+                  />
                 ) : (
                   <></> // Should not happen
                 )}
