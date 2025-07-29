@@ -12,8 +12,10 @@ import {
   API_URL,
   MAX_U64,
   MS_PER_YEAR,
+  NORMALIZED_DMC_COINTYPE,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
+  NORMALIZED_IKA_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatInteger,
   formatPrice,
@@ -269,13 +271,13 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for DMC, FUD, and HIPPO
+        // TODO: Remove workaround for FUD, HIPPO, DMC, and IKA
         if (
           useMaxAmount &&
-          reserve.coinType !==
-            "0x4c981f3ff786cdb9e514da897ab8a953647dae2ace9679e8358eec1e3e8871ac::dmc::DMC" &&
           reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
-          reserve.coinType !== NORMALIZED_HIPPO_COINTYPE
+          reserve.coinType !== NORMALIZED_HIPPO_COINTYPE &&
+          reserve.coinType !== NORMALIZED_DMC_COINTYPE &&
+          reserve.coinType !== NORMALIZED_IKA_COINTYPE
         )
           submitAmount = MAX_U64.toString();
         else
