@@ -461,6 +461,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         if (new BigNumber(value).gt(tvlSuiAmount))
           return { isDisabled: true, title: "Withdraw cannot exceed deposits" };
       }
+
+      if (healthPercent.lt(100)) {
+        return {
+          isDisabled: true,
+          title: "Adjust leverage to 100% health",
+        };
+      }
     }
 
     return {
@@ -1246,16 +1253,21 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   label="Leverage"
                   value={
                     <>
-                      {exposure.toFixed(1)}x
+                      {exposure.toFixed(selectedTab === Tab.ADJUST ? 6 : 1)}x
                       {selectedTab === Tab.ADJUST &&
                         `${adjustExposure.toFixed(1)}x` !==
-                          `${exposure.toFixed(1)}x` && (
+                          `${exposure.toFixed(6)}x` && (
                           <>
                             <FromToArrow />
                             {adjustExposure.toFixed(1)}x
                           </>
                         )}
                     </>
+                  }
+                  valueTooltip={
+                    selectedTab === Tab.ADJUST ? undefined : (
+                      <>{exposure.toFixed(6)}x</>
+                    )
                   }
                   horizontal
                 />

@@ -45,7 +45,7 @@ export default function SsuiStrategyCard() {
   return (
     <SsuiStrategyDialog>
       {lstClient === undefined ? (
-        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-40 w-full" />
       ) : (
         <div className="flex w-full cursor-pointer flex-col gap-4 rounded-sm border bg-card p-4 transition-colors hover:bg-muted/10">
           <div className="flex w-full flex-row justify-between">
@@ -88,6 +88,10 @@ export default function SsuiStrategyCard() {
                     obligation!.deposits[0].depositedAmount,
                     obligation!.borrows[0].borrowedAmount,
                   ).toFixed(1)}x`}
+                  valueTooltip={`${getExposure(
+                    obligation!.deposits[0].depositedAmount,
+                    obligation!.borrows[0].borrowedAmount,
+                  ).toFixed(6)}x`}
                   horizontal
                 />
 
