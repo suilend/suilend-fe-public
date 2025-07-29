@@ -6,8 +6,10 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   MS_PER_YEAR,
   NORMALIZED_ETH_COINTYPES,
+  NORMALIZED_IKA_COINTYPE,
   NORMALIZED_STABLECOIN_COINTYPES,
   formatList,
+  formatPercent,
   isEth,
   isStablecoin,
   isSui,
@@ -17,6 +19,8 @@ import { AppData } from "@/contexts/AppContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 import { SubmitButtonState } from "@/lib/types";
+
+const IKA_MAX_UTILIZATION_PERCENT = new BigNumber(40);
 
 const getMaxCalculations = (
   action: Action,
@@ -80,7 +84,7 @@ const getMaxCalculations = (
   } else if (action === Action.BORROW) {
     const borrowFee = reserve.config.borrowFeeBps / 10000;
 
-    return [
+    const result = [
       {
         reason: "Insufficient liquidity to borrow",
         isDisabled: true,
@@ -130,6 +134,23 @@ const getMaxCalculations = (
           .div(1 + borrowFee),
       },
     ];
+    if (reserve.coinType === NORMALIZED_IKA_COINTYPE) {
+      const maxBorrowedAmount = reserve.depositedAmount.times(
+        IKA_MAX_UTILIZATION_PERCENT.div(100),
+      );
+      console.log(
+        "XXXX IKA remaining borrow:",
+        +maxBorrowedAmount.minus(reserve.borrowedAmount),
+      );
+
+      result.push({
+        reason: `${formatPercent(IKA_MAX_UTILIZATION_PERCENT)} utilization limit reached`,
+        isDisabled: true,
+        value: maxBorrowedAmount.minus(reserve.borrowedAmount),
+      });
+    }
+
+    return result;
   } else if (action === Action.WITHDRAW) {
     const depositPosition = obligation?.deposits.find(
       (deposit) => deposit.coinType === reserve.coinType,
@@ -137,7 +158,7 @@ const getMaxCalculations = (
     const depositedAmount =
       depositPosition?.depositedAmount ?? new BigNumber(0);
 
-    return [
+    const result = [
       {
         reason: "Withdraws cannot exceed deposits",
         isDisabled: true,
@@ -172,6 +193,8 @@ const getMaxCalculations = (
               : Infinity,
       },
     ];
+
+    return result;
   } else if (action === Action.REPAY) {
     const borrowPosition = obligation?.borrows.find(
       (borrow) => borrow.coinType === reserve.coinType,
