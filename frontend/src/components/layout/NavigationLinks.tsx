@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { useState } from "react";
 
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
@@ -52,11 +53,17 @@ function More() {
 }
 
 export default function NavigationLinks() {
+  const router = useRouter();
+
   const { address } = useWalletContext();
 
   // More
   const [isMoreOpen, setIsMoreOpen] = useState<boolean>(false);
-  const Icon = isMoreOpen ? ChevronUp : ChevronDown;
+  const MoreIcon = isMoreOpen ? ChevronUp : ChevronDown;
+
+  const isMoreActive = [LEADERBOARD_URL, SEND_URL, ABOUT_URL].some(
+    (url) => router.asPath.split("?")[0] === url,
+  );
 
   return (
     <>
@@ -83,14 +90,14 @@ export default function NavigationLinks() {
             <TBodySans
               className={cn(
                 "transition-colors",
-                isMoreOpen
+                isMoreOpen || isMoreActive
                   ? "text-foreground"
                   : "text-muted-foreground group-hover:text-foreground",
               )}
             >
               More
             </TBodySans>
-            <Icon
+            <MoreIcon
               className={cn(
                 "h-3 w-3 transition-colors",
                 isMoreOpen
