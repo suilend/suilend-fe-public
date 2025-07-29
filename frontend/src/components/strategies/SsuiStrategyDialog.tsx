@@ -13,8 +13,9 @@ import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { TransactionObjectArgument } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
-import { Download, Wallet } from "lucide-react";
+import { Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -1077,25 +1078,34 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
       dialogContentInnerClassName="max-w-max"
-      headerProps={{
-        className: "h-9",
-        title: {
-          className: "normal-case",
-          children: <SsuiSuiStrategyHeader />,
-        },
-        showCloseButton: true,
-      }}
+      dialogContentInnerChildrenWrapperClassName="pt-4"
     >
       <Tabs
-        className="mb-4"
+        className="-mr-2 mb-4"
         tabs={tabs}
         selectedTab={selectedTab}
         onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
+        topEndDecorator={
+          <DialogPrimitive.Close asChild>
+            <Button
+              className="shrink-0 text-muted-foreground"
+              icon={<X className="h-5 w-5" />}
+              variant="ghost"
+              size="icon"
+            >
+              Close
+            </Button>
+          </DialogPrimitive.Close>
+        }
       >
+        <div className="mb-4 w-full">
+          <SsuiSuiStrategyHeader />
+        </div>
+
         <div
           className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
           style={{
-            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${36 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
+            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
         >
           <div className="flex h-full w-full flex-col gap-4 md:h-auto md:w-[28rem]">
@@ -1161,7 +1171,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   <div className="absolute inset-0 z-[1] rounded-full bg-card" />
 
                   <div
-                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full bg-gradient-to-r from-primary/50 to-primary/75"
+                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full border border-primary bg-gradient-to-r from-primary/25 to-primary/50"
                     style={{
                       width: `calc(${16 / 2}px + ${new BigNumber(
                         new BigNumber(
