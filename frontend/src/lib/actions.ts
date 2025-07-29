@@ -193,21 +193,6 @@ const getMaxCalculations = (
               : Infinity,
       },
     ];
-    if (reserve.coinType === NORMALIZED_IKA_COINTYPE) {
-      const minDepositedAmount = reserve.borrowedAmount.div(
-        IKA_MAX_UTILIZATION_PERCENT.div(100),
-      );
-      console.log(
-        "XXXX IKA remaining withdraw:",
-        +reserve.depositedAmount.minus(minDepositedAmount),
-      );
-
-      result.push({
-        reason: `${formatPercent(IKA_MAX_UTILIZATION_PERCENT)} utilization limit reached`,
-        isDisabled: true,
-        value: reserve.depositedAmount.minus(minDepositedAmount),
-      });
-    }
 
     return result;
   } else if (action === Action.REPAY) {
