@@ -71,6 +71,24 @@ interface SsuiStrategyContext {
     sSuiDepositedAmount: BigNumber,
     suiBorrowedAmount: BigNumber,
   ) => BigNumber;
+  simulateLoopToExposure: (
+    sSuiDepositedAmount: BigNumber,
+    suiBorrowedAmount: BigNumber,
+    targetExposure: BigNumber,
+  ) => {
+    sSuiDepositedAmount: BigNumber;
+    suiBorrowedAmount: BigNumber;
+    obligation: ParsedObligation;
+  };
+  simulateUnloopToExposure: (
+    sSuiDepositedAmount: BigNumber,
+    suiBorrowedAmount: BigNumber,
+    targetExposure: BigNumber,
+  ) => {
+    sSuiDepositedAmount: BigNumber;
+    suiBorrowedAmount: BigNumber;
+    obligation: ParsedObligation;
+  };
   simulateDeposit: (
     suiAmount: BigNumber,
     targetExposure: BigNumber,
@@ -124,6 +142,12 @@ const defaultContextValue: SsuiStrategyContext = {
     throw Error("SsuiStrategyContextProvider not initialized");
   },
   getStepMaxSsuiWithdrawnAmount: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
+  },
+  simulateLoopToExposure: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
+  },
+  simulateUnloopToExposure: () => {
     throw Error("SsuiStrategyContextProvider not initialized");
   },
   simulateDeposit: () => {
@@ -333,77 +357,11 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Simulate
-  const simulateDeposit = useCallback(
+  const getSimulatedObligation = useCallback(
     (
-      suiAmount: BigNumber,
-      targetExposure: BigNumber,
-    ): {
-      sSuiDepositedAmount: BigNumber;
-      suiBorrowedAmount: BigNumber;
-      obligation: ParsedObligation;
-    } => {
-      const sSuiAmount = suiAmount
-        .minus(getSsuiMintFee(suiAmount))
-        .times(suiToSsuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-
-      // Prepare
-      let sSuiDepositedAmount = new BigNumber(0);
-      let suiBorrowedAmount = new BigNumber(0);
-
-      // 1) Stake SUI for sSUI
-
-      // 2) Deposit sSUI (1x exposure)
-      sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
-
-      for (let i = 0; i < 30; i++) {
-        const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
-        const pendingExposure = targetExposure.minus(exposure);
-        if (pendingExposure.lte(E)) break;
-
-        // 3.1) Max
-        const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
-          sSuiDepositedAmount,
-          suiBorrowedAmount,
-        )
-          .times(0.99) // 1% buffer
-          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-        const stepMaxSsuiDepositedAmount = new BigNumber(
-          stepMaxSuiBorrowedAmount.minus(
-            getSsuiMintFee(stepMaxSuiBorrowedAmount),
-          ),
-        )
-          .times(suiToSsuiExchangeRate)
-          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-        const stepMaxExposure = getExposure(
-          sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
-          suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
-        ).minus(exposure);
-
-        // 3.2) Borrow SUI
-        const stepSuiBorrowedAmount = stepMaxSuiBorrowedAmount
-          .times(BigNumber.min(1, pendingExposure.div(stepMaxExposure)))
-          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-        const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
-
-        suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
-
-        // 3.3) Stake borrowed SUI for sSUI
-
-        // 3.4) Deposit sSUI
-        const stepSsuiDepositedAmount = new BigNumber(
-          stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
-        )
-          .times(suiToSsuiExchangeRate)
-          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-        const isMaxDeposit = stepSsuiDepositedAmount.eq(
-          stepMaxSsuiDepositedAmount,
-        );
-
-        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
-      }
-
-      // Obligation
+      sSuiDepositedAmount: BigNumber,
+      suiBorrowedAmount: BigNumber,
+    ): ParsedObligation => {
       const obligation = {
         deposits: [
           {
@@ -442,6 +400,77 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           .times(sSuiReserve.config.closeLtvPct / 100),
       } as ParsedObligation;
 
+      return obligation;
+    },
+    [sSuiReserve, suiReserve],
+  );
+
+  const simulateLoopToExposure = useCallback(
+    (
+      _sSuiDepositedAmount: BigNumber,
+      _suiBorrowedAmount: BigNumber,
+      targetExposure: BigNumber,
+    ): {
+      sSuiDepositedAmount: BigNumber;
+      suiBorrowedAmount: BigNumber;
+      obligation: ParsedObligation;
+    } => {
+      let sSuiDepositedAmount = _sSuiDepositedAmount;
+      let suiBorrowedAmount = _suiBorrowedAmount;
+
+      for (let i = 0; i < 30; i++) {
+        const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+        const pendingExposure = targetExposure.minus(exposure);
+        if (pendingExposure.lte(E)) break;
+
+        // 1) Max
+        const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
+          sSuiDepositedAmount,
+          suiBorrowedAmount,
+        )
+          .times(0.99) // 1% buffer
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const stepMaxSsuiDepositedAmount = new BigNumber(
+          stepMaxSuiBorrowedAmount.minus(
+            getSsuiMintFee(stepMaxSuiBorrowedAmount),
+          ),
+        )
+          .times(suiToSsuiExchangeRate)
+          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const stepMaxExposure = getExposure(
+          sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
+          suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+        ).minus(exposure);
+
+        // 2) Borrow SUI
+        const stepSuiBorrowedAmount = stepMaxSuiBorrowedAmount
+          .times(BigNumber.min(1, pendingExposure.div(stepMaxExposure)))
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const isMaxBorrow = stepSuiBorrowedAmount.eq(stepMaxSuiBorrowedAmount);
+
+        suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
+
+        // 3) Stake borrowed SUI for sSUI
+
+        // 4) Deposit sSUI
+        const stepSsuiDepositedAmount = new BigNumber(
+          stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
+        )
+          .times(suiToSsuiExchangeRate)
+          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const isMaxDeposit = stepSsuiDepositedAmount.eq(
+          stepMaxSsuiDepositedAmount,
+        );
+
+        sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
+      }
+
+      // Obligation
+      const obligation = getSimulatedObligation(
+        sSuiDepositedAmount,
+        suiBorrowedAmount,
+      );
+
       return { sSuiDepositedAmount, suiBorrowedAmount, obligation };
     },
     [
@@ -449,8 +478,139 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       suiToSsuiExchangeRate,
       getExposure,
       getStepMaxSuiBorrowedAmount,
-      sSuiReserve,
-      suiReserve,
+      getSimulatedObligation,
+    ],
+  );
+
+  const simulateUnloopToExposure = useCallback(
+    (
+      _sSuiDepositedAmount: BigNumber,
+      _suiBorrowedAmount: BigNumber,
+      targetExposure: BigNumber,
+    ): {
+      sSuiDepositedAmount: BigNumber;
+      suiBorrowedAmount: BigNumber;
+      obligation: ParsedObligation;
+    } => {
+      let sSuiDepositedAmount = _sSuiDepositedAmount;
+      let suiBorrowedAmount = _suiBorrowedAmount;
+
+      for (let i = 0; i < 30; i++) {
+        const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+        const pendingExposure = exposure.minus(targetExposure);
+        if (pendingExposure.lte(E)) break;
+
+        // 1) Max
+        const stepMaxSsuiWithdrawnAmount = getStepMaxSsuiWithdrawnAmount(
+          sSuiDepositedAmount,
+          suiBorrowedAmount,
+        )
+          .times(0.99) // 1% buffer
+          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const stepMaxSuiRepaidAmount = new BigNumber(
+          stepMaxSsuiWithdrawnAmount.minus(
+            getSsuiRedeemFee(stepMaxSsuiWithdrawnAmount),
+          ),
+        )
+          .times(sSuiToSuiExchangeRate)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const stepMaxExposure = getExposure(
+          sSuiDepositedAmount.plus(stepMaxSsuiWithdrawnAmount),
+          suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+        ).minus(exposure);
+
+        // 2) Withdraw sSUI
+        const stepSsuiWithdrawnAmount = stepMaxSsuiWithdrawnAmount
+          .times(BigNumber.min(1, pendingExposure.div(stepMaxExposure)))
+          .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const isMaxWithdraw = stepSsuiWithdrawnAmount.eq(
+          stepMaxSsuiWithdrawnAmount,
+        );
+
+        sSuiDepositedAmount = sSuiDepositedAmount.minus(
+          stepSsuiWithdrawnAmount,
+        );
+
+        // 3) Unstake withdrawn sSUI for SUI
+
+        // 4) Repay SUI
+        const stepSuiRepaidAmount = new BigNumber(
+          stepSsuiWithdrawnAmount.minus(
+            getSsuiRedeemFee(stepSsuiWithdrawnAmount),
+          ),
+        )
+          .times(sSuiToSuiExchangeRate)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
+
+        suiBorrowedAmount = suiBorrowedAmount.minus(stepSuiRepaidAmount);
+      }
+
+      // Obligation
+      const obligation = getSimulatedObligation(
+        sSuiDepositedAmount,
+        suiBorrowedAmount,
+      );
+
+      return { sSuiDepositedAmount, suiBorrowedAmount, obligation };
+    },
+    [
+      getExposure,
+      getStepMaxSsuiWithdrawnAmount,
+      getSsuiRedeemFee,
+      sSuiToSuiExchangeRate,
+      getSimulatedObligation,
+    ],
+  );
+
+  const simulateDeposit = useCallback(
+    (
+      suiAmount: BigNumber,
+      targetExposure: BigNumber,
+    ): {
+      sSuiDepositedAmount: BigNumber;
+      suiBorrowedAmount: BigNumber;
+      obligation: ParsedObligation;
+    } => {
+      const sSuiAmount = suiAmount
+        .minus(getSsuiMintFee(suiAmount))
+        .times(suiToSsuiExchangeRate)
+        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+
+      // Prepare
+      let sSuiDepositedAmount = new BigNumber(0);
+      let suiBorrowedAmount = new BigNumber(0);
+
+      // 1) Stake SUI for sSUI
+
+      // 2) Deposit sSUI (1x exposure)
+      sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
+
+      // 3) Loop to target exposure
+      const {
+        sSuiDepositedAmount: _sSuiDepositedAmount,
+        suiBorrowedAmount: _suiBorrowedAmount,
+      } = simulateLoopToExposure(
+        sSuiDepositedAmount,
+        suiBorrowedAmount,
+        targetExposure,
+      );
+      sSuiDepositedAmount = _sSuiDepositedAmount;
+      suiBorrowedAmount = _suiBorrowedAmount;
+
+      // Obligation
+      const obligation = getSimulatedObligation(
+        sSuiDepositedAmount,
+        suiBorrowedAmount,
+      );
+
+      return { sSuiDepositedAmount, suiBorrowedAmount, obligation };
+    },
+    [
+      getSsuiMintFee,
+      suiToSsuiExchangeRate,
+      simulateLoopToExposure,
+      getSimulatedObligation,
     ],
   );
 
@@ -555,6 +715,8 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       getExposure,
       getStepMaxSuiBorrowedAmount,
       getStepMaxSsuiWithdrawnAmount,
+      simulateLoopToExposure,
+      simulateUnloopToExposure,
       simulateDeposit,
       getTvlSuiAmount,
       getAprPercent,
@@ -578,6 +740,8 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       getExposure,
       getStepMaxSuiBorrowedAmount,
       getStepMaxSsuiWithdrawnAmount,
+      simulateLoopToExposure,
+      simulateUnloopToExposure,
       simulateDeposit,
       getTvlSuiAmount,
       getAprPercent,
