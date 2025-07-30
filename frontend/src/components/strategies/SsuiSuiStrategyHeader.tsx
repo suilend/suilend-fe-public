@@ -29,7 +29,7 @@ export default function SsuiSuiStrategyHeader() {
 
       <div className="-ml-[7px] flex flex-col gap-1">
         <TBody>sSUI/SUI</TBody>
-        <div className="-my-0.5 -ml-1 flex h-5 w-max flex-row items-center rounded-full border bg-card px-2">
+        <div className="-my-0.5 -ml-1 flex h-5 w-max flex-row items-center rounded-full border px-2">
           <TLabelSans>Looping</TLabelSans>
         </div>
       </div>

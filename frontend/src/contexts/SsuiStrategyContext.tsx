@@ -173,8 +173,9 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     return (
       obligation.deposits.length === 1 &&
       obligation.deposits[0].coinType === NORMALIZED_sSUI_COINTYPE &&
-      obligation.borrows.length === 1 &&
-      obligation.borrows[0].coinType === NORMALIZED_SUI_COINTYPE
+      (obligation.borrows.length === 0 ||
+        (obligation.borrows.length === 1 &&
+          obligation.borrows[0].coinType === NORMALIZED_SUI_COINTYPE))
     );
   }, []);
 
@@ -459,7 +460,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       if (isObligationLooping(obligation)) {
         return new BigNumber(
           obligation!.deposits[0].depositedAmount.times(sSuiToSuiExchangeRate),
-        ).minus(obligation!.borrows[0].borrowedAmount);
+        ).minus(obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0));
       } else {
         return new BigNumber(0);
       }

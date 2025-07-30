@@ -36,6 +36,7 @@ import {
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
+import FromToArrow from "@/components/shared/FromToArrow";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Spinner from "@/components/shared/Spinner";
 import Tabs from "@/components/shared/Tabs";
@@ -51,11 +52,10 @@ import {
   useLoadedSsuiStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-import FromToArrow from "../shared/FromToArrow";
+const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.1;
 
 const getTransactionMintAmounts = (res: SuiTransactionBlockResponse) => {
   const mintEvents = (res.events ?? []).filter(
@@ -300,7 +300,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           maxExposure,
           getExposure(
             obligation!.deposits[0].depositedAmount,
-            obligation!.borrows[0].borrowedAmount,
+            obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
           ),
         ).toFixed(1)
       : defaultExposure.toFixed(1),
@@ -316,7 +316,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       return BigNumber.max(
         new BigNumber(0),
         getBalance(NORMALIZED_SUI_COINTYPE).minus(
-          MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+          STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
         ),
       );
     else if (selectedTab === Tab.WITHDRAW)
@@ -372,7 +372,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       isObligationLooping(obligation)
         ? getExposure(
             obligation!.deposits[0].depositedAmount,
-            obligation!.borrows[0].borrowedAmount,
+            obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
           )
         : new BigNumber(depositSliderValue || 0),
     [isObligationLooping, obligation, getExposure, depositSliderValue],
@@ -447,17 +447,17 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         return { isDisabled: true, title: "Enter a non-zero amount" };
 
       if (selectedTab === Tab.DEPOSIT) {
+        if (new BigNumber(value).gt(suiBalance))
+          return { isDisabled: true, title: "Insufficient SUI" };
         if (
           new BigNumber(value).gt(
-            suiBalance.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
+            suiBalance.minus(STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
           )
         )
           return {
             isDisabled: true,
-            title: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
+            title: `${STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
           };
-        if (new BigNumber(value).gt(suiBalance))
-          return { isDisabled: true, title: "Insufficient SUI" };
       } else {
         if (new BigNumber(value).gt(tvlSuiAmount))
           return { isDisabled: true, title: "Withdraw cannot exceed deposits" };
@@ -519,15 +519,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         )
       : new BigNumber(0);
     let suiBorrowedAmount = isObligationLooping(obligation)
-      ? obligation!.borrows[0].borrowedAmount.decimalPlaces(
-          SUI_DECIMALS,
-          BigNumber.ROUND_DOWN,
-        )
+      ? (
+          obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
+        ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN)
       : new BigNumber(0);
     const targetExposure = isObligationLooping(obligation)
       ? getExposure(
           obligation!.deposits[0].depositedAmount,
-          obligation!.borrows[0].borrowedAmount,
+          obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
         )
       : new BigNumber(depositSliderValue || 0);
 
@@ -695,10 +694,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         sSUI_DECIMALS,
         BigNumber.ROUND_DOWN,
       );
-    let suiBorrowedAmount = obligation!.borrows[0].borrowedAmount.decimalPlaces(
-      SUI_DECIMALS,
-      BigNumber.ROUND_DOWN,
-    );
+    let suiBorrowedAmount = (
+      obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
+    ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     const targetSsuiDepositedAmount = sSuiDepositedAmount
       .times(new BigNumber(1).minus(unloopPercent.div(100)))
@@ -917,6 +915,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     return transaction;
   };
 
+  // const adjust = async (
+  //   transaction: Transaction,
+  //   targetExposure: BigNumber,
+  // ): Promise<Transaction> => {
+  //   if (!address) throw Error("Wallet not connected");
+  //   if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+
+  //   console.log(
+  //     `[SsuiStrategyDialog] adjust |`,
+  //     JSON.stringify({ targetExposure: targetExposure.toFixed(20) }, null, 2),
+  //   );
+  // };
+
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
     if (submitButtonState.isDisabled) return;
@@ -946,7 +957,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         const txUrl = explorer.buildTxUrl(res.digest);
 
         const mintAmounts = getTransactionMintAmounts(res);
-        const borrowedSuiAmount = getTransactionBorrowedSuiAmount(res);
+        const borrowedSuiAmount =
+          getTransactionBorrowedSuiAmount(res) ?? new BigNumber(0);
 
         toast.success(
           [
@@ -974,16 +986,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           },
         );
 
-        // Set slider value
-        setAdjustSliderValue(
-          BigNumber.min(
-            maxExposure,
-            getExposure(
-              obligation!.deposits[0].depositedAmount,
-              obligation!.borrows[0].borrowedAmount,
-            ),
-          ).toFixed(1),
-        );
+        // Set slider value (if initial deposit)
+        if (!isObligationLooping(obligation))
+          setAdjustSliderValue(depositSliderValue);
       } else if (selectedTab === Tab.WITHDRAW) {
         // 2) Withdraw
         transaction = !useMaxAmount
@@ -1003,7 +1008,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         const txUrl = explorer.buildTxUrl(res.digest);
 
         const redeemAmounts = getTransactionRedeemAmounts(res);
-        const repaidSuiAmount = getTransactionRepaidSuiAmount(res);
+        const repaidSuiAmount =
+          getTransactionRepaidSuiAmount(res) ?? new BigNumber(0);
 
         toast.success(
           [
@@ -1167,7 +1173,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   <div className="absolute inset-0 z-[1] rounded-full bg-card" />
 
                   <div
-                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full border border-primary bg-gradient-to-r from-primary/25 to-primary/50"
+                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full border border-primary bg-primary/25"
                     style={{
                       width: `calc(${16 / 2}px + ${new BigNumber(
                         new BigNumber(
@@ -1198,7 +1204,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                           "absolute inset-y-1/2 h-[4px] w-[4px] -translate-x-1/2 -translate-y-1/2",
                           detentIndex !== 0 &&
                             detentIndex !== array.length - 1 &&
-                            "rounded-[calc(4px/2)] bg-foreground/50",
+                            "rounded-[calc(4px/2)] bg-foreground",
                         )}
                         style={{
                           left: `${detentIndex * (100 / (array.length - 1))}%`,

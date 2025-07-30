@@ -1,4 +1,5 @@
 import { SUI_DECIMALS } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
@@ -78,11 +79,11 @@ export default function SsuiStrategyCard() {
                 label="Leverage"
                 value={`${getExposure(
                   obligation!.deposits[0].depositedAmount,
-                  obligation!.borrows[0].borrowedAmount,
+                  obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
                 ).toFixed(1)}x`}
                 valueTooltip={`${getExposure(
                   obligation!.deposits[0].depositedAmount,
-                  obligation!.borrows[0].borrowedAmount,
+                  obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
                 ).toFixed(6)}x`}
                 horizontal
               />
