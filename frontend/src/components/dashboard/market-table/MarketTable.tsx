@@ -12,6 +12,7 @@ import {
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
+  NORMALIZED_IKA_COINTYPE,
   Token,
   formatToken,
   formatUsd,
@@ -44,6 +45,8 @@ import {
 } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
+export const FEATURED_COINTYPES: string[] = [NORMALIZED_IKA_COINTYPE]; // TODO: Move to launchdarkly
+
 const getExceedsLimit = (limit: BigNumber, total: BigNumber) =>
   limit.eq(0) || total.gte(limit);
 const getExceedsLimitTooltip = (side: Side) => `Asset ${side} limit reached.`;
@@ -69,8 +72,7 @@ export enum MarketTableType {
 
 export interface HeaderRowData {
   isHeader: boolean;
-  isIsolated?: boolean;
-  isDeprecated?: boolean;
+  section: "featured" | "main" | "isolated" | "deprecated";
   title: string;
   tooltip?: string;
   count: number;
@@ -91,8 +93,7 @@ export interface CollapsibleRowData {
 }
 
 export interface ReservesRowData {
-  isIsolated: boolean;
-  isDeprecated: boolean;
+  section: "featured" | "main" | "isolated" | "deprecated";
 
   reserve: ParsedReserve;
   token: Token;
@@ -133,15 +134,16 @@ export default function MarketTable() {
         header: ({ column }) => tableHeader(column, "Asset name"),
         cell: ({ row }) => {
           if ((row.original as HeaderRowData).isHeader) {
-            const { isIsolated, isDeprecated, title, tooltip, count } =
+            const { section, title, tooltip, count } =
               row.original as HeaderRowData;
 
             const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
-            if (!isIsolated && !isDeprecated) return null;
+            if (FEATURED_COINTYPES.length === 0 && section === "main")
+              return null;
             return (
               <div className="group flex flex-row items-center gap-2">
-                {isDeprecated && (
+                {section === "deprecated" && (
                   <Icon className="-mr-1 h-4 w-4 text-primary" />
                 )}
 
@@ -156,7 +158,7 @@ export default function MarketTable() {
                     {title}
                   </TTitle>
                 </Tooltip>
-                <TLabel>{count}</TLabel>
+                {section !== "featured" && <TLabel>{count}</TLabel>}
               </div>
             );
           }
@@ -396,8 +398,13 @@ export default function MarketTable() {
               : undefined;
 
       return {
-        isIsolated: reserve.config.isolated,
-        isDeprecated: (deprecatedReserveIds ?? []).includes(reserve.id),
+        section: (deprecatedReserveIds ?? []).includes(reserve.id)
+          ? "deprecated"
+          : FEATURED_COINTYPES.includes(reserve.token.coinType)
+            ? "featured"
+            : reserve.config.isolated
+              ? "isolated"
+              : "main",
 
         reserve,
         token: reserve.token,
@@ -420,22 +427,45 @@ export default function MarketTable() {
       };
     });
 
+    const featuredReserveRows = reserveRows.filter(
+      (reserveRow) => reserveRow.section === "featured",
+    );
     const mainReserveRows = reserveRows.filter(
-      (reserveRow) => !reserveRow.isIsolated && !reserveRow.isDeprecated,
+      (reserveRow) => reserveRow.section === "main",
     );
     const isolatedReserveRows = reserveRows.filter(
-      (reserveRow) => reserveRow.isIsolated && !reserveRow.isDeprecated,
+      (reserveRow) => reserveRow.section === "isolated",
     );
     const deprecatedReserveRows = reserveRows.filter(
-      (reserveRow) => reserveRow.isDeprecated,
+      (reserveRow) => reserveRow.section === "deprecated",
     );
 
     const result: HeaderRowData[] = [];
+
+    // Featured assets
+    if (featuredReserveRows.length > 0) {
+      const featuredAssetsRow: HeaderRowData = {
+        isHeader: true,
+        section: "featured",
+        title: "Featured assets",
+        count: 0,
+
+        subRows: [],
+      };
+
+      for (const reserveRow of featuredReserveRows) {
+        featuredAssetsRow.subRows.push(reserveRow);
+      }
+
+      featuredAssetsRow.count = featuredReserveRows.length;
+      result.push(featuredAssetsRow);
+    }
 
     // Main assets
     if (mainReserveRows.length > 0) {
       const mainAssetsRow: HeaderRowData = {
         isHeader: true,
+        section: "main",
         title: "Main assets",
         count: 0,
 
@@ -492,7 +522,7 @@ export default function MarketTable() {
     if (isolatedReserveRows.length > 0) {
       const isolatedAssetsRow: HeaderRowData = {
         isHeader: true,
-        isIsolated: true,
+        section: "isolated",
         title: "Isolated assets",
         tooltip: ISOLATED_ASSETS_TOOLTIP,
         count: 0,
@@ -544,7 +574,7 @@ export default function MarketTable() {
     if (deprecatedReserveRows.length > 0) {
       const deprecatedAssetsRow: HeaderRowData = {
         isHeader: true,
-        isDeprecated: true,
+        section: "deprecated",
         title: "Deprecated assets",
         tooltip: DEPRECATED_ASSETS_TOOLTIP,
         count: 0,
@@ -575,19 +605,31 @@ export default function MarketTable() {
         <DataTable<RowData>
           columns={columns}
           data={rows}
-          initialExpandedState={{ "0": true, "1": true, "2": false }} // Expand main and isolated assets rows, do not expand deprecated assets row
+          initialExpandedState={
+            FEATURED_COINTYPES.length > 0
+              ? { "0": true, "1": true, "2": true, "3": false }
+              : { "0": true, "1": true, "2": false }
+          } // Expand featured, main, and isolated assets rows, do not expand deprecated assets row
           tableRowClassName={(row) => {
             if (!row) return cn(styles.tableRow);
 
             if ((row.original as HeaderRowData).isHeader) {
-              const { isIsolated, isDeprecated } =
-                row.original as HeaderRowData;
+              const { section } = row.original as HeaderRowData;
 
               return cn(
                 styles.tableRow,
-                !isIsolated && !isDeprecated && "border-b-0",
+                FEATURED_COINTYPES.length === 0 &&
+                  section === "main" &&
+                  "border-b-0",
               );
             }
+
+            if (
+              !(row.original as HeaderRowData).isHeader &&
+              (row.original as ReservesRowData).section === "featured"
+            )
+              return "rounded-sm shadow-[inset_0px_0_8px_0px_hsl(var(--secondary))]";
+
             if ((row.original as CollapsibleRowData).isCollapsibleRow)
               return cn(styles.tableRow, row.getIsExpanded() && "bg-muted/5");
 
@@ -600,10 +642,10 @@ export default function MarketTable() {
             if (!cell) return undefined;
 
             if ((cell.row.original as HeaderRowData).isHeader) {
-              const { isIsolated, isDeprecated } = cell.row
-                .original as HeaderRowData;
+              const { section } = cell.row.original as HeaderRowData;
 
-              if (!isIsolated && !isDeprecated) return cn("p-0 h-0");
+              if (FEATURED_COINTYPES.length === 0 && section === "main")
+                return cn("p-0 h-0");
               return cn(
                 cell.column.getIsFirstColumn() ? "h-auto py-2" : "p-0 h-0",
               );
@@ -628,7 +670,7 @@ export default function MarketTable() {
           }}
           onRowClick={(row) => {
             if ((row.original as HeaderRowData).isHeader)
-              return (row.original as HeaderRowData).isDeprecated
+              return (row.original as HeaderRowData).section === "deprecated"
                 ? row.getToggleExpandedHandler()
                 : undefined;
             if ((row.original as CollapsibleRowData).isCollapsibleRow)

@@ -10,6 +10,7 @@ import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
 import styles from "@/components/dashboard/market-table/MarketCardList.module.scss";
 import {
   CollapsibleRowData,
+  FEATURED_COINTYPES,
   HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
@@ -43,6 +44,8 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
     <Card
       className={cn(
         "cursor-pointer transition-colors hover:bg-muted/10",
+        rowData.section === "featured" &&
+          "border-0 shadow-[inset_0px_0_8px_0px_hsl(var(--secondary))]",
         styles.card,
       )}
       onClick={onClick}
@@ -105,20 +108,20 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
   return (
     <div className="flex w-full flex-col gap-6">
       {rows.map((row, index) => {
-        const { isIsolated, isDeprecated, title, tooltip, count } = row;
+        const { section, title, tooltip, count } = row;
 
         const isHeaderRowExpanded =
-          !isDeprecated || headerRowIsExpandedMap[title];
+          section !== "deprecated" || headerRowIsExpandedMap[title];
         const HeaderRowIcon = isHeaderRowExpanded ? ChevronUp : ChevronDown;
 
         return (
           <div key={index} className="flex w-full flex-col gap-4">
             {/* Title */}
-            {!(!isIsolated && !isDeprecated) && (
+            {!(FEATURED_COINTYPES.length === 0 && section === "main") && (
               <button
                 className="group flex flex-row items-center gap-2"
                 onClick={
-                  !isDeprecated
+                  section !== "deprecated"
                     ? undefined
                     : () =>
                         setHeaderRowIsExpandedMap((prev) => ({
@@ -127,7 +130,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                         }))
                 }
               >
-                {isDeprecated && (
+                {section === "deprecated" && (
                   <HeaderRowIcon className="-mr-1 h-4 w-4 text-primary" />
                 )}
 
@@ -142,7 +145,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                     {title}
                   </TTitle>
                 </Tooltip>
-                <TLabel>{count}</TLabel>
+                {section !== "featured" && <TLabel>{count}</TLabel>}
               </button>
             )}
 
