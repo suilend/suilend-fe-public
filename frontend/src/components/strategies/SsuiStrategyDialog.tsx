@@ -48,7 +48,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
   sSUI_DECIMALS,
-  useSsuiStrategyContext,
+  useLoadedSsuiStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
@@ -251,7 +251,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useSsuiStrategyContext();
+  } = useLoadedSsuiStrategyContext();
 
   // Tabs
   const tabs = [
@@ -472,7 +472,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
 
     return {
-      isDisabled: !lstClient,
       title:
         selectedTab === Tab.ADJUST
           ? `Adjust to ${adjustExposure.toFixed(1)}x`
@@ -495,7 +494,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
-    if (!lstClient) throw Error("LST client not found");
 
     const sSuiAmount = suiAmount
       .minus(getSsuiMintFee(suiAmount))
@@ -685,7 +683,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
-    if (!lstClient) throw Error("LST client not found");
 
     console.log(
       `[SsuiStrategyDialog] withdraw |`,
@@ -870,7 +867,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
-    if (!lstClient) throw Error("LST client not found");
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
@@ -923,7 +919,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
-    if (submitButtonState.isDisabled || !lstClient) return;
+    if (submitButtonState.isDisabled) return;
 
     setIsSubmitting(true);
 

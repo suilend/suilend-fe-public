@@ -31,6 +31,7 @@ import {
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
+import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { getWeightedBorrowsUsd } from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -88,6 +89,9 @@ interface SsuiStrategyContext {
     exposure?: BigNumber,
   ) => BigNumber;
 }
+type LoadedSsuiStrategyContext = SsuiStrategyContext & {
+  lstClient: LstClient;
+};
 
 const defaultContextValue: SsuiStrategyContext = {
   isObligationLooping: () => {
@@ -140,6 +144,8 @@ const SsuiStrategyContext =
   createContext<SsuiStrategyContext>(defaultContextValue);
 
 export const useSsuiStrategyContext = () => useContext(SsuiStrategyContext);
+export const useLoadedSsuiStrategyContext = () =>
+  useSsuiStrategyContext() as LoadedSsuiStrategyContext;
 
 export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
@@ -580,7 +586,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
 
   return (
     <SsuiStrategyContext.Provider value={contextValue}>
-      {children}
+      {lstClient !== undefined ? children : <FullPageSpinner />}
     </SsuiStrategyContext.Provider>
   );
 }
