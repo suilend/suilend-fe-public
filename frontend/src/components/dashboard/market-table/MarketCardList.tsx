@@ -10,7 +10,6 @@ import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
 import styles from "@/components/dashboard/market-table/MarketCardList.module.scss";
 import {
   CollapsibleRowData,
-  FEATURED_COINTYPES,
   HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
@@ -27,6 +26,7 @@ import {
   TTitle,
 } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { OPEN_LTV_BORROW_WEIGHT_TOOLTIP } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
@@ -97,6 +97,7 @@ interface MarketCardListProps {
 }
 
 export default function MarketCardList({ rows }: MarketCardListProps) {
+  const { featuredReserveIds } = useLoadedAppContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   const [headerRowIsExpandedMap, setHeaderRowIsExpandedMap] = useState<
@@ -117,7 +118,9 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
         return (
           <div key={index} className="flex w-full flex-col gap-4">
             {/* Title */}
-            {!(FEATURED_COINTYPES.length === 0 && section === "main") && (
+            {!(
+              (featuredReserveIds ?? []).length === 0 && section === "main"
+            ) && (
               <button
                 className="group flex flex-row items-center gap-2"
                 onClick={
