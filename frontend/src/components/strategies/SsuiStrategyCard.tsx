@@ -1,6 +1,7 @@
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
+import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk";
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
@@ -27,9 +28,12 @@ export default function SsuiStrategyCard() {
   } = useLoadedSsuiStrategyContext();
 
   // Obligation
-  const OBLIGATION_ID =
-    "0xf8dfef417a82155d5cbf485c4e7e061ff11dc1ddfa1370c6a46f0d7dfe4017f0";
-  const obligation = userData.obligations.find((o) => o.id === OBLIGATION_ID);
+  const strategyOwnerCap = userData.strategyOwnerCaps.find(
+    (soc) => soc.strategyType === STRATEGY_SUI_LOOPING_SSUI,
+  );
+  const obligation = userData.strategyObligations.find(
+    (so) => so.id === strategyOwnerCap?.obligationId,
+  );
 
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);

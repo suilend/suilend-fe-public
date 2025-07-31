@@ -19,6 +19,11 @@ import { Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  LENDING_MARKET_TYPE,
+  STRATEGY_SUI_LOOPING_SSUI,
+  STRATEGY_WRAPPER_PACKAGE_ID,
+} from "@suilend/sdk";
+import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
@@ -281,12 +286,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   // Obligation
-  const OBLIGATION_ID =
-    "0xf8dfef417a82155d5cbf485c4e7e061ff11dc1ddfa1370c6a46f0d7dfe4017f0";
-  const obligation = userData.obligations.find((o) => o.id === OBLIGATION_ID);
-  const obligationOwnerCap = userData.obligationOwnerCaps.find(
-    (o) => o.obligationId === obligation?.id,
+  const strategyOwnerCap = userData.strategyOwnerCaps.find(
+    (soc) => soc.strategyType === STRATEGY_SUI_LOOPING_SSUI,
   );
+  const obligation = userData.strategyObligations.find(
+    (so) => so.id === strategyOwnerCap?.obligationId,
+  );
+  console.log("XXXX", strategyOwnerCap);
 
   // Balance
   const suiBalance = getBalance(suiReserve.coinType);
@@ -525,6 +531,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   })();
 
   const loopToExposure = async (
+    obligationOwnerCap: TransactionObjectArgument,
     transaction: Transaction,
     _sSuiDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
@@ -535,7 +542,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     suiBorrowedAmount: BigNumber;
   }> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     let sSuiDepositedAmount = _sSuiDepositedAmount;
     let suiBorrowedAmount = _suiBorrowedAmount;
@@ -607,7 +614,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
 
       const [borrowedSuiCoin] = await appData.suilendClient.borrow(
-        obligationOwnerCap.id,
+        obligationOwnerCap,
         obligation.id,
         NORMALIZED_SUI_COINTYPE,
         stepSuiBorrowedAmount
@@ -646,7 +653,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       appData.suilendClient.deposit(
         stepSsuiCoin,
         NORMALIZED_sSUI_COINTYPE,
-        obligationOwnerCap.id,
+        obligationOwnerCap,
         transaction,
       );
       sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
@@ -656,6 +663,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const unloopToExposure = async (
+    obligationOwnerCap: TransactionObjectArgument,
     transaction: Transaction,
     _sSuiDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
@@ -666,7 +674,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     suiBorrowedAmount: BigNumber;
   }> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     let sSuiDepositedAmount = _sSuiDepositedAmount;
     let suiBorrowedAmount = _suiBorrowedAmount;
@@ -740,7 +748,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
 
       const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap.id,
+        obligationOwnerCap,
         obligation.id,
         NORMALIZED_sSUI_COINTYPE,
         stepSsuiWithdrawnAmount
@@ -791,11 +799,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const deposit = async (
+    obligationOwnerCap: TransactionObjectArgument,
     transaction: Transaction,
     suiAmount: BigNumber,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     const sSuiAmount = suiAmount
       .minus(getSsuiMintFee(suiAmount))
@@ -858,7 +867,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     appData.suilendClient.deposit(
       sSuiCoinToDeposit,
       NORMALIZED_sSUI_COINTYPE,
-      obligationOwnerCap.id,
+      obligationOwnerCap,
       transaction,
     );
     sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
@@ -866,6 +875,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     // 3) Loop to target exposure
     transaction = (
       await loopToExposure(
+        obligationOwnerCap,
         transaction,
         sSuiDepositedAmount,
         suiBorrowedAmount,
@@ -877,11 +887,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const withdraw = async (
+    obligationOwnerCap: TransactionObjectArgument,
     transaction: Transaction,
     unloopPercent: BigNumber,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     console.log(
       `[SsuiStrategyDialog] withdraw |`,
@@ -992,7 +1003,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
 
       const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap.id,
+        obligationOwnerCap,
         obligation.id,
         NORMALIZED_sSUI_COINTYPE,
         stepSsuiWithdrawnAmount
@@ -1061,10 +1072,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const maxWithdraw = async (
+    obligationOwnerCap: TransactionObjectArgument,
     transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
@@ -1072,7 +1084,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
       // 1.1) Max withdraw sSUI
       const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap.id,
+        obligationOwnerCap,
         obligation.id,
         NORMALIZED_sSUI_COINTYPE,
         MAX_U64.toString(),
@@ -1115,9 +1127,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     return transaction;
   };
 
-  const adjust = async (transaction: Transaction): Promise<Transaction> => {
+  const adjust = async (
+    obligationOwnerCap: TransactionObjectArgument,
+    transaction: Transaction,
+  ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligationOwnerCap || !obligation) throw Error("Obligation not found");
+    if (!obligation) throw Error("Obligation not found");
 
     // Prepare
     const sSuiDepositedAmount =
@@ -1146,6 +1161,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (targetExposure.gt(exposure))
       return (
         await loopToExposure(
+          obligationOwnerCap,
           transaction,
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -1155,6 +1171,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     else
       return (
         await unloopToExposure(
+          obligationOwnerCap,
           transaction,
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -1165,12 +1182,21 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
+    if (!strategyOwnerCap || !obligation)
+      throw Error("StrategyOwnerCap or Obligation not found");
     if (submitButtonState.isDisabled) return;
 
     setIsSubmitting(true);
 
     try {
       let transaction = new Transaction();
+
+      // 0) Get inner ObligationOwnerCap
+      const [obligationOwnerCap] = transaction.moveCall({
+        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::inner_cap`,
+        typeArguments: [LENDING_MARKET_TYPE],
+        arguments: [transaction.object(strategyOwnerCap.id)],
+      });
 
       // 1) Refresh pyth oracles (sSUI and SUI) - required when borrowing or withdrawing
       await appData.suilendClient.refreshAll(transaction, undefined, [
@@ -1180,7 +1206,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
       if (selectedTab === Tab.DEPOSIT) {
         // 2) Deposit
-        transaction = await deposit(transaction, new BigNumber(value));
+        transaction = await deposit(
+          obligationOwnerCap,
+          transaction,
+          new BigNumber(value),
+        );
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1228,10 +1258,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         // 2) Withdraw
         transaction = !useMaxAmount
           ? await withdraw(
+              obligationOwnerCap,
               transaction,
               new BigNumber(value).div(tvlSuiAmount).times(100),
             )
-          : await maxWithdraw(transaction);
+          : await maxWithdraw(obligationOwnerCap, transaction);
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1281,7 +1312,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         }
       } else if (selectedTab === Tab.ADJUST) {
         // 2) Adjust
-        await adjust(transaction);
+        await adjust(obligationOwnerCap, transaction);
 
         // 3) Rebalance sSUI
         lstClient.rebalance(

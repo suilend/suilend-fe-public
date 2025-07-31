@@ -138,10 +138,6 @@ const getMaxCalculations = (
       const maxBorrowedAmount = reserve.depositedAmount.times(
         IKA_MAX_UTILIZATION_PERCENT.div(100),
       );
-      console.log(
-        "XXXX IKA remaining borrow:",
-        +maxBorrowedAmount.minus(reserve.borrowedAmount),
-      );
 
       result.push({
         reason: `${formatPercent(IKA_MAX_UTILIZATION_PERCENT)} utilization limit reached`,

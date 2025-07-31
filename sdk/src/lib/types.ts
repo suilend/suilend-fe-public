@@ -213,3 +213,11 @@ export type ApiObligationDataEvent = {
    */
   borrowsJson: string;
 };
+
+// StrategyOwnerCap
+export type StrategyOwnerCap = {
+  id: string;
+  strategyType: number;
+  obligationOwnerCapId: string;
+  obligationId: string;
+};
