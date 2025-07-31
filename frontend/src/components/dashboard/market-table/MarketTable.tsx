@@ -12,7 +12,6 @@ import {
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
-  NORMALIZED_IKA_COINTYPE,
   Token,
   formatToken,
   formatUsd,
@@ -44,8 +43,6 @@ import {
   OPEN_LTV_BORROW_WEIGHT_TOOLTIP,
 } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
-
-export const FEATURED_COINTYPES: string[] = [NORMALIZED_IKA_COINTYPE]; // TODO: Move to launchdarkly
 
 const getExceedsLimit = (limit: BigNumber, total: BigNumber) =>
   limit.eq(0) || total.gte(limit);
@@ -118,8 +115,12 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const { allAppData, deprecatedReserveIds, isEcosystemLst } =
-    useLoadedAppContext();
+  const {
+    allAppData,
+    featuredReserveIds,
+    deprecatedReserveIds,
+    isEcosystemLst,
+  } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
   const { filteredReserves } = useLoadedAppContext();
 
@@ -139,7 +140,7 @@ export default function MarketTable() {
 
             const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
-            if (FEATURED_COINTYPES.length === 0 && section === "main")
+            if ((featuredReserveIds ?? []).length === 0 && section === "main")
               return null;
             return (
               <div className="group flex flex-row items-center gap-2">
@@ -299,7 +300,7 @@ export default function MarketTable() {
         },
       },
     ],
-    [],
+    [featuredReserveIds],
   );
 
   // Rows
@@ -400,7 +401,7 @@ export default function MarketTable() {
       return {
         section: (deprecatedReserveIds ?? []).includes(reserve.id)
           ? "deprecated"
-          : FEATURED_COINTYPES.includes(reserve.token.coinType)
+          : (featuredReserveIds ?? []).includes(reserve.id)
             ? "featured"
             : reserve.config.isolated
               ? "isolated"
@@ -596,6 +597,7 @@ export default function MarketTable() {
     userData.rewardMap,
     allAppData.lstAprPercentMap,
     deprecatedReserveIds,
+    featuredReserveIds,
     isEcosystemLst,
   ]);
 
@@ -606,7 +608,7 @@ export default function MarketTable() {
           columns={columns}
           data={rows}
           initialExpandedState={
-            FEATURED_COINTYPES.length > 0
+            (featuredReserveIds ?? []).length > 0
               ? { "0": true, "1": true, "2": true, "3": false }
               : { "0": true, "1": true, "2": false }
           } // Expand featured, main, and isolated assets rows, do not expand deprecated assets row
@@ -618,7 +620,7 @@ export default function MarketTable() {
 
               return cn(
                 styles.tableRow,
-                FEATURED_COINTYPES.length === 0 &&
+                (featuredReserveIds ?? []).length === 0 &&
                   section === "main" &&
                   "border-b-0",
               );
@@ -644,7 +646,7 @@ export default function MarketTable() {
             if ((cell.row.original as HeaderRowData).isHeader) {
               const { section } = cell.row.original as HeaderRowData;
 
-              if (FEATURED_COINTYPES.length === 0 && section === "main")
+              if ((featuredReserveIds ?? []).length === 0 && section === "main")
                 return cn("p-0 h-0");
               return cn(
                 cell.column.getIsFirstColumn() ? "h-auto py-2" : "p-0 h-0",

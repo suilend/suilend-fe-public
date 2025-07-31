@@ -4,6 +4,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import {
+  AlertTriangle,
   BadgeCheck,
   ChevronDown,
   Download,
@@ -97,11 +98,10 @@ function TokenRow({
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {(Object.values(allAppData.allLendingMarketData).find(
+                {Object.values(allAppData.allLendingMarketData).find(
                   (_appData) =>
                     Object.keys(_appData.reserveMap).includes(token.coinType),
-                ) ||
-                  verifiedCoinTypes.includes(token.coinType)) && (
+                ) || verifiedCoinTypes.includes(token.coinType) ? (
                   <Tooltip
                     title={
                       Object.values(allAppData.allLendingMarketData).find(
@@ -117,6 +117,10 @@ function TokenRow({
                     }
                   >
                     <BadgeCheck className="h-4 w-4 text-verified" />
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Unverified coin. Exercise caution.">
+                    <AlertTriangle className="h-4 w-4 text-warning" />
                   </Tooltip>
                 )}
 
