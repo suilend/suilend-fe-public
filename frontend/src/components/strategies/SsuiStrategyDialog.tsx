@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import { TransactionObjectArgument } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -19,10 +19,13 @@ import { Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  LENDING_MARKET_TYPE,
   STRATEGY_SUI_LOOPING_SSUI,
-  STRATEGY_WRAPPER_PACKAGE_ID,
-} from "@suilend/sdk";
+  createStrategyOwnerCapIfNoneExists,
+  sendStrategyOwnerCapToUser,
+  strategyBorrow,
+  strategyDeposit,
+  strategyWithdraw,
+} from "@suilend/sdk/lib/strategyOwnerCap";
 import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
@@ -292,7 +295,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
-  console.log("XXXX", strategyOwnerCap);
 
   // Balance
   const suiBalance = getBalance(suiReserve.coinType);
@@ -531,7 +533,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   })();
 
   const loopToExposure = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
     _sSuiDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
@@ -542,7 +544,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     suiBorrowedAmount: BigNumber;
   }> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligation) throw Error("Obligation not found");
 
     let sSuiDepositedAmount = _sSuiDepositedAmount;
     let suiBorrowedAmount = _suiBorrowedAmount;
@@ -613,16 +614,17 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      const [borrowedSuiCoin] = await appData.suilendClient.borrow(
-        obligationOwnerCap,
-        obligation.id,
+      const [borrowedSuiCoin] = strategyBorrow(
         NORMALIZED_SUI_COINTYPE,
-        stepSuiBorrowedAmount
-          .times(10 ** SUI_DECIMALS)
-          .integerValue(BigNumber.ROUND_DOWN)
-          .toString(),
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(NORMALIZED_SUI_COINTYPE),
+        BigInt(
+          stepSuiBorrowedAmount
+            .times(10 ** SUI_DECIMALS)
+            .integerValue(BigNumber.ROUND_DOWN)
+            .toString(),
+        ),
         transaction,
-        false,
       );
       suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
@@ -650,10 +652,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      appData.suilendClient.deposit(
+      strategyDeposit(
         stepSsuiCoin,
         NORMALIZED_sSUI_COINTYPE,
-        obligationOwnerCap,
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
         transaction,
       );
       sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
@@ -663,7 +666,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const unloopToExposure = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
     _sSuiDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
@@ -747,16 +750,24 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap,
-        obligation.id,
+      const [withdrawnSsuiCoin] = strategyWithdraw(
         NORMALIZED_sSUI_COINTYPE,
-        stepSsuiWithdrawnAmount
-          .times(10 ** sSUI_DECIMALS)
-          .integerValue(BigNumber.ROUND_DOWN)
-          .toString(),
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        BigInt(
+          BigNumber.min(
+            new BigNumber(
+              stepSsuiWithdrawnAmount
+                .times(10 ** sSUI_DECIMALS)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+            )
+              .div(sSuiReserve.cTokenExchangeRate)
+              .integerValue(BigNumber.ROUND_UP),
+            obligation.deposits[0].depositedCtokenAmount,
+          ).toString(),
+        ),
         transaction,
-        false,
       );
       sSuiDepositedAmount = sSuiDepositedAmount.minus(stepSsuiWithdrawnAmount);
 
@@ -799,12 +810,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const deposit = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
     suiAmount: BigNumber,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
-    if (!obligation) throw Error("Obligation not found");
 
     const sSuiAmount = suiAmount
       .minus(getSsuiMintFee(suiAmount))
@@ -864,10 +874,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     const sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
 
     // 2) Deposit sSUI (1x exposure)
-    appData.suilendClient.deposit(
+    strategyDeposit(
       sSuiCoinToDeposit,
       NORMALIZED_sSUI_COINTYPE,
-      obligationOwnerCap,
+      strategyOwnerCapId,
+      appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
       transaction,
     );
     sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
@@ -875,7 +886,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     // 3) Loop to target exposure
     transaction = (
       await loopToExposure(
-        obligationOwnerCap,
+        strategyOwnerCapId,
         transaction,
         sSuiDepositedAmount,
         suiBorrowedAmount,
@@ -887,7 +898,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const withdraw = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
     unloopPercent: BigNumber,
   ): Promise<Transaction> => {
@@ -1002,16 +1013,24 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap,
-        obligation.id,
+      const [withdrawnSsuiCoin] = strategyWithdraw(
         NORMALIZED_sSUI_COINTYPE,
-        stepSsuiWithdrawnAmount
-          .times(10 ** sSUI_DECIMALS)
-          .integerValue(BigNumber.ROUND_DOWN)
-          .toString(),
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        BigInt(
+          BigNumber.min(
+            new BigNumber(
+              stepSsuiWithdrawnAmount
+                .times(10 ** sSUI_DECIMALS)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+            )
+              .div(sSuiReserve.cTokenExchangeRate)
+              .integerValue(BigNumber.ROUND_UP),
+            obligation.deposits[0].depositedCtokenAmount,
+          ).toString(),
+        ),
         transaction,
-        false,
       );
       sSuiDepositedAmount = sSuiDepositedAmount.minus(stepSsuiWithdrawnAmount);
 
@@ -1072,7 +1091,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const maxWithdraw = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
@@ -1083,13 +1102,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       console.log(`[SsuiStrategyDialog] maxWithdraw - ${i} start`);
 
       // 1.1) Max withdraw sSUI
-      const [withdrawnSsuiCoin] = await appData.suilendClient.withdraw(
-        obligationOwnerCap,
-        obligation.id,
+      const [withdrawnSsuiCoin] = strategyWithdraw(
         NORMALIZED_sSUI_COINTYPE,
-        MAX_U64.toString(),
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        BigInt(MAX_U64.toString()),
         transaction,
-        false,
       );
 
       // 1.2) Unstake withdrawn sSUI for SUI
@@ -1128,7 +1146,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   };
 
   const adjust = async (
-    obligationOwnerCap: TransactionObjectArgument,
+    strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
@@ -1161,7 +1179,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (targetExposure.gt(exposure))
       return (
         await loopToExposure(
-          obligationOwnerCap,
+          strategyOwnerCapId,
           transaction,
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -1171,7 +1189,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     else
       return (
         await unloopToExposure(
-          obligationOwnerCap,
+          strategyOwnerCapId,
           transaction,
           sSuiDepositedAmount,
           suiBorrowedAmount,
@@ -1182,21 +1200,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
-    if (!strategyOwnerCap || !obligation)
-      throw Error("StrategyOwnerCap or Obligation not found");
     if (submitButtonState.isDisabled) return;
 
     setIsSubmitting(true);
 
     try {
       let transaction = new Transaction();
-
-      // 0) Get inner ObligationOwnerCap
-      const [obligationOwnerCap] = transaction.moveCall({
-        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::inner_cap`,
-        typeArguments: [LENDING_MARKET_TYPE],
-        arguments: [transaction.object(strategyOwnerCap.id)],
-      });
 
       // 1) Refresh pyth oracles (sSUI and SUI) - required when borrowing or withdrawing
       await appData.suilendClient.refreshAll(transaction, undefined, [
@@ -1205,9 +1214,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       ]);
 
       if (selectedTab === Tab.DEPOSIT) {
+        const { strategyOwnerCapId, didCreate } =
+          createStrategyOwnerCapIfNoneExists(transaction, strategyOwnerCap);
+        console.log("xxx3333", strategyOwnerCapId, didCreate);
         // 2) Deposit
         transaction = await deposit(
-          obligationOwnerCap,
+          strategyOwnerCapId,
           transaction,
           new BigNumber(value),
         );
@@ -1217,6 +1229,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           transaction,
           lstClient.liquidStakingObject.weightHookId,
         );
+
+        if (didCreate)
+          sendStrategyOwnerCapToUser(strategyOwnerCapId, address, transaction);
 
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
@@ -1255,14 +1270,17 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         if (!isObligationLooping(obligation))
           setAdjustSliderValue(depositSliderValue);
       } else if (selectedTab === Tab.WITHDRAW) {
+        if (!strategyOwnerCap || !obligation)
+          throw Error("StrategyOwnerCap or Obligation not found");
+
         // 2) Withdraw
         transaction = !useMaxAmount
           ? await withdraw(
-              obligationOwnerCap,
+              strategyOwnerCap.id,
               transaction,
               new BigNumber(value).div(tvlSuiAmount).times(100),
             )
-          : await maxWithdraw(obligationOwnerCap, transaction);
+          : await maxWithdraw(strategyOwnerCap.id, transaction);
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1311,8 +1329,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           setAdjustSliderValue(defaultExposure.toFixed(1));
         }
       } else if (selectedTab === Tab.ADJUST) {
+        if (!strategyOwnerCap || !obligation)
+          throw Error("StrategyOwnerCap or Obligation not found");
+
         // 2) Adjust
-        await adjust(obligationOwnerCap, transaction);
+        await adjust(strategyOwnerCap.id, transaction);
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1367,7 +1388,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
-      dialogContentInnerClassName="max-w-max"
+      dialogContentInnerClassName="max-w-[28rem]"
       dialogContentInnerChildrenWrapperClassName="pt-4"
     >
       <Tabs
@@ -1398,7 +1419,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
             height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
         >
-          <div className="flex h-full w-full flex-col gap-4 md:h-auto md:w-[28rem]">
+          <div className="flex h-full w-full flex-col gap-4 md:h-auto">
             {/* Amount */}
             {(selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) && (
               <div className="relative flex w-full flex-col">

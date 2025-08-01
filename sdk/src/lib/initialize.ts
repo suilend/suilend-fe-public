@@ -56,6 +56,7 @@ import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
+import { STRATEGY_WRAPPER_PACKAGE_ID } from "./strategyOwnerCap";
 import { StrategyOwnerCap } from "./types";
 
 export const RESERVES_CUSTOM_ORDER = [
@@ -116,10 +117,6 @@ const TREATS_COINTYPE =
 export const NORMALIZED_MAYA_COINTYPE = normalizeStructTag(MAYA_COINTYPE);
 export const NORMALIZED_mPOINTS_COINTYPE = normalizeStructTag(mPOINTS_COINTYPE);
 export const NORMALIZED_TREATS_COINTYPE = normalizeStructTag(TREATS_COINTYPE);
-
-export const STRATEGY_WRAPPER_PACKAGE_ID =
-  "0x21bd1cb316f0ecd9cc5ef3b75fb718d9937ff7cb78190c9270002ff8513408d7";
-export const STRATEGY_SUI_LOOPING_SSUI = 1;
 
 export const initializeSuilend = async (
   suiClient: SuiClient,
@@ -333,7 +330,7 @@ export const initializeObligations = async (
   const [strategyOwnerCaps, obligationOwnerCaps] = await Promise.all([
     (async () => {
       const objects = await getAllOwnedObjects(suiClient, address, {
-        StructType: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::StrategyOwnerCap<${LENDING_MARKET_TYPE}>`,
+        StructType: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::StrategyOwnerCap<${suilendClient.lendingMarket.$typeArgs[0]}>`,
       });
 
       return objects.map((obj) => {

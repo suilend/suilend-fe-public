@@ -1,7 +1,7 @@
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk";
+import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk/lib/strategyOwnerCap";
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";

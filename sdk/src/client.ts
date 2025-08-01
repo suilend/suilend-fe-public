@@ -3,7 +3,6 @@ import {
   Transaction,
   TransactionObjectArgument,
   TransactionObjectInput,
-  TransactionResult,
 } from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
