@@ -69,7 +69,7 @@ export default function NavigationLinks() {
     <>
       {/* Internal */}
       <Link href={ROOT_URL}>Lend</Link>
-      {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
+      {/* {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>} */}
       {!isInMsafeApp() && (
         <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
           Swap
