@@ -98,7 +98,7 @@ const DialogHeader = ({
         <TitleWithIcon className={cn(titleClassName)} {...restTitleProps} />
 
         {(titleEndContent || showCloseButton) && (
-          <div className="-mr-2 flex flex-row items-center">
+          <div className="absolute right-2 top-2.5 flex flex-row items-center">
             {titleEndContent}
             {showCloseButton && (
               <DialogPrimitive.Close asChild>

@@ -1,21 +1,30 @@
 import Head from "next/head";
 
-import { useWalletContext } from "@suilend/sui-fe-next";
+import { TBodySans } from "@/components/shared/Typography";
+import SsuiStrategyCard from "@/components/strategies/SsuiStrategyCard";
+import { SsuiStrategyContextProvider } from "@/contexts/SsuiStrategyContext";
 
 function Page() {
-  const { address } = useWalletContext();
-
   return (
     <>
       <Head>
         <title>Suilend | Strategies</title>
       </Head>
 
-      <div className="flex w-full flex-col items-center gap-8"></div>
+      <div className="flex w-full max-w-md flex-col items-center gap-8">
+        <div className="flex w-full flex-col gap-6">
+          <TBodySans className="text-xl">Strategies</TBodySans>
+          <SsuiStrategyCard />
+        </div>
+      </div>
     </>
   );
 }
 
 export default function Strategies() {
-  return <Page />;
+  return (
+    <SsuiStrategyContextProvider>
+      <Page />
+    </SsuiStrategyContextProvider>
+  );
 }

@@ -16,6 +16,7 @@ interface ValueProps {
   className?: ClassValue;
   valueStartDecorator?: ReactNode;
   value: string | number | BigNumber | ReactNode;
+  valueTooltip?: string | ReactNode;
   valueEndDecorator?: ReactNode;
   isId?: boolean;
   isType?: boolean;
@@ -29,6 +30,7 @@ export default function Value({
   className,
   valueStartDecorator,
   value,
+  valueTooltip,
   valueEndDecorator,
   isId,
   isType,
@@ -42,16 +44,24 @@ export default function Value({
       {valueStartDecorator}
       {isId || isType ? (
         <>
-          <Tooltip title={value as string}>
+          <Tooltip title={valueTooltip ?? (value as string)}>
             <TBody className="w-fit break-all uppercase">
               {(isId ? formatId : formatType)((value as string).toString())}
             </TBody>
           </Tooltip>
         </>
       ) : isUsd ? (
-        <TBody>{formatUsd(value as BigNumber)}</TBody>
+        <>
+          <Tooltip title={valueTooltip}>
+            <TBody>{formatUsd(value as BigNumber)}</TBody>
+          </Tooltip>
+        </>
       ) : (
-        <TBody>{value as string | number | ReactNode}</TBody>
+        <>
+          <Tooltip title={valueTooltip}>
+            <TBody>{value as string | number | ReactNode}</TBody>
+          </Tooltip>
+        </>
       )}
       {valueEndDecorator}
 

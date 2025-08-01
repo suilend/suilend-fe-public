@@ -21,6 +21,7 @@ import {
   ParsedObligation,
   RewardMap,
   Side,
+  StrategyOwnerCap,
 } from "@suilend/sdk";
 import { ObligationOwnerCap } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import {
@@ -60,8 +61,12 @@ const getCombinedAutoclaimedRewards = (
 };
 
 export interface UserData {
+  strategyOwnerCaps: StrategyOwnerCap[];
+  strategyObligations: ParsedObligation[];
+
   obligationOwnerCaps: ObligationOwnerCap<string>[];
   obligations: ParsedObligation[];
+
   rewardMap: RewardMap;
 }
 

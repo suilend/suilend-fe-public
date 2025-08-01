@@ -917,8 +917,6 @@ export default function HistoryTabContent({
     );
   }, [eventsData]);
 
-  console.log("XXX", rows);
-
   // Filters
   const [filteredOutEventTypes, setFilteredOutEventTypes] = useLocalStorage<
     EventType[]

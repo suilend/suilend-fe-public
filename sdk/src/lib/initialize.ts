@@ -43,6 +43,7 @@ import {
   NORMALIZED_xBTC_COINTYPE,
   NORMALIZED_yapSUI_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
+  getAllOwnedObjects,
   getCoinMetadataMap,
   getPrice,
   isSendPoints,
@@ -50,11 +51,13 @@ import {
 } from "@suilend/sui-fe";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { SuilendClient } from "../client";
+import { LENDING_MARKET_TYPE, SuilendClient } from "../client";
 import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
+import { STRATEGY_WRAPPER_PACKAGE_ID } from "./strategyOwnerCap";
+import { StrategyOwnerCap } from "./types";
 
 export const RESERVES_CUSTOM_ORDER = [
   // MAIN ASSETS
@@ -315,19 +318,53 @@ export const initializeObligations = async (
   reserveMap: Record<string, ParsedReserve>,
   address?: string,
 ) => {
-  if (!address) return { obligationOwnerCaps: [], obligations: [] };
+  if (!address)
+    return {
+      strategyOwnerCaps: [],
+      strategyObligations: [],
 
-  const obligationOwnerCaps = await SuilendClient.getObligationOwnerCaps(
-    address,
-    suilendClient.lendingMarket.$typeArgs,
-    suiClient,
-  );
+      obligationOwnerCaps: [],
+      obligations: [],
+    };
+
+  const [strategyOwnerCaps, obligationOwnerCaps] = await Promise.all([
+    (async () => {
+      const objects = await getAllOwnedObjects(suiClient, address, {
+        StructType: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::StrategyOwnerCap<${suilendClient.lendingMarket.$typeArgs[0]}>`,
+      });
+
+      return objects.map((obj) => {
+        const fields = (obj.data?.content as any).fields;
+
+        const id = fields.id.id;
+        const strategyType = fields.strategy_type;
+        const obligationOwnerCapId = fields.inner_cap.fields.id.id;
+        const obligationId = fields.inner_cap.fields.obligation_id;
+
+        const result: StrategyOwnerCap = {
+          id,
+          strategyType,
+          obligationOwnerCapId,
+          obligationId,
+        };
+        return result;
+      });
+    })(),
+    SuilendClient.getObligationOwnerCaps(
+      address,
+      suilendClient.lendingMarket.$typeArgs,
+      suiClient,
+    ),
+  ]);
 
   const obligations = (
     await Promise.all(
-      obligationOwnerCaps.map((ownerCap) =>
+      [
+        ...strategyOwnerCaps.map((soc) => soc.obligationId),
+        ...obligationOwnerCaps.map((ownerCap) => ownerCap.obligationId),
+      ].map((obligationId) =>
         SuilendClient.getObligation(
-          ownerCap.obligationId,
+          obligationId,
           suilendClient.lendingMarket.$typeArgs,
           suiClient,
         ),
@@ -342,5 +379,19 @@ export const initializeObligations = async (
     )
     .sort((a, b) => +b.netValueUsd.minus(a.netValueUsd));
 
-  return { obligationOwnerCaps, obligations };
+  // Divide into strategy and non-strategy
+  const strategyObligations = obligations.filter((o) =>
+    strategyOwnerCaps.some((soc) => soc.obligationId === o.id),
+  );
+  const nonStrategyObligations = obligations.filter(
+    (o) => !strategyObligations.some((so) => so.id === o.id),
+  );
+
+  return {
+    strategyOwnerCaps,
+    strategyObligations,
+
+    obligationOwnerCaps,
+    obligations: nonStrategyObligations,
+  };
 };

@@ -317,6 +317,7 @@ export const getNetAprPercent = (
   obligation: ParsedObligation,
   rewardMap: RewardMap,
   lstAprPercentMap: Record<string, BigNumber>,
+  noShares?: boolean,
 ) => {
   const weightedDepositedAmountUsd_aprPercent = obligation.deposits.reduce(
     (acc, deposit) => {
@@ -334,10 +335,12 @@ export const getNetAprPercent = (
         Side.DEPOSIT,
         getFilteredRewards(rewardMap[deposit.reserve.coinType].deposit),
       ).times(
-        getDepositShareUsd(
-          deposit.reserve,
-          new BigNumber(deposit.userRewardManager.share.toString()),
-        ),
+        !noShares
+          ? getDepositShareUsd(
+              deposit.reserve,
+              new BigNumber(deposit.userRewardManager.share.toString()),
+            )
+          : deposit.depositedAmountUsd,
       );
 
       return acc
@@ -357,10 +360,12 @@ export const getNetAprPercent = (
         Side.BORROW,
         getFilteredRewards(rewardMap[borrow.reserve.coinType].borrow),
       ).times(
-        getBorrowShareUsd(
-          borrow.reserve,
-          new BigNumber(borrow.userRewardManager.share.toString()),
-        ),
+        !noShares
+          ? getBorrowShareUsd(
+              borrow.reserve,
+              new BigNumber(borrow.userRewardManager.share.toString()),
+            )
+          : borrow.borrowedAmountUsd,
       );
 
       return acc

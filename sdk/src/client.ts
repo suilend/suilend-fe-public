@@ -3,7 +3,6 @@ import {
   Transaction,
   TransactionObjectArgument,
   TransactionObjectInput,
-  TransactionResult,
 } from "@mysten/sui/transactions";
 import {
   SUI_CLOCK_OBJECT_ID,
@@ -496,7 +495,7 @@ export class SuilendClient {
   }
 
   claimReward(
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     reserveArrayIndex: bigint,
     rewardIndex: bigint,
     rewardType: string,
@@ -508,7 +507,7 @@ export class SuilendClient {
       [this.lendingMarket.$typeArgs[0], rewardType],
       {
         lendingMarket: transaction.object(this.lendingMarket.id),
-        cap: transaction.object(obligationOwnerCapId),
+        cap: transaction.object(obligationOwnerCap),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         reserveId: transaction.pure.u64(reserveArrayIndex),
         rewardIndex: transaction.pure.u64(rewardIndex),
@@ -543,7 +542,7 @@ export class SuilendClient {
 
   claimRewards(
     ownerId: string,
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     rewards: ClaimRewardsReward[],
     transaction: Transaction,
   ): {
@@ -553,7 +552,7 @@ export class SuilendClient {
     const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
     for (const reward of rewards) {
       const [claimedCoin] = this.claimReward(
-        obligationOwnerCapId,
+        obligationOwnerCap,
         reward.reserveArrayIndex,
         reward.rewardIndex,
         reward.rewardCoinType,
@@ -579,13 +578,13 @@ export class SuilendClient {
 
   claimRewardsAndSendToUser(
     ownerId: string,
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     rewards: ClaimRewardsReward[],
     transaction: Transaction,
   ) {
     const { transaction: transaction_, mergedCoinsMap } = this.claimRewards(
       ownerId,
-      obligationOwnerCapId,
+      obligationOwnerCap,
       rewards,
       transaction,
     );
@@ -599,19 +598,19 @@ export class SuilendClient {
 
   claimRewardsAndDeposit(
     ownerId: string,
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     rewards: ClaimRewardsReward[],
     transaction: Transaction,
   ) {
     const { transaction: transaction_, mergedCoinsMap } = this.claimRewards(
       ownerId,
-      obligationOwnerCapId,
+      obligationOwnerCap,
       rewards,
       transaction,
     );
 
     for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
-      this.deposit(coin, coinType, obligationOwnerCapId, transaction_);
+      this.deposit(coin, coinType, obligationOwnerCap, transaction_);
     }
 
     return transaction_;
@@ -732,39 +731,45 @@ export class SuilendClient {
 
   async refreshAll(
     transaction: Transaction,
-    obligation: Obligation<string>,
-    extraReserveArrayIndex?: bigint,
+    obligation?: Obligation<string>,
+    coinTypes?: string[],
   ) {
     const reserveArrayIndexToPriceId = new Map<bigint, string>();
-    obligation.deposits.forEach((deposit) => {
-      const reserve =
-        this.lendingMarket.reserves[Number(deposit.reserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        deposit.reserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
-    });
+    if (obligation) {
+      obligation.deposits.forEach((deposit) => {
+        const reserve =
+          this.lendingMarket.reserves[Number(deposit.reserveArrayIndex)];
+        reserveArrayIndexToPriceId.set(
+          deposit.reserveArrayIndex,
+          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+        );
+      });
 
-    obligation.borrows.forEach((borrow) => {
-      const reserve =
-        this.lendingMarket.reserves[Number(borrow.reserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        borrow.reserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
-    });
+      obligation.borrows.forEach((borrow) => {
+        const reserve =
+          this.lendingMarket.reserves[Number(borrow.reserveArrayIndex)];
+        reserveArrayIndexToPriceId.set(
+          borrow.reserveArrayIndex,
+          toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+        );
+      });
+    }
 
-    if (
-      extraReserveArrayIndex != undefined &&
-      extraReserveArrayIndex >= 0 &&
-      extraReserveArrayIndex < this.lendingMarket.reserves.length
-    ) {
-      const reserve =
-        this.lendingMarket.reserves[Number(extraReserveArrayIndex)];
-      reserveArrayIndexToPriceId.set(
-        extraReserveArrayIndex,
-        toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
-      );
+    if (coinTypes !== undefined) {
+      for (const coinType of coinTypes) {
+        const reserveArrayIndex = this.findReserveArrayIndex(coinType);
+        if (
+          reserveArrayIndex >= 0 &&
+          reserveArrayIndex < BigInt(this.lendingMarket.reserves.length)
+        ) {
+          const reserve =
+            this.lendingMarket.reserves[Number(reserveArrayIndex)];
+          reserveArrayIndexToPriceId.set(
+            reserveArrayIndex,
+            toHEX(new Uint8Array(reserve.priceIdentifier.bytes)),
+          );
+        }
+      }
     }
 
     const tuples = Array.from(reserveArrayIndexToPriceId.entries()).sort();
@@ -893,7 +898,7 @@ export class SuilendClient {
     coinType: string,
     value: string,
     transaction: Transaction,
-    obligationOwnerCapId: string | TransactionResult,
+    obligationOwnerCap: TransactionObjectInput,
   ) {
     const coins = (
       await this.client.getCoins({
@@ -917,7 +922,7 @@ export class SuilendClient {
       [value],
     );
 
-    this.deposit(sendCoin, coinType, obligationOwnerCapId, transaction);
+    this.deposit(sendCoin, coinType, obligationOwnerCap, transaction);
   }
 
   async depositLiquidityAndGetCTokens(
@@ -965,16 +970,20 @@ export class SuilendClient {
   }
 
   async withdraw(
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     obligationId: string,
     coinType: string,
     value: string,
     transaction: Transaction,
+    addRefreshCalls: boolean = true,
   ) {
-    const obligation = await this.getObligation(obligationId);
-    if (!obligation) throw new Error("Error: no obligation");
+    if (addRefreshCalls) {
+      const obligation = await this.getObligation(obligationId);
+      if (!obligation) throw new Error("Error: no obligation");
 
-    await this.refreshAll(transaction, obligation);
+      await this.refreshAll(transaction, obligation);
+    }
+
     const [ctokens] = withdrawCtokens(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
@@ -983,7 +992,7 @@ export class SuilendClient {
         reserveArrayIndex: transaction.pure.u64(
           this.findReserveArrayIndex(coinType),
         ),
-        obligationOwnerCap: obligationOwnerCapId,
+        obligationOwnerCap,
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         amount: BigInt(value),
       },
@@ -1046,14 +1055,14 @@ export class SuilendClient {
 
   async withdrawAndSendToUser(
     ownerId: string,
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     obligationId: string,
     coinType: string,
     value: string,
     transaction: Transaction,
   ) {
     const [withdrawCoin] = await this.withdraw(
-      obligationOwnerCapId,
+      obligationOwnerCap,
       obligationId,
       coinType,
       value,
@@ -1067,20 +1076,20 @@ export class SuilendClient {
   }
 
   async borrow(
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     obligationId: string,
     coinType: string,
     value: string,
     transaction: Transaction,
+    addRefreshCalls: boolean = true,
   ) {
-    const obligation = await this.getObligation(obligationId);
-    if (!obligation) throw new Error("Error: no obligation");
+    if (addRefreshCalls) {
+      const obligation = await this.getObligation(obligationId);
+      if (!obligation) throw new Error("Error: no obligation");
 
-    await this.refreshAll(
-      transaction,
-      obligation,
-      this.findReserveArrayIndex(coinType),
-    );
+      await this.refreshAll(transaction, obligation, [coinType]);
+    }
+
     const [liquidityRequest] = borrowRequest(
       transaction,
       [this.lendingMarket.$typeArgs[0], coinType],
@@ -1089,7 +1098,7 @@ export class SuilendClient {
         reserveArrayIndex: transaction.pure.u64(
           this.findReserveArrayIndex(coinType),
         ),
-        obligationOwnerCap: obligationOwnerCapId,
+        obligationOwnerCap,
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
         amount: BigInt(value),
       },
@@ -1121,14 +1130,14 @@ export class SuilendClient {
 
   async borrowAndSendToUser(
     ownerId: string,
-    obligationOwnerCapId: string,
+    obligationOwnerCap: TransactionObjectInput,
     obligationId: string,
     coinType: string,
     value: string,
     transaction: Transaction,
   ) {
     const [borrowCoin] = await this.borrow(
-      obligationOwnerCapId,
+      obligationOwnerCap,
       obligationId,
       coinType,
       value,
