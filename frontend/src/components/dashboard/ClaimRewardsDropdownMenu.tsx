@@ -1,6 +1,6 @@
 import { CSSProperties, useState } from "react";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { RewardSummary } from "@suilend/sdk";
@@ -18,17 +18,15 @@ import Button from "@/components/shared/Button";
 import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
-import SendTokenLogo from "@/components/shared/SendTokenLogo";
 import Spinner from "@/components/shared/Spinner";
-import SuiTokenLogo from "@/components/shared/SuiTokenLogo";
+import StandardSelect from "@/components/shared/StandardSelect";
 import TextLink from "@/components/shared/TextLink";
 import { TLabelSans } from "@/components/shared/Typography";
-import UsdcTokenLogo from "@/components/shared/UsdcTokenLogo";
-import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { TX_TOAST_DURATION } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
   rewardsMap: Record<string, RewardSummary[]>;
@@ -73,33 +71,22 @@ export default function ClaimRewardsDropdownMenu({
         ];
   })();
 
-  // Claim and deposit as SEND/SUI/USDC
-  // SEND
-  const canDepositAsSend = !obligation
-    ? 1 <= 5
-    : (obligation.deposits.some(
-        (d) => d.coinType === NORMALIZED_SEND_COINTYPE,
-      ) ||
-        obligation.deposits.length + 1 <= 5) &&
-      !obligation.borrows.some((b) => b.coinType === NORMALIZED_SEND_COINTYPE);
-
-  // SUI
-  const canDepositAsSui = !obligation
-    ? 1 <= 5
-    : (obligation.deposits.some(
-        (d) => d.coinType === NORMALIZED_SUI_COINTYPE,
-      ) ||
-        obligation.deposits.length + 1 <= 5) &&
-      !obligation.borrows.some((b) => b.coinType === NORMALIZED_SUI_COINTYPE);
-
-  // USDC
-  const canDepositAsUsdc = !obligation
-    ? 1 <= 5
-    : (obligation.deposits.some(
-        (d) => d.coinType === NORMALIZED_USDC_COINTYPE,
-      ) ||
-        obligation.deposits.length + 1 <= 5) &&
-      !obligation.borrows.some((b) => b.coinType === NORMALIZED_USDC_COINTYPE);
+  // Claim and deposit as SUI/USDC/SEND
+  const canDepositAsMap: Record<string, boolean> = [
+    NORMALIZED_SUI_COINTYPE,
+    NORMALIZED_USDC_COINTYPE,
+    NORMALIZED_SEND_COINTYPE,
+  ].reduce(
+    (acc, coinType) => ({
+      ...acc,
+      [coinType]: !obligation
+        ? 1 <= 5
+        : (obligation.deposits.some((d) => d.coinType === coinType) ||
+            obligation.deposits.length + 1 <= 5) &&
+          !obligation.borrows.some((b) => b.coinType === coinType),
+    }),
+    {} as Record<string, boolean>,
+  );
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -108,26 +95,23 @@ export default function ClaimRewardsDropdownMenu({
   // Claim
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
-  const submit = async (args?: {
-    asSend?: boolean;
-    asSui?: boolean;
-    asUsdc?: boolean;
-    isDepositing?: boolean;
-  }) => {
+  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [swappingToCoinType, setSwappingToCoinType] = useState<string>(
+    NORMALIZED_SUI_COINTYPE,
+  );
+  const [isDepositing, setIsDepositing] = useState<boolean>(false);
+
+  const submit = async () => {
     if (isClaiming) return;
 
     setIsClaiming(true);
 
     const filteredRewardsMap: Record<string, RewardSummary[]> = (() => {
       const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
-        if (args?.asSend) {
-          return args?.isDepositing ? canDepositAsSend : true;
-        } else if (args?.asSui) {
-          return args?.isDepositing ? canDepositAsSui : true;
-        } else if (args?.asUsdc) {
-          return args?.isDepositing ? canDepositAsUsdc : true;
+        if (isSwapping) {
+          return isDepositing ? canDepositAsMap[swappingToCoinType] : true;
         } else {
-          return args?.isDepositing
+          return isDepositing
             ? tokensThatCanBeDeposited.some((t) => t.coinType === coinType)
             : true;
         }
@@ -139,20 +123,24 @@ export default function ClaimRewardsDropdownMenu({
     })();
 
     try {
-      const res = await claimRewards(filteredRewardsMap, args);
+      const res = await claimRewards(filteredRewardsMap, {
+        isSwapping,
+        swappingToCoinType,
+        isDepositing,
+      });
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(
         [
-          args?.isDepositing ? "Claimed and deposited" : "Claimed",
+          isDepositing ? "Claimed and deposited" : "Claimed",
           formatList(
             Object.keys(filteredRewardsMap).map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
-          args?.asSend || args?.asSui || args?.asUsdc
-            ? `as ${args?.asSend ? "SEND" : args?.asSui ? "SUI" : "USDC"}`
+          isSwapping
+            ? `as ${appData.coinMetadataMap[swappingToCoinType].symbol}`
             : null,
         ]
           .filter(Boolean)
@@ -170,15 +158,15 @@ export default function ClaimRewardsDropdownMenu({
       showErrorToast(
         [
           "Failed to",
-          args?.isDepositing ? "claim and deposit" : "claim",
+          isDepositing ? "claim and deposit" : "claim",
           formatList(
             Object.keys(filteredRewardsMap).map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
-          args?.asSend || args?.asSui || args?.asUsdc
-            ? `as ${args?.asSend ? "SEND" : args?.asSui ? "SUI" : "USDC"}`
+          isSwapping
+            ? `as ${appData.coinMetadataMap[swappingToCoinType].symbol}`
             : null,
         ]
           .filter(Boolean)
@@ -214,121 +202,117 @@ export default function ClaimRewardsDropdownMenu({
       }}
       items={
         <>
-          {/* Claim, claim and deposit */}
-          <div className="flex w-full flex-col gap-1.5">
-            <div className="flex w-full flex-row gap-2">
-              <DropdownMenuItem className="w-full" onClick={() => submit()}>
-                <TLabelSans className="text-foreground">Claim</TLabelSans>
-              </DropdownMenuItem>
+          {/* Claim */}
+          <DropdownMenuItem className="w-full" onClick={() => submit()}>
+            <TLabelSans className="text-foreground">Claim</TLabelSans>
+          </DropdownMenuItem>
 
-              <DropdownMenuItem
-                className="w-full"
-                isDisabled={tokensThatCanBeDeposited.length === 0}
-                onClick={() => submit({ isDepositing: true })}
+          {/* and deposit */}
+          <div className="mt-1 flex w-full flex-col gap-1.5">
+            {/* Checkbox */}
+            <div
+              className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"
+              onClick={() => setIsDepositing(!isDepositing)}
+            >
+              <button
+                className={cn(
+                  "flex h-4 w-4 flex-row items-center justify-center rounded-sm border border-muted/25 transition-colors",
+                  isDepositing
+                    ? "border-secondary bg-secondary/25"
+                    : "group-hover:border-muted/50",
+                )}
               >
-                <TLabelSans className="text-foreground">
-                  Claim and deposit
+                {isDepositing && <Check className="h-4 w-4 text-foreground" />}
+              </button>
+
+              <TLabelSans
+                className={cn(
+                  "transition-colors",
+                  isDepositing
+                    ? "text-foreground"
+                    : "group-hover:text-foreground",
+                )}
+              >
+                and deposit
+              </TLabelSans>
+            </div>
+
+            {/* Note */}
+            {isDepositing &&
+              !isSwapping &&
+              tokensThatCanBeDeposited.length < tokens.length && (
+                <TLabelSans className="text-[10px]">
+                  {`Note: Cannot claim and deposit ${formatList(
+                    tokens
+                      .filter(
+                        (t) =>
+                          !tokensThatCanBeDeposited
+                            .map((_t) => _t.coinType)
+                            .includes(t.coinType),
+                      )
+                      .map((t) => t.symbol),
+                  ).replace(
+                    "and",
+                    "or",
+                  )} (max 5 deposit positions, no borrows).`}
                 </TLabelSans>
-              </DropdownMenuItem>
-            </div>
-
-            {tokensThatCanBeDeposited.length < tokens.length && (
-              <TLabelSans className="pl-3 text-[10px]">
-                {`Note: Cannot claim and deposit ${formatList(
-                  tokens
-                    .filter(
-                      (t) =>
-                        !tokensThatCanBeDeposited
-                          .map((_t) => _t.coinType)
-                          .includes(t.coinType),
-                    )
-                    .map((t) => t.symbol),
-                ).replace("and", "or")} (max 5 deposit positions, no borrows).`}
-              </TLabelSans>
-            )}
+              )}
           </div>
 
-          <Separator className="-mx-4 my-1 w-auto" />
-
-          {/* Claim as SEND/SUI/USDC */}
-          <div className="flex h-[34px] w-full flex-row items-center justify-between gap-2 rounded-sm bg-gradient-to-r from-border via-transparent to-transparent pl-[13px]">
-            <TLabelSans className="text-foreground">Claim as...</TLabelSans>
-
-            <div className="flex flex-row items-center gap-1.5">
-              {/* SEND */}
-              <DropdownMenuItem
-                className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                onClick={() => submit({ asSend: true })}
+          {/* and swap to... */}
+          <div className="mt-1 flex w-full flex-col gap-1.5">
+            <div className="flex flex-row items-center gap-4">
+              {/* Checkbox */}
+              <div
+                className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"
+                onClick={() => setIsSwapping(!isSwapping)}
               >
-                <SendTokenLogo size={16} />
-              </DropdownMenuItem>
-
-              {/* SUI */}
-              <DropdownMenuItem
-                className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                onClick={() => submit({ asSui: true })}
-              >
-                <SuiTokenLogo size={16} />
-              </DropdownMenuItem>
-
-              {/* USDC */}
-              <DropdownMenuItem
-                className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                onClick={() => submit({ asUsdc: true })}
-              >
-                <UsdcTokenLogo size={16} />
-              </DropdownMenuItem>
-            </div>
-          </div>
-
-          {/* Claim and deposit as SEND/SUI/USDC */}
-          <div className="flex w-full flex-col gap-1.5">
-            <div className="flex h-[34px] w-full flex-row items-center justify-between gap-2 rounded-sm bg-gradient-to-r from-border via-transparent to-transparent pl-[13px]">
-              <TLabelSans className="text-foreground">
-                Claim and deposit as...
-              </TLabelSans>
-
-              <div className="flex flex-row items-center gap-1.5">
-                {/* SEND */}
-                <DropdownMenuItem
-                  className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                  isDisabled={!canDepositAsSend}
-                  onClick={() => submit({ asSend: true, isDepositing: true })}
+                <button
+                  className={cn(
+                    "flex h-4 w-4 flex-row items-center justify-center rounded-sm border border-muted/25 transition-colors",
+                    isSwapping
+                      ? "border-secondary bg-secondary/25"
+                      : "group-hover:border-muted/50",
+                  )}
                 >
-                  <SendTokenLogo size={16} />
-                </DropdownMenuItem>
+                  {isSwapping && <Check className="h-4 w-4 text-foreground" />}
+                </button>
 
-                {/* SUI */}
-                <DropdownMenuItem
-                  className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                  isDisabled={!canDepositAsSui}
-                  onClick={() => submit({ asSui: true, isDepositing: true })}
+                <TLabelSans
+                  className={cn(
+                    "transition-colors",
+                    isSwapping
+                      ? "text-foreground"
+                      : "group-hover:text-foreground",
+                  )}
                 >
-                  <SuiTokenLogo size={16} />
-                </DropdownMenuItem>
-
-                {/* USDC */}
-                <DropdownMenuItem
-                  className="flex h-[34px] w-[34px] flex-row items-center justify-center"
-                  isDisabled={!canDepositAsUsdc}
-                  onClick={() => submit({ asUsdc: true, isDepositing: true })}
-                >
-                  <UsdcTokenLogo size={16} />
-                </DropdownMenuItem>
+                  and swap to...
+                </TLabelSans>
               </div>
+
+              {/* Select */}
+              <StandardSelect
+                className={cn(
+                  "h-6 w-max min-w-0 px-2",
+                  isSwapping && "text-foreground",
+                )}
+                items={Object.keys(canDepositAsMap).map((coinType) => ({
+                  id: coinType,
+                  name: appData.coinMetadataMap[coinType].symbol,
+                }))}
+                value={swappingToCoinType}
+                onChange={setSwappingToCoinType}
+              />
             </div>
 
-            {(!canDepositAsSend || !canDepositAsSui || !canDepositAsUsdc) && (
-              <TLabelSans className="pl-3 text-[10px]">
-                {`Note: Cannot claim and deposit as ${formatList(
-                  [
-                    !canDepositAsSend ? "SEND" : null,
-                    !canDepositAsSui ? "SUI" : null,
-                    !canDepositAsUsdc ? "USDC" : null,
-                  ].filter(Boolean) as string[],
-                ).replace("and", "or")} (max 5 deposit positions, no borrows).`}
-              </TLabelSans>
-            )}
+            {/* Note */}
+            {isDepositing &&
+              isSwapping &&
+              !canDepositAsMap[swappingToCoinType] && (
+                <TLabelSans className="text-[10px]">
+                  {`Note: Cannot claim and deposit as ${appData.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
+                </TLabelSans>
+              )}
           </div>
         </>
       }

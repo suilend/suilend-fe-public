@@ -23,11 +23,6 @@ import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
-import {
-  NORMALIZED_SEND_COINTYPE,
-  NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_USDC_COINTYPE,
-} from "@suilend/sui-fe";
 import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -46,11 +41,10 @@ interface DashboardContext {
 
   claimRewards: (
     rewardsMap: Record<string, RewardSummary[]>,
-    args?: {
-      asSend?: boolean;
-      asSui?: boolean;
-      asUsdc?: boolean;
-      isDepositing?: boolean;
+    args: {
+      isSwapping: boolean;
+      swappingToCoinType: string;
+      isDepositing: boolean;
     },
   ) => Promise<SuiTransactionBlockResponse>;
 }
@@ -189,11 +183,10 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   const claimRewards = useCallback(
     async (
       rewardsMap: Record<string, RewardSummary[]>,
-      args?: {
-        asSend?: boolean;
-        asSui?: boolean;
-        asUsdc?: boolean;
-        isDepositing?: boolean;
+      args: {
+        isSwapping: boolean;
+        swappingToCoinType: string;
+        isDepositing: boolean;
       },
     ) => {
       if (!address) throw Error("Wallet not connected");
@@ -213,7 +206,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             side: r.stats.side,
           }));
 
-        if (args?.asSend || args?.asSui || args?.asUsdc) {
+        if (args.isSwapping) {
           // Claim
           const { transaction: _transaction1, mergedCoinsMap } =
             appData.suilendClient.claimRewards(
@@ -224,6 +217,33 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             );
           transaction = _transaction1;
 
+          const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
+            (coinType) => coinType === args.swappingToCoinType,
+          );
+          const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
+            (coinType) => coinType !== args.swappingToCoinType,
+          );
+
+          // Non-swapped coins
+          for (const [coinType, coin] of Object.entries(mergedCoinsMap).filter(
+            ([coinType]) => nonSwappedCoinTypes.includes(coinType),
+          )) {
+            if (args.isDepositing) {
+              appData.suilendClient.deposit(
+                coin,
+                args.swappingToCoinType,
+                obligationOwnerCap.id,
+                transaction,
+              );
+            } else {
+              transaction.transferObjects(
+                [coin],
+                transaction.pure.address(address),
+              );
+            }
+          }
+
+          // Swapped coins
           // Get amounts and routers
           const amountsAndSortedQuotesMap: Record<
             string,
@@ -233,35 +253,36 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             }
           > = Object.fromEntries(
             await Promise.all(
-              Object.entries(mergedCoinsMap).map(([coinType, coin]) =>
-                (async () => {
-                  // Get amount
-                  const amount = await getClaimRewardSimulatedAmount(
-                    rewards.filter((r) => r.rewardCoinType === coinType),
-                  );
+              Object.entries(mergedCoinsMap)
+                .filter(([coinType]) => swappedCoinTypes.includes(coinType))
+                .map(([coinType, coin]) =>
+                  (async () => {
+                    // Get amount
+                    const amount = await getClaimRewardSimulatedAmount(
+                      rewards.filter((r) => r.rewardCoinType === coinType),
+                    );
 
-                  // Get routes
-                  const routers = await cetusSdk.findRouters({
-                    from: coinType,
-                    target: args?.asSend
-                      ? NORMALIZED_SEND_COINTYPE
-                      : args?.asSui
-                        ? NORMALIZED_SUI_COINTYPE
-                        : NORMALIZED_USDC_COINTYPE,
-                    amount: new BN(amount), // Underestimate (rewards keep accruing)
-                    byAmountIn: true,
-                    splitCount: new BigNumber(amount)
-                      .times(rewardsMap[coinType][0].stats.price ?? 1)
-                      .gte(10)
-                      ? undefined // Don't limit splitCount if amount is >= $10
-                      : 1,
-                  });
-                  if (!routers) throw new Error("No quote found");
-                  console.log("[claimRewards] routers", { coinType, routers });
+                    // Get routes
+                    const routers = await cetusSdk.findRouters({
+                      from: coinType,
+                      target: args.swappingToCoinType,
+                      amount: new BN(amount), // Underestimate (rewards keep accruing)
+                      byAmountIn: true,
+                      splitCount: new BigNumber(amount)
+                        .times(rewardsMap[coinType][0].stats.price ?? 1)
+                        .gte(10)
+                        ? undefined // Don't limit splitCount if amount is >= $10
+                        : 1,
+                    });
+                    if (!routers) throw new Error("No quote found");
+                    console.log("[claimRewards] routers", {
+                      coinType,
+                      routers,
+                    });
 
-                  return [coinType, { coin, routers }];
-                })(),
-              ),
+                    return [coinType, { coin, routers }];
+                  })(),
+                ),
             ),
           );
 
@@ -284,14 +305,10 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
               throw new Error("No quote found");
             }
 
-            if (args?.isDepositing) {
+            if (args.isDepositing) {
               appData.suilendClient.deposit(
                 coinOut,
-                args?.asSend
-                  ? NORMALIZED_SEND_COINTYPE
-                  : args?.asSui
-                    ? NORMALIZED_SUI_COINTYPE
-                    : NORMALIZED_USDC_COINTYPE,
+                args.swappingToCoinType,
                 obligationOwnerCap.id,
                 transaction,
               );
@@ -303,7 +320,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             }
           }
         } else {
-          if (args?.isDepositing) {
+          if (args.isDepositing) {
             appData.suilendClient.claimRewardsAndDeposit(
               address,
               obligationOwnerCap.id,
