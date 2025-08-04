@@ -51,7 +51,7 @@ import Spinner from "@/components/shared/Spinner";
 import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -1108,7 +1108,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
-    // 2) Transfer SUI to user
+    // 1.5) Transfer SUI to user
     transaction.transferObjects([suiCoin], address);
 
     return transaction;
@@ -1121,11 +1121,29 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
+    // 1) Claim and deposit pending rewards
+    // appData.suilendClient.claimRewardsAndDeposit(address, obligationOwnerCap, rewards, transaction)
+    // Object.values(userData.rewardMap).flatMap((rewards) =>
+    //   [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+    //     if (!r.obligationClaims[obligation.id]) return;
+
+    //     appData.suilendClient.claimRewardsAndDeposit(
+    //       obligation.id,
+    //       r.stats.reserve.arrayIndex,
+    //       BigInt(r.stats.rewardIndex),
+    //       r.stats.rewardCoinType,
+    //       r.stats.side,
+    //       appData.suilendClient.findReserveArrayIndex(r.stats.rewardCoinType),
+    //       transaction,
+    //     );
+    //   }),
+    // );
+
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
       console.log(`[SsuiStrategyDialog] maxWithdraw - ${i} start`);
 
-      // 1.1) Max withdraw sSUI
+      // 2.1) Max withdraw sSUI
       const [withdrawnSsuiCoin] = strategyWithdraw(
         NORMALIZED_sSUI_COINTYPE,
         strategyOwnerCapId,
@@ -1134,12 +1152,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         transaction,
       );
 
-      // 1.2) Unstake withdrawn sSUI for SUI
+      // 2.2) Unstake withdrawn sSUI for SUI
       const stepSuiCoin = lstClient.redeem(transaction, withdrawnSsuiCoin);
       if (suiCoin) transaction.mergeCoins(suiCoin, [stepSuiCoin]);
       else suiCoin = stepSuiCoin;
 
-      // 1.3) Repay SUI
+      // 2.3) Repay SUI
       try {
         const txCopy = Transaction.from(transaction);
         appData.suilendClient.repay(
@@ -1163,7 +1181,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
-    // 2) Transfer SUI to user
+    // 2.4) Transfer SUI to user
     transaction.transferObjects([suiCoin], address);
 
     return transaction;
@@ -1226,6 +1244,21 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!address) throw Error("Wallet not connected");
     if (submitButtonState.isDisabled) return;
 
+    // if (obligation) {
+    //   Object.values(userData.rewardMap).flatMap((rewards) =>
+    //     [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+    //       if (!r.obligationClaims[obligation.id]) return;
+
+    //       console.log(
+    //         "XXX",
+    //         +r.obligationClaims[obligation.id].claimableAmount,
+    //       );
+    //     }),
+    //   );
+    // } else {
+    //   console.log("XXX", "no obligation");
+    // }
+
     setIsSubmitting(true);
 
     try {
@@ -1240,7 +1273,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       if (selectedTab === Tab.DEPOSIT) {
         const { strategyOwnerCapId, didCreate } =
           createStrategyOwnerCapIfNoneExists(transaction, strategyOwnerCap);
-        console.log("xxx3333", strategyOwnerCapId, didCreate);
+
         // 2) Deposit
         transaction = await deposit(
           strategyOwnerCapId,
@@ -1722,6 +1755,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   submitButtonState.title
                 )}
               </Button>
+
+              {selectedTab === Tab.WITHDRAW && useMaxAmount && (
+                <TLabelSans className="text-center">
+                  Any pending rewards will also be withdrawn
+                </TLabelSans>
+              )}
             </div>
           </div>
         </div>

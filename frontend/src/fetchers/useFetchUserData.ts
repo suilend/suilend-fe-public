@@ -42,7 +42,7 @@ export default function useFetchUserData() {
         appData.reserveMap,
         appData.rewardCoinMetadataMap,
         appData.rewardPriceMap,
-        obligations,
+        [...strategyObligations, ...obligations],
       );
 
       result[appData.lendingMarket.id] = {
