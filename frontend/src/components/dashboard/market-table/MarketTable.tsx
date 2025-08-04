@@ -92,6 +92,7 @@ export interface CollapsibleRowData {
 export interface ReservesRowData {
   section: "featured" | "main" | "isolated" | "deprecated";
 
+  symbol: string; // Required for sorting
   reserve: ParsedReserve;
   token: Token;
   price: BigNumber;
@@ -407,6 +408,7 @@ export default function MarketTable() {
               ? "isolated"
               : "main",
 
+        symbol: reserve.token.symbol,
         reserve,
         token: reserve.token,
         price: reserve.price,
