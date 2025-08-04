@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* colors */
+    --background: 221 85% 5%;
+    --foreground: 0 0% 100%;
+
+    --card: 221 65% 9%;
+    --card-foreground: 221 100% 57%;
+
+    --popover: 221 59% 12%;
+    --popover-foreground: 221 100% 57%;
+
+    --primary: 221 100% 57%;
+    --primary-foreground: var(--secondary);
+
+    --secondary: 194 82% 76%;
+    --secondary-foreground: var(--card);
+
+    --muted: 221 34% 65%;
+    --muted-foreground: 221 34% 65%;
+
+    --accent: 219 17% 19%; /* Not used */
+    --accent-foreground: 0 0% 80%; /* Not used */
+
+    --success: 158 56% 48%;
+    --success-foreground: 0 0% 0%; /* Not used */
+
+    --verified: 130 50% 65%; // #7BD389 (from STEAMM)
+
+    --warning: 33 92% 61%;
+    --warning-foreground: 0 0% 0%; /* Not used */
+
+    --destructive: 0 86% 60%;
+    --destructive-foreground: var(--foreground);
+
+    --border: 221 44% 15%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 44% 15%; /* same as border */
+
+    --gold: 51 96% 67%;
+    --silver: 132 6% 85%;
+    --bronze: 19 65% 68%;
+
+    /* borderRadius */
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Focus */
+:focus-visible {
+  outline: none;
+}
+
+/* Scrollbar */
+body {
+  overflow-y: scroll;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: hsla(var(--muted) / 50%);
+  border-radius: 0;
+  border: transparent;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
