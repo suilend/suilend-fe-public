@@ -173,6 +173,7 @@ export default function ReserveRewardsDialog({
       }}
     >
       <Tabs
+        className="mb-4"
         tabs={tabs}
         selectedTab={selectedTab}
         onTabChange={(tab) => onSelectedTabChange(tab as Tab)}

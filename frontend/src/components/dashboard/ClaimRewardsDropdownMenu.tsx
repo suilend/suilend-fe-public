@@ -3,7 +3,7 @@ import { CSSProperties, useState } from "react";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
-import { RewardSummary } from "@suilend/sdk";
+import { LENDING_MARKETS, RewardSummary } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -36,10 +36,13 @@ export default function ClaimRewardsDropdownMenu({
   rewardsMap,
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { appData, closeLedgerHashDialog } = useLoadedAppContext();
+  const { allAppData, appData, closeLedgerHashDialog } = useLoadedAppContext();
   const { refresh, obligation } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
+
+  const appDataMainMarket =
+    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
 
   const tokens: Token[] = Object.values(rewardsMap).map((r) =>
     getToken(
@@ -140,7 +143,7 @@ export default function ClaimRewardsDropdownMenu({
           ),
           "rewards",
           isSwapping
-            ? `as ${appData.coinMetadataMap[swappingToCoinType].symbol}`
+            ? `as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol}`
             : null,
         ]
           .filter(Boolean)
@@ -166,7 +169,7 @@ export default function ClaimRewardsDropdownMenu({
           ),
           "rewards",
           isSwapping
-            ? `as ${appData.coinMetadataMap[swappingToCoinType].symbol}`
+            ? `as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol}`
             : null,
         ]
           .filter(Boolean)
@@ -298,7 +301,7 @@ export default function ClaimRewardsDropdownMenu({
                 )}
                 items={Object.keys(canDepositAsMap).map((coinType) => ({
                   id: coinType,
-                  name: appData.coinMetadataMap[coinType].symbol,
+                  name: appDataMainMarket.coinMetadataMap[coinType].symbol,
                 }))}
                 value={swappingToCoinType}
                 onChange={setSwappingToCoinType}
@@ -310,7 +313,7 @@ export default function ClaimRewardsDropdownMenu({
               isSwapping &&
               !canDepositAsMap[swappingToCoinType] && (
                 <TLabelSans className="text-[10px]">
-                  {`Note: Cannot claim and deposit as ${appData.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
+                  {`Note: Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
                 </TLabelSans>
               )}
           </div>

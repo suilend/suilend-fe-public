@@ -4,6 +4,7 @@ import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
+import { LENDING_MARKETS } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
@@ -81,7 +82,11 @@ export default function AssetCell({
           tableType === AccountAssetTableType.BALANCES) &&
         !(
           // Staked WAL
-          (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
+          (
+            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+            token.coinType === NORMALIZED_WAL_COINTYPE &&
+            reserve === undefined
+          )
         ) &&
         !isInMsafeApp()
       ) {
@@ -134,7 +139,7 @@ export default function AssetCell({
       }
 
       return result;
-    }, [tableType, token, reserve, isLst]);
+    }, [appData.lendingMarket.id, tableType, token, reserve, isLst]);
 
   // WAL
   const stakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -242,9 +247,18 @@ export default function AssetCell({
   }, [extra, dryRunTransaction]);
 
   useEffect(() => {
-    if (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
+    if (
+      appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+      token.coinType === NORMALIZED_WAL_COINTYPE &&
+      reserve === undefined
+    )
       canStakedWalBeWithdrawnEarly();
-  }, [token.coinType, reserve, canStakedWalBeWithdrawnEarly]);
+  }, [
+    appData.lendingMarket.id,
+    token.coinType,
+    reserve,
+    canStakedWalBeWithdrawnEarly,
+  ]);
 
   const withdrawWal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -348,7 +362,8 @@ export default function AssetCell({
           <TBody>
             {
               // Staked WAL
-              token.coinType === NORMALIZED_WAL_COINTYPE &&
+              appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+                token.coinType === NORMALIZED_WAL_COINTYPE &&
                 reserve === undefined && (
                   <>
                     <Tooltip title={(extra!.obj as StakedWalObject).nodeId}>
@@ -373,7 +388,8 @@ export default function AssetCell({
           </TBody>
           {
             // Staked WAL (Withdrawing, withdrawEpoch > epoch)
-            token.coinType === NORMALIZED_WAL_COINTYPE &&
+            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+              token.coinType === NORMALIZED_WAL_COINTYPE &&
               reserve === undefined &&
               (extra!.obj as StakedWalObject).state ===
                 StakedWalState.WITHDRAWING &&
@@ -404,6 +420,7 @@ export default function AssetCell({
           ))}
           {(tableType === AccountAssetTableType.BALANCES ||
             tableType === MarketTableType.MARKET) &&
+            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
             token.coinType === NORMALIZED_WAL_COINTYPE &&
             address && (
               <Button

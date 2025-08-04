@@ -12,7 +12,7 @@ export default function SsuiSuiStrategyHeader() {
   const { appData } = useLoadedAppContext();
 
   return (
-    <div className="flex flex-row items-center gap-3">
+    <div className="flex h-10 flex-row items-center gap-3">
       <TokenLogos
         tokens={[
           getToken(
@@ -29,7 +29,7 @@ export default function SsuiSuiStrategyHeader() {
 
       <div className="-ml-[7px] flex flex-col gap-1">
         <TBody>sSUI/SUI</TBody>
-        <div className="-my-0.5 -ml-1 flex h-5 w-max flex-row items-center rounded-full border px-2">
+        <div className="flex h-5 w-max flex-row items-center rounded-full border border-muted/25 px-2">
           <TLabelSans>Looping</TLabelSans>
         </div>
       </div>
