@@ -15,6 +15,7 @@ import { TransactionObjectArgument } from "@mysten/sui/transactions";
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
+import { cloneDeep } from "lodash";
 import { Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -206,6 +207,7 @@ const getTransactionRepaidSuiAmount = (res: SuiTransactionBlockResponse) => {
 };
 
 enum QueryParams {
+  STRATEGY_NAME = "strategy",
   TAB = "action",
   // PARAMETERS_PANEL_TAB = "parametersPanelTab",
 }
@@ -220,6 +222,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const router = useRouter();
   const queryParams = useMemo(
     () => ({
+      [QueryParams.STRATEGY_NAME]: router.query[QueryParams.STRATEGY_NAME] as
+        | string
+        | undefined,
       [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
       // [QueryParams.PARAMETERS_PANEL_TAB]: router.query[
       //   QueryParams.PARAMETERS_PANEL_TAB
@@ -290,7 +295,22 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   );
 
   // State
-  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const isOpen = useMemo(
+    () => queryParams[QueryParams.STRATEGY_NAME] === "sSUI-SUI-looping",
+    [queryParams],
+  );
+
+  const open = useCallback(() => {
+    shallowPushQuery(router, {
+      ...router.query,
+      [QueryParams.STRATEGY_NAME]: "sSUI-SUI-looping",
+    });
+  }, [router]);
+  const close = useCallback(() => {
+    const restQuery = cloneDeep(router.query);
+    delete restQuery[QueryParams.STRATEGY_NAME];
+    shallowPushQuery(router, restQuery);
+  }, [router]);
 
   // Obligation
   const strategyOwnerCap = userData.strategyOwnerCaps.find(
@@ -1389,7 +1409,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   return (
     <Dialog
-      rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
+      rootProps={{
+        open: isOpen,
+        onOpenChange: (isOpen) => (isOpen ? open() : close()),
+      }}
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
       dialogContentInnerClassName="max-w-[28rem]"
