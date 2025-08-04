@@ -201,17 +201,25 @@ export default function ClaimRewardsDropdownMenu({
       }
       contentProps={{
         align: "start",
-        style: { "--bg-color": "hsl(var(--popover))" } as CSSProperties,
+        style: {
+          "--bg-color": "hsl(var(--popover))",
+          minWidth: "max-content",
+          maxWidth: "max-content",
+        } as CSSProperties,
       }}
       items={
         <>
-          {/* Claim */}
-          <DropdownMenuItem className="w-full" onClick={() => submit()}>
-            <TLabelSans className="text-foreground">Claim</TLabelSans>
-          </DropdownMenuItem>
+          {/* Claim rewards */}
+          <Button
+            className="mb-1 w-[150px]"
+            labelClassName="uppercase"
+            onClick={() => submit()}
+          >
+            Claim rewards
+          </Button>
 
           {/* and swap to */}
-          <div className="mt-1 flex w-full flex-col gap-1.5">
+          <div className="flex w-full flex-col gap-1.5">
             <div className="flex flex-row items-center gap-4">
               {/* Checkbox */}
               <div
@@ -267,7 +275,7 @@ export default function ClaimRewardsDropdownMenu({
           </div>
 
           {/* and deposit */}
-          <div className="mt-1 flex w-full flex-col gap-1.5">
+          <div className="flex w-full flex-col gap-1.5">
             {/* Checkbox */}
             <div
               className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"

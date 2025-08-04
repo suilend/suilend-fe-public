@@ -161,7 +161,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // Featured, deprecated reserves
   const flags = useFlags();
   const featuredReserveIds: string[] | undefined = useMemo(
-    () => flags?.suilendFeaturedReserveIds,
+    () => (flags?.suilendFeaturedReserveIds ?? []).filter(Boolean), // Filter out ""
     [flags?.suilendFeaturedReserveIds],
   );
   const deprecatedReserveIds: string[] | undefined = useMemo(
