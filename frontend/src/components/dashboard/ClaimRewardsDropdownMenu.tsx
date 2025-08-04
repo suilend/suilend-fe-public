@@ -193,10 +193,9 @@ export default function ClaimRewardsDropdownMenu({
         <Button
           className="w-[150px]"
           labelClassName="uppercase"
-          endIcon={isClaiming ? undefined : <Icon />}
-          disabled={isClaiming}
+          endIcon={<Icon />}
         >
-          {isClaiming ? <Spinner size="sm" /> : "Claim rewards"}
+          Claim rewards
         </Button>
       }
       contentProps={{
@@ -213,118 +212,122 @@ export default function ClaimRewardsDropdownMenu({
           <Button
             className="mb-1"
             labelClassName="uppercase"
+            disabled={
+              isClaiming ||
+              (!isSwapping && tokensThatCanBeDeposited.length === 0) ||
+              (isSwapping &&
+                isDepositing &&
+                !canDepositAsMap[swappingToCoinType])
+            }
             onClick={() => submit()}
           >
-            Claim rewards
+            {isClaiming ? <Spinner size="sm" /> : "Claim rewards"}
           </Button>
 
           {/* and swap to */}
-          <div className="flex w-full flex-col gap-1.5">
-            <div className="flex w-full flex-row items-center justify-between gap-4">
-              {/* Checkbox */}
-              <div
-                className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"
-                onClick={() => setIsSwapping(!isSwapping)}
-              >
-                <button
-                  className={cn(
-                    "flex h-4 w-4 flex-row items-center justify-center rounded-sm border border-muted/25 transition-colors",
-                    isSwapping
-                      ? "border-secondary bg-secondary/25"
-                      : "group-hover:border-muted/50",
-                  )}
-                >
-                  {isSwapping && <Check className="h-4 w-4 text-foreground" />}
-                </button>
-
-                <TLabelSans
-                  className={cn(
-                    "transition-colors",
-                    isSwapping
-                      ? "text-foreground"
-                      : "group-hover:text-foreground",
-                  )}
-                >
-                  and swap to
-                </TLabelSans>
-              </div>
-
-              {/* Select */}
-              <StandardSelect
-                className={cn(
-                  "h-6 w-max min-w-0 px-2",
-                  isSwapping && "text-foreground",
-                )}
-                items={Object.keys(canDepositAsMap).map((coinType) => ({
-                  id: coinType,
-                  name: appDataMainMarket.coinMetadataMap[coinType].symbol,
-                }))}
-                value={swappingToCoinType}
-                onChange={setSwappingToCoinType}
-              />
-            </div>
-
-            {/* Note */}
-            {isSwapping &&
-              isDepositing &&
-              !canDepositAsMap[swappingToCoinType] && (
-                <TLabelSans className="text-[10px]">
-                  {`Note: Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
-                </TLabelSans>
-              )}
-          </div>
-
-          {/* and deposit */}
-          <div className="flex w-full flex-col gap-1.5">
+          <div className="flex w-full flex-row items-center justify-between gap-4">
             {/* Checkbox */}
-            <div
-              className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"
-              onClick={() => setIsDepositing(!isDepositing)}
+            <button
+              className="group flex w-full w-max flex-row items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
+              disabled={isClaiming}
+              onClick={() => setIsSwapping(!isSwapping)}
             >
-              <button
+              <div
                 className={cn(
                   "flex h-4 w-4 flex-row items-center justify-center rounded-sm border border-muted/25 transition-colors",
-                  isDepositing
+                  isSwapping
                     ? "border-secondary bg-secondary/25"
                     : "group-hover:border-muted/50",
                 )}
               >
-                {isDepositing && <Check className="h-4 w-4 text-foreground" />}
-              </button>
+                {isSwapping && <Check className="h-4 w-4 text-foreground" />}
+              </div>
 
               <TLabelSans
                 className={cn(
                   "transition-colors",
-                  isDepositing
+                  isSwapping
                     ? "text-foreground"
                     : "group-hover:text-foreground",
                 )}
               >
-                and deposit
+                and swap to
               </TLabelSans>
+            </button>
+
+            {/* Select */}
+            <StandardSelect
+              className={cn(
+                "h-6 w-max min-w-0 px-2",
+                isSwapping && "text-foreground",
+                isClaiming && "pointer-events-none opacity-50", // Disable select when claiming
+              )}
+              items={Object.keys(canDepositAsMap).map((coinType) => ({
+                id: coinType,
+                name: appDataMainMarket.coinMetadataMap[coinType].symbol,
+              }))}
+              value={swappingToCoinType}
+              onChange={setSwappingToCoinType}
+            />
+          </div>
+
+          {/* and deposit */}
+          <button
+            className="group flex w-full w-max flex-row items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
+            disabled={isClaiming}
+            onClick={() => setIsDepositing(!isDepositing)}
+          >
+            <div
+              className={cn(
+                "flex h-4 w-4 flex-row items-center justify-center rounded-sm border border-muted/25 transition-colors",
+                isDepositing
+                  ? "border-secondary bg-secondary/25"
+                  : "group-hover:border-muted/50",
+              )}
+            >
+              {isDepositing && <Check className="h-4 w-4 text-foreground" />}
             </div>
 
-            {/* Note */}
-            {!isSwapping &&
-              isDepositing &&
-              tokensThatCanBeDeposited.length < tokens.length && (
-                <TLabelSans className="text-[10px]">
-                  {`Note: Cannot claim and deposit ${formatList(
-                    tokens
-                      .filter(
-                        (t) =>
-                          !tokensThatCanBeDeposited
-                            .map((_t) => _t.coinType)
-                            .includes(t.coinType),
-                      )
-                      .map((t) => t.symbol),
-                  ).replace(
-                    "and",
-                    "or",
-                  )} (max 5 deposit positions, no borrows).`}
-                </TLabelSans>
+            <TLabelSans
+              className={cn(
+                "transition-colors",
+                isDepositing
+                  ? "text-foreground"
+                  : "group-hover:text-foreground",
               )}
-          </div>
+            >
+              and deposit
+            </TLabelSans>
+          </button>
+
+          {/* Note */}
+          {isDepositing && (
+            <>
+              {!isSwapping
+                ? tokensThatCanBeDeposited.length < tokens.length && (
+                    <TLabelSans className="text-[10px]">
+                      {`Note: Cannot claim and deposit ${formatList(
+                        tokens
+                          .filter(
+                            (t) =>
+                              !tokensThatCanBeDeposited
+                                .map((_t) => _t.coinType)
+                                .includes(t.coinType),
+                          )
+                          .map((t) => t.symbol),
+                      ).replace(
+                        "and",
+                        "or",
+                      )} (max 5 deposit positions, no borrows).`}
+                    </TLabelSans>
+                  )
+                : !canDepositAsMap[swappingToCoinType] && (
+                    <TLabelSans className="text-[10px]">
+                      {`Note: Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
+                    </TLabelSans>
+                  )}
+            </>
+          )}
         </>
       }
     />
