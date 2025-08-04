@@ -203,15 +203,15 @@ export default function ClaimRewardsDropdownMenu({
         align: "start",
         style: {
           "--bg-color": "hsl(var(--popover))",
-          minWidth: "max-content",
-          maxWidth: "max-content",
+          minWidth: "240px",
+          maxWidth: "240px",
         } as CSSProperties,
       }}
       items={
         <>
           {/* Claim rewards */}
           <Button
-            className="mb-1 w-[150px]"
+            className="mb-1"
             labelClassName="uppercase"
             onClick={() => submit()}
           >
@@ -220,7 +220,7 @@ export default function ClaimRewardsDropdownMenu({
 
           {/* and swap to */}
           <div className="flex w-full flex-col gap-1.5">
-            <div className="flex flex-row items-center gap-4">
+            <div className="flex w-full flex-row items-center justify-between gap-4">
               {/* Checkbox */}
               <div
                 className="group flex w-full w-max cursor-pointer flex-row items-center gap-2"
