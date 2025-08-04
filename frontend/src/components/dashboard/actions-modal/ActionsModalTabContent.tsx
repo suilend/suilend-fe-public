@@ -411,7 +411,17 @@ export default function ActionsModalTabContent({
             </Tooltip>
           </div>
 
-          <div className="flex flex-row items-center gap-1.5">
+          <div
+            className={cn(
+              "flex flex-row items-center gap-1.5",
+              [Action.WITHDRAW].includes(action) && "cursor-pointer",
+            )}
+            onClick={
+              [Action.WITHDRAW].includes(action)
+                ? useMaxValueWrapper
+                : undefined
+            }
+          >
             {side === Side.DEPOSIT ? (
               <Download className="h-3 w-3 text-foreground" />
             ) : (

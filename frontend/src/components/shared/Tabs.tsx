@@ -6,7 +6,9 @@ import {
 } from "react";
 
 import { ClassValue } from "clsx";
+import { Info } from "lucide-react";
 
+import Tooltip from "@/components/shared/Tooltip";
 import { TabsList, Tabs as TabsRoot, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +16,7 @@ interface Tab {
   id: string;
   icon?: ReactElement;
   title: string;
+  tooltip?: string;
 }
 
 interface TabsProps extends PropsWithChildren {
@@ -64,6 +67,21 @@ export default function Tabs({
                   className: cn("w-4 h-4 shrink-0"),
                 })}
               {tab.title}
+
+              {tab.tooltip && (
+                <Tooltip title={tab.tooltip}>
+                  <div className="-m-1 flex shrink-0 flex-col justify-center p-1">
+                    <Info
+                      className={cn(
+                        "h-4 w-4 transition-colors",
+                        tab.id === selectedTab
+                          ? "text-primary-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    />
+                  </div>
+                </Tooltip>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>

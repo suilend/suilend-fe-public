@@ -267,7 +267,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const tabs = [
     { id: Tab.DEPOSIT, title: "Deposit" },
     { id: Tab.WITHDRAW, title: "Withdraw" },
-    { id: Tab.ADJUST, title: "Adjust" },
+    {
+      id: Tab.ADJUST,
+      title: "Adjust",
+      tooltip: "Modify leverage while keeping Strategy value the same",
+    },
   ];
 
   const selectedTab = useMemo(
@@ -1437,8 +1441,15 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
                 <div className="relative z-[1] -mt-2 flex w-full flex-row flex-wrap justify-between gap-x-2 gap-y-1 rounded-b-md bg-primary/25 px-3 pb-2 pt-4">
                   <div
-                    className="flex cursor-pointer flex-row items-center gap-1.5"
-                    onClick={useMaxValueWrapper}
+                    className={cn(
+                      "flex flex-row items-center gap-1.5",
+                      selectedTab === Tab.DEPOSIT && "cursor-pointer",
+                    )}
+                    onClick={
+                      selectedTab === Tab.DEPOSIT
+                        ? useMaxValueWrapper
+                        : undefined
+                    }
                   >
                     <Wallet className="h-3 w-3 text-foreground" />
                     <Tooltip
@@ -1454,11 +1465,21 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     </Tooltip>
                   </div>
 
-                  <div className="flex flex-row items-center gap-1.5">
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5",
+                      selectedTab === Tab.WITHDRAW && "cursor-pointer",
+                    )}
+                    onClick={
+                      selectedTab === Tab.WITHDRAW
+                        ? useMaxValueWrapper
+                        : undefined
+                    }
+                  >
                     <Download className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        isObligationLooping(obligation)
+                        tvlSuiAmount.gt(0)
                           ? `${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`
                           : undefined
                       }
@@ -1482,7 +1503,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   <div className="absolute inset-0 z-[1] rounded-full bg-card" />
 
                   <div
-                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full border border-primary bg-primary/25"
+                    className="absolute inset-y-0 left-0 z-[2] max-w-full rounded-l-full bg-primary/25"
                     style={{
                       width: `calc(${16 / 2}px + ${new BigNumber(
                         new BigNumber(
@@ -1550,14 +1571,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 <div className="flex w-full flex-row items-center justify-between px-[calc(16px/2)]">
                   {/* Min */}
                   <div className="flex w-0 flex-row justify-center">
-                    <TBody className="text-muted-foreground">
+                    <TBody>
                       {minExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
                     </TBody>
                   </div>
 
                   {/* Max */}
                   <div className="flex w-0 flex-row justify-center">
-                    <TBody className="text-muted-foreground">
+                    <TBody>
                       {maxExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
                     </TBody>
                   </div>
@@ -1614,13 +1635,15 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   label="Health"
                   value={
                     <>
-                      {formatPercent(healthPercent)}
+                      {formatPercent(healthPercent, {
+                        dp: selectedTab === Tab.ADJUST ? 2 : 0,
+                      })}
                       {selectedTab === Tab.ADJUST &&
-                        formatPercent(adjustHealthPercent) !==
-                          formatPercent(healthPercent) && (
+                        formatPercent(adjustHealthPercent, { dp: 0 }) !==
+                          formatPercent(healthPercent, { dp: 2 }) && (
                           <>
                             <FromToArrow />
-                            {formatPercent(adjustHealthPercent)}
+                            {formatPercent(adjustHealthPercent, { dp: 0 })}
                           </>
                         )}
                     </>

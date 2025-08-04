@@ -1,5 +1,6 @@
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import Color from "colorjs.io";
 
 import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk/lib/strategyOwnerCap";
 import { formatPercent, formatToken } from "@suilend/sui-fe";
@@ -43,6 +44,7 @@ export default function SsuiStrategyCard() {
 
   // Stats - Health
   const healthPercent = getHealthPercent(obligation, defaultExposure);
+  const healthColorRange = new Color("#ef4444").range("#22c55e"); // red-500 -> green-500
 
   return (
     <SsuiStrategyDialog>
@@ -96,22 +98,24 @@ export default function SsuiStrategyCard() {
               <div className="flex w-full flex-col gap-2">
                 <LabelWithValue
                   label="Health"
-                  value={formatPercent(healthPercent)}
+                  value={formatPercent(healthPercent, { dp: 0 })}
                   horizontal
                 />
 
-                <div className="h-3 w-full bg-muted/20">
-                  <div
-                    className="h-full w-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500"
-                    style={{
-                      clipPath: `polygon(${[
-                        "0% 0%",
-                        `${healthPercent.decimalPlaces(2)}% 0%`,
-                        `${healthPercent.decimalPlaces(2)}% 100%`,
-                        "0% 100%",
-                      ].join(", ")}`,
-                    }}
-                  />
+                <div className="flex w-full flex-row justify-between">
+                  {Array.from({ length: 50 + 1 }).map((_, i, arr) => (
+                    <div
+                      key={i}
+                      className="h-[16px] w-[2px] rounded-sm bg-muted/20"
+                      style={{
+                        backgroundColor: healthPercent.gte(
+                          i * (100 / (arr.length - 1)),
+                        )
+                          ? healthColorRange(i / (arr.length - 1)).toString()
+                          : undefined,
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
