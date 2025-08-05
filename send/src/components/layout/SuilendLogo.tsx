@@ -9,7 +9,7 @@ interface SuilendLogoProps {
 export default function SuilendLogo({ size }: SuilendLogoProps) {
   return (
     <Image
-      src={`${ASSETS_URL}/Suilend.svg`}
+      src={`${ASSETS_URL}/suilend/Suilend.svg`}
       alt="Suilend logo"
       width={size}
       height={size}

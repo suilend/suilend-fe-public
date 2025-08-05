@@ -15,7 +15,7 @@ export default function App({ Component, pageProps }: AppProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <main className={cn(fontClassNames)}>
+      <main id="__app_main" className={cn(fontClassNames)}>
         <Layout>
           <Component {...pageProps} />
         </Layout>
