@@ -1,5 +1,5 @@
-import SuilendLogo from "@/components/layout/SuilendLogo";
 import SteammLogo from "@/components/layout/SteammLogo";
+import SuilendLogo from "@/components/layout/SuilendLogo";
 import { TBodySans } from "@/components/shared/Typography";
 
 export default function Logo() {
