@@ -135,7 +135,7 @@ function Page() {
   const activeProviders = useMemo(
     () =>
       [
-        QuoteProvider.AFTERMATH,
+        // QuoteProvider.AFTERMATH,
         QuoteProvider.CETUS,
         QuoteProvider._7K,
         QuoteProvider.FLOWX,
@@ -1933,14 +1933,14 @@ function Page() {
 
         <TLabelSans className="opacity-50">
           {"Powered by "}
-          <TextLink
+          {/* <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground"
             href="https://aftermath.finance/trade"
             noIcon
           >
             Aftermath
           </TextLink>
-          {", "}
+          {", "} */}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://app.cetus.zone"
