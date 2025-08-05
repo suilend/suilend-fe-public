@@ -5,7 +5,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import SuilendLogo from "../layout/SuilendLogo";
 
 const TransactionsSection = () => {
   const transactions = [
@@ -33,10 +34,9 @@ const TransactionsSection = () => {
   ];
 
   return (
+    <>
+    <span className="text-lg">TRANSACTIONS</span>
     <Card>
-      <CardHeader>
-        <CardTitle>TRANSACTIONS</CardTitle>
-      </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -72,8 +72,8 @@ const TransactionsSection = () => {
                   <td className="py-3 px-4 text-sm">{tx.type}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-secondary rounded-full flex items-center justify-center">
-                        <Droplets className="w-2.5 h-2.5 text-secondary-foreground" />
+                      <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                        <SuilendLogo size={12} />
                       </div>
                       <span className="text-sm">{tx.amount}</span>
                     </div>
@@ -95,8 +95,9 @@ const TransactionsSection = () => {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
