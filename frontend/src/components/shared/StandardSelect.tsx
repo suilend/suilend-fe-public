@@ -10,11 +10,15 @@ import { cn } from "@/lib/utils";
 interface StandardSelectProps extends Omit<SelectProps, "root" | "trigger"> {
   className?: ClassValue;
   openClassName?: ClassValue;
+  iconClassName?: ClassValue;
+  iconOpenClassName?: ClassValue;
 }
 
 export default function StandardSelect({
   className,
   openClassName,
+  iconClassName,
+  iconOpenClassName,
   ...props
 }: StandardSelectProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -34,7 +38,15 @@ export default function StandardSelect({
                 openClassName,
               ),
           )}
-          icon={<Icon className="h-3 w-3" />}
+          icon={
+            <Icon
+              className={cn(
+                "h-3 w-3",
+                iconClassName,
+                isOpen && iconOpenClassName,
+              )}
+            />
+          }
         >
           <SelectValue />
         </SelectTrigger>

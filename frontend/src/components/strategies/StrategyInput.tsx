@@ -10,7 +10,8 @@ import {
 } from "@suilend/sui-fe";
 
 import Button from "@/components/shared/Button";
-import { TBody, TLabel } from "@/components/shared/Typography";
+import StandardSelect from "@/components/shared/StandardSelect";
+import { TLabel } from "@/components/shared/Typography";
 import { Tab } from "@/components/strategies/SsuiStrategyDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -26,13 +27,27 @@ interface StrategyInputProps {
   value: string;
   onChange: (value: string) => void;
   reserve: ParsedReserve;
+  reserveOptions: { id: string; name: string }[];
+  onReserveChange: (value: string) => void;
   tab: Tab;
   useMaxAmount: boolean;
   onMaxClick: () => void;
 }
 
 const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
-  ({ value, onChange, reserve, tab, useMaxAmount, onMaxClick }, ref) => {
+  (
+    {
+      value,
+      onChange,
+      reserve,
+      reserveOptions,
+      onReserveChange,
+      tab,
+      useMaxAmount,
+      onMaxClick,
+    },
+    ref,
+  ) => {
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
     useEffect(() => {
@@ -76,7 +91,7 @@ const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
           style={{
             height: `${INPUT_HEIGHT}px`,
             paddingLeft: `${3 * 4 + MAX_BUTTON_WIDTH + 3 * 4}px`,
-            paddingRight: `${3 * 4 + reserve.symbol.length * 14.4 + 3 * 4}px`,
+            paddingRight: `${3 * 4 + reserve.token.symbol.length * 14.4 + (4 + 16) + 3 * 4}px`,
             paddingTop: `${(INPUT_INNER_HEIGHT - MAX_BUTTON_HEIGHT) / 2}px`,
             paddingBottom: `${(INPUT_INNER_HEIGHT - MAX_BUTTON_HEIGHT) / 2 + USD_LABEL_HEIGHT}px`,
           }}
@@ -88,7 +103,14 @@ const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
           className="absolute right-3 top-0 z-[2] flex flex-col items-end justify-center"
           style={{ height: `${INPUT_HEIGHT}px` }}
         >
-          <TBody className="text-right text-2xl">{reserve.symbol}</TBody>
+          <StandardSelect
+            className="group h-auto w-max min-w-0 !border-0 !bg-transparent px-0 font-mono text-2xl !text-foreground"
+            iconClassName="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
+            iconOpenClassName="text-foreground"
+            items={reserveOptions}
+            value={reserve.coinType}
+            onChange={onReserveChange}
+          />
           <TLabel
             className="text-right"
             style={{ height: `${USD_LABEL_HEIGHT}px` }}

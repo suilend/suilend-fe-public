@@ -28,6 +28,7 @@ import {
   API_URL,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  isSui,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
@@ -51,8 +52,6 @@ interface SsuiStrategyContext {
   defaultExposure: BigNumber;
 
   lstClient: LstClient | undefined;
-  sSuiMintFeePercent: BigNumber;
-  sSuiRedeemFeePercent: BigNumber;
   suiBorrowFeePercent: BigNumber;
   suiToSsuiExchangeRate: BigNumber;
   sSuiToSuiExchangeRate: BigNumber;
@@ -90,7 +89,8 @@ interface SsuiStrategyContext {
     obligation: ParsedObligation;
   };
   simulateDeposit: (
-    suiAmount: BigNumber,
+    amount: BigNumber,
+    coinType: string,
     targetExposure: BigNumber,
   ) => {
     sSuiDepositedAmount: BigNumber;
@@ -123,8 +123,6 @@ const defaultContextValue: SsuiStrategyContext = {
   defaultExposure: new BigNumber(0),
 
   lstClient: undefined,
-  sSuiMintFeePercent: new BigNumber(0),
-  sSuiRedeemFeePercent: new BigNumber(0),
   suiBorrowFeePercent: new BigNumber(0),
   suiToSsuiExchangeRate: new BigNumber(0),
   sSuiToSuiExchangeRate: new BigNumber(0),
@@ -565,23 +563,25 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
 
   const simulateDeposit = useCallback(
     (
-      suiAmount: BigNumber,
+      amount: BigNumber,
+      coinType: string,
       targetExposure: BigNumber,
     ): {
       sSuiDepositedAmount: BigNumber;
       suiBorrowedAmount: BigNumber;
       obligation: ParsedObligation;
     } => {
-      const sSuiAmount = suiAmount
-        .minus(getSsuiMintFee(suiAmount))
-        .times(suiToSsuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+      const sSuiAmount = (
+        isSui(coinType)
+          ? amount.minus(getSsuiMintFee(amount)).times(suiToSsuiExchangeRate)
+          : amount
+      ).decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
 
       // Prepare
       let sSuiDepositedAmount = new BigNumber(0);
       let suiBorrowedAmount = new BigNumber(0);
 
-      // 1) Stake SUI for sSUI
+      // 1) Stake SUI for sSUI OR split sSUI coins
 
       // 2) Deposit sSUI (1x exposure)
       sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
@@ -642,6 +642,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
 
         _obligation = simulateDeposit(
           new BigNumber(1), // Any number will do
+          NORMALIZED_SUI_COINTYPE,
           exposure,
         ).obligation;
       }
@@ -674,6 +675,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
 
         _obligation = simulateDeposit(
           new BigNumber(1), // Any number will do
+          NORMALIZED_SUI_COINTYPE,
           exposure,
         ).obligation;
       }
@@ -704,8 +706,6 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       defaultExposure,
 
       lstClient,
-      sSuiMintFeePercent,
-      sSuiRedeemFeePercent,
       suiBorrowFeePercent,
       suiToSsuiExchangeRate,
       sSuiToSuiExchangeRate,
@@ -730,8 +730,6 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       maxExposure,
       defaultExposure,
       lstClient,
-      sSuiMintFeePercent,
-      sSuiRedeemFeePercent,
       suiBorrowFeePercent,
       suiToSsuiExchangeRate,
       sSuiToSuiExchangeRate,

@@ -36,13 +36,14 @@ export default function Select({
       {trigger}
       <SelectContent
         className="rounded-md"
+        align="end"
         scrollUpButton={{ className: "hidden" }}
         viewport={{ className: "p-4" }}
         scrollDownButton={{ className: "hidden" }}
         style={{
           maxHeight: "var(--radix-select-content-available-height)",
           overflowY: "auto",
-          minWidth: "200px",
+          minWidth: "150px",
         }}
       >
         <SelectGroup>

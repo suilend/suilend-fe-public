@@ -35,6 +35,10 @@ import {
   formatInteger,
   formatPercent,
   formatToken,
+  getAllCoins,
+  getBalanceChange,
+  isSui,
+  mergeAllCoins,
 } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
@@ -233,7 +237,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     [router.query],
   );
 
-  const { explorer } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { appData } = useLoadedAppContext();
@@ -249,8 +253,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     defaultExposure,
 
     lstClient,
-    sSuiMintFeePercent,
-    sSuiRedeemFeePercent,
     suiBorrowFeePercent,
     suiToSsuiExchangeRate,
     sSuiToSuiExchangeRate,
@@ -320,9 +322,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 
-  // Balance
-  const suiBalance = getBalance(suiReserve.coinType);
-
   // Slider
   const [depositSliderValue, setDepositSliderValue] = useState<string>(
     defaultExposure.toFixed(1),
@@ -340,45 +339,85 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       : defaultExposure.toFixed(1),
   );
 
+  // CoinType, reserve, and balance
+  const [coinType, setCoinType] = useState<string>(NORMALIZED_SUI_COINTYPE);
+
+  const reserveOptions = useMemo(
+    () => [
+      { id: NORMALIZED_SUI_COINTYPE, name: "SUI" },
+      { id: NORMALIZED_sSUI_COINTYPE, name: "sSUI" },
+    ],
+    [],
+  );
+  const reserve = useMemo(
+    () => appData.reserveMap[coinType],
+    [coinType, appData.reserveMap],
+  );
+
+  const reserveBalance = useMemo(
+    () => getBalance(coinType),
+    [coinType, getBalance],
+  );
+
   // Value
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState<string>("");
 
   const [useMaxAmount, setUseMaxAmount] = useState<boolean>(false);
-  const maxAmount = useMemo(() => {
-    if (selectedTab === Tab.DEPOSIT)
-      return BigNumber.max(
-        new BigNumber(0),
-        getBalance(NORMALIZED_SUI_COINTYPE).minus(
-          STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
-        ),
-      );
-    else if (selectedTab === Tab.WITHDRAW)
-      return BigNumber.max(new BigNumber(0), getTvlSuiAmount(obligation));
-    else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // Not relevant (adjust tab only has a slider)
+  const getMaxAmount = useCallback(
+    (_coinType?: string) => {
+      const balance = getBalance(_coinType ?? reserve.coinType);
 
-    return new BigNumber(0); // Should not happen
-  }, [selectedTab, getBalance, getTvlSuiAmount, obligation]);
+      if (selectedTab === Tab.DEPOSIT)
+        return BigNumber.max(
+          new BigNumber(0),
+          isSui(_coinType ?? reserve.coinType)
+            ? balance.minus(STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT)
+            : balance,
+        );
+      else if (selectedTab === Tab.WITHDRAW)
+        return BigNumber.max(
+          new BigNumber(0),
+          getTvlSuiAmount(obligation).times(
+            isSui(_coinType ?? reserve.coinType) ? 1 : suiToSsuiExchangeRate,
+          ),
+        );
+      else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // Not relevant (adjust tab only has a slider)
 
-  const formatAndSetValue = useCallback((_value: string) => {
-    let formattedValue;
-    if (new BigNumber(_value || 0).lt(0)) formattedValue = _value;
-    else if (!_value.includes(".")) formattedValue = _value;
-    else {
-      const [integers, decimals] = _value.split(".");
-      const integersFormatted = formatInteger(
-        integers !== "" ? parseInt(integers) : 0,
-        false,
-      );
-      const decimalsFormatted = decimals.slice(
-        0,
-        Math.min(decimals.length, SUI_DECIMALS),
-      );
-      formattedValue = `${integersFormatted}.${decimalsFormatted}`;
-    }
+      return new BigNumber(0); // Should not happen
+    },
+    [
+      getBalance,
+      reserve.coinType,
+      selectedTab,
+      getTvlSuiAmount,
+      obligation,
+      suiToSsuiExchangeRate,
+    ],
+  );
 
-    setValue(formattedValue);
-  }, []);
+  const formatAndSetValue = useCallback(
+    (_value: string) => {
+      let formattedValue;
+      if (new BigNumber(_value || 0).lt(0)) formattedValue = _value;
+      else if (!_value.includes(".")) formattedValue = _value;
+      else {
+        const [integers, decimals] = _value.split(".");
+        const integersFormatted = formatInteger(
+          integers !== "" ? parseInt(integers) : 0,
+          false,
+        );
+        const decimalsFormatted = decimals.slice(
+          0,
+          Math.min(decimals.length, reserve.token.decimals),
+        );
+        formattedValue = `${integersFormatted}.${decimalsFormatted}`;
+      }
+
+      setValue(formattedValue);
+    },
+    [reserve.token.decimals],
+  );
 
   const onValueChange = (_value: string) => {
     if (useMaxAmount) setUseMaxAmount(false);
@@ -387,18 +426,51 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const useMaxValueWrapper = () => {
     setUseMaxAmount(true);
-    formatAndSetValue(maxAmount.toFixed(SUI_DECIMALS, BigNumber.ROUND_DOWN));
+    formatAndSetValue(
+      getMaxAmount().toFixed(reserve.token.decimals, BigNumber.ROUND_DOWN),
+    );
   };
+
+  const onReserveChange = useCallback(
+    (newCoinType: string) => {
+      const newReserve = appData.reserveMap[newCoinType];
+
+      setCoinType(newCoinType);
+
+      if (value === "") return;
+      formatAndSetValue(
+        (useMaxAmount
+          ? getMaxAmount(newCoinType)
+          : new BigNumber(value)
+        ).toFixed(newReserve.token.decimals, BigNumber.ROUND_DOWN),
+      );
+    },
+    [appData.reserveMap, formatAndSetValue, useMaxAmount, getMaxAmount, value],
+  );
 
   useEffect(() => {
     // If user has specified intent to use max amount, we continue this intent
     // even if the max value updates
     if (useMaxAmount)
-      formatAndSetValue(maxAmount.toFixed(SUI_DECIMALS, BigNumber.ROUND_DOWN));
-  }, [useMaxAmount, maxAmount, formatAndSetValue]);
+      formatAndSetValue(
+        getMaxAmount().toFixed(reserve.token.decimals, BigNumber.ROUND_DOWN),
+      );
+  }, [useMaxAmount, formatAndSetValue, getMaxAmount, reserve.token.decimals]);
 
   // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(obligation);
+  const tvlAmount = useMemo(
+    () =>
+      getTvlSuiAmount(obligation)
+        .times(isSui(reserve.coinType) ? 1 : suiToSsuiExchangeRate)
+        .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN),
+    [
+      getTvlSuiAmount,
+      obligation,
+      reserve.coinType,
+      suiToSsuiExchangeRate,
+      reserve.token.decimals,
+    ],
+  );
 
   // Stats - Exposure
   const exposure = useMemo(
@@ -425,36 +497,58 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const adjustHealthPercent = getHealthPercent(undefined, adjustExposure);
 
   // Stats - Fees
-  const depositFeesSuiAmount = useMemo(() => {
+  const depositFeesAmount = useMemo(() => {
     const { suiBorrowedAmount } = simulateDeposit(
       new BigNumber(value || 0),
+      reserve.coinType,
       exposure,
     );
 
-    // TODO: Add sSUI mint fee
-    return suiBorrowedAmount.times(suiBorrowFeePercent.div(100));
-  }, [simulateDeposit, value, exposure, suiBorrowFeePercent]);
+    // TODO: Add sSUI mint fee (currently 0)
+    const suiBorrowFeesAmount = suiBorrowedAmount.times(
+      suiBorrowFeePercent.div(100),
+    );
 
-  const withdrawFeesSuiAmount = useMemo(() => {
+    return (
+      isSui(reserve.coinType)
+        ? suiBorrowFeesAmount
+        : suiBorrowFeesAmount.times(suiToSsuiExchangeRate)
+    ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
+  }, [
+    simulateDeposit,
+    value,
+    reserve.coinType,
+    exposure,
+    suiBorrowFeePercent,
+    suiToSsuiExchangeRate,
+    reserve.token.decimals,
+  ]);
+
+  const withdrawFeesAmount = useMemo(() => {
     if (!isObligationLooping(obligation)) return new BigNumber(0);
 
-    const unloopPercent = new BigNumber(value || 0)
-      .div(tvlSuiAmount)
-      .times(100);
+    const unloopPercent = new BigNumber(value || 0).div(tvlAmount).times(100);
     const withdrawnSsuiAmount = obligation!.deposits[0].depositedAmount.times(
       unloopPercent.div(100),
     );
 
-    return getSsuiRedeemFee(withdrawnSsuiAmount)
-      .times(sSuiToSuiExchangeRate)
-      .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+    // TODO: Add sSUI mint fee (currently 0)
+    const sSuiRedeemFeesAmount = getSsuiRedeemFee(withdrawnSsuiAmount);
+
+    return (
+      isSui(reserve.coinType)
+        ? sSuiRedeemFeesAmount.times(sSuiToSuiExchangeRate)
+        : sSuiRedeemFeesAmount
+    ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
   }, [
     isObligationLooping,
     obligation,
     value,
-    tvlSuiAmount,
+    tvlAmount,
+    reserve.coinType,
     getSsuiRedeemFee,
     sSuiToSuiExchangeRate,
+    reserve.token.decimals,
   ]);
 
   const adjustFeesSuiAmount = useMemo(() => {
@@ -472,9 +566,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         targetExposure,
       );
 
-      // TODO: Add sSUI mint fee
-      return new BigNumber(_suiBorrowedAmount.minus(suiBorrowedAmount)).times(
-        suiBorrowFeePercent.div(100),
+      // TODO: Add sSUI mint fee (currently 0)
+      const suiBorrowFeesAmount = new BigNumber(
+        _suiBorrowedAmount.minus(suiBorrowedAmount),
+      ).times(suiBorrowFeePercent.div(100));
+
+      return suiBorrowFeesAmount.decimalPlaces(
+        SUI_DECIMALS,
+        BigNumber.ROUND_DOWN,
       );
     } else {
       const { sSuiDepositedAmount: _sSuiDepositedAmount } =
@@ -484,9 +583,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           targetExposure,
         );
 
-      return getSsuiRedeemFee(sSuiDepositedAmount.minus(_sSuiDepositedAmount))
+      // TODO: Add sSUI mint fee (currently 0)
+      const sSuiRedeemFeesAmount = getSsuiRedeemFee(
+        sSuiDepositedAmount.minus(_sSuiDepositedAmount),
+      );
+
+      return sSuiRedeemFeesAmount
         .times(sSuiToSuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
     }
   }, [
     isObligationLooping,
@@ -511,15 +615,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       if (value === "") return { isDisabled: true, title: "Enter an amount" };
       if (new BigNumber(value).lt(0))
         return { isDisabled: true, title: "Enter a +ve amount" };
-      if (new BigNumber(value).eq(0) && !(useMaxAmount && maxAmount.gt(0)))
+      if (new BigNumber(value).eq(0))
         return { isDisabled: true, title: "Enter a non-zero amount" };
 
       if (selectedTab === Tab.DEPOSIT) {
-        if (new BigNumber(value).gt(suiBalance))
-          return { isDisabled: true, title: "Insufficient SUI" };
+        if (new BigNumber(value).gt(reserveBalance))
+          return {
+            isDisabled: true,
+            title: `Insufficient ${reserve.token.symbol}`,
+          };
         if (
+          isSui(reserve.coinType) &&
           new BigNumber(value).gt(
-            suiBalance.minus(STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
+            reserveBalance.minus(STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
           )
         )
           return {
@@ -527,7 +635,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
             title: `${STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
           };
       } else {
-        if (new BigNumber(value).gt(tvlSuiAmount))
+        if (new BigNumber(value).gt(tvlAmount))
           return { isDisabled: true, title: "Withdraw cannot exceed deposits" };
       }
 
@@ -541,18 +649,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
     return {
       title:
-        selectedTab === Tab.ADJUST
-          ? `Adjust to ${adjustExposure.toFixed(1)}x`
-          : `${
-              selectedTab === Tab.DEPOSIT
-                ? "Deposit"
-                : selectedTab === Tab.WITHDRAW
-                  ? "Withdraw"
-                  : "--" // Should not happen
-            } ${formatToken(new BigNumber(value), {
-              dp: SUI_DECIMALS,
+        selectedTab === Tab.DEPOSIT
+          ? `Deposit ${formatToken(new BigNumber(value), {
+              dp: reserve.token.decimals,
               trimTrailingZeros: true,
-            })} SUI`,
+            })} ${reserve.token.symbol}`
+          : selectedTab === Tab.WITHDRAW
+            ? `Withdraw ${formatToken(new BigNumber(value), {
+                dp: reserve.token.decimals,
+                trimTrailingZeros: true,
+              })} ${reserve.token.symbol}`
+            : selectedTab === Tab.ADJUST
+              ? `Adjust to ${adjustExposure.toFixed(1)}x`
+              : "--", // Should not happen
     };
   })();
 
@@ -836,19 +945,22 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const deposit = async (
     strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
-    suiAmount: BigNumber,
+    amount: BigNumber,
+    coinType: string,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
 
-    const sSuiAmount = suiAmount
-      .minus(getSsuiMintFee(suiAmount))
-      .times(suiToSsuiExchangeRate)
-      .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+    const sSuiAmount = (
+      isSui(coinType)
+        ? amount.minus(getSsuiMintFee(amount)).times(suiToSsuiExchangeRate)
+        : amount
+    ).decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
     console.log(
       `[SsuiStrategyDialog] deposit |`,
       JSON.stringify(
         {
-          suiAmount: suiAmount.toFixed(20),
+          amount: amount.toFixed(20),
+          coinType,
           sSuiAmount: sSuiAmount.toFixed(20),
         },
         null,
@@ -888,14 +1000,40 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       ),
     );
 
-    // 1) Stake SUI for sSUI
-    const suiCoinToStake = transaction.splitCoins(transaction.gas, [
-      suiAmount
-        .times(10 ** SUI_DECIMALS)
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString(),
-    ]);
-    const sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
+    // 1) Stake SUI for sSUI OR split sSUI coins
+    let sSuiCoinToDeposit;
+    if (isSui(coinType)) {
+      const suiCoinToStake = transaction.splitCoins(transaction.gas, [
+        amount
+          .times(10 ** SUI_DECIMALS)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString(),
+      ]);
+      sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
+    } else {
+      const allCoinsSsui = await getAllCoins(
+        suiClient,
+        address,
+        NORMALIZED_sSUI_COINTYPE,
+      );
+      const mergeCoinSsui = mergeAllCoins(
+        NORMALIZED_sSUI_COINTYPE,
+        transaction,
+        allCoinsSsui,
+      );
+
+      sSuiCoinToDeposit = transaction.splitCoins(
+        transaction.object(mergeCoinSsui.coinObjectId),
+        [
+          BigInt(
+            sSuiAmount
+              .times(10 ** sSUI_DECIMALS)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ),
+        ],
+      );
+    }
 
     // 2) Deposit sSUI (1x exposure)
     strategyDeposit(
@@ -923,8 +1061,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   const withdraw = async (
     strategyOwnerCapId: TransactionObjectInput,
-    transaction: Transaction,
     unloopPercent: BigNumber,
+    coinType: string,
+    transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
@@ -1108,14 +1247,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
-    // 1.5) Transfer SUI to user
-    transaction.transferObjects([suiCoin], address);
+    if (isSui(coinType)) {
+      // 1.5) Transfer SUI to user
+      transaction.transferObjects([suiCoin], address);
+    } else {
+      // 1.5) Stake SUI for sSUI
+      const sSuiCoin = lstClient.mint(transaction, suiCoin);
+
+      // 1.6) Transfer sSUI to user
+      transaction.transferObjects([sSuiCoin], address);
+    }
 
     return transaction;
   };
 
   const maxWithdraw = async (
     strategyOwnerCapId: TransactionObjectInput,
+    coinType: string,
     transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
@@ -1181,14 +1329,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     }
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
-    // 2.4) Transfer SUI to user
-    transaction.transferObjects([suiCoin], address);
+    if (isSui(coinType)) {
+      // 2.4) Transfer SUI to user
+      transaction.transferObjects([suiCoin], address);
+    } else {
+      // 2.4) Stake SUI for sSUI
+      const sSuiCoin = lstClient.mint(transaction, suiCoin);
+
+      // 2.5) Transfer sSUI to user
+      transaction.transferObjects([sSuiCoin], address);
+    }
 
     return transaction;
   };
 
   const adjust = async (
     strategyOwnerCapId: TransactionObjectInput,
+    targetExposure: BigNumber,
     transaction: Transaction,
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
@@ -1203,7 +1360,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     const suiBorrowedAmount = (
       obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
     ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-    const targetExposure = new BigNumber(adjustSliderValue);
 
     console.log(
       `[SsuiStrategyDialog] adjust |`,
@@ -1279,6 +1435,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           strategyOwnerCapId,
           transaction,
           new BigNumber(value),
+          reserve.coinType,
         );
 
         // 3) Rebalance sSUI
@@ -1293,22 +1450,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
-        const mintAmounts = getTransactionMintAmounts(res);
-        const borrowedSuiAmount =
-          getTransactionBorrowedSuiAmount(res) ?? new BigNumber(0);
+        const balanceChangeOut = getBalanceChange(
+          res,
+          address,
+          reserve.token,
+          -1,
+        );
 
         toast.success(
           [
             "Deposited",
-            mintAmounts !== undefined && borrowedSuiAmount !== undefined
-              ? formatToken(
-                  new BigNumber(
-                    mintAmounts.suiAmountIn.plus(mintAmounts.suiFeeAmount),
-                  ).minus(borrowedSuiAmount),
-                  { dp: SUI_DECIMALS, trimTrailingZeros: true },
-                )
+            balanceChangeOut !== undefined
+              ? formatToken(balanceChangeOut, {
+                  dp: reserve.token.decimals,
+                  trimTrailingZeros: true,
+                })
               : null,
-            "SUI",
+            reserve.token.symbol,
             "into sSUI/SUI loop strategy",
           ]
             .filter(Boolean)
@@ -1334,10 +1492,15 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         transaction = !useMaxAmount
           ? await withdraw(
               strategyOwnerCap.id,
+              new BigNumber(value).div(tvlAmount).times(100),
+              reserve.coinType,
               transaction,
-              new BigNumber(value).div(tvlSuiAmount).times(100),
             )
-          : await maxWithdraw(strategyOwnerCap.id, transaction);
+          : await maxWithdraw(
+              strategyOwnerCap.id,
+              reserve.coinType,
+              transaction,
+            );
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1348,24 +1511,18 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
-        const redeemAmounts = getTransactionRedeemAmounts(res);
-        const repaidSuiAmount =
-          getTransactionRepaidSuiAmount(res) ?? new BigNumber(0);
+        const balanceChangeIn = getBalanceChange(res, address, reserve.token);
 
         toast.success(
           [
             "Withdrew",
-            redeemAmounts !== undefined && repaidSuiAmount !== undefined
-              ? formatToken(
-                  new BigNumber(
-                    redeemAmounts.suiAmountOut.plus(
-                      redeemAmounts.sSuiFeeAmount.times(sSuiToSuiExchangeRate),
-                    ),
-                  ).minus(repaidSuiAmount),
-                  { dp: SUI_DECIMALS, trimTrailingZeros: true },
-                )
+            balanceChangeIn !== undefined
+              ? formatToken(balanceChangeIn, {
+                  dp: reserve.token.decimals,
+                  trimTrailingZeros: true,
+                })
               : null,
-            "SUI",
+            reserve.token.symbol,
             "from sSUI/SUI loop strategy",
           ]
             .filter(Boolean)
@@ -1390,7 +1547,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           throw Error("StrategyOwnerCap or Obligation not found");
 
         // 2) Adjust
-        await adjust(strategyOwnerCap.id, transaction);
+        await adjust(
+          strategyOwnerCap.id,
+          new BigNumber(adjustSliderValue),
+          transaction,
+        );
 
         // 3) Rebalance sSUI
         lstClient.rebalance(
@@ -1488,7 +1649,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     ref={inputRef}
                     value={value}
                     onChange={onValueChange}
-                    reserve={suiReserve}
+                    reserveOptions={reserveOptions}
+                    reserve={reserve}
+                    onReserveChange={onReserveChange}
                     tab={selectedTab}
                     useMaxAmount={useMaxAmount}
                     onMaxClick={useMaxValueWrapper}
@@ -1510,13 +1673,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     <Wallet className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        suiBalance.gt(0)
-                          ? `${formatToken(suiBalance, { dp: SUI_DECIMALS })} SUI`
+                        reserveBalance.gt(0)
+                          ? `${formatToken(reserveBalance, { dp: reserve.token.decimals })} ${reserve.token.symbol}`
                           : undefined
                       }
                     >
                       <TBody className="text-xs">
-                        {formatToken(suiBalance, { exact: false })} SUI
+                        {formatToken(reserveBalance, { exact: false })}{" "}
+                        {reserve.token.symbol}
                       </TBody>
                     </Tooltip>
                   </div>
@@ -1535,13 +1699,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     <Download className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        tvlSuiAmount.gt(0)
-                          ? `${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`
+                        tvlAmount.gt(0)
+                          ? `${formatToken(tvlAmount, { dp: reserve.token.decimals })} ${reserve.token.symbol}`
                           : undefined
                       }
                     >
                       <TBody className="text-xs">
-                        {formatToken(tvlSuiAmount, { exact: false })} SUI
+                        {formatToken(tvlAmount, { exact: false })}{" "}
+                        {reserve.token.symbol}
                       </TBody>
                     </Tooltip>
                   </div>
@@ -1674,10 +1839,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   label="APR"
                   value={
                     <>
-                      {formatPercent(aprPercent)}
+                      {formatPercent(aprPercent, {
+                        dp: selectedTab === Tab.ADJUST ? 4 : 2,
+                      })}
                       {selectedTab === Tab.ADJUST &&
                         formatPercent(adjustAprPercent) !==
-                          formatPercent(aprPercent) && (
+                          formatPercent(aprPercent, { dp: 4 }) && (
                           <>
                             <FromToArrow />
                             {formatPercent(adjustAprPercent)}
@@ -1709,19 +1876,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 {selectedTab === Tab.DEPOSIT ? (
                   <LabelWithValue
                     label="Deposit fee"
-                    value={`${formatToken(depositFeesSuiAmount, {
-                      dp: SUI_DECIMALS,
+                    value={`${formatToken(depositFeesAmount, {
+                      dp: reserve.token.decimals,
                       trimTrailingZeros: true,
-                    })} SUI`}
+                    })} ${reserve.token.symbol}`}
                     horizontal
                   />
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
                     label="Withdraw fee"
-                    value={`${formatToken(withdrawFeesSuiAmount, {
-                      dp: SUI_DECIMALS,
+                    value={`${formatToken(withdrawFeesAmount, {
+                      dp: reserve.token.decimals,
                       trimTrailingZeros: true,
-                    })} SUI`}
+                    })} ${reserve.token.symbol}`}
                     horizontal
                   />
                 ) : selectedTab === Tab.ADJUST ? (
