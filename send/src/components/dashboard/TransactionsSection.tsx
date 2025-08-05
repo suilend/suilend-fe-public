@@ -1,12 +1,35 @@
-import { ChevronsUpDown, DollarSign, ExternalLink, Droplets } from "lucide-react";
+import {
+  ChevronsUpDown,
+  DollarSign,
+  Droplets,
+  ExternalLink,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TransactionsSection = () => {
   const transactions = [
-    { date: "07/16/25 14:07", type: "DCA", amount: "123.41", size: "$9.99", price: "0.41" },
-    { date: "07/16/25 14:07", type: "SWAP", amount: "123.41", size: "$9.99", price: "0.41" },
-    { date: "07/16/25 14:07", type: "SWAP", amount: "123.41", size: "$9.99", price: "0.41" },
+    {
+      date: "07/16/25 14:07",
+      type: "DCA",
+      amount: "123.41",
+      size: "$9.99",
+      price: "0.41",
+    },
+    {
+      date: "07/16/25 14:07",
+      type: "SWAP",
+      amount: "123.41",
+      size: "$9.99",
+      price: "0.41",
+    },
+    {
+      date: "07/16/25 14:07",
+      type: "SWAP",
+      amount: "123.41",
+      size: "$9.99",
+      price: "0.41",
+    },
   ];
 
   return (
@@ -25,11 +48,21 @@ const TransactionsSection = () => {
                     <ChevronsUpDown className="w-3 h-3" />
                   </div>
                 </th>
-                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">Type</th>
-                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">Amount</th>
-                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">Size</th>
-                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">Price</th>
-                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">Txn</th>
+                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  Type
+                </th>
+                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  Amount
+                </th>
+                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  Size
+                </th>
+                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  Price
+                </th>
+                <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  Txn
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -67,4 +100,4 @@ const TransactionsSection = () => {
   );
 };
 
-export default TransactionsSection; 
+export default TransactionsSection;

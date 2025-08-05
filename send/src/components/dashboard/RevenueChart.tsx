@@ -41,19 +41,20 @@ const mockData = [
 
 const RevenueChart = () => {
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
-  
+
   const chartWidth = 800;
   const chartHeight = 256;
   const margin = { top: 20, right: 30, left: 60, bottom: 40 };
   const width = chartWidth - margin.left - margin.right;
   const height = chartHeight - margin.top - margin.bottom;
-  
-  const maxValue = Math.max(...mockData.map(d => d.primary + d.secondary));
-  const barWidth = width / mockData.length * 0.6;
-  const barSpacing = width / mockData.length * 0.4;
-  
+
+  const maxValue = Math.max(...mockData.map((d) => d.primary + d.secondary));
+  const barWidth = (width / mockData.length) * 0.6;
+  const barSpacing = (width / mockData.length) * 0.4;
+
   const getY = (value: number) => height - (value / maxValue) * height;
-  const getX = (index: number) => index * (barWidth + barSpacing) + barSpacing / 2;
+  const getX = (index: number) =>
+    index * (barWidth + barSpacing) + barSpacing / 2;
 
   return (
     <div className="w-full h-64 overflow-hidden">
@@ -82,14 +83,14 @@ const RevenueChart = () => {
             </text>
           </g>
         ))}
-        
+
         {/* Bars */}
         {mockData.map((data, index) => {
           const x = margin.left + getX(index);
           const primaryHeight = (data.primary / maxValue) * height;
           const secondaryHeight = (data.secondary / maxValue) * height;
           const totalHeight = primaryHeight + secondaryHeight;
-          
+
           return (
             <g key={index}>
               {/* Primary bar (bottom) */}
@@ -104,7 +105,7 @@ const RevenueChart = () => {
                 className="cursor-pointer transition-opacity"
                 opacity={hoveredBar === index ? 0.8 : 1}
               />
-              
+
               {/* Secondary bar (top) */}
               <rect
                 x={x}
@@ -117,7 +118,7 @@ const RevenueChart = () => {
                 className="cursor-pointer transition-opacity"
                 opacity={hoveredBar === index ? 0.8 : 1}
               />
-              
+
               {/* Date labels */}
               <text
                 x={x + barWidth / 2}
@@ -128,7 +129,7 @@ const RevenueChart = () => {
               >
                 {data.date}
               </text>
-              
+
               {/* Tooltip */}
               {hoveredBar === index && (
                 <g>
@@ -162,4 +163,4 @@ const RevenueChart = () => {
   );
 };
 
-export default RevenueChart; 
+export default RevenueChart;
