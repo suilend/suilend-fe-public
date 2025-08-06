@@ -2,6 +2,7 @@ import { CSSProperties, useState } from "react";
 
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { useLocalStorage } from "usehooks-ts";
 
 import { LENDING_MARKETS, RewardSummary } from "@suilend/sdk";
 import {
@@ -15,9 +16,7 @@ import {
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
-import DropdownMenu, {
-  DropdownMenuItem,
-} from "@/components/shared/DropdownMenu";
+import DropdownMenu from "@/components/shared/DropdownMenu";
 import Spinner from "@/components/shared/Spinner";
 import StandardSelect from "@/components/shared/StandardSelect";
 import TextLink from "@/components/shared/TextLink";
@@ -99,7 +98,8 @@ export default function ClaimRewardsDropdownMenu({
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
   const [isSwapping, setIsSwapping] = useState<boolean>(false);
-  const [swappingToCoinType, setSwappingToCoinType] = useState<string>(
+  const [swappingToCoinType, setSwappingToCoinType] = useLocalStorage<string>(
+    "claimRewards_swappingToCoinType",
     NORMALIZED_SUI_COINTYPE,
   );
   const [isDepositing, setIsDepositing] = useState<boolean>(false);
