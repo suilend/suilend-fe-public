@@ -19,6 +19,7 @@ import { cloneDeep } from "lodash";
 import { Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
 import {
   STRATEGY_SUI_LOOPING_SSUI,
   createStrategyOwnerCapIfNoneExists,
@@ -37,6 +38,7 @@ import {
   formatToken,
   getAllCoins,
   getBalanceChange,
+  isSendPoints,
   isSui,
   mergeAllCoins,
 } from "@suilend/sui-fe";
@@ -265,6 +267,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
+
+    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -1270,22 +1274,38 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!obligation) throw Error("Obligation not found");
 
     // 1) Claim and deposit pending rewards
-    // appData.suilendClient.claimRewardsAndDeposit(address, obligationOwnerCap, rewards, transaction)
-    // Object.values(userData.rewardMap).flatMap((rewards) =>
-    //   [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-    //     if (!r.obligationClaims[obligation.id]) return;
+    const rewardsMap: Record<string, RewardSummary[]> = {};
+    Object.values(userData.rewardMap).flatMap((rewards) =>
+      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+        if (isSendPoints(r.stats.rewardCoinType)) return;
+        if (!r.obligationClaims[obligation.id]) return;
 
-    //     appData.suilendClient.claimRewardsAndDeposit(
-    //       obligation.id,
-    //       r.stats.reserve.arrayIndex,
-    //       BigInt(r.stats.rewardIndex),
-    //       r.stats.rewardCoinType,
-    //       r.stats.side,
-    //       appData.suilendClient.findReserveArrayIndex(r.stats.rewardCoinType),
-    //       transaction,
-    //     );
-    //   }),
+        if (!rewardsMap[r.stats.rewardCoinType])
+          rewardsMap[r.stats.rewardCoinType] = [];
+        rewardsMap[r.stats.rewardCoinType].push(r);
+      }),
+    );
+    const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
+      .flat()
+      .map((r) => ({
+        reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
+        rewardIndex: BigInt(r.stats.rewardIndex),
+        rewardCoinType: r.stats.rewardCoinType,
+        side: r.stats.side,
+      }));
+
+    // TODO: Claim rewards
+    // const { transaction: transaction_, mergedCoinsMap } = this.claimRewards(
+    //   ownerId,
+    //   obligationOwnerCap,
+    //   rewards,
+    //   transaction,
     // );
+
+    // for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
+    //   transaction_.transferObjects([coin], transaction_.pure.address(ownerId));
+    // }
+    console.log("XXX rewardsMap:", rewardsMap, "rewards:", rewards);
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
@@ -1399,21 +1419,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const onSubmitClick = async () => {
     if (!address) throw Error("Wallet not connected");
     if (submitButtonState.isDisabled) return;
-
-    // if (obligation) {
-    //   Object.values(userData.rewardMap).flatMap((rewards) =>
-    //     [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-    //       if (!r.obligationClaims[obligation.id]) return;
-
-    //       console.log(
-    //         "XXX",
-    //         +r.obligationClaims[obligation.id].claimableAmount,
-    //       );
-    //     }),
-    //   );
-    // } else {
-    //   console.log("XXX", "no obligation");
-    // }
 
     setIsSubmitting(true);
 

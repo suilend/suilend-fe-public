@@ -97,6 +97,10 @@ interface SsuiStrategyContext {
     suiBorrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
+
+  getHistoricalTvlSuiAmount: (
+    obligation?: ParsedObligation,
+  ) => Promise<BigNumber | undefined>;
   getTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
   getAprPercent: (
     obligation?: ParsedObligation,
@@ -149,6 +153,10 @@ const defaultContextValue: SsuiStrategyContext = {
     throw Error("SsuiStrategyContextProvider not initialized");
   },
   simulateDeposit: () => {
+    throw Error("SsuiStrategyContextProvider not initialized");
+  },
+
+  getHistoricalTvlSuiAmount: () => {
     throw Error("SsuiStrategyContextProvider not initialized");
   },
   getTvlSuiAmount: () => {
@@ -614,7 +622,143 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  // TVL
+  // Stats - Historical TVL
+  const getHistoricalTvlSuiAmount = useCallback(
+    async (obligation?: ParsedObligation): Promise<BigNumber | undefined> => {
+      if (!obligation) return new BigNumber(0);
+
+      type Results = {
+        deposits: {
+          usdValue: string;
+          liquidityAmount: string;
+        }[];
+        withdraws: {
+          usdValue: string;
+          liquidityAmount: string;
+        }[];
+        borrows: {
+          usdValue: string;
+          liquidityAmount: string;
+        }[];
+        repays: {
+          usdValue: string;
+          liquidityAmount: string;
+        }[];
+      };
+
+      try {
+        const getPage = async (cursor?: string) => {
+          const url = `${API_URL}/obligations/history?${new URLSearchParams({
+            obligationId: obligation.id,
+            ...(cursor ? { cursor } : {}),
+          })}`;
+          const res = await fetch(url);
+          const json: {
+            results: Results;
+            cursor: string | null;
+          } = await res.json();
+
+          return json;
+        };
+
+        // Get all pages
+        const pages: Results[] = [];
+        let page = await getPage();
+        pages.push(page.results);
+
+        while (page.cursor !== null) {
+          page = await getPage(page.cursor);
+          pages.push(page.results);
+        }
+        console.log("XXX pages:", pages);
+
+        // Net deposited sSUI amount
+        const depositedSsuiAmount = pages.reduce(
+          (acc, page) =>
+            acc.plus(
+              page.deposits.reduce(
+                (acc2, deposit) => acc2.plus(deposit.liquidityAmount),
+                new BigNumber(0),
+              ),
+            ),
+          new BigNumber(0),
+        );
+        const withdrawnSsuiAmount = pages.reduce(
+          (acc, page) =>
+            acc.plus(
+              page.withdraws.reduce(
+                (acc2, withdraw) => acc2.plus(withdraw.liquidityAmount),
+                new BigNumber(0),
+              ),
+            ),
+          new BigNumber(0),
+        );
+
+        const netDepositedSsuiAmount =
+          depositedSsuiAmount.minus(withdrawnSsuiAmount);
+        console.log(
+          "XXX depositedSsuiAmount:",
+          +depositedSsuiAmount,
+          "withdrawnSsuiAmount:",
+          +withdrawnSsuiAmount,
+          "netDepositedSsuiAmount:",
+          +netDepositedSsuiAmount,
+        );
+
+        // Net borrowed SUI amount
+        const borrowedSuiAmount = pages
+          .reduce(
+            (acc, page) =>
+              acc.plus(
+                page.borrows.reduce(
+                  (acc2, borrow) => acc2.plus(borrow.liquidityAmount),
+                  new BigNumber(0),
+                ),
+              ),
+            new BigNumber(0),
+          )
+          .div(10 ** SUI_DECIMALS)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // TODO
+        const repaidSuiAmount = pages
+          .reduce(
+            (acc, page) =>
+              acc.plus(
+                page.repays.reduce(
+                  (acc2, repay) => acc2.plus(repay.liquidityAmount),
+                  new BigNumber(0),
+                ),
+              ),
+            new BigNumber(0),
+          )
+          .div(10 ** SUI_DECIMALS)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // TODO
+
+        const netBorrowedSuiAmount = borrowedSuiAmount.minus(repaidSuiAmount);
+        console.log(
+          "XXX borrowedSuiAmount:",
+          +borrowedSuiAmount,
+          "repaidSuiAmount:",
+          +repaidSuiAmount,
+          "netBorrowedSuiAmount:",
+          +netBorrowedSuiAmount,
+        );
+
+        // Historical TVL
+        const historicalTvl = new BigNumber(
+          netDepositedSsuiAmount.times(1), // TODO
+        ).minus(netBorrowedSuiAmount);
+        console.log("XXX historicalTvl:", +historicalTvl);
+
+        return historicalTvl;
+      } catch (err) {
+        console.error(err);
+        return undefined;
+      }
+    },
+    [],
+  );
+
+  // Stats - TVL
   const getTvlSuiAmount = useCallback(
     (obligation?: ParsedObligation) => {
       if (isObligationLooping(obligation)) {
@@ -628,7 +772,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     [isObligationLooping, sSuiToSuiExchangeRate],
   );
 
-  // APR
+  // Stats - APR
   const getAprPercent = useCallback(
     (obligation?: ParsedObligation, exposure?: BigNumber) => {
       let _obligation;
@@ -662,7 +806,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  // Health
+  // Stats - Health
   const getHealthPercent = useCallback(
     (obligation?: ParsedObligation, exposure?: BigNumber) => {
       let _obligation;
@@ -718,6 +862,8 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateUnloopToExposure,
       simulateDeposit,
+
+      getHistoricalTvlSuiAmount,
       getTvlSuiAmount,
       getAprPercent,
       getHealthPercent,
@@ -741,6 +887,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateUnloopToExposure,
       simulateDeposit,
+      getHistoricalTvlSuiAmount,
       getTvlSuiAmount,
       getAprPercent,
       getHealthPercent,

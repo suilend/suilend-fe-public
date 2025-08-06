@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
@@ -20,9 +22,27 @@ export default function SsuiStrategyCard() {
   const {
     isObligationLooping,
 
+    suiReserve,
+    sSuiReserve,
+    minExposure,
+    maxExposure,
     defaultExposure,
 
+    lstClient,
+    suiBorrowFeePercent,
+    suiToSsuiExchangeRate,
+    sSuiToSuiExchangeRate,
+
+    getSsuiMintFee,
+    getSsuiRedeemFee,
     getExposure,
+    getStepMaxSuiBorrowedAmount,
+    getStepMaxSsuiWithdrawnAmount,
+    simulateLoopToExposure,
+    simulateUnloopToExposure,
+    simulateDeposit,
+
+    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -35,6 +55,42 @@ export default function SsuiStrategyCard() {
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
+
+  // Stats - Historical TVL (TODO)
+  const [historicalTvlSuiAmountMap, setHistoricalTvlSuiAmountMap] = useState<
+    Record<string, BigNumber | undefined>
+  >({});
+  const historicalTvlSuiAmount = useMemo(
+    () =>
+      !obligation ? new BigNumber(0) : historicalTvlSuiAmountMap[obligation.id],
+    [obligation, historicalTvlSuiAmountMap],
+  );
+  console.log("XXX historicalTvlSuiAmount:", +historicalTvlSuiAmount);
+
+  const fetchHistoricalTvlSuiAmount = useCallback(async () => {
+    try {
+      const amount = await getHistoricalTvlSuiAmount(obligation);
+
+      setHistoricalTvlSuiAmountMap((prev) => ({
+        ...prev,
+        [obligation!.id]: amount,
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }, [getHistoricalTvlSuiAmount, obligation]);
+
+  const hasFetchedHistoricalTvlSuiAmountMapRef = useRef<
+    Record<string, boolean>
+  >({});
+  useEffect(() => {
+    if (!obligation) return;
+
+    if (hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id]) return;
+    hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id] = true;
+
+    fetchHistoricalTvlSuiAmount();
+  }, [obligation, fetchHistoricalTvlSuiAmount]);
 
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
