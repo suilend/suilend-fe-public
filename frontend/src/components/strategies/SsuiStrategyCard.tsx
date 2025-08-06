@@ -65,7 +65,7 @@ export default function SsuiStrategyCard() {
       !obligation ? new BigNumber(0) : historicalTvlSuiAmountMap[obligation.id],
     [obligation, historicalTvlSuiAmountMap],
   );
-  console.log("XXX historicalTvlSuiAmount:", +historicalTvlSuiAmount);
+  // console.log("XXX historicalTvlSuiAmount:", +historicalTvlSuiAmount);
 
   const fetchHistoricalTvlSuiAmount = useCallback(async () => {
     try {
