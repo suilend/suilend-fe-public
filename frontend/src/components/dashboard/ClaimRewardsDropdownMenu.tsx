@@ -97,12 +97,18 @@ export default function ClaimRewardsDropdownMenu({
   // Claim
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
-  const [isSwapping, setIsSwapping] = useState<boolean>(false);
+  const [isSwapping, setIsSwapping] = useLocalStorage<boolean>(
+    "claimRewards_isSwapping",
+    false,
+  );
   const [swappingToCoinType, setSwappingToCoinType] = useLocalStorage<string>(
     "claimRewards_swappingToCoinType",
     NORMALIZED_SUI_COINTYPE,
   );
-  const [isDepositing, setIsDepositing] = useState<boolean>(false);
+  const [isDepositing, setIsDepositing] = useLocalStorage<boolean>(
+    "claimRewards_isDepositing",
+    false,
+  );
 
   const submit = async () => {
     if (isClaiming) return;

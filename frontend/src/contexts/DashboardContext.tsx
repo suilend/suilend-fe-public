@@ -224,23 +224,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             (coinType) => coinType !== args.swappingToCoinType,
           );
 
+          let resultCoin: TransactionObjectArgument | undefined = undefined;
+
           // Non-swapped coins
           for (const [coinType, coin] of Object.entries(mergedCoinsMap).filter(
             ([coinType]) => nonSwappedCoinTypes.includes(coinType),
           )) {
-            if (args.isDepositing) {
-              appData.suilendClient.deposit(
-                coin,
-                args.swappingToCoinType,
-                obligationOwnerCap.id,
-                transaction,
-              );
-            } else {
-              transaction.transferObjects(
-                [coin],
-                transaction.pure.address(address),
-              );
-            }
+            if (resultCoin) transaction.mergeCoins(resultCoin, [coin]);
+            else resultCoin = coin;
           }
 
           // Swapped coins
@@ -268,9 +259,11 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                       target: args.swappingToCoinType,
                       amount: new BN(amount), // Underestimate (rewards keep accruing)
                       byAmountIn: true,
-                      splitCount: new BigNumber(amount)
-                        .times(rewardsMap[coinType][0].stats.price ?? 1)
-                        .gte(10)
+                      splitCount: new BigNumber(
+                        new BigNumber(amount)
+                          .div(10 ** appData.coinMetadataMap[coinType].decimals)
+                          .times(rewardsMap[coinType][0].stats.price ?? 1),
+                      ).gte(10)
                         ? undefined // Don't limit splitCount if amount is >= $10
                         : 1,
                     });
@@ -285,11 +278,15 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                 ),
             ),
           );
+          console.log("[claimRewards] amountsAndSortedQuotesMap", {
+            amountsAndSortedQuotesMap,
+          });
 
           // Swap
           for (const [coinType, { coin: coinIn, routers }] of Object.entries(
             amountsAndSortedQuotesMap,
           )) {
+            console.log("[claimRewards] swapping coinType", coinType);
             const slippagePercent = 3;
 
             let coinOut: TransactionObjectArgument;
@@ -305,19 +302,23 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
               throw new Error("No quote found");
             }
 
-            if (args.isDepositing) {
-              appData.suilendClient.deposit(
-                coinOut,
-                args.swappingToCoinType,
-                obligationOwnerCap.id,
-                transaction,
-              );
-            } else {
-              transaction.transferObjects(
-                [coinOut],
-                transaction.pure.address(address),
-              );
-            }
+            if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
+            else resultCoin = coinOut;
+          }
+
+          if (!resultCoin) throw new Error("No coin to deposit or transfer");
+          if (args.isDepositing) {
+            appData.suilendClient.deposit(
+              resultCoin,
+              args.swappingToCoinType,
+              obligationOwnerCap.id,
+              transaction,
+            );
+          } else {
+            transaction.transferObjects(
+              [resultCoin],
+              transaction.pure.address(address),
+            );
           }
         } else {
           if (args.isDepositing) {
