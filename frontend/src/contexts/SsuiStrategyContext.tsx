@@ -12,6 +12,7 @@ import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import {
+  Action,
   ParsedObligation,
   ParsedReserve,
   getNetAprPercent,
@@ -627,69 +628,160 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     async (obligation?: ParsedObligation): Promise<BigNumber | undefined> => {
       if (!obligation) return new BigNumber(0);
 
-      type Results = {
-        deposits: {
-          usdValue: string;
-          liquidityAmount: string;
+      type Page = {
+        actions: {
+          type: Action;
+          timestampS: number;
+          eventIndex: number;
+          liquidityAmount: BigNumber;
         }[];
-        withdraws: {
-          usdValue: string;
-          liquidityAmount: string;
-        }[];
-        borrows: {
-          usdValue: string;
-          liquidityAmount: string;
-        }[];
-        repays: {
-          usdValue: string;
-          liquidityAmount: string;
-        }[];
+        cursor: string | null;
       };
 
       try {
-        const getPage = async (cursor?: string) => {
+        const getPage = async (cursor?: string): Promise<Page> => {
           const url = `${API_URL}/obligations/history?${new URLSearchParams({
             obligationId: obligation.id,
             ...(cursor ? { cursor } : {}),
           })}`;
           const res = await fetch(url);
           const json: {
-            results: Results;
+            results: {
+              deposits: {
+                usdValue: string;
+                liquidityAmount: string;
+                deposit: {
+                  timestamp: number;
+                  eventIndex: number;
+                };
+              }[];
+              withdraws: {
+                usdValue: string;
+                liquidityAmount: string;
+                withdraw: {
+                  timestamp: number;
+                  eventIndex: number;
+                };
+              }[];
+              borrows: {
+                usdValue: string;
+                liquidityAmount: string; // Includes origination fees
+                timestamp: number;
+                eventIndex: number;
+              }[];
+              repays: {
+                usdValue: string;
+                liquidityAmount: string;
+                timestamp: number;
+                eventIndex: number;
+              }[];
+            };
             cursor: string | null;
           } = await res.json();
 
-          return json;
+          const actions: Page["actions"] = [];
+          for (const deposit of json.results.deposits) {
+            actions.push({
+              type: Action.DEPOSIT,
+              timestampS: deposit.deposit.timestamp,
+              eventIndex: deposit.deposit.eventIndex,
+              liquidityAmount: new BigNumber(deposit.liquidityAmount),
+            });
+          }
+          for (const withdraw of json.results.withdraws) {
+            actions.push({
+              type: Action.WITHDRAW,
+              timestampS: withdraw.withdraw.timestamp,
+              eventIndex: withdraw.withdraw.eventIndex,
+              liquidityAmount: new BigNumber(withdraw.liquidityAmount),
+            });
+          }
+          for (const borrow of json.results.borrows) {
+            actions.push({
+              type: Action.BORROW,
+              timestampS: borrow.timestamp,
+              eventIndex: borrow.eventIndex,
+              liquidityAmount: new BigNumber(borrow.liquidityAmount),
+            });
+          }
+          for (const repay of json.results.repays) {
+            actions.push({
+              type: Action.REPAY,
+              timestampS: repay.timestamp,
+              eventIndex: repay.eventIndex,
+              liquidityAmount: new BigNumber(repay.liquidityAmount),
+            });
+          }
+          return { actions, cursor: json.cursor };
         };
 
         // Get all pages
-        const pages: Results[] = [];
+        const pages: Page[] = [];
         let page = await getPage();
-        pages.push(page.results);
+        pages.push(page);
 
         while (page.cursor !== null) {
           page = await getPage(page.cursor);
-          pages.push(page.results);
+          pages.push(page);
         }
         console.log("XXX pages:", pages);
+
+        const sortedActions = pages
+          .flatMap((page) => page.actions)
+          .sort((a, b) => {
+            if (a.timestampS !== b.timestampS)
+              return a.timestampS - b.timestampS; // Sort by timestamp (asc)
+            if (a.eventIndex !== b.eventIndex)
+              return a.eventIndex - b.eventIndex; // Sort by eventIndex (asc) if timestamp is the same
+            return 0; // Should never happen
+          });
+
+        let positionSize = new BigNumber(0);
+        for (const action of sortedActions) {
+          const sSuiToSsuiExchangeRate = new BigNumber(1); // TODO
+
+          if (action.type === Action.DEPOSIT) {
+            positionSize = positionSize.plus(
+              action.liquidityAmount.times(sSuiToSsuiExchangeRate),
+            );
+          } else if (action.type === Action.WITHDRAW) {
+            positionSize = positionSize.plus(
+              new BigNumber(
+                action.liquidityAmount.times(sSuiToSsuiExchangeRate),
+              ).negated(),
+            );
+          } else if (action.type === Action.BORROW) {
+            positionSize = positionSize.minus(action.liquidityAmount);
+          } else if (action.type === Action.REPAY) {
+            positionSize = positionSize.minus(action.liquidityAmount.negated());
+          }
+
+          console.log("XXX positionSize:", +positionSize);
+        }
+        console.log("XXX positionSize (final):", +positionSize);
 
         // Net deposited sSUI amount
         const depositedSsuiAmount = pages.reduce(
           (acc, page) =>
             acc.plus(
-              page.deposits.reduce(
-                (acc2, deposit) => acc2.plus(deposit.liquidityAmount),
-                new BigNumber(0),
-              ),
+              page.actions
+                .filter((action) => action.type === Action.DEPOSIT)
+                .reduce(
+                  (acc2, deposit) => acc2.plus(deposit.liquidityAmount),
+                  new BigNumber(0),
+                ),
             ),
           new BigNumber(0),
         );
         const withdrawnSsuiAmount = pages.reduce(
           (acc, page) =>
             acc.plus(
-              page.withdraws.reduce(
-                (acc2, withdraw) => acc2.plus(withdraw.liquidityAmount),
-                new BigNumber(0),
-              ),
+              page.actions
+                .filter((action) => action.type === Action.WITHDRAW)
+                .reduce(
+                  (acc2, withdraw) => acc2.plus(withdraw.liquidityAmount),
+                  new BigNumber(0),
+                ),
             ),
           new BigNumber(0),
         );
@@ -706,32 +798,30 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
         );
 
         // Net borrowed SUI amount
-        const borrowedSuiAmount = pages
-          .reduce(
-            (acc, page) =>
-              acc.plus(
-                page.borrows.reduce(
+        const borrowedSuiAmount = pages.reduce(
+          (acc, page) =>
+            acc.plus(
+              page.actions
+                .filter((action) => action.type === Action.BORROW)
+                .reduce(
                   (acc2, borrow) => acc2.plus(borrow.liquidityAmount),
                   new BigNumber(0),
                 ),
-              ),
-            new BigNumber(0),
-          )
-          .div(10 ** SUI_DECIMALS)
-          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // TODO
-        const repaidSuiAmount = pages
-          .reduce(
-            (acc, page) =>
-              acc.plus(
-                page.repays.reduce(
+            ),
+          new BigNumber(0),
+        );
+        const repaidSuiAmount = pages.reduce(
+          (acc, page) =>
+            acc.plus(
+              page.actions
+                .filter((action) => action.type === Action.REPAY)
+                .reduce(
                   (acc2, repay) => acc2.plus(repay.liquidityAmount),
                   new BigNumber(0),
                 ),
-              ),
-            new BigNumber(0),
-          )
-          .div(10 ** SUI_DECIMALS)
-          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN); // TODO
+            ),
+          new BigNumber(0),
+        );
 
         const netBorrowedSuiAmount = borrowedSuiAmount.minus(repaidSuiAmount);
         console.log(
