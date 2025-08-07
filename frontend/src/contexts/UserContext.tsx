@@ -196,6 +196,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   const isFetchingOwnedStakedWalObjectsMapRef = useRef<string[]>([]);
   useEffect(() => {
     if (!address) return;
+    if (process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET === "true") return;
 
     if (isFetchingOwnedStakedWalObjectsMapRef.current.includes(address)) return;
     isFetchingOwnedStakedWalObjectsMapRef.current.push(address);
@@ -205,6 +206,8 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const ownedStakedWalObjects = useMemo(() => {
     if (!address || appData === undefined) return undefined;
+    if (process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET === "true")
+      return undefined;
 
     const result: StakedWalObject[] = [];
     for (const obj of ownedStakedWalObjectsMap[address] ?? []) {

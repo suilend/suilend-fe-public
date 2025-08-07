@@ -310,7 +310,7 @@ export default function MarketTable() {
       const totalDepositAprPercent = getTotalAprPercent(
         Side.DEPOSIT,
         reserve.depositAprPercent,
-        getFilteredRewards(userData.rewardMap[reserve.coinType].deposit),
+        getFilteredRewards(userData.rewardMap[reserve.coinType]?.deposit ?? []),
         getStakingYieldAprPercent(
           Side.DEPOSIT,
           reserve.coinType,
@@ -320,7 +320,7 @@ export default function MarketTable() {
       const totalBorrowAprPercent = getTotalAprPercent(
         Side.BORROW,
         reserve.borrowAprPercent,
-        getFilteredRewards(userData.rewardMap[reserve.coinType].borrow),
+        getFilteredRewards(userData.rewardMap[reserve.coinType]?.borrow ?? []),
       );
 
       const almostExceedsDepositLimit = getAlmostExceedsLimit(
