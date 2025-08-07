@@ -284,9 +284,9 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   );
 
   // Obligations with unclaimed rewards
-  const AUTOCLAIM_OBLIGATIONS_LIMIT = 10;
+  const AUTOCLAIM_OBLIGATIONS_LIMIT = 20;
   const MAX_REWARDS_PER_TRANSACTION = useMemo(
-    () => (isUsingLedger ? 0 : 15),
+    () => (isUsingLedger ? 0 : 30),
     [isUsingLedger],
   );
 
