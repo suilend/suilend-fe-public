@@ -25,6 +25,7 @@ import {
   createStrategyOwnerCapIfNoneExists,
   sendStrategyOwnerCapToUser,
   strategyBorrow,
+  strategyClaimRewards,
   strategyDeposit,
   strategyWithdraw,
 } from "@suilend/sdk/lib/strategyOwnerCap";
@@ -57,7 +58,7 @@ import Spinner from "@/components/shared/Spinner";
 import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody } from "@/components/shared/Typography";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -1274,6 +1275,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!obligation) throw Error("Obligation not found");
 
     // 1) Claim and deposit pending rewards
+    // 1.1) Get rewards
     const rewardsMap: Record<string, RewardSummary[]> = {};
     Object.values(userData.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
@@ -1294,19 +1296,43 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         side: r.stats.side,
       }));
 
-    // TODO: Claim rewards
-    // const { transaction: transaction_, mergedCoinsMap } = this.claimRewards(
-    //   ownerId,
-    //   obligationOwnerCap,
-    //   rewards,
-    //   transaction,
-    // );
+    // 1.2) Claim rewards and merge coins
+    const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
+    for (const reward of rewards) {
+      const [claimedCoin] = strategyClaimRewards(
+        reward.rewardCoinType,
+        strategyOwnerCapId,
+        reward.reserveArrayIndex,
+        reward.rewardIndex,
+        reward.side,
+        transaction,
+      );
 
-    // for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
-    //   transaction_.transferObjects([coin], transaction_.pure.address(ownerId));
-    // }
-    console.log("XXX rewardsMap:", rewardsMap, "rewards:", rewards);
+      if (mergeCoinsMap[reward.rewardCoinType] === undefined)
+        mergeCoinsMap[reward.rewardCoinType] = [];
+      mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
+    }
 
+    const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
+    for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+      const mergedCoin = coins[0];
+      if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
+
+      mergedCoinsMap[rewardCoinType] = mergedCoin;
+    }
+
+    // 1.3) Deposit rewards
+    for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
+      strategyDeposit(
+        coin,
+        coinType,
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(coinType),
+        transaction,
+      );
+    }
+
+    // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
       console.log(`[SsuiStrategyDialog] maxWithdraw - ${i} start`);
@@ -1927,12 +1953,6 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   submitButtonState.title
                 )}
               </Button>
-
-              {selectedTab === Tab.WITHDRAW && useMaxAmount && (
-                <TLabelSans className="text-center">
-                  Any pending rewards will also be withdrawn
-                </TLabelSans>
-              )}
             </div>
           </div>
         </div>

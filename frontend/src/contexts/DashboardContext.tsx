@@ -20,7 +20,7 @@ import {
 import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
 import track from "@suilend/sui-fe/lib/track";
@@ -267,7 +267,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                         ? undefined // Don't limit splitCount if amount is >= $10
                         : 1,
                     });
-                    if (!routers) throw new Error("No quote found");
+                    if (!routers) throw new Error("No swap quote found");
                     console.log("[claimRewards] routers", {
                       coinType,
                       routers,
@@ -299,7 +299,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                 partner: CETUS_PARTNER_ID,
               });
             } catch (err) {
-              throw new Error("No quote found");
+              throw new Error("No swap quote found");
             }
 
             if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);

@@ -12,10 +12,10 @@ import { isSui } from "@suilend/sui-fe";
 
 import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "../client";
 
-import { StrategyOwnerCap } from "./types";
+import { Side, StrategyOwnerCap } from "./types";
 
 export const STRATEGY_WRAPPER_PACKAGE_ID =
-  "0x2001629d6d87322ab0bd965a5d539acd318069ad589b644b6eaf6c50c606e99c";
+  "0xba97dc73a07638d03d77ad2161484eb21db577edc9cadcd7035fef4b4f2f6fa1";
 export const STRATEGY_SUI_LOOPING_SSUI = 1;
 
 export const strategyDeposit = (
@@ -85,6 +85,27 @@ export const strategyWithdraw = (
       transaction.pure.u64(reserveArrayIndex),
       transaction.object(SUI_CLOCK_OBJECT_ID),
       transaction.pure.u64(value),
+    ],
+  });
+
+export const strategyClaimRewards = (
+  coinType: string,
+  strategyOwnerCap: TransactionObjectInput,
+  reserveArrayIndex: bigint,
+  rewardIndex: bigint,
+  side: Side,
+  transaction: Transaction,
+) =>
+  transaction.moveCall({
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::claim_rewards`,
+    typeArguments: [LENDING_MARKET_TYPE, coinType],
+    arguments: [
+      transaction.object(strategyOwnerCap),
+      transaction.object(LENDING_MARKET_ID),
+      transaction.object(SUI_CLOCK_OBJECT_ID),
+      transaction.pure.u64(reserveArrayIndex),
+      transaction.pure.u64(rewardIndex),
+      transaction.pure.bool(side === Side.DEPOSIT),
     ],
   });
 
