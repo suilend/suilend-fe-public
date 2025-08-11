@@ -493,13 +493,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     [adjustSliderValue],
   );
 
-  // Stats - APR
-  const aprPercent = getAprPercent(obligation, exposure);
-  const adjustAprPercent = getAprPercent(undefined, adjustExposure);
-
   // Stats - Health
   const healthPercent = getHealthPercent(obligation, exposure);
   const adjustHealthPercent = getHealthPercent(undefined, adjustExposure);
+
+  // Stats - APR
+  const aprPercent = getAprPercent(obligation, exposure);
+  const adjustAprPercent = getAprPercent(undefined, adjustExposure);
 
   // Stats - Fees
   const depositFeesAmount = useMemo(() => {
@@ -709,7 +709,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         sSuiDepositedAmount,
         suiBorrowedAmount,
       )
-        .times(0.99) // 1% buffer
+        .times(0.98) // 2% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSsuiDepositedAmount = new BigNumber(
         stepMaxSuiBorrowedAmount.minus(
@@ -843,7 +843,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         sSuiDepositedAmount,
         suiBorrowedAmount,
       )
-        .times(0.99) // 1% buffer
+        .times(0.98) // 2% buffer
         .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
         stepMaxSsuiWithdrawnAmount.minus(
@@ -1139,7 +1139,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         sSuiDepositedAmount,
         suiBorrowedAmount,
       )
-        .times(0.99) // 1% buffer
+        .times(0.98) // 2% buffer
         .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
         stepMaxSsuiWithdrawnAmount.minus(
@@ -1885,6 +1885,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   }
                   horizontal
                 />
+
                 <LabelWithValue
                   label="Health"
                   value={
@@ -1904,6 +1905,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                   }
                   horizontal
                 />
+
                 {selectedTab === Tab.DEPOSIT ? (
                   <LabelWithValue
                     label="Deposit fee"

@@ -10,6 +10,14 @@ import {
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
+function ComingSoonStrategyCard() {
+  return (
+    <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
+      <TLabelSans>Coming soon</TLabelSans>
+    </div>
+  );
+}
+
 function Page() {
   const { userData } = useLoadedUserContext();
 
@@ -59,47 +67,44 @@ function Page() {
       <div className="flex w-full flex-col gap-6">
         <TBodySans className="text-xl">Strategies</TBodySans>
 
-        {/* Positions */}
+        {/* My positions/All strategies */}
+        <div className="flex w-full flex-col gap-3">
+          <TBodySans className="text-lg">
+            {isObligationLooping(obligation)
+              ? "My positions"
+              : "All strategies"}
+          </TBodySans>
+
+          {/* Min card width: 360px */}
+          <div className="grid grid-cols-1 gap-4 min-[820px]:grid-cols-2 min-[1196px]:grid-cols-3">
+            <SsuiStrategyCard />
+            {!isObligationLooping(obligation) && (
+              <>
+                <ComingSoonStrategyCard />
+                <ComingSoonStrategyCard />
+                <ComingSoonStrategyCard />
+                <ComingSoonStrategyCard />
+                <ComingSoonStrategyCard />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* All strategies */}
         {isObligationLooping(obligation) && (
           <div className="flex w-full flex-col gap-3">
-            <TBodySans className="text-lg">My positions</TBodySans>
+            <TBodySans className="text-lg">All strategies</TBodySans>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {isObligationLooping(obligation) && <SsuiStrategyCard />}
+            {/* Min card width: 360px */}
+            <div className="grid grid-cols-1 gap-4 min-[820px]:grid-cols-2 min-[1196px]:grid-cols-3">
+              <ComingSoonStrategyCard />
+              <ComingSoonStrategyCard />
+              <ComingSoonStrategyCard />
+              <ComingSoonStrategyCard />
+              <ComingSoonStrategyCard />
             </div>
           </div>
         )}
-
-        {/* All strategies */}
-        <div className="flex w-full flex-col gap-3">
-          <TBodySans className="text-lg">All strategies</TBodySans>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {!isObligationLooping(obligation) ? (
-              <SsuiStrategyCard />
-            ) : (
-              <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-                <TLabelSans>Coming soon</TLabelSans>
-              </div>
-            )}
-
-            <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-              <TLabelSans>Coming soon</TLabelSans>
-            </div>
-            <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-              <TLabelSans>Coming soon</TLabelSans>
-            </div>
-            <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-              <TLabelSans>Coming soon</TLabelSans>
-            </div>
-            <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-              <TLabelSans>Coming soon</TLabelSans>
-            </div>
-            <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
-              <TLabelSans>Coming soon</TLabelSans>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );

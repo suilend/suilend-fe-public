@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -10,11 +10,13 @@ import { formatPercent, formatToken } from "@suilend/sui-fe";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import usePnlSuiAmountMap from "@/hooks/usePnlSuiAmountMap";
 
 export default function SsuiStrategyCard() {
   const { userData } = useLoadedUserContext();
@@ -56,47 +58,31 @@ export default function SsuiStrategyCard() {
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 
-  // Stats - Historical TVL (TODO)
-  const [historicalTvlSuiAmountMap, setHistoricalTvlSuiAmountMap] = useState<
-    Record<string, BigNumber | undefined>
-  >({});
-  const historicalTvlSuiAmount = useMemo(
-    () =>
-      !obligation ? new BigNumber(0) : historicalTvlSuiAmountMap[obligation.id],
-    [obligation, historicalTvlSuiAmountMap],
-  );
-  // console.log("XXX historicalTvlSuiAmount:", +historicalTvlSuiAmount);
-
-  const fetchHistoricalTvlSuiAmount = useCallback(async () => {
-    try {
-      const amount = await getHistoricalTvlSuiAmount(obligation);
-
-      setHistoricalTvlSuiAmountMap((prev) => ({
-        ...prev,
-        [obligation!.id]: amount,
-      }));
-    } catch (err) {
-      console.error(err);
-    }
-  }, [getHistoricalTvlSuiAmount, obligation]);
-
-  const hasFetchedHistoricalTvlSuiAmountMapRef = useRef<
-    Record<string, boolean>
-  >({});
-  useEffect(() => {
-    if (!obligation) return;
-
-    if (hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id]) return;
-    hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id] = true;
-
-    fetchHistoricalTvlSuiAmount();
-  }, [obligation, fetchHistoricalTvlSuiAmount]);
-
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
   const aprPercent = getAprPercent(obligation, defaultExposure);
+
+  // Stats - PnL
+  const { pnlSuiAmountMap } = usePnlSuiAmountMap(obligation);
+  const pnlSuiAmount = useMemo(
+    () =>
+      isObligationLooping(obligation)
+        ? pnlSuiAmountMap[obligation!.id]
+        : new BigNumber(0),
+    [isObligationLooping, obligation, pnlSuiAmountMap],
+  );
+
+  // Stats - Exposure
+  const exposure = useMemo(
+    () =>
+      getExposure(
+        obligation?.deposits[0]?.depositedAmount ?? new BigNumber(0),
+        obligation?.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+      ),
+    [getExposure, obligation],
+  );
 
   // Stats - Health
   const healthPercent = getHealthPercent(obligation, defaultExposure);
@@ -113,7 +99,7 @@ export default function SsuiStrategyCard() {
           <div className="flex flex-row justify-end gap-6">
             {isObligationLooping(obligation) && (
               <div className="flex w-fit flex-col items-end gap-1">
-                <TLabelSans>Deposited</TLabelSans>
+                <TLabelSans>Equity</TLabelSans>
                 <Tooltip
                   title={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
                 >
@@ -125,7 +111,7 @@ export default function SsuiStrategyCard() {
             )}
 
             <div className="flex w-fit flex-col items-end gap-1">
-              <TLabelSans>APR</TLabelSans>
+              <TLabelSans>Net APR</TLabelSans>
               <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
             </div>
           </div>
@@ -136,17 +122,17 @@ export default function SsuiStrategyCard() {
             <Separator />
 
             <div className="flex w-full flex-col gap-4">
+              {/* PnL */}
+              <PnlLabelWithValue
+                reserve={suiReserve}
+                pnlAmount={pnlSuiAmount}
+              />
+
               {/* Exposure */}
               <LabelWithValue
                 label="Leverage"
-                value={`${getExposure(
-                  obligation!.deposits[0].depositedAmount,
-                  obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-                ).toFixed(1)}x`}
-                valueTooltip={`${getExposure(
-                  obligation!.deposits[0].depositedAmount,
-                  obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-                ).toFixed(6)}x`}
+                value={`${exposure.toFixed(1)}x`}
+                valueTooltip={`${exposure.toFixed(6)}x`}
                 horizontal
               />
 

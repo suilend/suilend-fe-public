@@ -568,7 +568,8 @@ function ClaimTabContent() {
   useEffect(() => {
     (async () => {
       try {
-        const poolsRes = await fetch(`${API_URL}/steamm/pools/all`);
+        const poolsUrl = `${API_URL}/steamm/pools/all`;
+        const poolsRes = await fetch(poolsUrl);
         const poolsJson: any[] = await poolsRes.json();
         if ((poolsJson as any)?.statusCode === 500)
           throw new Error("Failed to fetch pools");

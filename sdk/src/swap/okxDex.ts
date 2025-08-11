@@ -50,7 +50,8 @@ export const getOkxDexQuote = async (
   tokenInCoinType: string,
   tokenOutCoinType: string,
 ): Promise<OkxDexQuote> => {
-  const res = await fetch("/api/okx-dex/quote", {
+  const url = "/api/okx-dex/quote";
+  const res = await fetch(url, {
     method: "POST",
     body: JSON.stringify({
       amountIn,
@@ -77,7 +78,8 @@ export const getOkxDexSwapTransaction = async (
   slippagePercent: number,
   address: string,
 ): Promise<Transaction> => {
-  const res = await fetch("/api/okx-dex/swap", {
+  const url = "/api/okx-dex/swap";
+  const res = await fetch(url, {
     method: "POST",
     body: JSON.stringify({
       amountIn,

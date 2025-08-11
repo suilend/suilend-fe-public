@@ -83,7 +83,8 @@ export default function useFetchAppData() {
       // LSTs (won't throw on error)
       (async () => {
         try {
-          const res = await fetch(`${API_URL}/springsui/apy`);
+          const url = `${API_URL}/springsui/apy`;
+          const res = await fetch(url);
           const json: Record<string, string> = await res.json();
           if ((res as any)?.statusCode === 500)
             throw new Error("Failed to fetch SpringSui LST APRs");

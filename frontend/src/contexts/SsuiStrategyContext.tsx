@@ -8,13 +8,13 @@ import {
   useState,
 } from "react";
 
-import { SUI_DECIMALS } from "@mysten/sui/utils";
+import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
 import {
-  Action,
   ParsedObligation,
   ParsedReserve,
+  WAD,
   getNetAprPercent,
 } from "@suilend/sdk";
 import {
@@ -37,6 +37,7 @@ import FullPageSpinner from "@/components/shared/FullPageSpinner";
 import { getWeightedBorrowsUsd } from "@/components/shared/UtilizationBar";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { EventType } from "@/lib/events";
 
 export const E = 10 ** -6;
 export const sSUI_DECIMALS = 9;
@@ -224,11 +225,10 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           SPRING_SUI_UPGRADE_CAP_ID,
         );
 
-        const lstInfoRes = await fetch(
-          `${API_URL}/springsui/lst-info?${new URLSearchParams({
-            coinType: NORMALIZED_sSUI_COINTYPE,
-          })}`,
-        );
+        const lstInfoUrl = `${API_URL}/springsui/lst-info?${new URLSearchParams(
+          { coinType: NORMALIZED_sSUI_COINTYPE },
+        )}`;
+        const lstInfoRes = await fetch(lstInfoUrl);
         const lstInfoJson: {
           LIQUID_STAKING_INFO: LiquidStakingObjectInfo;
           liquidStakingInfo: LiquidStakingInfo<string>;
@@ -435,7 +435,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           sSuiDepositedAmount,
           suiBorrowedAmount,
         )
-          .times(0.99) // 1% buffer
+          .times(0.98) // 2% buffer
           .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxSsuiDepositedAmount = new BigNumber(
           stepMaxSuiBorrowedAmount.minus(
@@ -512,7 +512,7 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           sSuiDepositedAmount,
           suiBorrowedAmount,
         )
-          .times(0.99) // 1% buffer
+          .times(0.98) // 2% buffer
           .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxSuiRepaidAmount = new BigNumber(
           stepMaxSsuiWithdrawnAmount.minus(
@@ -628,13 +628,31 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
     async (obligation?: ParsedObligation): Promise<BigNumber | undefined> => {
       if (!obligation) return new BigNumber(0);
 
+      type ActionEvent = {
+        type:
+          | EventType.DEPOSIT
+          | EventType.WITHDRAW
+          | EventType.BORROW
+          | EventType.REPAY;
+        timestampS: number;
+        eventIndex: number;
+        liquidityAmount: BigNumber;
+      };
+      type ObligationDataEvent = {
+        type: EventType.OBLIGATION_DATA;
+        timestampS: number;
+        eventIndex: number;
+        depositedValueUsd: BigNumber;
+      };
+      type ClaimRewardEvent = {
+        type: EventType.CLAIM_REWARD;
+        timestampS: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: BigNumber;
+      };
       type Page = {
-        actions: {
-          type: Action;
-          timestampS: number;
-          eventIndex: number;
-          liquidityAmount: BigNumber;
-        }[];
+        events: (ActionEvent | ObligationDataEvent | ClaimRewardEvent)[];
         cursor: string | null;
       };
 
@@ -648,72 +666,107 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           const json: {
             results: {
               deposits: {
-                usdValue: string;
-                liquidityAmount: string;
                 deposit: {
                   timestamp: number;
                   eventIndex: number;
                 };
+                liquidityAmount: string;
               }[];
               withdraws: {
-                usdValue: string;
-                liquidityAmount: string;
                 withdraw: {
                   timestamp: number;
                   eventIndex: number;
                 };
+                liquidityAmount: string;
               }[];
               borrows: {
-                usdValue: string;
-                liquidityAmount: string; // Includes origination fees
                 timestamp: number;
                 eventIndex: number;
+                liquidityAmount: string; // Includes origination fees
               }[];
               repays: {
-                usdValue: string;
-                liquidityAmount: string;
                 timestamp: number;
                 eventIndex: number;
+                liquidityAmount: string;
+              }[];
+              obligationDataEvents: {
+                timestamp: number;
+                eventIndex: number;
+                depositedValueUsd: string;
+              }[];
+              claimRewardEvents: {
+                timestamp: number;
+                eventIndex: number;
+                coinType: string;
+                liquidityAmount: string;
               }[];
             };
             cursor: string | null;
           } = await res.json();
+          if ((json as any)?.statusCode === 500)
+            throw new Error("Failed to fetch obligation history");
 
-          const actions: Page["actions"] = [];
+          const events: Page["events"] = [];
           for (const deposit of json.results.deposits) {
-            actions.push({
-              type: Action.DEPOSIT,
+            events.push({
+              type: EventType.DEPOSIT,
               timestampS: deposit.deposit.timestamp,
               eventIndex: deposit.deposit.eventIndex,
               liquidityAmount: new BigNumber(deposit.liquidityAmount),
             });
           }
           for (const withdraw of json.results.withdraws) {
-            actions.push({
-              type: Action.WITHDRAW,
+            events.push({
+              type: EventType.WITHDRAW,
               timestampS: withdraw.withdraw.timestamp,
               eventIndex: withdraw.withdraw.eventIndex,
               liquidityAmount: new BigNumber(withdraw.liquidityAmount),
             });
           }
           for (const borrow of json.results.borrows) {
-            actions.push({
-              type: Action.BORROW,
+            events.push({
+              type: EventType.BORROW,
               timestampS: borrow.timestamp,
               eventIndex: borrow.eventIndex,
               liquidityAmount: new BigNumber(borrow.liquidityAmount),
             });
           }
           for (const repay of json.results.repays) {
-            actions.push({
-              type: Action.REPAY,
+            events.push({
+              type: EventType.REPAY,
               timestampS: repay.timestamp,
               eventIndex: repay.eventIndex,
               liquidityAmount: new BigNumber(repay.liquidityAmount),
             });
           }
-          return { actions, cursor: json.cursor };
+          for (const obligationDataEvent of json.results.obligationDataEvents) {
+            events.push({
+              type: EventType.OBLIGATION_DATA,
+              timestampS: obligationDataEvent.timestamp,
+              eventIndex: obligationDataEvent.eventIndex,
+              depositedValueUsd: new BigNumber(
+                obligationDataEvent.depositedValueUsd,
+              ).div(WAD),
+            });
+          }
+          for (const claimRewardEvent of json.results.claimRewardEvents) {
+            events.push({
+              type: EventType.CLAIM_REWARD,
+              timestampS: claimRewardEvent.timestamp,
+              eventIndex: claimRewardEvent.eventIndex,
+              coinType: normalizeStructTag(claimRewardEvent.coinType),
+              liquidityAmount: new BigNumber(claimRewardEvent.liquidityAmount),
+            });
+          }
+          return { events, cursor: json.cursor };
         };
+
+        // console.log(
+        //   "XXX obligation:",
+        //   +obligation.deposits[0].depositedAmount.times(sSuiToSuiExchangeRate),
+        //   +obligation.borrows[0].borrowedAmount,
+        //   +sSuiToSuiExchangeRate,
+        // );
 
         // Get all pages
         const pages: Page[] = [];
@@ -724,122 +777,152 @@ export function SsuiStrategyContextProvider({ children }: PropsWithChildren) {
           page = await getPage(page.cursor);
           pages.push(page);
         }
-        console.log("XXX pages:", pages);
+        // console.log("XXX pages:", pages);
 
-        const sortedActions = pages
-          .flatMap((page) => page.actions)
-          .sort((a, b) => {
-            if (a.timestampS !== b.timestampS)
-              return a.timestampS - b.timestampS; // Sort by timestamp (asc)
-            if (a.eventIndex !== b.eventIndex)
-              return a.eventIndex - b.eventIndex; // Sort by eventIndex (asc) if timestamp is the same
-            return 0; // Should never happen
-          });
+        // Combine and sort events
+        const events = pages.flatMap((page) => page.events);
+        const sortedEvents = events.sort((a, b) => {
+          if (a.timestampS !== b.timestampS) return a.timestampS - b.timestampS; // Sort by timestamp (asc)
+          if (a.eventIndex !== b.eventIndex) return a.eventIndex - b.eventIndex; // Sort by eventIndex (asc) if timestamp is the same
+          return 0; // Should never happen
+        });
+        // console.log(
+        //   `XXX sortedEvents: ${JSON.stringify(
+        //     sortedEvents.map((e, i) => ({ index: i, ...e })),
+        //     null,
+        //     2,
+        //   )}`,
+        // );
 
-        let positionSize = new BigNumber(0);
-        for (const action of sortedActions) {
-          const sSuiToSsuiExchangeRate = new BigNumber(1); // TODO
+        // Only keep events for the current position (since last obligationDataEvent.depositedValueUsd === 0)
+        const lastZeroDepositedValueUsdObligationDataEventIndex =
+          sortedEvents.findLastIndex(
+            (event) =>
+              event.type === EventType.OBLIGATION_DATA &&
+              (event as ObligationDataEvent).depositedValueUsd.eq(0),
+          );
+        // console.log(
+        //   "XXX lastZeroDepositedValueUsdObligationDataEventIndex:",
+        //   lastZeroDepositedValueUsdObligationDataEventIndex,
+        // );
 
-          if (action.type === Action.DEPOSIT) {
-            positionSize = positionSize.plus(
-              action.liquidityAmount.times(sSuiToSsuiExchangeRate),
+        const currentPositionSortedEvents =
+          lastZeroDepositedValueUsdObligationDataEventIndex === -1
+            ? sortedEvents
+            : sortedEvents.slice(
+                lastZeroDepositedValueUsdObligationDataEventIndex +
+                  1 + // Exclude ObligationDataEvent
+                  1, // Exclude last WithdrawEvent (ObligationDataEvent goes before WithdrawEvent)
+              );
+        console.log(
+          `XXX currentPositionSortedEvents: ${JSON.stringify(
+            currentPositionSortedEvents.map((e, i) => ({ index: i, ...e })),
+            null,
+            2,
+          )}`,
+        );
+
+        // Get historical sSUI to SUI exchange rates for the relevant timestamps (current position deposits and withdraws)
+        const sSuiToSuiExchangeRateTimestampsS = Array.from(
+          new Set(
+            currentPositionSortedEvents
+              .filter((event) =>
+                [EventType.DEPOSIT, EventType.WITHDRAW].includes(event.type),
+              )
+              .map((event) => event.timestampS),
+          ),
+        );
+
+        let sSuiToSuiExchangeRateMap: Record<number, BigNumber> = {};
+        if (sSuiToSuiExchangeRateTimestampsS.length > 0) {
+          const res = await fetch(
+            `${API_URL}/springsui/historical-rates?coinType=${NORMALIZED_sSUI_COINTYPE}&timestamps=${sSuiToSuiExchangeRateTimestampsS.join(",")}`,
+          );
+          const json: { timestamp: number; value: string }[] = await res.json();
+          if ((json as any)?.statusCode === 500)
+            throw new Error(
+              "Failed to fetch historical sSUI to SUI exchange rates",
             );
-          } else if (action.type === Action.WITHDRAW) {
-            positionSize = positionSize.plus(
-              new BigNumber(
-                action.liquidityAmount.times(sSuiToSsuiExchangeRate),
-              ).negated(),
+
+          sSuiToSuiExchangeRateMap = Object.fromEntries(
+            json.map(({ timestamp, value }) => [
+              timestamp,
+              new BigNumber(value),
+            ]),
+          );
+        }
+        // console.log(
+        //   "XXX sSuiToSuiExchangeRateMap:",
+        //   JSON.stringify(sSuiToSuiExchangeRateMap, null, 2),
+        // );
+
+        // Calculate current position
+        let depositedSuiAmount = new BigNumber(0);
+        let borrowedSuiAmount = new BigNumber(0);
+        for (let i = 0; i < currentPositionSortedEvents.length; i++) {
+          const event = currentPositionSortedEvents[i];
+
+          // Deposit/withdraw
+          if (event.type === EventType.DEPOSIT) {
+            const sSuiToSuiExchangeRate =
+              sSuiToSuiExchangeRateMap[event.timestampS];
+            if (sSuiToSuiExchangeRate === undefined) {
+              throw new Error(
+                `sSuiToSuiExchangeRate is undefined for timestamp ${event.timestampS}`,
+              );
+            }
+
+            const previousEvent = currentPositionSortedEvents[i - 1];
+            const isDepositingClaimedReward =
+              previousEvent && previousEvent.type === EventType.CLAIM_REWARD;
+            if (isDepositingClaimedReward) {
+              console.log("XXX skipping depositing claimed reward"); // Regardless of coinType, we don't want to count claimed+deposited rewards as deposited SUI
+              continue;
+            }
+
+            depositedSuiAmount = depositedSuiAmount.plus(
+              event.liquidityAmount.times(sSuiToSuiExchangeRate),
             );
-          } else if (action.type === Action.BORROW) {
-            positionSize = positionSize.minus(action.liquidityAmount);
-          } else if (action.type === Action.REPAY) {
-            positionSize = positionSize.minus(action.liquidityAmount.negated());
+            // console.log(
+            //   `XXX depositedSuiAmount: ${+depositedSuiAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
+            // );
+          } else if (event.type === EventType.WITHDRAW) {
+            const sSuiToSuiExchangeRate =
+              sSuiToSuiExchangeRateMap[event.timestampS];
+            if (sSuiToSuiExchangeRate === undefined) {
+              throw new Error(
+                `sSuiToSuiExchangeRate is undefined for timestamp ${event.timestampS}`,
+              );
+            }
+
+            depositedSuiAmount = depositedSuiAmount.minus(
+              event.liquidityAmount.times(sSuiToSuiExchangeRate),
+            );
+            // console.log(
+            //   `XXX depositedSuiAmount: ${+depositedSuiAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
+            // );
           }
 
-          console.log("XXX positionSize:", +positionSize);
+          // Borrow/repay
+          else if (event.type === EventType.BORROW) {
+            borrowedSuiAmount = borrowedSuiAmount.plus(event.liquidityAmount);
+            // console.log(
+            //   `XXX borrowedSuiAmount: ${+borrowedSuiAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
+            // );
+          } else if (event.type === EventType.REPAY) {
+            borrowedSuiAmount = borrowedSuiAmount.minus(event.liquidityAmount);
+            // console.log(
+            //   `XXX borrowedSuiAmount: ${+borrowedSuiAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
+            // );
+          }
         }
-        console.log("XXX positionSize (final):", +positionSize);
+        console.log(`XXX depositedSuiAmount (final): ${depositedSuiAmount}`);
+        console.log(`XXX borrowedSuiAmount (final): ${borrowedSuiAmount}`);
 
-        // Net deposited sSUI amount
-        const depositedSsuiAmount = pages.reduce(
-          (acc, page) =>
-            acc.plus(
-              page.actions
-                .filter((action) => action.type === Action.DEPOSIT)
-                .reduce(
-                  (acc2, deposit) => acc2.plus(deposit.liquidityAmount),
-                  new BigNumber(0),
-                ),
-            ),
-          new BigNumber(0),
-        );
-        const withdrawnSsuiAmount = pages.reduce(
-          (acc, page) =>
-            acc.plus(
-              page.actions
-                .filter((action) => action.type === Action.WITHDRAW)
-                .reduce(
-                  (acc2, withdraw) => acc2.plus(withdraw.liquidityAmount),
-                  new BigNumber(0),
-                ),
-            ),
-          new BigNumber(0),
-        );
+        const tvlSuiAmount = depositedSuiAmount.minus(borrowedSuiAmount);
+        console.log(`XXX tvlSuiAmount (final): ${tvlSuiAmount}`);
 
-        const netDepositedSsuiAmount =
-          depositedSsuiAmount.minus(withdrawnSsuiAmount);
-        console.log(
-          "XXX depositedSsuiAmount:",
-          +depositedSsuiAmount,
-          "withdrawnSsuiAmount:",
-          +withdrawnSsuiAmount,
-          "netDepositedSsuiAmount:",
-          +netDepositedSsuiAmount,
-        );
-
-        // Net borrowed SUI amount
-        const borrowedSuiAmount = pages.reduce(
-          (acc, page) =>
-            acc.plus(
-              page.actions
-                .filter((action) => action.type === Action.BORROW)
-                .reduce(
-                  (acc2, borrow) => acc2.plus(borrow.liquidityAmount),
-                  new BigNumber(0),
-                ),
-            ),
-          new BigNumber(0),
-        );
-        const repaidSuiAmount = pages.reduce(
-          (acc, page) =>
-            acc.plus(
-              page.actions
-                .filter((action) => action.type === Action.REPAY)
-                .reduce(
-                  (acc2, repay) => acc2.plus(repay.liquidityAmount),
-                  new BigNumber(0),
-                ),
-            ),
-          new BigNumber(0),
-        );
-
-        const netBorrowedSuiAmount = borrowedSuiAmount.minus(repaidSuiAmount);
-        console.log(
-          "XXX borrowedSuiAmount:",
-          +borrowedSuiAmount,
-          "repaidSuiAmount:",
-          +repaidSuiAmount,
-          "netBorrowedSuiAmount:",
-          +netBorrowedSuiAmount,
-        );
-
-        // Historical TVL
-        const historicalTvl = new BigNumber(
-          netDepositedSsuiAmount.times(1), // TODO
-        ).minus(netBorrowedSuiAmount);
-        console.log("XXX historicalTvl:", +historicalTvl);
-
-        return historicalTvl;
+        return tvlSuiAmount;
       } catch (err) {
         console.error(err);
         return undefined;

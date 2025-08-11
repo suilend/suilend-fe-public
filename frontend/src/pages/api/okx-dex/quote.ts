@@ -21,7 +21,8 @@ const getQuote = async (
   const queryString = "?" + new URLSearchParams(params).toString();
   const headers = getHeaders(timestamp, "GET", requestPath, queryString);
 
-  const res = await fetch(`https://web3.okx.com${requestPath}${queryString}`, {
+  const url = `https://web3.okx.com${requestPath}${queryString}`;
+  const res = await fetch(url, {
     method: "GET",
     headers,
   });
