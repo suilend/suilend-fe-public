@@ -148,7 +148,7 @@ export default function SsuiStrategyCard() {
                   {Array.from({ length: 50 + 1 }).map((_, i, arr) => (
                     <div
                       key={i}
-                      className="h-[16px] w-[2px] rounded-sm bg-muted/20"
+                      className="h-[16px] w-[max(0.5%,2px)] rounded-sm bg-muted/20"
                       style={{
                         backgroundColor: healthPercent.gte(
                           i * (100 / (arr.length - 1)),
