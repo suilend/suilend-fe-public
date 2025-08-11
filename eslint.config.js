@@ -19,7 +19,6 @@ module.exports = [
     plugins: {
       prettier,
     },
-
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "warn",
@@ -73,4 +72,10 @@ module.exports = [
       ],
     },
   },
+  {
+    files: ['send/src/fetchers/**/*.ts'], // wherever you have these non-component hooks
+    rules: {
+      'react-hooks/rules-of-hooks': 'off'
+    }
+  }
 ];

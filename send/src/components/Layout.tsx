@@ -10,7 +10,7 @@ export default function Layout({ children }: PropsWithChildren) {
       <AppHeader />
 
       {/* Content */}
-      <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-20">
+      <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-10">
         <Container className="flex-1">{children}</Container>
       </div>
 

@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import HeaderBase from "@/components/layout/HeaderBase";
-import Logo, { SteammLogotype } from "@/components/layout/Logo";
+import Logo from "@/components/layout/Logo";
+import NavigationLinks from "@/components/layout/NavigationLinks";
 
 export default function AppHeader() {
   return (
@@ -11,9 +12,11 @@ export default function AppHeader() {
         <Link href="https://suilend.com">
           <Logo />
         </Link>
-        <Link href="https://steamm.fi">
-          <SteammLogotype />
-        </Link>
+
+        {/* Links */}
+        <div className="flex flex-row items-center gap-8 max-lg:hidden">
+          <NavigationLinks />
+        </div>
       </div>
     </HeaderBase>
   );
