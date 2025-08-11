@@ -220,7 +220,9 @@ export default function ClaimRewardsDropdownMenu({
             labelClassName="uppercase"
             disabled={
               isClaiming ||
-              (!isSwapping && tokensThatCanBeDeposited.length === 0) ||
+              (!isSwapping &&
+                isDepositing &&
+                tokensThatCanBeDeposited.length === 0) ||
               (isSwapping &&
                 isDepositing &&
                 !canDepositAsMap[swappingToCoinType])
