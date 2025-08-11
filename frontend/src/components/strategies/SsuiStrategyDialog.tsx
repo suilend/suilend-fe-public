@@ -555,6 +555,32 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     sSuiToSuiExchangeRate,
     reserve.token.decimals,
   ]);
+  const generalWithdrawFeesPercent = useMemo(() => {
+    const { sSuiDepositedAmount, obligation } = simulateDeposit(
+      new BigNumber(10),
+      NORMALIZED_SUI_COINTYPE,
+      exposure,
+    );
+    const tvlSuiAmount = getTvlSuiAmount(obligation);
+
+    const unloopPercent = new BigNumber(100);
+    const withdrawnSsuiAmount = sSuiDepositedAmount.times(
+      unloopPercent.div(100),
+    );
+
+    // TODO: Add sSUI mint fee (currently 0)
+    const sSuiRedeemFeesAmount = getSsuiRedeemFee(withdrawnSsuiAmount);
+
+    return new BigNumber(sSuiRedeemFeesAmount.times(sSuiToSuiExchangeRate))
+      .div(tvlSuiAmount)
+      .times(100);
+  }, [
+    simulateDeposit,
+    exposure,
+    getTvlSuiAmount,
+    getSsuiRedeemFee,
+    sSuiToSuiExchangeRate,
+  ]);
 
   const adjustFeesSuiAmount = useMemo(() => {
     if (!isObligationLooping(obligation)) return new BigNumber(0);
@@ -1907,14 +1933,22 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 />
 
                 {selectedTab === Tab.DEPOSIT ? (
-                  <LabelWithValue
-                    label="Deposit fee"
-                    value={`${formatToken(depositFeesAmount, {
-                      dp: reserve.token.decimals,
-                      trimTrailingZeros: true,
-                    })} ${reserve.token.symbol}`}
-                    horizontal
-                  />
+                  <>
+                    <LabelWithValue
+                      label="Deposit fee"
+                      value={`${formatToken(depositFeesAmount, {
+                        dp: reserve.token.decimals,
+                        trimTrailingZeros: true,
+                      })} ${reserve.token.symbol}`}
+                      horizontal
+                    />
+
+                    <LabelWithValue
+                      label="Withdraw fee"
+                      value={formatPercent(generalWithdrawFeesPercent)}
+                      horizontal
+                    />
+                  </>
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
                     label="Withdraw fee"
