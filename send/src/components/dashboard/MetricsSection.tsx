@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMetrics } from "@/fetchers/fetchMetrics";
 import { SEND_SUPPLY } from "@/lib/constants";
+import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
 
 import SuilendLogo from "../layout/SuilendLogo";
 
@@ -19,51 +20,48 @@ const MetricsSection = () => {
     <Card>
       <CardContent className="p-6">
         <div className="flex justify-between">
-          <div>
-            <div className="text-xs font-sans text-muted-foreground mb-2">
-              Market Cap
+          <div className="flex flex-col items-start">
+            <div className="text-xs font-sans text-muted-foreground mb-2 text-left">
+              <span className="hidden lg:block">Market Cap</span>
+              <span className="block lg:hidden">Mcap</span>
             </div>
-            <div className="text-[15px]">
+            <div className="text-[13px] lg:text-[15px] text-left">
               {isLoading ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
-                new Intl.NumberFormat("en-US", {
-                  notation: "compact",
-                  maximumFractionDigits: 2,
-                  style: "currency",
-                  currency: "USD",
-                }).format(marketCap)
+                toCompactCurrency(marketCap)
               )}
             </div>
           </div>
-          <div>
-            <div className="text-xs font-sans text-muted-foreground mb-2">
+          <div className="flex flex-col items-center">
+            <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
               Revenue
             </div>
-            <div className="text-[15px]">
+            <div className="text-[13px] lg:text-[15px]">
               {isLoading ? (
                 <Skeleton className="h-4 w-20" />
               ) : (
-                `$${(metrics?.revenue ?? 0).toLocaleString()}`
+                toCompactCurrency(metrics?.revenue ?? 0)
               )}
             </div>
           </div>
-          <div>
-            <div className="text-xs font-sans text-muted-foreground mb-2">
+          <div className="flex flex-col items-center">
+            <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
               Treasury
             </div>
-            <div className="text-[15px]">
+            <div className="text-[13px] lg:text-[15px] text-center">
               {isLoading ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
-                `$${(metrics?.treasury ?? 0).toLocaleString()}`
+                toCompactCurrency(metrics?.treasury ?? 0)
               )}
             </div>
           </div>
 
-          <div>
-            <div className="text-xs font-sans text-muted-foreground flex items-center gap-2 mb-2">
-              Total buybacks
+          <div className="flex flex-col items-end">
+            <div className="text-xs font-sans text-muted-foreground flex items-center gap-1 lg:gap-2 mb-2 text-right">
+              <span className="hidden lg:block">Total buybacks</span>
+              <span className="block lg:hidden">Buybacks</span>
               {showUsdValue ? (
                 <ArrowRightLeft
                   className="w-4 cursor-pointer h-4"
@@ -76,15 +74,18 @@ const MetricsSection = () => {
                 />
               )}
             </div>
-            <div className="text-[15px] flex items-center gap-1">
+            <div className="text-[13px] lg:text-[15px] flex items-center gap-1 text-right">
               {isLoading ? (
                 <Skeleton className="h-4 w-24" />
               ) : showUsdValue ? (
-                `$${((metrics?.totalBuybacks ?? 0) * (metrics?.currentPrice ?? 0) || 0).toLocaleString()}`
+                toCompactCurrency(
+                  (metrics?.totalBuybacks ?? 0) *
+                    (metrics?.currentPrice ?? 0) || 0,
+                )
               ) : (
                 <>
                   <SuilendLogo size={12} />
-                  {(metrics?.totalBuybacks ?? 0).toLocaleString()}
+                  {toCompactNumber(metrics?.totalBuybacks ?? 0)}
                 </>
               )}
             </div>

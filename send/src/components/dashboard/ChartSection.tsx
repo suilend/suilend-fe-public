@@ -8,13 +8,12 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { Period } from "@/fetchers/fetchCharts";
 
 import RevenueChart from "./RevenueChart";
 
-type Timeframe = "7D" | "1M" | "ALL";
-
 const ChartSection = () => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Timeframe>("1M");
+  const [selectedTimeframe, setSelectedTimeframe] = useState<Period>("30d");
   const [isCumulative, setIsCumulative] = useState(true);
 
   const [enabledMetrics, setEnabledMetrics] = useState({
@@ -39,20 +38,36 @@ const ChartSection = () => {
         <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-start md:justify-between">
           {/* Left cluster: timeframe + cumulative */}
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 border border-border rounded-md overflow-hidden bg-tabBg">
-              {(["7D", "1M", "ALL"] as Timeframe[]).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setSelectedTimeframe(tf)}
-                  className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors ${
-                    selectedTimeframe === tf
-                      ? "text-white bg-card-foreground"
-                      : "bg-transparent text-card-foreground"
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <span className="text-xs md:text-sm text-muted-foreground">
+                Timeframe
+              </span>
+              <Select
+                value={selectedTimeframe}
+                onValueChange={(v) => setSelectedTimeframe(v as Period)}
+              >
+                <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm bg-background">
+                  {(() => {
+                    const labelMap: Record<Period, string> = {
+                      "1d": "1D",
+                      "7d": "7D",
+                      "30d": "30D",
+                      "90d": "90D",
+                      ytd: "YTD",
+                      alltime: "All time",
+                    };
+                    return labelMap[selectedTimeframe];
+                  })()}
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1d">1D</SelectItem>
+                  <SelectItem value="7d">7D</SelectItem>
+                  <SelectItem value="30d">30D</SelectItem>
+                  <SelectItem value="90d">90D</SelectItem>
+                  <SelectItem value="ytd">YTD</SelectItem>
+                  <SelectItem value="alltime">All time</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -69,76 +84,6 @@ const ChartSection = () => {
               </label>
             </div>
           </div>
-
-          {/* Right cluster: Boxed legend with checkboxes */}
-          <div className="border border-border rounded-lg p-3 md:p-4 bg-tabBg w-full md:w-auto">
-            {/* Metrics */}
-            <div>
-              <p className="text-xs md:text-sm text-muted-foreground mb-2">
-                Metrics
-              </p>
-              <div className="flex flex-col gap-2">
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-current"
-                    checked={enabledMetrics.revenue}
-                    onChange={() => toggleMetric("revenue")}
-                  />
-                  <span
-                    className="w-3 h-3 rounded-sm"
-                    style={{ backgroundColor: "hsl(var(--primary))" }}
-                  />
-                  <span className="text-sm">Revenue</span>
-                  <Select
-                    value={revenueScope}
-                    onValueChange={(v) =>
-                      setRevenueScope(v as "all" | "suilend" | "steamm")
-                    }
-                  >
-                    <SelectTrigger className="h-7 px-2 py-1 text-xs bg-background ml-2">
-                      {revenueScope === "all"
-                        ? "All"
-                        : revenueScope === "suilend"
-                          ? "Suilend"
-                          : "STEAMM"}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="suilend">Suilend</SelectItem>
-                      <SelectItem value="steamm">STEAMM</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-current"
-                    checked={enabledMetrics.buybacks}
-                    onChange={() => toggleMetric("buybacks")}
-                  />
-                  <span
-                    className="w-3 h-3 rounded-sm opacity-60"
-                    style={{ backgroundColor: "hsl(var(--primary))" }}
-                  />
-                  <span className="text-sm">Buybacks</span>
-                </label>
-                <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="accent-current"
-                    checked={enabledMetrics.price}
-                    onChange={() => toggleMetric("price")}
-                  />
-                  <span
-                    className="w-3 h-3 rounded-sm"
-                    style={{ backgroundColor: "hsl(var(--muted-foreground))" }}
-                  />
-                  <span className="text-sm">Price</span>
-                </label>
-              </div>
-            </div>
-          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -148,6 +93,102 @@ const ChartSection = () => {
           enabledMetrics={enabledMetrics}
           revenueScope={revenueScope}
         />
+
+        {/* Horizontal legend below chart */}
+        <div className="mt-4 w-full flex flex-wrap items-center gap-6">
+          {/* Revenue toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Toggle Revenue"
+              onClick={() => toggleMetric("revenue")}
+              className="w-4 h-4 rounded-[3px] p-0 flex items-center justify-center"
+              style={{ backgroundColor: "transparent" }}
+            >
+              {/* Diagonally split square: left (Suilend), right (STEAMM) */}
+              <svg width="16" height="16" viewBox="0 0 16 16">
+                {(() => {
+                  const showFill = enabledMetrics.revenue;
+                  const scope = revenueScope;
+                  const suilendFill =
+                    showFill && (scope === "all" || scope === "suilend");
+                  const steammFill =
+                    showFill && (scope === "all" || scope === "steamm");
+                  return (
+                    <g>
+                      {/* Left triangle (top-left) – Suilend */}
+                      <polygon
+                        points="0,0 16,0 0,16"
+                        fill={suilendFill ? "hsl(var(--primary))" : "none"}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                      />
+                      {/* Right triangle (bottom-right) – STEAMM */}
+                      <polygon
+                        points="16,0 16,16 0,16"
+                        fill={steammFill ? "hsl(var(--secondary))" : "none"}
+                        stroke="hsl(var(--secondary))"
+                        strokeWidth={2}
+                      />
+                    </g>
+                  );
+                })()}
+              </svg>
+            </button>
+            <span className="text-sm">Revenue</span>
+            <Select
+              value={revenueScope}
+              onValueChange={(v) =>
+                setRevenueScope(v as "all" | "suilend" | "steamm")
+              }
+            >
+              <SelectTrigger className="h-7 px-2 py-1 text-xs bg-background ml-2">
+                {revenueScope === "all"
+                  ? "All"
+                  : revenueScope === "suilend"
+                    ? "Suilend"
+                    : "STEAMM"}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="suilend">Suilend</SelectItem>
+                <SelectItem value="steamm">STEAMM</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Buybacks toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Toggle Buybacks"
+              onClick={() => toggleMetric("buybacks")}
+              className="w-4 h-4 rounded-[3px]"
+              style={{
+                backgroundColor: enabledMetrics.buybacks
+                  ? "#ffffff"
+                  : "transparent",
+                border: `2px solid #ffffff`,
+                opacity: enabledMetrics.buybacks ? 1 : 0.8,
+              }}
+            />
+            <span className="text-sm">Buybacks</span>
+          </div>
+
+          {/* Price toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              aria-label="Toggle Price"
+              onClick={() => toggleMetric("price")}
+              className="w-4 h-4 rounded-[3px]"
+              style={{
+                backgroundColor: enabledMetrics.price
+                  ? "hsl(var(--muted-foreground))"
+                  : "transparent",
+                border: `2px solid hsl(var(--muted-foreground))`,
+              }}
+            />
+            <span className="text-sm">Price</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

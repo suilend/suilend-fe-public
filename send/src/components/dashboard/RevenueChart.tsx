@@ -13,8 +13,6 @@ import {
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
 
-type Timeframe = "7D" | "1M" | "ALL";
-
 type MetricKey = "revenue" | "buybacks" | "price";
 
 type ProtocolKey = "suilend" | "steamm";
@@ -23,7 +21,7 @@ type EnabledMetrics = Record<MetricKey, boolean>;
 type RevenueScope = "all" | ProtocolKey;
 
 type ChartProps = {
-  timeframe: Timeframe;
+  timeframe: Period;
   isCumulative: boolean;
   enabledMetrics: EnabledMetrics;
   revenueScope: RevenueScope;
@@ -42,17 +40,11 @@ type RawPoint = {
 const COLOR_SUILEND = "hsl(var(--primary))";
 const COLOR_STEAMM = "hsl(var(--secondary))";
 const COLOR_PRICE_LINE = "hsl(var(--muted-foreground))";
-const COLOR_BUYBACKS = "hsl(var(--primary))"; // will render with lower opacity
+const COLOR_BUYBACKS = "#ffffff"; // white for better distinction
 
 function buildPath(points: { x: number; y: number }[]): string {
   if (points.length === 0) return "";
   return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-}
-
-function mapTimeframeToPeriod(tf: Timeframe): Period {
-  if (tf === "7D") return "7d";
-  if (tf === "1M") return "30d";
-  return "90d"; // ALL -> 90d (closest available)
 }
 
 function formatLabel(ts: number) {
@@ -60,8 +52,16 @@ function formatLabel(ts: number) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function useProcessedData(timeframe: Timeframe, isCumulative: boolean) {
-  const period = mapTimeframeToPeriod(timeframe);
+function formatTooltipDate(ts: number) {
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
+  });
+}
+
+function useProcessedData(period: Period, isCumulative: boolean) {
   const {
     data: revenueData,
     isLoading: loadingRev,
@@ -118,6 +118,7 @@ function useProcessedData(timeframe: Timeframe, isCumulative: boolean) {
   const processed = useMemo(() => {
     if (raw.length === 0)
       return [] as Array<{
+        timestamp: number;
         label: string;
         suilend: { revenue: number; buybacks: number };
         steamm: { revenue: number; buybacks: number };
@@ -126,6 +127,7 @@ function useProcessedData(timeframe: Timeframe, isCumulative: boolean) {
 
     if (!isCumulative) {
       return raw.map((pt) => ({
+        timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: pt.suilendRevenueM, buybacks: pt.buybacksM },
         steamm: { revenue: pt.steammRevenueM, buybacks: 0 },
@@ -141,6 +143,7 @@ function useProcessedData(timeframe: Timeframe, isCumulative: boolean) {
       cumSteamm += pt.steammRevenueM;
       cumBuy += pt.buybacksM;
       return {
+        timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: cumSuilend, buybacks: cumBuy },
         steamm: { revenue: cumSteamm, buybacks: 0 },
@@ -160,7 +163,7 @@ const RevenueChart = ({
 }: ChartProps) => {
   const chartWidth = 860;
   const chartHeight = 300;
-  const margin = { top: 16, right: 20, left: 48, bottom: 28 };
+  const margin = { top: 16, right: 20, left: 48, bottom: 32 };
   const width = chartWidth - margin.left - margin.right;
   const height = chartHeight - margin.top - margin.bottom;
 
@@ -298,19 +301,26 @@ const RevenueChart = ({
           </g>
         )}
 
-        {/* X labels */}
-        {data.map((d, i) => (
-          <text
-            key={i}
-            x={margin.left + getX(i)}
-            y={margin.top + height + 16}
-            textAnchor="middle"
-            fill="hsl(var(--muted-foreground))"
-            fontSize="10"
-          >
-            {d.label}
-          </text>
-        ))}
+        {/* X labels - reduce density based on data length */}
+        {(() => {
+          const maxLabels = 16; // cap visible labels for readability
+          const step = Math.max(1, Math.floor(data.length / maxLabels));
+          return data.map((d, i) => {
+            if (i % step !== 0 && i !== data.length - 1) return null;
+            return (
+              <text
+                key={i}
+                x={margin.left + getX(i)}
+                y={margin.top + height + 16}
+                textAnchor="middle"
+                fill="hsl(var(--muted-foreground))"
+                fontSize="10"
+              >
+                {d.label}
+              </text>
+            );
+          });
+        })()}
 
         {/* Side-by-side bars: left = Revenue (stacked by protocol per scope), right = Buybacks (single) */}
         {data.map((d, i) => {
@@ -531,7 +541,9 @@ const RevenueChart = ({
                   hover.type === "revenue"
                     ? `Revenue – ${(hover as { protocol: ProtocolKey }).protocol === "suilend" ? "Suilend" : "STEAMM"}`
                     : "Buybacks";
-                const text = `${label}: $${value.toFixed(2)}M`;
+                const ts = data[i]?.timestamp;
+                const timeStr = ts ? ` (${formatTooltipDate(ts)})` : "";
+                const text = `${label}: $${value.toFixed(2)}M${timeStr}`;
                 return (
                   <g>
                     <rect
@@ -567,7 +579,7 @@ const RevenueChart = ({
                     <rect
                       x={x}
                       y={y}
-                      width={100}
+                      width={140}
                       height={24}
                       rx={4}
                       ry={4}
@@ -580,7 +592,13 @@ const RevenueChart = ({
                       fill="hsl(var(--foreground))"
                       fontSize="12"
                     >
-                      Price: ${hover.value.toFixed(2)}
+                      {(() => {
+                        const ts2 = data[i]?.timestamp;
+                        const timeStr2 = ts2
+                          ? ` (${formatTooltipDate(ts2)})`
+                          : "";
+                        return `Price: $${hover.value.toFixed(2)}${timeStr2}`;
+                      })()}
                     </text>
                   </g>
                 );

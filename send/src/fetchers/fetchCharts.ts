@@ -1,6 +1,6 @@
 import useSWR from "swr";
 
-export type Period = "1d" | "7d" | "30d" | "90d";
+export type Period = "1d" | "7d" | "30d" | "90d" | "alltime" | "ytd";
 
 export type PricePoint = { timestamp: number; price: number };
 export type BuybacksPoint = {

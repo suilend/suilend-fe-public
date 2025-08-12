@@ -1,15 +1,15 @@
-import {
-  AlertCircle,
-  ChevronsUpDown,
-  DollarSign,
-  ExternalLink,
-} from "lucide-react";
+import Image from "next/image";
+
+import { AlertCircle, ExternalLink } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTransactions } from "@/fetchers/fetchTransactions";
+import { ASSETS_URL } from "@/lib/constants";
+import { toCompactNumber } from "@/lib/utils";
 
 import SuilendLogo from "../layout/SuilendLogo";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const TransactionsSection = () => {
   const { data, isLoading, error } = getTransactions(50);
@@ -24,25 +24,22 @@ const TransactionsSection = () => {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      Date
-                      <ChevronsUpDown className="w-3 h-3" />
-                    </div>
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                    Date
                   </th>
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Type
                   </th>
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Amount
                   </th>
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
-                    Size
-                  </th>
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Price
                   </th>
-                  <th className="text-xs text-left py-3 px-4 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                    Swapped from
+                  </th>
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Txn
                   </th>
                 </tr>
@@ -58,32 +55,51 @@ const TransactionsSection = () => {
                 {!isLoading &&
                   transactions.map((tx, index) => (
                     <tr key={index} className="border-b border-border/50">
-                      <td className="py-3 px-4 text-sm">
-                        {new Date(tx.timestamp).toLocaleString()}
+                      <td className="py-3 text-sm">
+                        {new Date(tx.timestamp)
+                          .toLocaleString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "2-digit",
+                            hour: "numeric",
+                            minute: "numeric",
+                            hour12: false,
+                          })
+                          .replace(",", "")}
                       </td>
-                      <td className="py-3 px-4 text-sm">Buyback</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 text-sm">SWAP</td>
+                      <td className="py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
                             <SuilendLogo size={12} />
                           </div>
-                          <span className="text-sm">
-                            {tx.sendAmount.toLocaleString()}
-                          </span>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <span className="text-sm">
+                                {toCompactNumber(tx.sendAmount)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {tx.sendAmount.toLocaleString()}
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm">
-                        ${tx.usdValue.toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 text-sm">${tx.price.toFixed(4)}</td>
+                      <td className="py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 bg-secondary rounded-full flex items-center justify-center">
-                            <DollarSign className="w-2.5 h-2.5 text-secondary-foreground" />
+                            <Image
+                              src={`${ASSETS_URL}/icons/sui.png`}
+                              alt="Suilend"
+                              width={16}
+                              height={16}
+                            />
                           </div>
                           <span className="text-sm">{tx.price.toFixed(4)}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 flex items-center justify-end">
                         <a
                           href={`https://suiscan.xyz/tx/${tx.digest}`}
                           target="_blank"
