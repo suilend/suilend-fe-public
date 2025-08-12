@@ -369,6 +369,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       appData.suilendClient,
       getClaimRewardSimulatedAmount,
       cetusSdk,
+      appData.coinMetadataMap,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,

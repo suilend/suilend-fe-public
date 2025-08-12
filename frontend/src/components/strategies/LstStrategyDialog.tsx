@@ -9,11 +9,14 @@ import {
   useState,
 } from "react";
 
+import * as Cetus from "@cetusprotocol/aggregator-sdk";
 import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import { TransactionObjectArgument } from "@mysten/sui/transactions";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
+import BN from "bn.js";
 import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
@@ -34,10 +37,12 @@ import {
   NORMALIZED_SUI_COINTYPE,
   TX_TOAST_DURATION,
   formatInteger,
+  formatList,
   formatPercent,
   formatToken,
   getAllCoins,
   getBalanceChange,
+  getToken,
   isSendPoints,
   isSui,
   mergeAllCoins,
@@ -57,8 +62,10 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import Spinner from "@/components/shared/Spinner";
 import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
+import TokenLogo from "@/components/shared/TokenLogo";
+import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
 import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
@@ -71,6 +78,8 @@ import {
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +159,9 @@ export default function LstStrategyDialog({
 
   const { md } = useBreakpoint();
 
+  // send.ag
+  const cetusSdk = useCetusSdk();
+
   // Tabs
   const tabs = [
     { id: Tab.DEPOSIT, title: "Deposit" },
@@ -228,6 +240,253 @@ export default function LstStrategyDialog({
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
+
+  // Rewards
+  const rewardsMap: Record<string, RewardSummary[]> = {};
+  const claimableRewardsMap: Record<string, BigNumber> = {};
+  if (obligation) {
+    Object.values(userData.rewardMap).flatMap((rewards) =>
+      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+        if (isSendPoints(r.stats.rewardCoinType)) return;
+        if (!r.obligationClaims[obligation.id]) return;
+        if (r.obligationClaims[obligation.id].claimableAmount.eq(0)) return;
+
+        const minAmount = 10 ** (-1 * r.stats.mintDecimals);
+        if (r.obligationClaims[obligation.id].claimableAmount.lt(minAmount))
+          return;
+
+        if (!rewardsMap[r.stats.rewardCoinType])
+          rewardsMap[r.stats.rewardCoinType] = [];
+        rewardsMap[r.stats.rewardCoinType].push(r);
+      }),
+    );
+
+    Object.entries(rewardsMap).forEach(([coinType, rewards]) => {
+      claimableRewardsMap[coinType] = rewards.reduce(
+        (acc, reward) =>
+          acc.plus(reward.obligationClaims[obligation.id].claimableAmount),
+        new BigNumber(0),
+      );
+    });
+  }
+
+  const hasClaimableRewards = Object.values(claimableRewardsMap).some(
+    (amount) => amount.gt(0),
+  );
+
+  // Rewards - compound
+  const [isCompoundingRewards, setIsCompoundingRewards] =
+    useState<boolean>(false);
+
+  const compoundRewards = async (_transaction?: Transaction) => {
+    if (!address) throw Error("Wallet not connected");
+    if (!strategyOwnerCap || !obligation)
+      throw Error("StrategyOwnerCap or Obligation not found");
+
+    const transaction = _transaction
+      ? Transaction.from(_transaction)
+      : new Transaction();
+
+    const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
+      .flat()
+      .map((r) => ({
+        reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
+        rewardIndex: BigInt(r.stats.rewardIndex),
+        rewardCoinType: r.stats.rewardCoinType,
+        side: r.stats.side,
+      }));
+
+    // 1) Claim and merge coins
+    const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
+    for (const reward of rewards) {
+      const [claimedCoin] = strategyClaimRewards(
+        reward.rewardCoinType,
+        strategyOwnerCap.id,
+        reward.reserveArrayIndex,
+        reward.rewardIndex,
+        reward.side,
+        transaction,
+      );
+
+      if (mergeCoinsMap[reward.rewardCoinType] === undefined)
+        mergeCoinsMap[reward.rewardCoinType] = [];
+      mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
+    }
+
+    const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
+    for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+      const mergedCoin = coins[0];
+      if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
+
+      mergedCoinsMap[rewardCoinType] = mergedCoin;
+    }
+
+    // 2) Prepare
+    const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
+      (coinType) => coinType === lstReserve.coinType,
+    );
+    const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
+      (coinType) => coinType !== lstReserve.coinType,
+    );
+
+    let resultCoin: TransactionObjectArgument | undefined = undefined;
+
+    // 3.1) Non-swapped coins
+    for (const [coinType, coin] of Object.entries(mergedCoinsMap).filter(
+      ([coinType]) => nonSwappedCoinTypes.includes(coinType),
+    )) {
+      if (resultCoin) transaction.mergeCoins(resultCoin, [coin]);
+      else resultCoin = coin;
+    }
+
+    // 3.2) Swapped coins
+    // 3.2.1) Get routers
+    const amountsAndSortedQuotesMap: Record<
+      string,
+      {
+        coin: TransactionObjectArgument;
+        routers: Cetus.RouterData;
+      }
+    > = Object.fromEntries(
+      await Promise.all(
+        Object.entries(mergedCoinsMap)
+          .filter(([coinType]) => swappedCoinTypes.includes(coinType))
+          .map(([coinType, coin]) =>
+            (async () => {
+              // Get amount
+              const amount = claimableRewardsMap[coinType]; // Use underestimate (rewards keep accruing)
+
+              // Get routes
+              const routers = await cetusSdk.findRouters({
+                from: coinType,
+                target: lstReserve.coinType,
+                amount: new BN(
+                  amount
+                    .times(10 ** appData.coinMetadataMap[coinType].decimals)
+                    .integerValue(BigNumber.ROUND_DOWN)
+                    .toString(),
+                ), // Underestimate (rewards keep accruing)
+                byAmountIn: true,
+                splitCount: new BigNumber(
+                  new BigNumber(amount)
+                    .div(10 ** appData.coinMetadataMap[coinType].decimals)
+                    .times(rewardsMap[coinType][0].stats.price ?? 1),
+                ).gte(10)
+                  ? undefined // Don't limit splitCount if amount is >= $10
+                  : 1,
+              });
+              if (!routers) throw new Error("No swap quote found");
+              console.log("[compoundRewards] routers", {
+                coinType,
+                routers,
+              });
+
+              return [coinType, { coin, routers }];
+            })(),
+          ),
+      ),
+    );
+    console.log("[compoundRewards] amountsAndSortedQuotesMap", {
+      amountsAndSortedQuotesMap,
+    });
+
+    // 3.2.2) Swap
+    for (const [coinType, { coin: coinIn, routers }] of Object.entries(
+      amountsAndSortedQuotesMap,
+    )) {
+      console.log("[compoundRewards] swapping coinType", coinType);
+      const slippagePercent = 3;
+
+      let coinOut: TransactionObjectArgument;
+      try {
+        coinOut = await cetusSdk.fixableRouterSwap({
+          routers,
+          inputCoin: coinIn,
+          slippage: slippagePercent / 100,
+          txb: transaction,
+          partner: CETUS_PARTNER_ID,
+        });
+      } catch (err) {
+        throw new Error("No swap quote found");
+      }
+
+      if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
+      else resultCoin = coinOut;
+    }
+
+    // 4) Deposit
+    if (!resultCoin) throw new Error("No coin to deposit or transfer");
+    strategyDeposit(
+      resultCoin,
+      lstReserve.coinType,
+      strategyOwnerCap.id,
+      appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
+      transaction,
+    );
+
+    return transaction;
+  };
+
+  const onCompoundRewardsClick = async () => {
+    if (isCompoundingRewards) return;
+
+    setIsCompoundingRewards(true);
+
+    try {
+      if (!address) throw Error("Wallet not connected");
+      if (!strategyOwnerCap || !obligation)
+        throw Error("StrategyOwnerCap or Obligation not found");
+
+      const transaction = await compoundRewards();
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success(
+        [
+          "Compounded",
+          formatList(
+            Object.keys(claimableRewardsMap).map(
+              (coinType) => appData.coinMetadataMap[coinType].symbol,
+            ),
+          ),
+          "rewards",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        },
+      );
+    } catch (err) {
+      Sentry.captureException(err);
+      console.error(err);
+      showErrorToast(
+        [
+          "Failed to compound",
+          formatList(
+            Object.keys(claimableRewardsMap).map(
+              (coinType) => appData.coinMetadataMap[coinType].symbol,
+            ),
+          ),
+          "rewards",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        err as Error,
+        undefined,
+        true,
+      );
+    } finally {
+      setIsCompoundingRewards(false);
+      refresh();
+    }
+  };
 
   // Slider
   const [depositSliderValue, setDepositSliderValue] = useState<string>(
@@ -1251,63 +1510,12 @@ export default function LstStrategyDialog({
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
-    // // 1) Claim and deposit pending rewards
-    // // 1.1) Get rewards
-    // const rewardsMap: Record<string, RewardSummary[]> = {};
-    // Object.values(userData.rewardMap).flatMap((rewards) =>
-    //   [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-    //     if (isSendPoints(r.stats.rewardCoinType)) return;
-    //     if (!r.obligationClaims[obligation.id]) return;
-
-    //     if (!rewardsMap[r.stats.rewardCoinType])
-    //       rewardsMap[r.stats.rewardCoinType] = [];
-    //     rewardsMap[r.stats.rewardCoinType].push(r);
-    //   }),
-    // );
-    // const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
-    //   .flat()
-    //   .map((r) => ({
-    //     reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
-    //     rewardIndex: BigInt(r.stats.rewardIndex),
-    //     rewardCoinType: r.stats.rewardCoinType,
-    //     side: r.stats.side,
-    //   }));
-
-    // // 1.2) Claim rewards and merge coins
-    // const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
-    // for (const reward of rewards) {
-    //   const [claimedCoin] = strategyClaimRewards(
-    //     reward.rewardCoinType,
-    //     strategyOwnerCapId,
-    //     reward.reserveArrayIndex,
-    //     reward.rewardIndex,
-    //     reward.side,
-    //     transaction,
-    //   );
-
-    //   if (mergeCoinsMap[reward.rewardCoinType] === undefined)
-    //     mergeCoinsMap[reward.rewardCoinType] = [];
-    //   mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
-    // }
-
-    // const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
-    // for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
-    //   const mergedCoin = coins[0];
-    //   if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
-
-    //   mergedCoinsMap[rewardCoinType] = mergedCoin;
-    // }
-
-    // // 1.3) Deposit rewards
-    // for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
-    //   strategyDeposit(
-    //     coin,
-    //     coinType,
-    //     strategyOwnerCapId,
-    //     appData.suilendClient.findReserveArrayIndex(coinType),
-    //     transaction,
-    //   );
-    // }
+    // 1) Compound rewards
+    try {
+      transaction = await compoundRewards(transaction);
+    } catch (err) {
+      console.error(err);
+    }
 
     // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
@@ -1661,8 +1869,67 @@ export default function LstStrategyDialog({
           </DialogPrimitive.Close>
         }
       >
-        <div className="mb-4 w-full">
+        <div className="mb-4 flex h-10 w-full flex-row items-center justify-between">
           <LstStrategyHeader strategyType={strategyType} />
+
+          {obligation && hasPosition(obligation) && hasClaimableRewards && (
+            <div className="flex h-10 flex-row items-center gap-4 rounded-sm border px-2">
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-1">
+                    {Object.entries(claimableRewardsMap).map(
+                      ([coinType, amount]) => (
+                        <div
+                          key={coinType}
+                          className="flex flex-row items-center gap-2"
+                        >
+                          <TokenLogo
+                            token={getToken(
+                              coinType,
+                              appData.coinMetadataMap[coinType],
+                            )}
+                            size={16}
+                          />
+                          <TLabelSans className="text-foreground">
+                            {formatToken(amount, {
+                              dp: appData.coinMetadataMap[coinType].decimals,
+                            })}{" "}
+                            {appData.coinMetadataMap[coinType].symbol}
+                          </TLabelSans>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                }
+              >
+                <div className="w-max">
+                  <TokenLogos
+                    tokens={Object.keys(claimableRewardsMap).map((coinType) =>
+                      getToken(coinType, appData.coinMetadataMap[coinType]),
+                    )}
+                    size={16}
+                  />
+                </div>
+              </Tooltip>
+
+              <Button
+                className="w-[92px] md:w-[159px]"
+                labelClassName="uppercase"
+                variant="secondary"
+                size="sm"
+                disabled={isCompoundingRewards}
+                onClick={onCompoundRewardsClick}
+              >
+                {isCompoundingRewards ? (
+                  <Spinner size="sm" />
+                ) : md ? (
+                  "Compound rewards"
+                ) : (
+                  "Compound"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div

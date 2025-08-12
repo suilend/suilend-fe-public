@@ -160,6 +160,7 @@ function Page() {
           <TBodySans className="text-lg">Learn more</TBodySans>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {/* 1 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What is SEND Strategies?</TBodySans>
               <TLabelSans>
@@ -170,7 +171,8 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
+            {/* 2 */}
+            {/* <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What strategies are available?</TBodySans>
               <TLabelSans>
                 1. <span className="font-medium">sSUI/SUI</span> Looping
@@ -183,22 +185,11 @@ function Page() {
                   ),
                 )}{" "}
                 APR from sSUI rewards and sSUI staking yield.
-                {/* <br />
-                <br />
-                2. <span className="font-medium">stratSUI/SUI</span> Looping
-                strategy that lets you leverage up to 3x, yielding{" "}
-                {formatPercent(
-                  getAprPercent(
-                    StrategyType.stratSUI_SUI_LOOPING,
-                    undefined,
-                    exposureMap[StrategyType.stratSUI_SUI_LOOPING].default,
-                  ),
-                )}{" "}
-                APR from STRAT and sSUI rewards, and stratSUI staking yield. */}
               </TLabelSans>
-            </div>
+            </div> */}
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
+            {/* 3 */}
+            {/* <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How do I deposit?</TBodySans>
               <TLabelSans>
                 In the deposit modal, enter the amount of SUI you want to
@@ -209,9 +200,10 @@ function Page() {
                 After opening a position, {`you'll`} be able to deposit more
                 into the strategy at any time.
               </TLabelSans>
-            </div>
+            </div> */}
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
+            {/* 4 */}
+            {/* <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How do I withdraw?</TBodySans>
               <TLabelSans>
                 In the withdraw modal, enter the amount of SUI you want to
@@ -222,8 +214,9 @@ function Page() {
                 You can either withdraw all of your position at once by pressing
                 the MAX button, or withdraw a portion of it.
               </TLabelSans>
-            </div>
+            </div> */}
 
+            {/* 5 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What are the risks?</TBodySans>
               <TLabelSans>
@@ -242,7 +235,8 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
+            {/* 6 */}
+            {/* <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How does Suilend mitigate risks?</TBodySans>
               <TLabelSans>
                 All DeFi protocols, including Suilend, come with risks, which
@@ -279,19 +273,10 @@ function Page() {
                   Suilend Integration Links
                 </TextLink>
                 .
-                {/* <br />
-                <br />
-                For the sSUI/SUI and stratSUI/SUI strategies:
-                <br />• No oracle risk: The SUI Pyth price feed is used for both
-                assets, as individual feeds for SUI derivative assets are less
-                reliable. Using a unified SUI price feed avoids oracle issues
-                that have occurred in the past (eg. mSOL on Solana).
-                <br />• If either asset depegs, the Suilend team will intervene
-                manually, adjusting LTVs or handling liquidations depending on
-                the nature of the depeg. */}
               </TLabelSans>
-            </div>
+            </div> */}
 
+            {/* 7 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>Do I need to manage my position?</TBodySans>
               <TLabelSans>
@@ -306,6 +291,7 @@ function Page() {
               </TLabelSans>
             </div>
 
+            {/* 8 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How much leverage should I use?</TBodySans>
               <TLabelSans>
