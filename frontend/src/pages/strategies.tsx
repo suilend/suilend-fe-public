@@ -1,8 +1,10 @@
 import Head from "next/head";
+import Link from "next/link";
 
 import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
+import TextLink from "@/components/shared/TextLink";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyCard from "@/components/strategies/LstStrategyCard";
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
@@ -11,6 +13,7 @@ import {
   useLoadedLstStrategyContext,
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 function ComingSoonStrategyCard() {
   return (
@@ -142,6 +145,110 @@ function Page() {
             <ComingSoonStrategyCard />
             <ComingSoonStrategyCard />
             <ComingSoonStrategyCard />
+          </div>
+        </div>
+
+        {/* Learn more */}
+        <div className="flex w-full flex-col gap-3">
+          <TBodySans className="text-lg">Learn more</TBodySans>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>What is SEND Strategies?</TBodySans>
+              <TLabelSans>
+                <span className="font-medium">SEND Strategies</span> is a new
+                Suilend feature that lets you deploy into preset DeFi strategies
+                in one click - turning complex, multi-step processes into a
+                simple, streamlined flow.
+                <br />
+                <br />
+                Our first strategies available:
+                <br />
+                <br />
+                1. <span className="font-medium">sSUI/SUI</span> looping
+                strategy that lets you leverage up to 3x, yielding ~11% APR from
+                both SUI staking rewards and additional sSUI rewards.
+                <br />
+                2. <span className="font-medium">stratSUI/SUI</span> looping
+                strategy that lets you leverage up to 3x, yielding both $STRAT
+                rewards and SUI staking rewards.
+              </TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>How do I deposit?</TBodySans>
+              <TLabelSans>
+                Head to{" "}
+                <TextLink
+                  className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+                  href="https://suilend.fi/strategies"
+                  noIcon
+                >
+                  suilend.fi/strategies
+                </TextLink>
+                .
+                <br />
+                <br />
+                In the deposit modal, enter the amount of SUI you want to
+                deposit into the strategy and sign the transaction request in
+                your Sui wallet.
+                <br />
+                <br />
+                For example, the sSUI/SUI strategy applies <b>3x leverage</b> -
+                for example, depositing 10 SUI gives you 30 SUI of total
+                exposure.
+              </TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>How do I withdraw?</TBodySans>
+              <TLabelSans>
+                In the withdraw modal, enter the amount of SUI you want to
+                withdraw from the strategy, and sign the transaction request in
+                your Sui wallet.
+              </TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>What are the risks?</TBodySans>
+              <TLabelSans>
+                Standard DeFi risks apply here.
+                <br />
+                <br />• Liquidation Risk: if borrows exceed borrow power due to
+                interest accruing
+                <br />• Smart Contract Risk: tied to SpringSui-issued LSTs such
+                as sSUI or stratSUI.
+                <br />• Oracle Risk: {`doesn't`} apply here (see below).
+                <br />
+                <br />
+                Always size your position based on your risk tolerance.
+              </TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>How does Suilend mitigate risks?</TBodySans>
+              <TLabelSans>TODO</TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>Do I need to manage my position?</TBodySans>
+              <TLabelSans>TODO</TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>How much leverage should I use?</TBodySans>
+              <TLabelSans>
+                Higher leverage boosts APR - but also increases risk.
+                <br />
+                <br />
+                For example:
+                <br />• 1.5-2x: Lower risk, moderate yield
+                <br />• 2.5-3x: Higher yield, higher liquidation risk
+                <br />
+                <br />
+                You can adjust leverage at any time through the UI.
+              </TLabelSans>
+            </div>
           </div>
         </div>
       </div>
