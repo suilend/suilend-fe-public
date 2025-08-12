@@ -122,11 +122,11 @@ function Page() {
           </div>
         )}
 
-        {/* Other strategies */}
+        {/* All strategies */}
         <div className="flex w-full flex-col gap-3">
           {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
             hasPosition(obligation),
-          ) && <TBodySans className="text-lg">Other strategies</TBodySans>}
+          ) && <TBodySans className="text-lg">All strategies</TBodySans>}
 
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
