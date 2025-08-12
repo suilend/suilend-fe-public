@@ -12,13 +12,15 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useLoadedLstStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
-interface StrategyHeaderProps {
+interface LstStrategyHeaderProps {
   strategyType: StrategyType;
 }
 
-export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
+export default function LstStrategyHeader({
+  strategyType,
+}: LstStrategyHeaderProps) {
   const { appData } = useLoadedAppContext();
 
   const {

@@ -12,7 +12,7 @@ import {
 import Button from "@/components/shared/Button";
 import StandardSelect from "@/components/shared/StandardSelect";
 import { TLabel } from "@/components/shared/Typography";
-import { Tab } from "@/components/strategies/SsuiStrategyDialog";
+import { Tab as LstStrategyDialogTab } from "@/components/strategies/LstStrategyDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ interface StrategyInputProps {
   reserve: ParsedReserve;
   reserveOptions: { id: string; name: string }[];
   onReserveChange: (value: string) => void;
-  tab: Tab;
+  tab: LstStrategyDialogTab;
   useMaxAmount: boolean;
   onMaxClick: () => void;
 }

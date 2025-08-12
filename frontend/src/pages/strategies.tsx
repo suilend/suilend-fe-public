@@ -4,12 +4,12 @@ import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import StrategyCard from "@/components/strategies/SsuiStrategyCard";
-import StrategyDialog from "@/components/strategies/SsuiStrategyDialog";
+import LstStrategyCard from "@/components/strategies/LstStrategyCard";
+import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
 import {
   LstStrategyContextProvider,
   useLoadedLstStrategyContext,
-} from "@/contexts/SsuiStrategyContext";
+} from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 function ComingSoonStrategyCard() {
@@ -85,7 +85,7 @@ function Page() {
       </Head>
 
       {Object.values(StrategyType).map((strategyType) => (
-        <StrategyDialog key={strategyType} strategyType={strategyType} />
+        <LstStrategyDialog key={strategyType} strategyType={strategyType} />
       ))}
 
       <div className="flex w-full flex-col gap-6">
@@ -107,7 +107,7 @@ function Page() {
 
                 if (!obligation || !hasPosition(obligation)) return null;
                 return (
-                  <StrategyCard
+                  <LstStrategyCard
                     key={strategyType}
                     strategyType={strategyType as StrategyType}
                   />
@@ -130,7 +130,7 @@ function Page() {
 
               if (!obligation || !hasPosition(obligation))
                 return (
-                  <StrategyCard
+                  <LstStrategyCard
                     key={strategyType}
                     strategyType={strategyType as StrategyType}
                   />

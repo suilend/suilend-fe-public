@@ -15,19 +15,21 @@ import { shallowPushQuery } from "@suilend/sui-fe-next";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
+import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
-import { QueryParams as StrategyDialogQueryParams } from "@/components/strategies/SsuiStrategyDialog";
-import StrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedLstStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import usePnlSuiAmountMap from "@/hooks/usePnlSuiAmountMap";
 
-interface StrategyCardProps {
+interface LstStrategyCardProps {
   strategyType: StrategyType;
 }
 
-export default function StrategyCard({ strategyType }: StrategyCardProps) {
+export default function LstStrategyCard({
+  strategyType,
+}: LstStrategyCardProps) {
   const router = useRouter();
 
   const { userData } = useLoadedUserContext();
@@ -90,10 +92,10 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   );
 
   // Open
-  const openStrategyDialog = useCallback(() => {
+  const openLstStrategyDialog = useCallback(() => {
     shallowPushQuery(router, {
       ...router.query,
-      [StrategyDialogQueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
+      [LstStrategyDialogQueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
     });
   }, [router, strategyInfo.queryParam]);
 
@@ -148,11 +150,11 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   return (
     <div
       className="flex w-full cursor-pointer flex-col gap-4 rounded-sm border bg-card p-4 transition-colors hover:bg-muted/10"
-      onClick={openStrategyDialog}
+      onClick={openLstStrategyDialog}
     >
       <div className="flex w-full flex-row justify-between">
         {/* Left */}
-        <StrategyHeader strategyType={strategyType} />
+        <LstStrategyHeader strategyType={strategyType} />
 
         {/* Right */}
         <div className="flex flex-row justify-end gap-6">

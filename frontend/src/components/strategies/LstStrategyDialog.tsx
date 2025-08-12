@@ -58,14 +58,14 @@ import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import StrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
+import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
   LST_DECIMALS,
   useLoadedLstStrategyContext,
-} from "@/contexts/SsuiStrategyContext";
+} from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -84,14 +84,14 @@ export enum Tab {
   ADJUST = "adjust",
 }
 
-interface StrategyDialogProps extends PropsWithChildren {
+interface LstStrategyDialogProps extends PropsWithChildren {
   strategyType: StrategyType;
 }
 
-export default function StrategyDialog({
+export default function LstStrategyDialog({
   strategyType,
   children,
-}: StrategyDialogProps) {
+}: LstStrategyDialogProps) {
   const router = useRouter();
   const queryParams = useMemo(
     () => ({
@@ -732,7 +732,7 @@ export default function StrategyDialog({
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const isMaxDeposit = stepLstDepositedAmount.eq(stepMaxLstDepositedAmount);
       console.log(
-        `[StrategyDialog] deposit - ${i} deposit |`,
+        `[LstStrategyDialog] deposit - ${i} deposit |`,
         JSON.stringify(
           {
             stepLstDepositedAmount: stepLstDepositedAmount.toFixed(20),
@@ -922,7 +922,7 @@ export default function StrategyDialog({
         : amount
     ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
     console.log(
-      `[StrategyDialog] deposit |`,
+      `[LstStrategyDialog] deposit |`,
       JSON.stringify(
         {
           amount: amount.toFixed(20),
@@ -958,7 +958,7 @@ export default function StrategyDialog({
         : new BigNumber(depositSliderValue);
 
     console.log(
-      `[StrategyDialog] deposit |`,
+      `[LstStrategyDialog] deposit |`,
       JSON.stringify(
         {
           lstDepositedAmount: lstDepositedAmount.toFixed(20),
@@ -1039,7 +1039,7 @@ export default function StrategyDialog({
     if (!obligation) throw Error("Obligation not found");
 
     console.log(
-      `[StrategyDialog] withdraw |`,
+      `[LstStrategyDialog] withdraw |`,
       JSON.stringify({ unloopPercent: unloopPercent.toFixed(20) }, null, 2),
     );
 
@@ -1061,7 +1061,7 @@ export default function StrategyDialog({
       .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     console.log(
-      `[StrategyDialog] withdraw |`,
+      `[LstStrategyDialog] withdraw |`,
       JSON.stringify(
         {
           lstDepositedAmount: lstDepositedAmount.toFixed(20),
@@ -1084,7 +1084,7 @@ export default function StrategyDialog({
       );
 
       console.log(
-        `[StrategyDialog] withdraw - ${i} start |`,
+        `[LstStrategyDialog] withdraw - ${i} start |`,
         JSON.stringify(
           {
             lstDepositedAmount: lstDepositedAmount.toFixed(20),
@@ -1116,7 +1116,7 @@ export default function StrategyDialog({
         .minus(10 ** (-1 * SUI_DECIMALS)) // Subtract 1 MIST
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
-        `[StrategyDialog] withdraw - ${i} max |`,
+        `[LstStrategyDialog] withdraw - ${i} max |`,
         JSON.stringify(
           {
             stepMaxLstWithdrawnAmount: stepMaxLstWithdrawnAmount.toFixed(20),
@@ -1136,7 +1136,7 @@ export default function StrategyDialog({
         stepMaxLstWithdrawnAmount,
       );
       console.log(
-        `[StrategyDialog] withdraw - ${i} withdraw |`,
+        `[LstStrategyDialog] withdraw - ${i} withdraw |`,
         JSON.stringify(
           {
             stepMaxLstWithdrawnAmount: stepMaxLstWithdrawnAmount.toFixed(20),
@@ -1179,7 +1179,7 @@ export default function StrategyDialog({
       );
       const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
       console.log(
-        `[StrategyDialog] withdraw - ${i} repay |`,
+        `[LstStrategyDialog] withdraw - ${i} repay |`,
         JSON.stringify(
           {
             stepMaxSuiRepaidAmount: stepMaxSuiRepaidAmount.toFixed(20),
@@ -1302,7 +1302,7 @@ export default function StrategyDialog({
     // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
-      console.log(`[StrategyDialog] maxWithdraw - ${i} start`);
+      console.log(`[LstStrategyDialog] maxWithdraw - ${i} start`);
 
       // 2.1) Max withdraw LST
       const [withdrawnLstCoin] = strategyWithdraw(
@@ -1375,7 +1375,7 @@ export default function StrategyDialog({
     ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     console.log(
-      `[StrategyDialog] adjust |`,
+      `[LstStrategyDialog] adjust |`,
       JSON.stringify(
         {
           lstDepositedAmount: lstDepositedAmount.toFixed(20),
@@ -1635,7 +1635,7 @@ export default function StrategyDialog({
         }
       >
         <div className="mb-4 w-full">
-          <StrategyHeader strategyType={strategyType} />
+          <LstStrategyHeader strategyType={strategyType} />
         </div>
 
         <div

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ParsedObligation } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
-import { useLoadedLstStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
 const usePnlSuiAmountMap = (
   strategyType: StrategyType,
