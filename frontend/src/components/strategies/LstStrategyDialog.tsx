@@ -34,6 +34,7 @@ import {
 } from "@suilend/sdk/lib/strategyOwnerCap";
 import {
   MAX_U64,
+  MS_PER_YEAR,
   NORMALIZED_SUI_COINTYPE,
   TX_TOAST_DURATION,
   formatInteger,
@@ -851,10 +852,46 @@ export default function LstStrategyDialog({
         return { isDisabled: true, title: "Enter a non-zero amount" };
 
       if (selectedTab === Tab.DEPOSIT) {
+        // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
+        const tenMinsDepositAprPercent = reserve.depositAprPercent
+          .div(MS_PER_YEAR)
+          .times(10 * 60 * 1000);
+        const safeDepositLimit = reserve.config.depositLimit.minus(
+          reserve.depositedAmount.times(tenMinsDepositAprPercent.div(100)),
+        );
+        const safeDepositLimitUsd = reserve.config.depositLimitUsd.minus(
+          reserve.depositedAmount
+            .times(reserve.maxPrice)
+            .times(tenMinsDepositAprPercent.div(100)),
+        );
+
         if (new BigNumber(value).gt(reserveBalance))
           return {
             isDisabled: true,
             title: `Insufficient ${reserve.token.symbol}`,
+          };
+        if (
+          new BigNumber(value).gt(
+            safeDepositLimit.minus(reserve.depositedAmount),
+          )
+        )
+          return {
+            isDisabled: true,
+            title: "Exceeds deposit limit",
+          };
+        if (
+          new BigNumber(value).gt(
+            BigNumber.max(
+              safeDepositLimitUsd
+                .minus(reserve.depositedAmount.times(reserve.maxPrice))
+                .div(reserve.maxPrice),
+              0,
+            ),
+          )
+        )
+          return {
+            isDisabled: true,
+            title: "Exceeds USD deposit limit",
           };
         if (
           isSui(reserve.coinType) &&
