@@ -45,8 +45,8 @@ export default function LstStrategyHeader({
     simulateUnloopToExposure,
     simulateDeposit,
 
-    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
+    getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();

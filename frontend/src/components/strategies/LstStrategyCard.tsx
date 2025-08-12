@@ -56,8 +56,8 @@ export default function LstStrategyCard({
     simulateUnloopToExposure,
     simulateDeposit,
 
-    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
+    getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();

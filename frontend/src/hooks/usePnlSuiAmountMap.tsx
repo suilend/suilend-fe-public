@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import BigNumber from "bignumber.js";
+
 import { ParsedObligation } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
@@ -31,16 +33,17 @@ const usePnlSuiAmountMap = (
     simulateUnloopToExposure,
     simulateDeposit,
 
-    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
+    getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
 
-  // TVL
+  // Stats
+  // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
 
-  // PnL
+  // Stats - PnL
   const [pnlSuiAmountMap, setPnlSuiAmountMap] = useState<
     Record<string, BigNumber | undefined>
   >({});

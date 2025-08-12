@@ -45,8 +45,8 @@ function Page() {
     simulateUnloopToExposure,
     simulateDeposit,
 
-    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
+    getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();

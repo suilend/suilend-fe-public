@@ -134,8 +134,8 @@ export default function LstStrategyDialog({
     simulateUnloopToExposure,
     simulateDeposit,
 
-    getHistoricalTvlSuiAmount,
     getTvlSuiAmount,
+    getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();

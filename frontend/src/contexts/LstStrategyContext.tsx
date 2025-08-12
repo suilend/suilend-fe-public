@@ -130,14 +130,14 @@ interface LstStrategyContext {
   };
 
   // Stats
-  getHistoricalTvlSuiAmount: (
-    strategyType: StrategyType,
-    obligation?: ParsedObligation,
-  ) => Promise<BigNumber | undefined>;
   getTvlSuiAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
   ) => BigNumber;
+  getHistoricalTvlSuiAmount: (
+    strategyType: StrategyType,
+    obligation?: ParsedObligation,
+  ) => Promise<BigNumber | undefined>;
   getAprPercent: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
@@ -219,10 +219,10 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Stats
-  getHistoricalTvlSuiAmount: () => {
+  getTvlSuiAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
-  getTvlSuiAmount: () => {
+  getHistoricalTvlSuiAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
   getAprPercent: () => {
@@ -798,7 +798,26 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Stats
-  // Stats - Historical TVL
+  // Stats - TVL
+  const getTvlSuiAmount = useCallback(
+    (strategyType: StrategyType, obligation?: ParsedObligation) => {
+      if (!!obligation && hasPosition(obligation)) {
+        const lstReserve = getLstReserve(strategyType);
+        const lstToSuiExchangeRate =
+          lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ??
+          new BigNumber(0);
+
+        return new BigNumber(
+          obligation.deposits[0].depositedAmount.times(lstToSuiExchangeRate),
+        ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
+      } else {
+        return new BigNumber(0);
+      }
+    },
+    [hasPosition, getLstReserve, lstMap],
+  );
+
+  // Stats - PnL
   const getHistoricalTvlSuiAmount = useCallback(
     async (
       strategyType: StrategyType,
@@ -961,7 +980,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         }
         // console.log("XXX pages:", pages);
 
-        // Combine and sort events
+        // Combine, sort, and filter events
         const events = pages.flatMap((page) => page.events);
         const sortedEvents = events.sort((a, b) => {
           if (a.timestampS !== b.timestampS) return a.timestampS - b.timestampS; // Sort by timestamp (asc)
@@ -976,9 +995,21 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         //   )}`,
         // );
 
+        const filteredSortedEvents = sortedEvents.filter((event) => {
+          const diffS = Date.now() / 1000 - event.timestampS;
+          return !(diffS < 30); // Exclude events that are less than 30 seconds old (indexer may not have indexed all event types yet)
+        });
+        // console.log(
+        //   `XXX filteredSortedEvents: ${JSON.stringify(
+        //     filteredSortedEvents.map((e, i) => ({ index: i, ...e })),
+        //     null,
+        //     2,
+        //   )}`,
+        // );
+
         // Only keep events for the current position (since last obligationDataEvent.depositedValueUsd === 0)
         const lastZeroDepositedValueUsdObligationDataEventIndex =
-          sortedEvents.findLastIndex(
+          filteredSortedEvents.findLastIndex(
             (event) =>
               event.type === EventType.OBLIGATION_DATA &&
               (event as ObligationDataEvent).depositedValueUsd.eq(0),
@@ -988,26 +1019,38 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         //   lastZeroDepositedValueUsdObligationDataEventIndex,
         // );
 
-        const currentPositionSortedEvents =
+        const currentPositionFilteredSortedEvents =
           lastZeroDepositedValueUsdObligationDataEventIndex === -1
-            ? sortedEvents
-            : sortedEvents.slice(
+            ? filteredSortedEvents
+            : filteredSortedEvents.slice(
                 lastZeroDepositedValueUsdObligationDataEventIndex +
                   1 + // Exclude ObligationDataEvent
                   1, // Exclude last WithdrawEvent (ObligationDataEvent goes before WithdrawEvent)
               );
-        console.log(
-          `XXX currentPositionSortedEvents: ${JSON.stringify(
-            currentPositionSortedEvents.map((e, i) => ({ index: i, ...e })),
-            null,
-            2,
-          )}`,
-        );
+        // console.log(
+        //   `XXX currentPositionFilteredSortedEvents: ${JSON.stringify(
+        //     currentPositionFilteredSortedEvents.map((e, i) => ({
+        //       index: i,
+        //       ...e,
+        //     })),
+        //     null,
+        //     2,
+        //   )}`,
+        // );
+
+        // Return early if no non-filtered events for current position
+        if (currentPositionFilteredSortedEvents.length === 0) {
+          console.log(
+            "XXX no non-filtered events for current position",
+            strategyType,
+          );
+          return getTvlSuiAmount(strategyType, obligation); // Return current TVL (no PnL)
+        }
 
         // Get historical LST to SUI exchange rates for the relevant timestamps (current position deposits and withdraws)
         const lstToSuiExchangeRateTimestampsS = Array.from(
           new Set(
-            currentPositionSortedEvents
+            currentPositionFilteredSortedEvents
               .filter((event) =>
                 [EventType.DEPOSIT, EventType.WITHDRAW].includes(event.type),
               )
@@ -1041,8 +1084,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // Calculate current position
         let depositedSuiAmount = new BigNumber(0);
         let borrowedSuiAmount = new BigNumber(0);
-        for (let i = 0; i < currentPositionSortedEvents.length; i++) {
-          const event = currentPositionSortedEvents[i];
+        for (let i = 0; i < currentPositionFilteredSortedEvents.length; i++) {
+          const event = currentPositionFilteredSortedEvents[i];
 
           // Deposit/withdraw
           if (event.type === EventType.DEPOSIT) {
@@ -1054,7 +1097,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               );
             }
 
-            const previousEvent = currentPositionSortedEvents[i - 1];
+            const previousEvent = currentPositionFilteredSortedEvents[i - 1];
             const isDepositingClaimedReward =
               previousEvent && previousEvent.type === EventType.CLAIM_REWARD;
             if (isDepositingClaimedReward) {
@@ -1110,26 +1153,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         return undefined;
       }
     },
-    [hasPosition, getLstReserve],
-  );
-
-  // Stats - TVL
-  const getTvlSuiAmount = useCallback(
-    (strategyType: StrategyType, obligation?: ParsedObligation) => {
-      if (!!obligation && hasPosition(obligation)) {
-        const lstReserve = getLstReserve(strategyType);
-        const lstToSuiExchangeRate =
-          lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ??
-          new BigNumber(0);
-
-        return new BigNumber(
-          obligation.deposits[0].depositedAmount.times(lstToSuiExchangeRate),
-        ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
-      } else {
-        return new BigNumber(0);
-      }
-    },
-    [hasPosition, getLstReserve, lstMap],
+    [hasPosition, getLstReserve, getTvlSuiAmount],
   );
 
   // Stats - APR
@@ -1238,8 +1262,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateDeposit,
 
       // Stats
-      getHistoricalTvlSuiAmount,
       getTvlSuiAmount,
+      getHistoricalTvlSuiAmount,
       getAprPercent,
       getHealthPercent,
     }),
@@ -1259,8 +1283,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateUnloopToExposure,
       simulateDeposit,
-      getHistoricalTvlSuiAmount,
       getTvlSuiAmount,
+      getHistoricalTvlSuiAmount,
       getAprPercent,
       getHealthPercent,
     ],

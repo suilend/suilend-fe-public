@@ -32,14 +32,22 @@ export default function PnlLabelWithValue({
           ) : (
             <Tooltip
               title={`${formatToken(pnlAmount.abs(), {
-                prefix: pnlAmount.gte(0) ? "+" : "-",
+                prefix: pnlAmount.eq(0)
+                  ? undefined
+                  : pnlAmount.gte(0)
+                    ? "+"
+                    : "-",
                 dp: reserve.token.decimals,
                 roundLtMinToZero: true,
               })} ${reserve.token.symbol}`}
             >
               <TBody className="text-right">
                 {formatToken(pnlAmount.abs(), {
-                  prefix: pnlAmount.gte(0) ? "+" : "-",
+                  prefix: pnlAmount.eq(0)
+                    ? undefined
+                    : pnlAmount.gte(0)
+                      ? "+"
+                      : "-",
                   exact: false,
                   roundLtMinToZero: true,
                 })}{" "}
@@ -57,9 +65,11 @@ export default function PnlLabelWithValue({
                   hoverUnderlineClassName,
                 )}
               >
-                {new BigNumber(pnlAmount.times(reserve.price)).gte(0)
-                  ? "+"
-                  : "-"}
+                {new BigNumber(pnlAmount.times(reserve.price)).eq(0)
+                  ? undefined
+                  : new BigNumber(pnlAmount.times(reserve.price)).gte(0)
+                    ? "+"
+                    : "-"}
                 {formatUsd(pnlAmount.times(reserve.price))}
               </TLabel>
             </Tooltip>
