@@ -871,23 +871,25 @@ export default function LstStrategyDialog({
             title: `Insufficient ${reserve.token.symbol}`,
           };
         if (
-          new BigNumber(value).gt(
-            safeDepositLimit.minus(reserve.depositedAmount),
-          )
+          new BigNumber(value)
+            .times(3) // TODO: Use actual leverage
+            .gt(safeDepositLimit.minus(reserve.depositedAmount))
         )
           return {
             isDisabled: true,
             title: "Exceeds deposit limit",
           };
         if (
-          new BigNumber(value).gt(
-            BigNumber.max(
-              safeDepositLimitUsd
-                .minus(reserve.depositedAmount.times(reserve.maxPrice))
-                .div(reserve.maxPrice),
-              0,
-            ),
-          )
+          new BigNumber(value)
+            .times(3) // TODO: Use actual leverage
+            .gt(
+              BigNumber.max(
+                safeDepositLimitUsd
+                  .minus(reserve.depositedAmount.times(reserve.maxPrice))
+                  .div(reserve.maxPrice),
+                0,
+              ),
+            )
         )
           return {
             isDisabled: true,
