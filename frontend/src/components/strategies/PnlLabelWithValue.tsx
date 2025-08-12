@@ -38,7 +38,6 @@ export default function PnlLabelWithValue({
                     ? "+"
                     : "-",
                 dp: reserve.token.decimals,
-                roundLtMinToZero: true,
               })} ${reserve.token.symbol}`}
             >
               <TBody className="text-right">
@@ -49,7 +48,6 @@ export default function PnlLabelWithValue({
                       ? "+"
                       : "-",
                   exact: false,
-                  roundLtMinToZero: true,
                 })}{" "}
                 {reserve.token.symbol}
               </TBody>
