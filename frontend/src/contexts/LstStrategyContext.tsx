@@ -18,6 +18,7 @@ import { useLocalStorage } from "usehooks-ts";
 import {
   ParsedObligation,
   ParsedReserve,
+  RewardSummary,
   WAD,
   getNetAprPercent,
 } from "@suilend/sdk";
@@ -33,7 +34,11 @@ import {
 } from "@suilend/springsui-sdk";
 import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_staking/liquid-staking/structs";
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
-import { API_URL, NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
+import {
+  API_URL,
+  NORMALIZED_SUI_COINTYPE,
+  isSendPoints,
+} from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
@@ -824,14 +829,67 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ??
           new BigNumber(0);
 
-        return new BigNumber(
+        // Raw TVL
+        let result = new BigNumber(
           obligation.deposits[0].depositedAmount.times(lstToSuiExchangeRate),
         ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
+
+        // Unclaimed rewards
+        const rewardsMap: Record<string, RewardSummary[]> = {};
+        const claimableRewardsMap: Record<string, BigNumber> = {};
+        if (obligation) {
+          Object.values(userData.rewardMap).flatMap((rewards) =>
+            [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+              if (isSendPoints(r.stats.rewardCoinType)) return;
+              if (!r.obligationClaims[obligation.id]) return;
+              if (r.obligationClaims[obligation.id].claimableAmount.eq(0))
+                return;
+
+              const minAmount = 10 ** (-1 * r.stats.mintDecimals);
+              if (
+                r.obligationClaims[obligation.id].claimableAmount.lt(minAmount)
+              )
+                return;
+
+              if (!rewardsMap[r.stats.rewardCoinType])
+                rewardsMap[r.stats.rewardCoinType] = [];
+              rewardsMap[r.stats.rewardCoinType].push(r);
+            }),
+          );
+
+          Object.entries(rewardsMap).forEach(([coinType, rewards]) => {
+            claimableRewardsMap[coinType] = rewards.reduce(
+              (acc, reward) =>
+                acc.plus(
+                  reward.obligationClaims[obligation.id].claimableAmount,
+                ),
+              new BigNumber(0),
+            );
+          });
+        }
+
+        // Add unclaimed rewards to TVL
+        Object.entries(claimableRewardsMap).forEach(([coinType, amount]) => {
+          const priceSui = (
+            appData.rewardPriceMap[coinType] ?? new BigNumber(0)
+          ).div(suiReserve.price);
+
+          result = result.plus(amount.times(priceSui));
+        });
+
+        return result;
       } else {
         return new BigNumber(0);
       }
     },
-    [hasPosition, getLstReserve, lstMap],
+    [
+      hasPosition,
+      getLstReserve,
+      lstMap,
+      userData.rewardMap,
+      appData.rewardPriceMap,
+      suiReserve.price,
+    ],
   );
 
   // Stats - PnL
