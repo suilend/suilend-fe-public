@@ -34,6 +34,7 @@ export default function PnlLabelWithValue({
               title={`${formatToken(pnlAmount.abs(), {
                 prefix: pnlAmount.gte(0) ? "+" : "-",
                 dp: reserve.token.decimals,
+                roundLtMinToZero: true,
               })} ${reserve.token.symbol}`}
             >
               <TBody className="text-right">

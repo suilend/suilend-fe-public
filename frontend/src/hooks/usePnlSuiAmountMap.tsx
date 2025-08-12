@@ -1,15 +1,44 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ParsedObligation } from "@suilend/sdk";
+import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
-import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/SsuiStrategyContext";
 
-const usePnlSuiAmountMap = (obligation?: ParsedObligation) => {
-  const { getHistoricalTvlSuiAmount, getTvlSuiAmount } =
-    useLoadedSsuiStrategyContext();
+const usePnlSuiAmountMap = (
+  strategyType: StrategyType,
+  obligation?: ParsedObligation,
+) => {
+  const {
+    hasPosition,
+
+    suiReserve,
+    suiBorrowFeePercent,
+
+    getLstReserve,
+    lstMap,
+    getLstMintFee,
+    getLstRedeemFee,
+
+    exposureMap,
+
+    getExposure,
+    getStepMaxSuiBorrowedAmount,
+    getStepMaxLstWithdrawnAmount,
+
+    getSimulatedObligation,
+    simulateLoopToExposure,
+    simulateUnloopToExposure,
+    simulateDeposit,
+
+    getHistoricalTvlSuiAmount,
+    getTvlSuiAmount,
+    getAprPercent,
+    getHealthPercent,
+  } = useLoadedLstStrategyContext();
 
   // TVL
-  const tvlSuiAmount = getTvlSuiAmount(obligation);
+  const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
 
   // PnL
   const [pnlSuiAmountMap, setPnlSuiAmountMap] = useState<
@@ -18,8 +47,10 @@ const usePnlSuiAmountMap = (obligation?: ParsedObligation) => {
 
   const fetchHistoricalTvlSuiAmount = useCallback(async () => {
     try {
-      const historicalTvlSuiAmount =
-        await getHistoricalTvlSuiAmount(obligation);
+      const historicalTvlSuiAmount = await getHistoricalTvlSuiAmount(
+        strategyType,
+        obligation,
+      );
       const result =
         historicalTvlSuiAmount === undefined
           ? undefined
@@ -32,7 +63,7 @@ const usePnlSuiAmountMap = (obligation?: ParsedObligation) => {
     } catch (err) {
       console.error(err);
     }
-  }, [getHistoricalTvlSuiAmount, obligation, tvlSuiAmount]);
+  }, [getHistoricalTvlSuiAmount, strategyType, obligation, tvlSuiAmount]);
 
   const hasFetchedHistoricalTvlSuiAmountMapRef = useRef<
     Record<string, boolean>

@@ -9,10 +9,9 @@ import {
   useState,
 } from "react";
 
-import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction, TransactionObjectInput } from "@mysten/sui/transactions";
 import { TransactionObjectArgument } from "@mysten/sui/transactions";
-import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
+import { SUI_DECIMALS } from "@mysten/sui/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
@@ -21,7 +20,8 @@ import { toast } from "sonner";
 
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
 import {
-  STRATEGY_SUI_LOOPING_SSUI,
+  STRATEGY_TYPE_INFO_MAP,
+  StrategyType,
   createStrategyOwnerCapIfNoneExists,
   sendStrategyOwnerCapToUser,
   strategyBorrow,
@@ -32,7 +32,6 @@ import {
 import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_sSUI_COINTYPE,
   TX_TOAST_DURATION,
   formatInteger,
   formatPercent,
@@ -59,159 +58,19 @@ import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
+import StrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
-  sSUI_DECIMALS,
-  useLoadedSsuiStrategyContext,
+  LST_DECIMALS,
+  useLoadedLstStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.1;
-
-const getTransactionMintAmounts = (res: SuiTransactionBlockResponse) => {
-  const mintEvents = (res.events ?? []).filter(
-    (event) =>
-      event.type ===
-        "0xb0575765166030556a6eafd3b1b970eba8183ff748860680245b9edd41c716e7::events::Event<0xb0575765166030556a6eafd3b1b970eba8183ff748860680245b9edd41c716e7::liquid_staking::MintEvent>" &&
-      normalizeStructTag((event.parsedJson as any).event.typename.name) ===
-        NORMALIZED_sSUI_COINTYPE,
-  );
-  if (mintEvents.length === 0) return undefined;
-
-  return mintEvents.reduce(
-    (acc, mintEvent) => {
-      return {
-        suiFeeAmount: acc.suiFeeAmount.plus(
-          new BigNumber((mintEvent.parsedJson as any).event.fee_amount).div(
-            10 ** SUI_DECIMALS,
-          ),
-        ),
-        suiAmountIn: acc.suiAmountIn.plus(
-          new BigNumber((mintEvent.parsedJson as any).event.sui_amount_in).div(
-            10 ** SUI_DECIMALS,
-          ),
-        ),
-        sSuiAmountOut: acc.sSuiAmountOut.plus(
-          new BigNumber((mintEvent.parsedJson as any).event.lst_amount_out).div(
-            10 ** sSUI_DECIMALS,
-          ),
-        ),
-      };
-    },
-    {
-      suiFeeAmount: new BigNumber(0),
-      suiAmountIn: new BigNumber(0),
-      sSuiAmountOut: new BigNumber(0),
-    },
-  );
-};
-const getTransactionRedeemAmounts = (res: SuiTransactionBlockResponse) => {
-  const redeemEvents = (res.events ?? []).filter(
-    (event) =>
-      event.type ===
-        "0xb0575765166030556a6eafd3b1b970eba8183ff748860680245b9edd41c716e7::events::Event<0xb0575765166030556a6eafd3b1b970eba8183ff748860680245b9edd41c716e7::liquid_staking::RedeemEvent>" &&
-      normalizeStructTag((event.parsedJson as any).event.typename.name) ===
-        NORMALIZED_sSUI_COINTYPE,
-  );
-  if (redeemEvents.length === 0) return undefined;
-
-  return redeemEvents.reduce(
-    (acc, redeemEvent) => {
-      return {
-        sSuiFeeAmount: acc.sSuiFeeAmount.plus(
-          new BigNumber((redeemEvent.parsedJson as any).event.fee_amount).div(
-            10 ** sSUI_DECIMALS,
-          ),
-        ),
-        sSuiAmountIn: acc.sSuiAmountIn.plus(
-          new BigNumber(
-            (redeemEvent.parsedJson as any).event.lst_amount_in,
-          ).div(10 ** sSUI_DECIMALS),
-        ),
-        suiAmountOut: acc.suiAmountOut.plus(
-          new BigNumber(
-            (redeemEvent.parsedJson as any).event.sui_amount_out,
-          ).div(10 ** SUI_DECIMALS),
-        ),
-      };
-    },
-    {
-      sSuiFeeAmount: new BigNumber(0),
-      sSuiAmountIn: new BigNumber(0),
-      suiAmountOut: new BigNumber(0),
-    },
-  );
-};
-
-const getTransactionDepositedSsuiAmount = (
-  res: SuiTransactionBlockResponse,
-) => {
-  const mintEvents = (res.events ?? []).filter(
-    (event) =>
-      event.type ===
-        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::MintEvent" &&
-      normalizeStructTag((event.parsedJson as any).coin_type.name) ===
-        NORMALIZED_sSUI_COINTYPE,
-  );
-  if (mintEvents.length === 0) return undefined;
-
-  return mintEvents.reduce(
-    (acc, mintEvent) =>
-      acc.plus(
-        new BigNumber((mintEvent.parsedJson as any).liquidity_amount).div(
-          10 ** sSUI_DECIMALS,
-        ),
-      ),
-    new BigNumber(0),
-  );
-};
-const getTransactionBorrowedSuiAmount = (res: SuiTransactionBlockResponse) => {
-  const borrowEvents = (res.events ?? []).filter(
-    (event) =>
-      event.type ===
-        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::BorrowEvent" &&
-      normalizeStructTag((event.parsedJson as any).coin_type.name) ===
-        NORMALIZED_SUI_COINTYPE,
-  );
-  if (borrowEvents.length === 0) return undefined;
-
-  return borrowEvents.reduce((acc, borrowEvent) => {
-    const incFeesAmount = new BigNumber(
-      (borrowEvent.parsedJson as any).liquidity_amount,
-    ).div(10 ** SUI_DECIMALS);
-    const feesAmount = new BigNumber(
-      (borrowEvent.parsedJson as any).origination_fee_amount,
-    ).div(10 ** SUI_DECIMALS);
-    const amount = incFeesAmount.minus(feesAmount);
-
-    return acc.plus(amount);
-  }, new BigNumber(0));
-};
-const getTransactionRepaidSuiAmount = (res: SuiTransactionBlockResponse) => {
-  const repayEvents = (res.events ?? []).filter(
-    (event) =>
-      event.type ===
-        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::RepayEvent" &&
-      normalizeStructTag((event.parsedJson as any).coin_type.name) ===
-        NORMALIZED_SUI_COINTYPE,
-  );
-  if (repayEvents.length === 0) return undefined;
-
-  return repayEvents.reduce(
-    (acc, repayEvent) =>
-      acc.plus(
-        new BigNumber((repayEvent.parsedJson as any).liquidity_amount).div(
-          10 ** SUI_DECIMALS,
-        ),
-      ),
-    new BigNumber(0),
-  );
-};
 
 enum QueryParams {
   STRATEGY_NAME = "strategy",
@@ -225,7 +84,14 @@ export enum Tab {
   ADJUST = "adjust",
 }
 
-export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
+interface StrategyDialogProps extends PropsWithChildren {
+  strategyType: StrategyType;
+}
+
+export default function StrategyDialog({
+  strategyType,
+  children,
+}: StrategyDialogProps) {
   const router = useRouter();
   const queryParams = useMemo(
     () => ({
@@ -247,24 +113,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
-    isObligationLooping,
+    hasPosition,
 
     suiReserve,
-    sSuiReserve,
-    minExposure,
-    maxExposure,
-    defaultExposure,
-
-    lstClient,
     suiBorrowFeePercent,
-    suiToSsuiExchangeRate,
-    sSuiToSuiExchangeRate,
 
-    getSsuiMintFee,
-    getSsuiRedeemFee,
+    getLstReserve,
+    lstMap,
+    getLstMintFee,
+    getLstRedeemFee,
+
+    exposureMap,
+
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxSsuiWithdrawnAmount,
+    getStepMaxLstWithdrawnAmount,
+
+    getSimulatedObligation,
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
@@ -273,7 +138,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useLoadedSsuiStrategyContext();
+  } = useLoadedLstStrategyContext();
 
   // Tabs
   const tabs = [
@@ -301,18 +166,51 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     [router],
   );
 
+  // Strategy
+  const strategyInfo = useMemo(
+    () => STRATEGY_TYPE_INFO_MAP[strategyType],
+    [strategyType],
+  );
+
+  const minExposure = useMemo(
+    () => exposureMap[strategyType].min,
+    [strategyType, exposureMap],
+  );
+  const maxExposure = useMemo(
+    () => exposureMap[strategyType].max,
+    [strategyType, exposureMap],
+  );
+  const defaultExposure = useMemo(
+    () => exposureMap[strategyType].default,
+    [strategyType, exposureMap],
+  );
+
+  // LST
+  const lstReserve = useMemo(
+    () => getLstReserve(strategyType),
+    [getLstReserve, strategyType],
+  );
+  const lst = useMemo(
+    () => lstMap[lstReserve.coinType],
+    [lstMap, lstReserve.coinType],
+  );
+
+  //
+  //
+  //
+
   // State
   const isOpen = useMemo(
-    () => queryParams[QueryParams.STRATEGY_NAME] === "sSUI-SUI-looping",
-    [queryParams],
+    () => queryParams[QueryParams.STRATEGY_NAME] === strategyInfo.queryParam,
+    [queryParams, strategyInfo.queryParam],
   );
 
   const open = useCallback(() => {
     shallowPushQuery(router, {
       ...router.query,
-      [QueryParams.STRATEGY_NAME]: "sSUI-SUI-looping",
+      [QueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
     });
-  }, [router]);
+  }, [router, strategyInfo.queryParam]);
   const close = useCallback(() => {
     const restQuery = cloneDeep(router.query);
     delete restQuery[QueryParams.STRATEGY_NAME];
@@ -321,7 +219,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
   // Obligation
   const strategyOwnerCap = userData.strategyOwnerCaps.find(
-    (soc) => soc.strategyType === STRATEGY_SUI_LOOPING_SSUI,
+    (soc) => soc.strategyType === strategyType,
   );
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
@@ -333,12 +231,13 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   );
 
   const [adjustSliderValue, setAdjustSliderValue] = useState<string>(
-    isObligationLooping(obligation)
+    !!obligation && hasPosition(obligation)
       ? BigNumber.min(
           maxExposure,
           getExposure(
-            obligation!.deposits[0].depositedAmount,
-            obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+            strategyType,
+            obligation.deposits[0].depositedAmount,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
           ),
         ).toFixed(1)
       : defaultExposure.toFixed(1),
@@ -348,11 +247,12 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const [coinType, setCoinType] = useState<string>(NORMALIZED_SUI_COINTYPE);
 
   const reserveOptions = useMemo(
-    () => [
-      { id: NORMALIZED_SUI_COINTYPE, name: "SUI" },
-      { id: NORMALIZED_sSUI_COINTYPE, name: "sSUI" },
-    ],
-    [],
+    () =>
+      strategyInfo.coinTypes.map((coinType) => ({
+        id: coinType,
+        name: appData.coinMetadataMap[coinType].symbol,
+      })),
+    [strategyInfo.coinTypes, appData.coinMetadataMap],
   );
   const reserve = useMemo(
     () => appData.reserveMap[coinType],
@@ -383,8 +283,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       else if (selectedTab === Tab.WITHDRAW)
         return BigNumber.max(
           new BigNumber(0),
-          getTvlSuiAmount(obligation).times(
-            isSui(_coinType ?? reserve.coinType) ? 1 : suiToSsuiExchangeRate,
+          getTvlSuiAmount(strategyType, obligation).times(
+            isSui(_coinType ?? reserve.coinType) ? 1 : lst.suiToLstExchangeRate,
           ),
         );
       else if (selectedTab === Tab.ADJUST) return new BigNumber(0); // Not relevant (adjust tab only has a slider)
@@ -396,8 +296,9 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       reserve.coinType,
       selectedTab,
       getTvlSuiAmount,
+      strategyType,
       obligation,
-      suiToSsuiExchangeRate,
+      lst.suiToLstExchangeRate,
     ],
   );
 
@@ -462,17 +363,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
   }, [useMaxAmount, formatAndSetValue, getMaxAmount, reserve.token.decimals]);
 
+  // Stats
   // Stats - TVL
   const tvlAmount = useMemo(
     () =>
-      getTvlSuiAmount(obligation)
-        .times(isSui(reserve.coinType) ? 1 : suiToSsuiExchangeRate)
+      getTvlSuiAmount(strategyType, obligation)
+        .times(isSui(reserve.coinType) ? 1 : lst.suiToLstExchangeRate)
         .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN),
     [
       getTvlSuiAmount,
+      strategyType,
       obligation,
       reserve.coinType,
-      suiToSsuiExchangeRate,
+      lst.suiToLstExchangeRate,
       reserve.token.decimals,
     ],
   );
@@ -480,13 +383,14 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   // Stats - Exposure
   const exposure = useMemo(
     () =>
-      isObligationLooping(obligation)
+      !!obligation && hasPosition(obligation)
         ? getExposure(
-            obligation!.deposits[0].depositedAmount,
-            obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+            strategyType,
+            obligation.deposits[0].depositedAmount,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
           )
         : new BigNumber(depositSliderValue),
-    [isObligationLooping, obligation, getExposure, depositSliderValue],
+    [obligation, hasPosition, getExposure, strategyType, depositSliderValue],
   );
   const adjustExposure = useMemo(
     () => new BigNumber(adjustSliderValue),
@@ -494,22 +398,32 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   );
 
   // Stats - Health
-  const healthPercent = getHealthPercent(obligation, exposure);
-  const adjustHealthPercent = getHealthPercent(undefined, adjustExposure);
+  const healthPercent = getHealthPercent(strategyType, obligation, exposure);
+  const adjustHealthPercent = getHealthPercent(
+    strategyType,
+    undefined,
+    adjustExposure,
+  );
 
   // Stats - APR
-  const aprPercent = getAprPercent(obligation, exposure);
-  const adjustAprPercent = getAprPercent(undefined, adjustExposure);
+  const aprPercent = getAprPercent(strategyType, obligation, exposure);
+  const adjustAprPercent = getAprPercent(
+    strategyType,
+    undefined,
+    adjustExposure,
+  );
 
   // Stats - Fees
   const depositFeesAmount = useMemo(() => {
     const { suiBorrowedAmount } = simulateDeposit(
-      new BigNumber(value || 0),
-      reserve.coinType,
+      strategyType,
+      isSui(reserve.coinType)
+        ? { sui: new BigNumber(value || 0) }
+        : { lst: new BigNumber(value || 0) },
       exposure,
     );
 
-    // TODO: Add sSUI mint fee (currently 0)
+    // TODO: Add LST mint fee (currently 0)
     const suiBorrowFeesAmount = suiBorrowedAmount.times(
       suiBorrowFeePercent.div(100),
     );
@@ -517,87 +431,96 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     return (
       isSui(reserve.coinType)
         ? suiBorrowFeesAmount
-        : suiBorrowFeesAmount.times(suiToSsuiExchangeRate)
+        : suiBorrowFeesAmount.times(lst.suiToLstExchangeRate)
     ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
   }, [
     simulateDeposit,
-    value,
+    strategyType,
     reserve.coinType,
+    value,
     exposure,
     suiBorrowFeePercent,
-    suiToSsuiExchangeRate,
+    lst.suiToLstExchangeRate,
     reserve.token.decimals,
   ]);
 
   const withdrawFeesAmount = useMemo(() => {
-    if (!isObligationLooping(obligation)) return new BigNumber(0);
+    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
     const unloopPercent = new BigNumber(value || 0).div(tvlAmount).times(100);
-    const withdrawnSsuiAmount = obligation!.deposits[0].depositedAmount.times(
+    const withdrawnLstAmount = obligation.deposits[0].depositedAmount.times(
       unloopPercent.div(100),
     );
 
-    // TODO: Add sSUI mint fee (currently 0)
-    const sSuiRedeemFeesAmount = getSsuiRedeemFee(withdrawnSsuiAmount);
+    // TODO: Add LST mint fee (currently 0)
+    const lstRedeemFeesAmount = getLstRedeemFee(
+      lstReserve.coinType,
+      withdrawnLstAmount,
+    );
 
     return (
       isSui(reserve.coinType)
-        ? sSuiRedeemFeesAmount.times(sSuiToSuiExchangeRate)
-        : sSuiRedeemFeesAmount
+        ? lstRedeemFeesAmount.times(lst.lstToSuiExchangeRate)
+        : lstRedeemFeesAmount
     ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
   }, [
-    isObligationLooping,
     obligation,
+    hasPosition,
     value,
     tvlAmount,
+    getLstRedeemFee,
+    lstReserve.coinType,
     reserve.coinType,
-    getSsuiRedeemFee,
-    sSuiToSuiExchangeRate,
+    lst.lstToSuiExchangeRate,
     reserve.token.decimals,
   ]);
   const generalWithdrawFeesPercent = useMemo(() => {
-    const { sSuiDepositedAmount, obligation } = simulateDeposit(
-      new BigNumber(10),
-      NORMALIZED_SUI_COINTYPE,
+    const { lstDepositedAmount, obligation } = simulateDeposit(
+      strategyType,
+      { sui: new BigNumber(10) },
       exposure,
     );
-    const tvlSuiAmount = getTvlSuiAmount(obligation);
+    const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
 
     const unloopPercent = new BigNumber(100);
-    const withdrawnSsuiAmount = sSuiDepositedAmount.times(
-      unloopPercent.div(100),
+    const withdrawnLstAmount = lstDepositedAmount.times(unloopPercent.div(100));
+
+    // TODO: Add LST mint fee (currently 0)
+    const lstRedeemFeesAmount = getLstRedeemFee(
+      lstReserve.coinType,
+      withdrawnLstAmount,
     );
 
-    // TODO: Add sSUI mint fee (currently 0)
-    const sSuiRedeemFeesAmount = getSsuiRedeemFee(withdrawnSsuiAmount);
-
-    return new BigNumber(sSuiRedeemFeesAmount.times(sSuiToSuiExchangeRate))
+    return new BigNumber(lstRedeemFeesAmount.times(lst.lstToSuiExchangeRate))
       .div(tvlSuiAmount)
       .times(100);
   }, [
     simulateDeposit,
+    strategyType,
     exposure,
     getTvlSuiAmount,
-    getSsuiRedeemFee,
-    sSuiToSuiExchangeRate,
+    getLstRedeemFee,
+    lstReserve.coinType,
+    lst.lstToSuiExchangeRate,
   ]);
 
   const adjustFeesSuiAmount = useMemo(() => {
-    if (!isObligationLooping(obligation)) return new BigNumber(0);
+    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-    const sSuiDepositedAmount = obligation!.deposits[0].depositedAmount;
+    const lstDepositedAmount = obligation.deposits[0].depositedAmount;
     const suiBorrowedAmount =
-      obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0);
+      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
     const targetExposure = adjustExposure;
 
     if (targetExposure.gt(exposure)) {
       const { suiBorrowedAmount: _suiBorrowedAmount } = simulateLoopToExposure(
-        sSuiDepositedAmount,
+        strategyType,
+        lstDepositedAmount,
         suiBorrowedAmount,
         targetExposure,
       );
 
-      // TODO: Add sSUI mint fee (currently 0)
+      // TODO: Add LST mint fee (currently 0)
       const suiBorrowFeesAmount = new BigNumber(
         _suiBorrowedAmount.minus(suiBorrowedAmount),
       ).times(suiBorrowFeePercent.div(100));
@@ -607,32 +530,36 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         BigNumber.ROUND_DOWN,
       );
     } else {
-      const { sSuiDepositedAmount: _sSuiDepositedAmount } =
+      const { lstDepositedAmount: _lstDepositedAmount } =
         simulateUnloopToExposure(
-          sSuiDepositedAmount,
+          strategyType,
+          lstDepositedAmount,
           suiBorrowedAmount,
           targetExposure,
         );
 
-      // TODO: Add sSUI mint fee (currently 0)
-      const sSuiRedeemFeesAmount = getSsuiRedeemFee(
-        sSuiDepositedAmount.minus(_sSuiDepositedAmount),
+      // TODO: Add LST mint fee (currently 0)
+      const lstRedeemFeesAmount = getLstRedeemFee(
+        lstReserve.coinType,
+        lstDepositedAmount.minus(_lstDepositedAmount),
       );
 
-      return sSuiRedeemFeesAmount
-        .times(sSuiToSuiExchangeRate)
+      return lstRedeemFeesAmount
+        .times(lst.lstToSuiExchangeRate)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
     }
   }, [
-    isObligationLooping,
     obligation,
+    hasPosition,
+    strategyType,
     adjustExposure,
     exposure,
     simulateLoopToExposure,
     suiBorrowFeePercent,
     simulateUnloopToExposure,
-    getSsuiRedeemFee,
-    sSuiToSuiExchangeRate,
+    getLstRedeemFee,
+    lstReserve.coinType,
+    lst.lstToSuiExchangeRate,
   ]);
 
   // Submit
@@ -699,27 +626,31 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   const loopToExposure = async (
     strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
-    _sSuiDepositedAmount: BigNumber,
+    _lstDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
     targetExposure: BigNumber,
   ): Promise<{
     transaction: Transaction;
-    sSuiDepositedAmount: BigNumber;
+    lstDepositedAmount: BigNumber;
     suiBorrowedAmount: BigNumber;
   }> => {
     if (!address) throw Error("Wallet not connected");
 
-    let sSuiDepositedAmount = _sSuiDepositedAmount;
+    let lstDepositedAmount = _lstDepositedAmount;
     let suiBorrowedAmount = _suiBorrowedAmount;
 
     for (let i = 0; i < 30; i++) {
-      const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+      const exposure = getExposure(
+        strategyType,
+        lstDepositedAmount,
+        suiBorrowedAmount,
+      );
       const pendingExposure = targetExposure.minus(exposure);
       console.log(
         `[loopToExposure] ${i} start |`,
         JSON.stringify(
           {
-            sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+            lstDepositedAmount: lstDepositedAmount.toFixed(20),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
             exposure: exposure.toFixed(20),
             pendingExposure: pendingExposure.toFixed(20),
@@ -732,20 +663,22 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
       // 1) Max
       const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
-        sSuiDepositedAmount,
+        strategyType,
+        lstDepositedAmount,
         suiBorrowedAmount,
       )
         .times(0.98) // 2% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepMaxSsuiDepositedAmount = new BigNumber(
+      const stepMaxLstDepositedAmount = new BigNumber(
         stepMaxSuiBorrowedAmount.minus(
-          getSsuiMintFee(stepMaxSuiBorrowedAmount),
+          getLstMintFee(lstReserve.coinType, stepMaxSuiBorrowedAmount),
         ),
       )
-        .times(suiToSsuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        .times(lst.suiToLstExchangeRate)
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxExposure = getExposure(
-        sSuiDepositedAmount.plus(stepMaxSsuiDepositedAmount),
+        strategyType,
+        lstDepositedAmount.plus(stepMaxLstDepositedAmount),
         suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
       ).minus(exposure);
       console.log(
@@ -753,7 +686,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         JSON.stringify(
           {
             stepMaxSuiBorrowedAmount: stepMaxSuiBorrowedAmount.toFixed(20),
-            stepMaxSsuiDepositedAmount: stepMaxSsuiDepositedAmount.toFixed(20),
+            stepMaxLstDepositedAmount: stepMaxLstDepositedAmount.toFixed(20),
             stepMaxExposure: stepMaxExposure.toFixed(20),
           },
           null,
@@ -792,23 +725,23 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
       suiBorrowedAmount = suiBorrowedAmount.plus(stepSuiBorrowedAmount);
 
-      // 3) Stake borrowed SUI for sSUI
-      const stepSsuiCoin = lstClient.mint(transaction, borrowedSuiCoin);
+      // 3) Stake borrowed SUI for LST
+      const stepLstCoin = lst.client.mint(transaction, borrowedSuiCoin);
 
-      // 4) Deposit sSUI
-      const stepSsuiDepositedAmount = new BigNumber(
-        stepSuiBorrowedAmount.minus(getSsuiMintFee(stepSuiBorrowedAmount)),
+      // 4) Deposit LST
+      const stepLstDepositedAmount = new BigNumber(
+        stepSuiBorrowedAmount.minus(
+          getLstMintFee(lstReserve.coinType, stepSuiBorrowedAmount),
+        ),
       )
-        .times(suiToSsuiExchangeRate)
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const isMaxDeposit = stepSsuiDepositedAmount.eq(
-        stepMaxSsuiDepositedAmount,
-      );
+        .times(lst.suiToLstExchangeRate)
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+      const isMaxDeposit = stepLstDepositedAmount.eq(stepMaxLstDepositedAmount);
       console.log(
-        `[SsuiStrategyDialog] deposit - ${i} deposit |`,
+        `[StrategyDialog] deposit - ${i} deposit |`,
         JSON.stringify(
           {
-            stepSsuiDepositedAmount: stepSsuiDepositedAmount.toFixed(20),
+            stepLstDepositedAmount: stepLstDepositedAmount.toFixed(20),
             isMaxDeposit,
           },
           null,
@@ -817,43 +750,47 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
 
       strategyDeposit(
-        stepSsuiCoin,
-        NORMALIZED_sSUI_COINTYPE,
+        stepLstCoin,
+        lstReserve.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         transaction,
       );
-      sSuiDepositedAmount = sSuiDepositedAmount.plus(stepSsuiDepositedAmount);
+      lstDepositedAmount = lstDepositedAmount.plus(stepLstDepositedAmount);
     }
 
-    return { transaction, sSuiDepositedAmount, suiBorrowedAmount };
+    return { transaction, lstDepositedAmount, suiBorrowedAmount };
   };
 
   const unloopToExposure = async (
     strategyOwnerCapId: TransactionObjectInput,
     transaction: Transaction,
-    _sSuiDepositedAmount: BigNumber,
+    _lstDepositedAmount: BigNumber,
     _suiBorrowedAmount: BigNumber,
     targetExposure: BigNumber,
   ): Promise<{
     transaction: Transaction;
-    sSuiDepositedAmount: BigNumber;
+    lstDepositedAmount: BigNumber;
     suiBorrowedAmount: BigNumber;
   }> => {
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
-    let sSuiDepositedAmount = _sSuiDepositedAmount;
+    let lstDepositedAmount = _lstDepositedAmount;
     let suiBorrowedAmount = _suiBorrowedAmount;
 
     for (let i = 0; i < 30; i++) {
-      const exposure = getExposure(sSuiDepositedAmount, suiBorrowedAmount);
+      const exposure = getExposure(
+        strategyType,
+        lstDepositedAmount,
+        suiBorrowedAmount,
+      );
       const pendingExposure = exposure.minus(targetExposure);
       console.log(
         `[unloopToExposure] ${i} start |`,
         JSON.stringify(
           {
-            sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+            lstDepositedAmount: lstDepositedAmount.toFixed(20),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
             exposure: exposure.toFixed(20),
             pendingExposure: pendingExposure.toFixed(20),
@@ -865,28 +802,30 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       if (pendingExposure.lte(E)) break;
 
       // 1) Max
-      const stepMaxSsuiWithdrawnAmount = getStepMaxSsuiWithdrawnAmount(
-        sSuiDepositedAmount,
+      const stepMaxLstWithdrawnAmount = getStepMaxLstWithdrawnAmount(
+        strategyType,
+        lstDepositedAmount,
         suiBorrowedAmount,
       )
         .times(0.98) // 2% buffer
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
-        stepMaxSsuiWithdrawnAmount.minus(
-          getSsuiRedeemFee(stepMaxSsuiWithdrawnAmount),
+        stepMaxLstWithdrawnAmount.minus(
+          getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
       )
-        .times(sSuiToSuiExchangeRate)
+        .times(lst.lstToSuiExchangeRate)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxExposure = getExposure(
-        sSuiDepositedAmount.plus(stepMaxSsuiWithdrawnAmount),
+        strategyType,
+        lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
         suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
       ).minus(exposure);
       console.log(
         `[unloopToExposure] ${i} max |`,
         JSON.stringify(
           {
-            stepMaxSsuiWithdrawnAmount: stepMaxSsuiWithdrawnAmount.toFixed(20),
+            stepMaxLstWithdrawnAmount: stepMaxLstWithdrawnAmount.toFixed(20),
             stepMaxSuiRepaidAmount: stepMaxSuiRepaidAmount.toFixed(20),
             stepMaxExposure: stepMaxExposure.toFixed(20),
           },
@@ -895,18 +834,18 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      // 2) Withdraw sSUI
-      const stepSsuiWithdrawnAmount = stepMaxSsuiWithdrawnAmount
+      // 2) Withdraw LST
+      const stepLstWithdrawnAmount = stepMaxLstWithdrawnAmount
         .times(BigNumber.min(1, pendingExposure.div(stepMaxExposure)))
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const isMaxWithdraw = stepSsuiWithdrawnAmount.eq(
-        stepMaxSsuiWithdrawnAmount,
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+      const isMaxWithdraw = stepLstWithdrawnAmount.eq(
+        stepMaxLstWithdrawnAmount,
       );
       console.log(
         `[unloopToExposure] ${i} withdraw |`,
         JSON.stringify(
           {
-            stepSsuiWithdrawnAmount: stepSsuiWithdrawnAmount.toFixed(20),
+            stepLstWithdrawnAmount: stepLstWithdrawnAmount.toFixed(20),
             isMaxWithdraw,
           },
           null,
@@ -914,37 +853,37 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      const [withdrawnSsuiCoin] = strategyWithdraw(
-        NORMALIZED_sSUI_COINTYPE,
+      const [withdrawnLstCoin] = strategyWithdraw(
+        lstReserve.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
           BigNumber.min(
             new BigNumber(
-              stepSsuiWithdrawnAmount
-                .times(10 ** sSUI_DECIMALS)
+              stepLstWithdrawnAmount
+                .times(10 ** LST_DECIMALS)
                 .integerValue(BigNumber.ROUND_DOWN)
                 .toString(),
             )
-              .div(sSuiReserve.cTokenExchangeRate)
+              .div(lstReserve.cTokenExchangeRate)
               .integerValue(BigNumber.ROUND_UP),
             obligation.deposits[0].depositedCtokenAmount,
           ).toString(),
         ),
         transaction,
       );
-      sSuiDepositedAmount = sSuiDepositedAmount.minus(stepSsuiWithdrawnAmount);
+      lstDepositedAmount = lstDepositedAmount.minus(stepLstWithdrawnAmount);
 
-      // 3) Unstake withdrawn sSUI for SUI
-      const stepSuiCoin = lstClient.redeem(transaction, withdrawnSsuiCoin);
+      // 3) Unstake withdrawn LST for SUI
+      const stepSuiCoin = lst.client.redeem(transaction, withdrawnLstCoin);
 
       // 4) Repay SUI
       const stepSuiRepaidAmount = new BigNumber(
-        stepSsuiWithdrawnAmount.minus(
-          getSsuiRedeemFee(stepSsuiWithdrawnAmount),
+        stepLstWithdrawnAmount.minus(
+          getLstRedeemFee(lstReserve.coinType, stepLstWithdrawnAmount),
         ),
       )
-        .times(sSuiToSuiExchangeRate)
+        .times(lst.lstToSuiExchangeRate)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
       console.log(
@@ -970,7 +909,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       suiBorrowedAmount = suiBorrowedAmount.minus(stepSuiRepaidAmount);
     }
 
-    return { transaction, sSuiDepositedAmount, suiBorrowedAmount };
+    return { transaction, lstDepositedAmount, suiBorrowedAmount };
   };
 
   const deposit = async (
@@ -981,18 +920,20 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
   ): Promise<Transaction> => {
     if (!address) throw Error("Wallet not connected");
 
-    const sSuiAmount = (
+    const lstAmount = (
       isSui(coinType)
-        ? amount.minus(getSsuiMintFee(amount)).times(suiToSsuiExchangeRate)
+        ? amount
+            .minus(getLstMintFee(lstReserve.coinType, amount))
+            .times(lst.suiToLstExchangeRate)
         : amount
-    ).decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+    ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
     console.log(
-      `[SsuiStrategyDialog] deposit |`,
+      `[StrategyDialog] deposit |`,
       JSON.stringify(
         {
           amount: amount.toFixed(20),
           coinType,
-          sSuiAmount: sSuiAmount.toFixed(20),
+          lstAmount: lstAmount.toFixed(20),
         },
         null,
         2,
@@ -1000,29 +941,33 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     );
 
     // Prepare
-    let sSuiDepositedAmount = isObligationLooping(obligation)
-      ? obligation!.deposits[0].depositedAmount.decimalPlaces(
-          sSUI_DECIMALS,
-          BigNumber.ROUND_DOWN,
-        )
-      : new BigNumber(0);
-    const suiBorrowedAmount = isObligationLooping(obligation)
-      ? (
-          obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
-        ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN)
-      : new BigNumber(0);
-    const targetExposure = isObligationLooping(obligation)
-      ? getExposure(
-          obligation!.deposits[0].depositedAmount,
-          obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-        )
-      : new BigNumber(depositSliderValue);
+    let lstDepositedAmount =
+      !!obligation && hasPosition(obligation)
+        ? obligation.deposits[0].depositedAmount.decimalPlaces(
+            LST_DECIMALS,
+            BigNumber.ROUND_DOWN,
+          )
+        : new BigNumber(0);
+    const suiBorrowedAmount =
+      !!obligation && hasPosition(obligation)
+        ? (
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
+          ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN)
+        : new BigNumber(0);
+    const targetExposure =
+      !!obligation && hasPosition(obligation)
+        ? getExposure(
+            strategyType,
+            obligation.deposits[0].depositedAmount,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+          )
+        : new BigNumber(depositSliderValue);
 
     console.log(
-      `[SsuiStrategyDialog] deposit |`,
+      `[StrategyDialog] deposit |`,
       JSON.stringify(
         {
-          sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+          lstDepositedAmount: lstDepositedAmount.toFixed(20),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
           targetExposure: targetExposure.toFixed(20),
         },
@@ -1031,8 +976,8 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       ),
     );
 
-    // 1) Stake SUI for sSUI OR split sSUI coins
-    let sSuiCoinToDeposit;
+    // 1) Stake SUI for LST OR split LST coins
+    let lstCoinToDeposit;
     if (isSui(coinType)) {
       const suiCoinToStake = transaction.splitCoins(transaction.gas, [
         amount
@@ -1040,25 +985,25 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           .integerValue(BigNumber.ROUND_DOWN)
           .toString(),
       ]);
-      sSuiCoinToDeposit = lstClient.mint(transaction, suiCoinToStake);
+      lstCoinToDeposit = lst.client.mint(transaction, suiCoinToStake);
     } else {
-      const allCoinsSsui = await getAllCoins(
+      const allCoinsLst = await getAllCoins(
         suiClient,
         address,
-        NORMALIZED_sSUI_COINTYPE,
+        lstReserve.coinType,
       );
-      const mergeCoinSsui = mergeAllCoins(
-        NORMALIZED_sSUI_COINTYPE,
+      const mergeCoinLst = mergeAllCoins(
+        lstReserve.coinType,
         transaction,
-        allCoinsSsui,
+        allCoinsLst,
       );
 
-      sSuiCoinToDeposit = transaction.splitCoins(
-        transaction.object(mergeCoinSsui.coinObjectId),
+      lstCoinToDeposit = transaction.splitCoins(
+        transaction.object(mergeCoinLst.coinObjectId),
         [
           BigInt(
-            sSuiAmount
-              .times(10 ** sSUI_DECIMALS)
+            lstAmount
+              .times(10 ** LST_DECIMALS)
               .integerValue(BigNumber.ROUND_DOWN)
               .toString(),
           ),
@@ -1066,22 +1011,22 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
     }
 
-    // 2) Deposit sSUI (1x exposure)
+    // 2) Deposit LST (1x exposure)
     strategyDeposit(
-      sSuiCoinToDeposit,
-      NORMALIZED_sSUI_COINTYPE,
+      lstCoinToDeposit,
+      lstReserve.coinType,
       strategyOwnerCapId,
-      appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+      appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
       transaction,
     );
-    sSuiDepositedAmount = sSuiDepositedAmount.plus(sSuiAmount);
+    lstDepositedAmount = lstDepositedAmount.plus(lstAmount);
 
     // 3) Loop to target exposure
     transaction = (
       await loopToExposure(
         strategyOwnerCapId,
         transaction,
-        sSuiDepositedAmount,
+        lstDepositedAmount,
         suiBorrowedAmount,
         targetExposure,
       )
@@ -1100,34 +1045,34 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!obligation) throw Error("Obligation not found");
 
     console.log(
-      `[SsuiStrategyDialog] withdraw |`,
+      `[StrategyDialog] withdraw |`,
       JSON.stringify({ unloopPercent: unloopPercent.toFixed(20) }, null, 2),
     );
 
     // Prepare
-    let sSuiDepositedAmount =
-      obligation!.deposits[0].depositedAmount.decimalPlaces(
-        sSUI_DECIMALS,
+    let lstDepositedAmount =
+      obligation.deposits[0].depositedAmount.decimalPlaces(
+        LST_DECIMALS,
         BigNumber.ROUND_DOWN,
       );
     let suiBorrowedAmount = (
-      obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
+      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
     ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
-    const targetSsuiDepositedAmount = sSuiDepositedAmount
+    const targetLstDepositedAmount = lstDepositedAmount
       .times(new BigNumber(1).minus(unloopPercent.div(100)))
-      .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+      .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
     const targetSuiBorrowedAmount = suiBorrowedAmount
       .times(new BigNumber(1).minus(unloopPercent.div(100)))
       .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     console.log(
-      `[SsuiStrategyDialog] withdraw |`,
+      `[StrategyDialog] withdraw |`,
       JSON.stringify(
         {
-          sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+          lstDepositedAmount: lstDepositedAmount.toFixed(20),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-          targetSsuiDepositedAmount: targetSsuiDepositedAmount.toFixed(20),
+          targetLstDepositedAmount: targetLstDepositedAmount.toFixed(20),
           targetSuiBorrowedAmount: targetSuiBorrowedAmount.toFixed(20),
         },
         null,
@@ -1137,48 +1082,49 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
-      const pendingSsuiWithdrawAmount = sSuiDepositedAmount.minus(
-        targetSsuiDepositedAmount,
+      const pendingLstWithdrawAmount = lstDepositedAmount.minus(
+        targetLstDepositedAmount,
       );
       const pendingSuiRepayAmount = suiBorrowedAmount.minus(
         targetSuiBorrowedAmount,
       );
 
       console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} start |`,
+        `[StrategyDialog] withdraw - ${i} start |`,
         JSON.stringify(
           {
-            sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+            lstDepositedAmount: lstDepositedAmount.toFixed(20),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-            pendingSsuiWithdrawAmount: pendingSsuiWithdrawAmount.toFixed(20),
+            pendingLstWithdrawAmount: pendingLstWithdrawAmount.toFixed(20),
             pendingSuiRepayAmount: pendingSuiRepayAmount.toFixed(20),
           },
           null,
           2,
         ),
       );
-      if (pendingSsuiWithdrawAmount.lte(E) && pendingSuiRepayAmount.lte(E))
+      if (pendingLstWithdrawAmount.lte(E) && pendingSuiRepayAmount.lte(E))
         break;
 
       // 1.1) Max
-      const stepMaxSsuiWithdrawnAmount = getStepMaxSsuiWithdrawnAmount(
-        sSuiDepositedAmount,
+      const stepMaxLstWithdrawnAmount = getStepMaxLstWithdrawnAmount(
+        strategyType,
+        lstDepositedAmount,
         suiBorrowedAmount,
       )
         .times(0.98) // 2% buffer
-        .decimalPlaces(sSUI_DECIMALS, BigNumber.ROUND_DOWN);
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
-        stepMaxSsuiWithdrawnAmount.minus(
-          getSsuiRedeemFee(stepMaxSsuiWithdrawnAmount),
+        stepMaxLstWithdrawnAmount.minus(
+          getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
       )
-        .times(sSuiToSuiExchangeRate)
+        .times(lst.lstToSuiExchangeRate)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} max |`,
+        `[StrategyDialog] withdraw - ${i} max |`,
         JSON.stringify(
           {
-            stepMaxSsuiWithdrawnAmount: stepMaxSsuiWithdrawnAmount.toFixed(20),
+            stepMaxLstWithdrawnAmount: stepMaxLstWithdrawnAmount.toFixed(20),
             stepMaxSuiRepaidAmount: stepMaxSuiRepaidAmount.toFixed(20),
           },
           null,
@@ -1186,20 +1132,20 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      // 1.2) Withdraw sSUI
-      const stepSsuiWithdrawnAmount = BigNumber.min(
-        pendingSsuiWithdrawAmount,
-        stepMaxSsuiWithdrawnAmount,
+      // 1.2) Withdraw LST
+      const stepLstWithdrawnAmount = BigNumber.min(
+        pendingLstWithdrawAmount,
+        stepMaxLstWithdrawnAmount,
       );
-      const isMaxWithdraw = stepSsuiWithdrawnAmount.eq(
-        stepMaxSsuiWithdrawnAmount,
+      const isMaxWithdraw = stepLstWithdrawnAmount.eq(
+        stepMaxLstWithdrawnAmount,
       );
       console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} withdraw |`,
+        `[StrategyDialog] withdraw - ${i} withdraw |`,
         JSON.stringify(
           {
-            stepMaxSsuiWithdrawnAmount: stepMaxSsuiWithdrawnAmount.toFixed(20),
-            stepSsuiWithdrawnAmount: stepSsuiWithdrawnAmount.toFixed(20),
+            stepMaxLstWithdrawnAmount: stepMaxLstWithdrawnAmount.toFixed(20),
+            stepLstWithdrawnAmount: stepLstWithdrawnAmount.toFixed(20),
             isMaxWithdraw,
           },
           null,
@@ -1207,29 +1153,29 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         ),
       );
 
-      const [withdrawnSsuiCoin] = strategyWithdraw(
-        NORMALIZED_sSUI_COINTYPE,
+      const [withdrawnLstCoin] = strategyWithdraw(
+        lstReserve.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
           BigNumber.min(
             new BigNumber(
-              stepSsuiWithdrawnAmount
-                .times(10 ** sSUI_DECIMALS)
+              stepLstWithdrawnAmount
+                .times(10 ** LST_DECIMALS)
                 .integerValue(BigNumber.ROUND_DOWN)
                 .toString(),
             )
-              .div(sSuiReserve.cTokenExchangeRate)
+              .div(lstReserve.cTokenExchangeRate)
               .integerValue(BigNumber.ROUND_UP),
             obligation.deposits[0].depositedCtokenAmount,
           ).toString(),
         ),
         transaction,
       );
-      sSuiDepositedAmount = sSuiDepositedAmount.minus(stepSsuiWithdrawnAmount);
+      lstDepositedAmount = lstDepositedAmount.minus(stepLstWithdrawnAmount);
 
-      // 1.3) Unstake withdrawn sSUI for SUI
-      const stepSuiCoin = lstClient.redeem(transaction, withdrawnSsuiCoin);
+      // 1.3) Unstake withdrawn LST for SUI
+      const stepSuiCoin = lst.client.redeem(transaction, withdrawnLstCoin);
 
       // 1.4) Repay SUI
       const stepSuiRepaidAmount = BigNumber.min(
@@ -1238,7 +1184,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       );
       const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
       console.log(
-        `[SsuiStrategyDialog] withdraw - ${i} repay |`,
+        `[StrategyDialog] withdraw - ${i} repay |`,
         JSON.stringify(
           {
             stepMaxSuiRepaidAmount: stepMaxSuiRepaidAmount.toFixed(20),
@@ -1282,11 +1228,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       // 1.5) Transfer SUI to user
       transaction.transferObjects([suiCoin], address);
     } else {
-      // 1.5) Stake SUI for sSUI
-      const sSuiCoin = lstClient.mint(transaction, suiCoin);
+      // 1.5) Stake SUI for LST
+      const lstCoin = lst.client.mint(transaction, suiCoin);
 
-      // 1.6) Transfer sSUI to user
-      transaction.transferObjects([sSuiCoin], address);
+      // 1.6) Transfer LST to user
+      transaction.transferObjects([lstCoin], address);
     }
 
     return transaction;
@@ -1361,19 +1307,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
-      console.log(`[SsuiStrategyDialog] maxWithdraw - ${i} start`);
+      console.log(`[StrategyDialog] maxWithdraw - ${i} start`);
 
-      // 2.1) Max withdraw sSUI
-      const [withdrawnSsuiCoin] = strategyWithdraw(
-        NORMALIZED_sSUI_COINTYPE,
+      // 2.1) Max withdraw LST
+      const [withdrawnLstCoin] = strategyWithdraw(
+        lstReserve.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(NORMALIZED_sSUI_COINTYPE),
+        appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(MAX_U64.toString()),
         transaction,
       );
 
-      // 2.2) Unstake withdrawn sSUI for SUI
-      const stepSuiCoin = lstClient.redeem(transaction, withdrawnSsuiCoin);
+      // 2.2) Unstake withdrawn LST for SUI
+      const stepSuiCoin = lst.client.redeem(transaction, withdrawnLstCoin);
       if (suiCoin) transaction.mergeCoins(suiCoin, [stepSuiCoin]);
       else suiCoin = stepSuiCoin;
 
@@ -1405,11 +1351,11 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
       // 2.4) Transfer SUI to user
       transaction.transferObjects([suiCoin], address);
     } else {
-      // 2.4) Stake SUI for sSUI
-      const sSuiCoin = lstClient.mint(transaction, suiCoin);
+      // 2.4) Stake SUI for LST
+      const lstCoin = lst.client.mint(transaction, suiCoin);
 
-      // 2.5) Transfer sSUI to user
-      transaction.transferObjects([sSuiCoin], address);
+      // 2.5) Transfer LST to user
+      transaction.transferObjects([lstCoin], address);
     }
 
     return transaction;
@@ -1424,20 +1370,20 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     if (!obligation) throw Error("Obligation not found");
 
     // Prepare
-    const sSuiDepositedAmount =
-      obligation!.deposits[0].depositedAmount.decimalPlaces(
-        sSUI_DECIMALS,
+    const lstDepositedAmount =
+      obligation.deposits[0].depositedAmount.decimalPlaces(
+        LST_DECIMALS,
         BigNumber.ROUND_DOWN,
       );
     const suiBorrowedAmount = (
-      obligation!.borrows[0]?.borrowedAmount ?? new BigNumber(0)
+      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
     ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
     console.log(
-      `[SsuiStrategyDialog] adjust |`,
+      `[StrategyDialog] adjust |`,
       JSON.stringify(
         {
-          sSuiDepositedAmount: sSuiDepositedAmount.toFixed(20),
+          lstDepositedAmount: lstDepositedAmount.toFixed(20),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
           targetExposure: targetExposure.toFixed(20),
         },
@@ -1451,7 +1397,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         await loopToExposure(
           strategyOwnerCapId,
           transaction,
-          sSuiDepositedAmount,
+          lstDepositedAmount,
           suiBorrowedAmount,
           targetExposure,
         )
@@ -1461,7 +1407,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         await unloopToExposure(
           strategyOwnerCapId,
           transaction,
-          sSuiDepositedAmount,
+          lstDepositedAmount,
           suiBorrowedAmount,
           targetExposure,
         )
@@ -1477,15 +1423,19 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
     try {
       let transaction = new Transaction();
 
-      // 1) Refresh pyth oracles (sSUI and SUI) - required when borrowing or withdrawing
+      // 1) Refresh pyth oracles (LST and SUI) - required when borrowing or withdrawing
       await appData.suilendClient.refreshAll(transaction, undefined, [
-        NORMALIZED_sSUI_COINTYPE,
+        lstReserve.coinType,
         NORMALIZED_SUI_COINTYPE,
       ]);
 
       if (selectedTab === Tab.DEPOSIT) {
         const { strategyOwnerCapId, didCreate } =
-          createStrategyOwnerCapIfNoneExists(transaction, strategyOwnerCap);
+          createStrategyOwnerCapIfNoneExists(
+            strategyType,
+            strategyOwnerCap,
+            transaction,
+          );
 
         // 2) Deposit
         transaction = await deposit(
@@ -1495,10 +1445,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           reserve.coinType,
         );
 
-        // 3) Rebalance sSUI
-        lstClient.rebalance(
+        // 3) Rebalance LST
+        lst.client.rebalance(
           transaction,
-          lstClient.liquidStakingObject.weightHookId,
+          lst.client.liquidStakingObject.weightHookId,
         );
 
         if (didCreate)
@@ -1524,7 +1474,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 })
               : null,
             reserve.token.symbol,
-            "into sSUI/SUI loop strategy",
+            `into ${strategyInfo.title} ${strategyInfo.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -1539,7 +1489,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         );
 
         // Set slider value (if initial deposit)
-        if (!isObligationLooping(obligation))
+        if (!obligation || !hasPosition(obligation))
           setAdjustSliderValue(depositSliderValue);
       } else if (selectedTab === Tab.WITHDRAW) {
         if (!strategyOwnerCap || !obligation)
@@ -1559,10 +1509,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
               transaction,
             );
 
-        // 3) Rebalance sSUI
-        lstClient.rebalance(
+        // 3) Rebalance LST
+        lst.client.rebalance(
           transaction,
-          lstClient.liquidStakingObject.weightHookId,
+          lst.client.liquidStakingObject.weightHookId,
         );
 
         const res = await signExecuteAndWaitForTransaction(transaction);
@@ -1580,7 +1530,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                 })
               : null,
             reserve.token.symbol,
-            "from sSUI/SUI loop strategy",
+            `from ${strategyInfo.title} ${strategyInfo.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -1610,10 +1560,10 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
           transaction,
         );
 
-        // 3) Rebalance sSUI
-        lstClient.rebalance(
+        // 3) Rebalance LST
+        lst.client.rebalance(
           transaction,
-          lstClient.liquidStakingObject.weightHookId,
+          lst.client.liquidStakingObject.weightHookId,
         );
 
         const res = await signExecuteAndWaitForTransaction(transaction);
@@ -1646,7 +1596,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
               : selectedTab === Tab.ADJUST
                 ? "adjust"
                 : "--" // Should not happen
-        } sSUI/SUI loop strategy`,
+        } ${strategyInfo.title} ${strategyInfo.type} strategy`,
         err as Error,
         undefined,
         true,
@@ -1688,7 +1638,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
         }
       >
         <div className="mb-4 w-full">
-          <SsuiSuiStrategyHeader />
+          <StrategyHeader strategyType={strategyType} />
         </div>
 
         <div
@@ -1773,7 +1723,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
 
             {/* Exposure */}
             {((selectedTab === Tab.DEPOSIT &&
-              !isObligationLooping(obligation)) ||
+              (!obligation || !hasPosition(obligation))) ||
               selectedTab === Tab.ADJUST) && (
               <div className="flex w-full flex-col gap-2">
                 {/* Slider */}
@@ -1840,7 +1790,7 @@ export default function SsuiStrategyDialog({ children }: PropsWithChildren) {
                     autoComplete="off"
                     disabled={
                       selectedTab === Tab.ADJUST &&
-                      !isObligationLooping(obligation)
+                      (!obligation || !hasPosition(obligation))
                     }
                   />
                 </div>

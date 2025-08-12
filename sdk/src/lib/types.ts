@@ -1,3 +1,5 @@
+import { StrategyType } from "./strategyOwnerCap";
+
 export enum Side {
   DEPOSIT = "deposit",
   BORROW = "borrow",
@@ -217,7 +219,7 @@ export type ApiObligationDataEvent = {
 // StrategyOwnerCap
 export type StrategyOwnerCap = {
   id: string;
-  strategyType: number;
+  strategyType: StrategyType;
   obligationOwnerCapId: string;
   obligationId: string;
 };

@@ -4,42 +4,48 @@ import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
 
-import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk/lib/strategyOwnerCap";
+import {
+  STRATEGY_TYPE_INFO_MAP,
+  StrategyType,
+} from "@suilend/sdk/lib/strategyOwnerCap";
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
-import SsuiStrategyDialog from "@/components/strategies/SsuiStrategyDialog";
-import SsuiSuiStrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
+import StrategyDialog from "@/components/strategies/SsuiStrategyDialog";
+import StrategyHeader from "@/components/strategies/SsuiSuiStrategyHeader";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedSsuiStrategyContext } from "@/contexts/SsuiStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import usePnlSuiAmountMap from "@/hooks/usePnlSuiAmountMap";
 
-export default function SsuiStrategyCard() {
+interface StrategyCardProps {
+  strategyType: StrategyType;
+}
+
+export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const { userData } = useLoadedUserContext();
 
   const {
-    isObligationLooping,
+    hasPosition,
 
     suiReserve,
-    sSuiReserve,
-    minExposure,
-    maxExposure,
-    defaultExposure,
-
-    lstClient,
     suiBorrowFeePercent,
-    suiToSsuiExchangeRate,
-    sSuiToSuiExchangeRate,
 
-    getSsuiMintFee,
-    getSsuiRedeemFee,
+    getLstReserve,
+    lstMap,
+    getLstMintFee,
+    getLstRedeemFee,
+
+    exposureMap,
+
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxSsuiWithdrawnAmount,
+    getStepMaxLstWithdrawnAmount,
+
+    getSimulatedObligation,
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
@@ -48,56 +54,95 @@ export default function SsuiStrategyCard() {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useLoadedSsuiStrategyContext();
+  } = useLoadedLstStrategyContext();
+
+  // Strategy
+  const strategyInfo = useMemo(
+    () => STRATEGY_TYPE_INFO_MAP[strategyType],
+    [strategyType],
+  );
+
+  const minExposure = useMemo(
+    () => exposureMap[strategyType].min,
+    [strategyType, exposureMap],
+  );
+  const maxExposure = useMemo(
+    () => exposureMap[strategyType].max,
+    [strategyType, exposureMap],
+  );
+  const defaultExposure = useMemo(
+    () => exposureMap[strategyType].default,
+    [strategyType, exposureMap],
+  );
+
+  // LST
+  const lstReserve = useMemo(
+    () => getLstReserve(strategyType),
+    [getLstReserve, strategyType],
+  );
+  const lst = useMemo(
+    () => lstMap[lstReserve.coinType],
+    [lstMap, lstReserve.coinType],
+  );
+
+  //
+  //
+  //
 
   // Obligation
   const strategyOwnerCap = userData.strategyOwnerCaps.find(
-    (soc) => soc.strategyType === STRATEGY_SUI_LOOPING_SSUI,
+    (soc) => soc.strategyType === strategyType,
   );
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 
+  // Stats
   // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(obligation);
+  const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
 
   // Stats - APR
-  const aprPercent = getAprPercent(obligation, defaultExposure);
+  const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
 
   // Stats - PnL
-  const { pnlSuiAmountMap } = usePnlSuiAmountMap(obligation);
+  const { pnlSuiAmountMap } = usePnlSuiAmountMap(strategyType, obligation);
   const pnlSuiAmount = useMemo(
     () =>
-      isObligationLooping(obligation)
-        ? pnlSuiAmountMap[obligation!.id]
+      !!obligation && hasPosition(obligation)
+        ? pnlSuiAmountMap[obligation.id]
         : new BigNumber(0),
-    [isObligationLooping, obligation, pnlSuiAmountMap],
+    [obligation, hasPosition, pnlSuiAmountMap],
   );
 
   // Stats - Exposure
   const exposure = useMemo(
     () =>
       getExposure(
+        strategyType,
         obligation?.deposits[0]?.depositedAmount ?? new BigNumber(0),
         obligation?.borrows[0]?.borrowedAmount ?? new BigNumber(0),
       ),
-    [getExposure, obligation],
+    [getExposure, strategyType, obligation],
   );
 
   // Stats - Health
-  const healthPercent = getHealthPercent(obligation, defaultExposure);
+  const healthPercent = getHealthPercent(
+    strategyType,
+    obligation,
+    defaultExposure,
+  );
   const healthColorRange = new Color("#ef4444").range("#22c55e"); // red-500 -> green-500
 
   return (
-    <SsuiStrategyDialog>
+    <StrategyDialog strategyType={strategyType}>
       <div className="flex w-full cursor-pointer flex-col gap-4 rounded-sm border bg-card p-4 transition-colors hover:bg-muted/10">
         <div className="flex w-full flex-row justify-between">
           {/* Left */}
-          <SsuiSuiStrategyHeader />
+          <StrategyHeader strategyType={strategyType} />
 
           {/* Right */}
           <div className="flex flex-row justify-end gap-6">
-            {isObligationLooping(obligation) && (
+            {!!obligation && hasPosition(obligation) && (
               <div className="flex w-fit flex-col items-end gap-1">
                 <TLabelSans>Equity</TLabelSans>
                 <Tooltip
@@ -117,7 +162,7 @@ export default function SsuiStrategyCard() {
           </div>
         </div>
 
-        {isObligationLooping(obligation) && (
+        {!!obligation && hasPosition(obligation) && (
           <>
             <Separator />
 
@@ -164,6 +209,6 @@ export default function SsuiStrategyCard() {
           </>
         )}
       </div>
-    </SsuiStrategyDialog>
+    </StrategyDialog>
   );
 }

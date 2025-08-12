@@ -1,12 +1,13 @@
 import Head from "next/head";
 
-import { STRATEGY_SUI_LOOPING_SSUI } from "@suilend/sdk/lib/strategyOwnerCap";
+import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
+import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import SsuiStrategyCard from "@/components/strategies/SsuiStrategyCard";
+import StrategyCard from "@/components/strategies/SsuiStrategyCard";
 import {
-  SsuiStrategyContextProvider,
-  useLoadedSsuiStrategyContext,
+  LstStrategyContextProvider,
+  useLoadedLstStrategyContext,
 } from "@/contexts/SsuiStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
@@ -22,24 +23,23 @@ function Page() {
   const { userData } = useLoadedUserContext();
 
   const {
-    isObligationLooping,
+    hasPosition,
 
     suiReserve,
-    sSuiReserve,
-    minExposure,
-    maxExposure,
-    defaultExposure,
-
-    lstClient,
     suiBorrowFeePercent,
-    suiToSsuiExchangeRate,
-    sSuiToSuiExchangeRate,
 
-    getSsuiMintFee,
-    getSsuiRedeemFee,
+    getLstReserve,
+    lstMap,
+    getLstMintFee,
+    getLstRedeemFee,
+
+    exposureMap,
+
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxSsuiWithdrawnAmount,
+    getStepMaxLstWithdrawnAmount,
+
+    getSimulatedObligation,
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
@@ -48,14 +48,33 @@ function Page() {
     getTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
-  } = useLoadedSsuiStrategyContext();
+  } = useLoadedLstStrategyContext();
 
-  // Obligation
-  const strategyOwnerCap = userData.strategyOwnerCaps.find(
-    (soc) => soc.strategyType === STRATEGY_SUI_LOOPING_SSUI,
-  );
-  const obligation = userData.strategyObligations.find(
-    (so) => so.id === strategyOwnerCap?.obligationId,
+  // Obligations
+  const strategyOwnerCapObligationMap: Record<
+    StrategyType,
+    { strategyOwnerCap: StrategyOwnerCap; obligation: ParsedObligation }
+  > = Object.values(StrategyType).reduce(
+    (acc, strategyType) => {
+      const strategyOwnerCap: StrategyOwnerCap | undefined =
+        userData.strategyOwnerCaps.find(
+          (soc) => soc.strategyType === strategyType,
+        );
+      const obligation: ParsedObligation | undefined =
+        userData.strategyObligations.find(
+          (so) => so.id === strategyOwnerCap?.obligationId,
+        );
+      if (!strategyOwnerCap || !obligation) return acc;
+
+      return {
+        ...acc,
+        [strategyType]: { strategyOwnerCap, obligation },
+      };
+    },
+    {} as Record<
+      StrategyType,
+      { strategyOwnerCap: StrategyOwnerCap; obligation: ParsedObligation }
+    >,
   );
 
   return (
@@ -67,44 +86,54 @@ function Page() {
       <div className="flex w-full flex-col gap-6">
         <TBodySans className="text-xl">Strategies</TBodySans>
 
-        {/* My positions/All strategies */}
-        <div className="flex w-full flex-col gap-3">
-          <TBodySans className="text-lg">
-            {isObligationLooping(obligation)
-              ? "My positions"
-              : "All strategies"}
-          </TBodySans>
-
-          {/* Min card width: 360px */}
-          <div className="grid grid-cols-1 gap-4 min-[820px]:grid-cols-2 min-[1196px]:grid-cols-3">
-            <SsuiStrategyCard />
-            {!isObligationLooping(obligation) && (
-              <>
-                <ComingSoonStrategyCard />
-                <ComingSoonStrategyCard />
-                <ComingSoonStrategyCard />
-                <ComingSoonStrategyCard />
-                <ComingSoonStrategyCard />
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* All strategies */}
-        {isObligationLooping(obligation) && (
+        {/* My positions */}
+        {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
+          hasPosition(obligation),
+        ) && (
           <div className="flex w-full flex-col gap-3">
-            <TBodySans className="text-lg">All strategies</TBodySans>
+            <TBodySans className="text-lg">My positions</TBodySans>
 
-            {/* Min card width: 360px */}
-            <div className="grid grid-cols-1 gap-4 min-[820px]:grid-cols-2 min-[1196px]:grid-cols-3">
-              <ComingSoonStrategyCard />
-              <ComingSoonStrategyCard />
-              <ComingSoonStrategyCard />
-              <ComingSoonStrategyCard />
-              <ComingSoonStrategyCard />
+            {/* Min card width: 400px */}
+            <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
+              {Object.values(StrategyType).map(
+                (strategyType) =>
+                  !!strategyOwnerCapObligationMap[
+                    strategyType as StrategyType
+                  ] && (
+                    <StrategyCard
+                      key={strategyType}
+                      strategyType={strategyType as StrategyType}
+                    />
+                  ),
+              )}
             </div>
           </div>
         )}
+
+        {/* All strategies */}
+        <div className="flex w-full flex-col gap-3">
+          <TBodySans className="text-lg">All strategies</TBodySans>
+
+          {/* Min card width: 400px */}
+          <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
+            {Object.values(StrategyType).map(
+              (strategyType) =>
+                !strategyOwnerCapObligationMap[
+                  strategyType as StrategyType
+                ] && (
+                  <StrategyCard
+                    key={strategyType}
+                    strategyType={strategyType as StrategyType}
+                  />
+                ),
+            )}
+
+            <ComingSoonStrategyCard />
+            <ComingSoonStrategyCard />
+            <ComingSoonStrategyCard />
+            <ComingSoonStrategyCard />
+          </div>
+        </div>
       </div>
     </>
   );
@@ -112,8 +141,8 @@ function Page() {
 
 export default function Strategies() {
   return (
-    <SsuiStrategyContextProvider>
+    <LstStrategyContextProvider>
       <Page />
-    </SsuiStrategyContextProvider>
+    </LstStrategyContextProvider>
   );
 }

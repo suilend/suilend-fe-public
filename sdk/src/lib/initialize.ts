@@ -51,12 +51,12 @@ import {
 } from "@suilend/sui-fe";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { LENDING_MARKET_TYPE, SuilendClient } from "../client";
+import { SuilendClient } from "../client";
 import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
-import { STRATEGY_WRAPPER_PACKAGE_ID } from "./strategyOwnerCap";
+import { STRATEGY_WRAPPER_PACKAGE_ID, StrategyType } from "./strategyOwnerCap";
 import { StrategyOwnerCap } from "./types";
 
 export const RESERVES_CUSTOM_ORDER = [
@@ -343,7 +343,7 @@ export const initializeObligations = async (
 
         const result: StrategyOwnerCap = {
           id,
-          strategyType,
+          strategyType: `${strategyType}` as StrategyType,
           obligationOwnerCapId,
           obligationId,
         };
