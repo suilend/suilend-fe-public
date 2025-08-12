@@ -56,11 +56,16 @@ function Page() {
     getHealthPercent,
   } = useLoadedLstStrategyContext();
 
+  // Strategy types
+  const strategyTypes = Object.values(StrategyType).filter(
+    (strategyType) => strategyType !== StrategyType.stratSUI_SUI_LOOPING,
+  );
+
   // Obligations
   const strategyOwnerCapObligationMap: Record<
     StrategyType,
     { strategyOwnerCap: StrategyOwnerCap; obligation: ParsedObligation }
-  > = Object.values(StrategyType).reduce(
+  > = strategyTypes.reduce(
     (acc, strategyType) => {
       const strategyOwnerCap: StrategyOwnerCap | undefined =
         userData.strategyOwnerCaps.find(
@@ -89,7 +94,7 @@ function Page() {
         <title>Suilend | Strategies</title>
       </Head>
 
-      {Object.values(StrategyType).map((strategyType) => (
+      {strategyTypes.map((strategyType) => (
         <LstStrategyDialog key={strategyType} strategyType={strategyType} />
       ))}
 
@@ -105,7 +110,7 @@ function Page() {
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {Object.values(StrategyType).map((strategyType) => {
+              {strategyTypes.map((strategyType) => {
                 const obligation =
                   strategyOwnerCapObligationMap[strategyType as StrategyType]
                     ?.obligation;
@@ -130,7 +135,7 @@ function Page() {
 
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-            {Object.values(StrategyType).map((strategyType) => {
+            {strategyTypes.map((strategyType) => {
               const obligation =
                 strategyOwnerCapObligationMap[strategyType as StrategyType]
                   ?.obligation;
@@ -145,6 +150,7 @@ function Page() {
               return null;
             })}
 
+            <ComingSoonStrategyCard />
             <ComingSoonStrategyCard />
           </div>
         </div>
@@ -177,7 +183,7 @@ function Page() {
                   ),
                 )}{" "}
                 APR from sSUI rewards and sSUI staking yield.
-                <br />
+                {/* <br />
                 <br />
                 2. <span className="font-medium">stratSUI/SUI</span> Looping
                 strategy that lets you leverage up to 3x, yielding{" "}
@@ -188,7 +194,7 @@ function Page() {
                     exposureMap[StrategyType.stratSUI_SUI_LOOPING].default,
                   ),
                 )}{" "}
-                APR from STRAT and sSUI rewards, and stratSUI staking yield.
+                APR from STRAT and sSUI rewards, and stratSUI staking yield. */}
               </TLabelSans>
             </div>
 
@@ -226,7 +232,8 @@ function Page() {
                 <br />• Liquidation Risk: if borrows exceed your borrow power
                 due to interest accruing
                 <br />• Smart Contract Risk: tied to SpringSui-issued LSTs such
-                as sSUI or stratSUI.
+                as sSUI.
+                {/* or stratSUI. */}
                 <br />• Oracle Risk: depending on strategy ({`doesn't`} apply to
                 SpringSui LST/SUI Looping strategies)
                 <br />
