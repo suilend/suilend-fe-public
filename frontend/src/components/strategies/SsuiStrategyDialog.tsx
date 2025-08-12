@@ -70,9 +70,9 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.1;
+const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.15;
 
-enum QueryParams {
+export enum QueryParams {
   STRATEGY_NAME = "strategy",
   TAB = "action",
   // PARAMETERS_PANEL_TAB = "parametersPanelTab",
@@ -195,27 +195,21 @@ export default function StrategyDialog({
     [lstMap, lstReserve.coinType],
   );
 
-  //
-  //
-  //
-
-  // State
+  // Open
   const isOpen = useMemo(
     () => queryParams[QueryParams.STRATEGY_NAME] === strategyInfo.queryParam,
     [queryParams, strategyInfo.queryParam],
   );
 
-  const open = useCallback(() => {
-    shallowPushQuery(router, {
-      ...router.query,
-      [QueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
-    });
-  }, [router, strategyInfo.queryParam]);
   const close = useCallback(() => {
     const restQuery = cloneDeep(router.query);
     delete restQuery[QueryParams.STRATEGY_NAME];
     shallowPushQuery(router, restQuery);
   }, [router]);
+
+  //
+  //
+  //
 
   // Obligation
   const strategyOwnerCap = userData.strategyOwnerCaps.find(
@@ -1119,6 +1113,7 @@ export default function StrategyDialog({
         ),
       )
         .times(lst.lstToSuiExchangeRate)
+        .minus(10 ** (-1 * SUI_DECIMALS)) // Subtract 1 MIST
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
         `[StrategyDialog] withdraw - ${i} max |`,
@@ -1246,63 +1241,63 @@ export default function StrategyDialog({
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
-    // 1) Claim and deposit pending rewards
-    // 1.1) Get rewards
-    const rewardsMap: Record<string, RewardSummary[]> = {};
-    Object.values(userData.rewardMap).flatMap((rewards) =>
-      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-        if (isSendPoints(r.stats.rewardCoinType)) return;
-        if (!r.obligationClaims[obligation.id]) return;
+    // // 1) Claim and deposit pending rewards
+    // // 1.1) Get rewards
+    // const rewardsMap: Record<string, RewardSummary[]> = {};
+    // Object.values(userData.rewardMap).flatMap((rewards) =>
+    //   [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+    //     if (isSendPoints(r.stats.rewardCoinType)) return;
+    //     if (!r.obligationClaims[obligation.id]) return;
 
-        if (!rewardsMap[r.stats.rewardCoinType])
-          rewardsMap[r.stats.rewardCoinType] = [];
-        rewardsMap[r.stats.rewardCoinType].push(r);
-      }),
-    );
-    const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
-      .flat()
-      .map((r) => ({
-        reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
-        rewardIndex: BigInt(r.stats.rewardIndex),
-        rewardCoinType: r.stats.rewardCoinType,
-        side: r.stats.side,
-      }));
+    //     if (!rewardsMap[r.stats.rewardCoinType])
+    //       rewardsMap[r.stats.rewardCoinType] = [];
+    //     rewardsMap[r.stats.rewardCoinType].push(r);
+    //   }),
+    // );
+    // const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
+    //   .flat()
+    //   .map((r) => ({
+    //     reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
+    //     rewardIndex: BigInt(r.stats.rewardIndex),
+    //     rewardCoinType: r.stats.rewardCoinType,
+    //     side: r.stats.side,
+    //   }));
 
-    // 1.2) Claim rewards and merge coins
-    const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
-    for (const reward of rewards) {
-      const [claimedCoin] = strategyClaimRewards(
-        reward.rewardCoinType,
-        strategyOwnerCapId,
-        reward.reserveArrayIndex,
-        reward.rewardIndex,
-        reward.side,
-        transaction,
-      );
+    // // 1.2) Claim rewards and merge coins
+    // const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
+    // for (const reward of rewards) {
+    //   const [claimedCoin] = strategyClaimRewards(
+    //     reward.rewardCoinType,
+    //     strategyOwnerCapId,
+    //     reward.reserveArrayIndex,
+    //     reward.rewardIndex,
+    //     reward.side,
+    //     transaction,
+    //   );
 
-      if (mergeCoinsMap[reward.rewardCoinType] === undefined)
-        mergeCoinsMap[reward.rewardCoinType] = [];
-      mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
-    }
+    //   if (mergeCoinsMap[reward.rewardCoinType] === undefined)
+    //     mergeCoinsMap[reward.rewardCoinType] = [];
+    //   mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
+    // }
 
-    const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
-    for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
-      const mergedCoin = coins[0];
-      if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
+    // const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
+    // for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+    //   const mergedCoin = coins[0];
+    //   if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
 
-      mergedCoinsMap[rewardCoinType] = mergedCoin;
-    }
+    //   mergedCoinsMap[rewardCoinType] = mergedCoin;
+    // }
 
-    // 1.3) Deposit rewards
-    for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
-      strategyDeposit(
-        coin,
-        coinType,
-        strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(coinType),
-        transaction,
-      );
-    }
+    // // 1.3) Deposit rewards
+    // for (const [coinType, coin] of Object.entries(mergedCoinsMap)) {
+    //   strategyDeposit(
+    //     coin,
+    //     coinType,
+    //     strategyOwnerCapId,
+    //     appData.suilendClient.findReserveArrayIndex(coinType),
+    //     transaction,
+    //   );
+    // }
 
     // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
@@ -1612,7 +1607,9 @@ export default function StrategyDialog({
     <Dialog
       rootProps={{
         open: isOpen,
-        onOpenChange: (isOpen) => (isOpen ? open() : close()),
+        onOpenChange: (open) => {
+          if (!open) close();
+        },
       }}
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}

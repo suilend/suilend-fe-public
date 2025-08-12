@@ -369,18 +369,18 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       console.error(err);
     }
   }, [suiClient]);
-  console.log(
-    `[LstStrategyContextProvider] lstMap: ${JSON.stringify(
-      Object.fromEntries(
-        Object.entries(lstMap ?? {}).map(([lstCoinType, lst]) => {
-          const { client, liquidStakingInfo, ...restLst } = lst;
-          return [lstCoinType, restLst];
-        }),
-      ),
-      null,
-      2,
-    )}`,
-  );
+  // console.log(
+  //   `[LstStrategyContextProvider] lstMap: ${JSON.stringify(
+  //     Object.fromEntries(
+  //       Object.entries(lstMap ?? {}).map(([lstCoinType, lst]) => {
+  //         const { client, liquidStakingInfo, ...restLst } = lst;
+  //         return [lstCoinType, restLst];
+  //       }),
+  //     ),
+  //     null,
+  //     2,
+  //   )}`,
+  // );
 
   const didFetchLstMap = useRef<boolean>(false);
   useEffect(() => {

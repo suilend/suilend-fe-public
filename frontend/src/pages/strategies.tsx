@@ -5,6 +5,7 @@ import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import StrategyCard from "@/components/strategies/SsuiStrategyCard";
+import StrategyDialog from "@/components/strategies/SsuiStrategyDialog";
 import {
   LstStrategyContextProvider,
   useLoadedLstStrategyContext,
@@ -83,6 +84,10 @@ function Page() {
         <title>Suilend | Strategies</title>
       </Head>
 
+      {Object.values(StrategyType).map((strategyType) => (
+        <StrategyDialog key={strategyType} strategyType={strategyType} />
+      ))}
+
       <div className="flex w-full flex-col gap-6">
         <TBodySans className="text-xl">Strategies</TBodySans>
 
@@ -95,17 +100,19 @@ function Page() {
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {Object.values(StrategyType).map(
-                (strategyType) =>
-                  !!strategyOwnerCapObligationMap[
-                    strategyType as StrategyType
-                  ] && (
-                    <StrategyCard
-                      key={strategyType}
-                      strategyType={strategyType as StrategyType}
-                    />
-                  ),
-              )}
+              {Object.values(StrategyType).map((strategyType) => {
+                const obligation =
+                  strategyOwnerCapObligationMap[strategyType as StrategyType]
+                    ?.obligation;
+
+                if (!obligation || !hasPosition(obligation)) return null;
+                return (
+                  <StrategyCard
+                    key={strategyType}
+                    strategyType={strategyType as StrategyType}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
@@ -116,17 +123,20 @@ function Page() {
 
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-            {Object.values(StrategyType).map(
-              (strategyType) =>
-                !strategyOwnerCapObligationMap[
-                  strategyType as StrategyType
-                ] && (
+            {Object.values(StrategyType).map((strategyType) => {
+              const obligation =
+                strategyOwnerCapObligationMap[strategyType as StrategyType]
+                  ?.obligation;
+
+              if (!obligation || !hasPosition(obligation))
+                return (
                   <StrategyCard
                     key={strategyType}
                     strategyType={strategyType as StrategyType}
                   />
-                ),
-            )}
+                );
+              return null;
+            })}
 
             <ComingSoonStrategyCard />
             <ComingSoonStrategyCard />
