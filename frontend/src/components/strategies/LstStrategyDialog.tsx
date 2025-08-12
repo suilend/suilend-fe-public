@@ -278,14 +278,14 @@ export default function LstStrategyDialog({
   const [isCompoundingRewards, setIsCompoundingRewards] =
     useState<boolean>(false);
 
-  const compoundRewards = async (_transaction?: Transaction) => {
+  const compoundRewards = async (
+    strategyOwnerCapId: TransactionObjectInput,
+    transaction: Transaction,
+    targetCoinType: string,
+    deposit?: boolean,
+  ) => {
     if (!address) throw Error("Wallet not connected");
-    if (!strategyOwnerCap || !obligation)
-      throw Error("StrategyOwnerCap or Obligation not found");
-
-    const transaction = _transaction
-      ? Transaction.from(_transaction)
-      : new Transaction();
+    if (!obligation) throw Error("Obligation not found");
 
     const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
       .flat()
@@ -301,7 +301,7 @@ export default function LstStrategyDialog({
     for (const reward of rewards) {
       const [claimedCoin] = strategyClaimRewards(
         reward.rewardCoinType,
-        strategyOwnerCap.id,
+        strategyOwnerCapId,
         reward.reserveArrayIndex,
         reward.rewardIndex,
         reward.side,
@@ -323,10 +323,10 @@ export default function LstStrategyDialog({
 
     // 2) Prepare
     const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-      (coinType) => coinType === lstReserve.coinType,
+      (coinType) => coinType === targetCoinType,
     );
     const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-      (coinType) => coinType !== lstReserve.coinType,
+      (coinType) => coinType !== targetCoinType,
     );
 
     let resultCoin: TransactionObjectArgument | undefined = undefined;
@@ -359,7 +359,7 @@ export default function LstStrategyDialog({
               // Get routes
               const routers = await cetusSdk.findRouters({
                 from: coinType,
-                target: lstReserve.coinType,
+                target: targetCoinType,
                 amount: new BN(
                   amount
                     .times(10 ** appData.coinMetadataMap[coinType].decimals)
@@ -414,17 +414,22 @@ export default function LstStrategyDialog({
       else resultCoin = coinOut;
     }
 
-    // 4) Deposit
+    // 4) Deposit/transfer
     if (!resultCoin) throw new Error("No coin to deposit or transfer");
-    strategyDeposit(
-      resultCoin,
-      lstReserve.coinType,
-      strategyOwnerCap.id,
-      appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
-      transaction,
-    );
-
-    return transaction;
+    if (deposit) {
+      strategyDeposit(
+        resultCoin,
+        targetCoinType,
+        strategyOwnerCapId,
+        appData.suilendClient.findReserveArrayIndex(targetCoinType),
+        transaction,
+      );
+    } else {
+      transaction.transferObjects(
+        [resultCoin],
+        transaction.pure.address(address),
+      );
+    }
   };
 
   const onCompoundRewardsClick = async () => {
@@ -437,7 +442,13 @@ export default function LstStrategyDialog({
       if (!strategyOwnerCap || !obligation)
         throw Error("StrategyOwnerCap or Obligation not found");
 
-      const transaction = await compoundRewards();
+      const transaction = new Transaction();
+      await compoundRewards(
+        strategyOwnerCap.id,
+        transaction,
+        lstReserve.coinType,
+        true,
+      );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
@@ -1564,9 +1575,9 @@ export default function LstStrategyDialog({
       transaction.transferObjects([lstCoin], address);
     }
 
-    // 2) Compound rewards
+    // 2) Claim rewards and transfer to user
     try {
-      transaction = await compoundRewards(transaction);
+      await compoundRewards(strategyOwnerCapId, transaction, coinType, false);
     } catch (err) {
       console.error(err);
     }
@@ -1872,7 +1883,7 @@ export default function LstStrategyDialog({
         <div className="mb-4 flex h-10 w-full flex-row items-center justify-between">
           <LstStrategyHeader strategyType={strategyType} />
 
-          {obligation && hasPosition(obligation) && hasClaimableRewards && (
+          {hasClaimableRewards && (
             <div className="flex h-10 flex-row items-center gap-4 rounded-sm border px-2">
               <Tooltip
                 content={
