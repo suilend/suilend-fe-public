@@ -40,7 +40,13 @@ export default function PnlLabelWithValue({
                 dp: reserve.token.decimals,
               })} ${reserve.token.symbol}`}
             >
-              <TBody className="text-right">
+              <TBody
+                className={cn(
+                  "text-right",
+                  pnlAmount.gt(0) && "text-success",
+                  pnlAmount.lt(0) && "text-destructive",
+                )}
+              >
                 {formatToken(pnlAmount.abs(), {
                   prefix: pnlAmount.eq(0)
                     ? undefined
@@ -60,6 +66,9 @@ export default function PnlLabelWithValue({
               <TLabel
                 className={cn(
                   "text-right decoration-muted-foreground/50",
+                  pnlAmount.gt(0) && "text-success decoration-success/50",
+                  pnlAmount.lt(0) &&
+                    "text-destructive decoration-destructive/50",
                   hoverUnderlineClassName,
                 )}
               >
