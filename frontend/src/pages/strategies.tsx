@@ -162,9 +162,9 @@ function Page() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* 1 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
-              <TBodySans>What is SEND Strategies?</TBodySans>
+              <TBodySans>What is Suilend Strategies?</TBodySans>
               <TLabelSans>
-                <span className="font-medium">SEND Strategies</span> is a new
+                <span className="font-medium">Suilend Strategies</span> is a new
                 Suilend feature that lets you deploy into preset DeFi strategies
                 in one click - turning complex, multi-step processes into a
                 simple, streamlined flow.

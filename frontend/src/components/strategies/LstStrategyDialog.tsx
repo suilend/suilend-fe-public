@@ -1510,19 +1510,12 @@ export default function LstStrategyDialog({
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
-    // 1) Compound rewards
-    try {
-      transaction = await compoundRewards(transaction);
-    } catch (err) {
-      console.error(err);
-    }
-
-    // 2) Max withdraw
+    // 1) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
       console.log(`[LstStrategyDialog] maxWithdraw - ${i} start`);
 
-      // 2.1) Max withdraw LST
+      // 1.1) Max withdraw LST
       const [withdrawnLstCoin] = strategyWithdraw(
         lstReserve.coinType,
         strategyOwnerCapId,
@@ -1531,12 +1524,12 @@ export default function LstStrategyDialog({
         transaction,
       );
 
-      // 2.2) Unstake withdrawn LST for SUI
+      // 1.2) Unstake withdrawn LST for SUI
       const stepSuiCoin = lst.client.redeem(transaction, withdrawnLstCoin);
       if (suiCoin) transaction.mergeCoins(suiCoin, [stepSuiCoin]);
       else suiCoin = stepSuiCoin;
 
-      // 2.3) Repay SUI
+      // 1.3) Repay SUI
       try {
         const txCopy = Transaction.from(transaction);
         appData.suilendClient.repay(
@@ -1561,14 +1554,21 @@ export default function LstStrategyDialog({
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
     if (isSui(coinType)) {
-      // 2.4) Transfer SUI to user
+      // 1.4) Transfer SUI to user
       transaction.transferObjects([suiCoin], address);
     } else {
-      // 2.4) Stake SUI for LST
+      // 1.4) Stake SUI for LST
       const lstCoin = lst.client.mint(transaction, suiCoin);
 
-      // 2.5) Transfer LST to user
+      // 1.5) Transfer LST to user
       transaction.transferObjects([lstCoin], address);
+    }
+
+    // 2) Compound rewards
+    try {
+      transaction = await compoundRewards(transaction);
+    } catch (err) {
+      console.error(err);
     }
 
     return transaction;
