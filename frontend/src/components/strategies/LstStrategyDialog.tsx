@@ -1522,13 +1522,16 @@ export default function LstStrategyDialog({
     if (!obligation) throw Error("Obligation not found");
 
     // 1) Compound rewards
+    const transactionCopy = Transaction.from(transaction);
     try {
       await compoundRewards(
         strategyOwnerCapId,
-        transaction,
+        transactionCopy,
         lstReserve.coinType,
         true,
       );
+      await dryRunTransaction(transactionCopy);
+      transaction = transactionCopy;
     } catch (err) {
       console.error(err);
     }
