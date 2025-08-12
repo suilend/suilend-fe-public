@@ -10,16 +10,14 @@ import {
 
 import {
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_mSUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  NORMALIZED_stratSUI_COINTYPE,
   isSui,
 } from "@suilend/sui-fe";
 
 import { LENDING_MARKET_ID, LENDING_MARKET_TYPE } from "../client";
 
 import { Side, StrategyOwnerCap } from "./types";
-
-export const NORMALIZED_stratSUI_COINTYPE = NORMALIZED_mSUI_COINTYPE; // TODO
 
 export const STRATEGY_WRAPPER_PACKAGE_ID =
   "0xba97dc73a07638d03d77ad2161484eb21db577edc9cadcd7035fef4b4f2f6fa1";

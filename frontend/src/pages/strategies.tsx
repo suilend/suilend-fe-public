@@ -2,9 +2,7 @@ import Head from "next/head";
 
 import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
-import { formatPercent } from "@suilend/sui-fe";
 
-import TextLink from "@/components/shared/TextLink";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyCard from "@/components/strategies/LstStrategyCard";
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
@@ -57,9 +55,7 @@ function Page() {
   } = useLoadedLstStrategyContext();
 
   // Strategy types
-  const strategyTypes = Object.values(StrategyType).filter(
-    (strategyType) => strategyType !== StrategyType.stratSUI_SUI_LOOPING,
-  );
+  const strategyTypes = Object.values(StrategyType);
 
   // Obligations
   const strategyOwnerCapObligationMap: Record<

@@ -1521,12 +1521,24 @@ export default function LstStrategyDialog({
     if (!address) throw Error("Wallet not connected");
     if (!obligation) throw Error("Obligation not found");
 
-    // 1) Max withdraw
+    // 1) Compound rewards
+    try {
+      await compoundRewards(
+        strategyOwnerCapId,
+        transaction,
+        lstReserve.coinType,
+        true,
+      );
+    } catch (err) {
+      console.error(err);
+    }
+
+    // 2) Max withdraw
     let suiCoin: TransactionObjectArgument | undefined = undefined;
     for (let i = 0; i < 30; i++) {
       console.log(`[LstStrategyDialog] maxWithdraw - ${i} start`);
 
-      // 1.1) Max withdraw LST
+      // 2.1) Max withdraw LST
       const [withdrawnLstCoin] = strategyWithdraw(
         lstReserve.coinType,
         strategyOwnerCapId,
@@ -1535,12 +1547,12 @@ export default function LstStrategyDialog({
         transaction,
       );
 
-      // 1.2) Unstake withdrawn LST for SUI
+      // 2.2) Unstake withdrawn LST for SUI
       const stepSuiCoin = lst.client.redeem(transaction, withdrawnLstCoin);
       if (suiCoin) transaction.mergeCoins(suiCoin, [stepSuiCoin]);
       else suiCoin = stepSuiCoin;
 
-      // 1.3) Repay SUI
+      // 2.3) Repay SUI
       try {
         const txCopy = Transaction.from(transaction);
         appData.suilendClient.repay(
@@ -1565,21 +1577,14 @@ export default function LstStrategyDialog({
     if (!suiCoin) throw Error("Failed to withdraw"); // Should not happen
 
     if (isSui(coinType)) {
-      // 1.4) Transfer SUI to user
+      // 2.4) Transfer SUI to user
       transaction.transferObjects([suiCoin], address);
     } else {
-      // 1.4) Stake SUI for LST
+      // 2.4) Stake SUI for LST
       const lstCoin = lst.client.mint(transaction, suiCoin);
 
-      // 1.5) Transfer LST to user
+      // 2.5) Transfer LST to user
       transaction.transferObjects([lstCoin], address);
-    }
-
-    // 2) Claim rewards and transfer to user
-    try {
-      await compoundRewards(strategyOwnerCapId, transaction, coinType, false);
-    } catch (err) {
-      console.error(err);
     }
 
     return transaction;
