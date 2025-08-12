@@ -1,8 +1,8 @@
 import Head from "next/head";
-import Link from "next/link";
 
 import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
+import { formatPercent } from "@suilend/sui-fe";
 
 import TextLink from "@/components/shared/TextLink";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
@@ -13,7 +13,6 @@ import {
   useLoadedLstStrategyContext,
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 function ComingSoonStrategyCard() {
   return (
@@ -160,18 +159,34 @@ function Page() {
                 Suilend feature that lets you deploy into preset DeFi strategies
                 in one click - turning complex, multi-step processes into a
                 simple, streamlined flow.
-                <br />
-                <br />
-                Our first strategies available:
-                <br />
-                <br />
+              </TLabelSans>
+            </div>
+
+            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+              <TBodySans>What strategies are available?</TBodySans>
+              <TLabelSans>
                 1. <span className="font-medium">sSUI/SUI</span> looping
-                strategy that lets you leverage up to 3x, yielding ~11% APR from
-                both SUI staking rewards and additional sSUI rewards.
+                strategy that lets you leverage up to 3x, yielding{" "}
+                {formatPercent(
+                  getAprPercent(
+                    StrategyType.sSUI_SUI_LOOPING,
+                    undefined,
+                    exposureMap[StrategyType.sSUI_SUI_LOOPING].default,
+                  ),
+                )}{" "}
+                APR from sSUI rewards and sSUI staking yield.
+                <br />
                 <br />
                 2. <span className="font-medium">stratSUI/SUI</span> looping
-                strategy that lets you leverage up to 3x, yielding both $STRAT
-                rewards and SUI staking rewards.
+                strategy that lets you leverage up to 3x, yielding{" "}
+                {formatPercent(
+                  getAprPercent(
+                    StrategyType.stratSUI_SUI_LOOPING,
+                    undefined,
+                    exposureMap[StrategyType.stratSUI_SUI_LOOPING].default,
+                  ),
+                )}{" "}
+                APR from STRAT and sSUI rewards, and stratSUI staking yield.
               </TLabelSans>
             </div>
 
@@ -194,9 +209,8 @@ function Page() {
                 your Sui wallet.
                 <br />
                 <br />
-                For example, the sSUI/SUI strategy applies <b>3x leverage</b> -
-                for example, depositing 10 SUI gives you 30 SUI of total
-                exposure.
+                After opening a position, {`you'll`} be able to deposit more
+                into the strategy at any time.
               </TLabelSans>
             </div>
 
@@ -206,19 +220,24 @@ function Page() {
                 In the withdraw modal, enter the amount of SUI you want to
                 withdraw from the strategy, and sign the transaction request in
                 your Sui wallet.
+                <br />
+                <br />
+                You can either withdraw all of your position at once by pressing
+                the MAX button, or withdraw a portion of it.
               </TLabelSans>
             </div>
 
             <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
               <TBodySans>What are the risks?</TBodySans>
               <TLabelSans>
-                Standard DeFi risks apply here.
+                Standard DeFi risks apply.
                 <br />
-                <br />• Liquidation Risk: if borrows exceed borrow power due to
-                interest accruing
+                <br />• Liquidation Risk: if borrows exceed your borrow power
+                due to interest accruing
                 <br />• Smart Contract Risk: tied to SpringSui-issued LSTs such
                 as sSUI or stratSUI.
-                <br />• Oracle Risk: {`doesn't`} apply here (see below).
+                <br />• Oracle Risk: depending on strategy ({`doesn't`} apply to
+                SpringSui LST/SUI looping strategies)
                 <br />
                 <br />
                 Always size your position based on your risk tolerance.
@@ -227,26 +246,81 @@ function Page() {
 
             <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
               <TBodySans>How does Suilend mitigate risks?</TBodySans>
-              <TLabelSans>TODO</TLabelSans>
+              <TLabelSans>
+                All DeFi protocols, including Suilend, come with risks, which
+                are important to understand before depositing significant
+                amounts of capital. The main risks involved in using Suilend are
+                outlined{" "}
+                <TextLink
+                  className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+                  href="https://docs.suilend.fi/security/risks"
+                  noIcon
+                >
+                  here
+                </TextLink>
+                .
+                <br />
+                <br />
+                To mitigate this, Suilend has undergone multiple rigorous
+                audits, available{" "}
+                <TextLink
+                  className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+                  href="https://docs.suilend.fi/security/suilend-audit"
+                  noIcon
+                >
+                  here
+                </TextLink>{" "}
+                and has an active bug bounty program covering smart contract
+                bugs. Suilend is one of the few Sui DeFi protocols to fully
+                open-source its smart contracts:{" "}
+                <TextLink
+                  className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
+                  href="https://docs.suilend.fi/ecosystem/suilend-integration-links"
+                  noIcon
+                >
+                  Suilend Integration Links
+                </TextLink>
+                .
+                {/* <br />
+                <br />
+                For the sSUI/SUI and stratSUI/SUI strategies:
+                <br />• No oracle risk: The SUI Pyth price feed is used for both
+                assets, as individual feeds for SUI derivative assets are less
+                reliable. Using a unified SUI price feed avoids oracle issues
+                that have occurred in the past (eg. mSOL on Solana).
+                <br />• If either asset depegs, the Suilend team will intervene
+                manually, adjusting LTVs or handling liquidations depending on
+                the nature of the depeg. */}
+              </TLabelSans>
             </div>
 
             <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
               <TBodySans>Do I need to manage my position?</TBodySans>
-              <TLabelSans>TODO</TLabelSans>
+              <TLabelSans>
+                Suilend Strategies is designed to be low-maintenance and
+                requires minimal management, but you can adjust your leverage,
+                deposit, or withdraw at any time.
+                <br />
+                <br />
+                Rewards that are listed on Suilend will be autocompounded
+                roughly every two weeks. Other rewards will need to be
+                compounded manually.
+              </TLabelSans>
             </div>
 
             <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
               <TBodySans>How much leverage should I use?</TBodySans>
               <TLabelSans>
-                Higher leverage boosts APR - but also increases risk.
+                Higher leverage means higher APR—but also higher risk.
                 <br />
                 <br />
                 For example:
-                <br />• 1.5-2x: Lower risk, moderate yield
-                <br />• 2.5-3x: Higher yield, higher liquidation risk
+                <br />• 1.5-2x leverage: Lower risk, moderate yield
+                <br />• 2.5-3x leverage: Higher liquidation risk, high yield
                 <br />
                 <br />
-                You can adjust leverage at any time through the UI.
+                You can adjust your leverage for each strategy at any time
+                through the UI.
               </TLabelSans>
             </div>
           </div>
