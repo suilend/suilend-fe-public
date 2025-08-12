@@ -122,9 +122,11 @@ function Page() {
           </div>
         )}
 
-        {/* All strategies */}
+        {/* Other strategies */}
         <div className="flex w-full flex-col gap-3">
-          <TBodySans className="text-lg">All strategies</TBodySans>
+          {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
+            hasPosition(obligation),
+          ) && <TBodySans className="text-lg">Other strategies</TBodySans>}
 
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
@@ -143,9 +145,6 @@ function Page() {
               return null;
             })}
 
-            <ComingSoonStrategyCard />
-            <ComingSoonStrategyCard />
-            <ComingSoonStrategyCard />
             <ComingSoonStrategyCard />
           </div>
         </div>
