@@ -15,7 +15,7 @@ import { SUI_DECIMALS } from "@mysten/sui/utils";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
-import { Download, Wallet, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
@@ -50,6 +50,7 @@ import {
 } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
+import Collapsible from "@/components/shared/Collapsible";
 import Dialog from "@/components/shared/Dialog";
 import FromToArrow from "@/components/shared/FromToArrow";
 import LabelWithValue from "@/components/shared/LabelWithValue";
@@ -58,8 +59,10 @@ import Tabs from "@/components/shared/Tabs";
 import TextLink from "@/components/shared/TextLink";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
+import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
 import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
+import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   E,
@@ -67,6 +70,7 @@ import {
   useLoadedLstStrategyContext,
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import useBreakpoint from "@/hooks/useBreakpoint";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +117,9 @@ export default function LstStrategyDialog({
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
+    isMoreParametersOpen,
+    setIsMoreParametersOpen,
+
     hasPosition,
 
     suiReserve,
@@ -139,6 +146,9 @@ export default function LstStrategyDialog({
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
+  const MoreParametersIcon = isMoreParametersOpen ? ChevronLeft : ChevronRight;
+
+  const { md } = useBreakpoint();
 
   // Tabs
   const tabs = [
@@ -1613,8 +1623,25 @@ export default function LstStrategyDialog({
       }}
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
-      dialogContentInnerClassName="max-w-[28rem]"
+      dialogContentInnerClassName="max-w-max"
       dialogContentInnerChildrenWrapperClassName="pt-4"
+      contentInnerDecorator={
+        // More parameters
+        <div
+          className="absolute -right-[calc(1px+40px)] top-1/2 -translate-y-1/2 rounded-r-md bg-popover max-md:hidden"
+          style={{ writingMode: "vertical-rl" }}
+        >
+          <Button
+            className="h-fit w-10 rounded-l-none rounded-r-md px-0 py-3"
+            labelClassName="uppercase"
+            endIcon={<MoreParametersIcon className="h-4 w-4" />}
+            variant="secondary"
+            onClick={() => setIsMoreParametersOpen((o) => !o)}
+          >
+            Learn more
+          </Button>
+        </div>
+      }
     >
       <Tabs
         className="-mr-2 mb-4"
@@ -1644,7 +1671,7 @@ export default function LstStrategyDialog({
             height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
         >
-          <div className="flex h-full w-full flex-col gap-4 md:h-auto">
+          <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
             {/* Amount */}
             {(selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) && (
               <div className="relative flex w-full flex-col">
@@ -1919,25 +1946,53 @@ export default function LstStrategyDialog({
                 )}
               </div>
 
-              {/* Parameters panel */}
+              {!md && isMoreParametersOpen && (
+                <>
+                  <Separator />
+                  <LstStrategyDialogParametersPanel
+                    strategyType={strategyType}
+                  />
+                </>
+              )}
             </div>
 
             <div className="flex w-full flex-col gap-3">
-              <Button
-                className="h-auto min-h-14 w-full rounded-md py-2"
-                labelClassName="text-wrap uppercase"
-                style={{ overflowWrap: "anywhere" }}
-                disabled={submitButtonState.isDisabled}
-                onClick={onSubmitClick}
-              >
-                {submitButtonState.isLoading ? (
-                  <Spinner size="md" />
-                ) : (
-                  submitButtonState.title
-                )}
-              </Button>
+              {!md && (
+                <Collapsible
+                  open={isMoreParametersOpen}
+                  onOpenChange={setIsMoreParametersOpen}
+                  closedTitle="More parameters"
+                  openTitle="Less parameters"
+                  hasSeparator
+                />
+              )}
+
+              <div className="flex w-full flex-col gap-3">
+                <Button
+                  className="h-auto min-h-14 w-full rounded-md py-2"
+                  labelClassName="text-wrap uppercase"
+                  style={{ overflowWrap: "anywhere" }}
+                  disabled={submitButtonState.isDisabled}
+                  onClick={onSubmitClick}
+                >
+                  {submitButtonState.isLoading ? (
+                    <Spinner size="md" />
+                  ) : (
+                    submitButtonState.title
+                  )}
+                </Button>
+              </div>
             </div>
+
+            {/* Required to get the desired modal width on <md */}
+            <div className="-mt-4 h-0 w-[28rem] max-w-full" />
           </div>
+
+          {md && isMoreParametersOpen && (
+            <div className="flex h-[440px] w-[28rem] flex-col gap-4">
+              <LstStrategyDialogParametersPanel strategyType={strategyType} />
+            </div>
+          )}
         </div>
       </Tabs>
     </Dialog>

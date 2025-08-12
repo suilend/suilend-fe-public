@@ -235,12 +235,15 @@ export default function ActionsModal() {
         >
           {reserve && tabConfig && (
             <>
-              <div className="flex h-full w-full flex-col gap-4 md:h-auto md:w-[28rem]">
+              <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
                 <ActionsModalTabContent
                   side={side}
                   reserve={reserve}
                   {...tabConfig}
                 />
+
+                {/* Required to get the desired modal width on <md */}
+                <div className="-mt-4 h-0 w-[28rem] max-w-full" />
               </div>
 
               {md && isMoreParametersOpen && (

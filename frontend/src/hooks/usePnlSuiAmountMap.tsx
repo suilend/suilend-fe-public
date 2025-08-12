@@ -12,6 +12,9 @@ const usePnlSuiAmountMap = (
   obligation?: ParsedObligation,
 ) => {
   const {
+    isMoreParametersOpen,
+    setIsMoreParametersOpen,
+
     hasPosition,
 
     suiReserve,

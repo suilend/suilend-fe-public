@@ -1,5 +1,7 @@
 import {
+  Dispatch,
   PropsWithChildren,
+  SetStateAction,
   createContext,
   useCallback,
   useContext,
@@ -11,6 +13,7 @@ import {
 
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import { useLocalStorage } from "usehooks-ts";
 
 import {
   ParsedObligation,
@@ -43,6 +46,10 @@ export const E = 10 ** -6;
 export const LST_DECIMALS = 9;
 
 interface LstStrategyContext {
+  // More parameters
+  isMoreParametersOpen: boolean;
+  setIsMoreParametersOpen: Dispatch<SetStateAction<boolean>>;
+
   // Obligations
   hasPosition: (obligation: ParsedObligation) => boolean;
 
@@ -166,6 +173,12 @@ type LoadedLstStrategyContext = LstStrategyContext & {
 };
 
 const defaultContextValue: LstStrategyContext = {
+  // More parameters
+  isMoreParametersOpen: false,
+  setIsMoreParametersOpen: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
+
   // Obligations
   hasPosition: () => {
     throw Error("LstStrategyContextProvider not initialized");
@@ -244,6 +257,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { userData } = useLoadedUserContext();
   const { allAppData, appData } = useLoadedAppContext();
+
+  // More parameters
+  const [isMoreParametersOpen, setIsMoreParametersOpen] =
+    useLocalStorage<boolean>("LstStrategyContext_isMoreParametersOpen", false);
 
   // Obligations
   const hasPosition = useCallback(
@@ -1234,6 +1251,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: LstStrategyContext = useMemo(
     () => ({
+      // More parameters
+      isMoreParametersOpen,
+      setIsMoreParametersOpen,
+
       // Obligations
       hasPosition,
 
@@ -1268,6 +1289,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getHealthPercent,
     }),
     [
+      isMoreParametersOpen,
+      setIsMoreParametersOpen,
       hasPosition,
       suiReserve,
       suiBorrowFeePercent,

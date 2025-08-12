@@ -16,7 +16,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 
 function ComingSoonStrategyCard() {
   return (
-    <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm bg-card opacity-50">
+    <div className="flex h-[74px] w-full flex-row items-center justify-center rounded-sm border bg-card">
       <TLabelSans>Coming soon</TLabelSans>
     </div>
   );
@@ -26,6 +26,9 @@ function Page() {
   const { userData } = useLoadedUserContext();
 
   const {
+    isMoreParametersOpen,
+    setIsMoreParametersOpen,
+
     hasPosition,
 
     suiReserve,
@@ -151,8 +154,8 @@ function Page() {
         <div className="flex w-full flex-col gap-3">
           <TBodySans className="text-lg">Learn more</TBodySans>
 
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What is SEND Strategies?</TBodySans>
               <TLabelSans>
                 <span className="font-medium">SEND Strategies</span> is a new
@@ -162,10 +165,10 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What strategies are available?</TBodySans>
               <TLabelSans>
-                1. <span className="font-medium">sSUI/SUI</span> looping
+                1. <span className="font-medium">sSUI/SUI</span> Looping
                 strategy that lets you leverage up to 3x, yielding{" "}
                 {formatPercent(
                   getAprPercent(
@@ -177,7 +180,7 @@ function Page() {
                 APR from sSUI rewards and sSUI staking yield.
                 <br />
                 <br />
-                2. <span className="font-medium">stratSUI/SUI</span> looping
+                2. <span className="font-medium">stratSUI/SUI</span> Looping
                 strategy that lets you leverage up to 3x, yielding{" "}
                 {formatPercent(
                   getAprPercent(
@@ -190,20 +193,9 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How do I deposit?</TBodySans>
               <TLabelSans>
-                Head to{" "}
-                <TextLink
-                  className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
-                  href="https://suilend.fi/strategies"
-                  noIcon
-                >
-                  suilend.fi/strategies
-                </TextLink>
-                .
-                <br />
-                <br />
                 In the deposit modal, enter the amount of SUI you want to
                 deposit into the strategy and sign the transaction request in
                 your Sui wallet.
@@ -214,7 +206,7 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How do I withdraw?</TBodySans>
               <TLabelSans>
                 In the withdraw modal, enter the amount of SUI you want to
@@ -227,7 +219,7 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What are the risks?</TBodySans>
               <TLabelSans>
                 Standard DeFi risks apply.
@@ -237,14 +229,14 @@ function Page() {
                 <br />• Smart Contract Risk: tied to SpringSui-issued LSTs such
                 as sSUI or stratSUI.
                 <br />• Oracle Risk: depending on strategy ({`doesn't`} apply to
-                SpringSui LST/SUI looping strategies)
+                SpringSui LST/SUI Looping strategies)
                 <br />
                 <br />
                 Always size your position based on your risk tolerance.
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How does Suilend mitigate risks?</TBodySans>
               <TLabelSans>
                 All DeFi protocols, including Suilend, come with risks, which
@@ -294,7 +286,7 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>Do I need to manage my position?</TBodySans>
               <TLabelSans>
                 Suilend Strategies is designed to be low-maintenance and
@@ -308,7 +300,7 @@ function Page() {
               </TLabelSans>
             </div>
 
-            <div className="flex w-full flex-col gap-2 rounded-sm border bg-card p-4">
+            <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>How much leverage should I use?</TBodySans>
               <TLabelSans>
                 Higher leverage means higher APR—but also higher risk.

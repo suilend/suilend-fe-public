@@ -9,7 +9,6 @@ import Dialog from "@/components/shared/Dialog";
 export default function ActionsModalContainer({ children }: PropsWithChildren) {
   const { isOpen, close, isMoreParametersOpen, setIsMoreParametersOpen } =
     useActionsModalContext();
-
   const MoreParametersIcon = isMoreParametersOpen ? ChevronLeft : ChevronRight;
 
   return (

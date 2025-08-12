@@ -24,6 +24,9 @@ export default function LstStrategyHeader({
   const { appData } = useLoadedAppContext();
 
   const {
+    isMoreParametersOpen,
+    setIsMoreParametersOpen,
+
     hasPosition,
 
     suiReserve,
