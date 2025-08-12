@@ -147,7 +147,6 @@ function Page() {
             })}
 
             <ComingSoonStrategyCard />
-            <ComingSoonStrategyCard />
           </div>
         </div>
 

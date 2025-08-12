@@ -69,12 +69,12 @@ export default function NavigationLinks() {
     <>
       {/* Internal */}
       <Link href={ROOT_URL}>Lend</Link>
-      {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
       {!isInMsafeApp() && (
         <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
           Swap
         </Link>
       )}
+      {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
