@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import * as Recharts from "recharts";
-import { toCompactCurrency } from "@/lib/utils";
 
 import {
   BuybacksPoint,
@@ -12,6 +11,7 @@ import {
   getPriceChart,
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
+import { toCompactCurrency } from "@/lib/utils";
 
 type EnabledMetrics = {
   suilendRevenue: boolean;
