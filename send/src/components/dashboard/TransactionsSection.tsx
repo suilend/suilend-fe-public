@@ -1,5 +1,5 @@
-import React from "react";
 import Image from "next/image";
+import React from "react";
 
 import { AlertCircle, ExternalLink } from "lucide-react";
 
@@ -18,7 +18,10 @@ const TransactionsSection = () => {
   const transactions = data?.results ?? [];
   const [cursor, setCursor] = React.useState<string | undefined>(undefined);
   const [prevCursors, setPrevCursors] = React.useState<string[]>([]);
-  const { data: pageData } = getTransactions(PAGE_SIZE, cursor === "start" ? undefined : cursor);
+  const { data: pageData } = getTransactions(
+    PAGE_SIZE,
+    cursor === "start" ? undefined : cursor,
+  );
   const pageResults = pageData?.results ?? transactions;
   const nextCursor = pageData?.cursor;
 
@@ -76,7 +79,8 @@ const TransactionsSection = () => {
                             hour12: false,
                           })
                           .replace(",", "")}
-                      </td><td className="py-3 text-sm lg:hidden">
+                      </td>
+                      <td className="py-3 text-sm lg:hidden">
                         {new Date(tx.timestamp)
                           .toLocaleString("en-US", {
                             month: "numeric",
@@ -86,18 +90,20 @@ const TransactionsSection = () => {
                           .replace(",", "")}
                       </td>
                       <td className="py-3 text-sm">SWAP</td>
-                      <td className="py-3 text-sm hidden lg:table-cell">${tx.price.toFixed(4)}</td>
+                      <td className="py-3 text-sm hidden lg:table-cell">
+                        ${tx.price.toFixed(4)}
+                      </td>
                       <td className="py-3 text-sm text-center">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <span className="text-sm">
-                            {toCompactCurrency(tx.usdValue)}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          ${tx.usdValue.toLocaleString()}
-                        </TooltipContent>
-                      </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="text-sm">
+                              {toCompactCurrency(tx.usdValue)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            ${tx.usdValue.toLocaleString()}
+                          </TooltipContent>
+                        </Tooltip>
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-2">
@@ -155,7 +161,10 @@ const TransactionsSection = () => {
             <div className="flex items-center justify-between py-3 gap-2">
               <button
                 className="px-3 py-1 rounded-md border border-border text-sm disabled:opacity-50"
-                disabled={prevCursors.length === 0 || !prevCursors[prevCursors.length - 1]}
+                disabled={
+                  prevCursors.length === 0 ||
+                  !prevCursors[prevCursors.length - 1]
+                }
                 onClick={() => {
                   setCursor(prevCursors[prevCursors.length - 1] ?? undefined);
                   setPrevCursors(prevCursors.slice(0, -1));

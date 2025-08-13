@@ -38,7 +38,10 @@ export default function Document() {
           sizes="16x16"
           href={`${ASSETS_URL}/suilend/seo/favicon-16x16.png`}
         />
-        <link rel="manifest" href={`${ASSETS_URL}/suilend/seo/site.webmanifest`} />
+        <link
+          rel="manifest"
+          href={`${ASSETS_URL}/suilend/seo/site.webmanifest`}
+        />
         <meta name="theme-color" content="#020A19" />
       </Head>
       <body>

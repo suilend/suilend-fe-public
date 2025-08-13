@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -9,10 +8,11 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Period } from "@/fetchers/fetchCharts";
+import { cn } from "@/lib/utils";
+
+import { Button } from "../ui/button";
 
 import RevenueChart from "./RevenueChart";
-import { Button } from "../ui/button";
-import { cn } from "@/lib/utils";
 
 const ChartSection = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<Period>("30d");
@@ -68,9 +68,14 @@ const ChartSection = () => {
             </div>
 
             <div className="flex items-center space-x-1">
-              <Button variant="outline" className={cn(
-                "h-8 text-sm font-sans text-muted-foreground cursor-pointer border-border hover:bg-primary/50 hover:text-primary-foreground",
-                isCumulative && "bg-primary text-primary-foreground")} onClick={() => setIsCumulative(!isCumulative)}>
+              <Button
+                variant="outline"
+                className={cn(
+                  "h-8 text-sm font-sans text-muted-foreground cursor-pointer border-border hover:bg-primary/50 hover:text-primary-foreground",
+                  isCumulative && "bg-primary text-primary-foreground",
+                )}
+                onClick={() => setIsCumulative(!isCumulative)}
+              >
                 Cumulative
               </Button>
             </div>
@@ -142,36 +147,36 @@ const ChartSection = () => {
           <div className="flex flex-col gap-2">
             <p className="text-xs text-muted-foreground">Metrics</p>
             <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <button
-                aria-label="Toggle Buybacks"
-                onClick={() => toggleMetric("buybacks")}
-                className="w-3.5 h-3.5 rounded-[3px]"
-                style={{
-                  backgroundColor: enabledMetrics.buybacks
-                    ? "#ffffff"
-                    : "transparent",
-                  border: `2px solid #ffffff`,
-                  opacity: enabledMetrics.buybacks ? 1 : 0.8,
-                }}
-              />
-              <span className="text-sm">Buybacks</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <button
-                aria-label="Toggle Price"
-                onClick={() => toggleMetric("price")}
-                className="w-3.5 h-3.5 rounded-[3px]"
-                style={{
-                  backgroundColor: enabledMetrics.price
-                    ? "hsl(var(--muted-foreground))"
-                    : "transparent",
-                  border: `2px solid hsl(var(--muted-foreground))`,
-                }}
-              />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <button
+                  aria-label="Toggle Buybacks"
+                  onClick={() => toggleMetric("buybacks")}
+                  className="w-3.5 h-3.5 rounded-[3px]"
+                  style={{
+                    backgroundColor: enabledMetrics.buybacks
+                      ? "#ffffff"
+                      : "transparent",
+                    border: `2px solid #ffffff`,
+                    opacity: enabledMetrics.buybacks ? 1 : 0.8,
+                  }}
+                />
+                <span className="text-sm">Buybacks</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <button
+                  aria-label="Toggle Price"
+                  onClick={() => toggleMetric("price")}
+                  className="w-3.5 h-3.5 rounded-[3px]"
+                  style={{
+                    backgroundColor: enabledMetrics.price
+                      ? "hsl(var(--muted-foreground))"
+                      : "transparent",
+                    border: `2px solid hsl(var(--muted-foreground))`,
+                  }}
+                />
                 <span className="text-sm">Price</span>
               </label>
-          </div>
+            </div>
           </div>
         </div>
       </CardContent>

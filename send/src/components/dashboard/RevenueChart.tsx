@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { AlertCircle } from "lucide-react";
-
-import { Skeleton } from "@/components/ui/skeleton";
 import * as Recharts from "recharts";
+
 import {
   BuybacksPoint,
   Period,
@@ -13,8 +11,6 @@ import {
   getPriceChart,
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
-
-type ProtocolKey = "suilend" | "steamm" | "springsui";
 
 type EnabledMetrics = {
   suilendRevenue: boolean;
@@ -66,7 +62,9 @@ function startOfWeekUtc(ts: number): number {
   const d = new Date(ts);
   const day = d.getUTCDay(); // 0=Sun ... 6=Sat
   const diffToMonday = (day + 6) % 7; // Monday=0
-  const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const monday = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
   monday.setUTCDate(monday.getUTCDate() - diffToMonday);
   return monday.getTime();
 }
@@ -102,7 +100,6 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     isLoading: loadingPrice,
     error: errorPrice,
   } = getPriceChart(period);
-  
 
   const loading = loadingRev || loadingBuy || loadingPrice;
   const anyError = errorRev || errorBuy || errorPrice;
@@ -112,9 +109,9 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     // Prefer price (densest/most regular), otherwise revenue, then buybacks.
     let timestamps: number[] = [];
     if (priceData && priceData.length > 0) {
-      timestamps = Array.from(
-        new Set(priceData.map((p) => p.timestamp)),
-      ).sort((a, b) => a - b);
+      timestamps = Array.from(new Set(priceData.map((p) => p.timestamp))).sort(
+        (a, b) => a - b,
+      );
     } else if (revenueData && revenueData.length > 0) {
       timestamps = Array.from(
         new Set(revenueData.map((p) => p.timestamp)),
@@ -137,8 +134,12 @@ function useProcessedData(period: Period, isCumulative: boolean) {
 
     // Estimate step from canonical timestamps to set a matching tolerance
     const diffs: number[] = [];
-    for (let i = 1; i < timestamps.length; i++) diffs.push(timestamps[i] - timestamps[i - 1]);
-    const stepMs = diffs.length > 0 ? diffs.sort((a, b) => a - b)[Math.floor(diffs.length / 2)] : 24 * 60 * 60 * 1000;
+    for (let i = 1; i < timestamps.length; i++)
+      diffs.push(timestamps[i] - timestamps[i - 1]);
+    const stepMs =
+      diffs.length > 0
+        ? diffs.sort((a, b) => a - b)[Math.floor(diffs.length / 2)]
+        : 24 * 60 * 60 * 1000;
     const tolerance = Math.max(stepMs / 2, 6 * 60 * 60 * 1000); // at least 6h
 
     let revIdx = 0;
@@ -154,16 +155,21 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       // advance pointer while next key is <= ts
       while (idxRef.i + 1 < keys.length && keys[idxRef.i + 1] <= ts) idxRef.i++;
       const prevKey = keys[idxRef.i];
-      const nextKey = idxRef.i + 1 < keys.length ? keys[idxRef.i + 1] : undefined;
+      const nextKey =
+        idxRef.i + 1 < keys.length ? keys[idxRef.i + 1] : undefined;
       let bestKey = prevKey;
-      if (nextKey !== undefined && Math.abs(nextKey - ts) < Math.abs(prevKey - ts)) bestKey = nextKey;
+      if (
+        nextKey !== undefined &&
+        Math.abs(nextKey - ts) < Math.abs(prevKey - ts)
+      )
+        bestKey = nextKey;
       if (Math.abs(bestKey - ts) <= tolerance) return map.get(bestKey);
       return undefined;
     }
 
     // Build price array aligned to the canonical timeline with forward-fill/backfill
-    const prices: Array<number | undefined> = timestamps.map((ts) =>
-      priceByTs.get(ts)?.price,
+    const prices: Array<number | undefined> = timestamps.map(
+      (ts) => priceByTs.get(ts)?.price,
     );
     // forward-fill
     let last: number | undefined = undefined;
@@ -234,7 +240,9 @@ function useProcessedData(period: Period, isCumulative: boolean) {
           existing.price = (existing.price + pt.price) / 2;
         }
       }
-      return Array.from(byBucket.values()).sort((a, b) => a.timestamp - b.timestamp);
+      return Array.from(byBucket.values()).sort(
+        (a, b) => a.timestamp - b.timestamp,
+      );
     }
     if (period === "ytd" || period === "alltime") {
       const byBucket = new Map<number, { sum: RawPoint; count: number }>();
@@ -304,31 +312,36 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         price: pt.price,
       };
     });
-  }, [bucketedRaw, isCumulative]);
+  }, [bucketedRaw, isCumulative, raw.length]);
 
   return { processed, loading, anyError };
 }
 
-const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) => {
-  const chartHeight = 300;
+const RevenueChart = ({
+  timeframe,
+  isCumulative,
+  enabledMetrics,
+}: ChartProps) => {
   const [isSmall, setIsSmall] = useState(false);
   useEffect(() => {
-    const mq = typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)") : undefined;
+    const mq =
+      typeof window !== "undefined"
+        ? window.matchMedia("(max-width: 640px)")
+        : undefined;
     const onChange = () => setIsSmall(Boolean(mq?.matches));
     onChange();
     mq?.addEventListener("change", onChange);
     return () => mq?.removeEventListener("change", onChange);
   }, []);
   const margin = useMemo(
-    () => (isSmall ? { top: 6, right: 8, left: 12, bottom: 16 } : { top: 10, right: 12, left: 14, bottom: 20 }),
+    () =>
+      isSmall
+        ? { top: 6, right: 8, left: 12, bottom: 16 }
+        : { top: 10, right: 12, left: 14, bottom: 20 },
     [isSmall],
   );
 
-  const {
-    processed: data,
-    loading,
-    anyError,
-  } = useProcessedData(timeframe, isCumulative);
+  const { processed: data } = useProcessedData(timeframe, isCumulative);
 
   const maxYRight = useMemo(() => {
     if (!enabledMetrics.price) return 1;
@@ -354,7 +367,16 @@ const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) =
   );
 
   const xTicks = useMemo(() => {
-    const maxLabels = timeframe === "30d" ? (isSmall ? 6 : 10) : timeframe === "7d" ? (isSmall ? 5 : 7) : 12;
+    const maxLabels =
+      timeframe === "30d"
+        ? isSmall
+          ? 6
+          : 10
+        : timeframe === "7d"
+          ? isSmall
+            ? 5
+            : 7
+          : 12;
     const step = Math.max(1, Math.floor(chartData.length / maxLabels));
     return chartData
       .filter((_, i) => i % step === 0 || i === chartData.length - 1)
@@ -388,28 +410,65 @@ const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) =
   }, [chartData, enabledMetrics]);
 
   // console.log(yMaxLeftVisible);
-  
+
   // Tooltip content styled like site cards
-  const TooltipCard = ({ active, payload }: any) => {
+  const TooltipCard = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: {
+      payload: {
+        suilendRevenue: number;
+        steammRevenue: number;
+        springsuiRevenue: number;
+        buybacks: number;
+        price: number;
+        timestamp: number;
+      };
+    }[];
+  }) => {
     if (!active || !payload || payload.length === 0) return null;
-    const d = payload[0].payload as any;
+    const d = payload[0].payload;
     const rows: Array<{ label: string; value: number; color?: string }> = [];
     if (enabledMetrics.suilendRevenue && d.suilendRevenue > 0)
-      rows.push({ label: "Suilend", value: d.suilendRevenue, color: COLOR_SUILEND });
+      rows.push({
+        label: "Suilend",
+        value: d.suilendRevenue,
+        color: COLOR_SUILEND,
+      });
     if (enabledMetrics.steammRevenue && d.steammRevenue > 0)
-      rows.push({ label: "STEAMM", value: d.steammRevenue, color: COLOR_STEAMM });
+      rows.push({
+        label: "STEAMM",
+        value: d.steammRevenue,
+        color: COLOR_STEAMM,
+      });
     if (enabledMetrics.springsuiRevenue && d.springsuiRevenue > 0)
-      rows.push({ label: "SpringSUI", value: d.springsuiRevenue, color: COLOR_SPRINGSUI });
+      rows.push({
+        label: "SpringSUI",
+        value: d.springsuiRevenue,
+        color: COLOR_SPRINGSUI,
+      });
     if (enabledMetrics.buybacks && d.buybacks > 0)
-      rows.push({ label: "Buybacks", value: d.buybacks, color: COLOR_BUYBACKS });
+      rows.push({
+        label: "Buybacks",
+        value: d.buybacks,
+        color: COLOR_BUYBACKS,
+      });
     const dateStr = formatTooltipDate(d.timestamp);
     return (
       <div className="rounded-md border bg-[#081126] text-foreground px-3 py-2 shadow-md">
         <div className="text-xs text-muted-foreground mb-2">{dateStr}</div>
         {rows.map((r, i) => (
-          <div key={i} className="flex items-center justify-between gap-4 text-sm mb-1">
+          <div
+            key={i}
+            className="flex items-center justify-between gap-4 text-sm mb-1"
+          >
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: r.color }} />
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-sm"
+                style={{ background: r.color }}
+              />
               <span>{r.label}</span>
             </div>
             <span>{`$${r.value.toFixed(r.value < 1 ? 2 : 0)}M`}</span>
@@ -418,7 +477,10 @@ const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) =
         {enabledMetrics.price && (
           <div className="flex items-center justify-between gap-4 text-sm mt-1">
             <div className="flex items-center gap-2">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_PRICE_LINE }} />
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-sm"
+                style={{ background: COLOR_PRICE_LINE }}
+              />
               <span>Price</span>
             </div>
             <span>{`$${Number(d.price).toFixed(2)}`}</span>
@@ -430,22 +492,42 @@ const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) =
   return (
     <div className="w-full h-[260px] md:h-[300px]">
       <Recharts.ResponsiveContainer width="100%" height="100%">
-        <Recharts.ComposedChart data={chartData} margin={margin} barCategoryGap="0%" barGap={0}>
-          <Recharts.CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+        <Recharts.ComposedChart
+          data={chartData}
+          margin={margin}
+          barCategoryGap="0%"
+          barGap={0}
+        >
+          <Recharts.CartesianGrid
+            strokeDasharray="3 3"
+            stroke="hsl(var(--border))"
+            vertical={false}
+          />
           <Recharts.XAxis
             dataKey="index"
             type="number"
             ticks={xTicks}
             tickFormatter={(value: number) => chartData[value]?.label ?? ""}
-            tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }}
-            domain={[chartData.length > 0 ? -0.5 : 0, chartData.length > 0 ? chartData.length - 0.5 : 1]}
+            tick={{
+              fontSize: isSmall ? 10 : 12,
+              fill: "hsl(var(--muted-foreground))",
+            }}
+            domain={[
+              chartData.length > 0 ? -0.5 : 0,
+              chartData.length > 0 ? chartData.length - 0.5 : 1,
+            ]}
             tickMargin={isSmall ? 4 : 6}
           />
           <Recharts.YAxis
             yAxisId="left"
             orientation="left"
-            tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }}
-            tickFormatter={(v: number) => (v < 1 ? `$${v.toFixed(2)}M` : `$${v}M`)}
+            tick={{
+              fontSize: isSmall ? 10 : 12,
+              fill: "hsl(var(--muted-foreground))",
+            }}
+            tickFormatter={(v: number) =>
+              v < 1 ? `$${v.toFixed(2)}M` : `$${v}M`
+            }
             domain={[0, yMaxLeftVisible]}
             allowDecimals
           >
@@ -454,35 +536,77 @@ const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) =
               angle={-90}
               position="insideLeft"
               offset={isSmall ? 0 : -5}
-              style={{ fill: "hsl(var(--muted-foreground))", fontSize: isSmall ? 10 : 12 }}
+              style={{
+                fill: "hsl(var(--muted-foreground))",
+                fontSize: isSmall ? 10 : 12,
+              }}
             />
           </Recharts.YAxis>
-          <Recharts.YAxis yAxisId="right" orientation="right" tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }} domain={[0, Math.max(1, maxYRight)]}>
+          <Recharts.YAxis
+            yAxisId="right"
+            orientation="right"
+            tick={{
+              fontSize: isSmall ? 10 : 12,
+              fill: "hsl(var(--muted-foreground))",
+            }}
+            domain={[0, Math.max(1, maxYRight)]}
+          >
             <Recharts.Label
               value="Price ($)"
               angle={90}
               position="insideRight"
               offset={10}
-              style={{ fill: "hsl(var(--muted-foreground))", fontSize: isSmall ? 10 : 12 }}
+              style={{
+                fill: "hsl(var(--muted-foreground))",
+                fontSize: isSmall ? 10 : 12,
+              }}
             />
           </Recharts.YAxis>
 
           {enabledMetrics.suilendRevenue && (
-            <Recharts.Bar yAxisId="left" dataKey="suilendRevenue" stackId="revenue" fill={COLOR_SUILEND} />
+            <Recharts.Bar
+              yAxisId="left"
+              dataKey="suilendRevenue"
+              stackId="revenue"
+              fill={COLOR_SUILEND}
+            />
           )}
           {enabledMetrics.steammRevenue && (
-            <Recharts.Bar yAxisId="left" dataKey="steammRevenue" stackId="revenue" fill={COLOR_STEAMM} />
+            <Recharts.Bar
+              yAxisId="left"
+              dataKey="steammRevenue"
+              stackId="revenue"
+              fill={COLOR_STEAMM}
+            />
           )}
           {enabledMetrics.springsuiRevenue && (
-            <Recharts.Bar yAxisId="left" dataKey="springsuiRevenue" stackId="revenue" fill={COLOR_SPRINGSUI} />
+            <Recharts.Bar
+              yAxisId="left"
+              dataKey="springsuiRevenue"
+              stackId="revenue"
+              fill={COLOR_SPRINGSUI}
+            />
           )}
           {enabledMetrics.buybacks && (
-            <Recharts.Bar yAxisId="left" dataKey="buybacks" fill={COLOR_BUYBACKS} opacity={0.45} />
+            <Recharts.Bar
+              yAxisId="left"
+              dataKey="buybacks"
+              fill={COLOR_BUYBACKS}
+              opacity={0.45}
+            />
           )}
           {enabledMetrics.price && (
             <>
               {/* Invisible reference line segments to extend to axes */}
-              <Recharts.Line yAxisId="right" type="monotone" dataKey={(d: any) => d.price} stroke="transparent" dot={false} isAnimationActive={false} points={undefined} />
+              <Recharts.Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="price"
+                stroke="transparent"
+                dot={false}
+                isAnimationActive={false}
+                points={undefined}
+              />
               {/* Real line draws over full domain by padding domain with -0.5..N-0.5 */}
               <Recharts.Line
                 yAxisId="right"
