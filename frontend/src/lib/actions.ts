@@ -93,7 +93,7 @@ const getMaxCalculations = (
           .div(1 + borrowFee),
       },
       {
-        reason: "Over reserve borrow limit",
+        reason: "Exceeds reserve borrow limit",
         isDisabled: true,
         value: reserve.config.borrowLimit
           .minus(reserve.borrowedAmount)
@@ -241,9 +241,7 @@ export const getMaxValue =
 
     return BigNumber.max(
       new BigNumber(0),
-      BigNumber.min(
-        ...Object.values(maxCalculations).map((calc) => calc.value),
-      ),
+      BigNumber.min(...maxCalculations.map((calc) => calc.value)),
     );
   };
 
