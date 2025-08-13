@@ -8,6 +8,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Period } from "@/fetchers/fetchCharts";
+
 import { Checkbox } from "../ui/checkbox";
 
 import RevenueChart from "./RevenueChart";
