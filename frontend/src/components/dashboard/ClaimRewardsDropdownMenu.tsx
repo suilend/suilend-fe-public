@@ -233,7 +233,7 @@ export default function ClaimRewardsDropdownMenu({
           </Button>
 
           {/* and swap to */}
-          <div className="flex w-full flex-row items-center justify-between gap-4">
+          <div className="flex w-full flex-row items-center gap-3">
             {/* Checkbox */}
             <button
               className="group flex w-full w-max flex-row items-center gap-2 disabled:pointer-events-none disabled:opacity-50"
