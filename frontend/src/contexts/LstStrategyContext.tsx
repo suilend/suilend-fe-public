@@ -835,8 +835,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
 
         // Unclaimed rewards
-        const rewardsMap: Record<string, RewardSummary[]> = {};
-        const claimableRewardsMap: Record<string, BigNumber> = {};
+        const rewardsMap: Record<
+          string,
+          { amount: BigNumber; rewards: RewardSummary[] }
+        > = {};
         if (obligation) {
           Object.values(userData.rewardMap).flatMap((rewards) =>
             [...rewards.deposit, ...rewards.borrow].forEach((r) => {
@@ -852,24 +854,20 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                 return;
 
               if (!rewardsMap[r.stats.rewardCoinType])
-                rewardsMap[r.stats.rewardCoinType] = [];
-              rewardsMap[r.stats.rewardCoinType].push(r);
+                rewardsMap[r.stats.rewardCoinType] = {
+                  amount: new BigNumber(0),
+                  rewards: [],
+                };
+              rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
+                r.stats.rewardCoinType
+              ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+              rewardsMap[r.stats.rewardCoinType].rewards.push(r);
             }),
           );
-
-          Object.entries(rewardsMap).forEach(([coinType, rewards]) => {
-            claimableRewardsMap[coinType] = rewards.reduce(
-              (acc, reward) =>
-                acc.plus(
-                  reward.obligationClaims[obligation.id].claimableAmount,
-                ),
-              new BigNumber(0),
-            );
-          });
         }
 
         // Add unclaimed rewards to TVL
-        Object.entries(claimableRewardsMap).forEach(([coinType, amount]) => {
+        Object.entries(rewardsMap).forEach(([coinType, { amount }]) => {
           const priceSui = (
             appData.rewardPriceMap[coinType] ?? new BigNumber(0)
           ).div(suiReserve.price);

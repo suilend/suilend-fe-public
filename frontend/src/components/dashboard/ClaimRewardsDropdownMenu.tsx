@@ -1,4 +1,4 @@
-import { CSSProperties, useState } from "react";
+import { CSSProperties, useMemo, useState } from "react";
 
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
@@ -28,7 +28,7 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
-  rewardsMap: Record<string, RewardSummary[]>;
+  rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>;
 }
 
 export default function ClaimRewardsDropdownMenu({
@@ -45,8 +45,8 @@ export default function ClaimRewardsDropdownMenu({
 
   const tokens: Token[] = Object.values(rewardsMap).map((r) =>
     getToken(
-      r[0].stats.rewardCoinType,
-      appData.coinMetadataMap[r[0].stats.rewardCoinType],
+      r.rewards[0].stats.rewardCoinType,
+      appData.coinMetadataMap[r.rewards[0].stats.rewardCoinType],
     ),
   );
 
@@ -72,6 +72,17 @@ export default function ClaimRewardsDropdownMenu({
             .slice(0, 5 - obligation.deposits.length),
         ];
   })();
+
+  // Swap
+  const canSwapMap: Record<string, boolean> = Object.keys(rewardsMap).reduce(
+    (acc, coinType) => ({
+      ...acc,
+      [coinType]: (appData.rewardPriceMap[coinType] ?? new BigNumber(0))
+        .times(rewardsMap[coinType].amount)
+        .gte(0.01), // Filter out rewards with value < $0.01 (will most likely fail to get a swap quote)
+    }),
+    {} as Record<string, boolean>,
+  );
 
   // Claim and deposit as SUI/USDC/SEND
   const canDepositAsMap: Record<string, boolean> = [
@@ -115,9 +126,13 @@ export default function ClaimRewardsDropdownMenu({
 
     setIsClaiming(true);
 
-    const filteredRewardsMap: Record<string, RewardSummary[]> = (() => {
+    const filteredRewardsMap: Record<
+      string,
+      { amount: BigNumber; rewards: RewardSummary[] }
+    > = (() => {
       const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
         if (isSwapping) {
+          if (!canSwapMap[coinType]) return false;
           return isDepositing ? canDepositAsMap[swappingToCoinType] : true;
         } else {
           return isDepositing
@@ -192,6 +207,49 @@ export default function ClaimRewardsDropdownMenu({
     }
   };
 
+  // Notes
+  const notes: string[] = useMemo(() => {
+    const result: string[] = [];
+
+    if (isSwapping && Object.values(canSwapMap).some((v) => !v)) {
+      result.push(
+        `Cannot swap ${formatList(
+          tokens.filter((t) => !canSwapMap[t.coinType]).map((t) => t.symbol),
+        ).replace("and", "or")} (amount too low).`,
+      );
+    }
+    if (isDepositing) {
+      if (!isSwapping && tokensThatCanBeDeposited.length < tokens.length)
+        result.push(
+          `Cannot claim and deposit ${formatList(
+            tokens
+              .filter(
+                (t) =>
+                  !tokensThatCanBeDeposited
+                    .map((_t) => _t.coinType)
+                    .includes(t.coinType),
+              )
+              .map((t) => t.symbol),
+          ).replace("and", "or")} (max 5 deposit positions, no borrows).`,
+        );
+      if (isSwapping && !canDepositAsMap[swappingToCoinType])
+        result.push(
+          `Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`,
+        );
+    }
+
+    return result;
+  }, [
+    isSwapping,
+    canSwapMap,
+    tokens,
+    isDepositing,
+    tokensThatCanBeDeposited,
+    canDepositAsMap,
+    swappingToCoinType,
+    appDataMainMarket.coinMetadataMap,
+  ]);
+
   return (
     <DropdownMenu
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}
@@ -220,12 +278,10 @@ export default function ClaimRewardsDropdownMenu({
             labelClassName="uppercase"
             disabled={
               isClaiming ||
-              (!isSwapping &&
-                isDepositing &&
-                tokensThatCanBeDeposited.length === 0) ||
-              (isSwapping &&
-                isDepositing &&
-                !canDepositAsMap[swappingToCoinType])
+              (isSwapping && Object.values(canSwapMap).every((v) => !v)) ||
+              (isDepositing &&
+                ((!isSwapping && tokensThatCanBeDeposited.length === 0) ||
+                  (isSwapping && !canDepositAsMap[swappingToCoinType])))
             }
             onClick={() => submit()}
           >
@@ -308,33 +364,17 @@ export default function ClaimRewardsDropdownMenu({
             </TLabelSans>
           </button>
 
-          {/* Note */}
-          {isDepositing && (
-            <>
-              {!isSwapping
-                ? tokensThatCanBeDeposited.length < tokens.length && (
-                    <TLabelSans className="text-[10px]">
-                      {`Note: Cannot claim and deposit ${formatList(
-                        tokens
-                          .filter(
-                            (t) =>
-                              !tokensThatCanBeDeposited
-                                .map((_t) => _t.coinType)
-                                .includes(t.coinType),
-                          )
-                          .map((t) => t.symbol),
-                      ).replace(
-                        "and",
-                        "or",
-                      )} (max 5 deposit positions, no borrows).`}
-                    </TLabelSans>
-                  )
-                : !canDepositAsMap[swappingToCoinType] && (
-                    <TLabelSans className="text-[10px]">
-                      {`Note: Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`}
-                    </TLabelSans>
-                  )}
-            </>
+          {/* Notes */}
+          {notes.length > 0 && (
+            <div className="mt-1 flex flex-col gap-1">
+              <TLabelSans className="text-[10px]">Note:</TLabelSans>
+
+              {notes.map((note) => (
+                <TLabelSans key={note} className="text-[10px]">
+                  • {note}
+                </TLabelSans>
+              ))}
+            </div>
           )}
         </>
       }

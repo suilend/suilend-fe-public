@@ -17,7 +17,6 @@ import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
-import { normalizeStructTag } from "@mysten/sui/utils";
 import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
@@ -40,7 +39,7 @@ interface DashboardContext {
   setIsAutoclaimNotificationDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   claimRewards: (
-    rewardsMap: Record<string, RewardSummary[]>,
+    rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>,
     args: {
       isSwapping: boolean;
       swappingToCoinType: string;
@@ -122,67 +121,12 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   ]);
 
   // Actions
-  const getClaimRewardSimulatedAmount = useCallback(
-    async (rewards: ClaimRewardsReward[]): Promise<string> => {
-      if (!address) throw Error("Wallet not connected");
-      if (!obligationOwnerCap || !obligation)
-        throw Error("Obligation not found");
-
-      let transaction = new Transaction();
-
-      // Claim
-      const { transaction: _transaction, mergedCoinsMap } =
-        appData.suilendClient.claimRewards(
-          address,
-          obligationOwnerCap.id,
-          rewards,
-          transaction,
-        );
-      transaction = _transaction;
-
-      const [coinType, coin] = Object.entries(mergedCoinsMap)[0]; // There should be only be one entry
-
-      // Get amount
-      transaction.transferObjects([coin], transaction.pure.address(address));
-      const inspectResults = await dryRunTransaction(transaction);
-
-      const claimEvents = inspectResults.events.filter(
-        (event) =>
-          event.type ===
-            "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::lending_market::ClaimRewardEvent" &&
-          normalizeStructTag((event.parsedJson as any).coin_type.name) ===
-            coinType,
-      );
-      if (claimEvents.length === 0) throw new Error("Claim event not found");
-
-      const amount = claimEvents
-        .reduce(
-          (acc, claimEvent) =>
-            acc.plus((claimEvent.parsedJson as any).liquidity_amount),
-          new BigNumber(0),
-        )
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString();
-      console.log("[getClaimRewardSimulatedAmount]", {
-        coinType,
-        amount,
-        claimEvents,
-      });
-
-      return amount;
-    },
-    [
-      address,
-      obligationOwnerCap,
-      obligation,
-      appData.suilendClient,
-      dryRunTransaction,
-    ],
-  );
-
   const claimRewards = useCallback(
     async (
-      rewardsMap: Record<string, RewardSummary[]>,
+      rewardsMap: Record<
+        string,
+        { amount: BigNumber; rewards: RewardSummary[] }
+      >,
       args: {
         isSwapping: boolean;
         swappingToCoinType: string;
@@ -197,7 +141,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
       try {
         const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
-          .flat()
+          .flatMap((r) => r.rewards)
           .map((r) => ({
             reserveArrayIndex:
               r.obligationClaims[obligation.id].reserveArrayIndex,
@@ -248,24 +192,21 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                 .filter(([coinType]) => swappedCoinTypes.includes(coinType))
                 .map(([coinType, coin]) =>
                   (async () => {
-                    // Get amount
-                    const amount = await getClaimRewardSimulatedAmount(
-                      rewards.filter((r) => r.rewardCoinType === coinType),
-                    );
+                    const { amount } = rewardsMap[coinType]; // Use underestimate (rewards keep accruing)
 
                     // Get routes
                     const routers = await cetusSdk.findRouters({
                       from: coinType,
                       target: args.swappingToCoinType,
-                      amount: new BN(amount), // Underestimate (rewards keep accruing)
+                      amount: new BN(
+                        amount
+                          .times(
+                            10 ** appData.coinMetadataMap[coinType].decimals,
+                          )
+                          .integerValue(BigNumber.ROUND_DOWN)
+                          .toString(),
+                      ), // Underestimate (rewards keep accruing)
                       byAmountIn: true,
-                      splitCount: new BigNumber(
-                        new BigNumber(amount)
-                          .div(10 ** appData.coinMetadataMap[coinType].decimals)
-                          .times(rewardsMap[coinType][0].stats.price ?? 1),
-                      ).gte(10)
-                        ? undefined // Don't limit splitCount if amount is >= $10
-                        : 1,
                     });
                     if (!routers) throw new Error("No swap quote found");
                     console.log("[claimRewards] routers", {
@@ -367,7 +308,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       obligationOwnerCap,
       obligation,
       appData.suilendClient,
-      getClaimRewardSimulatedAmount,
       cetusSdk,
       appData.coinMetadataMap,
       autoclaimRewards,

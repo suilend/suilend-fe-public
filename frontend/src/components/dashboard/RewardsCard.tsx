@@ -44,16 +44,16 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
 }
 
 interface ClaimableRewardsProps {
-  claimableRewardsMap: Record<string, BigNumber>;
+  rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>;
 }
 
-function ClaimableRewards({ claimableRewardsMap }: ClaimableRewardsProps) {
+function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
   return (
     <div className="flex flex-col gap-1">
       <TLabelSans>Claimable rewards</TLabelSans>
 
       <div className="grid w-full grid-cols-2 gap-x-4 gap-y-1">
-        {Object.entries(claimableRewardsMap).map(([coinType, amount]) => (
+        {Object.entries(rewardsMap).map(([coinType, { amount }]) => (
           <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
         ))}
       </div>
@@ -66,8 +66,10 @@ export default function RewardsCard() {
   const { userData, obligation } = useLoadedUserContext();
 
   // Rewards
-  const rewardsMap: Record<string, RewardSummary[]> = {};
-  const claimableRewardsMap: Record<string, BigNumber> = {};
+  const rewardsMap: Record<
+    string,
+    { amount: BigNumber; rewards: RewardSummary[] }
+  > = {};
   if (obligation) {
     Object.values(userData.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
@@ -80,22 +82,20 @@ export default function RewardsCard() {
           return;
 
         if (!rewardsMap[r.stats.rewardCoinType])
-          rewardsMap[r.stats.rewardCoinType] = [];
-        rewardsMap[r.stats.rewardCoinType].push(r);
+          rewardsMap[r.stats.rewardCoinType] = {
+            amount: new BigNumber(0),
+            rewards: [],
+          };
+        rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
+          r.stats.rewardCoinType
+        ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+        rewardsMap[r.stats.rewardCoinType].rewards.push(r);
       }),
     );
-
-    Object.entries(rewardsMap).forEach(([coinType, rewards]) => {
-      claimableRewardsMap[coinType] = rewards.reduce(
-        (acc, reward) =>
-          acc.plus(reward.obligationClaims[obligation.id].claimableAmount),
-        new BigNumber(0),
-      );
-    });
   }
 
-  const hasClaimableRewards = Object.values(claimableRewardsMap).some(
-    (amount) => amount.gt(0),
+  const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>
+    amount.gt(0),
   );
 
   return !address ? (
@@ -134,7 +134,7 @@ export default function RewardsCard() {
     >
       <CardContent className="flex flex-col gap-4 rounded-b-[3px] bg-card">
         {/* Rewards */}
-        <ClaimableRewards claimableRewardsMap={claimableRewardsMap} />
+        <ClaimableRewards rewardsMap={rewardsMap} />
 
         {/* Actions */}
         <div className="w-max">

@@ -243,8 +243,10 @@ export default function LstStrategyDialog({
   );
 
   // Rewards
-  const rewardsMap: Record<string, RewardSummary[]> = {};
-  const claimableRewardsMap: Record<string, BigNumber> = {};
+  const rewardsMap: Record<
+    string,
+    { amount: BigNumber; rewards: RewardSummary[] }
+  > = {};
   if (obligation) {
     Object.values(userData.rewardMap).flatMap((rewards) =>
       [...rewards.deposit, ...rewards.borrow].forEach((r) => {
@@ -257,22 +259,20 @@ export default function LstStrategyDialog({
           return;
 
         if (!rewardsMap[r.stats.rewardCoinType])
-          rewardsMap[r.stats.rewardCoinType] = [];
-        rewardsMap[r.stats.rewardCoinType].push(r);
+          rewardsMap[r.stats.rewardCoinType] = {
+            amount: new BigNumber(0),
+            rewards: [],
+          };
+        rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
+          r.stats.rewardCoinType
+        ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+        rewardsMap[r.stats.rewardCoinType].rewards.push(r);
       }),
     );
-
-    Object.entries(rewardsMap).forEach(([coinType, rewards]) => {
-      claimableRewardsMap[coinType] = rewards.reduce(
-        (acc, reward) =>
-          acc.plus(reward.obligationClaims[obligation.id].claimableAmount),
-        new BigNumber(0),
-      );
-    });
   }
 
-  const hasClaimableRewards = Object.values(claimableRewardsMap).some(
-    (amount) => amount.gt(0),
+  const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>
+    amount.gt(0),
   );
 
   // Rewards - compound
@@ -289,7 +289,7 @@ export default function LstStrategyDialog({
     if (!obligation) throw Error("Obligation not found");
 
     const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
-      .flat()
+      .flatMap((r) => r.rewards)
       .map((r) => ({
         reserveArrayIndex: r.obligationClaims[obligation.id].reserveArrayIndex,
         rewardIndex: BigInt(r.stats.rewardIndex),
@@ -355,7 +355,7 @@ export default function LstStrategyDialog({
           .map(([coinType, coin]) =>
             (async () => {
               // Get amount
-              const amount = claimableRewardsMap[coinType]; // Use underestimate (rewards keep accruing)
+              const { amount } = rewardsMap[coinType]; // Use underestimate (rewards keep accruing)
 
               // Get routes
               const routers = await cetusSdk.findRouters({
@@ -368,13 +368,6 @@ export default function LstStrategyDialog({
                     .toString(),
                 ), // Underestimate (rewards keep accruing)
                 byAmountIn: true,
-                splitCount: new BigNumber(
-                  new BigNumber(amount)
-                    .div(10 ** appData.coinMetadataMap[coinType].decimals)
-                    .times(rewardsMap[coinType][0].stats.price ?? 1),
-                ).gte(10)
-                  ? undefined // Don't limit splitCount if amount is >= $10
-                  : 1,
               });
               if (!routers) throw new Error("No swap quote found");
               console.log("[compoundRewards] routers", {
@@ -458,7 +451,7 @@ export default function LstStrategyDialog({
         [
           "Compounded",
           formatList(
-            Object.keys(claimableRewardsMap).map(
+            Object.keys(rewardsMap).map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
             ),
           ),
@@ -482,7 +475,7 @@ export default function LstStrategyDialog({
         [
           "Failed to compound",
           formatList(
-            Object.keys(claimableRewardsMap).map(
+            Object.keys(rewardsMap).map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
             ),
           ),
@@ -1935,8 +1928,8 @@ export default function LstStrategyDialog({
               <Tooltip
                 content={
                   <div className="flex flex-col gap-1">
-                    {Object.entries(claimableRewardsMap).map(
-                      ([coinType, amount]) => (
+                    {Object.entries(rewardsMap).map(
+                      ([coinType, { amount }]) => (
                         <div
                           key={coinType}
                           className="flex flex-row items-center gap-2"
@@ -1962,7 +1955,7 @@ export default function LstStrategyDialog({
               >
                 <div className="w-max">
                   <TokenLogos
-                    tokens={Object.keys(claimableRewardsMap).map((coinType) =>
+                    tokens={Object.keys(rewardsMap).map((coinType) =>
                       getToken(coinType, appData.coinMetadataMap[coinType]),
                     )}
                     size={16}
