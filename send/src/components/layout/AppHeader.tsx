@@ -27,7 +27,7 @@ export default function AppHeader() {
   return (
     <HeaderBase>
       {/* Start */}
-      <div className="flex shrink-0 flex-row items-center gap-12 justify-between w-full">
+      <div className="flex shrink-0 flex-row items-center gap-12 justify-between lg:justify-start w-full">
         <Link href="https://suilend.com">
           <Logo />
         </Link>

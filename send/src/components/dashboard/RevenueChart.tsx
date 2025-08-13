@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AlertCircle } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import * as Recharts from "recharts";
 import {
   BuybacksPoint,
   Period,
@@ -13,18 +14,20 @@ import {
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
 
-type MetricKey = "revenue" | "buybacks" | "price";
+type ProtocolKey = "suilend" | "steamm" | "springsui";
 
-type ProtocolKey = "suilend" | "steamm";
-
-type EnabledMetrics = Record<MetricKey, boolean>;
-type RevenueScope = "all" | ProtocolKey;
+type EnabledMetrics = {
+  suilendRevenue: boolean;
+  steammRevenue: boolean;
+  springsuiRevenue: boolean;
+  buybacks: boolean;
+  price: boolean;
+};
 
 type ChartProps = {
   timeframe: Period;
   isCumulative: boolean;
   enabledMetrics: EnabledMetrics;
-  revenueScope: RevenueScope;
 };
 
 type RawPoint = {
@@ -39,13 +42,11 @@ type RawPoint = {
 // Colors: protocol-distinct hues. Metric is subtle via opacity.
 const COLOR_SUILEND = "hsl(var(--primary))";
 const COLOR_STEAMM = "hsl(var(--secondary))";
+const COLOR_SPRINGSUI = "#6DA8FF";
 const COLOR_PRICE_LINE = "hsl(var(--muted-foreground))";
 const COLOR_BUYBACKS = "#ffffff"; // white for better distinction
 
-function buildPath(points: { x: number; y: number }[]): string {
-  if (points.length === 0) return "";
-  return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-}
+//
 
 function formatLabel(ts: number) {
   const d = new Date(ts);
@@ -59,6 +60,30 @@ function formatTooltipDate(ts: number) {
     day: "numeric",
     year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
   });
+}
+
+function startOfWeekUtc(ts: number): number {
+  const d = new Date(ts);
+  const day = d.getUTCDay(); // 0=Sun ... 6=Sat
+  const diffToMonday = (day + 6) % 7; // Monday=0
+  const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  monday.setUTCDate(monday.getUTCDate() - diffToMonday);
+  return monday.getTime();
+}
+
+function startOfMonthUtc(ts: number): number {
+  const d = new Date(ts);
+  const monthStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  return monthStart.getTime();
+}
+
+function formatMonthLabel(ts: number): string {
+  return new Date(ts).toLocaleDateString(undefined, { month: "short" });
+}
+
+function formatWeekLabel(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function useProcessedData(period: Period, isCumulative: boolean) {
@@ -77,16 +102,28 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     isLoading: loadingPrice,
     error: errorPrice,
   } = getPriceChart(period);
+  
 
   const loading = loadingRev || loadingBuy || loadingPrice;
   const anyError = errorRev || errorBuy || errorPrice;
 
   const raw: RawPoint[] = useMemo(() => {
-    const tsSet = new Set<number>();
-    (revenueData ?? []).forEach((p) => tsSet.add(p.timestamp));
-    (buybacksData ?? []).forEach((p) => tsSet.add(p.timestamp));
-    (priceData ?? []).forEach((p) => tsSet.add(p.timestamp));
-    const timestamps = Array.from(tsSet).sort((a, b) => a - b);
+    // Choose a canonical x-axis timeline to avoid blank regions.
+    // Prefer price (densest/most regular), otherwise revenue, then buybacks.
+    let timestamps: number[] = [];
+    if (priceData && priceData.length > 0) {
+      timestamps = Array.from(
+        new Set(priceData.map((p) => p.timestamp)),
+      ).sort((a, b) => a - b);
+    } else if (revenueData && revenueData.length > 0) {
+      timestamps = Array.from(
+        new Set(revenueData.map((p) => p.timestamp)),
+      ).sort((a, b) => a - b);
+    } else if (buybacksData && buybacksData.length > 0) {
+      timestamps = Array.from(
+        new Set(buybacksData.map((p) => p.timestamp)),
+      ).sort((a, b) => a - b);
+    }
 
     const revenueByTs = new Map<number, RevenuePoint>();
     (revenueData ?? []).forEach((p) => revenueByTs.set(p.timestamp, p));
@@ -95,14 +132,72 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     const priceByTs = new Map<number, PricePoint>();
     (priceData ?? []).forEach((p) => priceByTs.set(p.timestamp, p));
 
-    const points: RawPoint[] = timestamps.map((ts) => {
-      const rev = revenueByTs.get(ts);
-      const buy = buybacksByTs.get(ts);
-      const pr = priceByTs.get(ts);
+    const revKeys = Array.from(revenueByTs.keys()).sort((a, b) => a - b);
+    const buyKeys = Array.from(buybacksByTs.keys()).sort((a, b) => a - b);
+
+    // Estimate step from canonical timestamps to set a matching tolerance
+    const diffs: number[] = [];
+    for (let i = 1; i < timestamps.length; i++) diffs.push(timestamps[i] - timestamps[i - 1]);
+    const stepMs = diffs.length > 0 ? diffs.sort((a, b) => a - b)[Math.floor(diffs.length / 2)] : 24 * 60 * 60 * 1000;
+    const tolerance = Math.max(stepMs / 2, 6 * 60 * 60 * 1000); // at least 6h
+
+    let revIdx = 0;
+    let buyIdx = 0;
+
+    function nearestValue<T extends { timestamp: number }>(
+      keys: number[],
+      map: Map<number, T>,
+      idxRef: { i: number },
+      ts: number,
+    ): T | undefined {
+      if (keys.length === 0) return undefined;
+      // advance pointer while next key is <= ts
+      while (idxRef.i + 1 < keys.length && keys[idxRef.i + 1] <= ts) idxRef.i++;
+      const prevKey = keys[idxRef.i];
+      const nextKey = idxRef.i + 1 < keys.length ? keys[idxRef.i + 1] : undefined;
+      let bestKey = prevKey;
+      if (nextKey !== undefined && Math.abs(nextKey - ts) < Math.abs(prevKey - ts)) bestKey = nextKey;
+      if (Math.abs(bestKey - ts) <= tolerance) return map.get(bestKey);
+      return undefined;
+    }
+
+    // Build price array aligned to the canonical timeline with forward-fill/backfill
+    const prices: Array<number | undefined> = timestamps.map((ts) =>
+      priceByTs.get(ts)?.price,
+    );
+    // forward-fill
+    let last: number | undefined = undefined;
+    for (let i = 0; i < prices.length; i++) {
+      if (prices[i] === undefined) {
+        prices[i] = last;
+      } else {
+        last = prices[i];
+      }
+    }
+    // backfill for leading undefineds
+    let firstDefined: number | undefined = undefined;
+    for (let i = 0; i < prices.length; i++) {
+      if (prices[i] !== undefined) {
+        firstDefined = prices[i];
+        break;
+      }
+    }
+    if (firstDefined !== undefined) {
+      for (let i = 0; i < prices.length; i++) {
+        if (prices[i] === undefined) prices[i] = firstDefined;
+        else break;
+      }
+    }
+
+    const points: RawPoint[] = timestamps.map((ts, idx) => {
+      const rev = nearestValue(revKeys, revenueByTs, { i: revIdx }, ts);
+      revIdx = Math.min(revKeys.length - 1, revIdx);
+      const buy = nearestValue(buyKeys, buybacksByTs, { i: buyIdx }, ts);
+      buyIdx = Math.min(buyKeys.length - 1, buyIdx);
       const suilendRevenueM = rev ? rev.suilendRevenue / 1_000_000 : 0;
       const steammRevenueM = rev ? rev.steammRevenue / 1_000_000 : 0;
       const buybacksM = buy ? buy.usdValue / 1_000_000 : 0;
-      const price = pr ? pr.price : 0;
+      const price = prices[idx] ?? 0;
       return {
         timestamp: ts,
         label: formatLabel(ts),
@@ -115,6 +210,65 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     return points;
   }, [revenueData, buybacksData, priceData]);
 
+  // Optionally bucket raw points by week/month depending on period
+  const bucketedRaw: RawPoint[] = useMemo(() => {
+    if (period === "90d") {
+      const byBucket = new Map<number, RawPoint>();
+      for (const pt of raw) {
+        const bucket = startOfWeekUtc(pt.timestamp);
+        const existing = byBucket.get(bucket);
+        if (!existing) {
+          byBucket.set(bucket, {
+            timestamp: bucket,
+            label: formatWeekLabel(bucket),
+            suilendRevenueM: pt.suilendRevenueM,
+            steammRevenueM: pt.steammRevenueM,
+            buybacksM: pt.buybacksM,
+            price: pt.price,
+          });
+        } else {
+          existing.suilendRevenueM += pt.suilendRevenueM;
+          existing.steammRevenueM += pt.steammRevenueM;
+          existing.buybacksM += pt.buybacksM;
+          // average price within bucket
+          existing.price = (existing.price + pt.price) / 2;
+        }
+      }
+      return Array.from(byBucket.values()).sort((a, b) => a.timestamp - b.timestamp);
+    }
+    if (period === "ytd" || period === "alltime") {
+      const byBucket = new Map<number, { sum: RawPoint; count: number }>();
+      for (const pt of raw) {
+        const bucket = startOfMonthUtc(pt.timestamp);
+        const existing = byBucket.get(bucket);
+        if (!existing) {
+          byBucket.set(bucket, {
+            sum: {
+              timestamp: bucket,
+              label: formatMonthLabel(bucket),
+              suilendRevenueM: pt.suilendRevenueM,
+              steammRevenueM: pt.steammRevenueM,
+              buybacksM: pt.buybacksM,
+              price: pt.price,
+            },
+            count: 1,
+          });
+        } else {
+          existing.sum.suilendRevenueM += pt.suilendRevenueM;
+          existing.sum.steammRevenueM += pt.steammRevenueM;
+          existing.sum.buybacksM += pt.buybacksM;
+          existing.sum.price += pt.price;
+          existing.count += 1;
+        }
+      }
+      const arr = Array.from(byBucket.values())
+        .map(({ sum, count }) => ({ ...sum, price: sum.price / count }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+      return arr;
+    }
+    return raw;
+  }, [raw, period]);
+
   const processed = useMemo(() => {
     if (raw.length === 0)
       return [] as Array<{
@@ -126,7 +280,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       }>;
 
     if (!isCumulative) {
-      return raw.map((pt) => ({
+      return bucketedRaw.map((pt) => ({
         timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: pt.suilendRevenueM, buybacks: pt.buybacksM },
@@ -138,7 +292,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     let cumSuilend = 0;
     let cumSteamm = 0;
     let cumBuy = 0;
-    return raw.map((pt) => {
+    return bucketedRaw.map((pt) => {
       cumSuilend += pt.suilendRevenueM;
       cumSteamm += pt.steammRevenueM;
       cumBuy += pt.buybacksM;
@@ -150,44 +304,31 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         price: pt.price,
       };
     });
-  }, [raw, isCumulative]);
+  }, [bucketedRaw, isCumulative]);
 
   return { processed, loading, anyError };
 }
 
-const RevenueChart = ({
-  timeframe,
-  isCumulative,
-  enabledMetrics,
-  revenueScope,
-}: ChartProps) => {
-  const chartWidth = 860;
+const RevenueChart = ({ timeframe, isCumulative, enabledMetrics }: ChartProps) => {
   const chartHeight = 300;
-  const margin = { top: 16, right: 20, left: 48, bottom: 32 };
-  const width = chartWidth - margin.left - margin.right;
-  const height = chartHeight - margin.top - margin.bottom;
+  const [isSmall, setIsSmall] = useState(false);
+  useEffect(() => {
+    const mq = typeof window !== "undefined" ? window.matchMedia("(max-width: 640px)") : undefined;
+    const onChange = () => setIsSmall(Boolean(mq?.matches));
+    onChange();
+    mq?.addEventListener("change", onChange);
+    return () => mq?.removeEventListener("change", onChange);
+  }, []);
+  const margin = useMemo(
+    () => (isSmall ? { top: 6, right: 8, left: 12, bottom: 16 } : { top: 10, right: 12, left: 14, bottom: 20 }),
+    [isSmall],
+  );
 
   const {
     processed: data,
     loading,
     anyError,
   } = useProcessedData(timeframe, isCumulative);
-
-  // Left Y (bars) and Right Y (price)
-  const maxYLeft = useMemo(() => {
-    const totals = data.map((d) => {
-      const revenueVal = enabledMetrics.revenue
-        ? revenueScope === "all"
-          ? d.suilend.revenue + d.steamm.revenue
-          : d[revenueScope].revenue
-        : 0;
-      const buybacksVal = enabledMetrics.buybacks ? d.suilend.buybacks : 0;
-      return Math.max(revenueVal, buybacksVal);
-    });
-    const m = Math.max(1, ...totals);
-    const step = Math.pow(10, Math.floor(Math.log10(m)) - 1);
-    return Math.ceil(m / step) * step;
-  }, [data, enabledMetrics, revenueScope]);
 
   const maxYRight = useMemo(() => {
     if (!enabledMetrics.price) return 1;
@@ -196,416 +337,168 @@ const RevenueChart = ({
     return Math.ceil(m / step) * step;
   }, [data, enabledMetrics.price]);
 
-  const getX = useCallback(
-    (i: number) => (i / Math.max(1, data.length - 1)) * width,
-    [data, width],
-  );
-  const getYLeft = useCallback(
-    (v: number) => height - (v / maxYLeft) * height,
-    [height, maxYLeft],
-  );
-  const getYRight = useCallback(
-    (v: number) => height - (v / maxYRight) * height,
-    [height, maxYRight],
-  );
-
-  const priceLine = useMemo(() => {
-    if (!enabledMetrics.price) return [] as { x: number; y: number }[];
-    return data.map((d, i) => ({ x: getX(i), y: getYRight(d.price) }));
-  }, [data, enabledMetrics.price, getX, getYRight]);
-
-  const gridValuesLeft = [0, 0.25, 0.5, 0.75, 1].map((t) =>
-    Math.round(maxYLeft * t),
-  );
-  const gridValuesRight = [0, 0.25, 0.5, 0.75, 1].map((t) =>
-    Math.round(maxYRight * t),
+  // Recharts data mapping and ticks
+  const chartData = useMemo(
+    () =>
+      data.map((d, index) => ({
+        index,
+        timestamp: d.timestamp,
+        label: d.label,
+        suilendRevenue: enabledMetrics.suilendRevenue ? d.suilend.revenue : 0,
+        steammRevenue: enabledMetrics.steammRevenue ? d.steamm.revenue : 0,
+        springsuiRevenue: enabledMetrics.springsuiRevenue ? 0 : 0,
+        buybacks: enabledMetrics.buybacks ? d.suilend.buybacks : 0,
+        price: d.price,
+      })),
+    [data, enabledMetrics],
   );
 
-  // Hover state for tooltips
-  const [hover, setHover] = useState<
-    | { type: "revenue"; index: number; protocol: ProtocolKey; value: number }
-    | { type: "buybacks"; index: number; value: number }
-    | { type: "price"; index: number; value: number }
-    | null
-  >(null);
+  const xTicks = useMemo(() => {
+    const maxLabels = timeframe === "30d" ? (isSmall ? 6 : 10) : timeframe === "7d" ? (isSmall ? 5 : 7) : 12;
+    const step = Math.max(1, Math.floor(chartData.length / maxLabels));
+    return chartData
+      .filter((_, i) => i % step === 0 || i === chartData.length - 1)
+      .map((d) => d.index);
+  }, [chartData, timeframe, isSmall]);
 
-  return (
-    <div className="w-full h-[300px] overflow-hidden">
-      <svg
-        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="w-full h-full"
-      >
-        {/* Grid */}
-        {gridValuesLeft.map((value, i) => {
-          const y = margin.top + getYLeft(value);
-          return (
-            <g key={i}>
-              <line
-                x1={margin.left}
-                y1={y}
-                x2={margin.left + width}
-                y2={y}
-                stroke="hsl(var(--border))"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-                opacity={0.35}
-              />
-              <text
-                x={margin.left - 8}
-                y={y + 4}
-                textAnchor="end"
-                fill="hsl(var(--muted-foreground))"
-                fontSize="12"
-              >
-                ${value}M
-              </text>
-            </g>
-          );
-        })}
+  // Left Y domain derived strictly from visible series
+  const yMaxLeftVisible = useMemo(() => {
+    if (chartData.length === 0) return 1;
+    let max = 0;
+    for (const d of chartData) {
+      const revenueSum =
+        (enabledMetrics.suilendRevenue ? d.suilendRevenue : 0) +
+        (enabledMetrics.steammRevenue ? d.steammRevenue : 0) +
+        (enabledMetrics.springsuiRevenue ? d.springsuiRevenue : 0);
+      const buy = enabledMetrics.buybacks ? d.buybacks : 0;
+      const m = Math.max(revenueSum, buy);
+      if (m > max) max = m;
+    }
+    // If values are below 1M, round up to nearest 0.05M for better readability
+    if (max < 1) return Math.max(0.05, Math.ceil(max * 20) / 20);
+    // Otherwise, use 1-2-5 progression
+    const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+    const leading = max / magnitude;
+    let niceLeading = 1;
+    if (leading <= 1) niceLeading = 1;
+    else if (leading <= 2) niceLeading = 2;
+    else if (leading <= 5) niceLeading = 5;
+    else niceLeading = 10;
+    return niceLeading * magnitude;
+  }, [chartData, enabledMetrics]);
 
-        {/* Axes */}
-        <line
-          x1={margin.left}
-          y1={margin.top + height}
-          x2={margin.left + width}
-          y2={margin.top + height}
-          stroke="hsl(var(--border))"
-          strokeWidth="1"
-        />
-
-        {/* Loading / Error overlays */}
-        {loading && (
-          <foreignObject
-            x={margin.left}
-            y={margin.top}
-            width={width}
-            height={height}
-          >
-            <div className="w-full h-full">
-              <Skeleton className="w-full h-full" />
+  // console.log(yMaxLeftVisible);
+  
+  // Tooltip content styled like site cards
+  const TooltipCard = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const d = payload[0].payload as any;
+    const rows: Array<{ label: string; value: number; color?: string }> = [];
+    if (enabledMetrics.suilendRevenue && d.suilendRevenue > 0)
+      rows.push({ label: "Suilend", value: d.suilendRevenue, color: COLOR_SUILEND });
+    if (enabledMetrics.steammRevenue && d.steammRevenue > 0)
+      rows.push({ label: "STEAMM", value: d.steammRevenue, color: COLOR_STEAMM });
+    if (enabledMetrics.springsuiRevenue && d.springsuiRevenue > 0)
+      rows.push({ label: "SpringSUI", value: d.springsuiRevenue, color: COLOR_SPRINGSUI });
+    if (enabledMetrics.buybacks && d.buybacks > 0)
+      rows.push({ label: "Buybacks", value: d.buybacks, color: COLOR_BUYBACKS });
+    const dateStr = formatTooltipDate(d.timestamp);
+    return (
+      <div className="rounded-md border bg-[#081126] text-foreground px-3 py-2 shadow-md">
+        <div className="text-xs text-muted-foreground mb-2">{dateStr}</div>
+        {rows.map((r, i) => (
+          <div key={i} className="flex items-center justify-between gap-4 text-sm mb-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: r.color }} />
+              <span>{r.label}</span>
             </div>
-          </foreignObject>
-        )}
-        {anyError && (
-          <g>
-            <text
-              x={margin.left + 8}
-              y={margin.top + 16}
-              fill="red"
-              fontSize="12"
-              className="flex items-center"
-            ></text>
-            <g transform={`translate(${margin.left + 8}, ${margin.top + 8})`}>
-              <AlertCircle className="w-4 h-4 text-red-500" />
-            </g>
-          </g>
-        )}
-
-        {/* X labels - reduce density based on data length */}
-        {(() => {
-          const maxLabels = 16; // cap visible labels for readability
-          const step = Math.max(1, Math.floor(data.length / maxLabels));
-          return data.map((d, i) => {
-            if (i % step !== 0 && i !== data.length - 1) return null;
-            return (
-              <text
-                key={i}
-                x={margin.left + getX(i)}
-                y={margin.top + height + 16}
-                textAnchor="middle"
-                fill="hsl(var(--muted-foreground))"
-                fontSize="10"
-              >
-                {d.label}
-              </text>
-            );
-          });
-        })()}
-
-        {/* Side-by-side bars: left = Revenue (stacked by protocol per scope), right = Buybacks (single) */}
-        {data.map((d, i) => {
-          const centerX = margin.left + getX(i);
-          const segmentWidth = width / Math.max(1, data.length);
-          const barWidth = Math.min(18, Math.max(6, segmentWidth * 0.35));
-          const gap = Math.max(2, segmentWidth * 0.05);
-          const revX = centerX - gap / 2 - barWidth;
-          const buyX = centerX + gap / 2;
-
-          // Revenue segments depending on scope
-          const revenueSegments: Array<{
-            value: number;
-            color: string;
-            protocol: ProtocolKey;
-          }> = [];
-          if (enabledMetrics.revenue) {
-            if (revenueScope === "all") {
-              if (d.suilend.revenue > 0)
-                revenueSegments.push({
-                  value: d.suilend.revenue,
-                  color: COLOR_SUILEND,
-                  protocol: "suilend",
-                });
-              if (d.steamm.revenue > 0)
-                revenueSegments.push({
-                  value: d.steamm.revenue,
-                  color: COLOR_STEAMM,
-                  protocol: "steamm",
-                });
-            } else {
-              const val = d[revenueScope].revenue;
-              if (val > 0)
-                revenueSegments.push({
-                  value: val,
-                  color:
-                    revenueScope === "suilend" ? COLOR_SUILEND : COLOR_STEAMM,
-                  protocol: revenueScope,
-                });
-            }
-          }
-
-          // Buybacks single bar (sum of protocols), subtle color
-          const buybacksValue = enabledMetrics.buybacks
-            ? d.suilend.buybacks
-            : 0; // stored in suilend.buybacks
-
-          // Draw revenue stacked
-          let yCursorRev = margin.top + getYLeft(0);
-          const revenueRects = revenueSegments.map((seg, idx) => {
-            const h = (seg.value / maxYLeft) * height;
-            const y = yCursorRev - h;
-            yCursorRev = y;
-            return (
-              <rect
-                key={`r-${idx}`}
-                x={revX}
-                y={y}
-                width={barWidth}
-                height={h}
-                fill={seg.color}
-                opacity={1}
-                onMouseEnter={() =>
-                  setHover({
-                    type: "revenue",
-                    index: i,
-                    protocol: seg.protocol,
-                    value: seg.value,
-                  })
-                }
-                onMouseLeave={() => setHover(null)}
-              />
-            );
-          });
-
-          // Draw buybacks bar
-          const buybacksHeight = (buybacksValue / maxYLeft) * height;
-          const buybacksY = margin.top + getYLeft(0) - buybacksHeight;
-          const buybackRect = (
-            <rect
-              key={`b-${i}`}
-              x={buyX}
-              y={buybacksY}
-              width={barWidth}
-              height={buybacksHeight}
-              fill={COLOR_BUYBACKS}
-              opacity={0.45}
-              onMouseEnter={() =>
-                setHover({ type: "buybacks", index: i, value: buybacksValue })
-              }
-              onMouseLeave={() => setHover(null)}
-            />
-          );
-
-          return (
-            <g key={i}>
-              {revenueRects}
-              {buybackRect}
-            </g>
-          );
-        })}
-
-        {/* Price line on right axis */}
-        {priceLine.length > 0 && (
-          <g>
-            <path
-              d={buildPath(
-                priceLine.map((p) => ({
-                  x: margin.left + p.x,
-                  y: margin.top + p.y,
-                })),
-              )}
-              fill="none"
-              stroke={COLOR_PRICE_LINE}
-              strokeWidth={2.5}
-            />
-            {priceLine.map((p, i) => (
-              <g key={i}>
-                <circle
-                  cx={margin.left + p.x}
-                  cy={margin.top + p.y}
-                  r={3}
-                  fill={COLOR_PRICE_LINE}
-                />
-                <circle
-                  cx={margin.left + p.x}
-                  cy={margin.top + p.y}
-                  r={10}
-                  fill="transparent"
-                  onMouseEnter={() =>
-                    setHover({ type: "price", index: i, value: data[i].price })
-                  }
-                  onMouseLeave={() => setHover(null)}
-                />
-              </g>
-            ))}
-          </g>
-        )}
-
-        {/* Right axis ticks */}
+            <span>{`$${r.value.toFixed(r.value < 1 ? 2 : 0)}M`}</span>
+          </div>
+        ))}
         {enabledMetrics.price && (
-          <g>
-            {gridValuesRight.map((value, i) => {
-              const y = margin.top + getYRight(value);
-              return (
-                <text
-                  key={i}
-                  x={margin.left + width + 6}
-                  y={y + 4}
-                  textAnchor="start"
-                  fill="hsl(var(--muted-foreground))"
-                  fontSize="12"
-                >
-                  ${value}
-                </text>
-              );
-            })}
-          </g>
+          <div className="flex items-center justify-between gap-4 text-sm mt-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: COLOR_PRICE_LINE }} />
+              <span>Price</span>
+            </div>
+            <span>{`$${Number(d.price).toFixed(2)}`}</span>
+          </div>
         )}
+      </div>
+    );
+  };
+  return (
+    <div className="w-full h-[260px] md:h-[300px]">
+      <Recharts.ResponsiveContainer width="100%" height="100%">
+        <Recharts.ComposedChart data={chartData} margin={margin} barCategoryGap="0%" barGap={0}>
+          <Recharts.CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <Recharts.XAxis
+            dataKey="index"
+            type="number"
+            ticks={xTicks}
+            tickFormatter={(value: number) => chartData[value]?.label ?? ""}
+            tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }}
+            domain={[chartData.length > 0 ? -0.5 : 0, chartData.length > 0 ? chartData.length - 0.5 : 1]}
+            tickMargin={isSmall ? 4 : 6}
+          />
+          <Recharts.YAxis
+            yAxisId="left"
+            orientation="left"
+            tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }}
+            tickFormatter={(v: number) => (v < 1 ? `$${v.toFixed(2)}M` : `$${v}M`)}
+            domain={[0, yMaxLeftVisible]}
+            allowDecimals
+          >
+            <Recharts.Label
+              value="USD (M)"
+              angle={-90}
+              position="insideLeft"
+              offset={isSmall ? 0 : -5}
+              style={{ fill: "hsl(var(--muted-foreground))", fontSize: isSmall ? 10 : 12 }}
+            />
+          </Recharts.YAxis>
+          <Recharts.YAxis yAxisId="right" orientation="right" tick={{ fontSize: isSmall ? 10 : 12, fill: "hsl(var(--muted-foreground))" }} domain={[0, Math.max(1, maxYRight)]}>
+            <Recharts.Label
+              value="Price ($)"
+              angle={90}
+              position="insideRight"
+              offset={10}
+              style={{ fill: "hsl(var(--muted-foreground))", fontSize: isSmall ? 10 : 12 }}
+            />
+          </Recharts.YAxis>
 
-        {/* Tooltip rendering */}
-        {hover && (
-          <g>
-            {hover.type !== "price" &&
-              (() => {
-                const i = hover.index;
-                const centerX = margin.left + getX(i);
-                const segmentWidth = width / Math.max(1, data.length);
-                const barWidth = Math.min(18, Math.max(6, segmentWidth * 0.35));
-                const gap = Math.max(2, segmentWidth * 0.05);
-                const isRevenue = hover.type === "revenue";
-                const x = isRevenue
-                  ? centerX - gap / 2 - barWidth
-                  : centerX + gap / 2;
-                const value = hover.value;
-                const y = isRevenue
-                  ? (() => {
-                      // compute top of hovered segment for better tooltip placement
-                      const segments: Array<{
-                        value: number;
-                        protocol: ProtocolKey;
-                      }> = [];
-                      if (revenueScope === "all") {
-                        if (enabledMetrics.revenue) {
-                          segments.push({
-                            value: data[i].suilend.revenue,
-                            protocol: "suilend",
-                          });
-                          segments.push({
-                            value: data[i].steamm.revenue,
-                            protocol: "steamm",
-                          });
-                        }
-                      } else if (enabledMetrics.revenue) {
-                        segments.push({
-                          value: data[i][revenueScope].revenue,
-                          protocol: revenueScope,
-                        });
-                      }
-                      let cursor = margin.top + getYLeft(0);
-                      for (const seg of segments) {
-                        const h = (seg.value / maxYLeft) * height;
-                        const top = cursor - h;
-                        if (
-                          seg.protocol ===
-                          (hover as { protocol: ProtocolKey }).protocol
-                        )
-                          return top;
-                        cursor = top;
-                      }
-                      return cursor;
-                    })()
-                  : margin.top + getYLeft(value);
-
-                const boxX = x - 6;
-                const boxY = y - 28;
-                const label =
-                  hover.type === "revenue"
-                    ? `Revenue – ${(hover as { protocol: ProtocolKey }).protocol === "suilend" ? "Suilend" : "STEAMM"}`
-                    : "Buybacks";
-                const ts = data[i]?.timestamp;
-                const timeStr = ts ? ` (${formatTooltipDate(ts)})` : "";
-                const text = `${label}: $${value.toFixed(2)}M${timeStr}`;
-                return (
-                  <g>
-                    <rect
-                      x={boxX}
-                      y={boxY}
-                      width={150}
-                      height={24}
-                      rx={4}
-                      ry={4}
-                      fill="hsl(var(--card))"
-                      stroke="hsl(var(--border))"
-                    />
-                    <text
-                      x={boxX + 8}
-                      y={boxY + 16}
-                      fill="hsl(var(--foreground))"
-                      fontSize="12"
-                    >
-                      {text}
-                    </text>
-                  </g>
-                );
-              })()}
-            {hover.type === "price" &&
-              (() => {
-                const i = hover.index;
-                const p = priceLine[i];
-                if (!p) return null;
-                const x = margin.left + p.x + 8;
-                const y = margin.top + p.y - 28;
-                return (
-                  <g>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={140}
-                      height={24}
-                      rx={4}
-                      ry={4}
-                      fill="hsl(var(--card))"
-                      stroke="hsl(var(--border))"
-                    />
-                    <text
-                      x={x + 8}
-                      y={y + 16}
-                      fill="hsl(var(--foreground))"
-                      fontSize="12"
-                    >
-                      {(() => {
-                        const ts2 = data[i]?.timestamp;
-                        const timeStr2 = ts2
-                          ? ` (${formatTooltipDate(ts2)})`
-                          : "";
-                        return `Price: $${hover.value.toFixed(2)}${timeStr2}`;
-                      })()}
-                    </text>
-                  </g>
-                );
-              })()}
-          </g>
-        )}
-      </svg>
+          {enabledMetrics.suilendRevenue && (
+            <Recharts.Bar yAxisId="left" dataKey="suilendRevenue" stackId="revenue" fill={COLOR_SUILEND} />
+          )}
+          {enabledMetrics.steammRevenue && (
+            <Recharts.Bar yAxisId="left" dataKey="steammRevenue" stackId="revenue" fill={COLOR_STEAMM} />
+          )}
+          {enabledMetrics.springsuiRevenue && (
+            <Recharts.Bar yAxisId="left" dataKey="springsuiRevenue" stackId="revenue" fill={COLOR_SPRINGSUI} />
+          )}
+          {enabledMetrics.buybacks && (
+            <Recharts.Bar yAxisId="left" dataKey="buybacks" fill={COLOR_BUYBACKS} opacity={0.45} />
+          )}
+          {enabledMetrics.price && (
+            <>
+              {/* Invisible reference line segments to extend to axes */}
+              <Recharts.Line yAxisId="right" type="monotone" dataKey={(d: any) => d.price} stroke="transparent" dot={false} isAnimationActive={false} points={undefined} />
+              {/* Real line draws over full domain by padding domain with -0.5..N-0.5 */}
+              <Recharts.Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="price"
+                stroke={COLOR_PRICE_LINE}
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
+                isAnimationActive={false}
+                connectNulls
+              />
+            </>
+          )}
+          <Recharts.Tooltip content={<TooltipCard />} />
+        </Recharts.ComposedChart>
+      </Recharts.ResponsiveContainer>
     </div>
   );
 };

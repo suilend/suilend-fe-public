@@ -33,7 +33,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         >
           {checked && (
             <div className="flex items-center justify-center">
-              <Check className="h-4 w-4" />
+              <Check className="h-4 w-4" color="white" />
             </div>
           )}
         </div>

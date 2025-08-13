@@ -14,6 +14,7 @@ export type RevenuePoint = {
   value: number;
   suilendRevenue: number;
   steammRevenue: number;
+  springsuiRevenue: number;
 };
 
 function parseTimestampSecondsToMs(ts: unknown): number | undefined {
@@ -40,7 +41,7 @@ export function getPriceChart(period: Period) {
             Number.isNaN(price)
           )
             return undefined;
-          return { timestamp, price } as PricePoint;
+          return { timestamp: timestamp * 1000, price } as PricePoint;
         })
         .filter((x): x is PricePoint => Boolean(x));
     } catch (err) {
@@ -118,6 +119,7 @@ export function getRevenueChart(period: Period) {
         value: string | number;
         suilendRevenue: string | number;
         steammRevenue: string | number;
+        springsuiRevenue: string | number;
       }> = await res.json();
       return json
         .map((p) => {
@@ -131,18 +133,17 @@ export function getRevenueChart(period: Period) {
             typeof p.steammRevenue === "string"
               ? Number(p.steammRevenue)
               : p.steammRevenue;
-          if (
-            timestamp === undefined ||
-            typeof value !== "number" ||
-            typeof suilendRevenue !== "number" ||
-            typeof steammRevenue !== "number"
-          )
-            return undefined;
+          const springsuiRevenue =
+            typeof p.springsuiRevenue === "string"
+              ? Number(p.springsuiRevenue)
+              : p.springsuiRevenue;
+
           return {
             timestamp,
             value,
             suilendRevenue,
             steammRevenue,
+            springsuiRevenue,
           } as RevenuePoint;
         })
         .filter((x): x is RevenuePoint => Boolean(x));

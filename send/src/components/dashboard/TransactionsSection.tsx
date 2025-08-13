@@ -1,3 +1,4 @@
+import React from "react";
 import Image from "next/image";
 
 import { AlertCircle, ExternalLink } from "lucide-react";
@@ -6,14 +7,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getTransactions } from "@/fetchers/fetchTransactions";
 import { ASSETS_URL } from "@/lib/constants";
-import { toCompactNumber } from "@/lib/utils";
+import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
 
 import SuilendLogo from "../layout/SuilendLogo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const TransactionsSection = () => {
-  const { data, isLoading, error } = getTransactions(50);
+  const PAGE_SIZE = 25;
+  const { data, isLoading, error } = getTransactions(PAGE_SIZE);
   const transactions = data?.results ?? [];
+  const [cursor, setCursor] = React.useState<string | undefined>(undefined);
+  const [prevCursors, setPrevCursors] = React.useState<string[]>([]);
+  const { data: pageData } = getTransactions(PAGE_SIZE, cursor === "start" ? undefined : cursor);
+  const pageResults = pageData?.results ?? transactions;
+  const nextCursor = pageData?.cursor;
 
   return (
     <>
@@ -25,19 +32,22 @@ const TransactionsSection = () => {
               <thead>
                 <tr className="border-b border-border">
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
-                    Date
+                    Time
                   </th>
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Type
                   </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
-                    Amount
-                  </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
                     Price
                   </th>
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
-                    Swapped from
+                    USD value
+                  </th>
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                    Out Amount
+                  </th>
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
+                    In Amount
                   </th>
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Txn
@@ -53,9 +63,9 @@ const TransactionsSection = () => {
                   </tr>
                 )}
                 {!isLoading &&
-                  transactions.map((tx, index) => (
+                  pageResults.map((tx, index) => (
                     <tr key={index} className="border-b border-border/50">
-                      <td className="py-3 text-sm">
+                      <td className="py-3 text-sm hidden lg:table-cell">
                         {new Date(tx.timestamp)
                           .toLocaleString("en-US", {
                             month: "numeric",
@@ -66,8 +76,29 @@ const TransactionsSection = () => {
                             hour12: false,
                           })
                           .replace(",", "")}
+                      </td><td className="py-3 text-sm lg:hidden">
+                        {new Date(tx.timestamp)
+                          .toLocaleString("en-US", {
+                            month: "numeric",
+                            day: "numeric",
+                            year: "2-digit",
+                          })
+                          .replace(",", "")}
                       </td>
                       <td className="py-3 text-sm">SWAP</td>
+                      <td className="py-3 text-sm hidden lg:table-cell">${tx.price.toFixed(4)}</td>
+                      <td className="py-3 text-sm text-center">
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span className="text-sm">
+                            {toCompactCurrency(tx.usdValue)}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          ${tx.usdValue.toLocaleString()}
+                        </TooltipContent>
+                      </Tooltip>
+                      </td>
                       <td className="py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
@@ -85,8 +116,7 @@ const TransactionsSection = () => {
                           </Tooltip>
                         </div>
                       </td>
-                      <td className="py-3 text-sm">${tx.price.toFixed(4)}</td>
-                      <td className="py-3">
+                      <td className="py-3 hidden lg:table-cell">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 bg-secondary rounded-full flex items-center justify-center">
                             <Image
@@ -96,7 +126,7 @@ const TransactionsSection = () => {
                               height={16}
                             />
                           </div>
-                          <span className="text-sm">{tx.price.toFixed(4)}</span>
+                          -
                         </div>
                       </td>
                       <td className="py-3 flex items-center justify-end">
@@ -122,6 +152,30 @@ const TransactionsSection = () => {
                 )}
               </tbody>
             </table>
+            <div className="flex items-center justify-between py-3 gap-2">
+              <button
+                className="px-3 py-1 rounded-md border border-border text-sm disabled:opacity-50"
+                disabled={prevCursors.length === 0 || !prevCursors[prevCursors.length - 1]}
+                onClick={() => {
+                  setCursor(prevCursors[prevCursors.length - 1] ?? undefined);
+                  setPrevCursors(prevCursors.slice(0, -1));
+                }}
+              >
+                Previous
+              </button>
+              <button
+                className="px-3 py-1 rounded-md border border-border text-sm disabled:opacity-50"
+                disabled={!nextCursor}
+                onClick={() => {
+                  if (nextCursor) {
+                    setPrevCursors([...prevCursors, cursor ?? "start"]);
+                    setCursor(nextCursor);
+                  }
+                }}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </CardContent>
       </Card>
