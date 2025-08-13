@@ -8,9 +8,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Period } from "@/fetchers/fetchCharts";
-import { cn } from "@/lib/utils";
-
-import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 
 import RevenueChart from "./RevenueChart";
 
@@ -68,16 +66,17 @@ const ChartSection = () => {
             </div>
 
             <div className="flex items-center space-x-1">
-              <Button
-                variant="outline"
-                className={cn(
-                  "h-8 text-sm font-sans text-muted-foreground cursor-pointer border-border hover:bg-primary/50 hover:text-primary-foreground",
-                  isCumulative && "bg-primary text-primary-foreground",
-                )}
-                onClick={() => setIsCumulative(!isCumulative)}
+              <Checkbox
+                id="cumulative"
+                checked={isCumulative}
+                onCheckedChange={(v) => setIsCumulative(Boolean(v))}
+              />
+              <label
+                htmlFor="cumulative"
+                className="text-sm font-sans text-muted-foreground cursor-pointer"
               >
                 Cumulative
-              </Button>
+              </label>
             </div>
           </div>
         </div>
