@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import * as Recharts from "recharts";
+import { toCompactCurrency } from "@/lib/utils";
 
 import {
   BuybacksPoint,
@@ -29,9 +30,9 @@ type ChartProps = {
 type RawPoint = {
   timestamp: number; // ms
   label: string;
-  suilendRevenueM: number; // in millions USD
-  steammRevenueM: number; // in millions USD
-  buybacksM: number; // in millions USD
+  suilendRevenue: number; // USD
+  steammRevenue: number; // USD
+  buybacks: number; // USD
   price: number; // USD
 };
 
@@ -200,16 +201,16 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       revIdx = Math.min(revKeys.length - 1, revIdx);
       const buy = nearestValue(buyKeys, buybacksByTs, { i: buyIdx }, ts);
       buyIdx = Math.min(buyKeys.length - 1, buyIdx);
-      const suilendRevenueM = rev ? rev.suilendRevenue / 1_000_000 : 0;
-      const steammRevenueM = rev ? rev.steammRevenue / 1_000_000 : 0;
-      const buybacksM = buy ? buy.usdValue / 1_000_000 : 0;
+      const suilendRevenue = rev ? rev.suilendRevenue : 0;
+      const steammRevenue = rev ? rev.steammRevenue : 0;
+      const buybacks = buy ? buy.usdValue : 0;
       const price = prices[idx] ?? 0;
       return {
         timestamp: ts,
         label: formatLabel(ts),
-        suilendRevenueM,
-        steammRevenueM,
-        buybacksM,
+        suilendRevenue,
+        steammRevenue,
+        buybacks,
         price,
       };
     });
@@ -227,15 +228,15 @@ function useProcessedData(period: Period, isCumulative: boolean) {
           byBucket.set(bucket, {
             timestamp: bucket,
             label: formatWeekLabel(bucket),
-            suilendRevenueM: pt.suilendRevenueM,
-            steammRevenueM: pt.steammRevenueM,
-            buybacksM: pt.buybacksM,
+            suilendRevenue: pt.suilendRevenue,
+            steammRevenue: pt.steammRevenue,
+            buybacks: pt.buybacks,
             price: pt.price,
           });
         } else {
-          existing.suilendRevenueM += pt.suilendRevenueM;
-          existing.steammRevenueM += pt.steammRevenueM;
-          existing.buybacksM += pt.buybacksM;
+          existing.suilendRevenue += pt.suilendRevenue;
+          existing.steammRevenue += pt.steammRevenue;
+          existing.buybacks += pt.buybacks;
           // average price within bucket
           existing.price = (existing.price + pt.price) / 2;
         }
@@ -254,17 +255,17 @@ function useProcessedData(period: Period, isCumulative: boolean) {
             sum: {
               timestamp: bucket,
               label: formatMonthLabel(bucket),
-              suilendRevenueM: pt.suilendRevenueM,
-              steammRevenueM: pt.steammRevenueM,
-              buybacksM: pt.buybacksM,
+              suilendRevenue: pt.suilendRevenue,
+              steammRevenue: pt.steammRevenue,
+              buybacks: pt.buybacks,
               price: pt.price,
             },
             count: 1,
           });
         } else {
-          existing.sum.suilendRevenueM += pt.suilendRevenueM;
-          existing.sum.steammRevenueM += pt.steammRevenueM;
-          existing.sum.buybacksM += pt.buybacksM;
+          existing.sum.suilendRevenue += pt.suilendRevenue;
+          existing.sum.steammRevenue += pt.steammRevenue;
+          existing.sum.buybacks += pt.buybacks;
           existing.sum.price += pt.price;
           existing.count += 1;
         }
@@ -291,8 +292,8 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       return bucketedRaw.map((pt) => ({
         timestamp: pt.timestamp,
         label: pt.label,
-        suilend: { revenue: pt.suilendRevenueM, buybacks: pt.buybacksM },
-        steamm: { revenue: pt.steammRevenueM, buybacks: 0 },
+        suilend: { revenue: pt.suilendRevenue, buybacks: pt.buybacks },
+        steamm: { revenue: pt.steammRevenue, buybacks: 0 },
         price: pt.price,
       }));
     }
@@ -301,9 +302,9 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     let cumSteamm = 0;
     let cumBuy = 0;
     return bucketedRaw.map((pt) => {
-      cumSuilend += pt.suilendRevenueM;
-      cumSteamm += pt.steammRevenueM;
-      cumBuy += pt.buybacksM;
+      cumSuilend += pt.suilendRevenue;
+      cumSteamm += pt.steammRevenue;
+      cumBuy += pt.buybacks;
       return {
         timestamp: pt.timestamp,
         label: pt.label,
@@ -471,7 +472,7 @@ const RevenueChart = ({
               />
               <span>{r.label}</span>
             </div>
-            <span>{`$${r.value.toFixed(r.value < 1 ? 2 : 0)}M`}</span>
+            <span>{toCompactCurrency(r.value)}</span>
           </div>
         ))}
         {enabledMetrics.price && (
@@ -525,14 +526,12 @@ const RevenueChart = ({
               fontSize: isSmall ? 10 : 12,
               fill: "hsl(var(--muted-foreground))",
             }}
-            tickFormatter={(v: number) =>
-              v < 1 ? `$${v.toFixed(2)}M` : `$${v}M`
-            }
+            tickFormatter={(v: number) => toCompactCurrency(v)}
             domain={[0, yMaxLeftVisible]}
             allowDecimals
           >
             <Recharts.Label
-              value="USD (M)"
+              value="USD"
               angle={-90}
               position="insideLeft"
               offset={isSmall ? 0 : -5}

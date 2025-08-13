@@ -92,7 +92,7 @@ const ChartSection = () => {
         {/* Horizontal legend below chart */}
         <div className="mt-4 w-full flex flex-wrap items-center border border-border p-4 rounded-md gap-4 bg-[#081126]">
           {/* Revenue group */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 lg:flex-1 justify-center items-center">
             <p className="text-xs text-muted-foreground">Revenue</p>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -144,7 +144,7 @@ const ChartSection = () => {
           <div className="hidden md:block h-8 w-px bg-border" />
 
           {/* Buybacks */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 lg:flex-1 justify-center items-center">
             <p className="text-xs text-muted-foreground">Metrics</p>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
