@@ -301,14 +301,16 @@ function ObjectsTabContent({ side, reserve }: TabContentProps) {
         isExplorerUrl
         horizontal
       />
-      <LabelWithValue
-        label="Admin cap"
-        value={appData.lendingMarket.ownerCapId}
-        isId
-        url={explorer.buildObjectUrl(appData.lendingMarket.ownerCapId)}
-        isExplorerUrl
-        horizontal
-      />
+      {appData.lendingMarket.ownerCapId && (
+        <LabelWithValue
+          label="Admin cap"
+          value={appData.lendingMarket.ownerCapId}
+          isId
+          url={explorer.buildObjectUrl(appData.lendingMarket.ownerCapId)}
+          isExplorerUrl
+          horizontal
+        />
+      )}
     </>
   );
 }

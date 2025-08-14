@@ -1978,7 +1978,7 @@ export default function LstStrategyDialog({
           <LstStrategyHeader strategyType={strategyType} />
 
           {hasClaimableRewards && (
-            <div className="flex h-10 flex-row items-center gap-4 rounded-sm border px-2">
+            <div className="flex h-10 flex-row items-center gap-2.5 rounded-sm border px-2">
               <Tooltip
                 content={
                   <div className="flex flex-col gap-1">
