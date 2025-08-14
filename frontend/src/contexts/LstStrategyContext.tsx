@@ -37,7 +37,6 @@ import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/wei
 import {
   API_URL,
   NORMALIZED_SUI_COINTYPE,
-  formatList,
   isSendPoints,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
@@ -854,7 +853,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // Unclaimed rewards
         const rewardsMap: Record<
           string,
-          { amount: BigNumber; rewards: RewardSummary[] }
+          { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
         > = {};
         if (obligation) {
           Object.values(userData.rewardMap).flatMap((rewards) =>
@@ -873,11 +872,20 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               if (!rewardsMap[r.stats.rewardCoinType])
                 rewardsMap[r.stats.rewardCoinType] = {
                   amount: new BigNumber(0),
+                  rawAmount: new BigNumber(0),
                   rewards: [],
                 };
               rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
                 r.stats.rewardCoinType
               ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+              rewardsMap[r.stats.rewardCoinType].rawAmount = rewardsMap[
+                r.stats.rewardCoinType
+              ].amount
+                .times(
+                  10 **
+                    appData.coinMetadataMap[r.stats.rewardCoinType].decimals,
+                )
+                .integerValue(BigNumber.ROUND_DOWN);
               rewardsMap[r.stats.rewardCoinType].rewards.push(r);
             }),
           );

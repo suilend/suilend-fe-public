@@ -29,7 +29,10 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
-  rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>;
+  rewardsMap: Record<
+    string,
+    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
+  >;
 }
 
 export default function ClaimRewardsDropdownMenu({
@@ -128,7 +131,7 @@ export default function ClaimRewardsDropdownMenu({
 
     const filteredRewardsMap: Record<
       string,
-      { amount: BigNumber; rewards: RewardSummary[] }
+      { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
     > = (() => {
       const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
         if (isSwapping) {

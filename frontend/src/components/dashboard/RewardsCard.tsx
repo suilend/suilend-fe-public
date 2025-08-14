@@ -44,7 +44,10 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
 }
 
 interface ClaimableRewardsProps {
-  rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>;
+  rewardsMap: Record<
+    string,
+    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
+  >;
 }
 
 function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
@@ -63,12 +66,13 @@ function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
 
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
+  const { appData } = useLoadedAppContext();
   const { userData, obligation } = useLoadedUserContext();
 
   // Rewards
   const rewardsMap: Record<
     string,
-    { amount: BigNumber; rewards: RewardSummary[] }
+    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
   > = {};
   if (obligation) {
     Object.values(userData.rewardMap).flatMap((rewards) =>
@@ -84,11 +88,17 @@ export default function RewardsCard() {
         if (!rewardsMap[r.stats.rewardCoinType])
           rewardsMap[r.stats.rewardCoinType] = {
             amount: new BigNumber(0),
+            rawAmount: new BigNumber(0),
             rewards: [],
           };
         rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
           r.stats.rewardCoinType
         ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+        rewardsMap[r.stats.rewardCoinType].rawAmount = rewardsMap[
+          r.stats.rewardCoinType
+        ].amount
+          .times(10 ** appData.coinMetadataMap[r.stats.rewardCoinType].decimals)
+          .integerValue(BigNumber.ROUND_DOWN);
         rewardsMap[r.stats.rewardCoinType].rewards.push(r);
       }),
     );

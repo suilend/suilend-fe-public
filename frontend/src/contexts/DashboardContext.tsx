@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import * as Cetus from "@cetusprotocol/aggregator-sdk";
+import { RouterData as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import {
   Transaction,
@@ -39,7 +39,10 @@ interface DashboardContext {
   setIsAutoclaimNotificationDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   claimRewards: (
-    rewardsMap: Record<string, { amount: BigNumber; rewards: RewardSummary[] }>,
+    rewardsMap: Record<
+      string,
+      { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
+    >,
     args: {
       isSwapping: boolean;
       swappingToCoinType: string;
@@ -125,7 +128,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     async (
       rewardsMap: Record<
         string,
-        { amount: BigNumber; rewards: RewardSummary[] }
+        { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
       >,
       args: {
         isSwapping: boolean;
@@ -184,7 +187,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             string,
             {
               coin: TransactionObjectArgument;
-              routers: Cetus.RouterData;
+              routers: CetusRouterData;
             }
           > = Object.fromEntries(
             await Promise.all(
@@ -192,20 +195,13 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
                 .filter(([coinType]) => swappedCoinTypes.includes(coinType))
                 .map(([coinType, coin]) =>
                   (async () => {
-                    const { amount } = rewardsMap[coinType]; // Use underestimate (rewards keep accruing)
+                    const { rawAmount: amount } = rewardsMap[coinType]; // Use underestimate (rewards keep accruing)
 
                     // Get routes
                     const routers = await cetusSdk.findRouters({
                       from: coinType,
                       target: args.swappingToCoinType,
-                      amount: new BN(
-                        amount
-                          .times(
-                            10 ** appData.coinMetadataMap[coinType].decimals,
-                          )
-                          .integerValue(BigNumber.ROUND_DOWN)
-                          .toString(),
-                      ), // Underestimate (rewards keep accruing)
+                      amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
                       byAmountIn: true,
                     });
                     if (!routers) throw new Error("No swap quote found");
@@ -309,7 +305,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       obligation,
       appData.suilendClient,
       cetusSdk,
-      appData.coinMetadataMap,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
