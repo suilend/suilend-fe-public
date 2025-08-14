@@ -4,6 +4,7 @@ import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { API_URL, formatAddress, formatUsd } from "@suilend/sui-fe";
 import {
   showErrorToast,
@@ -201,9 +202,10 @@ export default function ConnectedWalletDropdownMenu({
                 Object.entries(allUserData)
                   .filter(
                     ([_lendingMarketId, _userData]) =>
-                      !allAppData?.allLendingMarketData[_lendingMarketId]
-                        .lendingMarket.isHidden &&
-                      _userData.obligations.length > 0,
+                      !(
+                        allAppData?.allLendingMarketData[_lendingMarketId]
+                          .lendingMarket.isHidden && address !== ADMIN_ADDRESS
+                      ) && _userData.obligations.length > 0,
                   )
                   .map(([_lendingMarketId, _userData], _userDataIndex) => (
                     <Fragment key={_lendingMarketId}>

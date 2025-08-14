@@ -1,7 +1,8 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 
-import { shallowPushQuery } from "@suilend/sui-fe-next";
+import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
@@ -40,11 +41,15 @@ function Page() {
 
   const { lg } = useBreakpoint();
 
+  const { address } = useWalletContext();
   const { allAppData, appData } = useLoadedAppContext();
 
   // Tabs
   const tabs = Object.values(allAppData.allLendingMarketData)
-    .filter((lendingMarket) => !lendingMarket.lendingMarket.isHidden)
+    .filter(
+      (lendingMarket) =>
+        !(lendingMarket.lendingMarket.isHidden && address !== ADMIN_ADDRESS),
+    )
     .map((_appData) => ({
       id: _appData.lendingMarket.slug,
       title: _appData.lendingMarket.name,

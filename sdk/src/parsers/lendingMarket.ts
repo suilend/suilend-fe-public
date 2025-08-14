@@ -1,9 +1,11 @@
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 
+import { formatId } from "@suilend/sui-fe";
+
 import { LendingMarket } from "../_generated/suilend/lending-market/structs";
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { LENDING_MARKETS } from "../client";
+import { LendingMarketMetadata } from "../lib";
 
 import { parseRateLimiter } from "./rateLimiter";
 import { parseReserve } from "./reserve";
@@ -15,6 +17,7 @@ export const parseLendingMarket = (
   reserves: Reserve<string>[],
   coinMetadataMap: Record<string, CoinMetadata>,
   nowS: number,
+  lendingMarketMetadata?: LendingMarketMetadata,
 ) => {
   const id = lendingMarket.id;
   const type = lendingMarket.$typeArgs[0];
@@ -47,20 +50,7 @@ export const parseLendingMarket = (
     tvlUsd = tvlUsd.plus(parsedReserve.availableAmountUsd);
   });
 
-  const LENDING_MARKET = LENDING_MARKETS.find((lm) => lm.id === id);
-  if (!LENDING_MARKET)
-    console.error(
-      `Missing LENDING_MARKETS definition for lending market with id: ${id}`,
-    );
-
-  const name = LENDING_MARKET?.name ?? "Unknown";
-  const slug = LENDING_MARKET?.slug ?? "unknown";
-  const isHidden = LENDING_MARKET?.isHidden ?? true;
-  const ownerCapId = LENDING_MARKET?.ownerCapId ?? "Unknown";
-
   return {
-    id,
-    type,
     version,
     reserves: parsedReserves,
     obligations,
@@ -73,10 +63,14 @@ export const parseLendingMarket = (
     borrowedAmountUsd,
     tvlUsd,
 
-    name,
-    slug,
-    isHidden,
-    ownerCapId,
+    // Metadata
+    id,
+    type,
+    ownerCapId: lendingMarketMetadata?.lendingMarketOwnerCapId ?? undefined,
+
+    name: lendingMarketMetadata?.name ?? formatId(id),
+    slug: lendingMarketMetadata?.slug ?? id,
+    isHidden: lendingMarketMetadata?.isHidden ?? true,
 
     /**
      * @deprecated since version 1.0.3. Use `depositedAmountUsd` instead.

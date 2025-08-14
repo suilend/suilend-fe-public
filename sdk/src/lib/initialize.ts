@@ -54,13 +54,13 @@ import {
 } from "@suilend/sui-fe";
 
 import { Reserve } from "../_generated/suilend/reserve/structs";
-import { SuilendClient } from "../client";
+import { LENDING_MARKET_ID, SuilendClient } from "../client";
 import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
 import { STRATEGY_WRAPPER_PACKAGE_ID, StrategyType } from "./strategyOwnerCap";
-import { StrategyOwnerCap } from "./types";
+import { LendingMarketMetadata, StrategyOwnerCap } from "./types";
 
 export const RESERVES_CUSTOM_ORDER = [
   // MAIN ASSETS
@@ -127,6 +127,7 @@ export const NORMALIZED_TREATS_COINTYPE = normalizeStructTag(TREATS_COINTYPE);
 export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
+  lendingMarketMetadata?: LendingMarketMetadata,
 ) => {
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
@@ -250,6 +251,7 @@ export const initializeSuilend = async (
     refreshedRawReserves,
     coinMetadataMap,
     nowS,
+    lendingMarketMetadata,
   );
   lendingMarket.reserves = lendingMarket.reserves.slice().sort((a, b) => {
     const aCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(a.coinType);
@@ -335,6 +337,8 @@ export const initializeObligations = async (
 
   const [strategyOwnerCaps, obligationOwnerCaps] = await Promise.all([
     (async () => {
+      if (suilendClient.lendingMarket.id !== LENDING_MARKET_ID) return []; // Only main lending market has strategy owner caps
+
       const objects = await getAllOwnedObjects(suiClient, address, {
         StructType: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::StrategyOwnerCap<${suilendClient.lendingMarket.$typeArgs[0]}>`,
       });

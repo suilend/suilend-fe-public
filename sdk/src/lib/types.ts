@@ -229,3 +229,13 @@ export type RewardsMap = Record<
   string,
   { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
 >;
+
+export type LendingMarketMetadata = {
+  id: string;
+  type: string;
+  lendingMarketOwnerCapId: string;
+
+  name?: string;
+  slug?: string;
+  isHidden?: boolean;
+};

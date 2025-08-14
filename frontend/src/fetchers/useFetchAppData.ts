@@ -2,15 +2,36 @@ import BigNumber from "bignumber.js";
 import useSWR, { useSWRConfig } from "swr";
 
 import {
+  LendingMarketMetadata,
   ParsedReserve,
   initializeSuilend,
   initializeSuilendRewards,
 } from "@suilend/sdk";
-import { LENDING_MARKETS, SuilendClient } from "@suilend/sdk/client";
+import {
+  LENDING_MARKET_ID,
+  STEAMM_LM_LENDING_MARKET_ID,
+  SuilendClient,
+} from "@suilend/sdk/client";
 import { API_URL, issSui } from "@suilend/sui-fe";
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
+
+const LENDING_MARKET_METADATA_MAP: Record<
+  string,
+  Pick<LendingMarketMetadata, "name" | "slug" | "isHidden">
+> = {
+  [LENDING_MARKET_ID]: {
+    name: "Main market",
+    slug: "main",
+    isHidden: false,
+  },
+  [STEAMM_LM_LENDING_MARKET_ID]: {
+    name: "STEAMM LM",
+    slug: "steamm-lm",
+    isHidden: true,
+  },
+};
 
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
@@ -19,45 +40,101 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
+    // Get lending markets from registry
+    const lendingMarketsTableObj = await suiClient.getDynamicFields({
+      parentId:
+        "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
+    });
+
+    const lendingMarketMetadataMap: Record<string, LendingMarketMetadata> =
+      Object.fromEntries(
+        (
+          await Promise.all(
+            lendingMarketsTableObj.data.map(async ({ objectId }) => {
+              const obj = await suiClient.getObject({
+                id: objectId,
+                options: { showContent: true },
+              });
+
+              // Lending market
+              const lendingMarketId: string = (obj.data?.content as any).fields
+                .value;
+              if (
+                [
+                  "0x6d9478307d1cb8417470bec42e38000422b448e9638d6b43b821301179ac8caf", // STEAMM LM (old)
+                  "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test
+                ].includes(lendingMarketId)
+              )
+                return undefined;
+
+              const lendingMarketType: string = `0x${
+                ((obj.data?.content as any).fields.name.fields as any).name
+              }`;
+
+              // LendingMarketOwnerCap id
+              const firstTx = await suiClient.queryTransactionBlocks({
+                filter: { ChangedObject: lendingMarketId },
+                options: {
+                  showObjectChanges: true,
+                },
+                limit: 1,
+                order: "ascending",
+              });
+
+              const lendingMarketOwnerCapId: string = (
+                firstTx.data[0].objectChanges?.find(
+                  (o) =>
+                    o.type === "created" &&
+                    o.objectType.includes(
+                      `::lending_market::LendingMarketOwnerCap<${lendingMarketType}>`,
+                    ),
+                ) as any
+              ).objectId;
+
+              return {
+                id: lendingMarketId,
+                type: lendingMarketType,
+                lendingMarketOwnerCapId,
+
+                name:
+                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.name ??
+                  undefined,
+                slug:
+                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.slug ??
+                  undefined,
+                isHidden:
+                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.isHidden ??
+                  undefined,
+              };
+            }),
+          )
+        )
+          .filter((x) => x !== undefined)
+          .map((x) => [x.id, x]),
+      );
+    console.log(
+      "[useFetchAppData] lendingMarketMetadataMap:",
+      lendingMarketMetadataMap,
+    );
+
     const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
       // Lending markets
+
       (async () => {
         const allLendingMarketData: AllAppData["allLendingMarketData"] =
           Object.fromEntries(
             await Promise.all(
-              LENDING_MARKETS.map((LENDING_MARKET) =>
-                (async () => {
-                  const suilendClient = await SuilendClient.initialize(
-                    LENDING_MARKET.id,
-                    LENDING_MARKET.type,
-                    suiClient,
-                    true,
-                  );
+              Object.entries(lendingMarketMetadataMap).map(
+                ([lendingMarketId, lendingMarketMetadata]) =>
+                  (async () => {
+                    const suilendClient = await SuilendClient.initialize(
+                      lendingMarketId,
+                      lendingMarketMetadata.type,
+                      suiClient,
+                      true,
+                    );
 
-                  const {
-                    lendingMarket,
-                    coinMetadataMap,
-
-                    refreshedRawReserves,
-                    reserveMap,
-                    reserveCoinTypes,
-                    reserveCoinMetadataMap,
-
-                    rewardCoinTypes,
-                    activeRewardCoinTypes,
-                    rewardCoinMetadataMap,
-                  } = await initializeSuilend(suiClient, suilendClient);
-
-                  const { rewardPriceMap } = await initializeSuilendRewards(
-                    reserveMap,
-                    activeRewardCoinTypes,
-                  );
-
-                  return [
-                    LENDING_MARKET.id,
-                    {
-                      suilendClient,
-
+                    const {
                       lendingMarket,
                       coinMetadataMap,
 
@@ -66,13 +143,40 @@ export default function useFetchAppData() {
                       reserveCoinTypes,
                       reserveCoinMetadataMap,
 
-                      rewardPriceMap,
                       rewardCoinTypes,
                       activeRewardCoinTypes,
                       rewardCoinMetadataMap,
-                    },
-                  ];
-                })(),
+                    } = await initializeSuilend(
+                      suiClient,
+                      suilendClient,
+                      lendingMarketMetadata,
+                    );
+
+                    const { rewardPriceMap } = await initializeSuilendRewards(
+                      reserveMap,
+                      activeRewardCoinTypes,
+                    );
+
+                    return [
+                      lendingMarketId,
+                      {
+                        suilendClient,
+
+                        lendingMarket,
+                        coinMetadataMap,
+
+                        refreshedRawReserves,
+                        reserveMap,
+                        reserveCoinTypes,
+                        reserveCoinMetadataMap,
+
+                        rewardPriceMap,
+                        rewardCoinTypes,
+                        activeRewardCoinTypes,
+                        rewardCoinMetadataMap,
+                      },
+                    ];
+                  })(),
               ),
             ),
           );
