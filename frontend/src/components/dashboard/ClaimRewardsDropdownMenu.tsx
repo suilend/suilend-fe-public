@@ -1,5 +1,6 @@
 import { CSSProperties, useMemo, useState } from "react";
 
+import BigNumber from "bignumber.js";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
