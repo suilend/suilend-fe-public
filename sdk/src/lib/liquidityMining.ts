@@ -7,12 +7,13 @@ import {
   MS_PER_YEAR,
   NORMALIZED_DEEP_COINTYPE,
   NORMALIZED_LBTC_COINTYPE,
+  isSendPoints,
 } from "@suilend/sui-fe";
 
 import { ParsedObligation, ParsedPoolReward, ParsedReserve } from "../parsers";
 
 import { WAD } from "./constants";
-import { Side } from "./types";
+import { RewardsMap, Side } from "./types";
 
 export type RewardMap = {
   [coinType: string]: {
@@ -382,4 +383,44 @@ export const getNetAprPercent = (
   return !obligation.netValueUsd.eq(0)
     ? aprPercentWeightedNetValueUsd.div(obligation.netValueUsd)
     : new BigNumber(0);
+};
+
+export const getRewardsMap = (
+  obligation: ParsedObligation | undefined,
+  rewardMap: RewardMap,
+  coinMetadataMap: Record<string, CoinMetadata>,
+) => {
+  const result: RewardsMap = {};
+
+  if (obligation) {
+    Object.values(rewardMap).flatMap((rewards) =>
+      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
+        if (isSendPoints(r.stats.rewardCoinType)) return;
+        if (!r.obligationClaims[obligation.id]) return;
+        if (r.obligationClaims[obligation.id].claimableAmount.eq(0)) return;
+
+        const minAmount = 10 ** (-1 * r.stats.mintDecimals);
+        if (r.obligationClaims[obligation.id].claimableAmount.lt(minAmount))
+          return;
+
+        if (!result[r.stats.rewardCoinType])
+          result[r.stats.rewardCoinType] = {
+            amount: new BigNumber(0),
+            rawAmount: new BigNumber(0),
+            rewards: [],
+          };
+        result[r.stats.rewardCoinType].amount = result[
+          r.stats.rewardCoinType
+        ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
+        result[r.stats.rewardCoinType].rawAmount = result[
+          r.stats.rewardCoinType
+        ].amount
+          .times(10 ** coinMetadataMap[r.stats.rewardCoinType].decimals)
+          .integerValue(BigNumber.ROUND_DOWN);
+        result[r.stats.rewardCoinType].rewards.push(r);
+      }),
+    );
+  }
+
+  return result;
 };

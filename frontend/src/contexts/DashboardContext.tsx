@@ -18,10 +18,9 @@ import {
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
-import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
-import { ClaimRewardsReward, RewardSummary } from "@suilend/sdk";
+import { ClaimRewardsReward, RewardsMap } from "@suilend/sdk";
 import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -39,10 +38,7 @@ interface DashboardContext {
   setIsAutoclaimNotificationDialogOpen: Dispatch<SetStateAction<boolean>>;
 
   claimRewards: (
-    rewardsMap: Record<
-      string,
-      { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-    >,
+    rewardsMap: RewardsMap,
     args: {
       isSwapping: boolean;
       swappingToCoinType: string;
@@ -126,10 +122,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   // Actions
   const claimRewards = useCallback(
     async (
-      rewardsMap: Record<
-        string,
-        { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-      >,
+      rewardsMap: RewardsMap,
       args: {
         isSwapping: boolean;
         swappingToCoinType: string;

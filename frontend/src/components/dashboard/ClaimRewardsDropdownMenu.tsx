@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 
-import { LENDING_MARKET_ID, RewardSummary } from "@suilend/sdk";
+import { LENDING_MARKET_ID, RewardsMap } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -29,10 +29,7 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
-  rewardsMap: Record<
-    string,
-    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-  >;
+  rewardsMap: RewardsMap;
 }
 
 export default function ClaimRewardsDropdownMenu({
@@ -129,10 +126,7 @@ export default function ClaimRewardsDropdownMenu({
 
     setIsClaiming(true);
 
-    const filteredRewardsMap: Record<
-      string,
-      { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-    > = (() => {
+    const filteredRewardsMap: RewardsMap = (() => {
       const coinTypes = Object.keys(rewardsMap).filter((coinType) => {
         if (isSwapping) {
           if (!canSwapMap[coinType]) return false;

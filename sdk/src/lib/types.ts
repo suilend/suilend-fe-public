@@ -1,3 +1,4 @@
+import { RewardSummary } from "./liquidityMining";
 import { StrategyType } from "./strategyOwnerCap";
 
 export enum Side {
@@ -223,3 +224,8 @@ export type StrategyOwnerCap = {
   obligationOwnerCapId: string;
   obligationId: string;
 };
+
+export type RewardsMap = Record<
+  string,
+  { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
+>;

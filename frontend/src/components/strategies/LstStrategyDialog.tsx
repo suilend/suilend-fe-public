@@ -19,7 +19,7 @@ import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { RewardSummary } from "@suilend/sdk";
+import { getRewardsMap } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -42,7 +42,6 @@ import {
   getAllCoins,
   getBalanceChange,
   getToken,
-  isSendPoints,
   isSui,
   mergeAllCoins,
 } from "@suilend/sui-fe";
@@ -241,40 +240,11 @@ export default function LstStrategyDialog({
   );
 
   // Rewards
-  const rewardsMap: Record<
-    string,
-    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-  > = {};
-  if (obligation) {
-    Object.values(userData.rewardMap).flatMap((rewards) =>
-      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-        if (isSendPoints(r.stats.rewardCoinType)) return;
-        if (!r.obligationClaims[obligation.id]) return;
-        if (r.obligationClaims[obligation.id].claimableAmount.eq(0)) return;
-
-        const minAmount = 10 ** (-1 * r.stats.mintDecimals);
-        if (r.obligationClaims[obligation.id].claimableAmount.lt(minAmount))
-          return;
-
-        if (!rewardsMap[r.stats.rewardCoinType])
-          rewardsMap[r.stats.rewardCoinType] = {
-            amount: new BigNumber(0),
-            rawAmount: new BigNumber(0),
-            rewards: [],
-          };
-        rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
-          r.stats.rewardCoinType
-        ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
-        rewardsMap[r.stats.rewardCoinType].rawAmount = rewardsMap[
-          r.stats.rewardCoinType
-        ].amount
-          .times(10 ** appData.coinMetadataMap[r.stats.rewardCoinType].decimals)
-          .integerValue(BigNumber.ROUND_DOWN);
-        rewardsMap[r.stats.rewardCoinType].rewards.push(r);
-      }),
-    );
-  }
-
+  const rewardsMap = getRewardsMap(
+    obligation,
+    userData.rewardMap,
+    appData.coinMetadataMap,
+  );
   const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>
     amount.gt(0),
   );

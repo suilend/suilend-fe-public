@@ -18,9 +18,9 @@ import { useLocalStorage } from "usehooks-ts";
 import {
   ParsedObligation,
   ParsedReserve,
-  RewardSummary,
   WAD,
   getNetAprPercent,
+  getRewardsMap,
 } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
@@ -34,11 +34,7 @@ import {
 } from "@suilend/springsui-sdk";
 import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_staking/liquid-staking/structs";
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
-import {
-  API_URL,
-  NORMALIZED_SUI_COINTYPE,
-  isSendPoints,
-} from "@suilend/sui-fe";
+import { API_URL, NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
@@ -851,45 +847,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
 
         // Unclaimed rewards
-        const rewardsMap: Record<
-          string,
-          { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-        > = {};
-        if (obligation) {
-          Object.values(userData.rewardMap).flatMap((rewards) =>
-            [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-              if (isSendPoints(r.stats.rewardCoinType)) return;
-              if (!r.obligationClaims[obligation.id]) return;
-              if (r.obligationClaims[obligation.id].claimableAmount.eq(0))
-                return;
-
-              const minAmount = 10 ** (-1 * r.stats.mintDecimals);
-              if (
-                r.obligationClaims[obligation.id].claimableAmount.lt(minAmount)
-              )
-                return;
-
-              if (!rewardsMap[r.stats.rewardCoinType])
-                rewardsMap[r.stats.rewardCoinType] = {
-                  amount: new BigNumber(0),
-                  rawAmount: new BigNumber(0),
-                  rewards: [],
-                };
-              rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
-                r.stats.rewardCoinType
-              ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
-              rewardsMap[r.stats.rewardCoinType].rawAmount = rewardsMap[
-                r.stats.rewardCoinType
-              ].amount
-                .times(
-                  10 **
-                    appData.coinMetadataMap[r.stats.rewardCoinType].decimals,
-                )
-                .integerValue(BigNumber.ROUND_DOWN);
-              rewardsMap[r.stats.rewardCoinType].rewards.push(r);
-            }),
-          );
-        }
+        const rewardsMap = getRewardsMap(
+          obligation,
+          userData.rewardMap,
+          appData.coinMetadataMap,
+        );
 
         // Add unclaimed rewards to TVL
         Object.entries(rewardsMap).forEach(([coinType, { amount }]) => {
@@ -910,6 +872,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getLstReserve,
       lstMap,
       userData.rewardMap,
+      appData.coinMetadataMap,
       appData.rewardPriceMap,
       suiReserve.price,
     ],

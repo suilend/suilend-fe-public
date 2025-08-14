@@ -2,7 +2,6 @@ import {
   RouterData as CetusRouterData,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
-import { CoinMetadata } from "@mysten/sui/client";
 import {
   Transaction,
   TransactionObjectArgument,
@@ -28,8 +27,7 @@ import {
   LENDING_MARKET_TYPE,
 } from "../client";
 
-import { RewardSummary } from "./liquidityMining";
-import { Side, StrategyOwnerCap } from "./types";
+import { RewardsMap, Side, StrategyOwnerCap } from "./types";
 
 export const STRATEGY_WRAPPER_PACKAGE_ID =
   "0xba97dc73a07638d03d77ad2161484eb21db577edc9cadcd7035fef4b4f2f6fa1";
@@ -162,10 +160,7 @@ export const strategyClaimRewards = (
 export const strategyCompoundRewards = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
-  rewardsMap: Record<
-    string,
-    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-  >,
+  rewardsMap: RewardsMap,
   targetCoinType: string,
   targetReserveArrayIndex: bigint,
   strategyOwnerCap: TransactionObjectInput,

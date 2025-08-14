@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { RewardSummary } from "@suilend/sdk";
-import { formatToken, getToken, isSendPoints } from "@suilend/sui-fe";
+import { RewardsMap, getRewardsMap } from "@suilend/sdk";
+import { formatToken, getToken } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
@@ -44,10 +44,7 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
 }
 
 interface ClaimableRewardsProps {
-  rewardsMap: Record<
-    string,
-    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-  >;
+  rewardsMap: RewardsMap;
 }
 
 function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
@@ -70,40 +67,11 @@ export default function RewardsCard() {
   const { userData, obligation } = useLoadedUserContext();
 
   // Rewards
-  const rewardsMap: Record<
-    string,
-    { amount: BigNumber; rawAmount: BigNumber; rewards: RewardSummary[] }
-  > = {};
-  if (obligation) {
-    Object.values(userData.rewardMap).flatMap((rewards) =>
-      [...rewards.deposit, ...rewards.borrow].forEach((r) => {
-        if (isSendPoints(r.stats.rewardCoinType)) return;
-        if (!r.obligationClaims[obligation.id]) return;
-        if (r.obligationClaims[obligation.id].claimableAmount.eq(0)) return;
-
-        const minAmount = 10 ** (-1 * r.stats.mintDecimals);
-        if (r.obligationClaims[obligation.id].claimableAmount.lt(minAmount))
-          return;
-
-        if (!rewardsMap[r.stats.rewardCoinType])
-          rewardsMap[r.stats.rewardCoinType] = {
-            amount: new BigNumber(0),
-            rawAmount: new BigNumber(0),
-            rewards: [],
-          };
-        rewardsMap[r.stats.rewardCoinType].amount = rewardsMap[
-          r.stats.rewardCoinType
-        ].amount.plus(r.obligationClaims[obligation.id].claimableAmount);
-        rewardsMap[r.stats.rewardCoinType].rawAmount = rewardsMap[
-          r.stats.rewardCoinType
-        ].amount
-          .times(10 ** appData.coinMetadataMap[r.stats.rewardCoinType].decimals)
-          .integerValue(BigNumber.ROUND_DOWN);
-        rewardsMap[r.stats.rewardCoinType].rewards.push(r);
-      }),
-    );
-  }
-
+  const rewardsMap = getRewardsMap(
+    obligation,
+    userData.rewardMap,
+    appData.coinMetadataMap,
+  );
   const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>
     amount.gt(0),
   );
