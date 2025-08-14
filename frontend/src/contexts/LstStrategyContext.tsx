@@ -37,6 +37,7 @@ import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/wei
 import {
   API_URL,
   NORMALIZED_SUI_COINTYPE,
+  formatList,
   isSendPoints,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
@@ -313,6 +314,33 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         SPRING_SUI_UPGRADE_CAP_ID,
       );
 
+      const lstInfoUrl = `${API_URL}/springsui/lst-info?${new URLSearchParams({
+        coinTypes: Array.from(
+          new Set(
+            Object.values(STRATEGY_TYPE_INFO_MAP).map(
+              ({ lstCoinType }) => lstCoinType,
+            ),
+          ),
+        ).join(","),
+      })}`;
+      const lstInfoRes = await fetch(lstInfoUrl);
+      const lstInfoJson: Record<
+        string,
+        {
+          LIQUID_STAKING_INFO: LiquidStakingObjectInfo;
+          liquidStakingInfo: LiquidStakingInfo<string>;
+          weightHook: WeightHook<string>;
+          apy: string;
+        }
+      > = await lstInfoRes.json();
+      if ((lstInfoRes as any)?.statusCode === 500)
+        throw new Error("Failed to fetch LST info");
+      const lstInfoMap = Object.fromEntries(
+        Object.entries(lstInfoJson).map(([lstCoinType, lstInfo]) => {
+          return [lstCoinType, lstInfo];
+        }),
+      );
+
       const result: Record<
         string,
         {
@@ -328,39 +356,28 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       > = Object.fromEntries(
         await Promise.all(
           Object.values(STRATEGY_TYPE_INFO_MAP).map(async ({ lstCoinType }) => {
-            const lstInfoUrl = `${API_URL}/springsui/lst-info?${new URLSearchParams(
-              { coinType: lstCoinType },
-            )}`;
-            const lstInfoRes = await fetch(lstInfoUrl);
-            const lstInfoJson: {
-              LIQUID_STAKING_INFO: LiquidStakingObjectInfo;
-              liquidStakingInfo: LiquidStakingInfo<string>;
-              weightHook: WeightHook<string>;
-              apy: string;
-            } = await lstInfoRes.json();
-            if ((lstInfoRes as any)?.statusCode === 500)
-              throw new Error(`Failed to fetch LST info for ${lstCoinType}`);
+            const lstInfo = lstInfoMap[lstCoinType];
 
             const lstClient = await LstClient.initialize(
               suiClient,
-              lstInfoJson.LIQUID_STAKING_INFO,
+              lstInfo.LIQUID_STAKING_INFO,
               publishedAt,
             );
 
             const mintFeePercent = new BigNumber(
-              lstInfoJson.liquidStakingInfo.feeConfig.element?.suiMintFeeBps.toString() ??
+              lstInfo.liquidStakingInfo.feeConfig.element?.suiMintFeeBps.toString() ??
                 0,
             ).div(100);
             const redeemFeePercent = new BigNumber(
-              lstInfoJson.liquidStakingInfo.feeConfig.element?.redeemFeeBps.toString() ??
+              lstInfo.liquidStakingInfo.feeConfig.element?.redeemFeeBps.toString() ??
                 0,
             ).div(100);
 
             const totalSuiSupply = new BigNumber(
-              lstInfoJson.liquidStakingInfo.storage.totalSuiSupply.toString(),
+              lstInfo.liquidStakingInfo.storage.totalSuiSupply.toString(),
             ).div(10 ** SUI_DECIMALS);
             const totalLstSupply = new BigNumber(
-              lstInfoJson.liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
+              lstInfo.liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
             ).div(10 ** LST_DECIMALS);
 
             const suiToLstExchangeRate = !totalSuiSupply.eq(0)
@@ -374,7 +391,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               lstCoinType,
               {
                 client: lstClient,
-                liquidStakingInfo: lstInfoJson.liquidStakingInfo,
+                liquidStakingInfo: lstInfo.liquidStakingInfo,
 
                 mintFeePercent,
                 redeemFeePercent,
