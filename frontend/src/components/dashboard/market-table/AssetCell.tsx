@@ -4,7 +4,7 @@ import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
@@ -83,7 +83,7 @@ export default function AssetCell({
         !(
           // Staked WAL
           (
-            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+            appData.lendingMarket.id === LENDING_MARKET_ID &&
             token.coinType === NORMALIZED_WAL_COINTYPE &&
             reserve === undefined
           )
@@ -248,7 +248,7 @@ export default function AssetCell({
 
   useEffect(() => {
     if (
-      appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+      appData.lendingMarket.id === LENDING_MARKET_ID &&
       token.coinType === NORMALIZED_WAL_COINTYPE &&
       reserve === undefined
     )
@@ -362,7 +362,7 @@ export default function AssetCell({
           <TBody>
             {
               // Staked WAL
-              appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+              appData.lendingMarket.id === LENDING_MARKET_ID &&
                 token.coinType === NORMALIZED_WAL_COINTYPE &&
                 reserve === undefined && (
                   <>
@@ -388,7 +388,7 @@ export default function AssetCell({
           </TBody>
           {
             // Staked WAL (Withdrawing, withdrawEpoch > epoch)
-            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+            appData.lendingMarket.id === LENDING_MARKET_ID &&
               token.coinType === NORMALIZED_WAL_COINTYPE &&
               reserve === undefined &&
               (extra!.obj as StakedWalObject).state ===
@@ -420,7 +420,7 @@ export default function AssetCell({
           ))}
           {(tableType === AccountAssetTableType.BALANCES ||
             tableType === MarketTableType.MARKET) &&
-            appData.lendingMarket.id === LENDING_MARKETS[0].id &&
+            appData.lendingMarket.id === LENDING_MARKET_ID &&
             token.coinType === NORMALIZED_WAL_COINTYPE &&
             address && (
               <Button

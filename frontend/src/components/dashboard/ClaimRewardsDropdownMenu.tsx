@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 
-import { LENDING_MARKETS, RewardSummary } from "@suilend/sdk";
+import { LENDING_MARKET_ID, RewardSummary } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -41,8 +41,7 @@ export default function ClaimRewardsDropdownMenu({
 
   const { claimRewards } = useDashboardContext();
 
-  const appDataMainMarket =
-    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const tokens: Token[] = Object.values(rewardsMap).map((r) =>
     getToken(

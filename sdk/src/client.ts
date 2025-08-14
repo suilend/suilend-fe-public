@@ -145,8 +145,12 @@ export const LENDING_MARKETS: UiLendingMarket[] =
           isHidden: true, // Only visible in the admin panel
         },
       ];
-export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market, for backwards compatibility
-export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // Main market, for backwards compatibility
+
+export const LENDING_MARKET_ID = LENDING_MARKETS[0].id; // Main market
+export const LENDING_MARKET_TYPE = LENDING_MARKETS[0].type; // Main market
+
+export const STEAMM_LM_LENDING_MARKET_ID = LENDING_MARKETS[1].id; // STEAMM LM
+export const STEAMM_LM_LENDING_MARKET_TYPE = LENDING_MARKETS[1].type; // STEAMM LM
 
 async function getLatestPackageId(client: SuiClient, upgradeCapId: string) {
   const object = await client.getObject({

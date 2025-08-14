@@ -1,4 +1,4 @@
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { NORMALIZED_SEND_COINTYPE, getToken } from "@suilend/sui-fe";
 
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -11,7 +11,7 @@ interface SendTokenLogoProps {
 export default function SendTokenLogo({ size }: SendTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (
     <TokenLogo

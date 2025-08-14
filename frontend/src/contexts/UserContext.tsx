@@ -16,7 +16,7 @@ import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
-  LENDING_MARKETS,
+  LENDING_MARKET_ID,
   ObligationWithUnclaimedRewards,
   ParsedObligation,
   RewardMap,
@@ -354,7 +354,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
       // Prepare
       const suilendClient =
-        allAppData.allLendingMarketData[LENDING_MARKETS[0].id].suilendClient;
+        allAppData.allLendingMarketData[LENDING_MARKET_ID].suilendClient;
 
       const filteredObligationsWithUnclaimedRewards =
         obligationsWithUnclaimedRewards.filter(

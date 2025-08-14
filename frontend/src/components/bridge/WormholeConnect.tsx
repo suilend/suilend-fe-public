@@ -1,7 +1,7 @@
 import WormholeConnect from "@wormhole-foundation/wormhole-connect";
 import BigNumber from "bignumber.js";
 
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SOL_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
@@ -20,7 +20,7 @@ export default function WormholeConnectWrapper() {
   const { allAppData } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const assetUsdPriceMap: Record<string, BigNumber> = {
     USDC: appData.reserveMap[NORMALIZED_USDC_COINTYPE].price,

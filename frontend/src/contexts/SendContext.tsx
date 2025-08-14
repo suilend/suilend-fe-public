@@ -27,7 +27,7 @@ import {
 import { SUI_DECIMALS, normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { LENDING_MARKET_ID, STEAMM_LM_LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_POINTS_S1_COINTYPE,
   NORMALIZED_SEND_POINTS_S2_COINTYPE,
@@ -174,8 +174,8 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { address } = useWalletContext();
   const { allUserData, getBalance } = useLoadedUserContext();
 
-  const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
-  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 
   // mSEND - object map
   const [mSendObjectMap, setMsendObjectMap] = useState<

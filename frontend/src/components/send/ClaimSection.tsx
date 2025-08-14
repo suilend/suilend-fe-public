@@ -12,7 +12,7 @@ import { capitalize } from "lodash";
 import { ArrowUpRight, Clock } from "lucide-react";
 import { toast } from "sonner";
 
-import { LENDING_MARKETS } from "@suilend/sdk";
+import { LENDING_MARKET_ID, STEAMM_LM_LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   API_URL,
   NORMALIZED_SEND_COINTYPE,
@@ -134,13 +134,12 @@ function RedeemTabContent({
   const rawUserAllocationsS1 = restLoadedSendContext.rawUserAllocationsS1!;
   const rawUserAllocationsS2 = restLoadedSendContext.rawUserAllocationsS2!;
 
-  const appDataMainMarket =
-    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const appDataSteammLmMarket =
-    allAppData.allLendingMarketData[LENDING_MARKETS[1].id];
+    allAppData.allLendingMarketData[STEAMM_LM_LENDING_MARKET_ID];
 
-  const userDataMainMarket = allUserData[LENDING_MARKETS[0].id];
-  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 
   // Submit
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -548,9 +547,8 @@ function ClaimTabContent() {
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appDataMainMarket =
-    allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
-  const userDataSteammLmMarket = allUserData[LENDING_MARKETS[1].id];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 
   // Reserves
   const suiReserve = appDataMainMarket.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -1036,7 +1034,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKETS[0].id];
+  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   // Redeem
   const minMsendAmount = 10 ** (-1 * mSendCoinMetadata.decimals);
