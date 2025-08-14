@@ -860,46 +860,57 @@ export default function LstStrategyDialog({
 
   // Submit
   const getSubmitButtonNoValueState = (): SubmitButtonState | undefined => {
-    // Get reserves
-    const depositReserve = getLstReserve(strategyType);
-    const borrowReserve = suiReserve;
-
     if (selectedTab === Tab.DEPOSIT) {
+      // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
+      const tenMinsDepositAprPercent = lstReserve.depositAprPercent
+        .div(MS_PER_YEAR)
+        .times(10 * 60 * 1000);
+      const safeDepositLimit = lstReserve.config.depositLimit.minus(
+        lstReserve.depositedAmount.times(tenMinsDepositAprPercent.div(100)),
+      );
+      const safeDepositLimitUsd = lstReserve.config.depositLimitUsd.minus(
+        lstReserve.depositedAmount
+          .times(lstReserve.maxPrice)
+          .times(tenMinsDepositAprPercent.div(100)),
+      );
+
       // Deposit
       if (
-        depositReserve.depositedAmount.gte(depositReserve.config.depositLimit)
+        new BigNumber(safeDepositLimit.minus(lstReserve.depositedAmount)).lte(0)
       )
         return {
           isDisabled: true,
-          title: `${depositReserve.token.symbol} deposit limit reached`,
+          title: `${lstReserve.token.symbol} deposit limit reached`,
         };
       if (
-        new BigNumber(depositReserve.depositedAmountUsd).gte(
-          depositReserve.config.depositLimitUsd,
-        )
+        new BigNumber(
+          safeDepositLimitUsd
+            .minus(lstReserve.depositedAmount.times(lstReserve.maxPrice))
+            .div(lstReserve.maxPrice),
+        ).lte(0)
       )
         return {
           isDisabled: true,
-          title: `${depositReserve.token.symbol} USD deposit limit reached`,
+          title: `${lstReserve.token.symbol} USD deposit limit reached`,
         };
       // "Cannot deposit borrowed asset" is not relevant here
       // "Max 5 deposit positions" is not relevant here
 
       // Borrow
       if (exposure.gt(1)) {
-        if (borrowReserve.borrowedAmount.gte(borrowReserve.config.borrowLimit))
+        if (suiReserve.borrowedAmount.gte(suiReserve.config.borrowLimit))
           return {
             isDisabled: true,
-            title: `${borrowReserve.token.symbol} borrow limit reached`,
+            title: `${suiReserve.token.symbol} borrow limit reached`,
           };
         if (
-          new BigNumber(
-            borrowReserve.borrowedAmount.times(borrowReserve.price),
-          ).gte(borrowReserve.config.borrowLimitUsd)
+          new BigNumber(suiReserve.borrowedAmount.times(suiReserve.price)).gte(
+            suiReserve.config.borrowLimitUsd,
+          )
         )
           return {
             isDisabled: true,
-            title: `${borrowReserve.token.symbol} USD borrow limit reached`,
+            title: `${suiReserve.token.symbol} USD borrow limit reached`,
           };
         // "Cannot borrow deposited asset" is not relevant here
         // "Max 5 borrow positions" is not relevant here

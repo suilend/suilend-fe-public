@@ -1,16 +1,51 @@
 import Head from "next/head";
+import { useState } from "react";
 
-import { ParsedObligation, StrategyOwnerCap } from "@suilend/sdk";
-import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
+import { Transaction } from "@mysten/sui/transactions";
+import * as Sentry from "@sentry/nextjs";
+import BigNumber from "bignumber.js";
+import { toast } from "sonner";
 
+import {
+  ParsedObligation,
+  RewardsMap,
+  StrategyOwnerCap,
+  getRewardsMap,
+} from "@suilend/sdk";
+import {
+  StrategyType,
+  strategyCompoundRewards,
+} from "@suilend/sdk/lib/strategyOwnerCap";
+import {
+  TX_TOAST_DURATION,
+  formatList,
+  formatToken,
+  getToken,
+} from "@suilend/sui-fe";
+import {
+  showErrorToast,
+  useSettingsContext,
+  useWalletContext,
+} from "@suilend/sui-fe-next";
+
+import Button from "@/components/shared/Button";
+import Spinner from "@/components/shared/Spinner";
+import TextLink from "@/components/shared/TextLink";
+import TokenLogo from "@/components/shared/TokenLogo";
+import TokenLogos from "@/components/shared/TokenLogos";
+import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyCard from "@/components/strategies/LstStrategyCard";
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   LstStrategyContextProvider,
   useLoadedLstStrategyContext,
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import useBreakpoint from "@/hooks/useBreakpoint";
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { useCetusSdk } from "@/lib/swap";
 
 function ComingSoonStrategyCard() {
   return (
@@ -21,7 +56,10 @@ function ComingSoonStrategyCard() {
 }
 
 function Page() {
-  const { userData } = useLoadedUserContext();
+  const { explorer } = useSettingsContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { appData } = useLoadedAppContext();
+  const { userData, refresh } = useLoadedUserContext();
 
   const {
     isMoreParametersOpen,
@@ -54,6 +92,11 @@ function Page() {
     getHealthPercent,
   } = useLoadedLstStrategyContext();
 
+  const { md } = useBreakpoint();
+
+  // send.ag
+  const cetusSdk = useCetusSdk();
+
   // Strategy types
   const strategyTypes = Object.values(StrategyType);
 
@@ -84,6 +127,118 @@ function Page() {
     >,
   );
 
+  // Rewards
+  const allRewardsMap = Object.entries(strategyOwnerCapObligationMap).reduce(
+    (acc, [strategyType, { strategyOwnerCap, obligation }]) => ({
+      ...acc,
+      [strategyType]: getRewardsMap(
+        obligation,
+        userData.rewardMap,
+        appData.coinMetadataMap,
+      ),
+    }),
+    {} as Record<StrategyType, RewardsMap>,
+  );
+  const hasClaimableRewards = Object.values(allRewardsMap).some((rewardsMap) =>
+    Object.values(rewardsMap).some(({ amount }) => amount.gt(0)),
+  );
+
+  const allRewardCoinTypes = Object.values(allRewardsMap).reduce(
+    (acc, rewardsMap) => [...acc, ...Object.keys(rewardsMap)],
+    [] as string[],
+  );
+
+  // Rewards - compound
+  const [isCompoundingRewards, setIsCompoundingRewards] =
+    useState<boolean>(false);
+
+  const onCompoundRewardsClick = async () => {
+    if (isCompoundingRewards) return;
+
+    setIsCompoundingRewards(true);
+
+    try {
+      if (!address) throw Error("Wallet not connected");
+
+      const transaction = new Transaction();
+
+      for (const [
+        strategyType,
+        { strategyOwnerCap, obligation },
+      ] of Object.entries(strategyOwnerCapObligationMap)) {
+        await strategyCompoundRewards(
+          cetusSdk,
+          CETUS_PARTNER_ID,
+          allRewardsMap[strategyType as StrategyType],
+          getLstReserve(strategyType as StrategyType).coinType,
+          appData.suilendClient.findReserveArrayIndex(
+            getLstReserve(strategyType as StrategyType).coinType,
+          ),
+          strategyOwnerCap.id,
+          transaction,
+        );
+      }
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success(
+        [
+          "Compounded",
+          formatList(
+            allRewardCoinTypes.map(
+              (coinType) => appData.coinMetadataMap[coinType].symbol,
+            ),
+          ),
+          "rewards",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        },
+      );
+    } catch (err) {
+      Sentry.captureException(err);
+      console.error(err);
+      showErrorToast(
+        [
+          "Failed to compound",
+          formatList(
+            allRewardCoinTypes.map(
+              (coinType) => appData.coinMetadataMap[coinType].symbol,
+            ),
+          ),
+          "rewards",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        err as Error,
+        undefined,
+        true,
+      );
+    } finally {
+      setIsCompoundingRewards(false);
+      refresh();
+    }
+  };
+
+  const allClaimableRewardsMap: Record<string, BigNumber> = {};
+  for (const [strategyType, rewardsMap] of Object.entries(allRewardsMap)) {
+    for (const [coinType, { amount, rawAmount, rewards }] of Object.entries(
+      rewardsMap,
+    )) {
+      allClaimableRewardsMap[coinType] = (
+        allClaimableRewardsMap[coinType] ?? new BigNumber(0)
+      ).plus(amount);
+    }
+  }
+
   return (
     <>
       <Head>
@@ -95,7 +250,69 @@ function Page() {
       ))}
 
       <div className="flex w-full flex-col gap-6">
-        <TBodySans className="text-xl">Strategies</TBodySans>
+        <div className="flex h-7 flex-row items-center gap-4">
+          <TBodySans className="text-xl">Strategies</TBodySans>
+
+          {hasClaimableRewards && (
+            <div className="flex h-10 flex-row items-center gap-2.5 rounded-sm border px-2">
+              <Tooltip
+                content={
+                  <div className="flex flex-col gap-1">
+                    {Object.entries(allClaimableRewardsMap).map(
+                      ([coinType, amount]) => (
+                        <div
+                          key={coinType}
+                          className="flex flex-row items-center gap-2"
+                        >
+                          <TokenLogo
+                            token={getToken(
+                              coinType,
+                              appData.coinMetadataMap[coinType],
+                            )}
+                            size={16}
+                          />
+                          <TLabelSans className="text-foreground">
+                            {formatToken(amount, {
+                              dp: appData.coinMetadataMap[coinType].decimals,
+                            })}{" "}
+                            {appData.coinMetadataMap[coinType].symbol}
+                          </TLabelSans>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                }
+              >
+                <div className="w-max">
+                  <TokenLogos
+                    tokens={Object.keys(allClaimableRewardsMap).map(
+                      (coinType) =>
+                        getToken(coinType, appData.coinMetadataMap[coinType]),
+                    )}
+                    size={16}
+                  />
+                </div>
+              </Tooltip>
+
+              <Button
+                className="w-[92px] md:w-[159px]"
+                labelClassName="uppercase"
+                variant="secondary"
+                size="sm"
+                disabled={isCompoundingRewards}
+                onClick={onCompoundRewardsClick}
+              >
+                {isCompoundingRewards ? (
+                  <Spinner size="sm" />
+                ) : md ? (
+                  "Compound rewards"
+                ) : (
+                  "Compound"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* My positions */}
         {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
