@@ -54,12 +54,13 @@ export default function PnlLabelWithValue({
             <Skeleton className="h-5 w-16" />
           ) : (
             <Tooltip
-              title={`${formatToken(pnlAmount.abs(), {
-                prefix: pnlAmount.eq(0)
-                  ? undefined
-                  : pnlAmount.gte(0)
+              title={`${
+                new BigNumber(pnlAmount.times(reserve.price)).eq(0)
+                  ? ""
+                  : new BigNumber(pnlAmount.times(reserve.price)).gte(0)
                     ? "+"
-                    : "-",
+                    : "-"
+              }${formatToken(pnlAmount.abs(), {
                 dp: reserve.token.decimals,
               })} ${reserve.token.symbol}`}
             >
@@ -70,14 +71,12 @@ export default function PnlLabelWithValue({
                   pnlAmount.lt(0) && "text-destructive",
                 )}
               >
-                {formatToken(pnlAmount.abs(), {
-                  prefix: pnlAmount.eq(0)
-                    ? undefined
-                    : pnlAmount.gte(0)
-                      ? "+"
-                      : "-",
-                  exact: false,
-                })}{" "}
+                {new BigNumber(pnlAmount.times(reserve.price)).eq(0)
+                  ? undefined
+                  : new BigNumber(pnlAmount.times(reserve.price)).gte(0)
+                    ? "+"
+                    : "-"}
+                {formatToken(pnlAmount.abs(), { exact: false })}{" "}
                 {reserve.token.symbol}
               </TBody>
             </Tooltip>
