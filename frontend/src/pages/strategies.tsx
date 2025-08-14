@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
@@ -143,9 +143,17 @@ function Page() {
     Object.values(rewardsMap).some(({ amount }) => amount.gt(0)),
   );
 
-  const allRewardCoinTypes = Object.values(allRewardsMap).reduce(
-    (acc, rewardsMap) => [...acc, ...Object.keys(rewardsMap)],
-    [] as string[],
+  const allRewardCoinTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          Object.values(allRewardsMap).reduce(
+            (acc, rewardsMap) => [...acc, ...Object.keys(rewardsMap)],
+            [] as string[],
+          ),
+        ),
+      ),
+    [allRewardsMap],
   );
 
   // Rewards - compound

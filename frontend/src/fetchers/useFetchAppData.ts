@@ -9,6 +9,7 @@ import {
 } from "@suilend/sdk";
 import {
   LENDING_MARKET_ID,
+  LENDING_MARKET_TYPE,
   STEAMM_LM_LENDING_MARKET_ID,
   SuilendClient,
 } from "@suilend/sdk/client";
@@ -41,13 +42,14 @@ export default function useFetchAppData() {
   // Data
   const dataFetcher = async () => {
     // Get lending markets from registry
-    const lendingMarketsTableObj = await suiClient.getDynamicFields({
-      parentId:
-        "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
-    });
+    let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
+    try {
+      const lendingMarketsTableObj = await suiClient.getDynamicFields({
+        parentId:
+          "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
+      });
 
-    const lendingMarketMetadataMap: Record<string, LendingMarketMetadata> =
-      Object.fromEntries(
+      lendingMarketMetadataMap = Object.fromEntries(
         (
           await Promise.all(
             lendingMarketsTableObj.data.map(async ({ objectId }) => {
@@ -112,10 +114,31 @@ export default function useFetchAppData() {
           .filter((x) => x !== undefined)
           .map((x) => [x.id, x]),
       );
-    console.log(
-      "[useFetchAppData] lendingMarketMetadataMap:",
-      lendingMarketMetadataMap,
-    );
+      console.log(
+        "[useFetchAppData] lendingMarketMetadataMap:",
+        lendingMarketMetadataMap,
+      );
+    } catch (err) {
+      console.error(err);
+
+      // Fallback
+      lendingMarketMetadataMap = {
+        [LENDING_MARKET_ID]: {
+          id: LENDING_MARKET_ID,
+          type: LENDING_MARKET_TYPE,
+          lendingMarketOwnerCapId:
+            "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
+
+          name:
+            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.name ?? undefined,
+          slug:
+            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.slug ?? undefined,
+          isHidden:
+            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.isHidden ??
+            undefined,
+        },
+      };
+    }
 
     const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
       // Lending markets
