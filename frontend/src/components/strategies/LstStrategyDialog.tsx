@@ -441,7 +441,7 @@ export default function LstStrategyDialog({
           value: BigNumber.max(
             safeDepositLimit.minus(lstReserve.depositedAmount),
             0,
-          ).times(depositFactor),
+          ).div(depositFactor),
         },
         {
           reason: `Exceeds ${lstReserve.token.symbol} USD deposit limit`,
@@ -451,7 +451,7 @@ export default function LstStrategyDialog({
               .minus(lstReserve.depositedAmount.times(lstReserve.maxPrice))
               .div(lstReserve.maxPrice),
             0,
-          ).times(depositFactor),
+          ).div(depositFactor),
         },
 
         // Borrow
@@ -464,7 +464,7 @@ export default function LstStrategyDialog({
                   suiReserve.availableAmount
                     .minus(borrowMinAvailableAmount)
                     .div(1 + borrowFee),
-                ).times(borrowFactor),
+                ).div(borrowFactor),
               },
               {
                 reason: `Exceeds ${suiReserve.token.symbol} borrow limit`,
@@ -473,7 +473,7 @@ export default function LstStrategyDialog({
                   suiReserve.config.borrowLimit
                     .minus(suiReserve.borrowedAmount)
                     .div(1 + borrowFee),
-                ).times(borrowFactor),
+                ).div(borrowFactor),
               },
               {
                 reason: `Exceeds ${suiReserve.token.symbol} USD borrow limit`,
@@ -483,7 +483,7 @@ export default function LstStrategyDialog({
                     .minus(suiReserve.borrowedAmount.times(suiReserve.price))
                     .div(suiReserve.price)
                     .div(1 + borrowFee),
-                ).times(borrowFactor),
+                ).div(borrowFactor),
               },
               // "Borrows cannot exceed borrow limit" is not relevant here
               {
@@ -494,14 +494,14 @@ export default function LstStrategyDialog({
                     .div(suiReserve.maxPrice)
                     .div(suiReserve.config.borrowWeightBps.div(10000))
                     .div(1 + borrowFee),
-                ).times(borrowFactor),
+                ).div(borrowFactor),
               },
               // "IKA max utilization limit" is not relevant here
             ]
           : []),
       ];
       console.log(
-        "[getMaxDepositCalculations] result:",
+        "[getMaxDepositCalculations] xxx result:",
         JSON.stringify(result, null, 2),
       );
 
@@ -551,7 +551,7 @@ export default function LstStrategyDialog({
           isDisabled: true,
           value: new BigNumber(
             lstReserve.availableAmount.minus(depositMinAvailableAmount),
-          ).times(withdrawFactor),
+          ).div(withdrawFactor),
         },
         {
           reason: "Outflow rate limit surpassed",
@@ -560,7 +560,7 @@ export default function LstStrategyDialog({
             appData.lendingMarket.rateLimiter.remainingOutflow.div(
               lstReserve.maxPrice,
             ),
-          ).times(withdrawFactor),
+          ).div(withdrawFactor),
         },
         // "Withdraw is unhealthy" is not relevant here
       ];
