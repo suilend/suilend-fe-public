@@ -802,16 +802,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       // 3) Loop to target exposure
       const {
-        lstDepositedAmount: _lstDepositedAmount,
-        suiBorrowedAmount: _suiBorrowedAmount,
+        lstDepositedAmount: newLstDepositedAmount,
+        suiBorrowedAmount: newSuiBorrowedAmount,
       } = simulateLoopToExposure(
         strategyType,
         lstDepositedAmount,
         suiBorrowedAmount,
         targetExposure,
       );
-      lstDepositedAmount = _lstDepositedAmount;
-      suiBorrowedAmount = _suiBorrowedAmount;
+      lstDepositedAmount = newLstDepositedAmount;
+      suiBorrowedAmount = newSuiBorrowedAmount;
 
       // Obligation
       const obligation = getSimulatedObligation(
