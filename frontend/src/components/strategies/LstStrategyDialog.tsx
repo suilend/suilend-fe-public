@@ -349,14 +349,7 @@ export default function LstStrategyDialog({
 
   const [adjustSliderValue, setAdjustSliderValue] = useState<string>(
     !!obligation && hasPosition(obligation)
-      ? BigNumber.min(
-          maxExposure,
-          getExposure(
-            strategyType,
-            obligation.deposits[0].depositedAmount,
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-          ),
-        ).toFixed(1)
+      ? BigNumber.min(maxExposure, getExposure(obligation)).toFixed(1)
       : defaultExposure.toFixed(1),
   );
 
@@ -386,13 +379,9 @@ export default function LstStrategyDialog({
   const exposure = useMemo(
     () =>
       !!obligation && hasPosition(obligation)
-        ? getExposure(
-            strategyType,
-            obligation.deposits[0].depositedAmount,
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-          )
+        ? getExposure(obligation)
         : new BigNumber(depositSliderValue),
-    [obligation, hasPosition, getExposure, strategyType, depositSliderValue],
+    [obligation, hasPosition, getExposure, depositSliderValue],
   );
   const adjustExposure = useMemo(
     () => new BigNumber(adjustSliderValue),
@@ -1272,9 +1261,11 @@ export default function LstStrategyDialog({
 
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
-        strategyType,
-        lstDepositedAmount,
-        suiBorrowedAmount,
+        getSimulatedObligation(
+          strategyType,
+          lstDepositedAmount,
+          suiBorrowedAmount,
+        ),
       );
       const pendingExposure = targetExposure.minus(exposure);
       console.log(
@@ -1308,9 +1299,11 @@ export default function LstStrategyDialog({
         .times(lst.suiToLstExchangeRate)
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxExposure = getExposure(
-        strategyType,
-        lstDepositedAmount.plus(stepMaxLstDepositedAmount),
-        suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+        getSimulatedObligation(
+          strategyType,
+          lstDepositedAmount.plus(stepMaxLstDepositedAmount),
+          suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+        ),
       ).minus(exposure);
       console.log(
         `[loopToExposure] ${i} max |`,
@@ -1412,9 +1405,11 @@ export default function LstStrategyDialog({
 
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
-        strategyType,
-        lstDepositedAmount,
-        suiBorrowedAmount,
+        getSimulatedObligation(
+          strategyType,
+          lstDepositedAmount,
+          suiBorrowedAmount,
+        ),
       );
       const pendingExposure = exposure.minus(targetExposure);
       console.log(
@@ -1448,9 +1443,11 @@ export default function LstStrategyDialog({
         .times(lst.lstToSuiExchangeRate)
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxExposure = getExposure(
-        strategyType,
-        lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
-        suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+        getSimulatedObligation(
+          strategyType,
+          lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
+          suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+        ),
       ).minus(exposure);
       console.log(
         `[unloopToExposure] ${i} max |`,
@@ -1588,9 +1585,11 @@ export default function LstStrategyDialog({
     const targetExposure =
       !!obligation && hasPosition(obligation)
         ? getExposure(
-            strategyType,
-            obligation.deposits[0].depositedAmount,
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+            getSimulatedObligation(
+              strategyType,
+              obligation.deposits[0].depositedAmount,
+              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
+            ),
           )
         : new BigNumber(depositSliderValue);
 

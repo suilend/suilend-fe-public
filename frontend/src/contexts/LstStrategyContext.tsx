@@ -85,11 +85,7 @@ interface LstStrategyContext {
   >;
 
   // Calculations
-  getExposure: (
-    strategyType: StrategyType,
-    lstDepositedAmount: BigNumber,
-    suiBorrowedAmount: BigNumber,
-  ) => BigNumber;
+  getExposure: (obligation?: ParsedObligation) => BigNumber;
   getStepMaxSuiBorrowedAmount: (
     strategyType: StrategyType,
     lstDepositedAmount: BigNumber,
@@ -480,15 +476,31 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
   // Calculations
   const getExposure = useCallback(
-    (
-      strategyType: StrategyType,
-      lstDepositedAmount: BigNumber,
-      suiBorrowedAmount: BigNumber,
-    ): BigNumber =>
-      lstDepositedAmount.gt(0)
-        ? lstDepositedAmount.div(lstDepositedAmount.minus(suiBorrowedAmount))
-        : new BigNumber(0),
-    [],
+    (obligation?: ParsedObligation): BigNumber => {
+      if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+
+      let suiDepositedAmount = new BigNumber(0);
+      for (const deposit of obligation.deposits) {
+        if (isSui(deposit.coinType) || isLst(deposit.coinType)) {
+          suiDepositedAmount = suiDepositedAmount.plus(deposit.depositedAmount); // Ignore LST exchange rate here, as SpringS LSTs use the same Pyth oracle as SUI on Suilend
+        } else {
+          const reserve = appData.reserveMap[deposit.coinType];
+          const priceSui = reserve.price.div(suiReserve.price);
+
+          suiDepositedAmount = suiDepositedAmount.plus(
+            deposit.depositedAmount.times(priceSui),
+          );
+        }
+      }
+
+      const suiBorrowedAmount =
+        obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow (SUI)
+
+      return suiDepositedAmount.gt(0)
+        ? suiDepositedAmount.div(suiDepositedAmount.minus(suiBorrowedAmount))
+        : new BigNumber(0);
+    },
+    [hasPosition, isLst, appData.reserveMap, suiReserve.price],
   );
 
   const getStepMaxSuiBorrowedAmount = useCallback(
@@ -610,9 +622,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
-          strategyType,
-          lstDepositedAmount,
-          suiBorrowedAmount,
+          getSimulatedObligation(
+            strategyType,
+            lstDepositedAmount,
+            suiBorrowedAmount,
+          ),
         );
         const pendingExposure = targetExposure.minus(exposure);
         if (pendingExposure.lte(E)) break;
@@ -633,9 +647,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           .times(suiToLstExchangeRate)
           .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxExposure = getExposure(
-          strategyType,
-          lstDepositedAmount.plus(stepMaxLstDepositedAmount),
-          suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+          getSimulatedObligation(
+            strategyType,
+            lstDepositedAmount.plus(stepMaxLstDepositedAmount),
+            suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
+          ),
         ).minus(exposure);
 
         // 2) Borrow SUI
@@ -702,9 +718,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
-          strategyType,
-          lstDepositedAmount,
-          suiBorrowedAmount,
+          getSimulatedObligation(
+            strategyType,
+            lstDepositedAmount,
+            suiBorrowedAmount,
+          ),
         );
         const pendingExposure = exposure.minus(targetExposure);
         if (pendingExposure.lte(E)) break;
@@ -725,9 +743,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           .times(lstToSuiExchangeRate)
           .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxExposure = getExposure(
-          strategyType,
-          lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
-          suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+          getSimulatedObligation(
+            strategyType,
+            lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
+            suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+          ),
         ).minus(exposure);
 
         // 2) Withdraw LST
@@ -871,7 +891,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     (obligation?: ParsedObligation) => {
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-      return obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
+      return obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow (SUI)
     },
     [hasPosition],
   );

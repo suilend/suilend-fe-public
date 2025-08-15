@@ -135,13 +135,8 @@ export default function LstStrategyCard({
 
   // Stats - Exposure
   const exposure = useMemo(
-    () =>
-      getExposure(
-        strategyType,
-        obligation?.deposits[0]?.depositedAmount ?? new BigNumber(0),
-        obligation?.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-      ),
-    [getExposure, strategyType, obligation],
+    () => getExposure(obligation),
+    [getExposure, obligation],
   );
 
   // Stats - Health
