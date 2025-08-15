@@ -48,6 +48,8 @@ export default function LstStrategyHeader({
     simulateUnloopToExposure,
     simulateDeposit,
 
+    getDepositedSuiAmount,
+    getBorrowedSuiAmount,
     getTvlSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,

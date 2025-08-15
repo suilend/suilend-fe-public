@@ -42,6 +42,8 @@ export default function LstStrategyDialogParametersPanel({
     simulateUnloopToExposure,
     simulateDeposit,
 
+    getDepositedSuiAmount,
+    getBorrowedSuiAmount,
     getTvlSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,

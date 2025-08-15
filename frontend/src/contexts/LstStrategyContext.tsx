@@ -34,7 +34,7 @@ import {
 } from "@suilend/springsui-sdk";
 import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_staking/liquid-staking/structs";
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
-import { API_URL, NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
+import { API_URL, NORMALIZED_SUI_COINTYPE, isSui } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
@@ -138,10 +138,9 @@ interface LstStrategyContext {
   };
 
   // Stats
-  getTvlSuiAmount: (
-    strategyType: StrategyType,
-    obligation?: ParsedObligation,
-  ) => BigNumber;
+  getDepositedSuiAmount: (obligation?: ParsedObligation) => BigNumber;
+  getBorrowedSuiAmount: (obligation?: ParsedObligation) => BigNumber;
+  getTvlSuiAmount: (obligation?: ParsedObligation) => BigNumber;
   getHistoricalTvlSuiAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
@@ -233,6 +232,12 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Stats
+  getDepositedSuiAmount: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
+  getBorrowedSuiAmount: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
   getTvlSuiAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
@@ -257,7 +262,7 @@ export const useLoadedLstStrategyContext = () =>
 export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { userData } = useLoadedUserContext();
-  const { allAppData, appData } = useLoadedAppContext();
+  const { allAppData, appData, isLst } = useLoadedAppContext();
 
   // More parameters
   const [isMoreParametersOpen, setIsMoreParametersOpen] =
@@ -598,7 +603,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     } => {
       const lstReserve = getLstReserve(strategyType);
       const suiToLstExchangeRate =
-        lstMap?.[lstReserve.coinType].suiToLstExchangeRate ?? new BigNumber(0);
+        lstMap?.[lstReserve.coinType].suiToLstExchangeRate ?? new BigNumber(1); // Fall back to 1:1, overcounting by 1-2%
 
       let lstDepositedAmount = _lstDepositedAmount;
       let suiBorrowedAmount = _suiBorrowedAmount;
@@ -693,7 +698,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       const lstReserve = getLstReserve(strategyType);
       const lstToSuiExchangeRate =
-        lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ?? new BigNumber(0);
+        lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ?? new BigNumber(1); // Fall back to 1:1, undercounting by 1-2%
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
@@ -781,7 +786,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     } => {
       const lstReserve = getLstReserve(strategyType);
       const suiToLstExchangeRate =
-        lstMap?.[lstReserve.coinType].suiToLstExchangeRate ?? new BigNumber(0);
+        lstMap?.[lstReserve.coinType].suiToLstExchangeRate ?? new BigNumber(1); // Fall back to 1:1, overcounting by 1-2%
 
       const lstAmount = (
         "sui" in amount
@@ -832,45 +837,78 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Stats
+  // Stats - Deposited and borrowed
+  const getDepositedSuiAmount = useCallback(
+    (obligation?: ParsedObligation) => {
+      if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+
+      let result = new BigNumber(0);
+      for (const deposit of obligation.deposits) {
+        if (isSui(deposit.coinType)) {
+          result = result.plus(deposit.depositedAmount);
+        } else if (isLst(deposit.coinType)) {
+          const lstReserve = appData.reserveMap[deposit.coinType];
+          const lstToSuiExchangeRate =
+            lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ??
+            new BigNumber(1); // Fall back to 1:1, undercounting by 1-2%
+
+          result = result.plus(
+            deposit.depositedAmount.times(lstToSuiExchangeRate),
+          );
+        } else {
+          const reserve = appData.reserveMap[deposit.coinType];
+          const priceSui = reserve.price.div(suiReserve.price);
+
+          result = result.plus(deposit.depositedAmount.times(priceSui));
+        }
+      }
+
+      return result;
+    },
+    [hasPosition, appData.reserveMap, isLst, lstMap, suiReserve.price],
+  );
+  const getBorrowedSuiAmount = useCallback(
+    (obligation?: ParsedObligation) => {
+      if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+
+      return obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
+    },
+    [hasPosition],
+  );
+
   // Stats - TVL
   const getTvlSuiAmount = useCallback(
-    (strategyType: StrategyType, obligation?: ParsedObligation) => {
-      if (!!obligation && hasPosition(obligation)) {
-        const lstReserve = getLstReserve(strategyType);
-        const lstToSuiExchangeRate =
-          lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ??
-          new BigNumber(0);
+    (obligation?: ParsedObligation) => {
+      if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-        // Raw TVL
-        let result = new BigNumber(
-          obligation.deposits[0].depositedAmount.times(lstToSuiExchangeRate),
-        ).minus(obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0));
+      // Raw TVL
+      const depositedSuiAmount = getDepositedSuiAmount(obligation);
+      const borrowedSuiAmount = getBorrowedSuiAmount(obligation);
 
-        // Unclaimed rewards
-        const rewardsMap = getRewardsMap(
-          obligation,
-          userData.rewardMap,
-          appData.coinMetadataMap,
-        );
+      let result = depositedSuiAmount.minus(borrowedSuiAmount);
 
-        // Add unclaimed rewards to TVL
-        Object.entries(rewardsMap).forEach(([coinType, { amount }]) => {
-          const priceSui = (
-            appData.rewardPriceMap[coinType] ?? new BigNumber(0)
-          ).div(suiReserve.price);
+      // Unclaimed rewards
+      const rewardsMap = getRewardsMap(
+        obligation,
+        userData.rewardMap,
+        appData.coinMetadataMap,
+      );
 
-          result = result.plus(amount.times(priceSui));
-        });
+      // Add unclaimed rewards to TVL
+      Object.entries(rewardsMap).forEach(([coinType, { amount }]) => {
+        const priceSui = (
+          appData.rewardPriceMap[coinType] ?? new BigNumber(0)
+        ).div(suiReserve.price);
 
-        return result;
-      } else {
-        return new BigNumber(0);
-      }
+        result = result.plus(amount.times(priceSui));
+      });
+
+      return result;
     },
     [
       hasPosition,
-      getLstReserve,
-      lstMap,
+      getDepositedSuiAmount,
+      getBorrowedSuiAmount,
       userData.rewardMap,
       appData.coinMetadataMap,
       appData.rewardPriceMap,
@@ -888,7 +926,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       const lstReserve = getLstReserve(strategyType);
       // const lstToSuiExchangeRate =
-      //   lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ?? new BigNumber(0);
+      //   lstMap?.[lstReserve.coinType].lstToSuiExchangeRate ?? new BigNumber(1); // Fall back to 1:1, undercounting by 1-2%
 
       type ActionEvent = {
         type:
@@ -1105,7 +1143,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             "XXX no non-filtered events for current position",
             strategyType,
           );
-          return getTvlSuiAmount(strategyType, obligation); // Return current TVL (no PnL)
+          return getTvlSuiAmount(obligation); // Return current TVL (no PnL)
         }
 
         // Get historical LST to SUI exchange rates for the relevant timestamps (current position deposits and withdraws)
@@ -1327,6 +1365,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateDeposit,
 
       // Stats
+      getDepositedSuiAmount,
+      getBorrowedSuiAmount,
       getTvlSuiAmount,
       getHistoricalTvlSuiAmount,
       getAprPercent,
@@ -1350,6 +1390,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateUnloopToExposure,
       simulateDeposit,
+      getDepositedSuiAmount,
+      getBorrowedSuiAmount,
       getTvlSuiAmount,
       getHistoricalTvlSuiAmount,
       getAprPercent,

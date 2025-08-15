@@ -59,6 +59,8 @@ export default function LstStrategyCard({
     simulateUnloopToExposure,
     simulateDeposit,
 
+    getDepositedSuiAmount,
+    getBorrowedSuiAmount,
     getTvlSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
@@ -116,7 +118,7 @@ export default function LstStrategyCard({
 
   // Stats
   // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
+  const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);

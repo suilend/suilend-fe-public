@@ -165,6 +165,8 @@ export default function LstStrategyDialog({
     simulateUnloopToExposure,
     simulateDeposit,
 
+    getDepositedSuiAmount,
+    getBorrowedSuiAmount,
     getTvlSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
@@ -548,7 +550,7 @@ export default function LstStrategyDialog({
         {
           reason: "Withdraws cannot exceed deposits",
           isDisabled: true,
-          value: getTvlSuiAmount(strategyType, obligation).times(
+          value: getTvlSuiAmount(obligation).times(
             isSui(_reserve.coinType) ? 1 : lst.suiToLstExchangeRate,
           ),
         },
@@ -586,7 +588,6 @@ export default function LstStrategyDialog({
       exposure,
       lst.suiToLstExchangeRate,
       getTvlSuiAmount,
-      strategyType,
       obligation,
       appData.lendingMarket.rateLimiter.remainingOutflow,
     ],
@@ -827,12 +828,11 @@ export default function LstStrategyDialog({
   // Stats - TVL
   const tvlAmount = useMemo(
     () =>
-      getTvlSuiAmount(strategyType, obligation)
+      getTvlSuiAmount(obligation)
         .times(isSui(reserve.coinType) ? 1 : lst.suiToLstExchangeRate)
         .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN),
     [
       getTvlSuiAmount,
-      strategyType,
       obligation,
       reserve.coinType,
       lst.suiToLstExchangeRate,
@@ -923,7 +923,7 @@ export default function LstStrategyDialog({
       { sui: new BigNumber(10) },
       exposure,
     );
-    const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
+    const tvlSuiAmount = getTvlSuiAmount(obligation);
 
     const unloopPercent = new BigNumber(100);
     const lstWithdrawnAmount = lstDepositedAmount.times(unloopPercent.div(100));

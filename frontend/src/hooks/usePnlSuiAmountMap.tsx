@@ -36,6 +36,8 @@ const usePnlSuiAmountMap = (
     simulateUnloopToExposure,
     simulateDeposit,
 
+    getDepositedSuiAmount,
+    getBorrowedSuiAmount,
     getTvlSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
@@ -44,7 +46,7 @@ const usePnlSuiAmountMap = (
 
   // Stats
   // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(strategyType, obligation);
+  const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - PnL
   const [pnlSuiAmountMap, setPnlSuiAmountMap] = useState<
