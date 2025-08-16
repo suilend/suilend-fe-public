@@ -1146,6 +1146,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                   1 + // Exclude ObligationDataEvent
                   1, // Exclude last WithdrawEvent (ObligationDataEvent goes before WithdrawEvent)
               );
+
+        while (
+          currentPositionFilteredSortedEvents.length > 0 &&
+          currentPositionFilteredSortedEvents[0].type === EventType.CLAIM_REWARD
+        )
+          currentPositionFilteredSortedEvents.shift(); // Remove all ClaimRewardEvents from the start (rewards are claimed after a MAX withdraw)
+
         // console.log(
         //   `XXX currentPositionFilteredSortedEvents: ${JSON.stringify(
         //     currentPositionFilteredSortedEvents.map((e, i) => ({
@@ -1205,6 +1212,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         let borrowedSuiAmount = new BigNumber(0);
         for (let i = 0; i < currentPositionFilteredSortedEvents.length; i++) {
           const event = currentPositionFilteredSortedEvents[i];
+          const previousEvent = currentPositionFilteredSortedEvents[i - 1];
 
           // Deposit/withdraw
           if (event.type === EventType.DEPOSIT) {
@@ -1216,7 +1224,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               );
             }
 
-            const previousEvent = currentPositionFilteredSortedEvents[i - 1];
             const isDepositingClaimedReward =
               previousEvent && previousEvent.type === EventType.CLAIM_REWARD;
             if (isDepositingClaimedReward) {

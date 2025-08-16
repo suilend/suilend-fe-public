@@ -137,7 +137,7 @@ export const strategyWithdraw = (
     ],
   });
 
-export const strategyClaimRewards = (
+const strategyClaimRewards = (
   coinType: string,
   strategyOwnerCap: TransactionObjectInput,
   reserveArrayIndex: bigint,
@@ -157,6 +157,66 @@ export const strategyClaimRewards = (
       transaction.pure.bool(side === Side.DEPOSIT),
     ],
   });
+const strategyClaimRewardsAndMergeCoins = (
+  rewardsMap: RewardsMap,
+  strategyOwnerCap: TransactionObjectInput,
+  transaction: Transaction,
+): Record<string, TransactionObjectArgument> => {
+  // 1) Get rewards
+  const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
+    .flatMap((r) => r.rewards)
+    .map((r) => ({
+      reserveArrayIndex: Object.values(r.obligationClaims)[0].reserveArrayIndex,
+      rewardIndex: BigInt(r.stats.rewardIndex),
+      rewardCoinType: r.stats.rewardCoinType,
+      side: r.stats.side,
+    }));
+
+  // 2) Claim rewards and merge coins
+  const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
+  for (const reward of rewards) {
+    const [claimedCoin] = strategyClaimRewards(
+      reward.rewardCoinType,
+      strategyOwnerCap,
+      reward.reserveArrayIndex,
+      reward.rewardIndex,
+      reward.side,
+      transaction,
+    );
+
+    if (mergeCoinsMap[reward.rewardCoinType] === undefined)
+      mergeCoinsMap[reward.rewardCoinType] = [];
+    mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
+  }
+
+  const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
+  for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
+    const mergedCoin = coins[0];
+    if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
+
+    mergedCoinsMap[rewardCoinType] = mergedCoin;
+  }
+
+  return mergedCoinsMap;
+};
+export const strategyClaimRewardsAndSendToUser = (
+  address: string,
+  rewardsMap: RewardsMap,
+  strategyOwnerCap: TransactionObjectInput,
+  transaction: Transaction,
+) => {
+  // 1) Claim rewards and merge coins
+  const mergedCoinsMap: Record<string, TransactionObjectArgument> =
+    strategyClaimRewardsAndMergeCoins(
+      rewardsMap,
+      strategyOwnerCap,
+      transaction,
+    );
+
+  // 2) Send coins to user
+  for (const [coinType, coin] of Object.entries(mergedCoinsMap))
+    transaction.transferObjects([coin], transaction.pure.address(address));
+};
 export const strategyCompoundRewards = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,

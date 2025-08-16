@@ -68,8 +68,7 @@ const DashboardContext = createContext<DashboardContext>(defaultContextValue);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
-  const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
-    useWalletContext();
+  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { appData, openLedgerHashDialog } = useLoadedAppContext();
   const {
     obligation,
