@@ -1486,13 +1486,13 @@ export default function LstStrategyDialog({
         strategyOwnerCapId,
         appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
-            new BigNumber(
-              stepLstWithdrawnAmount
-                .times(10 ** LST_DECIMALS)
-                .integerValue(BigNumber.ROUND_DOWN)
-                .toString(),
-            )
-              .div(lstReserve.cTokenExchangeRate)
+          new BigNumber(
+            stepLstWithdrawnAmount
+              .times(10 ** LST_DECIMALS)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          )
+            .div(lstReserve.cTokenExchangeRate)
             .integerValue(BigNumber.ROUND_UP)
             .toString(),
         ),
@@ -1781,13 +1781,13 @@ export default function LstStrategyDialog({
         strategyOwnerCapId,
         appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
-            new BigNumber(
-              stepLstWithdrawnAmount
-                .times(10 ** LST_DECIMALS)
-                .integerValue(BigNumber.ROUND_DOWN)
-                .toString(),
-            )
-              .div(lstReserve.cTokenExchangeRate)
+          new BigNumber(
+            stepLstWithdrawnAmount
+              .times(10 ** LST_DECIMALS)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          )
+            .div(lstReserve.cTokenExchangeRate)
             .integerValue(BigNumber.ROUND_UP)
             .toString(),
         ),
