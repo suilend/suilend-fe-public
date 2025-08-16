@@ -12,6 +12,7 @@ import {
   SUI_CLOCK_OBJECT_ID,
   SUI_SYSTEM_STATE_OBJECT_ID,
 } from "@mysten/sui/utils";
+import { BigNumber } from "bignumber.js";
 import BN from "bn.js";
 
 import {
