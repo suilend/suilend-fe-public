@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 interface TokenLogoProps {
   className?: ClassValue;
+  imageClassName?: ClassValue;
   token?: Token;
   size: number;
   showBridgedAssetTooltip?: boolean;
@@ -32,6 +33,7 @@ interface TokenLogoProps {
 
 export default function TokenLogo({
   className,
+  imageClassName,
   token,
   size,
   showBridgedAssetTooltip,
@@ -100,7 +102,10 @@ export default function TokenLogo({
         ) : undefined
       }
     >
-      <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <div
+        className={cn("relative shrink-0", className)}
+        style={{ width: size, height: size }}
+      >
         {(wormholeAsset || suiBridgeAsset) && (
           <div className="absolute -bottom-0.5 -right-0.5 z-[2] rounded-full border border-[black] bg-[black]">
             {wormholeAsset ? (
@@ -125,7 +130,7 @@ export default function TokenLogo({
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          className={cn("relative z-[1] rounded-[50%]", className)}
+          className={cn("relative z-[1] rounded-[50%]", imageClassName)}
           src={token.iconUrl!}
           alt={`${token.symbol} logo`}
           width={size}

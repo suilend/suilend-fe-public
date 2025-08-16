@@ -31,10 +31,11 @@ export default function TokenLogos({
       {(tokens ?? []).map((token, index) => (
         <TokenLogo
           key={token.coinType}
-          className={cn(
+          className={cn(index !== 0 && "-ml-[var(--ml)]")}
+          imageClassName={cn(
             "bg-[var(--bg-color-internal)]",
             index !== 0 &&
-              "-ml-[var(--ml)] outline outline-1 outline-[var(--bg-color-internal)]",
+              "outline outline-1 outline-[var(--bg-color-internal)]",
           )}
           token={token}
           size={size}

@@ -142,7 +142,6 @@ export default function useFetchAppData() {
 
     const [allLendingMarketData, lstAprPercentMap] = await Promise.all([
       // Lending markets
-
       (async () => {
         const allLendingMarketData: AllAppData["allLendingMarketData"] =
           Object.fromEntries(

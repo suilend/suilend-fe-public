@@ -43,7 +43,6 @@ import {
   useLoadedLstStrategyContext,
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import useBreakpoint from "@/hooks/useBreakpoint";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { useCetusSdk } from "@/lib/swap";
 
@@ -89,12 +88,11 @@ function Page() {
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
     getTvlSuiAmount,
+    getUnclaimedRewardsSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
-
-  const { md } = useBreakpoint();
 
   // send.ag
   const cetusSdk = useCetusSdk();
@@ -257,11 +255,11 @@ function Page() {
       ))}
 
       <div className="flex w-full flex-col gap-6">
-        <div className="flex h-7 flex-row items-center gap-4">
+        <div className="flex h-7 flex-row items-center justify-between gap-4">
           <TBodySans className="text-xl">Strategies</TBodySans>
 
           {hasClaimableRewards && (
-            <div className="flex h-10 flex-row items-center gap-2.5 rounded-sm border px-2">
+            <div className="flex h-10 flex-row items-center gap-2 rounded-sm border px-2">
               <Tooltip
                 content={
                   <div className="flex flex-col gap-1">
@@ -302,20 +300,14 @@ function Page() {
               </Tooltip>
 
               <Button
-                className="w-[92px] md:w-[159px]"
+                className="w-[92px]"
                 labelClassName="uppercase"
                 variant="secondary"
                 size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
-                {isCompoundingRewards ? (
-                  <Spinner size="sm" />
-                ) : md ? (
-                  "Compound rewards"
-                ) : (
-                  "Compound"
-                )}
+                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound"}
               </Button>
             </div>
           )}

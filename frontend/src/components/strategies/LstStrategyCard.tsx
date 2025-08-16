@@ -21,7 +21,7 @@ import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import usePnlSuiAmountMap from "@/hooks/usePnlSuiAmountMap";
+import useHistoricalTvlSuiAmountMap from "@/hooks/useHistoricalTvlSuiAmountMap";
 
 interface LstStrategyCardProps {
   strategyType: StrategyType;
@@ -62,6 +62,7 @@ export default function LstStrategyCard({
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
     getTvlSuiAmount,
+    getUnclaimedRewardsSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -120,17 +121,25 @@ export default function LstStrategyCard({
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
+  // Stats - Unclaimed rewards
+  const unclaimedRewardsSuiAmount = getUnclaimedRewardsSuiAmount(obligation);
+
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
 
   // Stats - PnL
-  const { pnlSuiAmountMap } = usePnlSuiAmountMap(strategyType, obligation);
+  const { historicalTvlSuiAmountMap } = useHistoricalTvlSuiAmountMap(
+    strategyType,
+    obligation,
+  );
   const pnlSuiAmount = useMemo(
     () =>
       !!obligation && hasPosition(obligation)
-        ? pnlSuiAmountMap[obligation.id]
+        ? historicalTvlSuiAmountMap[obligation.id] === undefined
+          ? undefined
+          : tvlSuiAmount.minus(historicalTvlSuiAmountMap[obligation.id]!)
         : new BigNumber(0),
-    [obligation, hasPosition, pnlSuiAmountMap],
+    [obligation, hasPosition, historicalTvlSuiAmountMap, tvlSuiAmount],
   );
 
   // Stats - Exposure
@@ -182,9 +191,21 @@ export default function LstStrategyCard({
         <>
           <Separator />
 
-          <div className="flex w-full flex-col gap-4">
+          <div className="flex w-full flex-col gap-3">
             {/* PnL */}
             <PnlLabelWithValue reserve={suiReserve} pnlAmount={pnlSuiAmount} />
+
+            {/* Unclaimed rewards */}
+            <LabelWithValue
+              label="Claimable rewards"
+              value={`${formatToken(unclaimedRewardsSuiAmount, {
+                exact: false,
+              })} SUI`}
+              valueTooltip={`${formatToken(unclaimedRewardsSuiAmount, {
+                dp: SUI_DECIMALS,
+              })} SUI`}
+              horizontal
+            />
 
             {/* Exposure */}
             <LabelWithValue

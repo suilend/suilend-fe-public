@@ -7,7 +7,7 @@ import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
-const usePnlSuiAmountMap = (
+const useHistoricalTvlSuiAmountMap = (
   strategyType: StrategyType,
   obligation?: ParsedObligation,
 ) => {
@@ -48,8 +48,8 @@ const usePnlSuiAmountMap = (
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
-  // Stats - PnL
-  const [pnlSuiAmountMap, setPnlSuiAmountMap] = useState<
+  // Stats - Historical TVL
+  const [historicalTvlSuiAmountMap, setHistoricalTvlSuiAmountMap] = useState<
     Record<string, BigNumber | undefined>
   >({});
 
@@ -62,16 +62,16 @@ const usePnlSuiAmountMap = (
       const result =
         historicalTvlSuiAmount === undefined
           ? undefined
-          : tvlSuiAmount.minus(historicalTvlSuiAmount);
+          : historicalTvlSuiAmount;
 
-      setPnlSuiAmountMap((prev) => ({
+      setHistoricalTvlSuiAmountMap((prev) => ({
         ...prev,
         [obligation!.id]: result,
       }));
     } catch (err) {
       console.error(err);
     }
-  }, [getHistoricalTvlSuiAmount, strategyType, obligation, tvlSuiAmount]);
+  }, [getHistoricalTvlSuiAmount, strategyType, obligation]);
 
   const hasFetchedHistoricalTvlSuiAmountMapRef = useRef<
     Record<string, boolean>
@@ -85,7 +85,7 @@ const usePnlSuiAmountMap = (
     fetchHistoricalTvlSuiAmount();
   }, [obligation, fetchHistoricalTvlSuiAmount]);
 
-  return { pnlSuiAmountMap };
+  return { historicalTvlSuiAmountMap };
 };
 
-export default usePnlSuiAmountMap;
+export default useHistoricalTvlSuiAmountMap;

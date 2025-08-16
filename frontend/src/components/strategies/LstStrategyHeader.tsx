@@ -51,6 +51,7 @@ export default function LstStrategyHeader({
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
     getTvlSuiAmount,
+    getUnclaimedRewardsSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -98,7 +99,7 @@ export default function LstStrategyHeader({
         size={28}
       />
 
-      <div className="-ml-[7px] flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <div className="flex flex-row items-center gap-2">
           <TBody>{strategyInfo.title}</TBody>
           <Tooltip title={strategyInfo.tooltip}>

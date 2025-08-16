@@ -45,6 +45,7 @@ export default function LstStrategyDialogParametersPanel({
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
     getTvlSuiAmount,
+    getUnclaimedRewardsSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -136,7 +137,7 @@ export default function LstStrategyDialogParametersPanel({
                   STRATEGY_TYPE_INFO_MAP[strategyType].lstCoinType
                 ].symbol
               }{" "}
-              back to SUI when you withdraw funds
+              back to SUI when you withdraw funds.
               <br />
               <br />
               All applicable fees are shown in the UI.

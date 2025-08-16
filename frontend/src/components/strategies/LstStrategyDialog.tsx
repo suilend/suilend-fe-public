@@ -169,6 +169,7 @@ export default function LstStrategyDialog({
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
     getTvlSuiAmount,
+    getUnclaimedRewardsSuiAmount,
     getHistoricalTvlSuiAmount,
     getAprPercent,
     getHealthPercent,
@@ -815,19 +816,7 @@ export default function LstStrategyDialog({
 
   // Stats
   // Stats - TVL
-  const tvlAmount = useMemo(
-    () =>
-      getTvlSuiAmount(obligation)
-        .times(isSui(reserve.coinType) ? 1 : lst.suiToLstExchangeRate)
-        .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN),
-    [
-      getTvlSuiAmount,
-      obligation,
-      reserve.coinType,
-      lst.suiToLstExchangeRate,
-      reserve.token.decimals,
-    ],
-  );
+  const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - Health
   const healthPercent = getHealthPercent(strategyType, obligation, exposure);
@@ -846,7 +835,7 @@ export default function LstStrategyDialog({
   );
 
   // Stats - Fees
-  const depositFeesAmount = useMemo(() => {
+  const depositFeesSuiAmount = useMemo(() => {
     const { suiBorrowedAmount } = simulateDeposit(
       strategyType,
       isSui(reserve.coinType)
@@ -860,11 +849,10 @@ export default function LstStrategyDialog({
       suiBorrowFeePercent.div(100),
     );
 
-    return (
-      isSui(reserve.coinType)
-        ? suiBorrowFeesAmount
-        : suiBorrowFeesAmount.times(lst.suiToLstExchangeRate)
-    ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
+    return suiBorrowFeesAmount.decimalPlaces(
+      SUI_DECIMALS,
+      BigNumber.ROUND_DOWN,
+    );
   }, [
     simulateDeposit,
     strategyType,
@@ -872,39 +860,45 @@ export default function LstStrategyDialog({
     value,
     exposure,
     suiBorrowFeePercent,
-    lst.suiToLstExchangeRate,
-    reserve.token.decimals,
   ]);
 
-  const withdrawFeesAmount = useMemo(() => {
+  const withdrawFeesSuiAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-    const unloopPercent = new BigNumber(value || 0).div(tvlAmount).times(100);
-    const lstWithdrawnAmount = obligation.deposits[0].depositedAmount.times(
-      unloopPercent.div(100),
-    );
+    const unloopPercent = new BigNumber(
+      new BigNumber(value || 0).times(
+        isSui(reserve.coinType) ? 1 : lst.lstToSuiExchangeRate,
+      ),
+    )
+      .div(getTvlSuiAmount(obligation))
+      .times(100);
+    const lstWithdrawnAmount = new BigNumber(
+      getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+    )
+      .times(unloopPercent.div(100))
+      .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
 
     // TODO: Add LST mint fee (currently 0)
-    const lstRedeemFeesAmount = getLstRedeemFee(
+    const lstRedeemFeesSuiAmount = getLstRedeemFee(
       lstReserve.coinType,
       lstWithdrawnAmount,
     );
 
-    return (
-      isSui(reserve.coinType)
-        ? lstRedeemFeesAmount.times(lst.lstToSuiExchangeRate)
-        : lstRedeemFeesAmount
-    ).decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
+    return lstRedeemFeesSuiAmount.decimalPlaces(
+      SUI_DECIMALS,
+      BigNumber.ROUND_DOWN,
+    );
   }, [
     obligation,
     hasPosition,
+    reserve.coinType,
     value,
-    tvlAmount,
+    lst.lstToSuiExchangeRate,
+    getTvlSuiAmount,
+    getDepositedSuiAmount,
+    lst.suiToLstExchangeRate,
     getLstRedeemFee,
     lstReserve.coinType,
-    reserve.coinType,
-    lst.lstToSuiExchangeRate,
-    reserve.token.decimals,
   ]);
   const generalWithdrawFeesPercent = useMemo(() => {
     const { lstDepositedAmount, obligation } = simulateDeposit(
@@ -912,36 +906,33 @@ export default function LstStrategyDialog({
       { sui: new BigNumber(10) },
       exposure,
     );
-    const tvlSuiAmount = getTvlSuiAmount(obligation);
 
     const unloopPercent = new BigNumber(100);
     const lstWithdrawnAmount = lstDepositedAmount.times(unloopPercent.div(100));
 
     // TODO: Add LST mint fee (currently 0)
-    const lstRedeemFeesAmount = getLstRedeemFee(
+    const lstRedeemFeesSuiAmount = getLstRedeemFee(
       lstReserve.coinType,
       lstWithdrawnAmount,
     );
 
-    return new BigNumber(lstRedeemFeesAmount.times(lst.lstToSuiExchangeRate))
-      .div(tvlSuiAmount)
-      .times(100);
+    return lstRedeemFeesSuiAmount.div(getTvlSuiAmount(obligation)).times(100);
   }, [
     simulateDeposit,
     strategyType,
     exposure,
-    getTvlSuiAmount,
     getLstRedeemFee,
     lstReserve.coinType,
-    lst.lstToSuiExchangeRate,
+    getTvlSuiAmount,
   ]);
 
   const adjustFeesSuiAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-    const currentLstDepositedAmount = obligation.deposits[0].depositedAmount;
-    const currentSuiBorrowedAmount =
-      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
+    const currentLstDepositedAmount = new BigNumber(
+      getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+    ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+    const currentSuiBorrowedAmount = getBorrowedSuiAmount(obligation);
     const targetExposure = adjustExposure;
 
     if (targetExposure.gt(exposure)) {
@@ -987,27 +978,30 @@ export default function LstStrategyDialog({
         currentSuiBorrowedAmount.minus(newSuiBorrowedAmount);
 
       // TODO: Add LST mint fee (currently 0)
-      const lstRedeemFeesAmount = getLstRedeemFee(
+      const lstRedeemFeesSuiAmount = getLstRedeemFee(
         lstReserve.coinType,
         lstWithdrawnAmount,
       );
 
-      return lstRedeemFeesAmount
-        .times(lst.lstToSuiExchangeRate)
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      return lstRedeemFeesSuiAmount.decimalPlaces(
+        SUI_DECIMALS,
+        BigNumber.ROUND_DOWN,
+      );
     }
   }, [
     obligation,
     hasPosition,
-    strategyType,
+    getDepositedSuiAmount,
+    lst.suiToLstExchangeRate,
+    getBorrowedSuiAmount,
     adjustExposure,
     exposure,
     simulateLoopToExposure,
+    strategyType,
     suiBorrowFeePercent,
     simulateUnloopToExposure,
     getLstRedeemFee,
     lstReserve.coinType,
-    lst.lstToSuiExchangeRate,
   ]);
 
   // Submit
@@ -1131,9 +1125,10 @@ export default function LstStrategyDialog({
     } else if (selectedTab === Tab.ADJUST) {
       if (!obligation || !hasPosition(obligation)) return undefined;
 
-      const currentLstDepositedAmount = obligation.deposits[0].depositedAmount;
-      const currentSuiBorrowedAmount =
-        obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
+      const currentLstDepositedAmount = new BigNumber(
+        getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+      ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+      const currentSuiBorrowedAmount = getBorrowedSuiAmount(obligation);
       const targetExposure = adjustExposure;
 
       if (targetExposure.gt(exposure)) {
@@ -1436,12 +1431,12 @@ export default function LstStrategyDialog({
         .times(0.98) // 2% buffer
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
-        stepMaxLstWithdrawnAmount.minus(
+        new BigNumber(
+          stepMaxLstWithdrawnAmount.times(lst.lstToSuiExchangeRate),
+        ).minus(
           getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
-      )
-        .times(lst.lstToSuiExchangeRate)
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxExposure = getExposure(
         getSimulatedObligation(
           strategyType,
@@ -1505,12 +1500,10 @@ export default function LstStrategyDialog({
 
       // 4) Repay SUI
       const stepSuiRepaidAmount = new BigNumber(
-        stepLstWithdrawnAmount.minus(
-          getLstRedeemFee(lstReserve.coinType, stepLstWithdrawnAmount),
-        ),
-      )
-        .times(lst.lstToSuiExchangeRate)
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        new BigNumber(
+          stepLstWithdrawnAmount.times(lst.lstToSuiExchangeRate),
+        ).minus(getLstRedeemFee(lstReserve.coinType, stepLstWithdrawnAmount)),
+      ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
       console.log(
         `[unloopToExposure] ${i} repay |`,
@@ -1569,16 +1562,13 @@ export default function LstStrategyDialog({
     // Prepare
     let lstDepositedAmount =
       !!obligation && hasPosition(obligation)
-        ? obligation.deposits[0].depositedAmount.decimalPlaces(
-            LST_DECIMALS,
-            BigNumber.ROUND_DOWN,
-          )
+        ? new BigNumber(
+            getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+          ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN)
         : new BigNumber(0);
     const suiBorrowedAmount =
       !!obligation && hasPosition(obligation)
-        ? (
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
-          ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN)
+        ? getBorrowedSuiAmount(obligation)
         : new BigNumber(0);
     const targetExposure =
       !!obligation && hasPosition(obligation)
@@ -1672,14 +1662,10 @@ export default function LstStrategyDialog({
     );
 
     // Prepare
-    let lstDepositedAmount =
-      obligation.deposits[0].depositedAmount.decimalPlaces(
-        LST_DECIMALS,
-        BigNumber.ROUND_DOWN,
-      );
-    let suiBorrowedAmount = (
-      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
-    ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+    let lstDepositedAmount = new BigNumber(
+      getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+    ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+    let suiBorrowedAmount = getBorrowedSuiAmount(obligation);
 
     const targetLstDepositedAmount = lstDepositedAmount
       .times(new BigNumber(1).minus(unloopPercent.div(100)))
@@ -1736,13 +1722,12 @@ export default function LstStrategyDialog({
         .times(0.98) // 2% buffer
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
-        stepMaxLstWithdrawnAmount.minus(
+        new BigNumber(
+          stepMaxLstWithdrawnAmount.times(lst.lstToSuiExchangeRate),
+        ).minus(
           getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
-      )
-        .times(lst.lstToSuiExchangeRate)
-        .minus(10 ** (-1 * SUI_DECIMALS)) // Subtract 1 MIST
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
         `[LstStrategyDialog] withdraw - ${i} max |`,
         JSON.stringify(
@@ -1941,14 +1926,10 @@ export default function LstStrategyDialog({
     if (!obligation) throw Error("Obligation not found");
 
     // Prepare
-    const lstDepositedAmount =
-      obligation.deposits[0].depositedAmount.decimalPlaces(
-        LST_DECIMALS,
-        BigNumber.ROUND_DOWN,
-      );
-    const suiBorrowedAmount = (
-      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)
-    ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+    const lstDepositedAmount = new BigNumber(
+      getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
+    ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+    const suiBorrowedAmount = getBorrowedSuiAmount(obligation);
 
     console.log(
       `[LstStrategyDialog] adjust |`,
@@ -1994,11 +1975,19 @@ export default function LstStrategyDialog({
     try {
       let transaction = new Transaction();
 
-      // 1) Refresh pyth oracles (LST and SUI) - required when borrowing or withdrawing
-      await appData.suilendClient.refreshAll(transaction, undefined, [
-        lstReserve.coinType,
-        NORMALIZED_SUI_COINTYPE,
-      ]);
+      // 1) Refresh pyth oracles (LST, SUI, and any other deposits/borrows) - required when borrowing or withdrawing
+      await appData.suilendClient.refreshAll(
+        transaction,
+        undefined,
+        Array.from(
+          new Set([
+            lstReserve.coinType,
+            NORMALIZED_SUI_COINTYPE,
+            ...(obligation?.deposits.map((deposit) => deposit.coinType) ?? []),
+            ...(obligation?.borrows.map((borrow) => borrow.coinType) ?? []),
+          ]),
+        ),
+      );
 
       if (selectedTab === Tab.DEPOSIT) {
         const { strategyOwnerCapId, didCreate } =
@@ -2067,10 +2056,18 @@ export default function LstStrategyDialog({
           throw Error("StrategyOwnerCap or Obligation not found");
 
         // 2) Withdraw
+        const unloopPercent = new BigNumber(
+          new BigNumber(value).times(
+            isSui(reserve.coinType) ? 1 : lst.lstToSuiExchangeRate,
+          ),
+        )
+          .div(getTvlSuiAmount(obligation))
+          .times(100);
+
         transaction = !useMaxAmount
           ? await withdraw(
               strategyOwnerCap.id,
-              new BigNumber(value).div(tvlAmount).times(100),
+              unloopPercent,
               reserve.coinType,
               transaction,
             )
@@ -2231,7 +2228,7 @@ export default function LstStrategyDialog({
           <LstStrategyHeader strategyType={strategyType} />
 
           {hasClaimableRewards && (
-            <div className="flex h-10 flex-row items-center gap-2.5 rounded-sm border px-2">
+            <div className="flex h-10 flex-row items-center gap-2 rounded-sm border px-2">
               <Tooltip
                 content={
                   <div className="flex flex-col gap-1">
@@ -2271,20 +2268,14 @@ export default function LstStrategyDialog({
               </Tooltip>
 
               <Button
-                className="w-[92px] md:w-[159px]"
+                className="w-[92px]"
                 labelClassName="uppercase"
                 variant="secondary"
                 size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
-                {isCompoundingRewards ? (
-                  <Spinner size="sm" />
-                ) : md ? (
-                  "Compound rewards"
-                ) : (
-                  "Compound"
-                )}
+                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound"}
               </Button>
             </div>
           )}
@@ -2355,13 +2346,27 @@ export default function LstStrategyDialog({
                     <Download className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        tvlAmount.gt(0)
-                          ? `${formatToken(tvlAmount, { dp: reserve.token.decimals })} ${reserve.token.symbol}`
+                        !!obligation && hasPosition(obligation)
+                          ? `${formatToken(
+                              tvlSuiAmount.times(
+                                isSui(reserve.coinType)
+                                  ? 1
+                                  : lst.suiToLstExchangeRate,
+                              ),
+                              { dp: reserve.token.decimals },
+                            )} ${reserve.token.symbol}`
                           : undefined
                       }
                     >
                       <TBody className="text-xs">
-                        {formatToken(tvlAmount, { exact: false })}{" "}
+                        {formatToken(
+                          tvlSuiAmount.times(
+                            isSui(reserve.coinType)
+                              ? 1
+                              : lst.suiToLstExchangeRate,
+                          ),
+                          { exact: false },
+                        )}{" "}
                         {reserve.token.symbol}
                       </TBody>
                     </Tooltip>
@@ -2535,10 +2540,17 @@ export default function LstStrategyDialog({
                   <>
                     <LabelWithValue
                       label="Deposit fee"
-                      value={`${formatToken(depositFeesAmount, {
-                        dp: reserve.token.decimals,
-                        trimTrailingZeros: true,
-                      })} ${reserve.token.symbol}`}
+                      value={`${formatToken(
+                        depositFeesSuiAmount.times(
+                          isSui(reserve.coinType)
+                            ? 1
+                            : lst.suiToLstExchangeRate,
+                        ),
+                        {
+                          dp: reserve.token.decimals,
+                          trimTrailingZeros: true,
+                        },
+                      )} ${reserve.token.symbol}`}
                       horizontal
                     />
 
@@ -2551,10 +2563,15 @@ export default function LstStrategyDialog({
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
                     label="Withdraw fee"
-                    value={`${formatToken(withdrawFeesAmount, {
-                      dp: reserve.token.decimals,
-                      trimTrailingZeros: true,
-                    })} ${reserve.token.symbol}`}
+                    value={`${formatToken(
+                      withdrawFeesSuiAmount.times(
+                        isSui(reserve.coinType) ? 1 : lst.suiToLstExchangeRate,
+                      ),
+                      {
+                        dp: reserve.token.decimals,
+                        trimTrailingZeros: true,
+                      },
+                    )} ${reserve.token.symbol}`}
                     horizontal
                   />
                 ) : selectedTab === Tab.ADJUST ? (
