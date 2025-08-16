@@ -180,10 +180,7 @@ function Page() {
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          getLstReserve(strategyType as StrategyType).coinType,
-          appData.suilendClient.findReserveArrayIndex(
-            getLstReserve(strategyType as StrategyType).coinType,
-          ),
+          getLstReserve(strategyType as StrategyType),
           strategyOwnerCap.id,
           transaction,
         );

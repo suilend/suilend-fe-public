@@ -26,6 +26,7 @@ import {
   LENDING_MARKET_ID,
   LENDING_MARKET_TYPE,
 } from "../client";
+import { ParsedReserve } from "../parsers";
 
 import { RewardsMap, Side, StrategyOwnerCap } from "./types";
 
@@ -221,51 +222,24 @@ export const strategyCompoundRewards = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
-  targetCoinType: string,
-  targetReserveArrayIndex: bigint,
+  lstReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  const rewards: ClaimRewardsReward[] = Object.values(rewardsMap)
-    .flatMap((r) => r.rewards)
-    .map((r) => ({
-      reserveArrayIndex: Object.values(r.obligationClaims)[0].reserveArrayIndex,
-      rewardIndex: BigInt(r.stats.rewardIndex),
-      rewardCoinType: r.stats.rewardCoinType,
-      side: r.stats.side,
-    }));
-
-  // 1) Claim and merge coins
-  const mergeCoinsMap: Record<string, TransactionObjectArgument[]> = {};
-  for (const reward of rewards) {
-    const [claimedCoin] = strategyClaimRewards(
-      reward.rewardCoinType,
+  // 1) Claim rewards and merge coins
+  const mergedCoinsMap: Record<string, TransactionObjectArgument> =
+    strategyClaimRewardsAndMergeCoins(
+      rewardsMap,
       strategyOwnerCap,
-      reward.reserveArrayIndex,
-      reward.rewardIndex,
-      reward.side,
       transaction,
     );
 
-    if (mergeCoinsMap[reward.rewardCoinType] === undefined)
-      mergeCoinsMap[reward.rewardCoinType] = [];
-    mergeCoinsMap[reward.rewardCoinType].push(claimedCoin);
-  }
-
-  const mergedCoinsMap: Record<string, TransactionObjectArgument> = {};
-  for (const [rewardCoinType, coins] of Object.entries(mergeCoinsMap)) {
-    const mergedCoin = coins[0];
-    if (coins.length > 1) transaction.mergeCoins(mergedCoin, coins.slice(1));
-
-    mergedCoinsMap[rewardCoinType] = mergedCoin;
-  }
-
   // 2) Prepare
   const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType === targetCoinType,
+    (coinType) => coinType === lstReserve.coinType,
   );
   const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType !== targetCoinType,
+    (coinType) => coinType !== lstReserve.coinType,
   );
 
   let resultCoin: TransactionObjectArgument | undefined = undefined;
@@ -298,12 +272,13 @@ export const strategyCompoundRewards = async (
             // Get routes
             const routers = await cetusSdk.findRouters({
               from: coinType,
-              target: targetCoinType,
+              target: lstReserve.coinType,
               amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
               byAmountIn: true,
             });
-            if (!routers) throw new Error("No swap quote found");
-            console.log("[compoundRewards] routers", {
+            if (!routers)
+              throw new Error(`No swap quote found for ${coinType}`);
+            console.log("[strategyCompoundRewards] routers", {
               coinType,
               routers,
             });
@@ -313,7 +288,7 @@ export const strategyCompoundRewards = async (
         ),
     ),
   );
-  console.log("[compoundRewards] amountsAndSortedQuotesMap", {
+  console.log("[strategyCompoundRewards] amountsAndSortedQuotesMap", {
     amountsAndSortedQuotesMap,
   });
 
@@ -321,7 +296,7 @@ export const strategyCompoundRewards = async (
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
-    console.log("[compoundRewards] swapping coinType", coinType);
+    console.log("[strategyCompoundRewards] swapping coinType", coinType);
     const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
@@ -334,7 +309,7 @@ export const strategyCompoundRewards = async (
         partner: cetusPartnerId,
       });
     } catch (err) {
-      throw new Error("No swap quote found");
+      throw new Error(`No swap quote found for ${coinType}`);
     }
 
     if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
@@ -345,9 +320,9 @@ export const strategyCompoundRewards = async (
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
   strategyDeposit(
     resultCoin,
-    targetCoinType,
+    lstReserve.coinType,
     strategyOwnerCap,
-    targetReserveArrayIndex,
+    lstReserve.arrayIndex,
     transaction,
   );
 };

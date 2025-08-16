@@ -288,8 +288,7 @@ export default function LstStrategyDialog({
         cetusSdk,
         CETUS_PARTNER_ID,
         rewardsMap,
-        lstReserve.coinType,
-        appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
+        lstReserve,
         strategyOwnerCap.id,
         transaction,
       );
@@ -1487,7 +1486,6 @@ export default function LstStrategyDialog({
         strategyOwnerCapId,
         appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
-          BigNumber.min(
             new BigNumber(
               stepLstWithdrawnAmount
                 .times(10 ** LST_DECIMALS)
@@ -1495,9 +1493,8 @@ export default function LstStrategyDialog({
                 .toString(),
             )
               .div(lstReserve.cTokenExchangeRate)
-              .integerValue(BigNumber.ROUND_UP),
-            obligation.deposits[0].depositedCtokenAmount,
-          ).toString(),
+            .integerValue(BigNumber.ROUND_UP)
+            .toString(),
         ),
         transaction,
       );
@@ -1585,13 +1582,7 @@ export default function LstStrategyDialog({
         : new BigNumber(0);
     const targetExposure =
       !!obligation && hasPosition(obligation)
-        ? getExposure(
-            getSimulatedObligation(
-              strategyType,
-              obligation.deposits[0].depositedAmount,
-              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0),
-            ),
-          )
+        ? getExposure(obligation)
         : new BigNumber(depositSliderValue);
 
     console.log(
@@ -1790,7 +1781,6 @@ export default function LstStrategyDialog({
         strategyOwnerCapId,
         appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         BigInt(
-          BigNumber.min(
             new BigNumber(
               stepLstWithdrawnAmount
                 .times(10 ** LST_DECIMALS)
@@ -1798,9 +1788,8 @@ export default function LstStrategyDialog({
                 .toString(),
             )
               .div(lstReserve.cTokenExchangeRate)
-              .integerValue(BigNumber.ROUND_UP),
-            obligation.deposits[0].depositedCtokenAmount,
-          ).toString(),
+            .integerValue(BigNumber.ROUND_UP)
+            .toString(),
         ),
         transaction,
       );
