@@ -29,6 +29,7 @@ import {
   strategyClaimRewardsAndSendToUser,
   strategyCompoundRewards,
   strategyDeposit,
+  strategySwapNonLstDepositsForLst,
   strategyWithdraw,
 } from "@suilend/sdk/lib/strategyOwnerCap";
 import {
@@ -1989,6 +1990,17 @@ export default function LstStrategyDialog({
         ),
       );
 
+      // 2) Swap non-LST autoclaimed+deposited rewards (if any) for LST
+      if (!!strategyOwnerCap && !!obligation)
+        await strategySwapNonLstDepositsForLst(
+          cetusSdk,
+          CETUS_PARTNER_ID,
+          obligation,
+          lstReserve,
+          strategyOwnerCap.id,
+          transaction,
+        );
+
       if (selectedTab === Tab.DEPOSIT) {
         const { strategyOwnerCapId, didCreate } =
           createStrategyOwnerCapIfNoneExists(
@@ -1997,7 +2009,7 @@ export default function LstStrategyDialog({
             transaction,
           );
 
-        // 2) Deposit
+        // 3) Deposit
         transaction = await deposit(
           strategyOwnerCapId,
           transaction,
@@ -2005,7 +2017,7 @@ export default function LstStrategyDialog({
           reserve.coinType,
         );
 
-        // 3) Rebalance LST
+        // 4) Rebalance LST
         lst.client.rebalance(
           transaction,
           lst.client.liquidStakingObject.weightHookId,
@@ -2055,7 +2067,7 @@ export default function LstStrategyDialog({
         if (!strategyOwnerCap || !obligation)
           throw Error("StrategyOwnerCap or Obligation not found");
 
-        // 2) Withdraw
+        // 3) Withdraw
         const unloopPercent = new BigNumber(
           new BigNumber(value).times(
             isSui(reserve.coinType) ? 1 : lst.lstToSuiExchangeRate,
@@ -2077,7 +2089,7 @@ export default function LstStrategyDialog({
               transaction,
             );
 
-        // 3) Rebalance LST
+        // 4) Rebalance LST
         lst.client.rebalance(
           transaction,
           lst.client.liquidStakingObject.weightHookId,
@@ -2121,14 +2133,14 @@ export default function LstStrategyDialog({
         if (!strategyOwnerCap || !obligation)
           throw Error("StrategyOwnerCap or Obligation not found");
 
-        // 2) Adjust
+        // 3) Adjust
         await adjust(
           strategyOwnerCap.id,
           new BigNumber(adjustSliderValue),
           transaction,
         );
 
-        // 3) Rebalance LST
+        // 4) Rebalance LST
         lst.client.rebalance(
           transaction,
           lst.client.liquidStakingObject.weightHookId,

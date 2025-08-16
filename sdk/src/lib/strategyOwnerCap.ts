@@ -16,6 +16,7 @@ import { BigNumber } from "bignumber.js";
 import BN from "bn.js";
 
 import {
+  MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_stratSUI_COINTYPE,
@@ -27,7 +28,7 @@ import {
   LENDING_MARKET_ID,
   LENDING_MARKET_TYPE,
 } from "../client";
-import { ParsedReserve } from "../parsers";
+import { ParsedObligation, ParsedReserve } from "../parsers";
 
 import { RewardsMap, Side, StrategyOwnerCap } from "./types";
 
@@ -319,6 +320,125 @@ export const strategyCompoundRewards = async (
 
   // 4) Deposit
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
+  strategyDeposit(
+    resultCoin,
+    lstReserve.coinType,
+    strategyOwnerCap,
+    lstReserve.arrayIndex,
+    transaction,
+  );
+};
+
+export const strategySwapNonLstDepositsForLst = async (
+  cetusSdk: CetusSdk,
+  cetusPartnerId: string,
+  obligation: ParsedObligation,
+  lstReserve: ParsedReserve,
+  strategyOwnerCap: TransactionObjectInput,
+  transaction: Transaction,
+) => {
+  // 1) MAX Withdraw non-LST deposits
+  const nonLstDeposits = obligation.deposits.filter(
+    (deposit) => deposit.coinType !== lstReserve.coinType,
+  );
+  if (nonLstDeposits.length === 0) return;
+
+  const withdrawnCoinsMap: Record<
+    string,
+    {
+      deposit: ParsedObligation["deposits"][number];
+      coin: TransactionObjectArgument;
+    }
+  > = {};
+
+  for (const deposit of nonLstDeposits) {
+    const [withdrawnCoin] = strategyWithdraw(
+      deposit.coinType,
+      strategyOwnerCap,
+      deposit.reserve.arrayIndex,
+      BigInt(MAX_U64.toString()),
+      transaction,
+    );
+
+    withdrawnCoinsMap[deposit.coinType] = {
+      deposit,
+      coin: withdrawnCoin,
+    };
+  }
+
+  // 2) Swap
+  let resultCoin: TransactionObjectArgument | undefined = undefined;
+
+  // 2.1) Get routers
+  const amountsAndSortedQuotesMap: Record<
+    string,
+    {
+      coin: TransactionObjectArgument;
+      routers: CetusRouterData;
+    }
+  > = Object.fromEntries(
+    await Promise.all(
+      Object.entries(withdrawnCoinsMap).map(([coinType, { deposit, coin }]) =>
+        (async () => {
+          // Get amount
+          const amount = deposit.depositedAmount
+            .times(10 ** deposit.reserve.token.decimals)
+            .integerValue(BigNumber.ROUND_DOWN); // Use underestimate (deposits keep accruing if deposit APR >0)
+
+          // Get routes
+          const routers = await cetusSdk.findRouters({
+            from: deposit.coinType,
+            target: lstReserve.coinType,
+            amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
+            byAmountIn: true,
+          });
+          if (!routers)
+            throw new Error(`No swap quote found for ${deposit.coinType}`);
+          console.log("[strategySwapNonLstDepositsForLst] routers", {
+            coinType: deposit.coinType,
+            routers,
+          });
+
+          return [deposit.coinType, { coin, routers }];
+        })(),
+      ),
+    ),
+  );
+  console.log("[strategySwapNonLstDepositsForLst] amountsAndSortedQuotesMap", {
+    amountsAndSortedQuotesMap,
+  });
+
+  // 2.2) Swap
+  for (const [coinType, { coin: coinIn, routers }] of Object.entries(
+    amountsAndSortedQuotesMap,
+  )) {
+    console.log(
+      "[strategySwapNonLstDepositsForLst] swapping coinType",
+      coinType,
+    );
+    const slippagePercent = 3;
+
+    let coinOut: TransactionObjectArgument;
+    try {
+      coinOut = await cetusSdk.fixableRouterSwap({
+        routers,
+        inputCoin: coinIn,
+        slippage: slippagePercent / 100,
+        txb: transaction,
+        partner: cetusPartnerId,
+      });
+    } catch (err) {
+      throw new Error(`No swap quote found for ${coinType}`);
+    }
+
+    if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
+    else resultCoin = coinOut;
+  }
+
+  // 3) Deposit
+  if (!resultCoin) throw new Error("No coin to deposit or transfer");
+
+  console.log("[strategySwapNonLstDepositsForLst] depositing resultCoin");
   strategyDeposit(
     resultCoin,
     lstReserve.coinType,

@@ -300,14 +300,14 @@ function Page() {
               </Tooltip>
 
               <Button
-                className="w-[92px]"
+                className="w-[125px]"
                 labelClassName="uppercase"
                 variant="secondary"
                 size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
-                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound"}
+                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound all"}
               </Button>
             </div>
           )}
