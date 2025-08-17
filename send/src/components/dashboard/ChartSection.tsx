@@ -1,6 +1,13 @@
 import { useState } from "react";
 
+import { Plus, X } from "lucide-react";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -31,156 +38,276 @@ const ChartSection = () => {
     setEnabledMetrics((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const toggleRevenue = () => {
+    const allRevenueEnabled =
+      enabledMetrics.suilendRevenue &&
+      enabledMetrics.steammRevenue &&
+      enabledMetrics.springsuiRevenue;
+
+    setEnabledMetrics((prev) => ({
+      ...prev,
+      suilendRevenue: !allRevenueEnabled,
+      steammRevenue: !allRevenueEnabled,
+      springsuiRevenue: !allRevenueEnabled,
+    }));
+  };
+
+  const getActivePills = () => {
+    const pills = [];
+
+    // Individual revenue source pills (never a combined "Revenue" pill)
+    if (enabledMetrics.suilendRevenue) {
+      pills.push({
+        key: "suilendRevenue",
+        label: "Suilend",
+        color: "hsl(var(--primary))",
+      });
+    }
+    if (enabledMetrics.steammRevenue) {
+      pills.push({
+        key: "steammRevenue",
+        label: "Steamm",
+        color: "hsl(var(--secondary))",
+      });
+    }
+    if (enabledMetrics.springsuiRevenue) {
+      pills.push({
+        key: "springsuiRevenue",
+        label: "SpringSUI",
+        color: "#6DA8FF",
+      });
+    }
+
+    if (enabledMetrics.buybacks) {
+      // Pink to match design
+      pills.push({ key: "buybacks", label: "Buyback", color: "#F08BD9" });
+    }
+    if (enabledMetrics.price) {
+      pills.push({
+        key: "price",
+        label: "Price",
+        color: "hsl(var(--muted-foreground))",
+      });
+    }
+    return pills;
+  };
+
+  const removePill = (key: string) => {
+    toggleMetric(key as keyof typeof enabledMetrics);
+  };
+
+  function Controls({ className }: { className?: string }) {
+    return (
+      <div className={`items-center gap-2 lg:gap-4 ${className}`}>
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="cumulative"
+            className="text-sm font-sans text-muted-foreground max-lg:text-xs"
+          >
+            Cumulative
+          </label>
+          <button
+            id="cumulative"
+            onClick={() => setIsCumulative(!isCumulative)}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              isCumulative ? "bg-primary" : "bg-gray-600"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                isCumulative ? "translate-x-4" : "translate-x-0.5"
+              }`}
+            />
+          </button>
+        </div>
+
+        <Select
+          value={selectedTimeframe}
+          onValueChange={(v) => setSelectedTimeframe(v as Period)}
+        >
+          <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm font-mono bg-background w-auto">
+            {(() => {
+              const labelMap: Record<Period, string> = {
+                "1d": "1D",
+                "7d": "7D",
+                "30d": "30D",
+                "90d": "90D",
+                "1y": "1Y",
+                all: "All time",
+              };
+              return labelMap[selectedTimeframe];
+            })()}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1d">1D</SelectItem>
+            <SelectItem value="7d">7D</SelectItem>
+            <SelectItem value="30d">30D</SelectItem>
+            <SelectItem value="90d">90D</SelectItem>
+            <SelectItem value="1y">1Y</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-start md:justify-between">
-          {/* Left cluster: timeframe + cumulative */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Select
-                value={selectedTimeframe}
-                onValueChange={(v) => setSelectedTimeframe(v as Period)}
-              >
-                <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm bg-background">
-                  {(() => {
-                    const labelMap: Record<Period, string> = {
-                      "1d": "1D",
-                      "7d": "7D",
-                      "30d": "30D",
-                      "90d": "90D",
-                      ytd: "1Y",
-                      alltime: "All time",
-                    };
-                    return labelMap[selectedTimeframe];
-                  })()}
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1d">1D</SelectItem>
-                  <SelectItem value="7d">7D</SelectItem>
-                  <SelectItem value="30d">30D</SelectItem>
-                  <SelectItem value="90d">90D</SelectItem>
-                  <SelectItem value="ytd">1Y</SelectItem>
-                  <SelectItem value="alltime">All time</SelectItem>
-                </SelectContent>
-              </Select>
+    <>
+      <span className="text-lg font-mono">BUYBACK</span>
+      <Card className="max-lg:pb-0">
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            {/* Left side: Metric dropdown + pills */}
+            <div className="flex items-center gap-2 justify-between">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 px-3 py-2 text-sm font-sans bg-background border border-border rounded-md hover:bg-muted transition-colors">
+                    Metric
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56 p-0">
+                  <div className="p-1">
+                    <div
+                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      onClick={() => toggleMetric("buybacks")}
+                    >
+                      <Checkbox
+                        checked={enabledMetrics.buybacks}
+                        className="mr-2"
+                      />
+                      Buyback
+                    </div>
+
+                    <div className="h-px bg-border my-1" />
+
+                    <div
+                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      onClick={toggleRevenue}
+                    >
+                      <Checkbox
+                        checked={
+                          enabledMetrics.suilendRevenue &&
+                          enabledMetrics.steammRevenue &&
+                          enabledMetrics.springsuiRevenue
+                        }
+                        className="mr-2"
+                      />
+                      Revenue
+                    </div>
+
+                    <div className="pl-6">
+                      <div
+                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        onClick={() => toggleMetric("suilendRevenue")}
+                      >
+                        <Checkbox
+                          checked={enabledMetrics.suilendRevenue}
+                          className="mr-2"
+                        />
+                        Suilend
+                      </div>
+                      <div
+                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        onClick={() => toggleMetric("steammRevenue")}
+                      >
+                        <Checkbox
+                          checked={enabledMetrics.steammRevenue}
+                          className="mr-2"
+                        />
+                        Steamm
+                      </div>
+                      <div
+                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        onClick={() => toggleMetric("springsuiRevenue")}
+                      >
+                        <Checkbox
+                          checked={enabledMetrics.springsuiRevenue}
+                          className="mr-2"
+                        />
+                        SpringSUI
+                      </div>
+                    </div>
+
+                    <div className="h-px bg-border my-1" />
+
+                    <div
+                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      onClick={() => toggleMetric("price")}
+                    >
+                      <Checkbox
+                        checked={enabledMetrics.price}
+                        className="mr-2"
+                      />
+                      Price
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <div className="w-px h-[38px] bg-border mx-2 hidden lg:block"></div>
+
+              <Controls className="lg:hidden flex" />
+              <div className="hidden lg:flex gap-2 items-center flex-1">
+                {/* Active metric pills */}
+                {getActivePills().map((pill) => (
+                  <div
+                    key={pill.key}
+                    className="flex items-center gap-2 px-3 py-1 bg-background rounded-full text-sm font-sans"
+                    style={{ border: `1px solid ${pill.color}` }}
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: pill.color }}
+                    />
+                    <span>{pill.label}</span>
+                    <button
+                      onClick={() => removePill(pill.key)}
+                      className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <Checkbox
-                id="cumulative"
-                checked={isCumulative}
-                onCheckedChange={(v) => setIsCumulative(Boolean(v))}
-              />
-              <label
-                htmlFor="cumulative"
-                className="text-sm font-sans text-muted-foreground cursor-pointer"
-              >
-                Cumulative
-              </label>
+            {/* Right side: Cumulative toggle + timeframe */}
+            <Controls className="lg:flex hidden" />
+
+            <div className="flex items-center gap-2 lg:hidden flex-1 flex-wrap">
+              {/* Active metric pills */}
+              {getActivePills().map((pill) => (
+                <div
+                  key={pill.key}
+                  className="flex items-center gap-2 px-3 py-1 bg-background rounded-full text-sm font-sans"
+                  style={{ border: `1px solid ${pill.color}` }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: pill.color }}
+                  />
+                  <span>{pill.label}</span>
+                  <button
+                    onClick={() => removePill(pill.key)}
+                    className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 justify-center items-center">
-        <RevenueChart
-          timeframe={selectedTimeframe}
-          isCumulative={isCumulative}
-          enabledMetrics={enabledMetrics}
-        />
-
-        {/* Horizontal legend below chart */}
-        <div className="mt-4 w-full flex flex-wrap items-center border border-border p-4 rounded-md gap-4 bg-[#081126]">
-          {/* Revenue group */}
-          <div className="flex flex-col gap-2 lg:flex-1 justify-center items-center">
-            <p className="text-xs text-muted-foreground">Revenue</p>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <button
-                  aria-label="Toggle Suilend Revenue"
-                  onClick={() => toggleMetric("suilendRevenue")}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    backgroundColor: enabledMetrics.suilendRevenue
-                      ? "hsl(var(--primary))"
-                      : "transparent",
-                    border: `2px solid hsl(var(--primary))`,
-                  }}
-                />
-                <span className="text-sm">Suilend</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <button
-                  aria-label="Toggle STEAMM Revenue"
-                  onClick={() => toggleMetric("steammRevenue")}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    backgroundColor: enabledMetrics.steammRevenue
-                      ? "hsl(var(--secondary))"
-                      : "transparent",
-                    border: `2px solid hsl(var(--secondary))`,
-                  }}
-                />
-                <span className="text-sm">STEAMM</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <button
-                  aria-label="Toggle SpringSUI Revenue"
-                  onClick={() => toggleMetric("springsuiRevenue")}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    backgroundColor: enabledMetrics.springsuiRevenue
-                      ? "#6DA8FF"
-                      : "transparent",
-                    border: `2px solid #6DA8FF`,
-                  }}
-                />
-                <span className="text-sm">SpringSUI</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="hidden md:block h-8 w-px bg-border" />
-
-          {/* Buybacks */}
-          <div className="flex flex-col gap-2 lg:flex-1 justify-center items-center">
-            <p className="text-xs text-muted-foreground">Metrics</p>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <button
-                  aria-label="Toggle Buybacks"
-                  onClick={() => toggleMetric("buybacks")}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    backgroundColor: enabledMetrics.buybacks
-                      ? "#ffffff"
-                      : "transparent",
-                    border: `2px solid #ffffff`,
-                    opacity: enabledMetrics.buybacks ? 1 : 0.8,
-                  }}
-                />
-                <span className="text-sm">Buybacks</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <button
-                  aria-label="Toggle Price"
-                  onClick={() => toggleMetric("price")}
-                  className="w-3.5 h-3.5 rounded-[3px]"
-                  style={{
-                    backgroundColor: enabledMetrics.price
-                      ? "hsl(var(--muted-foreground))"
-                      : "transparent",
-                    border: `2px solid hsl(var(--muted-foreground))`,
-                  }}
-                />
-                <span className="text-sm">Price</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2 justify-center items-center max-lg:pb-0">
+          <RevenueChart
+            timeframe={selectedTimeframe}
+            isCumulative={isCumulative}
+            enabledMetrics={enabledMetrics}
+          />
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

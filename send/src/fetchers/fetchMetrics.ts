@@ -11,7 +11,7 @@ export type Metrics = {
 export function getMetrics() {
   const fetcher = async (): Promise<Metrics | undefined> => {
     try {
-      const url = `https://global.suilend.fi/buybacks/metrics`;
+      const url = `https://global.suilend.fi/send/metrics`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();

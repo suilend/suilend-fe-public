@@ -19,8 +19,7 @@ export function getTransactions(limit = 50, cursor?: string) {
       const qs = new URLSearchParams();
       qs.set("limit", String(limit));
       if (cursor) qs.set("cursor", cursor);
-      console.log(qs.toString());
-      const url = `https://global.suilend.fi/buybacks/transactions?${qs}`;
+      const url = `https://global.suilend.fi/send/swaps?${qs}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: {

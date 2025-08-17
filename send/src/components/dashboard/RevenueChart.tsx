@@ -5,7 +5,6 @@ import * as Recharts from "recharts";
 import {
   BuybacksPoint,
   Period,
-  PricePoint,
   RevenuePoint,
   getBuybacksChart,
   getPriceChart,
@@ -41,9 +40,7 @@ const COLOR_SUILEND = "hsl(var(--primary))";
 const COLOR_STEAMM = "hsl(var(--secondary))";
 const COLOR_SPRINGSUI = "#6DA8FF";
 const COLOR_PRICE_LINE = "hsl(var(--muted-foreground))";
-const COLOR_BUYBACKS = "#ffffff"; // white for better distinction
-
-//
+const COLOR_BUYBACKS = "#F08BD9"; // pink shade to match design
 
 function formatLabel(ts: number) {
   const d = new Date(ts);
@@ -85,7 +82,46 @@ function formatWeekLabel(ts: number): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
-function useProcessedData(period: Period, isCumulative: boolean) {
+function formatHourLabel(ts: number): string {
+  const d = new Date(ts);
+  const hours = d.getUTCHours();
+  const minutes = d.getUTCMinutes();
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  // No leading zero for hours; always 2-digit minutes
+  return `${hours}:${pad2(minutes)}`;
+}
+
+function startOfDayUtc(ts: number): number {
+  const d = new Date(ts);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function startOf4HourUtc(ts: number): number {
+  const date = new Date(ts);
+  const floorHour = Math.floor(date.getUTCHours() / 4) * 4;
+  return Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    floorHour,
+    0,
+    0,
+    0,
+  );
+}
+
+function format4HourLabel(ts: number): string {
+  const start = new Date(ts);
+  const end = new Date(ts + 4 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(start.getUTCHours())}–${pad(end.getUTCHours())}h`;
+}
+
+function useProcessedData(
+  period: Period,
+  isCumulative: boolean,
+  isSmall: boolean,
+) {
   const {
     data: revenueData,
     isLoading: loadingRev,
@@ -106,177 +142,146 @@ function useProcessedData(period: Period, isCumulative: boolean) {
   const anyError = errorRev || errorBuy || errorPrice;
 
   const raw: RawPoint[] = useMemo(() => {
-    // Choose a canonical x-axis timeline to avoid blank regions.
-    // Prefer price (densest/most regular), otherwise revenue, then buybacks.
-    let timestamps: number[] = [];
-    if (priceData && priceData.length > 0) {
-      timestamps = Array.from(new Set(priceData.map((p) => p.timestamp))).sort(
-        (a, b) => a - b,
-      );
-    } else if (revenueData && revenueData.length > 0) {
-      timestamps = Array.from(
-        new Set(revenueData.map((p) => p.timestamp)),
-      ).sort((a, b) => a - b);
-    } else if (buybacksData && buybacksData.length > 0) {
-      timestamps = Array.from(
-        new Set(buybacksData.map((p) => p.timestamp)),
-      ).sort((a, b) => a - b);
-    }
+    // Build the union of timestamps from all series without any tolerance
+    const tsSet = new Set<number>();
+    (revenueData ?? []).forEach((p) => tsSet.add(p.timestamp));
+    (buybacksData ?? []).forEach((p) => tsSet.add(p.timestamp));
+    (priceData ?? []).forEach((p) => tsSet.add(p.timestamp));
+    const timestamps = Array.from(tsSet).sort((a, b) => a - b);
 
-    const revenueByTs = new Map<number, RevenuePoint>();
-    (revenueData ?? []).forEach((p) => revenueByTs.set(p.timestamp, p));
-    const buybacksByTs = new Map<number, BuybacksPoint>();
-    (buybacksData ?? []).forEach((p) => buybacksByTs.set(p.timestamp, p));
-    const priceByTs = new Map<number, PricePoint>();
-    (priceData ?? []).forEach((p) => priceByTs.set(p.timestamp, p));
-
-    const revKeys = Array.from(revenueByTs.keys()).sort((a, b) => a - b);
-    const buyKeys = Array.from(buybacksByTs.keys()).sort((a, b) => a - b);
-
-    // Estimate step from canonical timestamps to set a matching tolerance
-    const diffs: number[] = [];
-    for (let i = 1; i < timestamps.length; i++)
-      diffs.push(timestamps[i] - timestamps[i - 1]);
-    const stepMs =
-      diffs.length > 0
-        ? diffs.sort((a, b) => a - b)[Math.floor(diffs.length / 2)]
-        : 24 * 60 * 60 * 1000;
-    const tolerance = Math.max(stepMs / 2, 6 * 60 * 60 * 1000); // at least 6h
-
-    let revIdx = 0;
-    let buyIdx = 0;
-
-    function nearestValue<T extends { timestamp: number }>(
-      keys: number[],
-      map: Map<number, T>,
-      idxRef: { i: number },
-      ts: number,
-    ): T | undefined {
-      if (keys.length === 0) return undefined;
-      // advance pointer while next key is <= ts
-      while (idxRef.i + 1 < keys.length && keys[idxRef.i + 1] <= ts) idxRef.i++;
-      const prevKey = keys[idxRef.i];
-      const nextKey =
-        idxRef.i + 1 < keys.length ? keys[idxRef.i + 1] : undefined;
-      let bestKey = prevKey;
-      if (
-        nextKey !== undefined &&
-        Math.abs(nextKey - ts) < Math.abs(prevKey - ts)
-      )
-        bestKey = nextKey;
-      if (Math.abs(bestKey - ts) <= tolerance) return map.get(bestKey);
-      return undefined;
-    }
-
-    // Build price array aligned to the canonical timeline with forward-fill/backfill
-    const prices: Array<number | undefined> = timestamps.map(
-      (ts) => priceByTs.get(ts)?.price,
+    const revenueByTs = new Map<number, RevenuePoint>(
+      (revenueData ?? []).map((p) => [p.timestamp, p]),
     );
-    // forward-fill
-    let last: number | undefined = undefined;
-    for (let i = 0; i < prices.length; i++) {
-      if (prices[i] === undefined) {
-        prices[i] = last;
-      } else {
-        last = prices[i];
-      }
-    }
-    // backfill for leading undefineds
-    let firstDefined: number | undefined = undefined;
-    for (let i = 0; i < prices.length; i++) {
-      if (prices[i] !== undefined) {
-        firstDefined = prices[i];
-        break;
-      }
-    }
-    if (firstDefined !== undefined) {
-      for (let i = 0; i < prices.length; i++) {
-        if (prices[i] === undefined) prices[i] = firstDefined;
-        else break;
-      }
-    }
+    const buybacksByTs = new Map<number, BuybacksPoint>(
+      (buybacksData ?? []).map((p) => [p.timestamp, p]),
+    );
+    // Price only has one datapoint per day. Index by start-of-day and carry forward daily value.
+    const priceByDay = new Map<number, number>(
+      (priceData ?? []).map((p) => [startOfDayUtc(p.timestamp), p.price]),
+    );
+    const dayKeys = Array.from(priceByDay.keys()).sort((a, b) => a - b);
+    let priceIdx = 0;
 
-    const points: RawPoint[] = timestamps.map((ts, idx) => {
-      const rev = nearestValue(revKeys, revenueByTs, { i: revIdx }, ts);
-      revIdx = Math.min(revKeys.length - 1, revIdx);
-      const buy = nearestValue(buyKeys, buybacksByTs, { i: buyIdx }, ts);
-      buyIdx = Math.min(buyKeys.length - 1, buyIdx);
-      const suilendRevenue = rev ? rev.suilendRevenue : 0;
-      const steammRevenue = rev ? rev.steammRevenue : 0;
-      const buybacks = buy ? buy.usdValue : 0;
-      const price = prices[idx] ?? 0;
+    return timestamps.map((ts) => {
+      const rev = revenueByTs.get(ts);
+      const buy = buybacksByTs.get(ts);
+      // Resolve daily price for the timestamp by carrying forward the last known day value
+      let price = 0;
+      if (dayKeys.length > 0) {
+        const dayTs = startOfDayUtc(ts);
+        while (
+          priceIdx + 1 < dayKeys.length &&
+          dayKeys[priceIdx + 1] <= dayTs
+        ) {
+          priceIdx += 1;
+        }
+        const key = dayKeys[priceIdx] <= dayTs ? dayKeys[priceIdx] : undefined;
+        price = key !== undefined ? priceByDay.get(key)! : 0;
+      }
       return {
         timestamp: ts,
-        label: formatLabel(ts),
-        suilendRevenue,
-        steammRevenue,
-        buybacks,
+        label: period === "1d" ? formatHourLabel(ts) : formatLabel(ts),
+        suilendRevenue: rev?.suilendRevenue ?? 0,
+        steammRevenue: rev?.steammRevenue ?? 0,
+        buybacks: buy?.usdValue ?? 0,
         price,
       };
     });
-    return points;
-  }, [revenueData, buybacksData, priceData]);
+  }, [revenueData, buybacksData, priceData, period]);
 
-  // Optionally bucket raw points by week/month depending on period
+  // Bucketing rules vary for mobile vs desktop
   const bucketedRaw: RawPoint[] = useMemo(() => {
-    if (period === "90d") {
-      const byBucket = new Map<number, RawPoint>();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const aggregate = (
+      getBucketKey: (ts: number) => number,
+      makeLabel: (bucket: number) => string,
+    ) => {
+      const map = new Map<
+        number,
+        {
+          ts: number;
+          label: string;
+          r1: number;
+          r2: number;
+          b: number;
+          pSum: number;
+          pCount: number;
+        }
+      >();
       for (const pt of raw) {
-        const bucket = startOfWeekUtc(pt.timestamp);
-        const existing = byBucket.get(bucket);
-        if (!existing) {
-          byBucket.set(bucket, {
-            timestamp: bucket,
-            label: formatWeekLabel(bucket),
-            suilendRevenue: pt.suilendRevenue,
-            steammRevenue: pt.steammRevenue,
-            buybacks: pt.buybacks,
-            price: pt.price,
+        const bucket = getBucketKey(pt.timestamp);
+        const cur = map.get(bucket);
+        if (!cur) {
+          map.set(bucket, {
+            ts: bucket,
+            label: makeLabel(bucket),
+            r1: pt.suilendRevenue,
+            r2: pt.steammRevenue,
+            b: pt.buybacks,
+            pSum: pt.price,
+            pCount: 1,
           });
         } else {
-          existing.suilendRevenue += pt.suilendRevenue;
-          existing.steammRevenue += pt.steammRevenue;
-          existing.buybacks += pt.buybacks;
-          // average price within bucket
-          existing.price = (existing.price + pt.price) / 2;
+          cur.r1 += pt.suilendRevenue;
+          cur.r2 += pt.steammRevenue;
+          cur.b += pt.buybacks;
+          cur.pSum += pt.price;
+          cur.pCount += 1;
         }
       }
-      return Array.from(byBucket.values()).sort(
-        (a, b) => a.timestamp - b.timestamp,
-      );
-    }
-    if (period === "ytd" || period === "alltime") {
-      const byBucket = new Map<number, { sum: RawPoint; count: number }>();
-      for (const pt of raw) {
-        const bucket = startOfMonthUtc(pt.timestamp);
-        const existing = byBucket.get(bucket);
-        if (!existing) {
-          byBucket.set(bucket, {
-            sum: {
-              timestamp: bucket,
-              label: formatMonthLabel(bucket),
-              suilendRevenue: pt.suilendRevenue,
-              steammRevenue: pt.steammRevenue,
-              buybacks: pt.buybacks,
-              price: pt.price,
-            },
-            count: 1,
-          });
-        } else {
-          existing.sum.suilendRevenue += pt.suilendRevenue;
-          existing.sum.steammRevenue += pt.steammRevenue;
-          existing.sum.buybacks += pt.buybacks;
-          existing.sum.price += pt.price;
-          existing.count += 1;
-        }
-      }
-      const arr = Array.from(byBucket.values())
-        .map(({ sum, count }) => ({ ...sum, price: sum.price / count }))
+      return Array.from(map.values())
+        .map((v) => ({
+          timestamp: v.ts,
+          label: v.label,
+          suilendRevenue: v.r1,
+          steammRevenue: v.r2,
+          buybacks: v.b,
+          price: v.pSum / Math.max(1, v.pCount),
+        }))
         .sort((a, b) => a.timestamp - b.timestamp);
-      return arr;
+    };
+
+    if (isSmall) {
+      // Mobile bucketing
+      if (period === "1d") return aggregate(startOf4HourUtc, format4HourLabel);
+      if (period === "7d")
+        return aggregate(startOfDayUtc, (b) => formatWeekLabel(b));
+      if (period === "30d")
+        return aggregate(startOfWeekUtc, (b) => formatWeekLabel(b));
+      if (period === "90d") {
+        const get15Day = (ts: number) => {
+          const d0 = startOfDayUtc(ts);
+          const idx = Math.floor(d0 / dayMs);
+          const base = Math.floor(idx / 15) * 15;
+          return base * dayMs;
+        };
+        return aggregate(get15Day, (b) => formatWeekLabel(b));
+      }
+      if (period === "1y" || period === "all") {
+        const twoMonth = (ts: number) => {
+          const d = new Date(ts);
+          const mi = d.getUTCFullYear() * 12 + d.getUTCMonth();
+          const bucketM = Math.floor(mi / 2) * 2;
+          const y = Math.floor(bucketM / 12);
+          const m = bucketM % 12;
+          return Date.UTC(y, m, 1);
+        };
+        return aggregate(twoMonth, (b) => formatMonthLabel(b));
+      }
+      return raw;
     }
+
+    // Desktop bucketing
+    if (period === "30d" || period === "90d") {
+      return aggregate(startOfWeekUtc, (b) => formatWeekLabel(b));
+    }
+    if (period === "1y" || period === "all") {
+      return aggregate(startOfMonthUtc, (b) => formatMonthLabel(b));
+    }
+    // 1d and 7d: show raw
     return raw;
-  }, [raw, period]);
+  }, [raw, period, isSmall]);
 
   const processed = useMemo(() => {
     if (raw.length === 0)
@@ -337,12 +342,17 @@ const RevenueChart = ({
   const margin = useMemo(
     () =>
       isSmall
-        ? { top: 6, right: 8, left: 12, bottom: 16 }
-        : { top: 10, right: 12, left: 14, bottom: 20 },
+        ? { top: 4, right: 6, left: 6, bottom: 6 }
+        : { top: 10, right: 14, left: 14, bottom: 20 },
     [isSmall],
   );
+  const yAxisWidth = isSmall ? 44 : 56; // fixed widths so the plot stays centered
 
-  const { processed: data } = useProcessedData(timeframe, isCumulative);
+  const { processed: data } = useProcessedData(
+    timeframe,
+    isCumulative,
+    isSmall,
+  );
 
   const maxYRight = useMemo(() => {
     if (!enabledMetrics.price) return 1;
@@ -368,20 +378,44 @@ const RevenueChart = ({
   );
 
   const xTicks = useMemo(() => {
-    const maxLabels =
-      timeframe === "30d"
-        ? isSmall
-          ? 6
-          : 10
-        : timeframe === "7d"
-          ? isSmall
-            ? 5
-            : 7
-          : 12;
-    const step = Math.max(1, Math.floor(chartData.length / maxLabels));
-    return chartData
-      .filter((_, i) => i % step === 0 || i === chartData.length - 1)
-      .map((d) => d.index);
+    if (chartData.length === 0) return [] as number[];
+    // Prefer cadence-based ticks to avoid adjacent duplicates
+    const firstTs = chartData[0].timestamp;
+    const lastTs = chartData[chartData.length - 1].timestamp;
+    const hour = 60 * 60 * 1000;
+    const day = 24 * hour;
+
+    let cadence = hour; // default hourly
+    if (timeframe === "1d")
+      cadence = isSmall ? 4 * hour : 2 * hour; // mobile: 4h, desktop: 2h tick cadence
+    else if (timeframe === "7d") cadence = day;
+    else if (timeframe === "30d") cadence = 7 * day;
+    else if (timeframe === "90d") cadence = isSmall ? 15 * day : 7 * day;
+    else cadence = isSmall ? 60 * day : 30 * day; // coarse fallback
+
+    const alignToCadence = (ts: number) => Math.floor(ts / cadence) * cadence;
+    let cursor = alignToCadence(firstTs);
+    if (cursor < firstTs) cursor += cadence;
+
+    const ticksTs: number[] = [];
+    while (cursor <= lastTs + 1) {
+      // +1ms tolerance
+      ticksTs.push(cursor);
+      cursor += cadence;
+    }
+
+    // Map cadence timestamps to nearest indices in chartData
+    const indices: number[] = [];
+    let j = 0;
+    for (const t of ticksTs) {
+      while (j + 1 < chartData.length && chartData[j + 1].timestamp <= t) j++;
+      indices.push(chartData[j].index);
+    }
+    // De-duplicate indices
+    const uniq: number[] = [];
+    for (const idx of indices)
+      if (uniq[uniq.length - 1] !== idx) uniq.push(idx);
+    return uniq;
   }, [chartData, timeframe, isSmall]);
 
   // Left Y domain derived strictly from visible series
@@ -490,14 +524,90 @@ const RevenueChart = ({
       </div>
     );
   };
+  const bothActive =
+    enabledMetrics.buybacks &&
+    (enabledMetrics.suilendRevenue ||
+      enabledMetrics.steammRevenue ||
+      enabledMetrics.springsuiRevenue);
+
+  // When both are active, overlay buybacks as a thinner bar inside revenue using negative barGap
+  // Tighter bars on mobile to fit coarser buckets
+  // Adjust barGap to counteract category width expansion when both bars are enabled
+  const composedBarGap = bothActive ? (isSmall ? -13 : -23) : 0;
+  const revenueBarSize = isSmall ? 18 : 30;
+  const buybacksBarSize = isSmall ? 7 : 15;
+
+  // Rounded corners: only the top-most revenue segment should have rounded top edges
+  const topRadius = isSmall ? 2 : 3;
+  const topRevenueKey = enabledMetrics.springsuiRevenue
+    ? "springsuiRevenue"
+    : enabledMetrics.steammRevenue
+      ? "steammRevenue"
+      : enabledMetrics.suilendRevenue
+        ? "suilendRevenue"
+        : undefined;
+  const CenteredRoundedTopRect =
+    (desiredWidth: number, radius: number = 6) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, react/display-name
+    ({ x, y, width, height, fill }: any) => {
+      // Recharts gives the category slot (x,width); we recenter our own width
+      const cx = x + width / 2 - (bothActive ? 4 : 0);
+      const w = Math.max(0, Math.floor(desiredWidth));
+      const h = height; // can be negative for negative values
+      const left = cx - w / 2;
+      const right = cx + w / 2;
+
+      // For vertical bars, "top" depends on sign of height
+      const isNegative = h < 0;
+      const topY = isNegative ? y + h : y;
+      const bottomY = isNegative ? y : y + h;
+
+      // Clamp radius to fit
+      const r = Math.max(0, Math.min(Math.abs(radius), w / 2, Math.abs(h) / 2));
+
+      // If no rounding needed or height ~0, fall back to a plain rect path
+      if (r === 0 || h === 0) {
+        const dPlain = `M${left},${bottomY}V${topY}H${right}V${bottomY}Z`;
+        return <path d={dPlain} fill={fill} />;
+      }
+
+      // Build a path that rounds ONLY the top-left and top-right corners.
+      // Positive bar: round y=topY; Negative bar: "top" is bottomY visually, so swap.
+      if (!isNegative) {
+        // Positive bar (extends downward)
+        const d = [
+          `M${left},${bottomY}`, // start bottom-left
+          `V${topY + r}`, // up left edge to start curve
+          `Q${left},${topY} ${left + r},${topY}`, // top-left corner
+          `H${right - r}`, // top edge
+          `Q${right},${topY} ${right},${topY + r}`, // top-right corner
+          `V${bottomY}`, // down right edge
+          `Z`,
+        ].join("");
+        return <path d={d} fill={fill} />;
+      } else {
+        // Negative bar (extends upward) — "top" visually is bottomY
+        const d = [
+          `M${left},${topY}`, // start at real top-left (visually bottom)
+          `V${bottomY - r}`, // down to start of "top" (visual) rounding
+          `Q${left},${bottomY} ${left + r},${bottomY}`, // visual top-left
+          `H${right - r}`,
+          `Q${right},${bottomY} ${right},${bottomY - r}`, // visual top-right
+          `V${topY}`,
+          `Z`,
+        ].join("");
+        return <path d={d} fill={fill} />;
+      }
+    };
+
   return (
-    <div className="w-full h-[260px] md:h-[300px]">
+    <div className="w-full h-[240px] md:h-[300px]">
       <Recharts.ResponsiveContainer width="100%" height="100%">
         <Recharts.ComposedChart
           data={chartData}
           margin={margin}
           barCategoryGap="0%"
-          barGap={0}
+          barGap={composedBarGap}
         >
           <Recharts.CartesianGrid
             strokeDasharray="3 3"
@@ -513,11 +623,14 @@ const RevenueChart = ({
               fontSize: isSmall ? 10 : 12,
               fill: "hsl(var(--muted-foreground))",
             }}
+            axisLine={true}
+            tickLine={false}
             domain={[
               chartData.length > 0 ? -0.5 : 0,
               chartData.length > 0 ? chartData.length - 0.5 : 1,
             ]}
-            tickMargin={isSmall ? 4 : 6}
+            tickMargin={isSmall ? 2 : 6}
+            interval={"preserveStartEnd"}
           />
           <Recharts.YAxis
             yAxisId="left"
@@ -529,9 +642,10 @@ const RevenueChart = ({
             tickFormatter={(v: number) => toCompactCurrency(v)}
             domain={[0, yMaxLeftVisible]}
             allowDecimals
+            width={yAxisWidth}
           >
             <Recharts.Label
-              value="USD"
+              value={isSmall ? "" : "USD"}
               angle={-90}
               position="insideLeft"
               offset={isSmall ? 0 : -5}
@@ -549,9 +663,10 @@ const RevenueChart = ({
               fill: "hsl(var(--muted-foreground))",
             }}
             domain={[0, Math.max(1, maxYRight)]}
+            width={yAxisWidth}
           >
             <Recharts.Label
-              value="Price ($)"
+              value={isSmall ? "" : "Price ($)"}
               angle={90}
               position="insideRight"
               offset={10}
@@ -568,6 +683,16 @@ const RevenueChart = ({
               dataKey="suilendRevenue"
               stackId="revenue"
               fill={COLOR_SUILEND}
+              radius={
+                topRevenueKey === "suilendRevenue"
+                  ? [topRadius, topRadius, 0, 0]
+                  : 0
+              }
+              barSize={revenueBarSize}
+              shape={CenteredRoundedTopRect(
+                revenueBarSize,
+                topRevenueKey === "suilendRevenue" ? topRadius : 0,
+              )}
             />
           )}
           {enabledMetrics.steammRevenue && (
@@ -576,6 +701,16 @@ const RevenueChart = ({
               dataKey="steammRevenue"
               stackId="revenue"
               fill={COLOR_STEAMM}
+              radius={
+                topRevenueKey === "steammRevenue"
+                  ? [topRadius, topRadius, 0, 0]
+                  : 0
+              }
+              barSize={revenueBarSize}
+              shape={CenteredRoundedTopRect(
+                revenueBarSize,
+                topRevenueKey === "steammRevenue" ? topRadius : 0,
+              )}
             />
           )}
           {enabledMetrics.springsuiRevenue && (
@@ -584,6 +719,16 @@ const RevenueChart = ({
               dataKey="springsuiRevenue"
               stackId="revenue"
               fill={COLOR_SPRINGSUI}
+              radius={
+                topRevenueKey === "springsuiRevenue"
+                  ? [topRadius, topRadius, 0, 0]
+                  : 0
+              }
+              barSize={revenueBarSize}
+              shape={CenteredRoundedTopRect(
+                revenueBarSize,
+                topRevenueKey === "springsuiRevenue" ? topRadius : 0,
+              )}
             />
           )}
           {enabledMetrics.buybacks && (
@@ -591,7 +736,10 @@ const RevenueChart = ({
               yAxisId="left"
               dataKey="buybacks"
               fill={COLOR_BUYBACKS}
-              opacity={0.45}
+              opacity={0.9}
+              barSize={buybacksBarSize}
+              radius={[topRadius, topRadius, 0, 0]}
+              shape={CenteredRoundedTopRect(buybacksBarSize, topRadius)}
             />
           )}
           {enabledMetrics.price && (

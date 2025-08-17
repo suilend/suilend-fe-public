@@ -12,7 +12,13 @@ const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
 >(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
+  <PopoverPrimitive.Portal
+    container={
+      typeof document === "undefined"
+        ? undefined
+        : document.getElementById("__app_main")
+    }
+  >
     <PopoverPrimitive.Content
       ref={ref}
       align={align}

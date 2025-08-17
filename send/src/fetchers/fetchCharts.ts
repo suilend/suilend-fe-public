@@ -1,6 +1,6 @@
 import useSWR from "swr";
 
-export type Period = "1d" | "7d" | "30d" | "90d" | "alltime" | "ytd";
+export type Period = "1d" | "7d" | "30d" | "90d" | "all" | "1y";
 
 export type PricePoint = { timestamp: number; price: number };
 export type BuybacksPoint = {
@@ -26,7 +26,7 @@ function parseTimestampSecondsToMs(ts: unknown): number | undefined {
 export function getPriceChart(period: Period) {
   const fetcher = async (): Promise<PricePoint[] | undefined> => {
     try {
-      const url = `https://global.suilend.fi/buybacks/charts/price?${new URLSearchParams({ period })}`;
+      const url = `https://global.suilend.fi/send/charts/price?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: Array<{ timestamp: number; price: string | number }> =
@@ -59,7 +59,7 @@ export function getPriceChart(period: Period) {
 export function getBuybacksChart(period: Period) {
   const fetcher = async (): Promise<BuybacksPoint[] | undefined> => {
     try {
-      const url = `https://global.suilend.fi/buybacks/charts/buybacks?${new URLSearchParams({ period })}`;
+      const url = `https://global.suilend.fi/send/charts/send?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: Array<{
@@ -111,7 +111,7 @@ export function getBuybacksChart(period: Period) {
 export function getRevenueChart(period: Period) {
   const fetcher = async (): Promise<RevenuePoint[] | undefined> => {
     try {
-      const url = `https://global.suilend.fi/buybacks/charts/revenue?${new URLSearchParams({ period })}`;
+      const url = `https://global.suilend.fi/send/charts/revenue?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: Array<{
