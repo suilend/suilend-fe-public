@@ -98,7 +98,9 @@ function Page() {
   const cetusSdk = useCetusSdk();
 
   // Strategy types
-  const strategyTypes = Object.values(StrategyType);
+  const strategyTypes = Object.values(StrategyType).filter(
+    (strategyType) => strategyType !== StrategyType.USDC_sSUI_SUI_LOOPING,
+  );
 
   // Obligations
   const strategyOwnerCapObligationMap: Record<
