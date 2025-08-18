@@ -1,9 +1,10 @@
 export const ROOT_URL = "/";
 export const STRATEGIES_URL = "/strategies";
 export const SWAP_URL = "/swap";
+export const SEND_URL = "https://send.suilend.fi";
 export const BRIDGE_URL = "/bridge";
 export const LEADERBOARD_URL = "/leaderboard";
-export const SEND_URL = "/send";
+export const CLAIM_URL = "/claim";
 export const ABOUT_URL = "/about";
 export const ADMIN_URL = "/admin";
 

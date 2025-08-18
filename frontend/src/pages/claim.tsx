@@ -539,7 +539,7 @@ function Page() {
   return (
     <>
       <Head>
-        <title>Suilend | SEND</title>
+        <title>Suilend | Claim</title>
       </Head>
 
       <div className="relative flex w-full flex-col items-center">

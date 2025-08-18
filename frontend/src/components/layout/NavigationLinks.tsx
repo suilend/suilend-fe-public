@@ -14,6 +14,7 @@ import {
   ABOUT_URL,
   ADMIN_URL,
   BRIDGE_URL,
+  CLAIM_URL,
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
@@ -28,7 +29,7 @@ function More() {
   return (
     <>
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
-      <Link href={SEND_URL}>SEND</Link>
+      <Link href={CLAIM_URL}>Claim</Link>
       <Link href={ABOUT_URL}>About</Link>
 
       {/* External */}
@@ -61,7 +62,7 @@ export default function NavigationLinks() {
   const [isMoreOpen, setIsMoreOpen] = useState<boolean>(false);
   const MoreIcon = isMoreOpen ? ChevronUp : ChevronDown;
 
-  const isMoreActive = [LEADERBOARD_URL, SEND_URL, ABOUT_URL].some(
+  const isMoreActive = [LEADERBOARD_URL, CLAIM_URL, ABOUT_URL].some(
     (url) => router.asPath.split("?")[0] === url,
   );
 
@@ -75,6 +76,9 @@ export default function NavigationLinks() {
         </Link>
       )}
       {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
+      {/* <Link href={SEND_URL} isExternal label="New">
+        SEND
+      </Link> */}
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
