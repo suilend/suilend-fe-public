@@ -26,8 +26,7 @@ import {
   createStrategyOwnerCapIfNoneExists,
   sendStrategyOwnerCapToUser,
   strategyBorrow,
-  strategyClaimRewardsAndSendToUser,
-  strategyCompoundRewards,
+  strategyClaimRewardsAndSwap,
   strategyDeposit,
   strategySwapNonLstDepositsForLst,
   strategyWithdraw,
@@ -286,12 +285,14 @@ export default function LstStrategyDialog({
         throw Error("StrategyOwnerCap or Obligation not found");
 
       const transaction = new Transaction();
-      await strategyCompoundRewards(
+      await strategyClaimRewardsAndSwap(
+        address,
         cetusSdk,
         CETUS_PARTNER_ID,
         rewardsMap,
         lstReserve,
         strategyOwnerCap.id,
+        !!obligation && hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
         transaction,
       );
 
@@ -1907,13 +1908,26 @@ export default function LstStrategyDialog({
       transaction.transferObjects([lstCoin], address);
     }
 
-    // 2) Claim rewards and send to user
-    strategyClaimRewardsAndSendToUser(
-      address,
-      rewardsMap,
-      strategyOwnerCapId,
-      transaction,
-    );
+    // 2) Claim rewards, swap for SUI/LST, and send to user
+    try {
+      const txCopy = Transaction.from(transaction);
+      strategyClaimRewardsAndSwap(
+        address,
+        cetusSdk,
+        CETUS_PARTNER_ID,
+        rewardsMap,
+        reserve,
+        strategyOwnerCapId,
+        false, // isDepositing (false = transfer to user)
+        txCopy,
+      );
+      await dryRunTransaction(txCopy); // Throws error if claim+swap fails
+
+      transaction = txCopy;
+    } catch (err) {
+      // Don't block user from withdrawing if claim+swap fails. Rewards can be claimed separately by the user.
+      console.error(err);
+    }
 
     return transaction;
   };
@@ -2280,14 +2294,26 @@ export default function LstStrategyDialog({
               </Tooltip>
 
               <Button
-                className="w-[92px]"
+                className={cn(
+                  !!obligation && hasPosition(obligation)
+                    ? "w-[92px]"
+                    : "w-[66px]",
+                )}
                 labelClassName="uppercase"
                 variant="secondary"
                 size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
-                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound"}
+                {isCompoundingRewards ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <>
+                    {!!obligation && hasPosition(obligation)
+                      ? "Compound"
+                      : "Claim"}
+                  </>
+                )}
               </Button>
             </div>
           )}

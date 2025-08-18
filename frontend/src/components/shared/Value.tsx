@@ -16,13 +16,13 @@ interface ValueProps {
   className?: ClassValue;
   valueStartDecorator?: ReactNode;
   value: string | number | BigNumber | ReactNode;
-  valueTooltip?: string | ReactNode;
+  valueTooltip?: ReactNode;
   valueEndDecorator?: ReactNode;
   isId?: boolean;
   isType?: boolean;
   isUsd?: boolean;
   url?: string;
-  urlTooltip?: string;
+  urlTooltip?: ReactNode;
   isExplorerUrl?: boolean;
 }
 

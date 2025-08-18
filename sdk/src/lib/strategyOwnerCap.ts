@@ -202,30 +202,14 @@ const strategyClaimRewardsAndMergeCoins = (
 
   return mergedCoinsMap;
 };
-export const strategyClaimRewardsAndSendToUser = (
+export const strategyClaimRewardsAndSwap = async (
   address: string,
-  rewardsMap: RewardsMap,
-  strategyOwnerCap: TransactionObjectInput,
-  transaction: Transaction,
-) => {
-  // 1) Claim rewards and merge coins
-  const mergedCoinsMap: Record<string, TransactionObjectArgument> =
-    strategyClaimRewardsAndMergeCoins(
-      rewardsMap,
-      strategyOwnerCap,
-      transaction,
-    );
-
-  // 2) Send coins to user
-  for (const [coinType, coin] of Object.entries(mergedCoinsMap))
-    transaction.transferObjects([coin], transaction.pure.address(address));
-};
-export const strategyCompoundRewards = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
   lstReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
+  isDepositing: boolean,
   transaction: Transaction,
 ) => {
   // 1) Claim rewards and merge coins
@@ -280,7 +264,7 @@ export const strategyCompoundRewards = async (
             });
             if (!routers)
               throw new Error(`No swap quote found for ${coinType}`);
-            console.log("[strategyCompoundRewards] routers", {
+            console.log("[strategyClaimRewardsAndSwap] routers", {
               coinType,
               routers,
             });
@@ -290,7 +274,7 @@ export const strategyCompoundRewards = async (
         ),
     ),
   );
-  console.log("[strategyCompoundRewards] amountsAndSortedQuotesMap", {
+  console.log("[strategyClaimRewardsAndSwap] amountsAndSortedQuotesMap", {
     amountsAndSortedQuotesMap,
   });
 
@@ -298,7 +282,7 @@ export const strategyCompoundRewards = async (
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
-    console.log("[strategyCompoundRewards] swapping coinType", coinType);
+    console.log("[strategyClaimRewardsAndSwap] swapping coinType", coinType);
     const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
@@ -320,13 +304,20 @@ export const strategyCompoundRewards = async (
 
   // 4) Deposit
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
-  strategyDeposit(
-    resultCoin,
-    lstReserve.coinType,
-    strategyOwnerCap,
-    lstReserve.arrayIndex,
-    transaction,
-  );
+  if (isDepositing) {
+    strategyDeposit(
+      resultCoin,
+      lstReserve.coinType,
+      strategyOwnerCap,
+      lstReserve.arrayIndex,
+      transaction,
+    );
+  } else {
+    transaction.transferObjects(
+      [resultCoin],
+      transaction.pure.address(address),
+    );
+  }
 };
 
 export const strategySwapNonLstDepositsForLst = async (

@@ -50,7 +50,7 @@ interface ClaimableRewardsProps {
 function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
   return (
     <div className="flex flex-col gap-1">
-      <TLabelSans>Claimable rewards</TLabelSans>
+      <TLabelSans>Unclaimed rewards</TLabelSans>
 
       <div className="grid w-full grid-cols-2 gap-x-4 gap-y-1">
         {Object.entries(rewardsMap).map(([coinType, { amount }]) => (

@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 import BigNumber from "bignumber.js";
 
 import { ParsedReserve } from "@suilend/sdk";
@@ -12,8 +14,9 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 interface PnlLabelWithValueProps {
   reserve: ParsedReserve;
   label: string;
-  labelTooltip?: string;
+  labelTooltip?: ReactNode;
   pnlAmount?: BigNumber;
+  pnlTooltip?: ReactNode;
 }
 
 export default function PnlLabelWithValue({
@@ -21,6 +24,7 @@ export default function PnlLabelWithValue({
   label,
   labelTooltip,
   pnlAmount,
+  pnlTooltip,
 }: PnlLabelWithValueProps) {
   return (
     <LabelWithValue
@@ -58,22 +62,19 @@ export default function PnlLabelWithValue({
           {pnlAmount === undefined ? (
             <Skeleton className="h-5 w-16" />
           ) : (
-            <Tooltip
-              title={`${
-                new BigNumber(pnlAmount.times(reserve.price)).eq(0)
-                  ? ""
-                  : new BigNumber(pnlAmount.times(reserve.price)).gte(0)
-                    ? "+"
-                    : "-"
-              }${formatToken(pnlAmount.abs(), {
-                dp: reserve.token.decimals,
-              })} ${reserve.token.symbol}`}
-            >
+            <Tooltip title={pnlTooltip}>
               <TBody
                 className={cn(
                   "text-right",
                   pnlAmount.gt(0) && "text-success",
                   pnlAmount.lt(0) && "text-destructive",
+                  pnlTooltip &&
+                    cn(
+                      "decoration-muted-foreground/50",
+                      pnlAmount.gt(0) && "decoration-success/50",
+                      pnlAmount.lt(0) && "decoration-destructive/50",
+                      hoverUnderlineClassName,
+                    ),
                 )}
               >
                 {new BigNumber(pnlAmount.times(reserve.price)).eq(0)

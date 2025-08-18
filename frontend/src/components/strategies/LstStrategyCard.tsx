@@ -178,7 +178,19 @@ export default function LstStrategyCard({
         <div className="flex flex-row justify-end gap-6">
           {!!obligation && hasPosition(obligation) && (
             <div className="flex w-fit flex-col items-end gap-1">
-              <Tooltip title="Equity is calculated as the sum of the net amount deposited, deposit interest, LST staking yield, and claimed rewards, minus borrow interest.">
+              <Tooltip
+                title={
+                  <>
+                    Equity is calculated as the sum of the net amount deposited,
+                    deposit interest, LST staking yield, and claimed rewards,
+                    minus borrow interest.
+                    <br />
+                    <span className="mt-2 block">
+                      Equity does not include unclaimed rewards.
+                    </span>
+                  </>
+                }
+              >
                 <TLabelSans
                   className={cn(
                     "text-muted-foreground decoration-muted-foreground/50",
@@ -210,20 +222,83 @@ export default function LstStrategyCard({
           <Separator />
 
           <div className="flex w-full flex-col gap-3">
-            {/* Realized PnL */}
-            <PnlLabelWithValue
-              reserve={suiReserve}
-              label="Realized PnL"
-              labelTooltip="Realized PnL is the difference between your Equity and the net amount deposited."
-              pnlAmount={realizedPnlSuiAmount}
-            />
-
             {/* Total PnL */}
             <PnlLabelWithValue
               reserve={suiReserve}
               label="Total PnL"
-              labelTooltip="Total PnL is the sum of Realized PnL and Claimable rewards. Claimable rewards are autoclaimed and deposited every ~2 weeks, and can also be Compounded manually at any time."
+              labelTooltip="Total PnL is the difference between the sum of your Equity and unclaimed rewards, and the net amount deposited."
               pnlAmount={totalPnlSuiAmount}
+              pnlTooltip={
+                realizedPnlSuiAmount === undefined ||
+                totalPnlSuiAmount === undefined ? undefined : (
+                  <div className="flex flex-col gap-2">
+                    {/* Realized PnL */}
+                    <div className="flex flex-row items-center justify-between gap-4">
+                      <TLabelSans>Realized PnL</TLabelSans>
+                      <TBody
+                        className={cn(
+                          realizedPnlSuiAmount.gt(0) && "text-success",
+                          realizedPnlSuiAmount.lt(0) && "text-destructive",
+                        )}
+                      >
+                        {new BigNumber(realizedPnlSuiAmount).eq(0)
+                          ? null
+                          : new BigNumber(realizedPnlSuiAmount).gte(0)
+                            ? "+"
+                            : "-"}
+                        {formatToken(realizedPnlSuiAmount.abs(), {
+                          dp: suiReserve.token.decimals,
+                        })}{" "}
+                        {suiReserve.token.symbol}
+                      </TBody>
+                    </div>
+
+                    {/* Unclaimed rewards */}
+                    <div className="flex flex-row items-center justify-between gap-4">
+                      <TLabelSans>Unclaimed rewards</TLabelSans>
+                      <TBody
+                        className={cn(
+                          unclaimedRewardsSuiAmount.gt(0) && "text-success",
+                          unclaimedRewardsSuiAmount.lt(0) && "text-destructive",
+                        )}
+                      >
+                        {new BigNumber(unclaimedRewardsSuiAmount).eq(0)
+                          ? null
+                          : new BigNumber(unclaimedRewardsSuiAmount).gte(0)
+                            ? "+"
+                            : "-"}
+                        {formatToken(unclaimedRewardsSuiAmount.abs(), {
+                          dp: suiReserve.token.decimals,
+                        })}{" "}
+                        {suiReserve.token.symbol}
+                      </TBody>
+                    </div>
+
+                    <Separator />
+
+                    {/* Total PnL */}
+                    <div className="flex flex-row items-center justify-between gap-4">
+                      <TLabelSans>Total PnL</TLabelSans>
+                      <TBody
+                        className={cn(
+                          totalPnlSuiAmount.gt(0) && "text-success",
+                          totalPnlSuiAmount.lt(0) && "text-destructive",
+                        )}
+                      >
+                        {new BigNumber(totalPnlSuiAmount).eq(0)
+                          ? null
+                          : new BigNumber(totalPnlSuiAmount).gte(0)
+                            ? "+"
+                            : "-"}
+                        {formatToken(totalPnlSuiAmount.abs(), {
+                          dp: suiReserve.token.decimals,
+                        })}{" "}
+                        {suiReserve.token.symbol}
+                      </TBody>
+                    </div>
+                  </div>
+                )
+              }
             />
 
             {/* Exposure */}
