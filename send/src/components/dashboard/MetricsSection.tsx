@@ -22,6 +22,11 @@ const MetricsSection = () => {
     0,
   );
 
+  const totalBuybacksOutputs = allBuybacks?.reduce(
+    (acc, b) => acc + b.sendAmount,
+    0,
+  );
+
   return error ? (
     <Card>
       <CardContent className="p-5">
@@ -58,22 +63,7 @@ const MetricsSection = () => {
               ) : (
                 <>
                   <SuilendLogo size={12} />
-                  {toCompactNumber(metrics?.totalBuybacks ?? 0)}
-                </>
-              )}
-            </div>
-            <div className="text-xl lg:text-[15px] items-center gap-1 text-right hidden lg:flex">
-              {isLoading ? (
-                <Skeleton className="h-4 w-24" />
-              ) : showUsdValue ? (
-                toCompactCurrency(
-                  (metrics?.totalBuybacks ?? 0) *
-                    (metrics?.currentPrice ?? 0) || 0,
-                )
-              ) : (
-                <>
-                  <SuilendLogo size={12} />
-                  {toCompactNumber(metrics?.totalBuybacks ?? 0)}
+                  {toCompactNumber(totalBuybacksOutputs ?? 0)}
                 </>
               )}
             </div>
@@ -150,7 +140,7 @@ const MetricsSection = () => {
                 ) : (
                   <>
                     <SuilendLogo size={20} />
-                    {toCompactNumber(metrics?.totalBuybacks ?? 0)}
+                    {toCompactNumber(totalBuybacksOutputs ?? 0)}
                   </>
                 )}
               </div>
