@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DCA, getDcas } from "@/fetchers/fetchDcas";
 import { getTransactions } from "@/fetchers/fetchTransactions";
 import { ASSETS_URL } from "@/lib/constants";
-import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
+import { cn, toCompactNumber } from "@/lib/utils";
 
 import SuilendLogo from "../layout/SuilendLogo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
@@ -221,14 +221,16 @@ const TransactionsSection = () => {
                     unifiedRows.map((row, index) => (
                       <>
                         <tr
-                          className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:z-0 after:w-[var(--prog)] rounded-none" : ""}`}
-                          style={
-                            row.kind === "dca" && row.ongoing
-                              ? {
-                                  ["--prog" as keyof CSSProperties]: `${row.progressPercent ?? 0}%`,
-                                }
-                              : undefined
-                          }
+                          className={cn(
+                            row.kind === "dca" && row.ongoing && "bg-muted/15",
+                            "[background-image:linear-gradient(hsl(var(--card)),hsl(var(--card)))]",
+                            "[background-repeat:no-repeat]",
+                            "[background-position:left_top]",
+                            "[background-size:var(--prog)100%]",
+                          )}
+                          style={{
+                            ["--prog" as keyof CSSProperties]: `${row.progressPercent ?? 0}%`,
+                          }}
                         >
                           <td className="py-3 pl-4 z-10 relative text-foreground text-xs font-sans">
                             {new Date(row.timestamp)
