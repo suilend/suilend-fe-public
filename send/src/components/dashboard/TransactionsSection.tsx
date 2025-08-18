@@ -162,7 +162,7 @@ const TransactionsSection = () => {
               width={16}
               height={16}
             />
-            {toCompactCurrency(spentUsdc)}
+            {toCompactNumber(spentUsdc)}
           </span>
         ),
         viewHref: `https://suiscan.xyz/object/${d.objectId}`,
