@@ -29,7 +29,7 @@ const MetricsSection = () => {
     <>
       <Card className="flex lg:hidden">
         <CardContent className="p-3 lg:p-5 flex justify-between w-full">
-          <div className="flex flex-col items-center w-[80px]">
+          <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground mb-2 text-left">
               <span className="hidden lg:block">Market Cap</span>
               <span className="block lg:hidden">Mcap</span>
@@ -42,7 +42,7 @@ const MetricsSection = () => {
               )}
             </div>
           </div>
-          <div className="flex flex-col items-center w-[80px]">
+          <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
               Revenue
             </div>
@@ -54,7 +54,7 @@ const MetricsSection = () => {
               )}
             </div>
           </div>
-          <div className="flex flex-col items-center w-[80px]">
+          <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
               Treasury
             </div>
@@ -67,7 +67,7 @@ const MetricsSection = () => {
             </div>
           </div>
 
-          <div className="flex flex-col items-center w-[80px]">
+          <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground flex items-center gap-1 lg:gap-2 mb-2 text-right">
               <span className="hidden lg:block">Total Buybacks</span>
               <span className="block lg:hidden">Buybacks</span>
