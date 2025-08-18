@@ -141,7 +141,7 @@ const TransactionsSection = () => {
           </span>
         );
       } else if (d.status === "cancelled") {
-        priceContent = toCompactCurrency(spentUsdc / outCur);
+        priceContent = `$${(spentUsdc / outCur).toFixed(2)}`;
       }
 
       return {
