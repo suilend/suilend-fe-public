@@ -18,9 +18,17 @@ module.exports = {
   },
   async redirects() {
     return [
+      // Dashboard redirects
       {
         source: "/dashboard/:path*",
         destination: "https://suilend.fi/:path*",
+        permanent: true,
+      },
+
+      // SEND redirects
+      {
+        source: "/send/:path*",
+        destination: "https://send.suilend.fi/:path*",
         permanent: true,
       },
 
