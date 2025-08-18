@@ -11,7 +11,7 @@ import {
 
 import Button from "@/components/shared/Button";
 import StandardSelect from "@/components/shared/StandardSelect";
-import { TLabel } from "@/components/shared/Typography";
+import { TBody, TLabel } from "@/components/shared/Typography";
 import { Tab as LstStrategyDialogTab } from "@/components/strategies/LstStrategyDialog";
 import { Input as InputComponent } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -91,7 +91,7 @@ const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
           style={{
             height: `${INPUT_HEIGHT}px`,
             paddingLeft: `${3 * 4 + MAX_BUTTON_WIDTH + 3 * 4}px`,
-            paddingRight: `${3 * 4 + reserve.token.symbol.length * 14.4 + (4 + 16) + 3 * 4}px`,
+            paddingRight: `${3 * 4 + reserve.token.symbol.length * 14.4 + (reserveOptions.length > 1 ? 4 + 16 : 0) + 3 * 4}px`,
             paddingTop: `${(INPUT_INNER_HEIGHT - MAX_BUTTON_HEIGHT) / 2}px`,
             paddingBottom: `${(INPUT_INNER_HEIGHT - MAX_BUTTON_HEIGHT) / 2 + USD_LABEL_HEIGHT}px`,
           }}
@@ -103,14 +103,18 @@ const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
           className="absolute right-3 top-0 z-[2] flex flex-col items-end justify-center"
           style={{ height: `${INPUT_HEIGHT}px` }}
         >
-          <StandardSelect
-            className="group h-auto w-max min-w-0 !border-0 !bg-transparent px-0 font-mono text-2xl !text-foreground"
-            iconClassName="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
-            iconOpenClassName="text-foreground"
-            items={reserveOptions}
-            value={reserve.coinType}
-            onChange={onReserveChange}
-          />
+          {reserveOptions.length > 1 ? (
+            <StandardSelect
+              className="group h-auto w-max min-w-0 !border-0 !bg-transparent px-0 font-mono text-2xl !text-foreground"
+              iconClassName="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
+              iconOpenClassName="text-foreground"
+              items={reserveOptions}
+              value={reserve.coinType}
+              onChange={onReserveChange}
+            />
+          ) : (
+            <TBody className="text-2xl">{reserveOptions[0].name}</TBody>
+          )}
           <TLabel
             className="text-right"
             style={{ height: `${USD_LABEL_HEIGHT}px` }}

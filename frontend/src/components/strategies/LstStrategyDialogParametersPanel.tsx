@@ -65,6 +65,7 @@ export default function LstStrategyDialogParametersPanel({
                 {
                   [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
                   [StrategyType.stratSUI_SUI_LOOPING]: "STRAT and sSUI",
+                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "sSUI",
                 }[strategyType]
               }{" "}
               rewards.
@@ -75,6 +76,7 @@ export default function LstStrategyDialogParametersPanel({
                 {
                   [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
                   [StrategyType.stratSUI_SUI_LOOPING]: "stratSUI",
+                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "USDC",
                 }[strategyType]
               }{" "}
               and looping, you increase your exposure to both.
@@ -90,9 +92,9 @@ export default function LstStrategyDialogParametersPanel({
           <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
             <TBodySans>How does it work?</TBodySans>
             <TLabelSans>
-              The {STRATEGY_TYPE_INFO_MAP[strategyType].title}{" "}
-              {STRATEGY_TYPE_INFO_MAP[strategyType].type} strategy works as
-              follows:
+              The {STRATEGY_TYPE_INFO_MAP[strategyType].header.title}{" "}
+              {STRATEGY_TYPE_INFO_MAP[strategyType].header.type} strategy works
+              as follows:
               <br />
               <br />
               1. <span className="font-medium">Deposit</span> SUI (auto-staked
@@ -118,9 +120,9 @@ export default function LstStrategyDialogParametersPanel({
           <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
             <TBodySans>Are there any fees?</TBodySans>
             <TLabelSans>
-              The {STRATEGY_TYPE_INFO_MAP[strategyType].title}{" "}
-              {STRATEGY_TYPE_INFO_MAP[strategyType].type} strategy is currently
-              almost free to run.
+              The {STRATEGY_TYPE_INFO_MAP[strategyType].header.title}{" "}
+              {STRATEGY_TYPE_INFO_MAP[strategyType].header.type} strategy is
+              currently almost free to run.
               <br />
               <br />
               - No borrow fees on Suilend
@@ -151,6 +153,7 @@ export default function LstStrategyDialogParametersPanel({
                 {
                   [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
                   [StrategyType.stratSUI_SUI_LOOPING]: "STRAT and sSUI",
+                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "sSUI",
                 }[strategyType]
               }{" "}
               rewards are auto-claimed and re-deposited every 2 weeks.

@@ -465,34 +465,25 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
   // Exposure map
   const exposureMap = useMemo(
-    () =>
-      Object.values(StrategyType).reduce(
-        (acc, strategyType) => ({
-          ...acc,
-          [strategyType]: (() => {
-            const lstReserve = getLstReserve(strategyType as StrategyType);
-
-            const minExposure = new BigNumber(1);
-            const maxExposure = new BigNumber(
-              1 / (1 - lstReserve.config.openLtvPct / 100),
-            ).decimalPlaces(0, BigNumber.ROUND_DOWN); // Round down to 0dp e.g. 3.333x -> 3x
-            const defaultExposure = maxExposure;
-
-            return {
-              min: minExposure,
-              max: maxExposure,
-              default: defaultExposure,
-            };
-          })(),
-        }),
-        {} as Record<
-          StrategyType,
-          { min: BigNumber; max: BigNumber; default: BigNumber }
-        >,
-      ),
-    [getLstReserve],
+    () => ({
+      [StrategyType.sSUI_SUI_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(3), // Actual max: 1 / (1 - (sSUI Open LTV %)) = 3.333x, where sSUI Open LTV % = 70%
+        default: new BigNumber(3),
+      },
+      [StrategyType.stratSUI_SUI_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(3), // Actual max: 1 / (1 - (sSUI Open LTV %)) = 3.333x, where sSUI Open LTV % = 70%
+        default: new BigNumber(3),
+      },
+      [StrategyType.USDC_sSUI_SUI_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(3.3), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
+        default: new BigNumber(3.3),
+      },
+    }),
+    [],
   );
-
   // Calculations
   const getExposure = useCallback(
     (obligation?: ParsedObligation): BigNumber => {

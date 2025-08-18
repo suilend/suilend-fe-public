@@ -357,15 +357,17 @@ export default function LstStrategyDialog({
   );
 
   // CoinType, reserve, and balance
-  const [coinType, setCoinType] = useState<string>(NORMALIZED_SUI_COINTYPE);
+  const [coinType, setCoinType] = useState<string>(
+    strategyInfo.defaultOpenCloseCoinType,
+  );
 
   const reserveOptions = useMemo(
     () =>
-      strategyInfo.coinTypes.map((coinType) => ({
+      strategyInfo.openCloseCoinTypeOptions.map((coinType) => ({
         id: coinType,
         name: appData.coinMetadataMap[coinType].symbol,
       })),
-    [strategyInfo.coinTypes, appData.coinMetadataMap],
+    [strategyInfo.openCloseCoinTypeOptions, appData.coinMetadataMap],
   );
   const reserve = useMemo(
     () => appData.reserveMap[coinType],
@@ -2060,7 +2062,7 @@ export default function LstStrategyDialog({
                 })
               : null,
             reserve.token.symbol,
-            `into ${strategyInfo.title} ${strategyInfo.type} strategy`,
+            `into ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -2124,7 +2126,7 @@ export default function LstStrategyDialog({
                 })
               : null,
             reserve.token.symbol,
-            `from ${strategyInfo.title} ${strategyInfo.type} strategy`,
+            `from ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -2190,7 +2192,7 @@ export default function LstStrategyDialog({
               : selectedTab === Tab.ADJUST
                 ? "adjust"
                 : "--" // Should not happen
-        } ${strategyInfo.title} ${strategyInfo.type} strategy`,
+        } ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
         err as Error,
         undefined,
         true,
@@ -2488,18 +2490,18 @@ export default function LstStrategyDialog({
                 </div>
 
                 {/* Labels */}
-                <div className="flex w-full flex-row items-center justify-between px-[calc(16px/2)]">
+                <div className="flex w-full flex-row items-center justify-between">
                   {/* Min */}
-                  <div className="flex w-0 flex-row justify-center">
+                  <div className="flex w-max flex-row justify-center">
                     <TBody>
-                      {minExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
+                      {minExposure.toFixed(1, BigNumber.ROUND_DOWN)}x
                     </TBody>
                   </div>
 
                   {/* Max */}
-                  <div className="flex w-0 flex-row justify-center">
+                  <div className="flex w-max flex-row justify-center">
                     <TBody>
-                      {maxExposure.toFixed(0, BigNumber.ROUND_DOWN)}x
+                      {maxExposure.toFixed(1, BigNumber.ROUND_DOWN)}x
                     </TBody>
                   </div>
                 </div>

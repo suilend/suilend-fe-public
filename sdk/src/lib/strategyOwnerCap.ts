@@ -18,6 +18,7 @@ import BN from "bn.js";
 import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_stratSUI_COINTYPE,
   isSui,
@@ -38,35 +39,83 @@ export const STRATEGY_WRAPPER_PACKAGE_ID =
 export enum StrategyType {
   sSUI_SUI_LOOPING = "1",
   stratSUI_SUI_LOOPING = "2",
+  USDC_sSUI_SUI_LOOPING = "3",
 }
 export const STRATEGY_TYPE_INFO_MAP: Record<
   StrategyType,
   {
     queryParam: string;
-    coinTypes: string[];
+    header: {
+      coinTypes: string[];
+      title: string;
+      tooltip: string;
+      type: string;
+    };
+
+    defaultOpenCloseCoinType: string;
+    openCloseCoinTypeOptions: string[];
+
+    depositCoinTypes: string[];
+    borrowCoinType: string;
     lstCoinType: string;
-    title: string;
-    type: string;
-    tooltip: string;
   }
 > = {
   [StrategyType.sSUI_SUI_LOOPING]: {
     queryParam: "sSUI-SUI-looping",
-    coinTypes: [NORMALIZED_sSUI_COINTYPE, NORMALIZED_SUI_COINTYPE],
+    header: {
+      coinTypes: [NORMALIZED_sSUI_COINTYPE, NORMALIZED_SUI_COINTYPE],
+      title: "sSUI/SUI",
+      tooltip:
+        "Sets up a sSUI/SUI Looping strategy by depositing sSUI and borrowing SUI to the desired leverage",
+      type: "Looping",
+    },
+
+    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
+    openCloseCoinTypeOptions: [
+      NORMALIZED_SUI_COINTYPE,
+      NORMALIZED_sSUI_COINTYPE,
+    ],
+
+    depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
-    title: "sSUI/SUI",
-    type: "Looping",
-    tooltip:
-      "Sets up a sSUI/SUI Looping strategy by depositing sSUI and borrowing SUI to the desired leverage",
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
     queryParam: "stratSUI-SUI-looping",
-    coinTypes: [NORMALIZED_stratSUI_COINTYPE, NORMALIZED_SUI_COINTYPE],
+    header: {
+      coinTypes: [NORMALIZED_stratSUI_COINTYPE, NORMALIZED_SUI_COINTYPE],
+      title: "stratSUI/SUI",
+      tooltip:
+        "Sets up a stratSUI/SUI Looping strategy by depositing stratSUI and borrowing SUI to the desired leverage",
+      type: "Looping",
+    },
+
+    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
+    openCloseCoinTypeOptions: [
+      NORMALIZED_SUI_COINTYPE,
+      NORMALIZED_stratSUI_COINTYPE,
+    ],
+
+    depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
     lstCoinType: NORMALIZED_stratSUI_COINTYPE,
-    title: "stratSUI/SUI",
-    type: "Looping",
-    tooltip:
-      "Sets up a stratSUI/SUI Looping strategy by depositing stratSUI and borrowing SUI to the desired leverage",
+  },
+  [StrategyType.USDC_sSUI_SUI_LOOPING]: {
+    queryParam: "USDC-sSUI-SUI-looping",
+    header: {
+      coinTypes: [NORMALIZED_USDC_COINTYPE],
+      title: "USDC",
+      tooltip:
+        "Sets up a USDC sSUI/SUI Looping strategy by depositing USDC and looping sSUI/SUI to the desired leverage",
+      type: "Looping",
+    },
+
+    defaultOpenCloseCoinType: NORMALIZED_USDC_COINTYPE,
+    openCloseCoinTypeOptions: [NORMALIZED_USDC_COINTYPE],
+
+    depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
+    lstCoinType: NORMALIZED_sSUI_COINTYPE,
   },
 };
 
