@@ -11,18 +11,23 @@ import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface PnlLabelWithValueProps {
   reserve: ParsedReserve;
+  label: string;
+  labelTooltip?: string;
   pnlAmount?: BigNumber;
 }
 
 export default function PnlLabelWithValue({
   reserve,
+  label,
+  labelTooltip,
   pnlAmount,
 }: PnlLabelWithValueProps) {
   return (
     <LabelWithValue
       className="items-start"
       labelClassName="my-[2px]"
-      label="PnL"
+      label={label}
+      labelTooltip={labelTooltip}
       value="0"
       horizontal
       customChild={

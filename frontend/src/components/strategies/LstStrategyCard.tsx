@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useHistoricalTvlSuiAmountMap from "@/hooks/useHistoricalTvlSuiAmountMap";
+import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
 interface LstStrategyCardProps {
   strategyType: StrategyType;
@@ -121,18 +122,15 @@ export default function LstStrategyCard({
   // Stats - TVL
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
-  // Stats - Unclaimed rewards
-  const unclaimedRewardsSuiAmount = getUnclaimedRewardsSuiAmount(obligation);
-
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
 
-  // Stats - PnL
+  // Stats - Realized PnL
   const { historicalTvlSuiAmountMap } = useHistoricalTvlSuiAmountMap(
     strategyType,
     obligation,
   );
-  const pnlSuiAmount = useMemo(
+  const realizedPnlSuiAmount = useMemo(
     () =>
       !!obligation && hasPosition(obligation)
         ? historicalTvlSuiAmountMap[obligation.id] === undefined
@@ -140,6 +138,17 @@ export default function LstStrategyCard({
           : tvlSuiAmount.minus(historicalTvlSuiAmountMap[obligation.id]!)
         : new BigNumber(0),
     [obligation, hasPosition, historicalTvlSuiAmountMap, tvlSuiAmount],
+  );
+
+  // Stats - Total PnL
+  const unclaimedRewardsSuiAmount = getUnclaimedRewardsSuiAmount(obligation);
+
+  const totalPnlSuiAmount = useMemo(
+    () =>
+      realizedPnlSuiAmount === undefined
+        ? undefined
+        : realizedPnlSuiAmount.plus(unclaimedRewardsSuiAmount),
+    [realizedPnlSuiAmount, unclaimedRewardsSuiAmount],
   );
 
   // Stats - Exposure
@@ -169,7 +178,16 @@ export default function LstStrategyCard({
         <div className="flex flex-row justify-end gap-6">
           {!!obligation && hasPosition(obligation) && (
             <div className="flex w-fit flex-col items-end gap-1">
-              <TLabelSans>Equity</TLabelSans>
+              <Tooltip title="Equity is calculated as the sum of the net amount deposited, deposit interest, LST staking yield, and claimed rewards, minus borrow interest.">
+                <TLabelSans
+                  className={cn(
+                    "text-muted-foreground decoration-muted-foreground/50",
+                    hoverUnderlineClassName,
+                  )}
+                >
+                  Equity
+                </TLabelSans>
+              </Tooltip>
               <Tooltip
                 title={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
               >
@@ -192,19 +210,20 @@ export default function LstStrategyCard({
           <Separator />
 
           <div className="flex w-full flex-col gap-3">
-            {/* PnL */}
-            <PnlLabelWithValue reserve={suiReserve} pnlAmount={pnlSuiAmount} />
+            {/* Realized PnL */}
+            <PnlLabelWithValue
+              reserve={suiReserve}
+              label="Realized PnL"
+              labelTooltip="Realized PnL is the difference between your Equity and the net amount deposited."
+              pnlAmount={realizedPnlSuiAmount}
+            />
 
-            {/* Unclaimed rewards */}
-            <LabelWithValue
-              label="Claimable rewards"
-              value={`${formatToken(unclaimedRewardsSuiAmount, {
-                exact: false,
-              })} SUI`}
-              valueTooltip={`${formatToken(unclaimedRewardsSuiAmount, {
-                dp: SUI_DECIMALS,
-              })} SUI`}
-              horizontal
+            {/* Total PnL */}
+            <PnlLabelWithValue
+              reserve={suiReserve}
+              label="Total PnL"
+              labelTooltip="Total PnL is the sum of Realized PnL and Claimable rewards. Claimable rewards are autoclaimed and deposited every ~2 weeks, and can also be Compounded manually at any time."
+              pnlAmount={totalPnlSuiAmount}
             />
 
             {/* Exposure */}

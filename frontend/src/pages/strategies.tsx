@@ -255,7 +255,7 @@ function Page() {
       ))}
 
       <div className="flex w-full flex-col gap-6">
-        <div className="flex h-7 flex-row items-center justify-between gap-4">
+        <div className="flex h-7 flex-row items-center gap-4">
           <TBodySans className="text-xl">Strategies</TBodySans>
 
           {hasClaimableRewards && (
