@@ -221,11 +221,7 @@ const RevenueChart = ({
   );
   const yAxisWidth = isSmall ? 44 : 56; // fixed widths so the plot stays centered
 
-  const { processed: data } = useProcessedData(
-    timeframe,
-    isCumulative,
-    isSmall,
-  );
+  const { processed: data } = useProcessedData(timeframe, isCumulative);
 
   const maxYRight = useMemo(() => {
     if (!enabledMetrics.price) return 1;
@@ -508,12 +504,13 @@ const RevenueChart = ({
               fontSize: isSmall ? 10 : 12,
               fill: "hsl(var(--muted-foreground))",
             }}
+            tickFormatter={(v: number) => `$${v}`}
             domain={[0, Math.max(1, maxYRight)]}
             width={yAxisWidth}
             className="text-xs font-sans text-muted-foreground"
           >
             <Recharts.Label
-              value={isSmall ? "" : "Price ($)"}
+              value={isSmall ? "" : "Price"}
               angle={90}
               position="insideRight"
               offset={10}
@@ -607,8 +604,8 @@ const RevenueChart = ({
                 type="monotone"
                 dataKey="price"
                 stroke={COLOR_PRICE_LINE}
-                strokeWidth={2.5}
-                dot={{ r: 3 }}
+                strokeWidth={isSmall ? 1.5 : 2.5}
+                dot={{ r: isSmall ? 1.5 : 2 }}
                 isAnimationActive={false}
                 connectNulls={false}
               />

@@ -241,7 +241,7 @@ const TransactionsSection = () => {
                             })
                             .replace(",", "")}
                         </td>
-                        <td className="py-3 text-sm lg:hidden z-10 relative">
+                        <td className="py-3 lg:hidden z-10 relative text-xs font-sans">
                           {new Date(row.timestamp)
                             .toLocaleString("en-US", {
                               month: "numeric",
@@ -250,21 +250,21 @@ const TransactionsSection = () => {
                             })
                             .replace(",", "")}
                         </td>
-                        <td className="py-3 text-sm z-10 relative">
+                        <td className="py-3 text-sm z-10 relative max-lg:text-xs">
                           {row.typeLabel}
                         </td>
-                        <td className="py-3 text-sm hidden lg:table-cell z-10 relative">
+                        <td className="py-3 text-sm hidden lg:table-cell z-10 relative max-lg:text-xs">
                           {row.priceContent}
                         </td>
                         <td className="py-3 z-10 relative">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 max-lg:justify-center">
                             <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
                               <SuilendLogo size={12} />
                             </div>
                             {row.kind === "dca" && row.ongoing ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="text-sm underline decoration-dotted decoration-1 underline-offset-2">
+                                  <span className="text-sm underline decoration-dotted decoration-1 underline-offset-2 max-lg:text-xs">
                                     {toCompactNumber(row.outAmount)}
                                   </span>
                                 </TooltipTrigger>
@@ -274,19 +274,21 @@ const TransactionsSection = () => {
                                 </TooltipContent>
                               </Tooltip>
                             ) : (
-                              <span className="text-sm">
+                              <span className="text-sm max-lg:text-xs">
                                 {toCompactNumber(row.outAmount)}
                               </span>
                             )}
                           </div>
                         </td>
                         <td className="py-3 z-10 relative">
-                          <div className="flex items-center gap-2 text-sm">
+                          <div className="flex items-center gap-2 text-sm max-lg:justify-end">
                             {row.kind === "dca" ? (
-                              <span className="text-sm">{row.inAmount}</span>
+                              <span className="text-sm max-lg:text-xs">
+                                {row.inAmount}
+                              </span>
                             ) : (
-                              <>
-                                <div className="w-4 h-4 rounded-full flex items-center justify-center">
+                              <div className="flex items-center gap-2 text-sm max-lg:justify-end max-lg:text-xs">
+                                <div className="w-4 h-4 rounded-full flex items-center justify-end">
                                   <Image
                                     src={`${ASSETS_URL}/icons/usdc.png`}
                                     alt="USDC"
@@ -296,7 +298,7 @@ const TransactionsSection = () => {
                                   />
                                 </div>
                                 {row.inAmount}
-                              </>
+                              </div>
                             )}
                           </div>
                         </td>
