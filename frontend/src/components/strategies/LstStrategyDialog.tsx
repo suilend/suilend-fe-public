@@ -1731,7 +1731,9 @@ export default function LstStrategyDialog({
         ).minus(
           getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
-      ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      )
+        .times(0.9999) // 0.01% buffer for exchange rate errors
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       console.log(
         `[LstStrategyDialog] withdraw - ${i} max |`,
         JSON.stringify(
