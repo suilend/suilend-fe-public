@@ -19,7 +19,7 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 
 const generate_bytecode = (module: string, type: string) => {
   const bytecode = Buffer.from(
-    "oRzrCwYAAAAFAQACAgIEBwYsCDIgClIFAAIAAAIAD01BUktFVF9URU1QTEFURQtkdW1teV9maWVsZA9tYXJrZXJfdGVtcGxhdGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAQEBAA==",
+    "oRzrCwYAAAAFAQACAgIEBwYsCDIgClIFAAIAAAIAD01BUktFUl9URU1QTEFURQtkdW1teV9maWVsZA9tYXJrZXJfdGVtcGxhdGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAQEBAA==",
     "base64",
   );
 
@@ -184,7 +184,7 @@ export default function AddLendingMarketDialog() {
           label="module"
           id="module"
           value={module}
-          onChange={setModule}
+          onChange={(value) => setModule(value.toLowerCase())}
           inputProps={{ autoFocus: true }}
         />
         <div className="flex h-10 flex-row items-center">
@@ -195,7 +195,7 @@ export default function AddLendingMarketDialog() {
           label="type"
           id="type"
           value={type}
-          onChange={setType}
+          onChange={(value) => setType(value.toUpperCase())}
         />
       </div>
     </Dialog>
