@@ -319,6 +319,8 @@ const RevenueChart = ({
     [data, enabledMetrics],
   );
 
+  const lastIndex = chartData.length > 0 ? chartData.length - 1 : -1;
+
   const xTicks = useMemo(() => {
     const n = chartData.length;
     if (n === 0) return [] as number[];
@@ -512,6 +514,76 @@ const RevenueChart = ({
           barCategoryGap="0%"
           barGap="-100%"
         >
+          <defs>
+            <pattern
+              id="stripe-suilend"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill={COLOR_SUILEND} opacity="0.4" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke={COLOR_SUILEND}
+                strokeWidth="2"
+              />
+            </pattern>
+            <pattern
+              id="stripe-steamm"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill={COLOR_STEAMM} opacity="0.4" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke={COLOR_STEAMM}
+                strokeWidth="2"
+              />
+            </pattern>
+            <pattern
+              id="stripe-springsui"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill={COLOR_SPRINGSUI} opacity="0.4" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke={COLOR_SPRINGSUI}
+                strokeWidth="2"
+              />
+            </pattern>
+            <pattern
+              id="stripe-buybacks"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill={COLOR_BUYBACKS} opacity="0.4" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke={COLOR_BUYBACKS}
+                strokeWidth="2"
+              />
+            </pattern>
+          </defs>
           <Recharts.CartesianGrid
             strokeDasharray="3 3"
             stroke="hsl(var(--border))"
@@ -603,7 +675,16 @@ const RevenueChart = ({
                 1,
                 topRevenueKey === "suilendRevenue" ? topRadius : 0,
               )}
-            />
+            >
+              {chartData.map((_, i) => (
+                <Recharts.Cell
+                  key={`suil-${i}`}
+                  fill={
+                    i === lastIndex ? "url(#stripe-suilend)" : COLOR_SUILEND
+                  }
+                />
+              ))}
+            </Recharts.Bar>
           )}
           {enabledMetrics.steammRevenue && (
             <Recharts.Bar
@@ -621,7 +702,14 @@ const RevenueChart = ({
                 1,
                 topRevenueKey === "steammRevenue" ? topRadius : 0,
               )}
-            />
+            >
+              {chartData.map((_, i) => (
+                <Recharts.Cell
+                  key={`stm-${i}`}
+                  fill={i === lastIndex ? "url(#stripe-steamm)" : COLOR_STEAMM}
+                />
+              ))}
+            </Recharts.Bar>
           )}
           {enabledMetrics.springSuiRevenue && (
             <Recharts.Bar
@@ -639,7 +727,16 @@ const RevenueChart = ({
                 1,
                 topRevenueKey === "springSuiRevenue" ? topRadius : 0,
               )}
-            />
+            >
+              {chartData.map((_, i) => (
+                <Recharts.Cell
+                  key={`spr-${i}`}
+                  fill={
+                    i === lastIndex ? "url(#stripe-springsui)" : COLOR_SPRINGSUI
+                  }
+                />
+              ))}
+            </Recharts.Bar>
           )}
           {enabledMetrics.buybacks && (
             <Recharts.Bar
@@ -649,7 +746,16 @@ const RevenueChart = ({
               isAnimationActive={false}
               radius={[topRadius, topRadius, 0, 0]}
               shape={CenteredRoundedTopRectFraction(1, topRadius)}
-            />
+            >
+              {chartData.map((_, i) => (
+                <Recharts.Cell
+                  key={`buy-${i}`}
+                  fill={
+                    i === lastIndex ? "url(#stripe-buybacks)" : COLOR_BUYBACKS
+                  }
+                />
+              ))}
+            </Recharts.Bar>
           )}
           {enabledMetrics.price && (
             <>
