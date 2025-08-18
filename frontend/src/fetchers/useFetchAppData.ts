@@ -41,6 +41,20 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
+    // const x = await suiClient.getObject({
+    //   id: "0xf7b7ccd3fe3ba441207383bb83678b34266288c41ecd91afa72fff0d913af448",
+    //   options: {
+    //     showContent: true,
+    //     showDisplay: true,
+    //     showBcs: true,
+    //     showOwner: true,
+    //     showPreviousTransaction: true,
+    //     showStorageRebate: true,
+    //     showType: true,
+    //   },
+    // });
+    // console.log("XXXX", x);
+
     // Get lending markets from registry
     let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
     try {
