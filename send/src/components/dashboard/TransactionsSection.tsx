@@ -187,7 +187,7 @@ const TransactionsSection = () => {
           <div className="overflow-x-scroll">
             <div className="max-h-[480px] overflow-y-auto">
               <table className="w-full whitespace-nowrap border-separate border-spacing-0">
-                <thead className="sticky top-[-1px] bg-card z-20 border-b border-border">
+                <thead className="sticky top-[-1px] bg-card z-20 shadow-[0_1px_0_0_hsl(var(--border))]">
                   <tr className="border-b border-border">
                     <th className="text-xs text-left pl-4 py-3 font-sans font-normal text-muted-foreground">
                       Time (UTC)
@@ -245,7 +245,7 @@ const TransactionsSection = () => {
                           <td className="py-3 px-2 text-sm z-10 relative max-lg:text-xs">
                             {row.typeLabel}
                           </td>
-                          <td className="py-3 text-sm z-10 relative max-lg:text-xs font-sans">
+                          <td className="py-3 px-2 text-sm z-10 relative max-lg:text-xs font-sans">
                             {row.priceContent}
                           </td>
                           <td className="py-3 z-10 relative">
