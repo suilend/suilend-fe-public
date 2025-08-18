@@ -99,8 +99,8 @@ const TransactionsSection = () => {
       // Price content ($ per SEND)
       let priceContent: React.ReactNode;
       if (d.status === "completed" && outCur > 0) {
-        const price = inStart / 1_000_000 / (outCur / 1_000_000);
-        priceContent = `$${price.toFixed(4)}`;
+        const price = inStart / 1_000_000 / outCur;
+        priceContent = toCompactCurrency(price);
       } else if (d.status === "ongoing") {
         priceContent = (
           <span className="px-2 py-1 rounded text-xs font-medium text-white bg-primary">
