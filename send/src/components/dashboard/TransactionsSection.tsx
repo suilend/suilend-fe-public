@@ -240,7 +240,7 @@ const TransactionsSection = () => {
                   unifiedRows.map((row) => (
                     <>
                       <tr
-                        className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:rounded-r-md after:z-0 after:w-[var(--prog)] after:border-r-primary/50 after:border-r-2" : ""}`}
+                        className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:z-0 after:w-[var(--prog)] rounded-none" : ""}`}
                         style={
                           row.kind === "dca" && row.ongoing
                             ? {
