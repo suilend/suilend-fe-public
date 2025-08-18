@@ -6,6 +6,10 @@ export type Transaction = {
   sendAmount: number;
   usdValue: number;
   price: number;
+  inCoinType: string;
+  inCoinAmount: number;
+  outCoinType: string;
+  outCoinAmount: number;
 };
 
 export type TransactionsResponse = {
@@ -29,6 +33,10 @@ export function getTransactions(limit = 50, cursor?: string) {
           sendAmount: string | number;
           usdValue: string | number;
           price: string | number;
+          inCoinType: string;
+          inCoinAmount: string | number;
+          outCoinType: string;
+          outCoinAmount: string | number;
         }>;
         cursor?: string;
       } = await res.json();
@@ -58,6 +66,10 @@ export function getTransactions(limit = 50, cursor?: string) {
             sendAmount,
             usdValue,
             price,
+            inCoinType: r.inCoinType,
+            inCoinAmount: r.inCoinAmount,
+            outCoinType: r.outCoinType,
+            outCoinAmount: r.outCoinAmount,
           } as Transaction;
         })
         .filter((x): x is Transaction => Boolean(x));

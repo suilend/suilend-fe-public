@@ -15,17 +15,21 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const TransactionsSection = () => {
   const PAGE_SIZE = 25;
-  const { data, isLoading, error } = getTransactions(PAGE_SIZE);
-  const transactions = data?.results ?? [];
-  const { data: dcas } = getDcas();
+  const { data: rawDcas } = getDcas();
   const [cursor, setCursor] = React.useState<string | undefined>(undefined);
   const [prevCursors, setPrevCursors] = React.useState<string[]>([]);
-  const { data: pageData } = getTransactions(
-    PAGE_SIZE,
-    cursor === "start" ? undefined : cursor,
-  );
-  const pageResults = pageData?.results ?? transactions;
+  const {
+    data: pageData,
+    isLoading,
+    error,
+  } = getTransactions(PAGE_SIZE, cursor === "start" ? undefined : cursor);
+  // Avoid falling back to the first page while a paged request is loading
+  const pageResults = pageData?.results;
   const nextCursor = pageData?.cursor;
+
+  const dcas = rawDcas?.filter(
+    (d) => d.status !== "cancelled" || d.outCoinCurrentAmount !== "0",
+  );
 
   // Build unified rows (swaps + dcas), sorted by created time desc
   const unifiedRows = React.useMemo(() => {
@@ -49,7 +53,7 @@ const TransactionsSection = () => {
       priceContent: `$${tx.price.toFixed(4)}`,
       usdValue: tx.usdValue,
       outAmount: tx.sendAmount,
-      inAmount: undefined,
+      inAmount: toCompactNumber(tx.inCoinAmount / 1_000_000),
       viewHref: `https://suiscan.xyz/tx/${tx.digest}`,
     }));
 
@@ -60,7 +64,7 @@ const TransactionsSection = () => {
       const createdMs = d.createdAt > 1e12 ? d.createdAt : d.createdAt * 1000;
       const inStart = parseNum(d.inCoinStartingAmount) ?? 0; // USDC in base units
       const inCur = parseNum(d.inCoinCurrentAmount) ?? 0; // USDC in base units
-      const outCur = parseNum(d.outCoinCurrentAmount) ?? 0; // SEND amount (assumed display units)
+      const outCur = (parseNum(d.outCoinCurrentAmount) ?? 0) / 1_000_000; // SEND amount (assumed display units)
       const inPer = parseNum(d.inCoinPerCycle) ?? 0; // USDC in base units per cycle
 
       // USD value (USDC spent so far)
@@ -162,16 +166,16 @@ const TransactionsSection = () => {
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
                     Price
                   </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
                     USD Value
                   </th>
                   <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
                     Current Output
                   </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
-                    Total Input
+                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                    Input
                   </th>
-                  <th className="text-xs text-center py-3 font-sans font-normal text-muted-foreground">
+                  <th className="text-xs text-center py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
                     View
                   </th>
                 </tr>
@@ -224,7 +228,7 @@ const TransactionsSection = () => {
                       <td className="py-3 text-sm hidden lg:table-cell z-10 relative">
                         {row.priceContent}
                       </td>
-                      <td className="py-3 text-sm text-center z-10 relative">
+                      <td className="py-3 text-sm text-center z-10 relative hidden lg:table-cell">
                         <Tooltip>
                           <TooltipTrigger>
                             <span className="text-sm">
@@ -259,7 +263,7 @@ const TransactionsSection = () => {
                           </Tooltip>
                         </div>
                       </td>
-                      <td className="py-3 hidden lg:table-cell z-10 relative">
+                      <td className="py-3 z-10 relative">
                         <div className="flex items-center gap-2">
                           {row.kind === "dca" ? (
                             <span className="text-sm">{row.inAmount}</span>
@@ -273,12 +277,12 @@ const TransactionsSection = () => {
                                   height={16}
                                 />
                               </div>
-                              -
+                              {row.inAmount}
                             </>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 flex items-center justify-center z-10 relative">
+                      <td className="py-3 flex items-center justify-center z-10 relative hidden lg:table-cell">
                         <a href={row.viewHref} target="_blank" rel="noreferrer">
                           <ExternalLink className="w-4 h-4 text-muted-foreground" />
                         </a>
@@ -315,10 +319,10 @@ const TransactionsSection = () => {
                 className="px-3 py-1 rounded-md border border-border text-sm disabled:opacity-50"
                 disabled={!nextCursor}
                 onClick={() => {
-                  if (nextCursor) {
-                    setPrevCursors([...prevCursors, cursor ?? "start"]);
-                    setCursor(nextCursor);
-                  }
+                  if (!nextCursor) return;
+                  if (cursor === nextCursor) return; // already at last page
+                  setPrevCursors([...prevCursors, cursor ?? "start"]);
+                  setCursor(nextCursor);
                 }}
               >
                 Next

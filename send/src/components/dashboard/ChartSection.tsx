@@ -28,7 +28,7 @@ const ChartSection = () => {
     steammRevenue: true,
     suilendRevenue: true,
     springsuiRevenue: true,
-    buybacks: false,
+    buybacks: true,
     price: true,
   });
 

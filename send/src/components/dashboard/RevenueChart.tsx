@@ -32,7 +32,7 @@ type RawPoint = {
   suilendRevenue: number; // USD
   steammRevenue: number; // USD
   buybacks: number; // USD
-  price: number; // USD
+  price?: number; // USD (undefined when no datapoint)
 };
 
 // Colors: protocol-distinct hues. Metric is subtle via opacity.
@@ -155,19 +155,31 @@ function useProcessedData(
     const buybacksByTs = new Map<number, BuybacksPoint>(
       (buybacksData ?? []).map((p) => [p.timestamp, p]),
     );
-    // Price only has one datapoint per day. Index by start-of-day and carry forward daily value.
-    const priceByDay = new Map<number, number>(
-      (priceData ?? []).map((p) => [startOfDayUtc(p.timestamp), p.price]),
-    );
-    const dayKeys = Array.from(priceByDay.keys()).sort((a, b) => a - b);
+    // For 1d we have intraday points; otherwise price is daily
+    const isIntraday = period === "1d";
+    const priceByTs = isIntraday
+      ? new Map<number, number>(
+          (priceData ?? []).map((p) => [p.timestamp, p.price]),
+        )
+      : undefined;
+    const priceByDay = !isIntraday
+      ? new Map<number, number>(
+          (priceData ?? []).map((p) => [startOfDayUtc(p.timestamp), p.price]),
+        )
+      : undefined;
+    const dayKeys = priceByDay
+      ? Array.from(priceByDay.keys()).sort((a, b) => a - b)
+      : [];
     let priceIdx = 0;
 
     return timestamps.map((ts) => {
       const rev = revenueByTs.get(ts);
       const buy = buybacksByTs.get(ts);
-      // Resolve daily price for the timestamp by carrying forward the last known day value
-      let price = 0;
-      if (dayKeys.length > 0) {
+      // Resolve price: use intraday exact match for 1d; else carry-forward daily
+      let price: number | undefined = undefined;
+      if (isIntraday) {
+        price = priceByTs?.get(ts);
+      } else if (dayKeys.length > 0) {
         const dayTs = startOfDayUtc(ts);
         while (
           priceIdx + 1 < dayKeys.length &&
@@ -176,7 +188,7 @@ function useProcessedData(
           priceIdx += 1;
         }
         const key = dayKeys[priceIdx] <= dayTs ? dayKeys[priceIdx] : undefined;
-        price = key !== undefined ? priceByDay.get(key)! : 0;
+        price = key !== undefined ? priceByDay?.get(key) : undefined;
       }
       return {
         timestamp: ts,
@@ -196,6 +208,7 @@ function useProcessedData(
     const aggregate = (
       getBucketKey: (ts: number) => number,
       makeLabel: (bucket: number) => string,
+      nextTick?: (ts: number) => number | null,
     ) => {
       const map = new Map<
         number,
@@ -219,36 +232,85 @@ function useProcessedData(
             r1: pt.suilendRevenue,
             r2: pt.steammRevenue,
             b: pt.buybacks,
-            pSum: pt.price,
-            pCount: 1,
+            pSum: pt.price ?? 0,
+            pCount: pt.price != null ? 1 : 0,
           });
         } else {
           cur.r1 += pt.suilendRevenue;
           cur.r2 += pt.steammRevenue;
           cur.b += pt.buybacks;
-          cur.pSum += pt.price;
-          cur.pCount += 1;
+          if (pt.price != null) {
+            cur.pSum += pt.price;
+            cur.pCount += 1;
+          }
         }
       }
-      return Array.from(map.values())
-        .map((v) => ({
+      const sorted = Array.from(map.values()).sort((a, b) => a.ts - b.ts);
+      if (!nextTick) {
+        return sorted.map((v) => ({
           timestamp: v.ts,
-          label: v.label,
+          label: makeLabel(v.ts),
           suilendRevenue: v.r1,
           steammRevenue: v.r2,
           buybacks: v.b,
-          price: v.pSum / Math.max(1, v.pCount),
-        }))
-        .sort((a, b) => a.timestamp - b.timestamp);
+          price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
+        }));
+      }
+      if (sorted.length === 0) return [] as RawPoint[];
+      const byTs = new Map(sorted.map((v) => [v.ts, v] as const));
+      const out: RawPoint[] = [];
+      for (
+        let t = sorted[0].ts;
+        t !== null && t <= sorted[sorted.length - 1].ts;
+
+      ) {
+        const v = byTs.get(t);
+        if (v) {
+          out.push({
+            timestamp: v.ts,
+            label: makeLabel(v.ts),
+            suilendRevenue: v.r1,
+            steammRevenue: v.r2,
+            buybacks: v.b,
+            price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
+          });
+        } else {
+          out.push({
+            timestamp: t,
+            label: makeLabel(t),
+            suilendRevenue: 0,
+            steammRevenue: 0,
+            buybacks: 0,
+            price: undefined,
+          });
+        }
+        const nt = nextTick(t);
+        if (nt === null) break;
+        t = nt;
+      }
+      return out;
     };
 
     if (isSmall) {
       // Mobile bucketing
-      if (period === "1d") return aggregate(startOf4HourUtc, format4HourLabel);
+      if (period === "1d")
+        return aggregate(
+          startOf4HourUtc,
+          format4HourLabel,
+          (t) => t + 4 * 60 * 60 * 1000,
+        );
       if (period === "7d")
-        return aggregate(startOfDayUtc, (b) => formatWeekLabel(b));
+        return aggregate(
+          startOfDayUtc,
+          (b) => formatWeekLabel(b),
+          (t) => t + dayMs,
+        );
       if (period === "30d")
-        return aggregate(startOfWeekUtc, (b) => formatWeekLabel(b));
+        return aggregate(
+          startOfWeekUtc,
+          (b) => formatWeekLabel(b),
+          (t) => t + 7 * dayMs,
+        );
       if (period === "90d") {
         const get15Day = (ts: number) => {
           const d0 = startOfDayUtc(ts);
@@ -256,7 +318,11 @@ function useProcessedData(
           const base = Math.floor(idx / 15) * 15;
           return base * dayMs;
         };
-        return aggregate(get15Day, (b) => formatWeekLabel(b));
+        return aggregate(
+          get15Day,
+          (b) => formatWeekLabel(b),
+          (t) => t + 15 * dayMs,
+        );
       }
       if (period === "1y" || period === "all") {
         const twoMonth = (ts: number) => {
@@ -267,17 +333,49 @@ function useProcessedData(
           const m = bucketM % 12;
           return Date.UTC(y, m, 1);
         };
-        return aggregate(twoMonth, (b) => formatMonthLabel(b));
+        const next2Months = (t: number) => {
+          const d = new Date(t);
+          const y = d.getUTCFullYear();
+          const m = d.getUTCMonth() + 2;
+          return Date.UTC(y + Math.floor(m / 12), m % 12, 1);
+        };
+        return aggregate(twoMonth, (b) => formatMonthLabel(b), next2Months);
       }
       return raw;
     }
 
     // Desktop bucketing
+    if (period === "1d") {
+      const hourMs = 60 * 60 * 1000;
+      const startOfHour = (ts: number) => Math.floor(ts / hourMs) * hourMs;
+      return aggregate(
+        startOfHour,
+        (b) => formatHourLabel(b),
+        (t) => t + hourMs,
+      );
+    }
+    if (period === "7d") {
+      return aggregate(
+        startOfDayUtc,
+        (b) => formatWeekLabel(b),
+        (t) => t + dayMs,
+      );
+    }
     if (period === "30d" || period === "90d") {
-      return aggregate(startOfWeekUtc, (b) => formatWeekLabel(b));
+      return aggregate(
+        startOfWeekUtc,
+        (b) => formatWeekLabel(b),
+        (t) => t + 7 * dayMs,
+      );
     }
     if (period === "1y" || period === "all") {
-      return aggregate(startOfMonthUtc, (b) => formatMonthLabel(b));
+      const nextMonth = (t: number) => {
+        const d = new Date(t);
+        const y = d.getUTCFullYear();
+        const m = d.getUTCMonth() + 1;
+        return Date.UTC(y + Math.floor(m / 12), m % 12, 1);
+      };
+      return aggregate(startOfMonthUtc, (b) => formatMonthLabel(b), nextMonth);
     }
     // 1d and 7d: show raw
     return raw;
@@ -356,8 +454,11 @@ const RevenueChart = ({
 
   const maxYRight = useMemo(() => {
     if (!enabledMetrics.price) return 1;
-    const m = Math.max(1, ...data.map((d) => d.price));
-    const step = Math.pow(10, Math.floor(Math.log10(m)) - 1);
+    const m = Math.max(0, ...data.map((d) => d.price ?? 0));
+    if (!Number.isFinite(m) || m <= 0) return 1;
+    const exp = Math.floor(Math.log10(m));
+    const step = Math.pow(10, Math.max(exp - 1, 0));
+    if (!Number.isFinite(step) || step <= 0) return Math.ceil(m) || 1;
     return Math.ceil(m / step) * step;
   }, [data, enabledMetrics.price]);
 
@@ -754,7 +855,7 @@ const RevenueChart = ({
                 isAnimationActive={false}
                 points={undefined}
               />
-              {/* Real line draws over full domain by padding domain with -0.5..N-0.5 */}
+              {/* Real line draws; do not connect across nulls */}
               <Recharts.Line
                 yAxisId="right"
                 type="monotone"
@@ -763,7 +864,7 @@ const RevenueChart = ({
                 strokeWidth={2.5}
                 dot={{ r: 3 }}
                 isAnimationActive={false}
-                connectNulls
+                connectNulls={false}
               />
             </>
           )}

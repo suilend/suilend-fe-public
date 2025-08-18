@@ -41,7 +41,7 @@ export function getPriceChart(period: Period) {
             Number.isNaN(price)
           )
             return undefined;
-          return { timestamp: timestamp * 1000, price } as PricePoint;
+          return { timestamp: timestamp, price } as PricePoint;
         })
         .filter((x): x is PricePoint => Boolean(x));
     } catch (err) {
