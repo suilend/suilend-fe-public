@@ -20,6 +20,12 @@ export type DCA = {
   minOutCoinPerCycle: string | null;
   maxOutCoinPerCycle: string | null;
   objectId: string;
+  transactions: {
+    timestamp: number;
+    digest: string;
+    inCoinAmount: string;
+    outCoinAmount: string;
+  }[];
 };
 
 export const getDcas = () => {

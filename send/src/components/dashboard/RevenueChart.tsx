@@ -505,17 +505,27 @@ const RevenueChart = ({
       cursor += cadence;
     }
 
-    // Map cadence timestamps to nearest indices in chartData
+    // Map cadence timestamps to nearest indices in chartData (not just floor)
     const indices: number[] = [];
     let j = 0;
     for (const t of ticksTs) {
-      while (j + 1 < chartData.length && chartData[j + 1].timestamp <= t) j++;
+      while (
+        j + 1 < chartData.length &&
+        Math.abs(chartData[j + 1].timestamp - t) <=
+          Math.abs(chartData[j].timestamp - t)
+      )
+        j++;
       indices.push(chartData[j].index);
     }
     // De-duplicate indices
     const uniq: number[] = [];
     for (const idx of indices)
       if (uniq[uniq.length - 1] !== idx) uniq.push(idx);
+    // Ensure first/last indices are included so edge labels render
+    const lastIdx = chartData[chartData.length - 1].index;
+    if (uniq.length === 0 || uniq[0] !== chartData[0].index)
+      uniq.unshift(chartData[0].index);
+    if (uniq[uniq.length - 1] !== lastIdx) uniq.push(lastIdx);
     return uniq;
   }, [chartData, timeframe, isSmall]);
 

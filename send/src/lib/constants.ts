@@ -2,8 +2,8 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 
 export const TWITTER = "@suilendprotocol";
 
-export const TITLE = "Send Dashboard | Sui's DeFi Suite";
-export const DESCRIPTION = "Send Dashboard - Sui's DeFi Suite";
+export const TITLE = "SEND Dashboard | Sui's DeFi Suite";
+export const DESCRIPTION = "SEND Dashboard - Sui's DeFi Suite";
 
 export const TOAST_DURATION = 4 * 1000;
 export const TX_TOAST_DURATION = 10 * 1000;

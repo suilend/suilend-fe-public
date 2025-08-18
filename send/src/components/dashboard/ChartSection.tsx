@@ -66,7 +66,7 @@ const ChartSection = () => {
     if (enabledMetrics.steammRevenue) {
       pills.push({
         key: "steammRevenue",
-        label: "Steamm",
+        label: "STEAMM",
         color: "hsl(var(--secondary))",
       });
     }
