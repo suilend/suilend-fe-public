@@ -308,9 +308,7 @@ const ChartSection = () => {
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: pill.color }}
                     />
-                    <span className="text-sm font-sans">
-                      {pill.label}
-                    </span>
+                    <span className="text-sm font-sans">{pill.label}</span>
                     <button
                       onClick={() => removePill(pill.key)}
                       className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"

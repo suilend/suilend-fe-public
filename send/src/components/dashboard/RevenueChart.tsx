@@ -56,32 +56,6 @@ function formatTooltipDate(ts: number) {
   });
 }
 
-function startOfWeekUtc(ts: number): number {
-  const d = new Date(ts);
-  const day = d.getUTCDay(); // 0=Sun ... 6=Sat
-  const diffToMonday = (day + 6) % 7; // Monday=0
-  const monday = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
-  monday.setUTCDate(monday.getUTCDate() - diffToMonday);
-  return monday.getTime();
-}
-
-function startOfMonthUtc(ts: number): number {
-  const d = new Date(ts);
-  const monthStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-  return monthStart.getTime();
-}
-
-function formatMonthLabel(ts: number): string {
-  return new Date(ts).toLocaleDateString(undefined, { month: "short" });
-}
-
-function formatWeekLabel(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
 function formatHourLabel(ts: number): string {
   const d = new Date(ts);
   const hours = d.getUTCHours();
@@ -96,32 +70,7 @@ function startOfDayUtc(ts: number): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-function startOf4HourUtc(ts: number): number {
-  const date = new Date(ts);
-  const floorHour = Math.floor(date.getUTCHours() / 4) * 4;
-  return Date.UTC(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    floorHour,
-    0,
-    0,
-    0,
-  );
-}
-
-function format4HourLabel(ts: number): string {
-  const start = new Date(ts);
-  const end = new Date(ts + 4 * 60 * 60 * 1000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(start.getUTCHours())}–${pad(end.getUTCHours())}h`;
-}
-
-function useProcessedData(
-  period: Period,
-  isCumulative: boolean,
-  isSmall: boolean,
-) {
+function useProcessedData(period: Period, isCumulative: boolean) {
   const {
     data: revenueData,
     isLoading: loadingRev,
@@ -142,11 +91,14 @@ function useProcessedData(
   const anyError = errorRev || errorBuy || errorPrice;
 
   const raw: RawPoint[] = useMemo(() => {
-    // Build the union of timestamps from all series without any tolerance
+    // Build timeline from revenue + buybacks ONLY to keep consistent bar spacing.
+    // Do NOT include price timestamps here, or x-axis spacing becomes uneven.
     const tsSet = new Set<number>();
     (revenueData ?? []).forEach((p) => tsSet.add(p.timestamp));
     (buybacksData ?? []).forEach((p) => tsSet.add(p.timestamp));
-    (priceData ?? []).forEach((p) => tsSet.add(p.timestamp));
+    // Fallback: if both series are empty, use price to at least render the line
+    if (tsSet.size === 0)
+      (priceData ?? []).forEach((p) => tsSet.add(p.timestamp));
     const timestamps = Array.from(tsSet).sort((a, b) => a - b);
 
     const revenueByTs = new Map<number, RevenuePoint>(
@@ -201,185 +153,8 @@ function useProcessedData(
     });
   }, [revenueData, buybacksData, priceData, period]);
 
-  // Bucketing rules vary for mobile vs desktop
-  const bucketedRaw: RawPoint[] = useMemo(() => {
-    const dayMs = 24 * 60 * 60 * 1000;
-
-    const aggregate = (
-      getBucketKey: (ts: number) => number,
-      makeLabel: (bucket: number) => string,
-      nextTick?: (ts: number) => number | null,
-    ) => {
-      const map = new Map<
-        number,
-        {
-          ts: number;
-          label: string;
-          r1: number;
-          r2: number;
-          b: number;
-          pSum: number;
-          pCount: number;
-        }
-      >();
-      for (const pt of raw) {
-        const bucket = getBucketKey(pt.timestamp);
-        const cur = map.get(bucket);
-        if (!cur) {
-          map.set(bucket, {
-            ts: bucket,
-            label: makeLabel(bucket),
-            r1: pt.suilendRevenue,
-            r2: pt.steammRevenue,
-            b: pt.buybacks,
-            pSum: pt.price ?? 0,
-            pCount: pt.price != null ? 1 : 0,
-          });
-        } else {
-          cur.r1 += pt.suilendRevenue;
-          cur.r2 += pt.steammRevenue;
-          cur.b += pt.buybacks;
-          if (pt.price != null) {
-            cur.pSum += pt.price;
-            cur.pCount += 1;
-          }
-        }
-      }
-      const sorted = Array.from(map.values()).sort((a, b) => a.ts - b.ts);
-      if (!nextTick) {
-        return sorted.map((v) => ({
-          timestamp: v.ts,
-          label: makeLabel(v.ts),
-          suilendRevenue: v.r1,
-          steammRevenue: v.r2,
-          buybacks: v.b,
-          price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
-        }));
-      }
-      if (sorted.length === 0) return [] as RawPoint[];
-      const byTs = new Map(sorted.map((v) => [v.ts, v] as const));
-      const out: RawPoint[] = [];
-      for (
-        let t = sorted[0].ts;
-        t !== null && t <= sorted[sorted.length - 1].ts;
-
-      ) {
-        const v = byTs.get(t);
-        if (v) {
-          out.push({
-            timestamp: v.ts,
-            label: makeLabel(v.ts),
-            suilendRevenue: v.r1,
-            steammRevenue: v.r2,
-            buybacks: v.b,
-            price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
-          });
-        } else {
-          out.push({
-            timestamp: t,
-            label: makeLabel(t),
-            suilendRevenue: 0,
-            steammRevenue: 0,
-            buybacks: 0,
-            price: undefined,
-          });
-        }
-        const nt = nextTick(t);
-        if (nt === null) break;
-        t = nt;
-      }
-      return out;
-    };
-
-    if (isSmall) {
-      // Mobile bucketing
-      if (period === "1d")
-        return aggregate(
-          startOf4HourUtc,
-          format4HourLabel,
-          (t) => t + 4 * 60 * 60 * 1000,
-        );
-      if (period === "7d")
-        return aggregate(
-          startOfDayUtc,
-          (b) => formatWeekLabel(b),
-          (t) => t + dayMs,
-        );
-      if (period === "30d")
-        return aggregate(
-          startOfWeekUtc,
-          (b) => formatWeekLabel(b),
-          (t) => t + 7 * dayMs,
-        );
-      if (period === "90d") {
-        const get15Day = (ts: number) => {
-          const d0 = startOfDayUtc(ts);
-          const idx = Math.floor(d0 / dayMs);
-          const base = Math.floor(idx / 15) * 15;
-          return base * dayMs;
-        };
-        return aggregate(
-          get15Day,
-          (b) => formatWeekLabel(b),
-          (t) => t + 15 * dayMs,
-        );
-      }
-      if (period === "1y" || period === "all") {
-        const twoMonth = (ts: number) => {
-          const d = new Date(ts);
-          const mi = d.getUTCFullYear() * 12 + d.getUTCMonth();
-          const bucketM = Math.floor(mi / 2) * 2;
-          const y = Math.floor(bucketM / 12);
-          const m = bucketM % 12;
-          return Date.UTC(y, m, 1);
-        };
-        const next2Months = (t: number) => {
-          const d = new Date(t);
-          const y = d.getUTCFullYear();
-          const m = d.getUTCMonth() + 2;
-          return Date.UTC(y + Math.floor(m / 12), m % 12, 1);
-        };
-        return aggregate(twoMonth, (b) => formatMonthLabel(b), next2Months);
-      }
-      return raw;
-    }
-
-    // Desktop bucketing
-    if (period === "1d") {
-      const hourMs = 60 * 60 * 1000;
-      const startOfHour = (ts: number) => Math.floor(ts / hourMs) * hourMs;
-      return aggregate(
-        startOfHour,
-        (b) => formatHourLabel(b),
-        (t) => t + hourMs,
-      );
-    }
-    if (period === "7d") {
-      return aggregate(
-        startOfDayUtc,
-        (b) => formatWeekLabel(b),
-        (t) => t + dayMs,
-      );
-    }
-    if (period === "30d" || period === "90d") {
-      return aggregate(
-        startOfWeekUtc,
-        (b) => formatWeekLabel(b),
-        (t) => t + 7 * dayMs,
-      );
-    }
-    if (period === "1y" || period === "all") {
-      const nextMonth = (t: number) => {
-        const d = new Date(t);
-        const y = d.getUTCFullYear();
-        const m = d.getUTCMonth() + 1;
-        return Date.UTC(y + Math.floor(m / 12), m % 12, 1);
-      };
-      return aggregate(startOfMonthUtc, (b) => formatMonthLabel(b), nextMonth);
-    }
-    // 1d and 7d: show raw
-    return raw;
-  }, [raw, period, isSmall]);
+  // No bucketing: serve API data as-is (but keep labels and price handling)
+  const asIsRaw: RawPoint[] = useMemo(() => raw, [raw]);
 
   const processed = useMemo(() => {
     if (raw.length === 0)
@@ -392,7 +167,7 @@ function useProcessedData(
       }>;
 
     if (!isCumulative) {
-      return bucketedRaw.map((pt) => ({
+      return asIsRaw.map((pt) => ({
         timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: pt.suilendRevenue, buybacks: pt.buybacks },
@@ -404,7 +179,7 @@ function useProcessedData(
     let cumSuilend = 0;
     let cumSteamm = 0;
     let cumBuy = 0;
-    return bucketedRaw.map((pt) => {
+    return asIsRaw.map((pt) => {
       cumSuilend += pt.suilendRevenue;
       cumSteamm += pt.steammRevenue;
       cumBuy += pt.buybacks;
@@ -416,7 +191,7 @@ function useProcessedData(
         price: pt.price,
       };
     });
-  }, [bucketedRaw, isCumulative, raw.length]);
+  }, [asIsRaw, isCumulative, raw.length]);
 
   return { processed, loading, anyError };
 }
@@ -479,55 +254,16 @@ const RevenueChart = ({
   );
 
   const xTicks = useMemo(() => {
-    if (chartData.length === 0) return [] as number[];
-    // Prefer cadence-based ticks to avoid adjacent duplicates
-    const firstTs = chartData[0].timestamp;
-    const lastTs = chartData[chartData.length - 1].timestamp;
-    const hour = 60 * 60 * 1000;
-    const day = 24 * hour;
-
-    let cadence = hour; // default hourly
-    if (timeframe === "1d")
-      cadence = isSmall ? 4 * hour : 2 * hour; // mobile: 4h, desktop: 2h tick cadence
-    else if (timeframe === "7d") cadence = day;
-    else if (timeframe === "30d") cadence = 7 * day;
-    else if (timeframe === "90d") cadence = isSmall ? 15 * day : 7 * day;
-    else cadence = isSmall ? 60 * day : 30 * day; // coarse fallback
-
-    const alignToCadence = (ts: number) => Math.floor(ts / cadence) * cadence;
-    let cursor = alignToCadence(firstTs);
-    if (cursor < firstTs) cursor += cadence;
-
-    const ticksTs: number[] = [];
-    while (cursor <= lastTs + 1) {
-      // +1ms tolerance
-      ticksTs.push(cursor);
-      cursor += cadence;
-    }
-
-    // Map cadence timestamps to nearest indices in chartData (not just floor)
-    const indices: number[] = [];
-    let j = 0;
-    for (const t of ticksTs) {
-      while (
-        j + 1 < chartData.length &&
-        Math.abs(chartData[j + 1].timestamp - t) <=
-          Math.abs(chartData[j].timestamp - t)
-      )
-        j++;
-      indices.push(chartData[j].index);
-    }
-    // De-duplicate indices
-    const uniq: number[] = [];
-    for (const idx of indices)
-      if (uniq[uniq.length - 1] !== idx) uniq.push(idx);
-    // Ensure first/last indices are included so edge labels render
-    const lastIdx = chartData[chartData.length - 1].index;
-    if (uniq.length === 0 || uniq[0] !== chartData[0].index)
-      uniq.unshift(chartData[0].index);
-    if (uniq[uniq.length - 1] !== lastIdx) uniq.push(lastIdx);
-    return uniq;
-  }, [chartData, timeframe, isSmall]);
+    const n = chartData.length;
+    if (n === 0) return [] as number[];
+    // Aim for ~5 labels on small screens, ~10 on desktop, regardless of n
+    const maxLabels = isSmall ? 5 : 10;
+    const step = Math.max(1, Math.ceil(n / maxLabels));
+    const ticks: number[] = [];
+    for (let i = 0; i < n; i += step) ticks.push(i);
+    if (ticks[ticks.length - 1] !== n - 1) ticks.push(n - 1);
+    return ticks;
+  }, [chartData, isSmall]);
 
   // Left Y domain derived strictly from visible series
   const yMaxLeftVisible = useMemo(() => {
@@ -655,7 +391,10 @@ const RevenueChart = ({
     ({ x, y, width, height, fill }: any) => {
       // Recharts gives the category slot (x,width); we recenter our own width
       const cx = x + width / 2;
-      const w = Math.max(0, Math.floor(width * Math.max(0, Math.min(1, widthFraction))));
+      const w = Math.max(
+        0,
+        Math.floor(width * Math.max(0, Math.min(1, widthFraction))),
+      );
       const h = height; // can be negative for negative values
       const left = cx - w / 2;
       const right = cx + w / 2;
@@ -671,7 +410,7 @@ const RevenueChart = ({
       // If no rounding needed or height ~0, fall back to a plain rect path
       if (r === 0 || h === 0) {
         const dPlain = `M${left},${bottomY}V${topY}H${right}V${bottomY}Z`;
-        return <path d={dPlain} fill={fill} opacity={0.5}/>;
+        return <path d={dPlain} fill={fill} opacity={0.5} />;
       }
 
       // Build a path that rounds ONLY the top-left and top-right corners.
@@ -699,7 +438,7 @@ const RevenueChart = ({
           `V${topY}`,
           `Z`,
         ].join("");
-        return <path d={d} fill={fill} opacity={0.5}  />;
+        return <path d={d} fill={fill} opacity={0.5} />;
       }
     };
 
@@ -720,6 +459,7 @@ const RevenueChart = ({
           <Recharts.XAxis
             dataKey="index"
             type="number"
+            // Downsampled ticks for readability across long ranges
             ticks={xTicks}
             tickFormatter={(value: number) => chartData[value]?.label ?? ""}
             tick={{
@@ -734,7 +474,7 @@ const RevenueChart = ({
               chartData.length > 0 ? chartData.length - 0.5 : 1,
             ]}
             tickMargin={isSmall ? 2 : 6}
-            interval={"preserveStartEnd"}
+            interval={0}
           />
           <Recharts.YAxis
             yAxisId="left"
