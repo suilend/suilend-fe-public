@@ -676,7 +676,7 @@ const RevenueChart = ({
                 stroke={COLOR_PRICE_LINE}
                 strokeWidth={isSmall ? 1.5 : 2.5}
                 dot={
-                  chartData.length <= 100 ? { r: isSmall ? 1.5 : 2 } : undefined
+                  chartData.length <= 100 ? { r: 1 } : undefined
                 }
                 isAnimationActive={false}
                 connectNulls={false}
