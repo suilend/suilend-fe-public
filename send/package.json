@@ -34,11 +34,12 @@
     "next-themes": "^0.4.3",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "sass": "^1.81.0",
     "recharts": "^2.12.7",
+    "sass": "^1.81.0",
+    "swr": "^2.2.5",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "swr": "^2.2.5"
+    "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
     "@tsconfig/next": "^2.0.3",

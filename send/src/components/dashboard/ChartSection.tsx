@@ -1,6 +1,5 @@
-import { useState } from "react";
-
 import { Plus, X } from "lucide-react";
+import { useLocalStorage } from "usehooks-ts";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -21,20 +20,27 @@ import { Checkbox } from "../ui/checkbox";
 import RevenueChart from "./RevenueChart";
 
 const ChartSection = () => {
-  const [selectedTimeframe, setSelectedTimeframe] = useState<Period>("30d");
-  const [isCumulative, setIsCumulative] = useState(true);
+  const [selectedTimeframe, setSelectedTimeframe] = useLocalStorage<Period>(
+    "selectedTimeframe",
+    "30d",
+  );
+  const [isCumulative, setIsCumulative] = useLocalStorage(
+    "isCumulative",
+    false,
+  );
 
-  const [enabledMetrics, setEnabledMetrics] = useState({
-    steammRevenue: true,
-    suilendRevenue: true,
-    springsuiRevenue: true,
-    buybacks: true,
-    price: true,
-  });
+  const [enabledMetrics, setEnabledMetrics] = useLocalStorage(
+    "enabledMetrics",
+    {
+      steammRevenue: false,
+      suilendRevenue: false,
+      springsuiRevenue: false,
+      buybacks: true,
+      price: false,
+    },
+  );
 
   const toggleMetric = (key: keyof typeof enabledMetrics) => {
-    const numEnabled = Object.values(enabledMetrics).filter(Boolean).length;
-    if (numEnabled === 1 && enabledMetrics[key]) return; // keep at least one
     setEnabledMetrics((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -73,7 +79,7 @@ const ChartSection = () => {
     if (enabledMetrics.springsuiRevenue) {
       pills.push({
         key: "springsuiRevenue",
-        label: "SpringSUI",
+        label: "SpringSui",
         color: "#6DA8FF",
       });
     }
@@ -85,7 +91,7 @@ const ChartSection = () => {
     if (enabledMetrics.price) {
       pills.push({
         key: "price",
-        label: "Price",
+        label: "SEND Price",
         color: "hsl(var(--muted-foreground))",
       });
     }
@@ -102,7 +108,7 @@ const ChartSection = () => {
         <div className="flex items-center gap-2">
           <label
             htmlFor="cumulative"
-            className="text-sm font-sans text-muted-foreground max-lg:text-xs"
+            className="text-xs font-sans text-muted-foreground"
           >
             Cumulative
           </label>
@@ -125,7 +131,7 @@ const ChartSection = () => {
           value={selectedTimeframe}
           onValueChange={(v) => setSelectedTimeframe(v as Period)}
         >
-          <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm font-mono bg-background w-auto">
+          <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm font-sans bg-background w-auto text-muted-foreground">
             {(() => {
               const labelMap: Record<Period, string> = {
                 "1d": "1D",
@@ -133,18 +139,52 @@ const ChartSection = () => {
                 "30d": "30D",
                 "90d": "90D",
                 "1y": "1Y",
-                all: "All time",
+                all: "ALL",
               };
-              return labelMap[selectedTimeframe];
+              return (
+                <span className="text-xs font-sans text-muted-foreground">
+                  {labelMap[selectedTimeframe]}
+                </span>
+              );
             })()}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="1d">1D</SelectItem>
-            <SelectItem value="7d">7D</SelectItem>
-            <SelectItem value="30d">30D</SelectItem>
-            <SelectItem value="90d">90D</SelectItem>
-            <SelectItem value="1y">1Y</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
+            <SelectItem
+              value="1d"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              1D
+            </SelectItem>
+            <SelectItem
+              value="7d"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              7D
+            </SelectItem>
+            <SelectItem
+              value="30d"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              30D
+            </SelectItem>
+            <SelectItem
+              value="90d"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              90D
+            </SelectItem>
+            <SelectItem
+              value="1y"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              1Y
+            </SelectItem>
+            <SelectItem
+              value="all"
+              className="text-xs font-sans text-muted-foreground"
+            >
+              ALL
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -153,7 +193,6 @@ const ChartSection = () => {
 
   return (
     <>
-      <span className="text-lg font-mono">BUYBACK</span>
       <Card className="max-lg:pb-0">
         <CardHeader>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -161,7 +200,7 @@ const ChartSection = () => {
             <div className="flex items-center gap-2 justify-between">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 text-sm font-sans bg-background border border-border rounded-md hover:bg-muted transition-colors">
+                  <button className="flex items-center gap-2 px-3 py-2 font-sans bg-background border border-border rounded-md hover:bg-muted transition-colors text-muted-foreground text-xs">
                     Metric
                     <Plus className="h-4 w-4" />
                   </button>
@@ -169,7 +208,7 @@ const ChartSection = () => {
                 <PopoverContent align="start" className="w-56 p-0">
                   <div className="p-1">
                     <div
-                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
                       onClick={() => toggleMetric("buybacks")}
                     >
                       <Checkbox
@@ -182,23 +221,32 @@ const ChartSection = () => {
                     <div className="h-px bg-border my-1" />
 
                     <div
-                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
                       onClick={toggleRevenue}
                     >
-                      <Checkbox
-                        checked={
+                      {(() => {
+                        const all =
                           enabledMetrics.suilendRevenue &&
                           enabledMetrics.steammRevenue &&
-                          enabledMetrics.springsuiRevenue
-                        }
-                        className="mr-2"
-                      />
+                          enabledMetrics.springsuiRevenue;
+                        const any =
+                          enabledMetrics.suilendRevenue ||
+                          enabledMetrics.steammRevenue ||
+                          enabledMetrics.springsuiRevenue;
+                        return (
+                          <Checkbox
+                            checked={all}
+                            indeterminate={!all && any}
+                            className="mr-2"
+                          />
+                        );
+                      })()}
                       Revenue
                     </div>
 
                     <div className="pl-6">
                       <div
-                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
                         onClick={() => toggleMetric("suilendRevenue")}
                       >
                         <Checkbox
@@ -208,7 +256,7 @@ const ChartSection = () => {
                         Suilend
                       </div>
                       <div
-                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
                         onClick={() => toggleMetric("steammRevenue")}
                       >
                         <Checkbox
@@ -218,28 +266,28 @@ const ChartSection = () => {
                         Steamm
                       </div>
                       <div
-                        className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                        className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
                         onClick={() => toggleMetric("springsuiRevenue")}
                       >
                         <Checkbox
                           checked={enabledMetrics.springsuiRevenue}
                           className="mr-2"
                         />
-                        SpringSUI
+                        SpringSui
                       </div>
                     </div>
 
                     <div className="h-px bg-border my-1" />
 
                     <div
-                      className="flex items-center px-2 py-1.5 text-sm font-sans cursor-pointer text-foreground hover:bg-accent rounded-sm"
+                      className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-xs text-muted-foreground text-xs"
                       onClick={() => toggleMetric("price")}
                     >
                       <Checkbox
                         checked={enabledMetrics.price}
                         className="mr-2"
                       />
-                      Price
+                      SEND Price
                     </div>
                   </div>
                 </PopoverContent>
@@ -260,7 +308,9 @@ const ChartSection = () => {
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: pill.color }}
                     />
-                    <span>{pill.label}</span>
+                    <span className="text-xs font-sans text-muted-foreground">
+                      {pill.label}
+                    </span>
                     <button
                       onClick={() => removePill(pill.key)}
                       className="ml-1 hover:bg-muted rounded-full p-0.5 transition-colors"

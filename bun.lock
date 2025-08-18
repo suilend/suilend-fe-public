@@ -159,6 +159,7 @@
         "swr": "^2.2.5",
         "tailwind-merge": "^2.5.4",
         "tailwindcss-animate": "^1.0.7",
+        "usehooks-ts": "^3.1.1",
       },
       "devDependencies": {
         "@tsconfig/next": "^2.0.3",

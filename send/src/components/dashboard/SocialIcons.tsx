@@ -37,18 +37,6 @@ const SocialIcons = () => (
         quality={100}
       />
     </Link>
-    <Link
-      href="https://suiscan.xyz/mainnet/coin/0xb45fcfcc2cc07ce0702cc2d229621e046c906ef14d9b25e8e4d25f6e8763fef7::send::SEND"
-      target="_blank"
-    >
-      <Image
-        src={`${ASSETS_URL}/icons/suiscan.svg`}
-        alt="Suiscan"
-        width={18}
-        height={18}
-        quality={100}
-      />
-    </Link>
   </div>
 );
 

@@ -15,6 +15,7 @@ import {
   SEND_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
+  STRATEGIES_URL,
   SWAP_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -22,8 +23,8 @@ import { cn } from "@/lib/utils";
 function More() {
   return (
     <>
-      <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={SEND_URL}>SEND</Link>
+      <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={ABOUT_URL}>About</Link>
       {/* External */}
       <Link
@@ -40,7 +41,6 @@ function More() {
       >
         STEAMM
       </Link>
-      <Link href={BUYBACK_URL}>Metrics</Link>
     </>
   );
 }
@@ -61,6 +61,10 @@ export default function NavigationLinks() {
       <Link href={ROOT_URL}>Lend</Link>
       <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
         Swap
+      </Link>
+      <Link href={STRATEGIES_URL}>Strategies</Link>
+      <Link href={BUYBACK_URL} label="New">
+        SEND
       </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>
       {/* More */}

@@ -591,7 +591,7 @@ const RevenueChart = ({
       });
     if (enabledMetrics.springsuiRevenue && d.springsuiRevenue > 0)
       rows.push({
-        label: "SpringSUI",
+        label: "SpringSui",
         value: d.springsuiRevenue,
         color: COLOR_SPRINGSUI,
       });
@@ -622,7 +622,7 @@ const RevenueChart = ({
             <span>{toCompactCurrency(r.value)}</span>
           </div>
         ))}
-        {enabledMetrics.price && (
+        {enabledMetrics.price && d.price > 0 && (
           <div className="flex items-center justify-between gap-4 text-sm mt-1">
             <div className="flex items-center gap-2">
               <span
@@ -637,18 +637,12 @@ const RevenueChart = ({
       </div>
     );
   };
-  const bothActive =
-    enabledMetrics.buybacks &&
-    (enabledMetrics.suilendRevenue ||
-      enabledMetrics.steammRevenue ||
-      enabledMetrics.springsuiRevenue);
 
   // When both are active, overlay buybacks as a thinner bar inside revenue using negative barGap
   // Tighter bars on mobile to fit coarser buckets
   // Adjust barGap to counteract category width expansion when both bars are enabled
-  const composedBarGap = bothActive ? (isSmall ? -13 : -23) : 0;
   const revenueBarSize = isSmall ? 18 : 30;
-  const buybacksBarSize = isSmall ? 7 : 15;
+  const composedBarGap = -revenueBarSize;
 
   // Rounded corners: only the top-most revenue segment should have rounded top edges
   const topRadius = isSmall ? 2 : 3;
@@ -664,7 +658,7 @@ const RevenueChart = ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, react/display-name
     ({ x, y, width, height, fill }: any) => {
       // Recharts gives the category slot (x,width); we recenter our own width
-      const cx = x + width / 2 - (bothActive ? 4 : 0);
+      const cx = x + width / 2;
       const w = Math.max(0, Math.floor(desiredWidth));
       const h = height; // can be negative for negative values
       const left = cx - w / 2;
@@ -681,7 +675,7 @@ const RevenueChart = ({
       // If no rounding needed or height ~0, fall back to a plain rect path
       if (r === 0 || h === 0) {
         const dPlain = `M${left},${bottomY}V${topY}H${right}V${bottomY}Z`;
-        return <path d={dPlain} fill={fill} />;
+        return <path d={dPlain} fill={fill} opacity={0.5} />;
       }
 
       // Build a path that rounds ONLY the top-left and top-right corners.
@@ -697,7 +691,7 @@ const RevenueChart = ({
           `V${bottomY}`, // down right edge
           `Z`,
         ].join("");
-        return <path d={d} fill={fill} />;
+        return <path d={d} fill={fill} opacity={0.5} />;
       } else {
         // Negative bar (extends upward) — "top" visually is bottomY
         const d = [
@@ -709,7 +703,7 @@ const RevenueChart = ({
           `V${topY}`,
           `Z`,
         ].join("");
-        return <path d={d} fill={fill} />;
+        return <path d={d} fill={fill} opacity={0.5} />;
       }
     };
 
@@ -736,6 +730,7 @@ const RevenueChart = ({
               fontSize: isSmall ? 10 : 12,
               fill: "hsl(var(--muted-foreground))",
             }}
+            className="text-xs font-sans text-muted-foreground"
             axisLine={true}
             tickLine={false}
             domain={[
@@ -752,6 +747,7 @@ const RevenueChart = ({
               fontSize: isSmall ? 10 : 12,
               fill: "hsl(var(--muted-foreground))",
             }}
+            className="text-xs font-sans text-muted-foreground"
             tickFormatter={(v: number) => toCompactCurrency(v)}
             domain={[0, yMaxLeftVisible]}
             allowDecimals
@@ -762,6 +758,7 @@ const RevenueChart = ({
               angle={-90}
               position="insideLeft"
               offset={isSmall ? 0 : -5}
+              className="text-xs font-sans text-muted-foreground"
               style={{
                 fill: "hsl(var(--muted-foreground))",
                 fontSize: isSmall ? 10 : 12,
@@ -777,12 +774,14 @@ const RevenueChart = ({
             }}
             domain={[0, Math.max(1, maxYRight)]}
             width={yAxisWidth}
+            className="text-xs font-sans text-muted-foreground"
           >
             <Recharts.Label
               value={isSmall ? "" : "Price ($)"}
               angle={90}
               position="insideRight"
               offset={10}
+              className="text-xs font-sans text-muted-foreground"
               style={{
                 fill: "hsl(var(--muted-foreground))",
                 fontSize: isSmall ? 10 : 12,
@@ -854,9 +853,9 @@ const RevenueChart = ({
               fill={COLOR_BUYBACKS}
               isAnimationActive={false}
               opacity={0.9}
-              barSize={buybacksBarSize}
+              barSize={revenueBarSize}
               radius={[topRadius, topRadius, 0, 0]}
-              shape={CenteredRoundedTopRect(buybacksBarSize, topRadius)}
+              shape={CenteredRoundedTopRect(revenueBarSize, topRadius)}
             />
           )}
           {enabledMetrics.price && (
