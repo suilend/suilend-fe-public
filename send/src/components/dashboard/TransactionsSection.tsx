@@ -201,7 +201,7 @@ const TransactionsSection = () => {
                     <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-center">
                       SEND Amount
                     </th>
-                    <th className="text-xs text-center py-3 font-sans font-normal text-muted-foreground max-lg:pr-2">
+                    <th className="text-xs text-left max-lg:text-center py-3 font-sans font-normal text-muted-foreground">
                       Value
                     </th>
                     <th className="text-xs text-right pr-2 py-3 font-sans font-normal text-muted-foreground">
