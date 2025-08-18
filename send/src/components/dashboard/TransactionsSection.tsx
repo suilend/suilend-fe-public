@@ -348,7 +348,7 @@ const TransactionsSection = () => {
                             <td colSpan={6} className="py-3">
                               {/* Summary card */}
                               <div className="border border-border rounded-md p-3 mb-3">
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 lg:flex lg:justify-between">
                                   <div>
                                     <div className="text-xs text-muted-foreground font-sans text-center">
                                       Status
@@ -406,7 +406,7 @@ const TransactionsSection = () => {
                                     </div>
                                   </div>
                                   <div className="flex items-center justify-between gap-2">
-                                    <div>
+                                    <div className="flex items-center gap-4">
                                       <div className="text-xs text-muted-foreground font-sans text-center">
                                         Txns
                                       </div>
@@ -466,7 +466,7 @@ const TransactionsSection = () => {
                                       <th className="text-left font-normal font-sans py-2 whitespace-nowrap text-muted-foreground text-xs">
                                         Input
                                       </th>
-                                      <th className="text-center font-normal font-sans py-2 whitespace-nowrap text-muted-foreground text-xs">
+                                      <th className="text-right font-normal font-sans py-2 whitespace-nowrap text-muted-foreground text-xs">
                                         Txn
                                       </th>
                                     </tr>

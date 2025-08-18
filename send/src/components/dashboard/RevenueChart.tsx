@@ -604,7 +604,9 @@ const RevenueChart = ({
     const dateStr = formatTooltipDate(d.timestamp);
     return (
       <div className="rounded-md border bg-[#081126] text-foreground px-3 py-2 shadow-md">
-        <div className="text-xs text-muted-foreground mb-2">{dateStr}</div>
+        <div className="text-xs text-muted-foreground font-sans mb-2">
+          {dateStr}
+        </div>
         {rows.map((r, i) => (
           <div
             key={i}
@@ -615,7 +617,7 @@ const RevenueChart = ({
                 className="inline-block w-2.5 h-2.5 rounded-sm"
                 style={{ background: r.color }}
               />
-              <span>{r.label}</span>
+              <span className="font-sans text-muted-foreground">{r.label}</span>
             </div>
             <span>{toCompactCurrency(r.value)}</span>
           </div>
@@ -627,7 +629,7 @@ const RevenueChart = ({
                 className="inline-block w-2.5 h-2.5 rounded-sm"
                 style={{ background: COLOR_PRICE_LINE }}
               />
-              <span>Price</span>
+              <span className="font-sans text-muted-foreground">Price</span>
             </div>
             <span>{`$${Number(d.price).toFixed(2)}`}</span>
           </div>
@@ -794,6 +796,7 @@ const RevenueChart = ({
               dataKey="suilendRevenue"
               stackId="revenue"
               fill={COLOR_SUILEND}
+              isAnimationActive={false}
               radius={
                 topRevenueKey === "suilendRevenue"
                   ? [topRadius, topRadius, 0, 0]
@@ -812,6 +815,7 @@ const RevenueChart = ({
               dataKey="steammRevenue"
               stackId="revenue"
               fill={COLOR_STEAMM}
+              isAnimationActive={false}
               radius={
                 topRevenueKey === "steammRevenue"
                   ? [topRadius, topRadius, 0, 0]
@@ -830,6 +834,7 @@ const RevenueChart = ({
               dataKey="springsuiRevenue"
               stackId="revenue"
               fill={COLOR_SPRINGSUI}
+              isAnimationActive={false}
               radius={
                 topRevenueKey === "springsuiRevenue"
                   ? [topRadius, topRadius, 0, 0]
@@ -847,6 +852,7 @@ const RevenueChart = ({
               yAxisId="left"
               dataKey="buybacks"
               fill={COLOR_BUYBACKS}
+              isAnimationActive={false}
               opacity={0.9}
               barSize={buybacksBarSize}
               radius={[topRadius, topRadius, 0, 0]}
