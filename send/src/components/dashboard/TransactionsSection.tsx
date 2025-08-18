@@ -185,148 +185,153 @@ const TransactionsSection = () => {
       <Card>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
-                    Time
-                  </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
-                    Type
-                  </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
-                    Price
-                  </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-center">
-                    SEND Amount
-                  </th>
-                  <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-right">
-                    Value
-                  </th>
-                  <th className="text-xs text-center py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
-                    View
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading && (
-                  <tr>
-                    <td colSpan={6} className="py-3 px-4">
-                      <Skeleton className="h-5 w-full" />
-                    </td>
+            <div className="max-h-[480px] overflow-y-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-card z-20">
+                  <tr className="border-b border-border">
+                    <th className="text-xs text-left lg:pl-4 py-3 font-sans font-normal text-muted-foreground">
+                      Time
+                    </th>
+                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground">
+                      Type
+                    </th>
+                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
+                      Price
+                    </th>
+                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-center">
+                      SEND Amount
+                    </th>
+                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-right">
+                      Value
+                    </th>
+                    <th className="text-xs text-right pr-4 py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
+                      View
+                    </th>
                   </tr>
-                )}
-                {!isLoading &&
-                  unifiedRows.map((row) => (
-                    <>
-                      <tr
-                        className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:z-0 after:w-[var(--prog)] rounded-none" : ""}`}
-                        style={
-                          row.kind === "dca" && row.ongoing
-                            ? {
-                                ["--prog" as keyof CSSProperties]: `${row.progressPercent ?? 0}%`,
-                              }
-                            : undefined
-                        }
-                      >
-                        <td className="py-3 hidden lg:table-cell z-10 relative text-foreground text-xs font-sans">
-                          {new Date(row.timestamp)
-                            .toLocaleString("en-US", {
-                              month: "numeric",
-                              day: "numeric",
-                              year: "2-digit",
-                              hour: "numeric",
-                              minute: "numeric",
-                              hour12: false,
-                            })
-                            .replace(",", "")}
-                        </td>
-                        <td className="py-3 lg:hidden z-10 relative text-xs font-sans">
-                          {new Date(row.timestamp)
-                            .toLocaleString("en-US", {
-                              month: "numeric",
-                              day: "numeric",
-                              year: "2-digit",
-                            })
-                            .replace(",", "")}
-                        </td>
-                        <td className="py-3 text-sm z-10 relative max-lg:text-xs">
-                          {row.typeLabel}
-                        </td>
-                        <td className="py-3 text-sm hidden lg:table-cell z-10 relative max-lg:text-xs">
-                          {row.priceContent}
-                        </td>
-                        <td className="py-3 z-10 relative">
-                          <div className="flex items-center gap-1 max-lg:justify-center">
-                            <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
-                              <SuilendLogo size={12} />
-                            </div>
-                            {row.kind === "dca" && row.ongoing ? (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="text-sm underline decoration-dotted decoration-1 underline-offset-2 max-lg:text-xs">
-                                    {toCompactNumber(row.outAmount)}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent className="font-sans text-xs">
-                                  DCA is ongoing and will continue to buy more
-                                  SEND.
-                                </TooltipContent>
-                              </Tooltip>
-                            ) : (
-                              <span className="text-sm max-lg:text-xs">
-                                {toCompactNumber(row.outAmount)}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 z-10 relative">
-                          <div className="flex items-center gap-2 text-sm max-lg:justify-end">
-                            {row.kind === "dca" ? (
-                              <span className="text-sm max-lg:text-xs">
-                                {row.inAmount}
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-2 text-sm max-lg:justify-end max-lg:text-xs">
-                                <div className="w-4 h-4 rounded-full flex items-center justify-end">
-                                  <Image
-                                    src={`${ASSETS_URL}/icons/usdc.png`}
-                                    alt="USDC"
-                                    className="rounded-full overflow-hidden"
-                                    width={16}
-                                    height={16}
-                                  />
-                                </div>
-                                {row.inAmount}
+                </thead>
+                <tbody>
+                  {isLoading && (
+                    <tr>
+                      <td colSpan={6} className="py-3 px-4">
+                        <Skeleton className="h-5 w-full" />
+                      </td>
+                    </tr>
+                  )}
+                  {!isLoading &&
+                    unifiedRows.map((row) => (
+                      <>
+                        <tr
+                          className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:z-0 after:w-[var(--prog)] rounded-none" : ""}`}
+                          style={
+                            row.kind === "dca" && row.ongoing
+                              ? {
+                                  ["--prog" as keyof CSSProperties]: `${row.progressPercent ?? 0}%`,
+                                }
+                              : undefined
+                          }
+                        >
+                          <td className="py-3 hidden lg:table-cell lg:pl-4 z-10 relative text-foreground text-xs font-sans">
+                            {new Date(row.timestamp)
+                              .toLocaleString("en-US", {
+                                month: "numeric",
+                                day: "numeric",
+                                year: "2-digit",
+                                hour: "numeric",
+                                minute: "numeric",
+                                hour12: false,
+                              })
+                              .replace(",", "")}
+                          </td>
+                          <td className="py-3 lg:hidden z-10 relative text-xs font-sans">
+                            {new Date(row.timestamp)
+                              .toLocaleString("en-US", {
+                                month: "numeric",
+                                day: "numeric",
+                                year: "2-digit",
+                              })
+                              .replace(",", "")}
+                          </td>
+                          <td className="py-3 text-sm z-10 relative max-lg:text-xs">
+                            {row.typeLabel}
+                          </td>
+                          <td className="py-3 text-sm hidden lg:table-cell z-10 relative max-lg:text-xs">
+                            {row.priceContent}
+                          </td>
+                          <td className="py-3 z-10 relative">
+                            <div className="flex items-center gap-1 max-lg:justify-center">
+                              <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                                <SuilendLogo size={12} />
                               </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 items-center justify-center z-10 relative text-center hidden lg:table-cell">
-                          <a
-                            href={row.viewHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex justify-center"
-                          >
-                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                          </a>
-                        </td>
-                      </tr>
-                    </>
-                  ))}
-                {error && (
-                  <tr>
-                    <td colSpan={6} className="py-3 px-4 text-red-500 text-sm">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>Failed to load transactions</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                              {row.kind === "dca" && row.ongoing ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-sm underline decoration-dotted decoration-1 underline-offset-2 max-lg:text-xs">
+                                      {toCompactNumber(row.outAmount)}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="font-sans text-xs">
+                                    DCA is ongoing and will continue to buy more
+                                    SEND.
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <span className="text-sm max-lg:text-xs">
+                                  {toCompactNumber(row.outAmount)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 z-10 relative">
+                            <div className="flex items-center gap-2 text-sm max-lg:justify-end">
+                              {row.kind === "dca" ? (
+                                <span className="text-sm max-lg:text-xs">
+                                  {row.inAmount}
+                                </span>
+                              ) : (
+                                <div className="flex items-center gap-2 text-sm max-lg:justify-end max-lg:text-xs">
+                                  <div className="w-4 h-4 rounded-full flex items-center justify-end">
+                                    <Image
+                                      src={`${ASSETS_URL}/icons/usdc.png`}
+                                      alt="USDC"
+                                      className="rounded-full overflow-hidden"
+                                      width={16}
+                                      height={16}
+                                    />
+                                  </div>
+                                  {row.inAmount}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 z-10 relative text-right hidden lg:table-cell pr-4">
+                            <a
+                              href={row.viewHref}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex justify-end"
+                            >
+                              <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                            </a>
+                          </td>
+                        </tr>
+                      </>
+                    ))}
+                  {error && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="py-3 px-4 text-red-500 text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          <span>Failed to load transactions</span>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
             <div className="flex items-center justify-between pt-4 gap-2">
               <button
                 className="px-3 py-1 rounded-md border border-border disabled:opacity-50 text-muted-foreground text-xs font-sans"
