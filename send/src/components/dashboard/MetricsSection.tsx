@@ -42,7 +42,7 @@ const MetricsSection = () => {
         <CardContent className="p-3 lg:p-5 flex justify-between w-full">
           <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground flex items-center gap-1 lg:gap-2 mb-2 text-right">
-              <span className="hidden lg:block">Total Buybacks</span>
+              <span>Total</span>
               {showUsdValue ? (
                 <ArrowRightLeft
                   className="w-4 cursor-pointer h-4"
