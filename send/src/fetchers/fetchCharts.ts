@@ -28,7 +28,6 @@ function isTestMode1Y(): boolean {
   } catch {}
   // Fallback to NEXT_PUBLIC env if provided
   try {
-    // eslint-disable-next-line no-process-env
     return process.env.NEXT_PUBLIC_SEND_TEST_CHARTS_1Y === "true";
   } catch {
     return false;
@@ -47,8 +46,8 @@ function generatePastYearDailyBuybacks(): BuybacksPoint[] {
   for (let i = 364; i >= 0; i -= 1) {
     const ts = today - i * day;
     // Randomized but reasonable magnitudes
-    const usdValue = Math.max(0, Math.round((Math.random() ** 2) * 200_000));
-    const sendAmount = Math.max(0, Math.round((Math.random() ** 2) * 350_000));
+    const usdValue = Math.max(0, Math.round(Math.random() ** 2 * 200_000));
+    const sendAmount = Math.max(0, Math.round(Math.random() ** 2 * 350_000));
     const transactionCount = Math.floor(Math.random() * 300);
     out.push({ timestamp: ts, usdValue, sendAmount, transactionCount });
   }
@@ -61,11 +60,23 @@ function generatePastYearDailyRevenue(): RevenuePoint[] {
   const out: RevenuePoint[] = [];
   for (let i = 364; i >= 0; i -= 1) {
     const ts = today - i * day;
-    const suilendRevenue = Math.max(0, Math.round((Math.random() ** 2) * 800_000));
-    const steammRevenue = Math.max(0, Math.round((Math.random() ** 2) * 250_000));
-    const springsuiRevenue = Math.max(0, Math.round((Math.random() ** 2) * 150_000));
+    const suilendRevenue = Math.max(
+      0,
+      Math.round(Math.random() ** 2 * 800_000),
+    );
+    const steammRevenue = Math.max(0, Math.round(Math.random() ** 2 * 250_000));
+    const springsuiRevenue = Math.max(
+      0,
+      Math.round(Math.random() ** 2 * 150_000),
+    );
     const value = suilendRevenue + steammRevenue + springsuiRevenue;
-    out.push({ timestamp: ts, value, suilendRevenue, steammRevenue, springsuiRevenue });
+    out.push({
+      timestamp: ts,
+      value,
+      suilendRevenue,
+      steammRevenue,
+      springsuiRevenue,
+    });
   }
   return out;
 }
