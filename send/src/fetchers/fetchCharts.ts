@@ -17,6 +17,59 @@ export type RevenuePoint = {
   springsuiRevenue: number;
 };
 
+// --- Test mode helpers (1y fake data) ---
+function isTestMode1Y(): boolean {
+  // Prefer runtime toggle via localStorage to avoid env churn
+  try {
+    if (typeof window !== "undefined") {
+      const v = window.localStorage.getItem("SEND_TEST_CHARTS_1Y");
+      if (v != null) return v === "true" || v === "1";
+    }
+  } catch {}
+  // Fallback to NEXT_PUBLIC env if provided
+  try {
+    // eslint-disable-next-line no-process-env
+    return process.env.NEXT_PUBLIC_SEND_TEST_CHARTS_1Y === "true";
+  } catch {
+    return false;
+  }
+}
+
+function startOfUtcDay(ms: number): number {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function generatePastYearDailyBuybacks(): BuybacksPoint[] {
+  const day = 24 * 60 * 60 * 1000;
+  const today = startOfUtcDay(Date.now());
+  const out: BuybacksPoint[] = [];
+  for (let i = 364; i >= 0; i -= 1) {
+    const ts = today - i * day;
+    // Randomized but reasonable magnitudes
+    const usdValue = Math.max(0, Math.round((Math.random() ** 2) * 200_000));
+    const sendAmount = Math.max(0, Math.round((Math.random() ** 2) * 350_000));
+    const transactionCount = Math.floor(Math.random() * 300);
+    out.push({ timestamp: ts, usdValue, sendAmount, transactionCount });
+  }
+  return out;
+}
+
+function generatePastYearDailyRevenue(): RevenuePoint[] {
+  const day = 24 * 60 * 60 * 1000;
+  const today = startOfUtcDay(Date.now());
+  const out: RevenuePoint[] = [];
+  for (let i = 364; i >= 0; i -= 1) {
+    const ts = today - i * day;
+    const suilendRevenue = Math.max(0, Math.round((Math.random() ** 2) * 800_000));
+    const steammRevenue = Math.max(0, Math.round((Math.random() ** 2) * 250_000));
+    const springsuiRevenue = Math.max(0, Math.round((Math.random() ** 2) * 150_000));
+    const value = suilendRevenue + steammRevenue + springsuiRevenue;
+    out.push({ timestamp: ts, value, suilendRevenue, steammRevenue, springsuiRevenue });
+  }
+  return out;
+}
+
 function parseTimestampSecondsToMs(ts: unknown): number | undefined {
   if (typeof ts !== "number") return undefined;
   // API appears to return seconds for charts; convert to ms for charts/UI
@@ -59,6 +112,9 @@ export function getPriceChart(period: Period) {
 export function getBuybacksChart(period: Period) {
   const fetcher = async (): Promise<BuybacksPoint[] | undefined> => {
     try {
+      if (period === "1y" && isTestMode1Y()) {
+        return generatePastYearDailyBuybacks();
+      }
       const url = `https://global.suilend.fi/send/charts/send?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -111,6 +167,9 @@ export function getBuybacksChart(period: Period) {
 export function getRevenueChart(period: Period) {
   const fetcher = async (): Promise<RevenuePoint[] | undefined> => {
     try {
+      if (period === "1y" && isTestMode1Y()) {
+        return generatePastYearDailyRevenue();
+      }
       const url = `https://global.suilend.fi/send/charts/revenue?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
