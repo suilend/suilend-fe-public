@@ -9,6 +9,7 @@ import { TBodySans } from "@/components/shared/Typography";
 import {
   ABOUT_URL,
   BRIDGE_URL,
+  BUYBACK_URL,
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
@@ -24,7 +25,6 @@ function More() {
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={SEND_URL}>SEND</Link>
       <Link href={ABOUT_URL}>About</Link>
-
       {/* External */}
       <Link
         href={SPRINGSUI_URL}
@@ -40,6 +40,7 @@ function More() {
       >
         STEAMM
       </Link>
+      <Link href={BUYBACK_URL}>Metrics</Link>
     </>
   );
 }
