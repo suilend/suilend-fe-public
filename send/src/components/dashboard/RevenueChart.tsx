@@ -760,7 +760,7 @@ const RevenueChart = ({
                 isAnimationActive={false}
                 points={undefined}
               />
-              {/* Real line draws; do not connect across nulls */}
+              {/* Real line draws; connect across missing points */}
               <Recharts.Line
                 yAxisId="right"
                 type="monotone"
@@ -769,7 +769,7 @@ const RevenueChart = ({
                 strokeWidth={isSmall ? 1.5 : 2.5}
                 dot={chartData.length <= 100 ? { r: 1 } : undefined}
                 isAnimationActive={false}
-                connectNulls={false}
+                connectNulls
               />
             </>
           )}
