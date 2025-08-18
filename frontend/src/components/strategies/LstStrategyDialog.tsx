@@ -1035,7 +1035,7 @@ export default function LstStrategyDialog({
           title: `${lstReserve.token.symbol} USD deposit limit reached`,
         };
       // "Cannot deposit borrowed asset" is not relevant here
-      // "Max 5 deposit positions" is not relevant here
+      // "Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions" is not relevant here
 
       // Borrow
       if (exposure.gt(1)) {
@@ -1054,7 +1054,7 @@ export default function LstStrategyDialog({
             title: `${suiReserve.token.symbol} USD borrow limit reached`,
           };
         // "Cannot borrow deposited asset" is not relevant here
-        // "Max 5 borrow positions" is not relevant here
+        // "Max ${MAX_BORROWS_PER_OBLIGATION} borrow positions" is not relevant here
 
         // Isolated - not relevant here
       }
@@ -1087,7 +1087,7 @@ export default function LstStrategyDialog({
             title: `${lstReserve.token.symbol} USD deposit limit reached`,
           };
         // "Cannot deposit borrowed asset" is not relevant here
-        // "Max 5 deposit positions" is not relevant here
+        // "Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions" is not relevant here
 
         // Borrow
         if (suiReserve.borrowedAmount.gte(suiReserve.config.borrowLimit))
@@ -1105,7 +1105,7 @@ export default function LstStrategyDialog({
             title: `${suiReserve.token.symbol} USD borrow limit reached`,
           };
         // "Cannot borrow deposited asset" is not relevant here
-        // "Max 5 borrow positions" is not relevant here
+        // "Max ${MAX_BORROWS_PER_OBLIGATION} borrow positions" is not relevant here
 
         // Isolated - not relevant here
       } else {

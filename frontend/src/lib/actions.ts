@@ -16,7 +16,11 @@ import {
 } from "@suilend/sui-fe";
 
 import { AppData } from "@/contexts/AppContext";
-import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
+import {
+  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+  MAX_BORROWS_PER_OBLIGATION,
+  MAX_DEPOSITS_PER_OBLIGATION,
+} from "@/lib/constants";
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 import { SubmitButtonState } from "@/lib/types";
 
@@ -422,13 +426,13 @@ export const getSubmitButtonNoValueState =
         return { isDisabled: true, title: "Cannot deposit borrowed asset" };
       if (
         obligation &&
-        obligation.deposits.length >= 5 &&
+        obligation.deposits.length >= MAX_DEPOSITS_PER_OBLIGATION &&
         !obligation.deposits.find((d) => d.coinType === reserve.coinType)
       )
         return {
           isDisabled: true,
-          title: "Max 5 deposit positions",
-          description: "Cannot deposit more than 5 different assets at once",
+          title: `Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions`,
+          description: `Cannot deposit more than ${MAX_DEPOSITS_PER_OBLIGATION} different assets at once`,
         };
       return undefined;
     } else if (action === Action.BORROW) {
@@ -450,13 +454,13 @@ export const getSubmitButtonNoValueState =
         return { isDisabled: true, title: "Cannot borrow deposited asset" };
       if (
         obligation &&
-        obligation.borrows.length >= 5 &&
+        obligation.borrows.length >= MAX_BORROWS_PER_OBLIGATION &&
         !obligation.borrows.find((b) => b.coinType === reserve.coinType)
       )
         return {
           isDisabled: true,
-          title: "Max 5 borrow positions",
-          description: "Cannot borrow more than 5 different assets at once",
+          title: `Max ${MAX_BORROWS_PER_OBLIGATION} borrow positions`,
+          description: `Cannot borrow more than ${MAX_BORROWS_PER_OBLIGATION} different assets at once`,
         };
 
       // Isolated

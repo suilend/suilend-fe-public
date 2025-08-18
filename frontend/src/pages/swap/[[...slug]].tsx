@@ -91,6 +91,7 @@ import {
 } from "@/lib/actions";
 import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+  MAX_DEPOSITS_PER_OBLIGATION,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { TokenDirection } from "@/lib/swap";
@@ -976,7 +977,7 @@ function Page() {
         const depositedAmount = quote.out.amount.minus(repaidAmount);
 
         if (depositedAmount.gt(0)) {
-          if (obligation.deposits.length < 5) {
+          if (obligation.deposits.length < MAX_DEPOSITS_PER_OBLIGATION) {
             appData.suilendClient.deposit(
               coinOut!, // Checked above
               tokenOutReserve.coinType,
@@ -1035,7 +1036,7 @@ function Page() {
           const depositedAmount = quote.out.amount.minus(repaidAmount);
 
           if (depositedAmount.gt(0)) {
-            if (obligation.deposits.length < 5) {
+            if (obligation.deposits.length < MAX_DEPOSITS_PER_OBLIGATION) {
               appData.suilendClient.deposit(
                 coinOut!, // Checked above
                 tokenOutReserve.coinType,

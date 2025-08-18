@@ -11,3 +11,6 @@ export const FIRST_DEPOSIT_DIALOG_START_DATE = new Date("2024-07-02T13:15:00Z");
 export const ASSETS_URL = "https://d29k09wtkr1a3e.cloudfront.net/suilend";
 
 export const MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.05;
+
+export const MAX_DEPOSITS_PER_OBLIGATION = 5;
+export const MAX_BORROWS_PER_OBLIGATION = 5;

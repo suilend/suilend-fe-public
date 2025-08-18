@@ -25,7 +25,10 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { TX_TOAST_DURATION } from "@/lib/constants";
+import {
+  MAX_DEPOSITS_PER_OBLIGATION,
+  TX_TOAST_DURATION,
+} from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
@@ -93,9 +96,9 @@ export default function ClaimRewardsDropdownMenu({
     (acc, coinType) => ({
       ...acc,
       [coinType]: !obligation
-        ? 1 <= 5
+        ? 1 <= MAX_DEPOSITS_PER_OBLIGATION
         : (obligation.deposits.some((d) => d.coinType === coinType) ||
-            obligation.deposits.length + 1 <= 5) &&
+            obligation.deposits.length + 1 <= MAX_DEPOSITS_PER_OBLIGATION) &&
           !obligation.borrows.some((b) => b.coinType === coinType),
     }),
     {} as Record<string, boolean>,
@@ -227,11 +230,14 @@ export default function ClaimRewardsDropdownMenu({
                     .includes(t.coinType),
               )
               .map((t) => t.symbol),
-          ).replace("and", "or")} (max 5 deposit positions, no borrows).`,
+          ).replace(
+            "and",
+            "or",
+          )} (max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions, no borrows).`,
         );
       if (isSwapping && !canDepositAsMap[swappingToCoinType])
         result.push(
-          `Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max 5 deposit positions, no borrows).`,
+          `Cannot claim and deposit as ${appDataMainMarket.coinMetadataMap[swappingToCoinType].symbol} (max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions, no borrows).`,
         );
     }
 
