@@ -638,11 +638,7 @@ const RevenueChart = ({
     );
   };
 
-  // When both are active, overlay buybacks as a thinner bar inside revenue using negative barGap
-  // Tighter bars on mobile to fit coarser buckets
-  // Adjust barGap to counteract category width expansion when both bars are enabled
-  const revenueBarSize = isSmall ? 18 : 30;
-  const composedBarGap = -revenueBarSize;
+  // Bars fill x-axis: use barCategoryGap="0%" and barGap="-100%" to overlay series.
 
   // Rounded corners: only the top-most revenue segment should have rounded top edges
   const topRadius = isSmall ? 2 : 3;
@@ -653,13 +649,13 @@ const RevenueChart = ({
       : enabledMetrics.suilendRevenue
         ? "suilendRevenue"
         : undefined;
-  const CenteredRoundedTopRect =
-    (desiredWidth: number, radius: number = 6) =>
+  const CenteredRoundedTopRectFraction =
+    (widthFraction: number, radius: number = 6) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, react/display-name
     ({ x, y, width, height, fill }: any) => {
       // Recharts gives the category slot (x,width); we recenter our own width
       const cx = x + width / 2;
-      const w = Math.max(0, Math.floor(desiredWidth));
+      const w = Math.max(0, Math.floor(width * Math.max(0, Math.min(1, widthFraction))));
       const h = height; // can be negative for negative values
       const left = cx - w / 2;
       const right = cx + w / 2;
@@ -675,7 +671,7 @@ const RevenueChart = ({
       // If no rounding needed or height ~0, fall back to a plain rect path
       if (r === 0 || h === 0) {
         const dPlain = `M${left},${bottomY}V${topY}H${right}V${bottomY}Z`;
-        return <path d={dPlain} fill={fill} opacity={0.5} />;
+        return <path d={dPlain} fill={fill} opacity={0.5}/>;
       }
 
       // Build a path that rounds ONLY the top-left and top-right corners.
@@ -703,7 +699,7 @@ const RevenueChart = ({
           `V${topY}`,
           `Z`,
         ].join("");
-        return <path d={d} fill={fill} opacity={0.5} />;
+        return <path d={d} fill={fill} opacity={0.5}  />;
       }
     };
 
@@ -714,7 +710,7 @@ const RevenueChart = ({
           data={chartData}
           margin={margin}
           barCategoryGap="0%"
-          barGap={composedBarGap}
+          barGap="-100%"
         >
           <Recharts.CartesianGrid
             strokeDasharray="3 3"
@@ -801,9 +797,8 @@ const RevenueChart = ({
                   ? [topRadius, topRadius, 0, 0]
                   : 0
               }
-              barSize={revenueBarSize}
-              shape={CenteredRoundedTopRect(
-                revenueBarSize,
+              shape={CenteredRoundedTopRectFraction(
+                1,
                 topRevenueKey === "suilendRevenue" ? topRadius : 0,
               )}
             />
@@ -820,9 +815,8 @@ const RevenueChart = ({
                   ? [topRadius, topRadius, 0, 0]
                   : 0
               }
-              barSize={revenueBarSize}
-              shape={CenteredRoundedTopRect(
-                revenueBarSize,
+              shape={CenteredRoundedTopRectFraction(
+                1,
                 topRevenueKey === "steammRevenue" ? topRadius : 0,
               )}
             />
@@ -839,9 +833,8 @@ const RevenueChart = ({
                   ? [topRadius, topRadius, 0, 0]
                   : 0
               }
-              barSize={revenueBarSize}
-              shape={CenteredRoundedTopRect(
-                revenueBarSize,
+              shape={CenteredRoundedTopRectFraction(
+                1,
                 topRevenueKey === "springsuiRevenue" ? topRadius : 0,
               )}
             />
@@ -852,10 +845,8 @@ const RevenueChart = ({
               dataKey="buybacks"
               fill={COLOR_BUYBACKS}
               isAnimationActive={false}
-              opacity={0.9}
-              barSize={revenueBarSize}
               radius={[topRadius, topRadius, 0, 0]}
-              shape={CenteredRoundedTopRect(revenueBarSize, topRadius)}
+              shape={CenteredRoundedTopRectFraction(1, topRadius)}
             />
           )}
           {enabledMetrics.price && (

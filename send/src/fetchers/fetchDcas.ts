@@ -7,6 +7,7 @@ export enum DCAVenue {
 
 export type DCA = {
   createdAt: number;
+  lastTransactionTimestamp: number;
   frequency: string;
   inCoinType: string;
   outCoinType: string;

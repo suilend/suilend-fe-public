@@ -115,8 +115,8 @@ const ChartSection = () => {
           <button
             id="cumulative"
             onClick={() => setIsCumulative(!isCumulative)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              isCumulative ? "bg-primary" : "bg-gray-600"
+            className={`relative inline-flex h-5 w-9 items-center border border-border rounded-full transition-colors ${
+              isCumulative ? "bg-primary" : "bg-background"
             }`}
           >
             <span
@@ -200,7 +200,7 @@ const ChartSection = () => {
             <div className="flex items-center gap-2 justify-between">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="flex items-center gap-2 px-3 py-2 font-sans bg-background border border-border rounded-md hover:bg-muted transition-colors text-muted-foreground text-xs">
+                  <button className="flex items-center gap-2 px-3 py-2 font-sans bg-background border border-border rounded-md transition-colors text-muted-foreground text-xs">
                     Metric
                     <Plus className="h-4 w-4" />
                   </button>
@@ -308,7 +308,7 @@ const ChartSection = () => {
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: pill.color }}
                     />
-                    <span className="text-xs font-sans text-muted-foreground">
+                    <span className="text-sm font-sans">
                       {pill.label}
                     </span>
                     <button

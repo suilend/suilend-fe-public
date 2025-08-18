@@ -80,8 +80,7 @@ const TransactionsSection = () => {
     const range = cursorRanges[currentKey];
     const pageScopedDcas = range
       ? (dcas ?? []).filter((d) => {
-          const createdMs =
-            d.createdAt > 1e12 ? d.createdAt : d.createdAt * 1000;
+          const createdMs = d.lastTransactionTimestamp;
           const upper =
             currentKey === "start" ? Number.POSITIVE_INFINITY : range.max;
           return createdMs >= range.min && createdMs <= upper;
@@ -89,7 +88,6 @@ const TransactionsSection = () => {
       : [];
 
     const dcaRows: Row[] = pageScopedDcas.map((d: DCA): Row => {
-      const createdMs = d.createdAt > 1e12 ? d.createdAt : d.createdAt * 1000;
       const inStart = parseNum(d.inCoinStartingAmount) ?? 0; // USDC in base units
       const inCur = parseNum(d.inCoinCurrentAmount) ?? 0; // USDC in base units
       const outCur = (parseNum(d.outCoinCurrentAmount) ?? 0) / 1_000_000; // SEND amount (1e6)
@@ -141,7 +139,7 @@ const TransactionsSection = () => {
 
       return {
         kind: "dca",
-        timestamp: createdMs,
+        timestamp: d.lastTransactionTimestamp,
         typeLabel: "DCA",
         priceContent,
         usdValue,
