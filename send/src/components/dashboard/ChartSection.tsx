@@ -86,7 +86,7 @@ const ChartSection = () => {
 
     if (enabledMetrics.buybacks) {
       // Pink to match design
-      pills.push({ key: "buybacks", label: "Buyback", color: "#F08BD9" });
+      pills.push({ key: "buybacks", label: "Buybacks", color: "#F08BD9" });
     }
     if (enabledMetrics.price) {
       pills.push({
