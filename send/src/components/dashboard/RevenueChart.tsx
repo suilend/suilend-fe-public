@@ -15,7 +15,7 @@ import { toCompactCurrency } from "@/lib/utils";
 type EnabledMetrics = {
   suilendRevenue: boolean;
   steammRevenue: boolean;
-  springsuiRevenue: boolean;
+  springSuiRevenue: boolean;
   buybacks: boolean;
   price: boolean;
 };
@@ -31,6 +31,7 @@ type RawPoint = {
   label: string;
   suilendRevenue: number; // USD
   steammRevenue: number; // USD
+  springSuiRevenue: number; // USD
   buybacks: number; // USD
   price?: number; // USD (undefined when no datapoint)
 };
@@ -68,6 +69,17 @@ function formatHourLabel(ts: number): string {
 function startOfDayUtc(ts: number): number {
   const d = new Date(ts);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+function startOfWeekUtc(ts: number): number {
+  const d = new Date(ts);
+  const day = d.getUTCDay(); // 0=Sun ... 6=Sat
+  const diffToMonday = (day + 6) % 7; // Monday=0
+  const monday = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+  monday.setUTCDate(monday.getUTCDate() - diffToMonday);
+  return monday.getTime();
 }
 
 function useProcessedData(period: Period, isCumulative: boolean) {
@@ -147,14 +159,65 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         label: period === "1d" ? formatHourLabel(ts) : formatLabel(ts),
         suilendRevenue: rev?.suilendRevenue ?? 0,
         steammRevenue: rev?.steammRevenue ?? 0,
+        springSuiRevenue: rev?.springSuiRevenue ?? 0,
         buybacks: buy?.usdValue ?? 0,
         price,
       };
     });
   }, [revenueData, buybacksData, priceData, period]);
 
-  // No bucketing: serve API data as-is (but keep labels and price handling)
-  const asIsRaw: RawPoint[] = useMemo(() => raw, [raw]);
+  // For 1y and all, bucket weekly; otherwise serve as-is
+  const effectiveRaw: RawPoint[] = useMemo(() => {
+    if (period !== "1y" && period !== "all") return raw;
+    const map = new Map<
+      number,
+      {
+        ts: number;
+        label: string;
+        r1: number;
+        r2: number;
+        r3: number;
+        b: number;
+        pSum: number;
+        pCount: number;
+      }
+    >();
+    for (const pt of raw) {
+      const bucket = startOfWeekUtc(pt.timestamp);
+      const cur = map.get(bucket);
+      if (!cur) {
+        map.set(bucket, {
+          ts: bucket,
+          label: formatLabel(bucket),
+          r1: pt.suilendRevenue,
+          r2: pt.steammRevenue,
+          r3: pt.springSuiRevenue,
+          b: pt.buybacks,
+          pSum: pt.price ?? 0,
+          pCount: pt.price != null ? 1 : 0,
+        });
+      } else {
+        cur.r1 += pt.suilendRevenue;
+        cur.r2 += pt.steammRevenue;
+        cur.r3 += pt.springSuiRevenue;
+        cur.b += pt.buybacks;
+        if (pt.price != null) {
+          cur.pSum += pt.price;
+          cur.pCount += 1;
+        }
+      }
+    }
+    const sorted = Array.from(map.values()).sort((a, b) => a.ts - b.ts);
+    return sorted.map((v) => ({
+      timestamp: v.ts,
+      label: formatLabel(v.ts),
+      suilendRevenue: v.r1,
+      steammRevenue: v.r2,
+      springSuiRevenue: v.r3,
+      buybacks: v.b,
+      price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
+    }));
+  }, [raw, period]);
 
   const processed = useMemo(() => {
     if (raw.length === 0)
@@ -163,15 +226,17 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         label: string;
         suilend: { revenue: number; buybacks: number };
         steamm: { revenue: number; buybacks: number };
+        springSuiRevenue: number;
         price: number;
       }>;
 
     if (!isCumulative) {
-      return asIsRaw.map((pt) => ({
+      return effectiveRaw.map((pt) => ({
         timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: pt.suilendRevenue, buybacks: pt.buybacks },
         steamm: { revenue: pt.steammRevenue, buybacks: 0 },
+        springSuiRevenue: pt.springSuiRevenue,
         price: pt.price,
       }));
     }
@@ -179,19 +244,22 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     let cumSuilend = 0;
     let cumSteamm = 0;
     let cumBuy = 0;
-    return asIsRaw.map((pt) => {
+    let cumSpring = 0;
+    return effectiveRaw.map((pt) => {
       cumSuilend += pt.suilendRevenue;
       cumSteamm += pt.steammRevenue;
       cumBuy += pt.buybacks;
+      cumSpring += pt.springSuiRevenue;
       return {
         timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: cumSuilend, buybacks: cumBuy },
         steamm: { revenue: cumSteamm, buybacks: 0 },
+        springSuiRevenue: cumSpring,
         price: pt.price,
       };
     });
-  }, [asIsRaw, isCumulative, raw.length]);
+  }, [effectiveRaw, isCumulative, raw.length]);
 
   return { processed, loading, anyError };
 }
@@ -242,7 +310,9 @@ const RevenueChart = ({
         label: d.label,
         suilendRevenue: enabledMetrics.suilendRevenue ? d.suilend.revenue : 0,
         steammRevenue: enabledMetrics.steammRevenue ? d.steamm.revenue : 0,
-        springsuiRevenue: enabledMetrics.springsuiRevenue ? 0 : 0,
+        springSuiRevenue: enabledMetrics.springSuiRevenue
+          ? d.springSuiRevenue
+          : 0,
         buybacks: enabledMetrics.buybacks ? d.suilend.buybacks : 0,
         price: d.price,
       })),
@@ -269,7 +339,7 @@ const RevenueChart = ({
       const revenueSum =
         (enabledMetrics.suilendRevenue ? d.suilendRevenue : 0) +
         (enabledMetrics.steammRevenue ? d.steammRevenue : 0) +
-        (enabledMetrics.springsuiRevenue ? d.springsuiRevenue : 0);
+        (enabledMetrics.springSuiRevenue ? d.springSuiRevenue : 0);
       const buy = enabledMetrics.buybacks ? d.buybacks : 0;
       const m = Math.max(revenueSum, buy);
       if (m > max) max = m;
@@ -299,7 +369,7 @@ const RevenueChart = ({
       payload: {
         suilendRevenue: number;
         steammRevenue: number;
-        springsuiRevenue: number;
+        springSuiRevenue: number;
         buybacks: number;
         price: number;
         timestamp: number;
@@ -321,10 +391,10 @@ const RevenueChart = ({
         value: d.steammRevenue,
         color: COLOR_STEAMM,
       });
-    if (enabledMetrics.springsuiRevenue && d.springsuiRevenue > 0)
+    if (enabledMetrics.springSuiRevenue && d.springSuiRevenue > 0)
       rows.push({
         label: "SpringSui",
-        value: d.springsuiRevenue,
+        value: d.springSuiRevenue,
         color: COLOR_SPRINGSUI,
       });
     if (enabledMetrics.buybacks && d.buybacks > 0)
@@ -374,8 +444,8 @@ const RevenueChart = ({
 
   // Rounded corners: only the top-most revenue segment should have rounded top edges
   const topRadius = isSmall ? 2 : 3;
-  const topRevenueKey = enabledMetrics.springsuiRevenue
-    ? "springsuiRevenue"
+  const topRevenueKey = enabledMetrics.springSuiRevenue
+    ? "springSuiRevenue"
     : enabledMetrics.steammRevenue
       ? "steammRevenue"
       : enabledMetrics.suilendRevenue
@@ -558,21 +628,21 @@ const RevenueChart = ({
               )}
             />
           )}
-          {enabledMetrics.springsuiRevenue && (
+          {enabledMetrics.springSuiRevenue && (
             <Recharts.Bar
               yAxisId="left"
-              dataKey="springsuiRevenue"
+              dataKey="springSuiRevenue"
               stackId="revenue"
               fill={COLOR_SPRINGSUI}
               isAnimationActive={false}
               radius={
-                topRevenueKey === "springsuiRevenue"
+                topRevenueKey === "springSuiRevenue"
                   ? [topRadius, topRadius, 0, 0]
                   : 0
               }
               shape={CenteredRoundedTopRectFraction(
                 1,
-                topRevenueKey === "springsuiRevenue" ? topRadius : 0,
+                topRevenueKey === "springSuiRevenue" ? topRadius : 0,
               )}
             />
           )}

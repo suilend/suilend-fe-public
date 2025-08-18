@@ -34,7 +34,7 @@ const ChartSection = () => {
     {
       steammRevenue: false,
       suilendRevenue: false,
-      springsuiRevenue: false,
+      springSuiRevenue: false,
       buybacks: true,
       price: false,
     },
@@ -48,13 +48,13 @@ const ChartSection = () => {
     const allRevenueEnabled =
       enabledMetrics.suilendRevenue &&
       enabledMetrics.steammRevenue &&
-      enabledMetrics.springsuiRevenue;
+      enabledMetrics.springSuiRevenue;
 
     setEnabledMetrics((prev) => ({
       ...prev,
       suilendRevenue: !allRevenueEnabled,
       steammRevenue: !allRevenueEnabled,
-      springsuiRevenue: !allRevenueEnabled,
+      springSuiRevenue: !allRevenueEnabled,
     }));
   };
 
@@ -76,9 +76,9 @@ const ChartSection = () => {
         color: "hsl(var(--secondary))",
       });
     }
-    if (enabledMetrics.springsuiRevenue) {
+    if (enabledMetrics.springSuiRevenue) {
       pills.push({
-        key: "springsuiRevenue",
+        key: "springSuiRevenue",
         label: "SpringSui",
         color: "#6DA8FF",
       });
@@ -228,11 +228,11 @@ const ChartSection = () => {
                         const all =
                           enabledMetrics.suilendRevenue &&
                           enabledMetrics.steammRevenue &&
-                          enabledMetrics.springsuiRevenue;
+                          enabledMetrics.springSuiRevenue;
                         const any =
                           enabledMetrics.suilendRevenue ||
                           enabledMetrics.steammRevenue ||
-                          enabledMetrics.springsuiRevenue;
+                          enabledMetrics.springSuiRevenue;
                         return (
                           <Checkbox
                             checked={all}
@@ -267,10 +267,10 @@ const ChartSection = () => {
                       </div>
                       <div
                         className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
-                        onClick={() => toggleMetric("springsuiRevenue")}
+                        onClick={() => toggleMetric("springSuiRevenue")}
                       >
                         <Checkbox
-                          checked={enabledMetrics.springsuiRevenue}
+                          checked={enabledMetrics.springSuiRevenue}
                           className="mr-2"
                         />
                         SpringSui

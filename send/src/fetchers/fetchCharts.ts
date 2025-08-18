@@ -14,7 +14,7 @@ export type RevenuePoint = {
   value: number;
   suilendRevenue: number;
   steammRevenue: number;
-  springsuiRevenue: number;
+  springSuiRevenue: number;
 };
 
 // --- Test mode helpers (1y fake data) ---
@@ -65,17 +65,17 @@ function generatePastYearDailyRevenue(): RevenuePoint[] {
       Math.round(Math.random() ** 2 * 800_000),
     );
     const steammRevenue = Math.max(0, Math.round(Math.random() ** 2 * 250_000));
-    const springsuiRevenue = Math.max(
+    const springSuiRevenue = Math.max(
       0,
       Math.round(Math.random() ** 2 * 150_000),
     );
-    const value = suilendRevenue + steammRevenue + springsuiRevenue;
+    const value = suilendRevenue + steammRevenue + springSuiRevenue;
     out.push({
       timestamp: ts,
       value,
       suilendRevenue,
       steammRevenue,
-      springsuiRevenue,
+      springSuiRevenue,
     });
   }
   return out;
@@ -107,7 +107,7 @@ export function getPriceChart(period: Period) {
             return undefined;
           return { timestamp: timestamp, price } as PricePoint;
         })
-        .filter((x): x is PricePoint => Boolean(x));
+        .filter((x): x is PricePoint => Boolean(x) && !!x && x.price > 0);
     } catch (err) {
       console.error(err);
       return undefined;
@@ -189,7 +189,7 @@ export function getRevenueChart(period: Period) {
         value: string | number;
         suilendRevenue: string | number;
         steammRevenue: string | number;
-        springsuiRevenue: string | number;
+        springSuiRevenue: string | number;
       }> = await res.json();
       return json
         .map((p) => {
@@ -203,17 +203,18 @@ export function getRevenueChart(period: Period) {
             typeof p.steammRevenue === "string"
               ? Number(p.steammRevenue)
               : p.steammRevenue;
-          const springsuiRevenue =
-            typeof p.springsuiRevenue === "string"
-              ? Number(p.springsuiRevenue)
-              : p.springsuiRevenue;
+          const springSuiRevenue =
+            typeof p.springSuiRevenue === "string"
+              ? Number(p.springSuiRevenue)
+              : p.springSuiRevenue;
 
+          console.log("springSuiRevenue", springSuiRevenue);
           return {
             timestamp,
             value,
             suilendRevenue,
             steammRevenue,
-            springsuiRevenue,
+            springSuiRevenue,
           } as RevenuePoint;
         })
         .filter((x): x is RevenuePoint => Boolean(x));
