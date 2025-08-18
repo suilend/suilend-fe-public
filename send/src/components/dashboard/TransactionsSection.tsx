@@ -154,7 +154,7 @@ const TransactionsSection = () => {
         inAmount: ["ongoing"].includes(d.status) ? (
           <span className="inline-flex items-center gap-1">{FractionUSDC}</span>
         ) : (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-sans">
             <Image
               src={`${ASSETS_URL}/icons/usdc.png`}
               alt="USDC"
@@ -282,7 +282,7 @@ const TransactionsSection = () => {
                                   {row.inAmount}
                                 </span>
                               ) : (
-                                <div className="flex items-center gap-2 text-sm max-lg:justify-center max-lg:text-xs">
+                                <div className="flex items-center gap-2 text-sm max-lg:justify-center max-lg:text-xs font-sans">
                                   <div className="w-4 h-4 rounded-full flex items-center justify-center">
                                     <Image
                                       src={`${ASSETS_URL}/icons/usdc.png`}
