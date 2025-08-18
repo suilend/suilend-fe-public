@@ -95,7 +95,7 @@ export function getPriceChart(period: Period) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: Array<{ timestamp: number; price: string | number }> =
         await res.json();
-      return json
+      const points = json
         .map((p) => {
           const timestamp = parseTimestampSecondsToMs(p.timestamp);
           const price = typeof p.price === "string" ? Number(p.price) : p.price;
@@ -111,6 +111,10 @@ export function getPriceChart(period: Period) {
           } as PricePoint;
         })
         .filter((x): x is PricePoint => Boolean(x) && !!x && x.price > 0);
+
+      // Trim leading zero/invalid range (defensive even after filter)
+      const firstIdx = points.findIndex((p) => (p.price ?? 0) > 0);
+      return firstIdx > 0 ? points.slice(firstIdx) : points;
     } catch (err) {
       console.error(err);
       return undefined;
@@ -138,7 +142,7 @@ export function getBuybacksChart(period: Period) {
         sendAmount: string | number;
         transactionCount: number;
       }> = await res.json();
-      return json
+      const points = json
         .map((p) => {
           const timestamp = parseTimestampSecondsToMs(p.timestamp);
           const usdValue =
@@ -166,6 +170,15 @@ export function getBuybacksChart(period: Period) {
           } as BuybacksPoint;
         })
         .filter((x): x is BuybacksPoint => Boolean(x));
+
+      // Trim leading zero-valued buckets to avoid long flat spans before activity
+      const firstIdx = points.findIndex(
+        (p) =>
+          (p.usdValue ?? 0) > 0 ||
+          (p.sendAmount ?? 0) > 0 ||
+          (p.transactionCount ?? 0) > 0,
+      );
+      return firstIdx > 0 ? points.slice(firstIdx) : points;
     } catch (err) {
       console.error(err);
       return undefined;

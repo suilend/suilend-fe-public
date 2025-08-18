@@ -292,10 +292,28 @@ const RevenueChart = ({
     return Math.ceil(m / step) * step;
   }, [data, enabledMetrics.price]);
 
+  // Trim x-range to active bar datasets (ignore price-only)
+  const visibleData = useMemo(() => {
+    const barEnabled =
+      enabledMetrics.suilendRevenue ||
+      enabledMetrics.steammRevenue ||
+      enabledMetrics.springSuiRevenue ||
+      enabledMetrics.buybacks;
+    if (!barEnabled) return data;
+    const firstIdx = data.findIndex(
+      (d) =>
+        (enabledMetrics.suilendRevenue && d.suilend.revenue > 0) ||
+        (enabledMetrics.steammRevenue && d.steamm.revenue > 0) ||
+        (enabledMetrics.springSuiRevenue && d.springSuiRevenue > 0) ||
+        (enabledMetrics.buybacks && d.suilend.buybacks > 0),
+    );
+    return firstIdx > 0 ? data.slice(firstIdx) : data;
+  }, [data, enabledMetrics]);
+
   // Recharts data mapping and ticks
   const chartData = useMemo(
     () =>
-      data.map((d, index) => ({
+      visibleData.map((d, index) => ({
         index,
         timestamp: d.timestamp,
         label: d.label,
@@ -307,7 +325,7 @@ const RevenueChart = ({
         buybacks: enabledMetrics.buybacks ? d.suilend.buybacks : 0,
         price: d.price,
       })),
-    [data, enabledMetrics],
+    [visibleData, enabledMetrics],
   );
 
   const lastIndex = chartData.length > 0 ? chartData.length - 1 : -1;
