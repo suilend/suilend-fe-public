@@ -134,7 +134,6 @@ const ChartSection = () => {
           <SelectTrigger className="h-8 px-3 py-2 text-xs md:text-sm font-sans bg-background w-auto text-muted-foreground">
             {(() => {
               const labelMap: Record<Period, string> = {
-                "1d": "1D",
                 "7d": "7D",
                 "30d": "30D",
                 "90d": "90D",
@@ -149,12 +148,6 @@ const ChartSection = () => {
             })()}
           </SelectTrigger>
           <SelectContent>
-            <SelectItem
-              value="1d"
-              className="text-xs font-sans text-muted-foreground"
-            >
-              1D
-            </SelectItem>
             <SelectItem
               value="7d"
               className="text-xs font-sans text-muted-foreground"
