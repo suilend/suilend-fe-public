@@ -57,15 +57,6 @@ function formatTooltipDate(ts: number) {
   });
 }
 
-function formatHourLabel(ts: number): string {
-  const d = new Date(ts);
-  const hours = d.getUTCHours();
-  const minutes = d.getUTCMinutes();
-  const pad2 = (n: number) => String(n).padStart(2, "0");
-  // No leading zero for hours; always 2-digit minutes
-  return `${hours}:${pad2(minutes)}`;
-}
-
 function startOfDayUtc(ts: number): number {
   const d = new Date(ts);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
@@ -120,7 +111,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       (buybacksData ?? []).map((p) => [p.timestamp, p]),
     );
     // For 1d we have intraday points; otherwise price is daily
-    const isIntraday = period === "1d";
+    const isIntraday = false;
     const priceByTs = isIntraday
       ? new Map<number, number>(
           (priceData ?? []).map((p) => [p.timestamp, p.price]),
@@ -156,7 +147,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       }
       return {
         timestamp: ts,
-        label: period === "1d" ? formatHourLabel(ts) : formatLabel(ts),
+        label: formatLabel(ts),
         suilendRevenue: rev?.suilendRevenue ?? 0,
         steammRevenue: rev?.steammRevenue ?? 0,
         springSuiRevenue: rev?.springSuiRevenue ?? 0,
@@ -164,7 +155,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         price,
       };
     });
-  }, [revenueData, buybacksData, priceData, period]);
+  }, [revenueData, buybacksData, priceData]);
 
   // For 1y and all, bucket weekly; otherwise serve as-is
   const effectiveRaw: RawPoint[] = useMemo(() => {
