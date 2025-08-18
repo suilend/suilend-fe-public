@@ -3,6 +3,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getBuybacksChart } from "@/fetchers/fetchCharts";
 import { getMetrics } from "@/fetchers/fetchMetrics";
 import { SEND_SUPPLY } from "@/lib/constants";
 import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
@@ -12,8 +13,14 @@ import SuilendLogo from "../layout/SuilendLogo";
 const MetricsSection = () => {
   const [showUsdValue, setShowUsdValue] = useLocalStorage("showUsdValue", true);
   const { data: metrics, isLoading, error } = getMetrics();
+  const { data: allBuybacks } = getBuybacksChart("all");
   const price = metrics?.currentPrice;
   const marketCap = price ? price * SEND_SUPPLY : 0;
+
+  const totalBuybacksInputs = allBuybacks?.reduce(
+    (acc, b) => acc + b.usdValue,
+    0,
+  );
 
   return error ? (
     <Card>
@@ -45,13 +52,10 @@ const MetricsSection = () => {
               )}
             </div>
             <div className="text-[13px] lg:text-[15px] flex items-center gap-1 text-right lg:hidden">
-              {isLoading ? (
+              {isLoading || !totalBuybacksInputs ? (
                 <Skeleton className="h-4 w-24" />
               ) : showUsdValue ? (
-                toCompactCurrency(
-                  (metrics?.totalBuybacks ?? 0) *
-                    (metrics?.currentPrice ?? 0) || 0,
-                )
+                toCompactCurrency(totalBuybacksInputs)
               ) : (
                 <>
                   <SuilendLogo size={12} />
@@ -140,29 +144,11 @@ const MetricsSection = () => {
                   />
                 )}
               </div>
-              <div className="text-[13px] lg:text-[15px] flex items-center gap-1 text-right lg:hidden">
-                {isLoading ? (
+              <div className="text-[13px] lg:text-[15px] items-center gap-1 text-right">
+                {isLoading || !totalBuybacksInputs ? (
                   <Skeleton className="h-4 w-24" />
                 ) : showUsdValue ? (
-                  toCompactCurrency(
-                    (metrics?.totalBuybacks ?? 0) *
-                      (metrics?.currentPrice ?? 0) || 0,
-                  )
-                ) : (
-                  <>
-                    <SuilendLogo size={12} />
-                    {toCompactNumber(metrics?.totalBuybacks ?? 0)}
-                  </>
-                )}
-              </div>
-              <div className="text-[13px] lg:text-[15px] items-center gap-1 text-right hidden lg:flex">
-                {isLoading ? (
-                  <Skeleton className="h-4 w-24" />
-                ) : showUsdValue ? (
-                  toCompactCurrency(
-                    (metrics?.totalBuybacks ?? 0) *
-                      (metrics?.currentPrice ?? 0) || 0,
-                  )
+                  toCompactCurrency(totalBuybacksInputs)
                 ) : (
                   <>
                     <SuilendLogo size={12} />

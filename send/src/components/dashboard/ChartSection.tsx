@@ -215,7 +215,7 @@ const ChartSection = () => {
                         checked={enabledMetrics.buybacks}
                         className="mr-2"
                       />
-                      Buyback
+                      Buybacks
                     </div>
 
                     <div className="h-px bg-border my-1" />

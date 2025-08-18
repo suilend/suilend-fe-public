@@ -201,7 +201,7 @@ const TransactionsSection = () => {
                     <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-center">
                       SEND Amount
                     </th>
-                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-right">
+                    <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-right max-lg:pr-4">
                       Value
                     </th>
                     <th className="text-xs text-right pr-4 py-3 font-sans font-normal text-muted-foreground hidden lg:table-cell">
@@ -218,7 +218,7 @@ const TransactionsSection = () => {
                     </tr>
                   )}
                   {!isLoading &&
-                    unifiedRows.map((row) => (
+                    unifiedRows.map((row, index) => (
                       <>
                         <tr
                           className={`border-b border-border/50 relative overflow-hidden ${row.kind === "dca" && row.ongoing ? "bg-muted/15 after:content-[''] after:absolute after:inset-y-0 after:left-0 after:h-[49px] after:bg-card after:z-0 after:w-[var(--prog)] rounded-none" : ""}`}
@@ -269,7 +269,10 @@ const TransactionsSection = () => {
                                       {toCompactNumber(row.outAmount)}
                                     </span>
                                   </TooltipTrigger>
-                                  <TooltipContent className="font-sans text-xs">
+                                  <TooltipContent
+                                    className="font-sans text-xs"
+                                    side={index === 0 ? "bottom" : "top"}
+                                  >
                                     DCA is ongoing and will continue to buy more
                                     SEND.
                                   </TooltipContent>
@@ -284,11 +287,11 @@ const TransactionsSection = () => {
                           <td className="py-3 z-10 relative">
                             <div className="flex items-center gap-2 text-sm max-lg:justify-end">
                               {row.kind === "dca" ? (
-                                <span className="text-sm max-lg:text-xs">
+                                <span className="text-sm max-lg:text-xs max-lg:pr-4">
                                   {row.inAmount}
                                 </span>
                               ) : (
-                                <div className="flex items-center gap-2 text-sm max-lg:justify-end max-lg:text-xs">
+                                <div className="flex items-center gap-2 text-sm max-lg:justify-end max-lg:text-xs max-lg:pr-4">
                                   <div className="w-4 h-4 rounded-full flex items-center justify-end">
                                     <Image
                                       src={`${ASSETS_URL}/icons/usdc.png`}
