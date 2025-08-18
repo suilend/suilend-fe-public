@@ -344,16 +344,13 @@ const RevenueChart = ({
       const m = Math.max(revenueSum, buy);
       if (m > max) max = m;
     }
-    // If values are below 1M, round up to nearest 0.05M for better readability
-    if (max < 1) return Math.max(0.05, Math.ceil(max * 20) / 20);
-    // Otherwise, use 1-2-5 progression
+    if (max <= 0) return 1;
+    // For sub-1 ranges, round up to nearest 0.05 for readability
+    if (max < 1) return Math.max(0.05, Math.ceil(max / 0.05) * 0.05);
+    // Aggressive scaling: use 0.5 progression (…, 0.5, 1.0, 1.5, 2.0, …) × 10^k
     const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
     const leading = max / magnitude;
-    let niceLeading = 1;
-    if (leading <= 1) niceLeading = 1;
-    else if (leading <= 2) niceLeading = 2;
-    else if (leading <= 5) niceLeading = 5;
-    else niceLeading = 10;
+    const niceLeading = Math.ceil(leading / 0.5) * 0.5;
     return niceLeading * magnitude;
   }, [chartData, enabledMetrics]);
 
