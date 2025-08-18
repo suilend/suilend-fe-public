@@ -187,7 +187,7 @@ const TransactionsSection = () => {
           <div className="overflow-x-scroll">
             <div className="max-h-[480px] overflow-y-auto">
               <table className="w-full whitespace-nowrap border-separate border-spacing-0">
-                <thead className="sticky top-0 bg-card z-20 shadow-[0_2px_0_0_hsl(var(--border))]">
+                <thead className="sticky top-[-1px] bg-card z-20 border-b border-border">
                   <tr className="border-b border-border">
                     <th className="text-xs text-left pl-4 py-3 font-sans font-normal text-muted-foreground">
                       Time (UTC)
