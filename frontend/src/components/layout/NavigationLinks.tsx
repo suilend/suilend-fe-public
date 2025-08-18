@@ -76,7 +76,7 @@ export default function NavigationLinks() {
         </Link>
       )}
       {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
-      {Date.now() >= 1755522000000 && (
+      {Date.now() >= 1755525600000 && (
         <Link href={SEND_URL} isExternal label="New">
           SEND
         </Link>
