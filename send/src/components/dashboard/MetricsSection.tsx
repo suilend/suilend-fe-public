@@ -38,7 +38,6 @@ const MetricsSection = () => {
           <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground flex items-center gap-1 lg:gap-2 mb-2 text-right">
               <span className="hidden lg:block">Total Buybacks</span>
-              <span className="block lg:hidden">Buybacks</span>
               {showUsdValue ? (
                 <ArrowRightLeft
                   className="w-4 cursor-pointer h-4"
@@ -63,7 +62,7 @@ const MetricsSection = () => {
                 </>
               )}
             </div>
-            <div className="text-[13px] lg:text-[15px] items-center gap-1 text-right hidden lg:flex">
+            <div className="text-xl lg:text-[15px] items-center gap-1 text-right hidden lg:flex">
               {isLoading ? (
                 <Skeleton className="h-4 w-24" />
               ) : showUsdValue ? (
@@ -131,7 +130,6 @@ const MetricsSection = () => {
             <div className="flex flex-col items-center">
               <div className="text-xs font-sans text-muted-foreground flex items-center gap-1 lg:gap-2 mb-2 text-center">
                 <span className="hidden lg:block">Total Buybacks</span>
-                <span className="block lg:hidden">Buybacks</span>
                 {showUsdValue ? (
                   <ArrowRightLeft
                     className="w-4 cursor-pointer h-4"
@@ -144,14 +142,14 @@ const MetricsSection = () => {
                   />
                 )}
               </div>
-              <div className="text-[13px] lg:text-[15px] items-center gap-1 text-right">
+              <div className="text-xl flex items-center gap-2 text-right">
                 {isLoading || !totalBuybacksInputs ? (
                   <Skeleton className="h-4 w-24" />
                 ) : showUsdValue ? (
                   toCompactCurrency(totalBuybacksInputs)
                 ) : (
                   <>
-                    <SuilendLogo size={12} />
+                    <SuilendLogo size={20} />
                     {toCompactNumber(metrics?.totalBuybacks ?? 0)}
                   </>
                 )}
@@ -165,7 +163,7 @@ const MetricsSection = () => {
               <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
                 Treasury
               </div>
-              <div className="text-[13px] lg:text-[15px] text-center">
+              <div className="text-xl text-center">
                 {isLoading ? (
                   <Skeleton className="h-4 w-24" />
                 ) : (
@@ -181,7 +179,7 @@ const MetricsSection = () => {
               <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
                 Annualized Revenue
               </div>
-              <div className="text-[13px] lg:text-[15px]">
+              <div className="text-xl">
                 {isLoading ? (
                   <Skeleton className="h-4 w-20" />
                 ) : (
@@ -198,7 +196,7 @@ const MetricsSection = () => {
                 <span className="hidden lg:block">FDV</span>
                 <span className="block lg:hidden">Mcap</span>
               </div>
-              <div className="text-[13px] lg:text-[15px] text-center">
+              <div className="text-xl text-center">
                 {isLoading ? (
                   <Skeleton className="h-4 w-24" />
                 ) : (

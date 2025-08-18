@@ -208,7 +208,6 @@ export function getRevenueChart(period: Period) {
               ? Number(p.springSuiRevenue)
               : p.springSuiRevenue;
 
-          console.log("springSuiRevenue", springSuiRevenue);
           return {
             timestamp,
             value,

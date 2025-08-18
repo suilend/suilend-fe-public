@@ -40,7 +40,7 @@ type RawPoint = {
 const COLOR_SUILEND = "hsl(var(--primary))";
 const COLOR_STEAMM = "hsl(var(--secondary))";
 const COLOR_SPRINGSUI = "#6DA8FF";
-const COLOR_PRICE_LINE = "hsl(var(--muted-foreground))";
+const COLOR_PRICE_LINE = "hsl(var(--foreground))";
 const COLOR_BUYBACKS = "#F08BD9"; // pink shade to match design
 
 function formatLabel(ts: number) {
@@ -353,8 +353,6 @@ const RevenueChart = ({
     const niceLeading = Math.ceil(leading / 0.5) * 0.5;
     return niceLeading * magnitude;
   }, [chartData, enabledMetrics]);
-
-  // console.log(yMaxLeftVisible);
 
   // Tooltip content styled like site cards
   const TooltipCard = ({

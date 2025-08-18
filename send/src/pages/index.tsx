@@ -9,7 +9,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-[1080px] w-full mx-auto flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between lg:justify-start">
+      <div className="flex items-center justify-start">
         <div className="flex items-center gap-2">
           <Logo />
           <PriceDisplay />

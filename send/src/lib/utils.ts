@@ -9,7 +9,7 @@ export function toTitleCase(str: string) {
   return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatNumber(num: number, maximumFractionDigits = 2) {
+function formatNumber(num: number, maximumFractionDigits = 1) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits,
   }).format(num);
@@ -32,7 +32,7 @@ export function toCompactNumber(num: number) {
   // Fall back to Intl for very large numbers (B, T, etc.)
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 1,
   }).format(num);
 }
 
@@ -43,7 +43,7 @@ export function toCompactCurrency(num: number) {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 1,
     }).format(num);
   }
   if (abs < 1_000_000) {

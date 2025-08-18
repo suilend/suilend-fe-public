@@ -92,7 +92,7 @@ const ChartSection = () => {
       pills.push({
         key: "price",
         label: "SEND Price",
-        color: "hsl(var(--muted-foreground))",
+        color: "hsl(var(--foreground))",
       });
     }
     return pills;

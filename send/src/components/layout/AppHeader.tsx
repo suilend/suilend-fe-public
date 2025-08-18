@@ -7,6 +7,7 @@ import HeaderBase from "@/components/layout/HeaderBase";
 import Logo from "@/components/layout/Logo";
 import NavigationLinks from "@/components/layout/NavigationLinks";
 import Button from "@/components/shared/Button";
+import { ROOT_URL } from "@/lib/navigation";
 
 import HeaderMenu from "./HeaderMenu";
 
@@ -28,7 +29,7 @@ export default function AppHeader() {
     <HeaderBase>
       {/* Start */}
       <div className="flex shrink-0 flex-row items-center gap-12 justify-between lg:justify-start w-full">
-        <Link href="https://suilend.com">
+        <Link href={ROOT_URL}>
           <Logo />
         </Link>
 

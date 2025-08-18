@@ -23,8 +23,8 @@ import { cn } from "@/lib/utils";
 function More() {
   return (
     <>
-      <Link href={SEND_URL}>SEND</Link>
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
+      <Link href={SEND_URL}>Claim</Link>
       <Link href={ABOUT_URL}>About</Link>
       {/* External */}
       <Link
