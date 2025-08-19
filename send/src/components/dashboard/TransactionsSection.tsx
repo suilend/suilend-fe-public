@@ -120,7 +120,7 @@ const TransactionsSection = () => {
           <Image
             src={`${ASSETS_URL}/icons/usdc.png`}
             alt="USDC"
-            className="rounded-full overflow-hidden mr-1"
+            className="rounded-full overflow-hidden mr-1 shrink-0"
             width={16}
             height={16}
           />
@@ -195,7 +195,7 @@ const TransactionsSection = () => {
                     <th className="text-xs text-left px-2 py-3 font-sans font-normal text-muted-foreground">
                       Type
                     </th>
-                    <th className="text-xs px-2 text-left py-3 font-sans font-normal text-muted-foreground">
+                    <th className="text-xs px-2 text-center py-3 font-sans font-normal text-muted-foreground">
                       Price
                     </th>
                     <th className="text-xs text-left py-3 font-sans font-normal text-muted-foreground max-lg:text-center">
@@ -247,7 +247,7 @@ const TransactionsSection = () => {
                           <td className="py-3 px-2 text-sm z-10 relative max-lg:text-xs">
                             {row.typeLabel}
                           </td>
-                          <td className="py-3 px-2 text-sm z-10 relative max-lg:text-xs font-sans">
+                          <td className="py-3 px-2 text-sm z-10 relative max-lg:text-xs font-sans text-center">
                             {row.priceContent}
                           </td>
                           <td className="py-3 z-10 relative">
@@ -285,15 +285,13 @@ const TransactionsSection = () => {
                                 </span>
                               ) : (
                                 <div className="flex items-center gap-2 text-sm max-lg:justify-center max-lg:text-xs font-sans">
-                                  <div className="w-4 h-4 rounded-full flex items-center justify-center">
                                     <Image
                                       src={`${ASSETS_URL}/icons/usdc.png`}
                                       alt="USDC"
-                                      className="rounded-full overflow-hidden"
+                                      className="rounded-full overflow-hidden shrink-0"
                                       width={16}
                                       height={16}
                                     />
-                                  </div>
                                   {row.inAmount}
                                 </div>
                               )}
