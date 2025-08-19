@@ -4,11 +4,11 @@ import { useRouter } from "next/router";
 import { formatId } from "@suilend/sui-fe";
 import { shallowPushQuery, useSettingsContext } from "@suilend/sui-fe-next";
 
-import AddLendingMarketDialog from "@/components/admin/AddLendingMarketDialog";
 import {
   AdminContextProvider,
   useAdminContext,
 } from "@/components/admin/AdminContext";
+import CreateLendingMarketDialog from "@/components/admin/CreateLendingMarketDialog";
 import LendingMarketTab from "@/components/admin/lendingMarket/LendingMarketTab";
 import LiquidateTab from "@/components/admin/liquidate/LiquidateTab";
 import ObligationsTab from "@/components/admin/obligations/ObligationsTab";
@@ -88,7 +88,7 @@ function Page() {
         <div className="flex w-full max-w-[800px] flex-col gap-4">
           {/* Lending market */}
           <div className="flex w-full flex-row items-center gap-2">
-            <AddLendingMarketDialog />
+            <CreateLendingMarketDialog />
 
             <div className="flex-1">
               <StandardSelect

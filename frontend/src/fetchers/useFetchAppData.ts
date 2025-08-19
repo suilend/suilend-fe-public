@@ -42,20 +42,6 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    // const x = await suiClient.getObject({
-    //   id: "0xf7b7ccd3fe3ba441207383bb83678b34266288c41ecd91afa72fff0d913af448",
-    //   options: {
-    //     showContent: true,
-    //     showDisplay: true,
-    //     showBcs: true,
-    //     showOwner: true,
-    //     showPreviousTransaction: true,
-    //     showStorageRebate: true,
-    //     showType: true,
-    //   },
-    // });
-    // console.log("XXXX", x);
-
     // Get lending markets from registry
     let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
     try {
@@ -79,7 +65,9 @@ export default function useFetchAppData() {
               if (
                 [
                   "0x6d9478307d1cb8417470bec42e38000422b448e9638d6b43b821301179ac8caf", // STEAMM LM (old)
-                  "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test
+                  "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test 1
+                  "0x8843ed2e29bd36683c7c99bf7e529fcee124a175388ad4b9886b48f1009e6285", // Test 2
+                  "0x02b4b27b3aa136405c2aaa8e2e08191670f3971d495bfcd2dda17184895c20ad", // Test 3
                 ].includes(lendingMarketId)
               )
                 return undefined;

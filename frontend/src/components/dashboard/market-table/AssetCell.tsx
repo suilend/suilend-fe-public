@@ -66,8 +66,10 @@ export default function AssetCell({
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction, dryRunTransaction } =
     useWalletContext();
-  const { appData, isLst, walrusEpoch } = useLoadedAppContext();
+  const { allAppData, isLst, walrusEpoch } = useLoadedAppContext();
   const { getBalance, refresh } = useLoadedUserContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const isTouchscreen = useIsTouchscreen();
 
@@ -82,11 +84,7 @@ export default function AssetCell({
           tableType === AccountAssetTableType.BALANCES) &&
         !(
           // Staked WAL
-          (
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-            token.coinType === NORMALIZED_WAL_COINTYPE &&
-            reserve === undefined
-          )
+          (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
         ) &&
         !isInMsafeApp()
       ) {
@@ -139,7 +137,7 @@ export default function AssetCell({
       }
 
       return result;
-    }, [appData.lendingMarket.id, tableType, token, reserve, isLst]);
+    }, [tableType, token, reserve, isLst]);
 
   // WAL
   const stakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -154,7 +152,10 @@ export default function AssetCell({
       if (balance.lt(1)) throw new Error("Minimum stake is 1 WAL");
 
       const submitAmount = balance
-        .times(10 ** appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals)
+        .times(
+          10 **
+            appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+        )
         .integerValue(BigNumber.ROUND_DOWN)
         .toString();
 
@@ -185,7 +186,7 @@ export default function AssetCell({
         address,
         getToken(
           NORMALIZED_WAL_COINTYPE,
-          appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
+          appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
         ),
         -1,
       );
@@ -195,7 +196,8 @@ export default function AssetCell({
           "Staked",
           balanceChangeOut !== undefined
             ? formatToken(balanceChangeOut, {
-                dp: appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+                dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
+                  .decimals,
                 trimTrailingZeros: true,
               })
             : null,
@@ -247,14 +249,10 @@ export default function AssetCell({
   }, [extra, dryRunTransaction]);
 
   useEffect(() => {
-    if (
-      appData.lendingMarket.id === LENDING_MARKET_ID &&
-      token.coinType === NORMALIZED_WAL_COINTYPE &&
-      reserve === undefined
-    )
+    if (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
       canStakedWalBeWithdrawnEarly();
   }, [
-    appData.lendingMarket.id,
+    appDataMainMarket.lendingMarket.id,
     token.coinType,
     reserve,
     canStakedWalBeWithdrawnEarly,
@@ -283,7 +281,8 @@ export default function AssetCell({
 
       toast.success(
         `Withdrew ${formatToken(amount, {
-          dp: appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+          dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
+            .decimals,
           trimTrailingZeros: true,
         })} staked WAL`,
         {
@@ -329,7 +328,8 @@ export default function AssetCell({
 
       toast.success(
         `Requested withdrawal of ${formatToken(amount, {
-          dp: appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+          dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
+            .decimals,
           trimTrailingZeros: true,
         })} staked WAL`,
         {
@@ -362,8 +362,7 @@ export default function AssetCell({
           <TBody>
             {
               // Staked WAL
-              appData.lendingMarket.id === LENDING_MARKET_ID &&
-                token.coinType === NORMALIZED_WAL_COINTYPE &&
+              token.coinType === NORMALIZED_WAL_COINTYPE &&
                 reserve === undefined && (
                   <>
                     <Tooltip title={(extra!.obj as StakedWalObject).nodeId}>
@@ -388,8 +387,7 @@ export default function AssetCell({
           </TBody>
           {
             // Staked WAL (Withdrawing, withdrawEpoch > epoch)
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-              token.coinType === NORMALIZED_WAL_COINTYPE &&
+            token.coinType === NORMALIZED_WAL_COINTYPE &&
               reserve === undefined &&
               (extra!.obj as StakedWalObject).state ===
                 StakedWalState.WITHDRAWING &&
@@ -420,7 +418,6 @@ export default function AssetCell({
           ))}
           {(tableType === AccountAssetTableType.BALANCES ||
             tableType === MarketTableType.MARKET) &&
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
             token.coinType === NORMALIZED_WAL_COINTYPE &&
             address && (
               <Button

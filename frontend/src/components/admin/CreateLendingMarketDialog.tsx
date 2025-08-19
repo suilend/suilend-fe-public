@@ -19,7 +19,7 @@ import { TX_TOAST_DURATION } from "@/lib/constants";
 
 const generate_bytecode = (module: string, type: string) => {
   const bytecode = Buffer.from(
-    "oRzrCwYAAAAFAQACAgIEBwYsCDIgClIFAAIAAAIAD01BUktFUl9URU1QTEFURQtkdW1teV9maWVsZA9tYXJrZXJfdGVtcGxhdGUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAQEBAA==",
+    "oRzrCwYAAAAFAQACAgIEBwYeCCQgCkQFAAIAAAIACFRFTVBMQVRFC2R1bW15X2ZpZWxkCHRlbXBsYXRlAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgEBAQA=",
     "base64",
   );
 
@@ -31,7 +31,7 @@ const generate_bytecode = (module: string, type: string) => {
   return updated;
 };
 
-export default function AddLendingMarketDialog() {
+export default function CreateLendingMarketDialog() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { refresh } = useLoadedUserContext();
@@ -89,6 +89,11 @@ export default function AddLendingMarketDialog() {
         ),
         duration: TX_TOAST_DURATION,
       });
+
+      const packageId: string = (
+        res.objectChanges?.find((o) => o.type === "published") as any
+      ).packageId;
+      fullType = `${packageId}::${module}::${type}`;
     } catch (err) {
       toast.error("Failed to create type", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -184,7 +189,7 @@ export default function AddLendingMarketDialog() {
           label="module"
           id="module"
           value={module}
-          onChange={(value) => setModule(value.toLowerCase())}
+          onChange={setModule}
           inputProps={{ autoFocus: true }}
         />
         <div className="flex h-10 flex-row items-center">
@@ -195,7 +200,7 @@ export default function AddLendingMarketDialog() {
           label="type"
           id="type"
           value={type}
-          onChange={(value) => setType(value.toUpperCase())}
+          onChange={setType}
         />
       </div>
     </Dialog>

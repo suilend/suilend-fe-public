@@ -205,9 +205,12 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   }, [address, fetchOwnedStakedWalObjectsMap]);
 
   const ownedStakedWalObjects = useMemo(() => {
-    if (!address || appData === undefined) return undefined;
+    if (!address || allAppData === undefined) return undefined;
     if (process.env.NEXT_PUBLIC_SUILEND_USE_BETA_MARKET === "true")
       return undefined;
+
+    const appDataMainMarket =
+      allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
     const result: StakedWalObject[] = [];
     for (const obj of ownedStakedWalObjectsMap[address] ?? []) {
@@ -224,7 +227,8 @@ export function UserContextProvider({ children }: PropsWithChildren) {
             ? state.fields.withdraw_epoch
             : undefined,
         amount: new BigNumber(principal).div(
-          10 ** appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
+          10 **
+            appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
         ),
         state:
           state.variant === "Staked"
@@ -234,7 +238,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     }
 
     return result;
-  }, [address, appData, ownedStakedWalObjectsMap]);
+  }, [address, allAppData, ownedStakedWalObjectsMap]);
 
   // User data
   const { data: allUserData, mutateData: mutateAllUserData } =

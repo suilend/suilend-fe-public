@@ -76,11 +76,9 @@ export default function NavigationLinks() {
         </Link>
       )}
       {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
-      {Date.now() >= 1755525600000 && (
-        <Link href={SEND_URL} label="New">
-          SEND
-        </Link>
-      )}
+      <Link href={SEND_URL} label="New">
+        SEND
+      </Link>
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
