@@ -186,7 +186,7 @@ const MetricsSection = () => {
                 <span className="hidden lg:block">FDV</span>
                 <span className="block lg:hidden">Mcap</span>
               </div>
-              <div className="text-xl text-center">
+              <div className="text-xl flex justify-center">
                 {isLoading ? (
                   <Skeleton className="h-4 w-24" />
                 ) : (
