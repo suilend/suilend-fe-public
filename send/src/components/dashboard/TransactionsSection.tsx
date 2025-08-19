@@ -285,13 +285,13 @@ const TransactionsSection = () => {
                                 </span>
                               ) : (
                                 <div className="flex items-center gap-2 text-sm max-lg:justify-center max-lg:text-xs font-sans">
-                                    <Image
-                                      src={`${ASSETS_URL}/icons/usdc.png`}
-                                      alt="USDC"
-                                      className="rounded-full overflow-hidden shrink-0"
-                                      width={16}
-                                      height={16}
-                                    />
+                                  <Image
+                                    src={`${ASSETS_URL}/icons/usdc.png`}
+                                    alt="USDC"
+                                    className="rounded-full overflow-hidden shrink-0"
+                                    width={16}
+                                    height={16}
+                                  />
                                   {row.inAmount}
                                 </div>
                               )}
