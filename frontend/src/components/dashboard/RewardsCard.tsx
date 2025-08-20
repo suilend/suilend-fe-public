@@ -1,7 +1,7 @@
 import BigNumber from "bignumber.js";
 
-import { RewardsMap, getRewardsMap } from "@suilend/sdk";
-import { formatToken, getToken } from "@suilend/sui-fe";
+import { getRewardsMap } from "@suilend/sdk";
+import { formatToken, formatUsd, getToken } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Card from "@/components/dashboard/Card";
@@ -9,7 +9,7 @@ import ClaimRewardsDropdownMenu from "@/components/dashboard/ClaimRewardsDropdow
 import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -39,24 +39,6 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
           {appData.coinMetadataMap[coinType].symbol}
         </TBody>
       </Tooltip>
-    </div>
-  );
-}
-
-interface ClaimableRewardsProps {
-  rewardsMap: RewardsMap;
-}
-
-function ClaimableRewards({ rewardsMap }: ClaimableRewardsProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <TLabelSans>Unclaimed rewards</TLabelSans>
-
-      <div className="grid w-full grid-cols-2 gap-x-4 gap-y-1">
-        {Object.entries(rewardsMap).map(([coinType, { amount }]) => (
-          <ClaimableReward key={coinType} coinType={coinType} amount={amount} />
-        ))}
-      </div>
     </div>
   );
 }
@@ -105,14 +87,39 @@ export default function RewardsCard() {
       className="rounded-[4px] border-none bg-gradient-to-r from-secondary to-border p-[1px]"
       headerProps={{
         className: "rounded-t-[3px] bg-card",
-        title: "Rewards",
+        title: (
+          <>
+            Unclaimed rewards
+            <span className="text-xs text-muted-foreground">
+              {formatUsd(
+                Object.entries(rewardsMap).reduce(
+                  (acc, [coinType, { amount }]) => {
+                    const price =
+                      appData.rewardPriceMap[coinType] ?? new BigNumber(0);
+
+                    return acc.plus(amount.times(price));
+                  },
+                  new BigNumber(0),
+                ),
+              )}
+            </span>
+          </>
+        ),
         titleClassName: "text-primary-foreground",
         noSeparator: true,
       }}
     >
       <CardContent className="flex flex-col gap-4 rounded-b-[3px] bg-card">
         {/* Rewards */}
-        <ClaimableRewards rewardsMap={rewardsMap} />
+        <div className="grid w-full grid-cols-2 gap-x-4 gap-y-1">
+          {Object.entries(rewardsMap).map(([coinType, { amount }]) => (
+            <ClaimableReward
+              key={coinType}
+              coinType={coinType}
+              amount={amount}
+            />
+          ))}
+        </div>
 
         {/* Actions */}
         <div className="w-max">
