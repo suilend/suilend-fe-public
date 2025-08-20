@@ -395,7 +395,7 @@ function Page() {
 
         {/* Learn more */}
         <div className="flex w-full flex-col gap-3">
-          <TBodySans className="text-lg">Learn more</TBodySans>
+          <TBody className="uppercase">Learn more</TBody>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {/* 1 */}
