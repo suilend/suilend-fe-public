@@ -122,12 +122,7 @@ export default function LstStrategyCard({
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
-  const defaultAprPercent = getAprPercent(
-    strategyType,
-    undefined,
-    defaultExposure,
-  );
-  const netAprPercent = getAprPercent(strategyType, obligation, undefined);
+  const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
 
   // Stats - Realized PnL
   const { historicalTvlSuiAmountMap } = useHistoricalTvlSuiAmountMap(
@@ -180,12 +175,12 @@ export default function LstStrategyCard({
 
         {/* Right */}
         <div className="flex flex-row justify-end gap-6">
-          {/* Default APR */}
+          {/* APR/Max APR */}
           <div className="flex w-fit flex-col items-end gap-1">
-            <TLabelSans>Default APR</TLabelSans>
-            <TBody className="text-right">
-              {formatPercent(defaultAprPercent)}
-            </TBody>
+            <TLabelSans>
+              {!!obligation && hasPosition(obligation) ? "APR" : "Max APR"}
+            </TLabelSans>
+            <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
           </div>
         </div>
       </div>
@@ -298,13 +293,6 @@ export default function LstStrategyCard({
               label="Leverage"
               value={`${exposure.toFixed(1)}x`}
               valueTooltip={`${exposure.toFixed(6)}x`}
-              horizontal
-            />
-
-            {/* Net APR */}
-            <LabelWithValue
-              label="Net APR"
-              value={formatPercent(netAprPercent)}
               horizontal
             />
 

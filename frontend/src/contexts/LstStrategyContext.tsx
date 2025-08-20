@@ -1134,13 +1134,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         //   )}`,
         // );
 
-        const filteredSortedEvents = sortedEvents.filter((event) => {
-          const diffS = Date.now() / 1000 - event.timestampS;
-          return !(diffS < 30); // Exclude events that are less than 30 seconds old (indexer may not have indexed all event types yet)
-        });
         // console.log(
-        //   `XXX filteredSortedEvents: ${JSON.stringify(
-        //     filteredSortedEvents.map((e, i) => ({ index: i, ...e })),
+        //   `XXX sortedEvents: ${JSON.stringify(
+        //     sortedEvents.map((e, i) => ({ index: i, ...e })),
         //     null,
         //     2,
         //   )}`,
@@ -1148,7 +1144,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
         // Only keep events for the current position (since last obligationDataEvent.depositedValueUsd === 0)
         const lastZeroDepositedValueUsdObligationDataEventIndex =
-          filteredSortedEvents.findLastIndex(
+          sortedEvents.findLastIndex(
             (event) =>
               event.type === EventType.OBLIGATION_DATA &&
               (event as ObligationDataEvent).depositedValueUsd.eq(0),
@@ -1158,24 +1154,24 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         //   lastZeroDepositedValueUsdObligationDataEventIndex,
         // );
 
-        const currentPositionFilteredSortedEvents =
+        const currentPositionSortedEvents =
           lastZeroDepositedValueUsdObligationDataEventIndex === -1
-            ? filteredSortedEvents
-            : filteredSortedEvents.slice(
+            ? sortedEvents
+            : sortedEvents.slice(
                 lastZeroDepositedValueUsdObligationDataEventIndex +
                   1 + // Exclude ObligationDataEvent
                   1, // Exclude last WithdrawEvent (ObligationDataEvent goes before WithdrawEvent)
               );
 
         while (
-          currentPositionFilteredSortedEvents.length > 0 &&
-          currentPositionFilteredSortedEvents[0].type === EventType.CLAIM_REWARD
+          currentPositionSortedEvents.length > 0 &&
+          currentPositionSortedEvents[0].type === EventType.CLAIM_REWARD
         )
-          currentPositionFilteredSortedEvents.shift(); // Remove all ClaimRewardEvents from the start (rewards are claimed after a MAX withdraw)
+          currentPositionSortedEvents.shift(); // Remove all ClaimRewardEvents from the start (rewards are claimed after a MAX withdraw)
 
         // console.log(
-        //   `XXX currentPositionFilteredSortedEvents: ${JSON.stringify(
-        //     currentPositionFilteredSortedEvents.map((e, i) => ({
+        //   `XXX currentPositionSortedEvents: ${JSON.stringify(
+        //     currentPositionSortedEvents.map((e, i) => ({
         //       index: i,
         //       ...e,
         //     })),
@@ -1185,7 +1181,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // );
 
         // Return early if no non-filtered events for current position
-        if (currentPositionFilteredSortedEvents.length === 0) {
+        if (currentPositionSortedEvents.length === 0) {
           console.log(
             "XXX no non-filtered events for current position",
             strategyType,
@@ -1196,7 +1192,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // Get historical LST to SUI exchange rates for the relevant timestamps (current position deposits and withdraws)
         const lstToSuiExchangeRateTimestampsS = Array.from(
           new Set(
-            currentPositionFilteredSortedEvents
+            currentPositionSortedEvents
               .filter((event) =>
                 [EventType.DEPOSIT, EventType.WITHDRAW].includes(event.type),
               )
@@ -1230,9 +1226,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // Calculate current position
         let depositedSuiAmount = new BigNumber(0);
         let borrowedSuiAmount = new BigNumber(0);
-        for (let i = 0; i < currentPositionFilteredSortedEvents.length; i++) {
-          const event = currentPositionFilteredSortedEvents[i];
-          const previousEvent = currentPositionFilteredSortedEvents[i - 1];
+        for (let i = 0; i < currentPositionSortedEvents.length; i++) {
+          const event = currentPositionSortedEvents[i];
+          const previousEvent = currentPositionSortedEvents[i - 1];
 
           // Deposit/withdraw
           if (event.type === EventType.DEPOSIT) {
