@@ -55,8 +55,6 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     defaultOpenCloseCoinType: string;
     openCloseCoinTypeOptions: string[];
 
-    depositCoinTypes: string[];
-    borrowCoinType: string;
     lstCoinType: string;
   }
 > = {
@@ -76,8 +74,6 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       NORMALIZED_sSUI_COINTYPE,
     ],
 
-    depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
-    borrowCoinType: NORMALIZED_SUI_COINTYPE,
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
@@ -96,8 +92,6 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       NORMALIZED_stratSUI_COINTYPE,
     ],
 
-    depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
-    borrowCoinType: NORMALIZED_SUI_COINTYPE,
     lstCoinType: NORMALIZED_stratSUI_COINTYPE,
   },
   [StrategyType.USDC_sSUI_SUI_LOOPING]: {
@@ -113,8 +107,6 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     defaultOpenCloseCoinType: NORMALIZED_USDC_COINTYPE,
     openCloseCoinTypeOptions: [NORMALIZED_USDC_COINTYPE],
 
-    depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
-    borrowCoinType: NORMALIZED_SUI_COINTYPE,
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
   },
 };

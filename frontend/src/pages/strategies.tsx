@@ -84,12 +84,13 @@ function Page() {
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxLstWithdrawnAmount,
+    getStepMaxWithdrawnAmount,
 
     getSimulatedObligation,
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getDepositedSuiAmount,
     getBorrowedSuiAmount,

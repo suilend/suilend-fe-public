@@ -35,12 +35,13 @@ export default function LstStrategyDialogParametersPanel({
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxLstWithdrawnAmount,
+    getStepMaxWithdrawnAmount,
 
     getSimulatedObligation,
     simulateLoopToExposure,
     simulateUnloopToExposure,
     simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getDepositedSuiAmount,
     getBorrowedSuiAmount,
