@@ -1313,10 +1313,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       if (!!obligation && hasPosition(obligation)) {
         _obligation = obligation;
       } else {
-        if (exposure === undefined)
-          throw new Error(
-            "exposure must be defined if obligation is not defined or has no position",
-          );
+        if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
         _obligation = simulateDeposit(
           strategyType,
@@ -1351,10 +1348,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       if (!!obligation && hasPosition(obligation)) {
         _obligation = obligation;
       } else {
-        if (exposure === undefined)
-          throw new Error(
-            "exposure must be defined if obligation is not defined",
-          );
+        if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
         _obligation = simulateDeposit(
           strategyType,

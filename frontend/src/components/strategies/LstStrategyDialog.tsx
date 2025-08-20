@@ -2539,7 +2539,7 @@ export default function LstStrategyDialog({
                 />
 
                 <LabelWithValue
-                  label="APR"
+                  label="Net APR"
                   value={
                     <>
                       {formatPercent(aprPercent, {

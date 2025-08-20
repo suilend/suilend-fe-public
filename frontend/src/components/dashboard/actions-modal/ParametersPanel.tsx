@@ -110,14 +110,14 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       <Separator />
 
       <LabelWithValue
-        labelTooltip={OPEN_LTV_TOOLTIP}
         label="Open LTV"
+        labelTooltip={OPEN_LTV_TOOLTIP}
         value={formatLtvPercent(new BigNumber(reserve.config.openLtvPct))}
         horizontal
       />
       <LabelWithValue
-        labelTooltip={CLOSE_LTV_TOOLTIP}
         label="Close LTV"
+        labelTooltip={CLOSE_LTV_TOOLTIP}
         value={formatLtvPercent(new BigNumber(reserve.config.closeLtvPct))}
         horizontal
       />
@@ -127,8 +127,8 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
         horizontal
       />
       <LabelWithValue
-        labelTooltip={BORROW_WEIGHT_TOOLTIP}
         label="Borrow weight (BW)"
+        labelTooltip={BORROW_WEIGHT_TOOLTIP}
         value={formatBorrowWeight(reserve.config.borrowWeightBps)}
         horizontal
       />

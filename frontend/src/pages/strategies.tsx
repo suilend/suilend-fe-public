@@ -20,6 +20,7 @@ import {
   TX_TOAST_DURATION,
   formatList,
   formatToken,
+  formatUsd,
   getToken,
 } from "@suilend/sui-fe";
 import {
@@ -34,7 +35,12 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBodySans, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import LstStrategyCard from "@/components/strategies/LstStrategyCard";
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -261,8 +267,8 @@ function Page() {
       ))}
 
       <div className="flex w-full flex-col gap-6">
-        <div className="flex h-7 flex-row items-center gap-4">
-          <TBodySans className="text-xl">Strategies</TBodySans>
+        <div className="flex h-[24px] flex-row items-center justify-between gap-4">
+          <TBody className="text-md uppercase">Strategies</TBody>
 
           {hasClaimableRewards && (
             <div className="flex h-10 flex-row items-center gap-2 rounded-sm border px-2">
@@ -324,7 +330,22 @@ function Page() {
           hasPosition(obligation),
         ) && (
           <div className="flex w-full flex-col gap-3">
-            <TBodySans className="text-lg">My positions</TBodySans>
+            <div className="flex flex-row items-center gap-2">
+              <TBody className="uppercase">My positions</TBody>
+              <TLabel>
+                {formatUsd(
+                  Object.values(strategyOwnerCapObligationMap).reduce(
+                    (acc, { obligation }) => {
+                      const tvlSuiAmount = getTvlSuiAmount(obligation);
+                      const tvlUsdAmount = tvlSuiAmount.times(suiReserve.price);
+
+                      return acc.plus(tvlUsdAmount);
+                    },
+                    new BigNumber(0),
+                  ),
+                )}
+              </TLabel>
+            </div>
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
@@ -349,7 +370,7 @@ function Page() {
         <div className="flex w-full flex-col gap-3">
           {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
             hasPosition(obligation),
-          ) && <TBodySans className="text-lg">All strategies</TBodySans>}
+          ) && <TBody className="uppercase">All strategies</TBody>}
 
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">

@@ -13,7 +13,6 @@ import { formatPercent, formatToken } from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
@@ -22,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useHistoricalTvlSuiAmountMap from "@/hooks/useHistoricalTvlSuiAmountMap";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface LstStrategyCardProps {
   strategyType: StrategyType;
@@ -123,7 +122,12 @@ export default function LstStrategyCard({
   const tvlSuiAmount = getTvlSuiAmount(obligation);
 
   // Stats - APR
-  const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
+  const defaultAprPercent = getAprPercent(
+    strategyType,
+    undefined,
+    defaultExposure,
+  );
+  const netAprPercent = getAprPercent(strategyType, obligation, undefined);
 
   // Stats - Realized PnL
   const { historicalTvlSuiAmountMap } = useHistoricalTvlSuiAmountMap(
@@ -176,43 +180,12 @@ export default function LstStrategyCard({
 
         {/* Right */}
         <div className="flex flex-row justify-end gap-6">
-          {!!obligation && hasPosition(obligation) && (
-            <div className="flex w-fit flex-col items-end gap-1">
-              <Tooltip
-                title={
-                  <>
-                    Equity is calculated as the sum of the net amount deposited,
-                    deposit interest, LST staking yield, and claimed rewards,
-                    minus borrow interest.
-                    <br />
-                    <span className="mt-2 block">
-                      Equity does not include unclaimed rewards.
-                    </span>
-                  </>
-                }
-              >
-                <TLabelSans
-                  className={cn(
-                    "text-muted-foreground decoration-muted-foreground/50",
-                    hoverUnderlineClassName,
-                  )}
-                >
-                  Equity
-                </TLabelSans>
-              </Tooltip>
-              <Tooltip
-                title={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
-              >
-                <TBody className="text-right">
-                  {formatToken(tvlSuiAmount, { exact: false })} SUI
-                </TBody>
-              </Tooltip>
-            </div>
-          )}
-
+          {/* Default APR */}
           <div className="flex w-fit flex-col items-end gap-1">
-            <TLabelSans>Net APR</TLabelSans>
-            <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
+            <TLabelSans>Default APR</TLabelSans>
+            <TBody className="text-right">
+              {formatPercent(defaultAprPercent)}
+            </TBody>
           </div>
         </div>
       </div>
@@ -222,6 +195,25 @@ export default function LstStrategyCard({
           <Separator />
 
           <div className="flex w-full flex-col gap-3">
+            {/* Equity */}
+            <LabelWithValue
+              label="Equity"
+              labelTooltip={
+                <>
+                  Equity is calculated as the sum of the net amount deposited,
+                  deposit interest, LST staking yield, and claimed rewards,
+                  minus borrow interest.
+                  <br />
+                  <span className="mt-2 block">
+                    Equity does not include unclaimed rewards.
+                  </span>
+                </>
+              }
+              value={`${formatToken(tvlSuiAmount, { exact: false })} SUI`}
+              valueTooltip={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
+              horizontal
+            />
+
             {/* Total PnL */}
             <PnlLabelWithValue
               reserve={suiReserve}
@@ -306,6 +298,13 @@ export default function LstStrategyCard({
               label="Leverage"
               value={`${exposure.toFixed(1)}x`}
               valueTooltip={`${exposure.toFixed(6)}x`}
+              horizontal
+            />
+
+            {/* Net APR */}
+            <LabelWithValue
+              label="Net APR"
+              value={formatPercent(netAprPercent)}
               horizontal
             />
 

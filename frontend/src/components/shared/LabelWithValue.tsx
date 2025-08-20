@@ -10,9 +10,9 @@ import { cn } from "@/lib/utils";
 interface LabelWithValueProps {
   className?: ClassValue;
   labelClassName?: ClassValue;
-  labelTooltip?: ReactNode;
   labelStartDecorator?: ReactNode;
   label: string;
+  labelTooltip?: ReactNode;
   labelEndDecorator?: ReactNode;
   valueClassName?: ClassValue;
   valueStartDecorator?: ReactNode;
