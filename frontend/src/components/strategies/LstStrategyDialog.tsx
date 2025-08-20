@@ -1319,11 +1319,19 @@ export default function LstStrategyDialog({
       const stepMaxExposure = getExposure(
         getSimulatedObligation(
           strategyType,
-          deposits.map((d) =>
-            d.coinType === lstReserve.coinType
-              ? { ...d, amount: d.amount.plus(stepMaxLstDepositedAmount) }
-              : d,
-          ),
+          deposits.some((d) => d.coinType === lstReserve.coinType)
+            ? deposits.map((d) =>
+                d.coinType === lstReserve.coinType
+                  ? { ...d, amount: d.amount.plus(stepMaxLstDepositedAmount) }
+                  : d,
+              )
+            : [
+                ...deposits,
+                {
+                  coinType: lstReserve.coinType,
+                  amount: stepMaxLstDepositedAmount,
+                },
+              ],
           suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
         ),
       ).minus(exposure);
@@ -1384,7 +1392,7 @@ export default function LstStrategyDialog({
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const isMaxDeposit = stepLstDepositedAmount.eq(stepMaxLstDepositedAmount);
       console.log(
-        `[LstStrategyDialog] deposit - ${i} deposit |`,
+        `[loopToExposure] ${i} deposit |`,
         JSON.stringify(
           {
             stepLstDepositedAmount: stepLstDepositedAmount.toFixed(20),
@@ -1402,11 +1410,16 @@ export default function LstStrategyDialog({
         appData.suilendClient.findReserveArrayIndex(lstReserve.coinType),
         transaction,
       );
-      deposits = deposits.map((d) =>
-        d.coinType === lstReserve.coinType
-          ? { ...d, amount: d.amount.plus(stepLstDepositedAmount) }
-          : d,
-      );
+      deposits = deposits.some((d) => d.coinType === lstReserve.coinType)
+        ? deposits.map((d) =>
+            d.coinType === lstReserve.coinType
+              ? { ...d, amount: d.amount.plus(stepLstDepositedAmount) }
+              : d,
+          )
+        : [
+            ...deposits,
+            { coinType: lstReserve.coinType, amount: stepLstDepositedAmount },
+          ];
     }
 
     return { deposits, suiBorrowedAmount, transaction };
@@ -2155,7 +2168,8 @@ export default function LstStrategyDialog({
         undefined,
         Array.from(
           new Set([
-            lstReserve.coinType,
+            ...strategyInfo.depositCoinTypes,
+            strategyInfo.borrowCoinType,
             NORMALIZED_SUI_COINTYPE,
             ...(obligation?.deposits.map((deposit) => deposit.coinType) ?? []),
             ...(obligation?.borrows.map((borrow) => borrow.coinType) ?? []),

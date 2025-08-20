@@ -714,11 +714,19 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         const stepMaxExposure = getExposure(
           getSimulatedObligation(
             strategyType,
-            deposits.map((d) =>
-              d.coinType === lstReserve.coinType
-                ? { ...d, amount: d.amount.plus(stepMaxLstDepositedAmount) }
-                : d,
-            ),
+            deposits.some((d) => d.coinType === lstReserve.coinType)
+              ? deposits.map((d) =>
+                  d.coinType === lstReserve.coinType
+                    ? { ...d, amount: d.amount.plus(stepMaxLstDepositedAmount) }
+                    : d,
+                )
+              : [
+                  ...deposits,
+                  {
+                    coinType: lstReserve.coinType,
+                    amount: stepMaxLstDepositedAmount,
+                  },
+                ],
             suiBorrowedAmount.plus(stepMaxSuiBorrowedAmount),
           ),
         ).minus(exposure);
@@ -745,11 +753,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           stepMaxLstDepositedAmount,
         );
 
-        deposits = deposits.map((d) =>
-          d.coinType === lstReserve.coinType
-            ? { ...d, amount: d.amount.plus(stepLstDepositedAmount) }
-            : d,
-        );
+        deposits = deposits.some((d) => d.coinType === lstReserve.coinType)
+          ? deposits.map((d) =>
+              d.coinType === lstReserve.coinType
+                ? { ...d, amount: d.amount.plus(stepLstDepositedAmount) }
+                : d,
+            )
+          : [
+              ...deposits,
+              { coinType: lstReserve.coinType, amount: stepLstDepositedAmount },
+            ];
       }
 
       // Obligation

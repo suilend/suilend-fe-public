@@ -33,8 +33,10 @@ import { ParsedObligation, ParsedReserve } from "../parsers";
 
 import { RewardsMap, Side, StrategyOwnerCap } from "./types";
 
-export const STRATEGY_WRAPPER_PACKAGE_ID =
+export const STRATEGY_WRAPPER_PACKAGE_ID_V1 =
   "0xba97dc73a07638d03d77ad2161484eb21db577edc9cadcd7035fef4b4f2f6fa1";
+const STRATEGY_WRAPPER_PACKAGE_ID_V4 =
+  "0x5afa283826db9c0f4c3507fd84277c491d437a4fbecb8fa38c52a891fe513c83";
 
 export enum StrategyType {
   sSUI_SUI_LOOPING = "1",
@@ -56,6 +58,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     openCloseCoinTypeOptions: string[];
 
     lstCoinType: string;
+    depositCoinTypes: string[];
+    borrowCoinType: string;
   }
 > = {
   [StrategyType.sSUI_SUI_LOOPING]: {
@@ -75,6 +79,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     ],
 
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
+    depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
     queryParam: "stratSUI-SUI-looping",
@@ -93,6 +99,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     ],
 
     lstCoinType: NORMALIZED_stratSUI_COINTYPE,
+    depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.USDC_sSUI_SUI_LOOPING]: {
     queryParam: "USDC-sSUI-SUI-looping",
@@ -108,6 +116,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     openCloseCoinTypeOptions: [NORMALIZED_USDC_COINTYPE],
 
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
+    depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    borrowCoinType: NORMALIZED_sSUI_COINTYPE,
   },
 };
 
@@ -119,7 +129,7 @@ export const strategyDeposit = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::deposit_liquidity_and_deposit_into_obligation`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::deposit_liquidity_and_deposit_into_obligation`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -139,7 +149,7 @@ export const strategyBorrow = (
 ) =>
   isSui(coinType)
     ? transaction.moveCall({
-        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::borrow_sui_from_obligation`,
+        target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::borrow_sui_from_obligation`,
         typeArguments: [LENDING_MARKET_TYPE],
         arguments: [
           transaction.object(strategyOwnerCap),
@@ -151,7 +161,7 @@ export const strategyBorrow = (
         ],
       })
     : transaction.moveCall({
-        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::borrow_from_obligation`,
+        target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::borrow_from_obligation`,
         typeArguments: [LENDING_MARKET_TYPE, coinType],
         arguments: [
           transaction.object(strategyOwnerCap),
@@ -170,7 +180,7 @@ export const strategyWithdraw = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::withdraw_from_obligation_and_redeem`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::withdraw_from_obligation_and_redeem`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -190,7 +200,7 @@ const strategyClaimRewards = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::claim_rewards`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::claim_rewards`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -490,7 +500,7 @@ export const createStrategyOwnerCapIfNoneExists = (
   if (strategyOwnerCap) strategyOwnerCapId = strategyOwnerCap.id;
   else {
     strategyOwnerCapId = transaction.moveCall({
-      target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::create_strategy_owner_cap`,
+      target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::create_strategy_owner_cap`,
       typeArguments: [LENDING_MARKET_TYPE],
       arguments: [
         transaction.object(LENDING_MARKET_ID),
