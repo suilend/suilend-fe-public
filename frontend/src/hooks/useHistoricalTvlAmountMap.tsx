@@ -7,7 +7,7 @@ import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
-const useHistoricalTvlSuiAmountMap = (
+const useHistoricalTvlAmountMap = (
   strategyType: StrategyType,
   obligation?: ParsedObligation,
 ) => {
@@ -37,56 +37,51 @@ const useHistoricalTvlSuiAmountMap = (
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
 
   // Stats
-  // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(obligation);
-
   // Stats - Historical TVL
-  const [historicalTvlSuiAmountMap, setHistoricalTvlSuiAmountMap] = useState<
+  const [historicalTvlAmountMap, setHistoricalTvlAmountMap] = useState<
     Record<string, BigNumber | undefined>
   >({});
 
-  const fetchHistoricalTvlSuiAmount = useCallback(async () => {
+  const fetchHistoricalTvlAmount = useCallback(async () => {
     try {
-      const historicalTvlSuiAmount = await getHistoricalTvlSuiAmount(
+      const historicalTvlAmount = await getHistoricalTvlAmount(
         strategyType,
         obligation,
       );
       const result =
-        historicalTvlSuiAmount === undefined
-          ? undefined
-          : historicalTvlSuiAmount;
+        historicalTvlAmount === undefined ? undefined : historicalTvlAmount;
 
-      setHistoricalTvlSuiAmountMap((prev) => ({
+      setHistoricalTvlAmountMap((prev) => ({
         ...prev,
         [obligation!.id]: result,
       }));
     } catch (err) {
       console.error(err);
     }
-  }, [getHistoricalTvlSuiAmount, strategyType, obligation]);
+  }, [getHistoricalTvlAmount, strategyType, obligation]);
 
-  const hasFetchedHistoricalTvlSuiAmountMapRef = useRef<
-    Record<string, boolean>
-  >({});
+  const hasFetchedHistoricalTvlAmountMapRef = useRef<Record<string, boolean>>(
+    {},
+  );
   useEffect(() => {
     if (!obligation) return;
 
-    if (hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id]) return;
-    hasFetchedHistoricalTvlSuiAmountMapRef.current[obligation.id] = true;
+    if (hasFetchedHistoricalTvlAmountMapRef.current[obligation.id]) return;
+    hasFetchedHistoricalTvlAmountMapRef.current[obligation.id] = true;
 
-    fetchHistoricalTvlSuiAmount();
-  }, [obligation, fetchHistoricalTvlSuiAmount]);
+    fetchHistoricalTvlAmount();
+  }, [obligation, fetchHistoricalTvlAmount]);
 
-  return { historicalTvlSuiAmountMap };
+  return { historicalTvlAmountMap };
 };
 
-export default useHistoricalTvlSuiAmountMap;
+export default useHistoricalTvlAmountMap;

@@ -60,6 +60,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     lstCoinType: string;
     depositCoinTypes: string[];
     borrowCoinType: string;
+
+    currencyCoinType: string;
   }
 > = {
   [StrategyType.sSUI_SUI_LOOPING]: {
@@ -81,6 +83,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
     depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
+
+    currencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
     queryParam: "stratSUI-SUI-looping",
@@ -101,6 +105,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     lstCoinType: NORMALIZED_stratSUI_COINTYPE,
     depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
+
+    currencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.USDC_sSUI_SUI_LOOPING]: {
     queryParam: "USDC-sSUI-SUI-looping",
@@ -118,6 +124,8 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     lstCoinType: NORMALIZED_sSUI_COINTYPE,
     depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
     borrowCoinType: NORMALIZED_sSUI_COINTYPE,
+
+    currencyCoinType: NORMALIZED_USDC_COINTYPE,
   },
 };
 
@@ -371,7 +379,8 @@ export const strategyClaimRewardsAndSwap = async (
   }
 };
 
-export const strategySwapNonLstDepositsForLst = async (
+export const strategyThirdAssetDepositsForDepositCoinType = async (
+  strategyType: StrategyType,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   obligation: ParsedObligation,
@@ -379,11 +388,14 @@ export const strategySwapNonLstDepositsForLst = async (
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  // 1) MAX Withdraw non-LST deposits
-  const nonLstDeposits = obligation.deposits.filter(
-    (deposit) => deposit.coinType !== lstReserve.coinType,
+  // 1) MAX Withdraw non-depositCoinTypes deposits
+  const nonDepositCoinTypeDeposits = obligation.deposits.filter(
+    (deposit) =>
+      !STRATEGY_TYPE_INFO_MAP[strategyType].depositCoinTypes.includes(
+        deposit.coinType,
+      ),
   );
-  if (nonLstDeposits.length === 0) return;
+  if (nonDepositCoinTypeDeposits.length === 0) return;
 
   const withdrawnCoinsMap: Record<
     string,
@@ -393,7 +405,7 @@ export const strategySwapNonLstDepositsForLst = async (
     }
   > = {};
 
-  for (const deposit of nonLstDeposits) {
+  for (const deposit of nonDepositCoinTypeDeposits) {
     const [withdrawnCoin] = strategyWithdraw(
       deposit.coinType,
       strategyOwnerCap,
@@ -436,26 +448,30 @@ export const strategySwapNonLstDepositsForLst = async (
           });
           if (!routers)
             throw new Error(`No swap quote found for ${deposit.coinType}`);
-          console.log("[strategySwapNonLstDepositsForLst] routers", {
-            coinType: deposit.coinType,
-            routers,
-          });
+          console.log(
+            "[strategyThirdAssetDepositsForDepositCoinType] routers",
+            {
+              coinType: deposit.coinType,
+              routers,
+            },
+          );
 
           return [deposit.coinType, { coin, routers }];
         })(),
       ),
     ),
   );
-  console.log("[strategySwapNonLstDepositsForLst] amountsAndSortedQuotesMap", {
-    amountsAndSortedQuotesMap,
-  });
+  console.log(
+    "[strategyThirdAssetDepositsForDepositCoinType] amountsAndSortedQuotesMap",
+    { amountsAndSortedQuotesMap },
+  );
 
   // 2.2) Swap
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
     console.log(
-      "[strategySwapNonLstDepositsForLst] swapping coinType",
+      "[strategyThirdAssetDepositsForDepositCoinType] swapping coinType",
       coinType,
     );
     const slippagePercent = 3;
@@ -480,7 +496,9 @@ export const strategySwapNonLstDepositsForLst = async (
   // 3) Deposit
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
 
-  console.log("[strategySwapNonLstDepositsForLst] depositing resultCoin");
+  console.log(
+    "[strategyThirdAssetDepositsForDepositCoinType] depositing resultCoin",
+  );
   strategyDeposit(
     resultCoin,
     lstReserve.coinType,

@@ -43,11 +43,11 @@ export default function LstStrategyDialogParametersPanel({
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();

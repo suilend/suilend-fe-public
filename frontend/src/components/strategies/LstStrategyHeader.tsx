@@ -49,11 +49,11 @@ export default function LstStrategyHeader({
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
@@ -86,6 +86,11 @@ export default function LstStrategyHeader({
     () => lstMap[lstReserve.coinType],
     [lstMap, lstReserve.coinType],
   );
+
+  // Currency
+  const currencyCoinType =
+    STRATEGY_TYPE_INFO_MAP[strategyType].currencyCoinType;
+  const currencyReserve = appData.reserveMap[currencyCoinType];
 
   //
   //

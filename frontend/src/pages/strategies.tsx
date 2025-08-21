@@ -13,6 +13,7 @@ import {
   getRewardsMap,
 } from "@suilend/sdk";
 import {
+  STRATEGY_TYPE_INFO_MAP,
   StrategyType,
   strategyClaimRewardsAndSwap,
 } from "@suilend/sdk/lib/strategyOwnerCap";
@@ -92,11 +93,11 @@ function Page() {
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
   } = useLoadedLstStrategyContext();
@@ -351,12 +352,22 @@ function Page() {
               <TBody className="uppercase">Open positions</TBody>
               <TLabel>
                 {formatUsd(
-                  Object.values(strategyOwnerCapObligationMap).reduce(
-                    (acc, { obligation }) => {
-                      const tvlSuiAmount = getTvlSuiAmount(obligation);
-                      const tvlUsdAmount = tvlSuiAmount.times(suiReserve.price);
+                  Object.entries(strategyOwnerCapObligationMap).reduce(
+                    (acc, [strategyType, { obligation }]) => {
+                      // Currency
+                      const currencyCoinType =
+                        STRATEGY_TYPE_INFO_MAP[strategyType as StrategyType]
+                          .currencyCoinType;
+                      const currencyReserve =
+                        appData.reserveMap[currencyCoinType];
 
-                      return acc.plus(tvlUsdAmount);
+                      // Stats - TVL
+                      const tvlAmount = getTvlAmount(
+                        strategyType as StrategyType,
+                        obligation,
+                      );
+
+                      return acc.plus(tvlAmount.times(currencyReserve.price));
                     },
                     new BigNumber(0),
                   ),
