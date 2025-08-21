@@ -1493,7 +1493,7 @@ export default function LstStrategyDialog({
       if (pendingExposure.lte(E)) break;
 
       // 1) Max
-      const stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
+      let stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
         strategyType,
         deposits,
         suiBorrowedAmount,
@@ -1501,25 +1501,33 @@ export default function LstStrategyDialog({
       )
         .times(0.98) // 2% buffer
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepMaxSuiRepaidAmount = new BigNumber(
+      let stepMaxSuiRepaidAmount = new BigNumber(
         new BigNumber(
           stepMaxLstWithdrawnAmount.times(lst.lstToSuiExchangeRate),
         ).minus(
           getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
       ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepMaxExposure = getExposure(
-        strategyType,
-        getSimulatedObligation(
+      if (stepMaxSuiRepaidAmount.gt(suiBorrowedAmount)) {
+        const ratio = stepMaxSuiRepaidAmount.div(suiBorrowedAmount);
+        stepMaxLstWithdrawnAmount = stepMaxLstWithdrawnAmount.div(ratio);
+        stepMaxSuiRepaidAmount = suiBorrowedAmount;
+      }
+
+      const stepMaxExposure = exposure.minus(
+        getExposure(
           strategyType,
-          deposits.map((d) =>
-            d.coinType === lstReserve.coinType
-              ? { ...d, amount: d.amount.minus(stepMaxLstWithdrawnAmount) }
-              : d,
+          getSimulatedObligation(
+            strategyType,
+            deposits.map((d) =>
+              d.coinType === lstReserve.coinType
+                ? { ...d, amount: d.amount.minus(stepMaxLstWithdrawnAmount) }
+                : d,
+            ),
+            suiBorrowedAmount.minus(stepMaxSuiRepaidAmount),
           ),
-          suiBorrowedAmount.minus(stepMaxSuiRepaidAmount),
         ),
-      ).minus(exposure);
+      );
       console.log(
         `[unloopToExposure] ${i} max |`,
         JSON.stringify(

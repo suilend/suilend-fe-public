@@ -835,7 +835,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         if (pendingExposure.lte(E)) break;
 
         // 1) Max
-        const stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
+        let stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
           strategyType,
           deposits,
           suiBorrowedAmount,
@@ -843,13 +843,19 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         )
           .times(0.98) // 2% buffer
           .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
-        const stepMaxSuiRepaidAmount = new BigNumber(
+        let stepMaxSuiRepaidAmount = new BigNumber(
           new BigNumber(
             stepMaxLstWithdrawnAmount.times(lstToSuiExchangeRate),
           ).minus(
             getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
           ),
         ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+        if (stepMaxSuiRepaidAmount.gt(suiBorrowedAmount)) {
+          const ratio = stepMaxSuiRepaidAmount.div(suiBorrowedAmount);
+          stepMaxLstWithdrawnAmount = stepMaxLstWithdrawnAmount.div(ratio);
+          stepMaxSuiRepaidAmount = suiBorrowedAmount;
+        }
+
         const stepMaxExposure = exposure.minus(
           getExposure(
             strategyType,
