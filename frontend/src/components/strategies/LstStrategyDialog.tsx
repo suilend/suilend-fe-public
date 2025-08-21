@@ -2330,7 +2330,12 @@ export default function LstStrategyDialog({
         </div>
 
         <div
-          className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
+          className={cn(
+            "flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch",
+            !!obligation && hasPosition(obligation)
+              ? "md:min-h-[346px]"
+              : "md:min-h-[406px]",
+          )}
           style={{
             height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
