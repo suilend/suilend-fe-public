@@ -1428,27 +1428,35 @@ export default function LstStrategyDialog({
       if (pendingExposure.lte(E)) break;
 
       // 1) Max
-      const stepMaxLstWithdrawnAmount = getStepMaxLstWithdrawnAmount(
+      let stepMaxLstWithdrawnAmount = getStepMaxLstWithdrawnAmount(
         strategyType,
         lstDepositedAmount,
         suiBorrowedAmount,
       )
         .times(0.98) // 2% buffer
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepMaxSuiRepaidAmount = new BigNumber(
+      let stepMaxSuiRepaidAmount = new BigNumber(
         new BigNumber(
           stepMaxLstWithdrawnAmount.times(lst.lstToSuiExchangeRate),
         ).minus(
           getLstRedeemFee(lstReserve.coinType, stepMaxLstWithdrawnAmount),
         ),
       ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
-      const stepMaxExposure = getExposure(
-        getSimulatedObligation(
-          strategyType,
-          lstDepositedAmount.plus(stepMaxLstWithdrawnAmount),
-          suiBorrowedAmount.plus(stepMaxSuiRepaidAmount),
+      if (stepMaxSuiRepaidAmount.gt(suiBorrowedAmount)) {
+        const ratio = stepMaxSuiRepaidAmount.div(suiBorrowedAmount);
+        stepMaxLstWithdrawnAmount = stepMaxLstWithdrawnAmount.div(ratio);
+        stepMaxSuiRepaidAmount = suiBorrowedAmount;
+      }
+
+      const stepMaxExposure = exposure.minus(
+        getExposure(
+          getSimulatedObligation(
+            strategyType,
+            lstDepositedAmount.minus(stepMaxLstWithdrawnAmount),
+            suiBorrowedAmount.minus(stepMaxSuiRepaidAmount),
+          ),
         ),
-      ).minus(exposure);
+      );
       console.log(
         `[unloopToExposure] ${i} max |`,
         JSON.stringify(
