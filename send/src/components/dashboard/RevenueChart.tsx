@@ -643,30 +643,32 @@ const RevenueChart = ({
               }}
             />
           </Recharts.YAxis>
-          <Recharts.YAxis
-            yAxisId="right"
-            orientation="right"
-            tick={{
-              fontSize: isSmall ? 10 : 12,
-              fill: "hsl(var(--muted-foreground))",
-            }}
-            tickFormatter={(v: number) => `$${v}`}
-            domain={[0, Math.max(1, maxYRight)]}
-            width={yAxisWidth}
-            className="text-xs font-sans text-muted-foreground"
-          >
-            <Recharts.Label
-              value={isSmall ? "" : "Price"}
-              angle={90}
-              position="insideRight"
-              offset={10}
-              className="text-xs font-sans text-muted-foreground"
-              style={{
-                fill: "hsl(var(--muted-foreground))",
+          {enabledMetrics.price && (
+            <Recharts.YAxis
+              yAxisId="right"
+              orientation="right"
+              tick={{
                 fontSize: isSmall ? 10 : 12,
+                fill: "hsl(var(--muted-foreground))",
               }}
-            />
-          </Recharts.YAxis>
+              tickFormatter={(v: number) => `$${v}`}
+              domain={[0, Math.max(1, maxYRight)]}
+              width={yAxisWidth}
+              className="text-xs font-sans text-muted-foreground"
+            >
+              <Recharts.Label
+                value={isSmall ? "" : "Price"}
+                angle={90}
+                position="insideRight"
+                offset={10}
+                className="text-xs font-sans text-muted-foreground"
+                style={{
+                  fill: "hsl(var(--muted-foreground))",
+                  fontSize: isSmall ? 10 : 12,
+                }}
+              />
+            </Recharts.YAxis>
+          )}
 
           {enabledMetrics.suilendRevenue && (
             <Recharts.Bar

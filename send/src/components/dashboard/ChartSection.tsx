@@ -256,7 +256,7 @@ const ChartSection = () => {
                           checked={enabledMetrics.steammRevenue}
                           className="mr-2"
                         />
-                        Steamm
+                        STEAMM
                       </div>
                       <div
                         className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
