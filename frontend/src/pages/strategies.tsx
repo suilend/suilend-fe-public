@@ -267,11 +267,29 @@ function Page() {
       ))}
 
       <div className="flex w-full flex-col gap-6">
-        <div className="flex h-[24px] flex-row items-center justify-between gap-4">
-          <TBody className="text-md uppercase">Strategies</TBody>
+        {/* Unclaimed rewards */}
+        {hasClaimableRewards && (
+          <div className="flex w-full flex-col gap-2.5 sm:h-[20px] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex flex-row items-center gap-2">
+              <TBody className="uppercase text-primary-foreground">
+                Unclaimed rewards
+              </TBody>
+              <TLabel>
+                {formatUsd(
+                  Object.entries(allClaimableRewardsMap).reduce(
+                    (acc, [coinType, amount]) => {
+                      const price =
+                        appData.rewardPriceMap[coinType] ?? new BigNumber(0);
 
-          {hasClaimableRewards && (
-            <div className="flex h-10 flex-row items-center gap-2 rounded-sm border px-2">
+                      return acc.plus(amount.times(price));
+                    },
+                    new BigNumber(0),
+                  ),
+                )}
+              </TLabel>
+            </div>
+
+            <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">
               <Tooltip
                 content={
                   <div className="flex flex-col gap-1">
@@ -312,26 +330,24 @@ function Page() {
               </Tooltip>
 
               <Button
-                className="w-[125px]"
+                className="w-[134px]"
                 labelClassName="uppercase"
-                variant="secondary"
-                size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
-                {isCompoundingRewards ? <Spinner size="sm" /> : "Compound all"}
+                {isCompoundingRewards ? <Spinner size="sm" /> : "Claim rewards"}
               </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* My positions */}
+        {/* Open positions */}
         {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
           hasPosition(obligation),
         ) && (
-          <div className="flex w-full flex-col gap-3">
+          <div className="flex w-full flex-col gap-4">
             <div className="flex flex-row items-center gap-2">
-              <TBody className="uppercase">My positions</TBody>
+              <TBody className="uppercase">Open positions</TBody>
               <TLabel>
                 {formatUsd(
                   Object.values(strategyOwnerCapObligationMap).reduce(
@@ -351,14 +367,13 @@ function Page() {
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {strategyTypes.map((strategyType) => {
                 const obligation =
-                  strategyOwnerCapObligationMap[strategyType as StrategyType]
-                    ?.obligation;
+                  strategyOwnerCapObligationMap[strategyType]?.obligation;
 
                 if (!obligation || !hasPosition(obligation)) return null;
                 return (
                   <LstStrategyCard
                     key={strategyType}
-                    strategyType={strategyType as StrategyType}
+                    strategyType={strategyType}
                   />
                 );
               })}
@@ -367,34 +382,39 @@ function Page() {
         )}
 
         {/* All strategies */}
-        <div className="flex w-full flex-col gap-3">
-          {Object.values(strategyOwnerCapObligationMap).some(({ obligation }) =>
-            hasPosition(obligation),
-          ) && <TBody className="uppercase">All strategies</TBody>}
+        {Object.values(StrategyType).some(
+          (strategyType) =>
+            !strategyOwnerCapObligationMap[strategyType] ||
+            !hasPosition(
+              strategyOwnerCapObligationMap[strategyType].obligation,
+            ),
+        ) && (
+          <div className="flex w-full flex-col gap-4">
+            <TBody className="uppercase">All strategies</TBody>
 
-          {/* Min card width: 400px */}
-          <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-            {strategyTypes.map((strategyType) => {
-              const obligation =
-                strategyOwnerCapObligationMap[strategyType as StrategyType]
-                  ?.obligation;
+            {/* Min card width: 400px */}
+            <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
+              {strategyTypes.map((strategyType) => {
+                const obligation =
+                  strategyOwnerCapObligationMap[strategyType]?.obligation;
 
-              if (!obligation || !hasPosition(obligation))
-                return (
-                  <LstStrategyCard
-                    key={strategyType}
-                    strategyType={strategyType as StrategyType}
-                  />
-                );
-              return null;
-            })}
+                if (!obligation || !hasPosition(obligation))
+                  return (
+                    <LstStrategyCard
+                      key={strategyType}
+                      strategyType={strategyType}
+                    />
+                  );
+                return null;
+              })}
 
-            <ComingSoonStrategyCard />
+              <ComingSoonStrategyCard />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Learn more */}
-        <div className="flex w-full flex-col gap-3">
+        <div className="flex w-full flex-col gap-4">
           <TBody className="uppercase">Learn more</TBody>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
