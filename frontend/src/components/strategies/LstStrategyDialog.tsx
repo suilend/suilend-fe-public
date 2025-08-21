@@ -40,6 +40,7 @@ import {
   formatList,
   formatPercent,
   formatToken,
+  formatUsd,
   getAllCoins,
   getBalanceChange,
   getToken,
@@ -64,7 +65,7 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
 import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
@@ -2254,69 +2255,74 @@ export default function LstStrategyDialog({
           </DialogPrimitive.Close>
         }
       >
-        <div className="mb-4 flex h-10 w-full flex-row items-center justify-between">
+        <div className="mb-4 flex w-full flex-col gap-4 sm:h-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <LstStrategyHeader strategyType={strategyType} />
 
           {hasClaimableRewards && (
-            <div className="flex h-10 flex-row items-center gap-2 rounded-sm border px-2">
-              <Tooltip
-                content={
-                  <div className="flex flex-col gap-1">
-                    {Object.entries(rewardsMap).map(
-                      ([coinType, { amount }]) => (
-                        <div
-                          key={coinType}
-                          className="flex flex-row items-center gap-2"
-                        >
-                          <TokenLogo
-                            token={getToken(
-                              coinType,
-                              appData.coinMetadataMap[coinType],
-                            )}
-                            size={16}
-                          />
-                          <TLabelSans className="text-foreground">
-                            {formatToken(amount, {
-                              dp: appData.coinMetadataMap[coinType].decimals,
-                            })}{" "}
-                            {appData.coinMetadataMap[coinType].symbol}
-                          </TLabelSans>
-                        </div>
-                      ),
-                    )}
+            <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">
+              <div className="flex flex-row-reverse items-center gap-2 sm:flex-row">
+                <TLabel>
+                  {formatUsd(
+                    Object.entries(rewardsMap).reduce(
+                      (acc, [coinType, { amount }]) => {
+                        const price =
+                          appData.rewardPriceMap[coinType] ?? new BigNumber(0);
+
+                        return acc.plus(amount.times(price));
+                      },
+                      new BigNumber(0),
+                    ),
+                  )}
+                </TLabel>
+                <Tooltip
+                  content={
+                    <div className="flex flex-col gap-1">
+                      {Object.entries(rewardsMap).map(
+                        ([coinType, { amount }]) => (
+                          <div
+                            key={coinType}
+                            className="flex flex-row items-center gap-2"
+                          >
+                            <TokenLogo
+                              token={getToken(
+                                coinType,
+                                appData.coinMetadataMap[coinType],
+                              )}
+                              size={16}
+                            />
+                            <TLabelSans className="text-foreground">
+                              {formatToken(amount, {
+                                dp: appData.coinMetadataMap[coinType].decimals,
+                              })}{" "}
+                              {appData.coinMetadataMap[coinType].symbol}
+                            </TLabelSans>
+                          </div>
+                        ),
+                      )}
+                    </div>
+                  }
+                >
+                  <div className="w-max">
+                    <TokenLogos
+                      tokens={Object.keys(rewardsMap).map((coinType) =>
+                        getToken(coinType, appData.coinMetadataMap[coinType]),
+                      )}
+                      size={16}
+                    />
                   </div>
-                }
-              >
-                <div className="w-max">
-                  <TokenLogos
-                    tokens={Object.keys(rewardsMap).map((coinType) =>
-                      getToken(coinType, appData.coinMetadataMap[coinType]),
-                    )}
-                    size={16}
-                  />
-                </div>
-              </Tooltip>
+                </Tooltip>
+              </div>
 
               <Button
-                className={cn(
-                  !!obligation && hasPosition(obligation)
-                    ? "w-[92px]"
-                    : "w-[66px]",
-                )}
+                className="w-[134px]"
                 labelClassName="uppercase"
-                variant="secondary"
-                size="sm"
                 disabled={isCompoundingRewards}
                 onClick={onCompoundRewardsClick}
               >
                 {isCompoundingRewards ? (
                   <Spinner size="sm" />
                 ) : (
-                  <>
-                    {!!obligation && hasPosition(obligation)
-                      ? "Compound"
-                      : "Claim"}
-                  </>
+                  <>Claim rewards</>
                 )}
               </Button>
             </div>
