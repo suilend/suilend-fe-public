@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getBuybacksChart } from "@/fetchers/fetchCharts";
 import { getMetrics } from "@/fetchers/fetchMetrics";
-import { SEND_SUPPLY } from "@/lib/constants";
 import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
 
 import SuilendLogo from "../layout/SuilendLogo";
@@ -14,8 +13,7 @@ const MetricsSection = () => {
   const [showUsdValue, setShowUsdValue] = useLocalStorage("showUsdValue", true);
   const { data: metrics, isLoading, error } = getMetrics();
   const { data: allBuybacks } = getBuybacksChart("all");
-  const price = metrics?.currentPrice;
-  const marketCap = price ? price * SEND_SUPPLY : 0;
+  const marketCapNotFdv = metrics?.marketCapNotFdv;
 
   const totalBuybacksInputs = allBuybacks?.reduce(
     (acc, b) => acc + b.usdValue,
@@ -101,7 +99,7 @@ const MetricsSection = () => {
               {isLoading ? (
                 <Skeleton className="h-4 w-24" />
               ) : (
-                toCompactCurrency(marketCap)
+                toCompactCurrency(marketCapNotFdv ?? 0)
               )}
             </div>
           </div>
@@ -183,14 +181,14 @@ const MetricsSection = () => {
           <CardContent className="p-5">
             <div className="flex flex-col">
               <div className="text-xs font-sans text-muted-foreground mb-2 text-center">
-                <span className="hidden lg:block">FDV</span>
+                <span className="hidden lg:block">Market Cap</span>
                 <span className="block lg:hidden">Mcap</span>
               </div>
               <div className="text-xl flex justify-center">
                 {isLoading ? (
                   <Skeleton className="h-4 w-24" />
                 ) : (
-                  toCompactCurrency(marketCap)
+                  toCompactCurrency(metrics?.marketCapNotFdv ?? 0)
                 )}
               </div>
             </div>
