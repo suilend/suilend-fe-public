@@ -20,12 +20,14 @@ const useHistoricalTvlAmountMap = (
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
+
+    getDepositReserves,
+    getDefaultCurrencyReserve,
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
@@ -40,6 +42,7 @@ const useHistoricalTvlAmountMap = (
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
+    getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,

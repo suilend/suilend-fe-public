@@ -54,14 +54,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: string;
     };
 
-    defaultOpenCloseCoinType: string;
-    openCloseCoinTypeOptions: string[];
-
-    lstCoinType: string;
-    depositCoinTypes: string[];
+    depositBaseCoinType?: string;
+    depositLstCoinType: string;
     borrowCoinType: string;
 
-    currencyCoinType: string;
+    currencyCoinTypes: string[];
+    defaultCurrencyCoinType: string;
   }
 > = {
   [StrategyType.sSUI_SUI_LOOPING]: {
@@ -74,17 +72,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
-    openCloseCoinTypeOptions: [
-      NORMALIZED_SUI_COINTYPE,
-      NORMALIZED_sSUI_COINTYPE,
-    ],
-
-    lstCoinType: NORMALIZED_sSUI_COINTYPE,
-    depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
+    depositBaseCoinType: undefined,
+    depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
 
-    currencyCoinType: NORMALIZED_SUI_COINTYPE,
+    currencyCoinTypes: [NORMALIZED_SUI_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
     queryParam: "stratSUI-SUI-looping",
@@ -96,17 +89,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
-    openCloseCoinTypeOptions: [
-      NORMALIZED_SUI_COINTYPE,
-      NORMALIZED_stratSUI_COINTYPE,
-    ],
-
-    lstCoinType: NORMALIZED_stratSUI_COINTYPE,
-    depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
+    depositBaseCoinType: undefined,
+    depositLstCoinType: NORMALIZED_stratSUI_COINTYPE,
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
 
-    currencyCoinType: NORMALIZED_SUI_COINTYPE,
+    currencyCoinTypes: [NORMALIZED_SUI_COINTYPE, NORMALIZED_stratSUI_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.USDC_sSUI_SUI_LOOPING]: {
     queryParam: "USDC-sSUI-SUI-looping",
@@ -118,14 +106,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_USDC_COINTYPE,
-    openCloseCoinTypeOptions: [NORMALIZED_USDC_COINTYPE],
-
-    lstCoinType: NORMALIZED_sSUI_COINTYPE,
-    depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    depositBaseCoinType: NORMALIZED_USDC_COINTYPE,
+    depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
     borrowCoinType: NORMALIZED_sSUI_COINTYPE,
 
-    currencyCoinType: NORMALIZED_USDC_COINTYPE,
+    currencyCoinTypes: [NORMALIZED_USDC_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_USDC_COINTYPE,
   },
 };
 
@@ -266,7 +252,7 @@ export const strategyClaimRewardsAndSwap = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
-  lstReserve: ParsedReserve,
+  depositLstReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   isDepositing: boolean,
   transaction: Transaction,
@@ -281,10 +267,10 @@ export const strategyClaimRewardsAndSwap = async (
 
   // 2) Prepare
   const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType === lstReserve.coinType,
+    (coinType) => coinType === depositLstReserve.coinType,
   );
   const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType !== lstReserve.coinType,
+    (coinType) => coinType !== depositLstReserve.coinType,
   );
 
   let resultCoin: TransactionObjectArgument | undefined = undefined;
@@ -317,7 +303,7 @@ export const strategyClaimRewardsAndSwap = async (
             // Get routes
             const routers = await cetusSdk.findRouters({
               from: coinType,
-              target: lstReserve.coinType,
+              target: depositLstReserve.coinType,
               amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
               byAmountIn: true,
             });
@@ -366,9 +352,9 @@ export const strategyClaimRewardsAndSwap = async (
   if (isDepositing) {
     strategyDeposit(
       resultCoin,
-      lstReserve.coinType,
+      depositLstReserve.coinType,
       strategyOwnerCap,
-      lstReserve.arrayIndex,
+      depositLstReserve.arrayIndex,
       transaction,
     );
   } else {
@@ -379,21 +365,22 @@ export const strategyClaimRewardsAndSwap = async (
   }
 };
 
-export const strategyThirdAssetDepositsForDepositCoinType = async (
+export const strategySwapNonBaseNonLstDepositsForLst = async (
   strategyType: StrategyType,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   obligation: ParsedObligation,
-  lstReserve: ParsedReserve,
+  depositLstReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  // 1) MAX Withdraw non-depositCoinTypes deposits
+  // 1) MAX Withdraw non-base/non-LST deposits
   const nonDepositCoinTypeDeposits = obligation.deposits.filter(
     (deposit) =>
-      !STRATEGY_TYPE_INFO_MAP[strategyType].depositCoinTypes.includes(
-        deposit.coinType,
-      ),
+      deposit.coinType !==
+        STRATEGY_TYPE_INFO_MAP[strategyType].depositBaseCoinType &&
+      deposit.coinType !==
+        STRATEGY_TYPE_INFO_MAP[strategyType].depositLstCoinType,
   );
   if (nonDepositCoinTypeDeposits.length === 0) return;
 
@@ -442,19 +429,16 @@ export const strategyThirdAssetDepositsForDepositCoinType = async (
           // Get routes
           const routers = await cetusSdk.findRouters({
             from: deposit.coinType,
-            target: lstReserve.coinType,
+            target: depositLstReserve.coinType,
             amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
             byAmountIn: true,
           });
           if (!routers)
             throw new Error(`No swap quote found for ${deposit.coinType}`);
-          console.log(
-            "[strategyThirdAssetDepositsForDepositCoinType] routers",
-            {
-              coinType: deposit.coinType,
-              routers,
-            },
-          );
+          console.log("[strategySwapNonBaseNonLstDepositsForLst] routers", {
+            coinType: deposit.coinType,
+            routers,
+          });
 
           return [deposit.coinType, { coin, routers }];
         })(),
@@ -462,7 +446,7 @@ export const strategyThirdAssetDepositsForDepositCoinType = async (
     ),
   );
   console.log(
-    "[strategyThirdAssetDepositsForDepositCoinType] amountsAndSortedQuotesMap",
+    "[strategySwapNonBaseNonLstDepositsForLst] amountsAndSortedQuotesMap",
     { amountsAndSortedQuotesMap },
   );
 
@@ -471,7 +455,7 @@ export const strategyThirdAssetDepositsForDepositCoinType = async (
     amountsAndSortedQuotesMap,
   )) {
     console.log(
-      "[strategyThirdAssetDepositsForDepositCoinType] swapping coinType",
+      "[strategySwapNonBaseNonLstDepositsForLst] swapping coinType",
       coinType,
     );
     const slippagePercent = 3;
@@ -497,13 +481,13 @@ export const strategyThirdAssetDepositsForDepositCoinType = async (
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
 
   console.log(
-    "[strategyThirdAssetDepositsForDepositCoinType] depositing resultCoin",
+    "[strategySwapNonBaseNonLstDepositsForLst] depositing resultCoin",
   );
   strategyDeposit(
     resultCoin,
-    lstReserve.coinType,
+    depositLstReserve.coinType,
     strategyOwnerCap,
-    lstReserve.arrayIndex,
+    depositLstReserve.arrayIndex,
     transaction,
   );
 };

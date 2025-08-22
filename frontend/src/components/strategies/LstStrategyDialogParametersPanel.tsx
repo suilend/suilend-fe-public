@@ -26,12 +26,14 @@ export default function LstStrategyDialogParametersPanel({
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
+
+    getDepositReserves,
+    getDefaultCurrencyReserve,
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
@@ -102,7 +104,7 @@ export default function LstStrategyDialogParametersPanel({
               to{" "}
               {
                 appData.coinMetadataMap[
-                  STRATEGY_TYPE_INFO_MAP[strategyType].lstCoinType
+                  getDepositReserves(strategyType).lst.coinType
                 ].symbol
               }
               )<br />
@@ -131,13 +133,13 @@ export default function LstStrategyDialogParametersPanel({
               <br />
               -The only cost incurred is a{" "}
               {formatPercent(
-                lstMap[STRATEGY_TYPE_INFO_MAP[strategyType].lstCoinType]
+                lstMap[getDepositReserves(strategyType).lst.coinType]
                   .redeemFeePercent,
               )}{" "}
               unstake fee when converting{" "}
               {
                 appData.coinMetadataMap[
-                  STRATEGY_TYPE_INFO_MAP[strategyType].lstCoinType
+                  getDepositReserves(strategyType).lst.coinType
                 ].symbol
               }{" "}
               back to SUI when you withdraw funds.

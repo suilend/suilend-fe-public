@@ -44,12 +44,14 @@ export default function LstStrategyCard({
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
+
+    getDepositReserves,
+    getDefaultCurrencyReserve,
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
@@ -90,19 +92,17 @@ export default function LstStrategyCard({
   );
 
   // LST
-  const lstReserve = useMemo(
-    () => getLstReserve(strategyType),
-    [getLstReserve, strategyType],
-  );
   const lst = useMemo(
-    () => lstMap[lstReserve.coinType],
-    [lstMap, lstReserve.coinType],
+    () => lstMap[strategyInfo.depositLstCoinType],
+    [lstMap, strategyInfo.depositLstCoinType],
   );
 
-  // Currency
-  const currencyCoinType =
-    STRATEGY_TYPE_INFO_MAP[strategyType].currencyCoinType;
-  const currencyReserve = appData.reserveMap[currencyCoinType];
+  // Reserves
+  const depositReserves = useMemo(
+    () => getDepositReserves(strategyType),
+    [getDepositReserves, strategyType],
+  );
+  const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
   // Open
   const openLstStrategyDialog = useCallback(() => {
@@ -214,16 +214,16 @@ export default function LstStrategyCard({
                   </span>
                 </>
               }
-              value={`${formatToken(tvlAmount, { exact: false })} ${currencyReserve.token.symbol}`}
+              value={`${formatToken(tvlAmount, { exact: false })} ${defaultCurrencyReserve.token.symbol}`}
               valueTooltip={`${formatToken(tvlAmount, {
-                dp: currencyReserve.token.decimals,
-              })} ${currencyReserve.token.symbol}`}
+                dp: defaultCurrencyReserve.token.decimals,
+              })} ${defaultCurrencyReserve.token.symbol}`}
               horizontal
             />
 
             {/* Total PnL */}
             <PnlLabelWithValue
-              reserve={currencyReserve}
+              reserve={defaultCurrencyReserve}
               label="Total PnL"
               labelTooltip="Total PnL is the difference between the sum of your Equity and unclaimed rewards, and the net amount deposited."
               pnlAmount={totalPnlAmount}
@@ -246,9 +246,9 @@ export default function LstStrategyCard({
                             ? "+"
                             : "-"}
                         {formatToken(realizedPnlAmount.abs(), {
-                          dp: currencyReserve.token.decimals,
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {currencyReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
 
@@ -267,9 +267,9 @@ export default function LstStrategyCard({
                             ? "+"
                             : "-"}
                         {formatToken(unclaimedRewardsAmount.abs(), {
-                          dp: currencyReserve.token.decimals,
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {currencyReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
 
@@ -290,9 +290,9 @@ export default function LstStrategyCard({
                             ? "+"
                             : "-"}
                         {formatToken(totalPnlAmount.abs(), {
-                          dp: currencyReserve.token.decimals,
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {currencyReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
                   </div>

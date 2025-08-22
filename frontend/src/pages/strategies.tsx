@@ -76,12 +76,14 @@ function Page() {
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
+
+    getDepositReserves,
+    getDefaultCurrencyReserve,
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
@@ -191,7 +193,7 @@ function Page() {
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          getLstReserve(strategyType as StrategyType),
+          getDepositReserves(strategyType as StrategyType).lst,
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
           transaction,
@@ -354,12 +356,13 @@ function Page() {
                 {formatUsd(
                   Object.entries(strategyOwnerCapObligationMap).reduce(
                     (acc, [strategyType, { obligation }]) => {
-                      // Currency
-                      const currencyCoinType =
-                        STRATEGY_TYPE_INFO_MAP[strategyType as StrategyType]
-                          .currencyCoinType;
-                      const currencyReserve =
-                        appData.reserveMap[currencyCoinType];
+                      // Reserves
+                      const depositReserves = getDepositReserves(
+                        strategyType as StrategyType,
+                      );
+                      const defaultCurrencyReserve = getDefaultCurrencyReserve(
+                        strategyType as StrategyType,
+                      );
 
                       // Stats - TVL
                       const tvlAmount = getTvlAmount(
@@ -367,7 +370,9 @@ function Page() {
                         obligation,
                       );
 
-                      return acc.plus(tvlAmount.times(currencyReserve.price));
+                      return acc.plus(
+                        tvlAmount.times(defaultCurrencyReserve.price),
+                      );
                     },
                     new BigNumber(0),
                   ),

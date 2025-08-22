@@ -32,12 +32,14 @@ export default function LstStrategyHeader({
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
+
+    getDepositReserves,
+    getDefaultCurrencyReserve,
 
     getExposure,
     getStepMaxSuiBorrowedAmount,
@@ -78,19 +80,17 @@ export default function LstStrategyHeader({
   );
 
   // LST
-  const lstReserve = useMemo(
-    () => getLstReserve(strategyType),
-    [getLstReserve, strategyType],
-  );
   const lst = useMemo(
-    () => lstMap[lstReserve.coinType],
-    [lstMap, lstReserve.coinType],
+    () => lstMap[strategyInfo.depositLstCoinType],
+    [lstMap, strategyInfo.depositLstCoinType],
   );
 
-  // Currency
-  const currencyCoinType =
-    STRATEGY_TYPE_INFO_MAP[strategyType].currencyCoinType;
-  const currencyReserve = appData.reserveMap[currencyCoinType];
+  // Reserves
+  const depositReserves = useMemo(
+    () => getDepositReserves(strategyType),
+    [getDepositReserves, strategyType],
+  );
+  const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
   //
   //
