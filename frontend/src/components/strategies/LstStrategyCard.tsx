@@ -53,6 +53,9 @@ export default function LstStrategyCard({
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
@@ -63,9 +66,6 @@ export default function LstStrategyCard({
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,

@@ -35,6 +35,9 @@ export default function LstStrategyDialogParametersPanel({
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
@@ -45,9 +48,6 @@ export default function LstStrategyDialogParametersPanel({
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,

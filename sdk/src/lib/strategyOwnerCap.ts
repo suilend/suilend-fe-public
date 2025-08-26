@@ -12,7 +12,7 @@ import {
   SUI_CLOCK_OBJECT_ID,
   SUI_SYSTEM_STATE_OBJECT_ID,
 } from "@mysten/sui/utils";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
 import {
@@ -108,7 +108,7 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
 
     depositBaseCoinType: NORMALIZED_USDC_COINTYPE,
     depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
-    borrowCoinType: NORMALIZED_sSUI_COINTYPE,
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
 
     currencyCoinTypes: [NORMALIZED_USDC_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_USDC_COINTYPE,
@@ -374,7 +374,7 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  // 1) MAX Withdraw non-base/non-LST deposits
+  // 1) MAX withdraw non-base/non-LST deposits
   const nonDepositCoinTypeDeposits = obligation.deposits.filter(
     (deposit) =>
       deposit.coinType !==

@@ -320,6 +320,7 @@ function RedeemTabContent({
                                 ].join(" ")}
                                 width={24}
                                 height={24}
+                                quality={100}
                               />
                               <TBody>
                                 {formatInteger(+owned)}{" "}
@@ -369,6 +370,7 @@ function RedeemTabContent({
                         alt={allocation.title}
                         width={24}
                         height={24}
+                        quality={100}
                       />
                       <div className="flex flex-col gap-1">
                         <TBody>

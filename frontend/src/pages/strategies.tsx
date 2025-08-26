@@ -85,6 +85,9 @@ function Page() {
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
@@ -95,9 +98,6 @@ function Page() {
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,
@@ -205,7 +205,7 @@ function Page() {
 
       toast.success(
         [
-          "Compounded",
+          "Claimed and redeposited",
           formatList(
             allRewardCoinTypes.map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
@@ -229,7 +229,7 @@ function Page() {
       console.error(err);
       showErrorToast(
         [
-          "Failed to compound",
+          "Failed to claim and redeposit",
           formatList(
             allRewardCoinTypes.map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
@@ -560,9 +560,9 @@ function Page() {
                 deposit, or withdraw at any time.
                 <br />
                 <br />
-                Rewards that are listed on Suilend will be autocompounded
-                roughly every two weeks. Other rewards will need to be
-                compounded manually.
+                Rewards that are listed on Suilend will be autoclaimed and
+                redeposited roughly every two weeks. Other rewards will need to
+                be claimed and redeposited manually.
               </TLabelSans>
             </div>
 
