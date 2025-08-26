@@ -1,11 +1,20 @@
 import useSWR from "swr";
 
 export type Metrics = {
-  currentPrice: number;
-  marketCap: number;
-  revenue: number;
-  treasury: number;
-  totalBuybacks: number;
+  currentPrice?: number;
+  marketCapNotFdv?: number;
+  marketCap?: number;
+  circulatingSupply?: number;
+  totalSupply?: number;
+  revenue?: number;
+  treasury?: number;
+  totalBuybacks?: number;
+  swapBuybacks?: number;
+  dcaBuybacks?: number;
+  totalSendBought?: number;
+  swapSendBought?: number;
+  dcaSendBought?: number;
+  timestamp?: number;
 };
 
 export function getMetrics() {
@@ -26,18 +35,32 @@ export function getMetrics() {
       const revenue = toNum(json.revenue);
       const treasury = toNum(json.treasury);
       const totalBuybacks = toNum(json.totalBuybacks);
+      const swapBuybacks = toNum(json.swapBuybacks);
+      const dcaBuybacks = toNum(json.dcaBuybacks);
+      const totalSendBought = toNum(json.totalSendBought);
+      const swapSendBought = toNum(json.swapSendBought);
+      const dcaSendBought = toNum(json.dcaSendBought);
+      const timestamp = toNum(json.timestamp);
+      const marketCapNotFdv = toNum(json.marketCapNotFdv);
+      const circulatingSupply = toNum(json.circulatingSupply);
+      const totalSupply = toNum(json.totalSupply);
 
-      if (
-        currentPrice === undefined ||
-        marketCap === undefined ||
-        revenue === undefined ||
-        treasury === undefined ||
-        totalBuybacks === undefined
-      ) {
-        return undefined;
-      }
-
-      return { currentPrice, marketCap, revenue, treasury, totalBuybacks };
+      return {
+        currentPrice,
+        marketCap,
+        revenue,
+        treasury,
+        totalBuybacks,
+        swapBuybacks,
+        dcaBuybacks,
+        totalSendBought,
+        swapSendBought,
+        dcaSendBought,
+        timestamp,
+        marketCapNotFdv,
+        circulatingSupply,
+        totalSupply,
+      };
     } catch (err) {
       console.error(err);
       return undefined;
