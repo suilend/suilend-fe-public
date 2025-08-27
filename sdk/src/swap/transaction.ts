@@ -20,7 +20,6 @@ import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 
 import { getAllCoins, isSui, mergeAllCoins } from "@suilend/sui-fe";
 
-import { getOkxDexSwapTransaction } from "./okxDex";
 import { QuoteProvider, StandardizedQuote } from "./quote";
 
 const getSwapTransactionWrapper = async (
@@ -184,18 +183,6 @@ export const getSwapTransaction = async (
       });
 
       return { transaction, coinOut: coinOut as TransactionObjectArgument };
-    });
-  } else if (quote.provider === QuoteProvider.OKX_DEX) {
-    return getSwapTransactionWrapper(QuoteProvider.OKX_DEX, async () => {
-      const transaction2 = await getOkxDexSwapTransaction(
-        quote.quote.fromTokenAmount,
-        quote.in.coinType,
-        quote.out.coinType,
-        slippagePercent,
-        address,
-      ); // Does not use `transaction` or `coinIn`
-
-      return { transaction: transaction2, coinOut: undefined };
     });
   } else throw new Error("Unknown quote type");
 };

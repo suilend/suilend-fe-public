@@ -24,25 +24,17 @@ import { Token } from "@suilend/sui-fe";
 
 import { WAD } from "../lib";
 
-import {
-  OkxDexQuote,
-  cartesianProduct,
-  getOkxDexQuote as getOkxDexQuoteOriginal,
-} from "./okxDex";
-
 export enum QuoteProvider {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
   _7K = "7k",
   FLOWX = "flowx",
-  OKX_DEX = "okxDex",
 }
 export const QUOTE_PROVIDER_NAME_MAP = {
   [QuoteProvider.AFTERMATH]: "Aftermath",
   [QuoteProvider.CETUS]: "Cetus",
   [QuoteProvider._7K]: "7K",
   [QuoteProvider.FLOWX]: "FlowX",
-  [QuoteProvider.OKX_DEX]: "OKX DEX",
 };
 
 export type StandardizedRoutePath = {
@@ -87,7 +79,6 @@ export type StandardizedQuote = {
   | { provider: QuoteProvider.CETUS; quote: CetusQuote }
   | { provider: QuoteProvider._7K; quote: _7kQuote }
   | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
-  | { provider: QuoteProvider.OKX_DEX; quote: OkxDexQuote }
 );
 
 const getPoolProviders = (standardizedQuote: StandardizedQuote) => {
@@ -355,90 +346,6 @@ const getFlowXQuote = async (
 
   return standardizedQuote;
 };
-const getOkxDexQuote = async (
-  amountIn: string,
-  tokenIn: Token,
-  tokenOut: Token,
-) => {
-  const quote = await getOkxDexQuoteOriginal(
-    amountIn,
-    tokenIn.coinType,
-    tokenOut.coinType,
-  );
-
-  const flattenedDexRouterList: OkxDexQuote["dexRouterList"] = [];
-  for (const dexRouter of quote.dexRouterList) {
-    const indexes: number[][] = [];
-    for (const subRouter of dexRouter.subRouterList) {
-      indexes.push(
-        Array.from({ length: subRouter.dexProtocol.length }, (_, j) => j),
-      );
-    }
-
-    const combinations = cartesianProduct(indexes);
-    for (const combination of combinations) {
-      const flattenedRouter: OkxDexQuote["dexRouterList"][number] = {
-        ...dexRouter,
-        routerPercent: "",
-        subRouterList: dexRouter.subRouterList.map((subRouter, index) => ({
-          ...subRouter,
-          dexProtocol: [subRouter.dexProtocol[combination[index]]],
-        })),
-      };
-
-      let routerPercent = new BigNumber(dexRouter.routerPercent);
-      for (const subRouter of flattenedRouter.subRouterList) {
-        const dexProtocol = subRouter.dexProtocol[0];
-
-        routerPercent = routerPercent.times(
-          new BigNumber(dexProtocol.percent).div(100),
-        );
-      }
-      flattenedRouter.routerPercent = routerPercent.toString();
-
-      flattenedDexRouterList.push(flattenedRouter);
-    }
-  }
-
-  const standardizedQuote: StandardizedQuote = {
-    id: uuidv4(),
-    provider: QuoteProvider.OKX_DEX,
-    in: {
-      coinType: tokenIn.coinType,
-      amount: new BigNumber(quote.fromTokenAmount).div(10 ** tokenIn.decimals),
-    },
-    out: {
-      coinType: tokenOut.coinType,
-      amount: new BigNumber(quote.toTokenAmount).div(10 ** tokenOut.decimals),
-    },
-    routes: flattenedDexRouterList.map((dexRouter, routeIndex) => {
-      return {
-        percent: new BigNumber(dexRouter.routerPercent),
-        path: dexRouter.subRouterList.map((subRouter) => ({
-          id: uuidv4(),
-          poolId: undefined, // Missing data
-          routeIndex,
-          provider: subRouter.dexProtocol[0].dexName,
-          in: {
-            coinType: normalizeStructTag(
-              subRouter.fromToken.tokenContractAddress,
-            ),
-            amount: new BigNumber(0).div(10 ** tokenIn.decimals), // Missing data
-          },
-          out: {
-            coinType: normalizeStructTag(
-              subRouter.toToken.tokenContractAddress,
-            ),
-            amount: new BigNumber(0).div(10 ** tokenIn.decimals), // Missing data
-          },
-        })),
-      };
-    }),
-    quote,
-  };
-
-  return standardizedQuote;
-};
 
 export const getAggQuotes = async (
   sdkMap: {
@@ -524,19 +431,6 @@ export const getAggQuotes = async (
       onGetAggQuote(standardizedQuote);
     })();
   }
-
-  // OKX DEX
-  if (activeProviders.includes(QuoteProvider.OKX_DEX)) {
-    (async () => {
-      const standardizedQuote = await getAggQuoteWrapper(
-        QuoteProvider.OKX_DEX,
-        () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
-        timeoutMs,
-      );
-
-      onGetAggQuote(standardizedQuote);
-    })();
-  }
 };
 export const getAggSortedQuotesAll = async (
   sdkMap: {
@@ -597,13 +491,6 @@ export const getAggSortedQuotesAll = async (
                 tokenOut,
                 amountIn,
               ),
-            timeoutMs,
-          )
-        : null,
-      activeProviders.includes(QuoteProvider.OKX_DEX)
-        ? getAggQuoteWrapper(
-            QuoteProvider.OKX_DEX,
-            () => getOkxDexQuote(amountIn, tokenIn, tokenOut),
             timeoutMs,
           )
         : null,

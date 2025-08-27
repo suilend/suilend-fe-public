@@ -106,8 +106,8 @@ export function getPriceChart(period: Period) {
           )
             return undefined;
           return {
-            timestamp: timestamp,
-            price: p.price === "1.729877523777323" ? "0.71" : price,
+            timestamp,
+            price,
           } as PricePoint;
         })
         .filter((x): x is PricePoint => Boolean(x) && !!x && x.price > 0);
