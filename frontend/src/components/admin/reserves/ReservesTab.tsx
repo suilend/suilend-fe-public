@@ -1,11 +1,11 @@
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { Side } from "@suilend/sdk";
+import { ADMIN_ADDRESS, Side } from "@suilend/sdk";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -51,6 +51,8 @@ export default function ReservesTab() {
 
   const { appData, steammPoolInfos } = useAdminContext();
 
+  const isEditable = address === ADMIN_ADDRESS;
+
   // coinType
   useEffect(() => {
     if (!queryParams[QueryParams.COIN_TYPE]) return;
@@ -62,58 +64,77 @@ export default function ReservesTab() {
     window.scrollTo({ top: elem.offsetTop - 100, behavior: "smooth" });
   }, [queryParams]);
 
-  // Close all rewards
-  const [isClosingRewards, setIsClosingRewards] = useState<boolean>(false);
-  const onCloseRewards = async () => {
+  // Close rewards
+  const getCloseRewardsTransaction = useCallback(() => {
     if (!address) throw new Error("Wallet not connected");
     if (!appData.lendingMarket.ownerCapId)
       throw new Error("Error: lendingMarket.ownerCapId not defined");
 
     const transaction = new Transaction();
 
-    try {
-      setIsClosingRewards(true);
+    let rewardCount = 0;
+    for (const reserve of appData.lendingMarket.reserves) {
+      for (const side of Object.values(Side)) {
+        const poolRewardManager =
+          side === Side.DEPOSIT
+            ? reserve.depositsPoolRewardManager
+            : reserve.borrowsPoolRewardManager;
 
-      let rewardCount = 0;
-      for (const reserve of appData.lendingMarket.reserves) {
-        for (const side of Object.values(Side)) {
-          const poolRewardManager =
-            side === Side.DEPOSIT
-              ? reserve.depositsPoolRewardManager
-              : reserve.borrowsPoolRewardManager;
+        for (const poolReward of poolRewardManager.poolRewards) {
+          const isClosable =
+            Date.now() > new Date(poolReward.endTimeMs).getTime() &&
+            +poolReward.numUserRewardManagers.toString() === 0;
 
-          for (const poolReward of poolRewardManager.poolRewards) {
-            const isClosable =
-              Date.now() > new Date(poolReward.endTimeMs).getTime() &&
-              +poolReward.numUserRewardManagers.toString() === 0;
+          if (isClosable) {
+            const reserveArrayIndex = reserve.arrayIndex;
+            const isDepositReward = side === Side.DEPOSIT;
+            const rewardIndex = BigInt(poolReward.rewardIndex);
+            const rewardCoinType = poolReward.coinType;
 
-            if (isClosable) {
-              const reserveArrayIndex = reserve.arrayIndex;
-              const isDepositReward = side === Side.DEPOSIT;
-              const rewardIndex = BigInt(poolReward.rewardIndex);
-              const rewardCoinType = poolReward.coinType;
+            const [unclaimedRewards] = appData.suilendClient.closeReward(
+              appData.lendingMarket.ownerCapId,
+              reserveArrayIndex,
+              isDepositReward,
+              rewardIndex,
+              rewardCoinType,
+              transaction,
+            );
+            transaction.transferObjects([unclaimedRewards], address);
 
-              const [unclaimedRewards] = appData.suilendClient.closeReward(
-                appData.lendingMarket.ownerCapId,
-                reserveArrayIndex,
-                isDepositReward,
-                rewardIndex,
-                rewardCoinType,
-                transaction,
-              );
-              transaction.transferObjects([unclaimedRewards], address);
-
-              rewardCount++;
-            }
+            rewardCount++;
           }
         }
       }
+    }
+
+    return { transaction, rewardCount };
+  }, [
+    address,
+    appData.lendingMarket.ownerCapId,
+    appData.lendingMarket.reserves,
+    appData.suilendClient,
+  ]);
+  const closableRewardsCount = useMemo(
+    () => getCloseRewardsTransaction().rewardCount,
+    [getCloseRewardsTransaction],
+  );
+
+  const [isClosingRewards, setIsClosingRewards] = useState<boolean>(false);
+  const onCloseRewardsClick = async () => {
+    if (!address) throw new Error("Wallet not connected");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
+
+    try {
+      const { transaction } = getCloseRewardsTransaction();
+
+      setIsClosingRewards(true);
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(
-        `Closed ${rewardCount} reward${rewardCount !== 1 ? "s" : ""}`,
+        `Closed ${closableRewardsCount} reward${closableRewardsCount !== 1 ? "s" : ""}`,
         {
           action: (
             <TextLink className="block" href={txUrl}>
@@ -199,10 +220,14 @@ export default function ReservesTab() {
           labelClassName={cn("uppercase")}
           startIcon={<X />}
           variant="secondary"
-          disabled={isClosingRewards}
-          onClick={onCloseRewards}
+          disabled={
+            !isEditable || closableRewardsCount === 0 || isClosingRewards
+          }
+          onClick={onCloseRewardsClick}
         >
-          Close rewards
+          {closableRewardsCount === 0
+            ? "Close rewards"
+            : `Close ${closableRewardsCount} reward${closableRewardsCount !== 1 ? "s" : ""}`}
         </Button>
       </div>
     </div>
