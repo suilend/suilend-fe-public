@@ -13,7 +13,6 @@ import {
   getRewardsMap,
 } from "@suilend/sdk";
 import {
-  STRATEGY_TYPE_INFO_MAP,
   StrategyType,
   strategyClaimRewardsAndSwap,
 } from "@suilend/sdk/lib/strategyOwnerCap";

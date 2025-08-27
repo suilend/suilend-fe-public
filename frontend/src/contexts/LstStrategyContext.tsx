@@ -37,7 +37,6 @@ import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_stak
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
 import {
   API_URL,
-  MS_PER_YEAR,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   isSui,
@@ -155,7 +154,8 @@ interface LstStrategyContext {
     strategyType: StrategyType,
     deposits: Deposit[],
     suiBorrowedAmount: BigNumber,
-    targetExposure: BigNumber,
+    targetSuiBorrowedAmount: BigNumber | undefined,
+    targetExposure: BigNumber | undefined, // Must be defined if targetSuiBorrowedAmount is undefined
   ) => {
     deposits: Deposit[];
     suiBorrowedAmount: BigNumber;
@@ -165,8 +165,10 @@ interface LstStrategyContext {
     strategyType: StrategyType,
     deposits: Deposit[],
     suiBorrowedAmount: BigNumber,
-    targetExposure: BigNumber,
+    targetSuiBorrowedAmount: BigNumber | undefined,
+    targetExposure: BigNumber | undefined, // Must be defined if targetSuiBorrowedAmount is undefined
   ) => {
+    lstRedeemFeeSuiAmount: BigNumber;
     deposits: Deposit[];
     suiBorrowedAmount: BigNumber;
     obligation: ParsedObligation;
@@ -536,8 +538,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       },
       [StrategyType.USDC_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
-        max: new BigNumber(3.3), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
-        default: new BigNumber(3.3),
+        max: new BigNumber(3), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
+        default: new BigNumber(3),
       },
     }),
     [],
@@ -592,9 +594,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           const lstToSuiExchangeRate =
             lstMap?.[deposit.coinType]?.lstToSuiExchangeRate ??
             new BigNumber(1);
+          const redeemFeePercent =
+            lstMap?.[deposit.coinType]?.redeemFeePercent ?? new BigNumber(0);
 
           resultSui = resultSui.plus(
-            deposit.depositedAmount.times(lstToSuiExchangeRate),
+            deposit.depositedAmount
+              .times(lstToSuiExchangeRate)
+              .times(new BigNumber(1).minus(redeemFeePercent.div(100))),
           );
         } else {
           const depositReserve = appData.reserveMap[deposit.coinType];
@@ -836,7 +842,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       strategyType: StrategyType,
       _deposits: Deposit[],
       _suiBorrowedAmount: BigNumber,
-      targetExposure: BigNumber,
+      _targetSuiBorrowedAmount: BigNumber | undefined,
+      _targetExposure: BigNumber | undefined, // Must be defined if _targetSuiBorrowedAmount is undefined
     ): {
       deposits: Deposit[];
       suiBorrowedAmount: BigNumber;
@@ -858,10 +865,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         strategyType,
         getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
       ).times(defaultCurrencyReserve.price);
-      const targetSuiBorrowedAmount = tvlAmountUsd
-        .times(targetExposure.minus(1))
-        .div(suiReserve.price)
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      const targetSuiBorrowedAmount =
+        _targetSuiBorrowedAmount ??
+        tvlAmountUsd
+          .times(_targetExposure!.minus(1))
+          .div(suiReserve.price)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
@@ -953,8 +962,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       strategyType: StrategyType,
       _deposits: Deposit[],
       _suiBorrowedAmount: BigNumber,
-      targetExposure: BigNumber,
+      _targetSuiBorrowedAmount: BigNumber | undefined,
+      _targetExposure: BigNumber | undefined, // Must be defined if _targetSuiBorrowedAmount is undefined
     ): {
+      lstRedeemFeeSuiAmount: BigNumber;
       deposits: Deposit[];
       suiBorrowedAmount: BigNumber;
       obligation: ParsedObligation;
@@ -971,6 +982,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       //
 
+      let lstRedeemFeeSuiAmount = new BigNumber(0);
       let deposits = cloneDeep(_deposits);
       let suiBorrowedAmount = _suiBorrowedAmount;
 
@@ -978,10 +990,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         strategyType,
         getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
       ).times(defaultCurrencyReserve.price);
-      const targetSuiBorrowedAmount = tvlAmountUsd
-        .times(targetExposure.minus(1))
-        .div(suiReserve.price)
-        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+      const targetSuiBorrowedAmount =
+        _targetSuiBorrowedAmount ??
+        tvlAmountUsd
+          .times(_targetExposure!.minus(1))
+          .div(suiReserve.price)
+          .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
@@ -1063,10 +1077,14 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         const isMaxRepay = stepSuiRepaidAmount.eq(stepMaxSuiRepaidAmount);
 
         // 2.3) Update state
+        lstRedeemFeeSuiAmount = lstRedeemFeeSuiAmount.plus(
+          getLstRedeemFee(depositReserves.lst.coinType, stepLstWithdrawnAmount),
+        );
         suiBorrowedAmount = suiBorrowedAmount.minus(stepSuiRepaidAmount);
       }
 
       return {
+        lstRedeemFeeSuiAmount,
         deposits,
         suiBorrowedAmount,
         obligation: getSimulatedObligation(
@@ -1209,15 +1227,26 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       if (targetExposure.gt(1)) {
         // 2) Loop to target exposure
-        return simulateLoopToExposure(
+        // 2.1) Loop
+        const {
+          deposits: newDeposits2,
+          suiBorrowedAmount: newSuiBorrowedAmount2,
+          obligation: newObligation2,
+        } = simulateLoopToExposure(
           strategyType,
           deposits,
           suiBorrowedAmount,
-          targetExposure,
+          undefined, // Don't pass targetSuiBorrowedAmount
+          targetExposure, // Pass targetExposure
         );
-      } else {
-        return { deposits, suiBorrowedAmount, obligation };
+
+        // 2.2) Update state
+        deposits = newDeposits2;
+        suiBorrowedAmount = newSuiBorrowedAmount2;
+        obligation = newObligation2;
       }
+
+      return { deposits, suiBorrowedAmount, obligation };
     },
     [getSimulatedObligation, simulateDeposit, simulateLoopToExposure],
   );
