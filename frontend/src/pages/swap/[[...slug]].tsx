@@ -140,9 +140,8 @@ function Page() {
         QuoteProvider.CETUS,
         QuoteProvider._7K,
         QuoteProvider.FLOWX,
-        !swapInAccount ? QuoteProvider.OKX_DEX : null,
       ].filter(Boolean) as QuoteProvider[],
-    [swapInAccount],
+    [],
   );
 
   // Balances
@@ -782,9 +781,7 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol} and ${action_swapAndDeposit}`,
-      isDisabled:
-        buttonState_swap.isDisabled ||
-        quote?.provider === QuoteProvider.OKX_DEX,
+      isDisabled: buttonState_swap.isDisabled,
     };
   })();
 
@@ -929,13 +926,7 @@ function Page() {
 
     const { transaction: _transaction, coinOut } =
       await getTransactionForStandardizedQuote(transaction, coinIn);
-    if (
-      (swapInAccount ||
-        isSwapAndDeposit ||
-        quote.provider !== QuoteProvider.OKX_DEX) &&
-      !coinOut
-    )
-      throw new Error("Missing coin to deposit/transfer to user");
+    if (!coinOut) throw new Error("Missing coin to deposit/transfer to user");
 
     transaction = _transaction;
 
@@ -1057,13 +1048,11 @@ function Page() {
           }
         }
       } else {
-        if (quote.provider !== QuoteProvider.OKX_DEX) {
-          // TRANSFER out token
-          transaction.transferObjects(
-            [coinOut!], // Checked above
-            transaction.pure.address(address),
-          );
-        }
+        // TRANSFER out token
+        transaction.transferObjects(
+          [coinOut!], // Checked above
+          transaction.pure.address(address),
+        );
       }
     }
 
@@ -1825,34 +1814,26 @@ function Page() {
 
                 {/* Swap and deposit */}
                 {tokenOutReserve && (
-                  <Tooltip
-                    title={
-                      quote?.provider === QuoteProvider.OKX_DEX
-                        ? `OKX DEX does not support swap and ${action_swapAndDeposit}`
-                        : undefined
-                    }
-                  >
-                    <div className="flex h-max w-full flex-col">
-                      <Button
-                        className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
-                        labelClassName="uppercase text-wrap text-xs"
-                        variant="secondary"
-                        disabled={buttonState_swapAndDeposit.isDisabled}
-                        onClick={() => onSwapClick(true)}
-                      >
-                        {buttonState_swapAndDeposit.isLoading ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          buttonState_swapAndDeposit.title
-                        )}
-                        {buttonState_swapAndDeposit.description && (
-                          <span className="block font-sans text-xs normal-case">
-                            {buttonState_swapAndDeposit.description}
-                          </span>
-                        )}
-                      </Button>
-                    </div>
-                  </Tooltip>
+                  <div className="flex h-max w-full flex-col">
+                    <Button
+                      className="h-auto min-h-8 w-full rounded-b-md rounded-t-none py-1"
+                      labelClassName="uppercase text-wrap text-xs"
+                      variant="secondary"
+                      disabled={buttonState_swapAndDeposit.isDisabled}
+                      onClick={() => onSwapClick(true)}
+                    >
+                      {buttonState_swapAndDeposit.isLoading ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        buttonState_swapAndDeposit.title
+                      )}
+                      {buttonState_swapAndDeposit.description && (
+                        <span className="block font-sans text-xs normal-case">
+                          {buttonState_swapAndDeposit.description}
+                        </span>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -1957,21 +1938,13 @@ function Page() {
           >
             7K
           </TextLink>
-          {", "}
+          {", and "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
             href="https://flowx.finance/swap"
             noIcon
           >
             FlowX
-          </TextLink>
-          {", and "}
-          <TextLink
-            className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
-            href="https://web3.okx.com/dex-swap"
-            noIcon
-          >
-            OKX DEX
           </TextLink>
         </TLabelSans>
       </div>
