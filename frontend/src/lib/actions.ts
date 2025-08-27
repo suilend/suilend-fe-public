@@ -24,7 +24,7 @@ import {
 import { LOOPING_WARNING_MESSAGE } from "@/lib/looping";
 import { SubmitButtonState } from "@/lib/types";
 
-const IKA_MAX_UTILIZATION_PERCENT = new BigNumber(40);
+// const IKA_MAX_UTILIZATION_PERCENT = new BigNumber(40);
 
 const getMaxCalculations = (
   action: Action,
@@ -138,17 +138,17 @@ const getMaxCalculations = (
           .div(1 + borrowFee),
       },
     ];
-    if (reserve.coinType === NORMALIZED_IKA_COINTYPE) {
-      const maxBorrowedAmount = reserve.depositedAmount.times(
-        IKA_MAX_UTILIZATION_PERCENT.div(100),
-      );
+    // if (reserve.coinType === NORMALIZED_IKA_COINTYPE) {
+    //   const maxBorrowedAmount = reserve.depositedAmount.times(
+    //     IKA_MAX_UTILIZATION_PERCENT.div(100),
+    //   );
 
-      result.push({
-        reason: `${formatPercent(IKA_MAX_UTILIZATION_PERCENT)} utilization limit reached`,
-        isDisabled: true,
-        value: maxBorrowedAmount.minus(reserve.borrowedAmount),
-      });
-    }
+    //   result.push({
+    //     reason: `${formatPercent(IKA_MAX_UTILIZATION_PERCENT)} utilization limit reached`,
+    //     isDisabled: true,
+    //     value: maxBorrowedAmount.minus(reserve.borrowedAmount),
+    //   });
+    // }
 
     return result;
   } else if (action === Action.WITHDRAW) {
