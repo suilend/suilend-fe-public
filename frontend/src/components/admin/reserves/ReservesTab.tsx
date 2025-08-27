@@ -19,7 +19,7 @@ import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import TextLink from "@/components/shared/TextLink";
-import { TTitle } from "@/components/shared/Typography";
+import { TLabelSans, TTitle } from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
 import {
   Card,
@@ -72,7 +72,8 @@ export default function ReservesTab() {
 
     const transaction = new Transaction();
 
-    let rewardCount = 0;
+    let closableRewardCount = 0;
+    let notClosableRewardCount = 0;
     for (const reserve of appData.lendingMarket.reserves) {
       for (const side of Object.values(Side)) {
         const poolRewardManager =
@@ -101,21 +102,24 @@ export default function ReservesTab() {
             );
             transaction.transferObjects([unclaimedRewards], address);
 
-            rewardCount++;
+            closableRewardCount++;
+          } else {
+            console.log("XXXXX", reserve, poolReward);
+            notClosableRewardCount++;
           }
         }
       }
     }
 
-    return { transaction, rewardCount };
+    return { transaction, closableRewardCount, notClosableRewardCount };
   }, [
     address,
     appData.lendingMarket.ownerCapId,
     appData.lendingMarket.reserves,
     appData.suilendClient,
   ]);
-  const closableRewardsCount = useMemo(
-    () => getCloseRewardsTransaction().rewardCount,
+  const { closableRewardCount, notClosableRewardCount } = useMemo(
+    () => getCloseRewardsTransaction(),
     [getCloseRewardsTransaction],
   );
 
@@ -134,7 +138,7 @@ export default function ReservesTab() {
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(
-        `Closed ${closableRewardsCount} reward${closableRewardsCount !== 1 ? "s" : ""}`,
+        `Closed ${closableRewardCount} reward${closableRewardCount !== 1 ? "s" : ""}`,
         {
           action: (
             <TextLink className="block" href={txUrl}>
@@ -215,20 +219,26 @@ export default function ReservesTab() {
         <AddRewardsDialog />
         <ClaimFeesDialog />
 
-        <Button
-          className="w-fit"
-          labelClassName={cn("uppercase")}
-          startIcon={<X />}
-          variant="secondary"
-          disabled={
-            !isEditable || closableRewardsCount === 0 || isClosingRewards
-          }
-          onClick={onCloseRewardsClick}
-        >
-          {closableRewardsCount === 0
-            ? "Close rewards"
-            : `Close ${closableRewardsCount} reward${closableRewardsCount !== 1 ? "s" : ""}`}
-        </Button>
+        <div className="flex flex-col items-center gap-1.5">
+          <Button
+            className="w-fit"
+            labelClassName={cn("uppercase")}
+            startIcon={<X />}
+            variant="secondary"
+            disabled={
+              !isEditable || closableRewardCount === 0 || isClosingRewards
+            }
+            onClick={onCloseRewardsClick}
+          >
+            {closableRewardCount === 0
+              ? "Close rewards"
+              : `Close ${closableRewardCount} reward${closableRewardCount !== 1 ? "s" : ""}`}
+          </Button>
+          <TLabelSans>
+            {notClosableRewardCount} non-closable reward
+            {notClosableRewardCount !== 1 ? "s" : ""}
+          </TLabelSans>
+        </div>
       </div>
     </div>
   );
