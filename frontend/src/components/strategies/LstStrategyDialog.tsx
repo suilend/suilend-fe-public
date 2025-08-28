@@ -194,7 +194,8 @@ export default function LstStrategyDialog({
     {
       id: Tab.ADJUST,
       title: "Adjust",
-      tooltip: "Modify leverage while keeping Strategy value the same",
+      tooltip:
+        "Increase or decrease leverage without changing your position size (deposited amount)",
     },
   ];
 
@@ -413,23 +414,54 @@ export default function LstStrategyDialog({
     (_currencyCoinType: string) => {
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
+      const simValue = new BigNumber(1);
+      const { deposits, suiBorrowedAmount } = simulateDepositAndLoopToExposure(
+        strategyType,
+        [],
+        new BigNumber(0),
+        {
+          coinType: _currencyReserve.coinType,
+          depositedAmount: simValue,
+        },
+        exposure,
+      );
+
       // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
-      const { safeDepositLimit, safeDepositLimitUsd } =
-        getReserveSafeDepositLimit(depositReserves.lst);
+      const safeDepositLimitMap: {
+        base?: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
+        lst: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
+      } = {
+        base:
+          depositReserves.base !== undefined
+            ? getReserveSafeDepositLimit(depositReserves.base)
+            : undefined,
+        lst: getReserveSafeDepositLimit(depositReserves.lst),
+      };
 
       // Calculate minimum available amount (100 MIST equivalent) and borrow fee
-      const borrowMinAvailableAmount = new BigNumber(100).div(
-        10 ** suiReserve.mintDecimals,
+      const suiBorrowMinAvailableAmount = new BigNumber(100).div(
+        10 ** suiReserve.token.decimals,
       );
-      const borrowFee = suiReserve.config.borrowFeeBps / 10000;
+      const suiBorrowFeePercent = new BigNumber(
+        suiReserve.config.borrowFeeBps,
+      ).div(100);
 
       // Factor
-      const depositFactor = (
-        isSui(_reserve.coinType) ? lst.lstToSuiExchangeRate : new BigNumber(1)
-      ).times(exposure); // More restrictive than necessary
-      const borrowFactor = (
-        isSui(_reserve.coinType) ? new BigNumber(1) : lst.suiToLstExchangeRate
-      ).times(exposure.minus(1)); // More restrictive than necessary
+      const depositFactorMap: {
+        base?: BigNumber;
+        lst: BigNumber;
+      } = {
+        base:
+          depositReserves.base !== undefined
+            ? deposits
+                .find((d) => d.coinType === depositReserves.base!.coinType)!
+                .depositedAmount.div(simValue)
+            : undefined,
+        lst: deposits
+          .find((d) => d.coinType === depositReserves.lst.coinType)!
+          .depositedAmount.div(simValue),
+      };
+      const suiBorrowFactor = suiBorrowedAmount.div(simValue);
 
       const result = [
         // Balance
@@ -451,28 +483,40 @@ export default function LstStrategyDialog({
           : []),
 
         // Deposit
-        {
-          reason: `Exceeds ${depositReserves.lst.token.symbol} deposit limit`,
-          isDisabled: true,
-          value: BigNumber.max(
-            safeDepositLimit.minus(depositReserves.lst.depositedAmount),
-            0,
-          ).div(depositFactor),
-        },
-        {
-          reason: `Exceeds ${depositReserves.lst.token.symbol} USD deposit limit`,
-          isDisabled: true,
-          value: BigNumber.max(
-            safeDepositLimitUsd
-              .minus(
-                depositReserves.lst.depositedAmount.times(
-                  depositReserves.lst.maxPrice,
-                ),
-              )
-              .div(depositReserves.lst.maxPrice),
-            0,
-          ).div(depositFactor),
-        },
+        ...(["base", "lst"]
+          .flatMap((_key) => {
+            const key = _key as "base" | "lst";
+            const reserve = depositReserves[key];
+            if (!reserve) return undefined;
+
+            return [
+              {
+                reason: `Exceeds ${reserve.token.symbol} deposit limit`,
+                isDisabled: true,
+                value: BigNumber.max(
+                  safeDepositLimitMap[key]!.safeDepositLimit.minus(
+                    reserve.depositedAmount,
+                  ),
+                  0,
+                ).div(depositFactorMap[key]!),
+              },
+              {
+                reason: `Exceeds ${reserve.token.symbol} USD deposit limit`,
+                isDisabled: true,
+                value: BigNumber.max(
+                  safeDepositLimitMap[key]!.safeDepositLimitUsd.minus(
+                    reserve.depositedAmount.times(reserve.maxPrice),
+                  ).div(reserve.maxPrice),
+                  0,
+                ).div(depositFactorMap[key]!),
+              },
+            ];
+          })
+          .filter(Boolean) as {
+          reason: string;
+          isDisabled: boolean;
+          value: BigNumber;
+        }[]),
 
         // Borrow
         ...(exposure.gt(1)
@@ -482,9 +526,9 @@ export default function LstStrategyDialog({
                 isDisabled: true,
                 value: new BigNumber(
                   suiReserve.availableAmount
-                    .minus(borrowMinAvailableAmount)
-                    .div(1 + borrowFee),
-                ).div(borrowFactor),
+                    .minus(suiBorrowMinAvailableAmount)
+                    .div(new BigNumber(1).plus(suiBorrowFeePercent.div(100))),
+                ).div(suiBorrowFactor),
               },
               {
                 reason: `Exceeds ${suiReserve.token.symbol} borrow limit`,
@@ -492,8 +536,8 @@ export default function LstStrategyDialog({
                 value: new BigNumber(
                   suiReserve.config.borrowLimit
                     .minus(suiReserve.borrowedAmount)
-                    .div(1 + borrowFee),
-                ).div(borrowFactor),
+                    .div(new BigNumber(1).plus(suiBorrowFeePercent.div(100))),
+                ).div(suiBorrowFactor),
               },
               {
                 reason: `Exceeds ${suiReserve.token.symbol} USD borrow limit`,
@@ -502,8 +546,8 @@ export default function LstStrategyDialog({
                   suiReserve.config.borrowLimitUsd
                     .minus(suiReserve.borrowedAmount.times(suiReserve.price))
                     .div(suiReserve.price)
-                    .div(1 + borrowFee),
-                ).div(borrowFactor),
+                    .div(new BigNumber(1).plus(suiBorrowFeePercent.div(100))),
+                ).div(suiBorrowFactor),
               },
               // "Borrows cannot exceed borrow limit" is not relevant here
               {
@@ -513,8 +557,8 @@ export default function LstStrategyDialog({
                   appData.lendingMarket.rateLimiter.remainingOutflow
                     .div(suiReserve.maxPrice)
                     .div(suiReserve.config.borrowWeightBps.div(10000))
-                    .div(1 + borrowFee),
-                ).div(borrowFactor),
+                    .div(new BigNumber(1).plus(suiBorrowFeePercent.div(100))),
+                ).div(suiBorrowFactor),
               },
               // "IKA max utilization limit" is not relevant here
             ]
@@ -529,12 +573,21 @@ export default function LstStrategyDialog({
     },
     [
       appData.reserveMap,
-      depositReserves.lst,
-      suiReserve,
-      lst.lstToSuiExchangeRate,
+      simulateDepositAndLoopToExposure,
+      strategyType,
       exposure,
-      lst.suiToLstExchangeRate,
+      suiReserve.token.decimals,
+      suiReserve.config.borrowFeeBps,
+      depositReserves,
       getBalance,
+      suiReserve.token.symbol,
+      suiReserve.availableAmount,
+      suiReserve.config.borrowLimit,
+      suiReserve.borrowedAmount,
+      suiReserve.config.borrowLimitUsd,
+      suiReserve.price,
+      suiReserve.maxPrice,
+      suiReserve.config.borrowWeightBps,
       appData.lendingMarket.rateLimiter.remainingOutflow,
     ],
   );
@@ -542,18 +595,42 @@ export default function LstStrategyDialog({
     (_currencyCoinType: string) => {
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
-      // Calculate minimum available amount (100 MIST equivalent)
-      const depositMinAvailableAmount = new BigNumber(100).div(
-        10 ** depositReserves.lst.mintDecimals,
+      const simValue = new BigNumber(1);
+      const { deposits } = simulateDepositAndLoopToExposure(
+        strategyType,
+        [],
+        new BigNumber(0),
+        {
+          coinType: _currencyReserve.coinType,
+          depositedAmount: simValue,
+        },
+        exposure,
       );
 
+      // Calculate minimum available amount (100 MIST equivalent)
+      const depositMinAvailableAmountMap = {
+        base:
+          depositReserves.base !== undefined
+            ? new BigNumber(100).div(10 ** depositReserves.base.token.decimals)
+            : undefined,
+        lst: new BigNumber(100).div(10 ** depositReserves.lst.token.decimals),
+      };
+
       // Factor
-      const withdrawFactor = (
-        isSui(_reserve.coinType) ? lst.lstToSuiExchangeRate : new BigNumber(1)
-      ).times(exposure); // More restrictive than necessary
-      const repayFactor = (
-        isSui(_reserve.coinType) ? new BigNumber(1) : lst.suiToLstExchangeRate
-      ).times(exposure.minus(1)); // More restrictive than necessary
+      const withdrawFactorMap: {
+        base?: BigNumber;
+        lst: BigNumber;
+      } = {
+        base:
+          depositReserves.base !== undefined
+            ? deposits
+                .find((d) => d.coinType === depositReserves.base!.coinType)!
+                .depositedAmount.div(simValue)
+            : undefined,
+        lst: deposits
+          .find((d) => d.coinType === depositReserves.lst.coinType)!
+          .depositedAmount.div(simValue),
+      };
 
       const result = [
         // Balance
@@ -570,24 +647,30 @@ export default function LstStrategyDialog({
         },
 
         // Withdraw
-        {
-          reason: "Insufficient liquidity to withdraw",
-          isDisabled: true,
-          value: new BigNumber(
-            depositReserves.lst.availableAmount.minus(
-              depositMinAvailableAmount,
-            ),
-          ).div(withdrawFactor),
-        },
-        {
-          reason: "Outflow rate limit surpassed",
-          isDisabled: true,
-          value: new BigNumber(
-            appData.lendingMarket.rateLimiter.remainingOutflow.div(
-              depositReserves.lst.maxPrice,
-            ),
-          ).div(withdrawFactor),
-        },
+        ...(["base", "lst"]
+          .flatMap((_key) => {
+            const key = _key as "base" | "lst";
+            const reserve = depositReserves[key];
+            if (!reserve) return undefined;
+
+            return [
+              {
+                reason: `Insufficient ${reserve.token.symbol} liquidity to withdraw`,
+                isDisabled: true,
+                value: new BigNumber(
+                  reserve.availableAmount.minus(
+                    depositMinAvailableAmountMap[key]!,
+                  ),
+                ).div(withdrawFactorMap[key]!),
+              },
+            ];
+          })
+          .filter(Boolean) as {
+          reason: string;
+          isDisabled: boolean;
+          value: BigNumber;
+        }[]),
+        // TODO: "Outflow rate limit surpassed"
         // "Withdraw is unhealthy" is not relevant here
       ];
       console.log(
@@ -599,161 +682,16 @@ export default function LstStrategyDialog({
     },
     [
       appData.reserveMap,
-      depositReserves.lst,
-      lst.lstToSuiExchangeRate,
-      exposure,
-      lst.suiToLstExchangeRate,
-      getTvlAmount,
+      simulateDepositAndLoopToExposure,
       strategyType,
+      exposure,
+      depositReserves,
+      getTvlAmount,
       obligation,
-      appData.lendingMarket.rateLimiter.remainingOutflow,
+      lst.suiToLstExchangeRate,
     ],
   );
-  const getMaxAdjustUpCalculations = useCallback(
-    (targetExposure: BigNumber) => {
-      // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
-      const { safeDepositLimit, safeDepositLimitUsd } =
-        getReserveSafeDepositLimit(depositReserves.lst);
-
-      // Calculate minimum available amount (100 MIST equivalent) and borrow fee
-      const borrowMinAvailableAmount = new BigNumber(100).div(
-        10 ** suiReserve.mintDecimals,
-      );
-      const borrowFee = suiReserve.config.borrowFeeBps / 10000;
-
-      const result: {
-        deposit: { reason: string; isDisabled: boolean; value: BigNumber }[];
-        borrow: { reason: string; isDisabled: boolean; value: BigNumber }[];
-      } = {
-        // Deposit
-        deposit: [
-          {
-            reason: `Exceeds ${depositReserves.lst.token.symbol} deposit limit`,
-            isDisabled: true,
-            value: BigNumber.max(
-              safeDepositLimit.minus(depositReserves.lst.depositedAmount),
-              0,
-            ),
-          },
-          {
-            reason: `Exceeds ${depositReserves.lst.token.symbol} USD deposit limit`,
-            isDisabled: true,
-            value: BigNumber.max(
-              safeDepositLimitUsd
-                .minus(
-                  depositReserves.lst.depositedAmount.times(
-                    depositReserves.lst.maxPrice,
-                  ),
-                )
-                .div(depositReserves.lst.maxPrice),
-              0,
-            ),
-          },
-        ],
-
-        // Borrow
-        borrow: targetExposure.gt(1)
-          ? [
-              {
-                reason: `Insufficient ${suiReserve.token.symbol} liquidity to borrow`,
-                isDisabled: true,
-                value: new BigNumber(
-                  suiReserve.availableAmount
-                    .minus(borrowMinAvailableAmount)
-                    .div(1 + borrowFee),
-                ),
-              },
-              {
-                reason: `Exceeds ${suiReserve.token.symbol} borrow limit`,
-                isDisabled: true,
-                value: new BigNumber(
-                  suiReserve.config.borrowLimit
-                    .minus(suiReserve.borrowedAmount)
-                    .div(1 + borrowFee),
-                ),
-              },
-              {
-                reason: `Exceeds ${suiReserve.token.symbol} USD borrow limit`,
-                isDisabled: true,
-                value: new BigNumber(
-                  suiReserve.config.borrowLimitUsd
-                    .minus(suiReserve.borrowedAmount.times(suiReserve.price))
-                    .div(suiReserve.price)
-                    .div(1 + borrowFee),
-                ),
-              },
-              // "Borrows cannot exceed borrow limit" is not relevant here
-              {
-                reason: "Outflow rate limit surpassed",
-                isDisabled: true,
-                value: new BigNumber(
-                  appData.lendingMarket.rateLimiter.remainingOutflow
-                    .div(suiReserve.maxPrice)
-                    .div(suiReserve.config.borrowWeightBps.div(10000))
-                    .div(1 + borrowFee),
-                ),
-              },
-              // "IKA max utilization limit" is not relevant here
-            ]
-          : [],
-      };
-      console.log(
-        "[getMaxAdjustUpCalculations] result:",
-        JSON.stringify(result, null, 2),
-      );
-
-      return result;
-    },
-    [
-      depositReserves.lst,
-      suiReserve,
-      appData.lendingMarket.rateLimiter.remainingOutflow,
-    ],
-  );
-  const getMaxAdjustDownCalculations = useCallback(
-    (targetExposure: BigNumber) => {
-      // Calculate minimum available amount (100 MIST equivalent)
-      const depositMinAvailableAmount = new BigNumber(100).div(
-        10 ** depositReserves.lst.mintDecimals,
-      );
-
-      const result: {
-        withdraw: { reason: string; isDisabled: boolean; value: BigNumber }[];
-        repay: { reason: string; isDisabled: boolean; value: BigNumber }[];
-      } = {
-        // Withdraw
-        withdraw: [
-          {
-            reason: "Insufficient liquidity to withdraw",
-            isDisabled: true,
-            value: new BigNumber(
-              depositReserves.lst.availableAmount.minus(
-                depositMinAvailableAmount,
-              ),
-            ),
-          },
-          {
-            reason: "Outflow rate limit surpassed",
-            isDisabled: true,
-            value: new BigNumber(
-              appData.lendingMarket.rateLimiter.remainingOutflow.div(
-                depositReserves.lst.maxPrice,
-              ),
-            ),
-          },
-          // "Withdraw is unhealthy" is not relevant here
-        ],
-        repay: [],
-      };
-      console.log(
-        "[getMaxAdjustDownCalculations] result:",
-        JSON.stringify(result, null, 2),
-      );
-
-      return result;
-    },
-    [depositReserves.lst, appData.lendingMarket.rateLimiter.remainingOutflow],
-  );
+  // TODO: getMaxAdjustUpCalculations, getMaxAdjustDownCalculations
 
   const getMaxAmount = useCallback(
     (_currencyCoinType?: string) => {
@@ -1001,32 +939,50 @@ export default function LstStrategyDialog({
 
   // Submit
   const getSubmitButtonNoValueState = (): SubmitButtonState | undefined => {
-    // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
-    const { safeDepositLimit, safeDepositLimitUsd } =
-      getReserveSafeDepositLimit(lstReserve);
-
     if (selectedTab === Tab.DEPOSIT) {
+      // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
+      const safeDepositLimitMap: {
+        base?: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
+        lst: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
+      } = {
+        base:
+          depositReserves.base !== undefined
+            ? getReserveSafeDepositLimit(depositReserves.base)
+            : undefined,
+        lst: getReserveSafeDepositLimit(depositReserves.lst),
+      };
+
       // Deposit
-      if (
-        new BigNumber(safeDepositLimit.minus(lstReserve.depositedAmount)).lte(0)
-      )
-        return {
-          isDisabled: true,
-          title: `${lstReserve.token.symbol} deposit limit reached`,
-        };
-      if (
-        new BigNumber(
-          safeDepositLimitUsd
-            .minus(lstReserve.depositedAmount.times(lstReserve.maxPrice))
-            .div(lstReserve.maxPrice),
-        ).lte(0)
-      )
-        return {
-          isDisabled: true,
-          title: `${lstReserve.token.symbol} USD deposit limit reached`,
-        };
-      // "Cannot deposit borrowed asset" is not relevant here
-      // "Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions" is not relevant here
+      for (const _key of ["base", "lst"]) {
+        const key = _key as "base" | "lst";
+        const reserve = depositReserves[key];
+        if (!reserve) continue;
+
+        if (
+          new BigNumber(
+            safeDepositLimitMap[key]!.safeDepositLimit.minus(
+              reserve.depositedAmount,
+            ),
+          ).lte(0)
+        )
+          return {
+            isDisabled: true,
+            title: `${reserve.token.symbol} deposit limit reached`,
+          };
+        if (
+          new BigNumber(
+            safeDepositLimitMap[key]!.safeDepositLimitUsd.minus(
+              reserve.depositedAmount.times(reserve.maxPrice),
+            ).div(reserve.maxPrice),
+          ).lte(0)
+        )
+          return {
+            isDisabled: true,
+            title: `${reserve.token.symbol} USD deposit limit reached`,
+          };
+        // "Cannot deposit borrowed asset" is not relevant here
+        // "Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions" is not relevant here
+      }
 
       // Borrow
       if (exposure.gt(1)) {
@@ -1052,56 +1008,7 @@ export default function LstStrategyDialog({
     } else if (selectedTab === Tab.WITHDRAW) {
       // N/A
     } else if (selectedTab === Tab.ADJUST) {
-      if (!obligation || !hasPosition(obligation)) return undefined;
-
-      const targetExposure = adjustExposure;
-      if (targetExposure.gt(exposure)) {
-        // Deposit
-        if (
-          new BigNumber(safeDepositLimit.minus(lstReserve.depositedAmount)).lte(
-            0,
-          )
-        )
-          return {
-            isDisabled: true,
-            title: `${lstReserve.token.symbol} deposit limit reached`,
-          };
-        if (
-          new BigNumber(
-            safeDepositLimitUsd
-              .minus(lstReserve.depositedAmount.times(lstReserve.maxPrice))
-              .div(lstReserve.maxPrice),
-          ).lte(0)
-        )
-          return {
-            isDisabled: true,
-            title: `${lstReserve.token.symbol} USD deposit limit reached`,
-          };
-        // "Cannot deposit borrowed asset" is not relevant here
-        // "Max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions" is not relevant here
-
-        // Borrow
-        if (suiReserve.borrowedAmount.gte(suiReserve.config.borrowLimit))
-          return {
-            isDisabled: true,
-            title: `${suiReserve.token.symbol} borrow limit reached`,
-          };
-        if (
-          new BigNumber(suiReserve.borrowedAmount.times(suiReserve.price)).gte(
-            suiReserve.config.borrowLimitUsd,
-          )
-        )
-          return {
-            isDisabled: true,
-            title: `${suiReserve.token.symbol} USD borrow limit reached`,
-          };
-        // "Cannot borrow deposited asset" is not relevant here
-        // "Max ${MAX_BORROWS_PER_OBLIGATION} borrow positions" is not relevant here
-
-        // Isolated - not relevant here
-      } else {
-        // N/A
-      }
+      // TODO
     }
 
     return undefined;
@@ -1118,68 +1025,7 @@ export default function LstStrategyDialog({
           return { isDisabled: calc.isDisabled, title: calc.reason };
       }
     } else if (selectedTab === Tab.ADJUST) {
-      if (!obligation || !hasPosition(obligation)) return undefined;
-
-      const currentLstDepositedAmount = new BigNumber(
-        getDepositedSuiAmount(obligation).times(lst.suiToLstExchangeRate),
-      ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
-      const currentSuiBorrowedAmount = getBorrowedSuiAmount(obligation);
-      const targetExposure = adjustExposure;
-
-      if (targetExposure.gt(exposure)) {
-        const {
-          lstDepositedAmount: newLstDepositedAmount,
-          suiBorrowedAmount: newSuiBorrowedAmount,
-        } = simulateLoopToExposure(
-          strategyType,
-          currentLstDepositedAmount,
-          currentSuiBorrowedAmount,
-          targetExposure,
-        );
-        const lstDepositedAmount = newLstDepositedAmount.minus(
-          currentLstDepositedAmount,
-        );
-        const suiBorrowedAmount = newSuiBorrowedAmount.minus(
-          currentSuiBorrowedAmount,
-        );
-
-        const maxCalculations = getMaxAdjustUpCalculations(targetExposure);
-
-        for (const calc of maxCalculations.deposit) {
-          if (lstDepositedAmount.gt(calc.value))
-            return { isDisabled: calc.isDisabled, title: calc.reason };
-        }
-        for (const calc of maxCalculations.borrow) {
-          if (suiBorrowedAmount.gt(calc.value))
-            return { isDisabled: calc.isDisabled, title: calc.reason };
-        }
-      } else {
-        const {
-          lstDepositedAmount: newLstDepositedAmount,
-          suiBorrowedAmount: newSuiBorrowedAmount,
-        } = simulateUnloopToExposure(
-          strategyType,
-          currentLstDepositedAmount,
-          currentSuiBorrowedAmount,
-          targetExposure,
-        );
-        const lstWithdrawnAmount = currentLstDepositedAmount.minus(
-          newLstDepositedAmount,
-        );
-        const suiRepaidAmount =
-          currentSuiBorrowedAmount.minus(newSuiBorrowedAmount);
-
-        const maxCalculations = getMaxAdjustDownCalculations(targetExposure);
-
-        for (const calc of maxCalculations.withdraw) {
-          if (lstWithdrawnAmount.gt(calc.value))
-            return { isDisabled: calc.isDisabled, title: calc.reason };
-        }
-        for (const calc of maxCalculations.repay) {
-          if (suiRepaidAmount.gt(calc.value))
-            return { isDisabled: calc.isDisabled, title: calc.reason };
-        }
-      }
+      // TODO
     }
 
     return undefined;

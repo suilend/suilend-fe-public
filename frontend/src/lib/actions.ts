@@ -90,7 +90,7 @@ const getMaxCalculations = (
 
     const result = [
       {
-        reason: "Insufficient liquidity to borrow",
+        reason: `Insufficient ${reserve.token.symbol} liquidity to borrow`,
         isDisabled: true,
         value: reserve.availableAmount
           .minus(MIN_AVAILABLE_AMOUNT)
@@ -165,7 +165,7 @@ const getMaxCalculations = (
         value: depositedAmount,
       },
       {
-        reason: "Insufficient liquidity to withdraw",
+        reason: `Insufficient ${reserve.token.symbol} liquidity to withdraw`,
         isDisabled: true,
         value: reserve.availableAmount.minus(MIN_AVAILABLE_AMOUNT),
       },
