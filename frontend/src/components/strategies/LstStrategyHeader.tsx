@@ -50,7 +50,6 @@ export default function LstStrategyHeader({
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 

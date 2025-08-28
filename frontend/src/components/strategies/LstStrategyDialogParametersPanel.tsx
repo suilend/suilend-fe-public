@@ -1,11 +1,6 @@
-import {
-  STRATEGY_TYPE_INFO_MAP,
-  StrategyType,
-} from "@suilend/sdk/lib/strategyOwnerCap";
-import { formatPercent } from "@suilend/sui-fe";
+import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
 interface LstStrategyDialogParametersPanelProps {
@@ -15,8 +10,6 @@ interface LstStrategyDialogParametersPanelProps {
 export default function LstStrategyDialogParametersPanel({
   strategyType,
 }: LstStrategyDialogParametersPanelProps) {
-  const { appData } = useLoadedAppContext();
-
   const {
     isMoreParametersOpen,
     setIsMoreParametersOpen,
@@ -44,7 +37,6 @@ export default function LstStrategyDialogParametersPanel({
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
@@ -60,118 +52,23 @@ export default function LstStrategyDialogParametersPanel({
         {/* Learn more */}
         <div className="flex w-full flex-col gap-4">
           <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
-            <TBodySans>Where does the yield come from? </TBodySans>
-            <TLabelSans>
-              Yield comes from{" "}
-              <span className="font-medium">staking yield</span> plus additional{" "}
-              {
-                {
-                  [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
-                  [StrategyType.stratSUI_SUI_LOOPING]: "STRAT and sSUI",
-                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "sSUI",
-                }[strategyType]
-              }{" "}
-              rewards.
-              <br />
-              <br />
-              By borrowing SUI against your{" "}
-              {
-                {
-                  [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
-                  [StrategyType.stratSUI_SUI_LOOPING]: "stratSUI",
-                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "USDC",
-                }[strategyType]
-              }{" "}
-              and looping, you increase your exposure to both.
-              <br />
-              <br />
-              Example: <span className="font-medium">
-                3x leverage ≈ 3x
-              </span>{" "}
-              staking yield (minus borrowing costs and fees).
-            </TLabelSans>
-          </div>
-
-          <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
-            <TBodySans>How does it work?</TBodySans>
-            <TLabelSans>
-              The {STRATEGY_TYPE_INFO_MAP[strategyType].header.title}{" "}
-              {STRATEGY_TYPE_INFO_MAP[strategyType].header.type} strategy works
-              as follows:
-              <br />
-              <br />
-              1. <span className="font-medium">Deposit</span> SUI (auto-staked
-              to{" "}
-              {
-                appData.coinMetadataMap[
-                  getDepositReserves(strategyType).lst.coinType
-                ].symbol
-              }
-              )<br />
-              2. <span className="font-medium">Adjust</span> leverage (up to{" "}
-              {exposureMap[strategyType].max.toFixed(1)}x)
-              <br />
-              3. <span className="font-medium">Withdraw</span> anytime
-              <br />
-              <br />
-              All actions are managed through an easy UI. The strategy takes
-              care of the LST minting, borrowing, and unstaking behind the
-              scenes.
-            </TLabelSans>
-          </div>
-
-          <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
-            <TBodySans>Are there any fees?</TBodySans>
-            <TLabelSans>
-              The {STRATEGY_TYPE_INFO_MAP[strategyType].header.title}{" "}
-              {STRATEGY_TYPE_INFO_MAP[strategyType].header.type} strategy is
-              currently almost free to run.
-              <br />
-              <br />
-              - No borrow fees on Suilend
-              <br />- No asset management fees
-              <br />
-              -The only cost incurred is a{" "}
-              {formatPercent(
-                lstMap[getDepositReserves(strategyType).lst.coinType]
-                  .redeemFeePercent,
-              )}{" "}
-              unstake fee when converting{" "}
-              {
-                appData.coinMetadataMap[
-                  getDepositReserves(strategyType).lst.coinType
-                ].symbol
-              }{" "}
-              back to SUI when you withdraw funds.
-              <br />
-              <br />
-              All applicable fees are shown in the UI.
-            </TLabelSans>
-          </div>
-
-          <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
             <TBodySans>How do I manage or claim rewards?</TBodySans>
             <TLabelSans>
               {
                 {
-                  [StrategyType.sSUI_SUI_LOOPING]: "sSUI",
-                  [StrategyType.stratSUI_SUI_LOOPING]: "STRAT and sSUI",
-                  [StrategyType.USDC_sSUI_SUI_LOOPING]: "sSUI",
+                  [StrategyType.sSUI_SUI_LOOPING]:
+                    "sSUI rewards (from depositing sSUI, and borrowing SUI)",
+                  [StrategyType.stratSUI_SUI_LOOPING]:
+                    "STRAT rewards (from depositing stratSUI) and sSUI rewards (from borrowing SUI)",
+                  [StrategyType.USDC_sSUI_SUI_LOOPING]:
+                    "sSUI rewards (from borrowing SUI)",
                 }[strategyType]
               }{" "}
-              rewards are auto-claimed and re-deposited every 2 weeks.
-            </TLabelSans>
-          </div>
-
-          <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
-            <TBodySans>
-              What are the risks associated with this strategy?
-            </TBodySans>
-            <TLabelSans>
-              - No oracle risk: The SUI Pyth price feed is used for both assets,
-              as individual feeds for SUI derivative assets are less reliable.
-              Using a unified SUI price feed avoids oracle issues that have
-              occurred in the past (eg. mSOL on Solana).
+              are auto-claimed and redeposited every 2 weeks.
+              <br />
+              <br />
+              You can also claim them manually at any time by clicking the{" "}
+              {`"Claim rewards"`} button.
             </TLabelSans>
           </div>
         </div>

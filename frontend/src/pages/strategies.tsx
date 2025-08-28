@@ -93,7 +93,6 @@ function Page() {
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
@@ -107,10 +106,14 @@ function Page() {
   const cetusSdk = useCetusSdk();
 
   // Strategy types
-  const strategyTypes = Object.values(StrategyType).filter((strategyType) =>
-    strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-      ? process.env.NODE_ENV === "development"
-      : true,
+  const strategyTypes = useMemo(
+    () =>
+      Object.values(StrategyType).filter((strategyType) =>
+        strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+          ? process.env.NODE_ENV === "development"
+          : true,
+      ),
+    [],
   );
 
   // Obligations

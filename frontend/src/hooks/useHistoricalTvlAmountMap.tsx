@@ -38,7 +38,6 @@ const useHistoricalTvlAmountMap = (
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 

@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
@@ -60,7 +60,6 @@ export default function LstStrategyCard({
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
@@ -125,6 +124,7 @@ export default function LstStrategyCard({
   // Stats
   // Stats - TVL
   const tvlAmount = getTvlAmount(strategyType, obligation);
+  const tvlAmountSnapshot = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
@@ -134,30 +134,21 @@ export default function LstStrategyCard({
     strategyType,
     obligation,
   );
-  const [realizedPnlAmount, setRealizedPnlAmount] = useState<
-    BigNumber | undefined
-  >(undefined);
-  useEffect(() => {
-    if (!obligation || !hasPosition(obligation)) {
-      setRealizedPnlAmount(new BigNumber(0));
-    } else {
-      if (historicalTvlAmountMap[obligation.id] === undefined)
-        setRealizedPnlAmount(undefined);
-      else {
-        // Only set once
-        if (realizedPnlAmount === undefined)
-          setRealizedPnlAmount(
-            tvlAmount.minus(historicalTvlAmountMap[obligation.id]!),
-          );
-      }
-    }
-  }, [
-    obligation,
-    hasPosition,
-    historicalTvlAmountMap,
-    realizedPnlAmount,
-    tvlAmount,
-  ]);
+  const historicalTvlAmount = useMemo(
+    () =>
+      !obligation || !hasPosition(obligation)
+        ? undefined
+        : historicalTvlAmountMap[obligation.id],
+    [obligation, hasPosition, historicalTvlAmountMap],
+  );
+
+  const realizedPnlAmount = useMemo(() => {
+    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+
+    return historicalTvlAmount === undefined
+      ? undefined
+      : tvlAmountSnapshot.current.minus(historicalTvlAmount);
+  }, [obligation, hasPosition, historicalTvlAmount]);
 
   // Stats - Total PnL
   const unclaimedRewardsAmount = getUnclaimedRewardsAmount(
