@@ -457,9 +457,10 @@ export default function LstStrategyDialog({
                 .find((d) => d.coinType === depositReserves.base!.coinType)!
                 .depositedAmount.div(simValue)
             : undefined,
-        lst: deposits
-          .find((d) => d.coinType === depositReserves.lst.coinType)!
-          .depositedAmount.div(simValue),
+        lst:
+          deposits
+            .find((d) => d.coinType === depositReserves.lst.coinType)
+            ?.depositedAmount.div(simValue) ?? new BigNumber(0), // No LST deposits if depositReserves.base !== undefined AND exposure.eq(1)
       };
       const suiBorrowFactor = suiBorrowedAmount.div(simValue);
 
@@ -487,7 +488,14 @@ export default function LstStrategyDialog({
           .flatMap((_key) => {
             const key = _key as "base" | "lst";
             const reserve = depositReserves[key];
+
             if (!reserve) return undefined;
+            if (
+              depositReserves.base !== undefined &&
+              exposure.eq(1) &&
+              key === "lst"
+            )
+              return undefined;
 
             return [
               {
@@ -627,9 +635,10 @@ export default function LstStrategyDialog({
                 .find((d) => d.coinType === depositReserves.base!.coinType)!
                 .depositedAmount.div(simValue)
             : undefined,
-        lst: deposits
-          .find((d) => d.coinType === depositReserves.lst.coinType)!
-          .depositedAmount.div(simValue),
+        lst:
+          deposits
+            .find((d) => d.coinType === depositReserves.lst.coinType)
+            ?.depositedAmount.div(simValue) ?? new BigNumber(0), // No LST deposits if depositReserves.base !== undefined AND exposure.eq(1)
       };
 
       const result = [
@@ -651,7 +660,14 @@ export default function LstStrategyDialog({
           .flatMap((_key) => {
             const key = _key as "base" | "lst";
             const reserve = depositReserves[key];
+
             if (!reserve) return undefined;
+            if (
+              depositReserves.base !== undefined &&
+              exposure.eq(1) &&
+              key === "lst"
+            )
+              return undefined;
 
             return [
               {
