@@ -34,8 +34,8 @@ interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
   setIsFirstDepositDialogOpen: Dispatch<SetStateAction<boolean>>;
 
-  isAutoclaimNotificationDialogOpen: boolean;
-  setIsAutoclaimNotificationDialogOpen: Dispatch<SetStateAction<boolean>>;
+  isShowingAutoclaimNotification: boolean;
+  dismissAutoclaimNotification: () => void;
 
   claimRewards: (
     rewardsMap: RewardsMap,
@@ -53,8 +53,8 @@ const defaultContextValue: DashboardContext = {
     throw Error("DashboardContextProvider not initialized");
   },
 
-  isAutoclaimNotificationDialogOpen: false,
-  setIsAutoclaimNotificationDialogOpen: () => {
+  isShowingAutoclaimNotification: false,
+  dismissAutoclaimNotification: () => {
     throw Error("DashboardContextProvider not initialized");
   },
 
@@ -87,14 +87,15 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
 
   // Autoclaim
-  const [
-    isAutoclaimNotificationDialogOpen,
-    setIsAutoclaimNotificationDialogOpen,
-  ] = useState<boolean>(defaultContextValue.isAutoclaimNotificationDialogOpen);
+  const [isShowingAutoclaimNotification, setIsShowingAutoclaimNotification] =
+    useState<boolean>(defaultContextValue.isShowingAutoclaimNotification);
 
-  const didOpenAutoclaimNotificationDialogMap = useRef<Record<string, boolean>>(
-    {},
+  const dismissAutoclaimNotification = useCallback(
+    () => setIsShowingAutoclaimNotification(false),
+    [],
   );
+
+  const didShowAutoclaimNotificationMap = useRef<Record<string, boolean>>({});
   useEffect(() => {
     if (!obligation?.id) return;
 
@@ -106,10 +107,10 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     )
       return;
 
-    if (didOpenAutoclaimNotificationDialogMap.current[obligation.id]) return;
-    didOpenAutoclaimNotificationDialogMap.current[obligation.id] = true;
+    if (didShowAutoclaimNotificationMap.current[obligation.id]) return;
+    didShowAutoclaimNotificationMap.current[obligation.id] = true;
 
-    setIsAutoclaimNotificationDialogOpen(true);
+    setIsShowingAutoclaimNotification(true);
     setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
   }, [
     obligation?.id,
@@ -309,16 +310,16 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       isFirstDepositDialogOpen,
       setIsFirstDepositDialogOpen,
 
-      isAutoclaimNotificationDialogOpen,
-      setIsAutoclaimNotificationDialogOpen,
+      isShowingAutoclaimNotification,
+      dismissAutoclaimNotification,
 
       claimRewards,
     }),
     [
       isFirstDepositDialogOpen,
       setIsFirstDepositDialogOpen,
-      isAutoclaimNotificationDialogOpen,
-      setIsAutoclaimNotificationDialogOpen,
+      isShowingAutoclaimNotification,
+      dismissAutoclaimNotification,
       claimRewards,
     ],
   );
