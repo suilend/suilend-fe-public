@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import { RouterData as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
+// import { RouterDataV3 as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import {
   Transaction,
@@ -179,7 +179,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             string,
             {
               coin: TransactionObjectArgument;
-              routers: CetusRouterData;
+              routers: any; // TODO
             }
           > = Object.fromEntries(
             await Promise.all(
@@ -220,8 +220,8 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
             let coinOut: TransactionObjectArgument;
             try {
-              coinOut = await cetusSdk.fixableRouterSwap({
-                routers,
+              coinOut = await cetusSdk.fixableRouterSwapV3({
+                router: routers,
                 inputCoin: coinIn,
                 slippage: slippagePercent / 100,
                 txb: transaction,

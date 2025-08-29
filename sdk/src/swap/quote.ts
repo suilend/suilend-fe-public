@@ -3,7 +3,7 @@ import {
   getQuote as get7kQuoteOriginal,
 } from "@7kprotocol/sdk-ts/cjs";
 import {
-  RouterData as CetusQuote,
+  // RouterDataV3 as CetusQuote,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
 import {
@@ -76,7 +76,7 @@ export type StandardizedQuote = {
   }[];
 } & (
   | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
-  | { provider: QuoteProvider.CETUS; quote: CetusQuote }
+  | { provider: QuoteProvider.CETUS; quote: any } // TODO
   | { provider: QuoteProvider._7K; quote: _7kQuote }
   | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
 );
@@ -217,28 +217,30 @@ const getCetusQuote = async (
         10 ** tokenOut.decimals,
       ),
     },
-    routes: quote.routes.map((route, routeIndex) => ({
-      percent: new BigNumber(route.amountIn.toString())
+    routes: quote.paths.map((path, routeIndex) => ({
+      percent: new BigNumber(path.amountIn.toString())
         .div(quote.amountIn.toString())
         .times(100),
-      path: route.path.map((path) => ({
-        id: uuidv4(),
-        poolId: path.id,
-        routeIndex,
-        provider: path.provider,
-        in: {
-          coinType: normalizeStructTag(path.from),
-          amount: new BigNumber(path.amountIn.toString()).div(
-            10 ** tokenIn.decimals,
-          ),
+      path: [
+        {
+          id: uuidv4(),
+          poolId: path.id,
+          routeIndex,
+          provider: path.provider,
+          in: {
+            coinType: normalizeStructTag(path.from),
+            amount: new BigNumber(path.amountIn.toString()).div(
+              10 ** tokenIn.decimals,
+            ),
+          },
+          out: {
+            coinType: normalizeStructTag(path.target),
+            amount: new BigNumber(path.amountOut.toString()).div(
+              10 ** tokenOut.decimals,
+            ),
+          },
         },
-        out: {
-          coinType: normalizeStructTag(path.target),
-          amount: new BigNumber(path.amountOut.toString()).div(
-            10 ** tokenOut.decimals,
-          ),
-        },
-      })),
+      ],
     })),
     quote,
   };
