@@ -7,7 +7,6 @@ import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
-import AutoclaimNotificationDialog from "@/components/dashboard/AutoclaimNotificationDialog";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
 import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
@@ -128,7 +127,6 @@ export default function Dashboard() {
 
       <ActionsModal />
       <FirstDepositDialog />
-      <AutoclaimNotificationDialog />
     </DashboardContextProvider>
   );
 }
