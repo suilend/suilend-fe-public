@@ -3,7 +3,8 @@ import {
   getQuote as get7kQuoteOriginal,
 } from "@7kprotocol/sdk-ts/cjs";
 import {
-  RouterData as CetusQuote,
+  Path as CetusPath,
+  RouterDataV3 as CetusQuote,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
 import {
@@ -202,6 +203,47 @@ const getCetusQuote = async (
   });
   if (!quote) return null;
 
+  const routes: {
+    amountIn: BigNumber;
+    paths: CetusPath[];
+  }[] = [];
+
+  // First pass: build initial routes
+  for (const path of quote.paths) {
+    let addedToExistingRoute = false;
+
+    // Try to add to an existing route
+    for (const route of routes) {
+      if (
+        route.paths.length > 0 &&
+        path.amountIn === route.paths[route.paths.length - 1].amountOut &&
+        normalizeStructTag(path.from) ===
+          normalizeStructTag(route.paths[route.paths.length - 1].target)
+      ) {
+        route.paths.push(path);
+        addedToExistingRoute = true;
+        break;
+      }
+    }
+
+    // If couldn't add to existing route, only start a new route if it's from the quote's from field
+    if (
+      !addedToExistingRoute &&
+      normalizeStructTag(path.from) === normalizeStructTag(tokenIn.coinType)
+    ) {
+      routes.push({
+        amountIn: new BigNumber(path.amountIn),
+        paths: [path],
+      });
+    }
+  }
+
+  const remainingPaths = quote.paths.filter(
+    (path) =>
+      !routes.some((route) => route.paths.some((p) => p.id === path.id)),
+  );
+  // TODO
+
   const standardizedQuote: StandardizedQuote = {
     id: uuidv4(),
     provider: QuoteProvider.CETUS,
@@ -217,11 +259,11 @@ const getCetusQuote = async (
         10 ** tokenOut.decimals,
       ),
     },
-    routes: quote.routes.map((route, routeIndex) => ({
+    routes: routes.map((route, routeIndex) => ({
       percent: new BigNumber(route.amountIn.toString())
         .div(quote.amountIn.toString())
         .times(100),
-      path: route.path.map((path) => ({
+      path: route.paths.map((path) => ({
         id: uuidv4(),
         poolId: path.id,
         routeIndex,

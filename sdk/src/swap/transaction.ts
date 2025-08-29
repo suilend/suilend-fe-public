@@ -109,7 +109,7 @@ export const getSwapTransaction = async (
       }
 
       const coinOut = await sdkMap[QuoteProvider.CETUS].routerSwap({
-        routers: quote.quote,
+        router: quote.quote,
         inputCoin: coinIn,
         slippage: slippagePercent / 100,
         txb: transaction,
