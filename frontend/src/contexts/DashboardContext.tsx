@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-// import { RouterDataV3 as CetusRouterData } from "@cetusprotocol/aggregator-sdk";
+import { RouterDataV3 as CetusQuote } from "@cetusprotocol/aggregator-sdk";
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import {
   Transaction,
@@ -179,7 +179,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
             string,
             {
               coin: TransactionObjectArgument;
-              routers: any; // TODO
+              routers: CetusQuote;
             }
           > = Object.fromEntries(
             await Promise.all(

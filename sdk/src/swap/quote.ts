@@ -3,7 +3,8 @@ import {
   getQuote as get7kQuoteOriginal,
 } from "@7kprotocol/sdk-ts/cjs";
 import {
-  // RouterDataV3 as CetusQuote,
+  Path as CetusPath,
+  RouterDataV3 as CetusQuote,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
 import {
@@ -76,7 +77,7 @@ export type StandardizedQuote = {
   }[];
 } & (
   | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
-  | { provider: QuoteProvider.CETUS; quote: any } // TODO
+  | { provider: QuoteProvider.CETUS; quote: CetusQuote }
   | { provider: QuoteProvider._7K; quote: _7kQuote }
   | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
 );
@@ -202,6 +203,47 @@ const getCetusQuote = async (
   });
   if (!quote) return null;
 
+  const routes: {
+    amountIn: BigNumber;
+    paths: CetusPath[];
+  }[] = [];
+
+  // First pass: build initial routes
+  for (const path of quote.paths) {
+    let addedToExistingRoute = false;
+
+    // Try to add to an existing route
+    for (const route of routes) {
+      if (
+        route.paths.length > 0 &&
+        path.amountIn === route.paths[route.paths.length - 1].amountOut &&
+        normalizeStructTag(path.from) ===
+          normalizeStructTag(route.paths[route.paths.length - 1].target)
+      ) {
+        route.paths.push(path);
+        addedToExistingRoute = true;
+        break;
+      }
+    }
+
+    // If couldn't add to existing route, only start a new route if it's from the quote's from field
+    if (
+      !addedToExistingRoute &&
+      normalizeStructTag(path.from) === normalizeStructTag(tokenIn.coinType)
+    ) {
+      routes.push({
+        amountIn: new BigNumber(path.amountIn),
+        paths: [path],
+      });
+    }
+  }
+
+  const remainingPaths = quote.paths.filter(
+    (path) =>
+      !routes.some((route) => route.paths.some((p) => p.id === path.id)),
+  );
+  // TODO
+
   const standardizedQuote: StandardizedQuote = {
     id: uuidv4(),
     provider: QuoteProvider.CETUS,
@@ -217,30 +259,28 @@ const getCetusQuote = async (
         10 ** tokenOut.decimals,
       ),
     },
-    routes: quote.paths.map((path, routeIndex) => ({
-      percent: new BigNumber(path.amountIn.toString())
+    routes: routes.map((route, routeIndex) => ({
+      percent: new BigNumber(route.amountIn.toString())
         .div(quote.amountIn.toString())
         .times(100),
-      path: [
-        {
-          id: uuidv4(),
-          poolId: path.id,
-          routeIndex,
-          provider: path.provider,
-          in: {
-            coinType: normalizeStructTag(path.from),
-            amount: new BigNumber(path.amountIn.toString()).div(
-              10 ** tokenIn.decimals,
-            ),
-          },
-          out: {
-            coinType: normalizeStructTag(path.target),
-            amount: new BigNumber(path.amountOut.toString()).div(
-              10 ** tokenOut.decimals,
-            ),
-          },
+      path: route.paths.map((path) => ({
+        id: uuidv4(),
+        poolId: path.id,
+        routeIndex,
+        provider: path.provider,
+        in: {
+          coinType: normalizeStructTag(path.from),
+          amount: new BigNumber(path.amountIn.toString()).div(
+            10 ** tokenIn.decimals,
+          ),
         },
-      ],
+        out: {
+          coinType: normalizeStructTag(path.target),
+          amount: new BigNumber(path.amountOut.toString()).div(
+            10 ** tokenOut.decimals,
+          ),
+        },
+      })),
     })),
     quote,
   };

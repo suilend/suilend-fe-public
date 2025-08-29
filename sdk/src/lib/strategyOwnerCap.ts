@@ -1,5 +1,5 @@
 import {
-  // RouterDataV3 as CetusRouterData,
+  RouterDataV3 as CetusQuote,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
 import {
@@ -293,7 +293,7 @@ export const strategyClaimRewardsAndSwap = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: any; // TODO
+      routers: CetusQuote;
     }
   > = Object.fromEntries(
     await Promise.all(
@@ -414,7 +414,7 @@ export const strategySwapNonLstDepositsForLst = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: any; // TODO
+      routers: CetusQuote;
     }
   > = Object.fromEntries(
     await Promise.all(

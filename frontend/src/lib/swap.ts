@@ -31,7 +31,7 @@ export const useCetusSdk = () => {
 
   const cetusSdk = useMemo(() => {
     const sdk = new CetusSdk({
-      endpoint: "https://api-sui.cetus.zone/router_v2/find_routes",
+      endpoint: "https://api-sui.cetus.zone/router_v3/find_routes",
       signer: address,
       client: suiClient,
       env: Env.Mainnet,

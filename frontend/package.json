@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@7kprotocol/sdk-ts": "^3.4.0",
-    "@cetusprotocol/aggregator-sdk": "^1.1.1",
+    "@cetusprotocol/aggregator-sdk": "^1.1.2",
     "@cetusprotocol/cetus-sui-clmm-sdk": "^5.4.0",
     "@flowx-finance/sdk": "^1.11.3",
     "@launchdarkly/node-server-sdk": "^9.7.2",
