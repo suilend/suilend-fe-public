@@ -1,5 +1,5 @@
 import {
-  RouterData as CetusRouterData,
+  RouterDataV3 as CetusQuote,
   AggregatorClient as CetusSdk,
 } from "@cetusprotocol/aggregator-sdk";
 import {
@@ -289,7 +289,7 @@ export const strategyClaimRewardsAndSwap = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: CetusRouterData;
+      routers: CetusQuote;
     }
   > = Object.fromEntries(
     await Promise.all(
@@ -332,8 +332,8 @@ export const strategyClaimRewardsAndSwap = async (
 
     let coinOut: TransactionObjectArgument;
     try {
-      coinOut = await cetusSdk.fixableRouterSwap({
-        routers,
+      coinOut = await cetusSdk.fixableRouterSwapV3({
+        router: routers,
         inputCoin: coinIn,
         slippage: slippagePercent / 100,
         txb: transaction,
@@ -415,7 +415,7 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: CetusRouterData;
+      routers: CetusQuote;
     }
   > = Object.fromEntries(
     await Promise.all(
@@ -462,8 +462,8 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
 
     let coinOut: TransactionObjectArgument;
     try {
-      coinOut = await cetusSdk.fixableRouterSwap({
-        routers,
+      coinOut = await cetusSdk.fixableRouterSwapV3({
+        router: routers,
         inputCoin: coinIn,
         slippage: slippagePercent / 100,
         txb: transaction,
