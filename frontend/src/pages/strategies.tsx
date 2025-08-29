@@ -14,7 +14,7 @@ import {
 } from "@suilend/sdk";
 import {
   StrategyType,
-  strategyClaimRewardsAndSwap,
+  strategyClaimRewardsAndSwapForCoinType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
 import {
   TX_TOAST_DURATION,
@@ -190,7 +190,7 @@ function Page() {
         strategyType,
         { strategyOwnerCap, obligation },
       ] of Object.entries(strategyOwnerCapObligationMap)) {
-        await strategyClaimRewardsAndSwap(
+        await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
           CETUS_PARTNER_ID,

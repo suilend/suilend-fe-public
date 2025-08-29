@@ -247,12 +247,12 @@ const strategyClaimRewardsAndMergeCoins = (
 
   return mergedCoinsMap;
 };
-export const strategyClaimRewardsAndSwap = async (
+export const strategyClaimRewardsAndSwapForCoinType = async (
   address: string,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
-  depositLstReserve: ParsedReserve,
+  depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   isDepositing: boolean,
   transaction: Transaction,
@@ -267,10 +267,10 @@ export const strategyClaimRewardsAndSwap = async (
 
   // 2) Prepare
   const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType === depositLstReserve.coinType,
+    (coinType) => coinType === depositReserve.coinType,
   );
   const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType !== depositLstReserve.coinType,
+    (coinType) => coinType !== depositReserve.coinType,
   );
 
   let resultCoin: TransactionObjectArgument | undefined = undefined;
@@ -303,13 +303,13 @@ export const strategyClaimRewardsAndSwap = async (
             // Get routes
             const routers = await cetusSdk.findRouters({
               from: coinType,
-              target: depositLstReserve.coinType,
+              target: depositReserve.coinType,
               amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
               byAmountIn: true,
             });
             if (!routers)
               throw new Error(`No swap quote found for ${coinType}`);
-            console.log("[strategyClaimRewardsAndSwap] routers", {
+            console.log("[strategyClaimRewardsAndSwapForCoinType] routers", {
               coinType,
               routers,
             });
@@ -319,15 +319,19 @@ export const strategyClaimRewardsAndSwap = async (
         ),
     ),
   );
-  console.log("[strategyClaimRewardsAndSwap] amountsAndSortedQuotesMap", {
-    amountsAndSortedQuotesMap,
-  });
+  console.log(
+    "[strategyClaimRewardsAndSwapForCoinType] amountsAndSortedQuotesMap",
+    { amountsAndSortedQuotesMap },
+  );
 
   // 3.2.2) Swap
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
-    console.log("[strategyClaimRewardsAndSwap] swapping coinType", coinType);
+    console.log(
+      "[strategyClaimRewardsAndSwapForCoinType] swapping coinType",
+      coinType,
+    );
     const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
@@ -352,9 +356,9 @@ export const strategyClaimRewardsAndSwap = async (
   if (isDepositing) {
     strategyDeposit(
       resultCoin,
-      depositLstReserve.coinType,
+      depositReserve.coinType,
       strategyOwnerCap,
-      depositLstReserve.arrayIndex,
+      depositReserve.arrayIndex,
       transaction,
     );
   } else {
@@ -365,24 +369,21 @@ export const strategyClaimRewardsAndSwap = async (
   }
 };
 
-export const strategySwapNonBaseNonLstDepositsForLst = async (
+export const strategySwapSomeDepositsForCoinType = async (
   strategyType: StrategyType,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   obligation: ParsedObligation,
-  depositLstReserve: ParsedReserve,
+  noSwapCoinTypes: string[], // coinTypes to not swap for depositReserve.coinType
+  depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  // 1) MAX withdraw non-base/non-LST deposits
-  const nonDepositCoinTypeDeposits = obligation.deposits.filter(
-    (deposit) =>
-      deposit.coinType !==
-        STRATEGY_TYPE_INFO_MAP[strategyType].depositBaseCoinType &&
-      deposit.coinType !==
-        STRATEGY_TYPE_INFO_MAP[strategyType].depositLstCoinType,
+  // 1) MAX withdraw non-swapCoinTypes deposits
+  const swapCoinTypeDeposits = obligation.deposits.filter(
+    (deposit) => !noSwapCoinTypes.includes(deposit.coinType),
   );
-  if (nonDepositCoinTypeDeposits.length === 0) return;
+  if (swapCoinTypeDeposits.length === 0) return;
 
   const withdrawnCoinsMap: Record<
     string,
@@ -392,7 +393,7 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
     }
   > = {};
 
-  for (const deposit of nonDepositCoinTypeDeposits) {
+  for (const deposit of swapCoinTypeDeposits) {
     const [withdrawnCoin] = strategyWithdraw(
       deposit.coinType,
       strategyOwnerCap,
@@ -429,13 +430,13 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
           // Get routes
           const routers = await cetusSdk.findRouters({
             from: deposit.coinType,
-            target: depositLstReserve.coinType,
+            target: depositReserve.coinType,
             amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
             byAmountIn: true,
           });
           if (!routers)
             throw new Error(`No swap quote found for ${deposit.coinType}`);
-          console.log("[strategySwapNonBaseNonLstDepositsForLst] routers", {
+          console.log("[strategySwapSomeDepositsForCoinType] routers", {
             coinType: deposit.coinType,
             routers,
           });
@@ -446,7 +447,7 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
     ),
   );
   console.log(
-    "[strategySwapNonBaseNonLstDepositsForLst] amountsAndSortedQuotesMap",
+    "[strategySwapSomeDepositsForCoinType] amountsAndSortedQuotesMap",
     { amountsAndSortedQuotesMap },
   );
 
@@ -455,7 +456,7 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
     amountsAndSortedQuotesMap,
   )) {
     console.log(
-      "[strategySwapNonBaseNonLstDepositsForLst] swapping coinType",
+      "[strategySwapSomeDepositsForCoinType] swapping coinType",
       coinType,
     );
     const slippagePercent = 3;
@@ -480,14 +481,12 @@ export const strategySwapNonBaseNonLstDepositsForLst = async (
   // 3) Deposit
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
 
-  console.log(
-    "[strategySwapNonBaseNonLstDepositsForLst] depositing resultCoin",
-  );
+  console.log("[strategySwapSomeDepositsForCoinType] depositing resultCoin");
   strategyDeposit(
     resultCoin,
-    depositLstReserve.coinType,
+    depositReserve.coinType,
     strategyOwnerCap,
-    depositLstReserve.arrayIndex,
+    depositReserve.arrayIndex,
     transaction,
   );
 };

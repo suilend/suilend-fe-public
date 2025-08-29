@@ -134,13 +134,12 @@ function Page() {
 
   // send.ag
   const activeProviders = useMemo(
-    () =>
-      [
-        // QuoteProvider.AFTERMATH,
-        QuoteProvider.CETUS,
-        QuoteProvider._7K,
-        QuoteProvider.FLOWX,
-      ].filter(Boolean) as QuoteProvider[],
+    () => [
+      // QuoteProvider.AFTERMATH,
+      QuoteProvider.CETUS,
+      QuoteProvider._7K,
+      QuoteProvider.FLOWX,
+    ],
     [],
   );
 
