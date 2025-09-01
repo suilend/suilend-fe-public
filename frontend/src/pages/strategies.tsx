@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
@@ -61,6 +62,8 @@ function ComingSoonStrategyCard() {
 }
 
 function Page() {
+  const router = useRouter();
+
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { appData } = useLoadedAppContext();
@@ -112,10 +115,11 @@ function Page() {
       Object.values(StrategyType).filter((strategyType) =>
         strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
           ? process.env.NODE_ENV === "development" ||
+            router.query.usdc === "true" ||
             Date.now() >= 1756731600000 // 2025/09/01 13:00:00 UTC
           : true,
       ),
-    [],
+    [router.query.usdc],
   );
 
   // Obligations
