@@ -21,6 +21,7 @@ interface LinkProps extends PropsWithChildren, NextLinkProps {
   labelClassName?: ClassValue;
   labelActiveClassName?: ClassValue;
   endIcon?: ReactNode;
+  isActiveOverride?: boolean;
 }
 
 export default function Link({
@@ -35,12 +36,15 @@ export default function Link({
   labelActiveClassName,
   endIcon,
   children,
+  isActiveOverride,
   ...props
 }: LinkProps) {
   const router = useRouter();
-  const isActive = startsWithHref
-    ? router.asPath.startsWith(startsWithHref)
-    : router.asPath.split("?")[0] === href;
+  const isActive =
+    isActiveOverride ??
+    (startsWithHref
+      ? router.asPath.startsWith(startsWithHref)
+      : router.asPath.split("?")[0] === href);
 
   const Component = isExternal ? "a" : NextLink;
 

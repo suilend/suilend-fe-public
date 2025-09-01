@@ -63,7 +63,7 @@ export default function NavigationLinks() {
         Swap
       </Link>
       <Link href={STRATEGIES_URL}>Strategies</Link>
-      <Link href={BUYBACK_URL} label="New">
+      <Link href={BUYBACK_URL} label="New" isActiveOverride>
         SEND
       </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>
