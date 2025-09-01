@@ -66,7 +66,7 @@ export default function ReservesTab() {
 
   // Close rewards
   const getCloseRewardsTransaction = useCallback(() => {
-    if (!address) throw new Error("Wallet not connected");
+    // if (!address) throw new Error("Wallet not connected");
     if (!appData.lendingMarket.ownerCapId)
       throw new Error("Error: lendingMarket.ownerCapId not defined");
 
@@ -100,11 +100,11 @@ export default function ReservesTab() {
               rewardCoinType,
               transaction,
             );
-            transaction.transferObjects([unclaimedRewards], address);
+            if (address)
+              transaction.transferObjects([unclaimedRewards], address);
 
             closableRewardCount++;
           } else {
-            console.log("XXXXX", reserve, poolReward);
             notClosableRewardCount++;
           }
         }

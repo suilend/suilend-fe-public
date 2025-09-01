@@ -10,6 +10,7 @@ module.exports = {
     remotePatterns: [
       new URL("https://d29k09wtkr1a3e.cloudfront.net/suilend/**"),
     ],
+    qualities: [100],
   },
   webpack: (config) => {
     config.resolve.fallback = { fs: false };

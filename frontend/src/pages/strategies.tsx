@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
@@ -14,7 +15,7 @@ import {
 } from "@suilend/sdk";
 import {
   StrategyType,
-  strategyClaimRewardsAndSwap,
+  strategyClaimRewardsAndSwapForCoinType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
 import {
   TX_TOAST_DURATION,
@@ -61,6 +62,8 @@ function ComingSoonStrategyCard() {
 }
 
 function Page() {
+  const router = useRouter();
+
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { appData } = useLoadedAppContext();
@@ -75,39 +78,48 @@ function Page() {
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
 
+    getDepositReserves,
+    getDefaultCurrencyReserve,
+
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxLstWithdrawnAmount,
+    getStepMaxWithdrawnAmount,
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
 
   // Strategy types
-  const strategyTypes = Object.values(StrategyType).filter((strategyType) =>
-    strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-      ? process.env.NODE_ENV === "development"
-      : true,
+  const strategyTypes = useMemo(
+    () =>
+      Object.values(StrategyType).filter((strategyType) =>
+        strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+          ? process.env.NODE_ENV === "development" ||
+            router.query.usdc === "true" ||
+            Date.now() >= 1756731600000 // 2025/09/01 13:00:00 UTC
+          : true,
+      ),
+    [router.query.usdc],
   );
 
   // Obligations
@@ -184,12 +196,12 @@ function Page() {
         strategyType,
         { strategyOwnerCap, obligation },
       ] of Object.entries(strategyOwnerCapObligationMap)) {
-        await strategyClaimRewardsAndSwap(
+        await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          getLstReserve(strategyType as StrategyType),
+          getDepositReserves(strategyType as StrategyType).lst,
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
           transaction,
@@ -201,7 +213,7 @@ function Page() {
 
       toast.success(
         [
-          "Compounded",
+          "Claimed and redeposited",
           formatList(
             allRewardCoinTypes.map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
@@ -225,7 +237,7 @@ function Page() {
       console.error(err);
       showErrorToast(
         [
-          "Failed to compound",
+          "Failed to claim and redeposit",
           formatList(
             allRewardCoinTypes.map(
               (coinType) => appData.coinMetadataMap[coinType].symbol,
@@ -350,12 +362,25 @@ function Page() {
               <TBody className="uppercase">Open positions</TBody>
               <TLabel>
                 {formatUsd(
-                  Object.values(strategyOwnerCapObligationMap).reduce(
-                    (acc, { obligation }) => {
-                      const tvlSuiAmount = getTvlSuiAmount(obligation);
-                      const tvlUsdAmount = tvlSuiAmount.times(suiReserve.price);
+                  Object.entries(strategyOwnerCapObligationMap).reduce(
+                    (acc, [strategyType, { obligation }]) => {
+                      // Reserves
+                      const depositReserves = getDepositReserves(
+                        strategyType as StrategyType,
+                      );
+                      const defaultCurrencyReserve = getDefaultCurrencyReserve(
+                        strategyType as StrategyType,
+                      );
 
-                      return acc.plus(tvlUsdAmount);
+                      // Stats - TVL
+                      const tvlAmount = getTvlAmount(
+                        strategyType as StrategyType,
+                        obligation,
+                      );
+
+                      return acc.plus(
+                        tvlAmount.times(defaultCurrencyReserve.price),
+                      );
                     },
                     new BigNumber(0),
                   ),
@@ -543,9 +568,9 @@ function Page() {
                 deposit, or withdraw at any time.
                 <br />
                 <br />
-                Rewards that are listed on Suilend will be autocompounded
-                roughly every two weeks. Other rewards will need to be
-                compounded manually.
+                Rewards that are listed on Suilend will be autoclaimed and
+                redeposited roughly every two weeks. Other rewards will need to
+                be claimed and redeposited manually.
               </TLabelSans>
             </div>
 

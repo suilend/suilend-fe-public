@@ -60,7 +60,10 @@ import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
-import { STRATEGY_WRAPPER_PACKAGE_ID, StrategyType } from "./strategyOwnerCap";
+import {
+  STRATEGY_WRAPPER_PACKAGE_ID_V1,
+  StrategyType,
+} from "./strategyOwnerCap";
 import { LendingMarketMetadata, StrategyOwnerCap } from "./types";
 
 export const RESERVES_CUSTOM_ORDER = [
@@ -342,7 +345,7 @@ export const initializeObligations = async (
       if (suilendClient.lendingMarket.id !== LENDING_MARKET_ID) return []; // Only main lending market has strategy owner caps
 
       const objects = await getAllOwnedObjects(suiClient, address, {
-        StructType: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::StrategyOwnerCap<${suilendClient.lendingMarket.$typeArgs[0]}>`,
+        StructType: `${STRATEGY_WRAPPER_PACKAGE_ID_V1}::strategy_wrapper::StrategyOwnerCap<${suilendClient.lendingMarket.$typeArgs[0]}>`,
       });
 
       return objects.map((obj) => {

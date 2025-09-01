@@ -32,29 +32,32 @@ export default function LstStrategyHeader({
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
 
+    getDepositReserves,
+    getDefaultCurrencyReserve,
+
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxLstWithdrawnAmount,
+    getStepMaxWithdrawnAmount,
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy
@@ -77,14 +80,17 @@ export default function LstStrategyHeader({
   );
 
   // LST
-  const lstReserve = useMemo(
-    () => getLstReserve(strategyType),
-    [getLstReserve, strategyType],
-  );
   const lst = useMemo(
-    () => lstMap[lstReserve.coinType],
-    [lstMap, lstReserve.coinType],
+    () => lstMap[strategyInfo.depositLstCoinType],
+    [lstMap, strategyInfo.depositLstCoinType],
   );
+
+  // Reserves
+  const depositReserves = useMemo(
+    () => getDepositReserves(strategyType),
+    [getDepositReserves, strategyType],
+  );
+  const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
   //
   //

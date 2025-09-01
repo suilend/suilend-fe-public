@@ -12,7 +12,7 @@ import {
   SUI_CLOCK_OBJECT_ID,
   SUI_SYSTEM_STATE_OBJECT_ID,
 } from "@mysten/sui/utils";
-import { BigNumber } from "bignumber.js";
+import BigNumber from "bignumber.js";
 import BN from "bn.js";
 
 import {
@@ -33,8 +33,10 @@ import { ParsedObligation, ParsedReserve } from "../parsers";
 
 import { RewardsMap, Side, StrategyOwnerCap } from "./types";
 
-export const STRATEGY_WRAPPER_PACKAGE_ID =
+export const STRATEGY_WRAPPER_PACKAGE_ID_V1 =
   "0xba97dc73a07638d03d77ad2161484eb21db577edc9cadcd7035fef4b4f2f6fa1";
+const STRATEGY_WRAPPER_PACKAGE_ID_V4 =
+  "0x5afa283826db9c0f4c3507fd84277c491d437a4fbecb8fa38c52a891fe513c83";
 
 export enum StrategyType {
   sSUI_SUI_LOOPING = "1",
@@ -52,12 +54,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: string;
     };
 
-    defaultOpenCloseCoinType: string;
-    openCloseCoinTypeOptions: string[];
-
-    depositCoinTypes: string[];
+    depositBaseCoinType?: string;
+    depositLstCoinType: string;
     borrowCoinType: string;
-    lstCoinType: string;
+
+    currencyCoinTypes: string[];
+    defaultCurrencyCoinType: string;
   }
 > = {
   [StrategyType.sSUI_SUI_LOOPING]: {
@@ -70,15 +72,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
-    openCloseCoinTypeOptions: [
-      NORMALIZED_SUI_COINTYPE,
-      NORMALIZED_sSUI_COINTYPE,
-    ],
-
-    depositCoinTypes: [NORMALIZED_sSUI_COINTYPE],
+    depositBaseCoinType: undefined,
+    depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
-    lstCoinType: NORMALIZED_sSUI_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_SUI_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.stratSUI_SUI_LOOPING]: {
     queryParam: "stratSUI-SUI-looping",
@@ -90,15 +89,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_SUI_COINTYPE,
-    openCloseCoinTypeOptions: [
-      NORMALIZED_SUI_COINTYPE,
-      NORMALIZED_stratSUI_COINTYPE,
-    ],
-
-    depositCoinTypes: [NORMALIZED_stratSUI_COINTYPE],
+    depositBaseCoinType: undefined,
+    depositLstCoinType: NORMALIZED_stratSUI_COINTYPE,
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
-    lstCoinType: NORMALIZED_stratSUI_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_SUI_COINTYPE, NORMALIZED_stratSUI_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_SUI_COINTYPE,
   },
   [StrategyType.USDC_sSUI_SUI_LOOPING]: {
     queryParam: "USDC-sSUI-SUI-looping",
@@ -110,12 +106,12 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       type: "Looping",
     },
 
-    defaultOpenCloseCoinType: NORMALIZED_USDC_COINTYPE,
-    openCloseCoinTypeOptions: [NORMALIZED_USDC_COINTYPE],
-
-    depositCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_sSUI_COINTYPE],
+    depositBaseCoinType: NORMALIZED_USDC_COINTYPE,
+    depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
-    lstCoinType: NORMALIZED_sSUI_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_USDC_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_USDC_COINTYPE,
   },
 };
 
@@ -127,7 +123,7 @@ export const strategyDeposit = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::deposit_liquidity_and_deposit_into_obligation`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::deposit_liquidity_and_deposit_into_obligation`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -147,7 +143,7 @@ export const strategyBorrow = (
 ) =>
   isSui(coinType)
     ? transaction.moveCall({
-        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::borrow_sui_from_obligation`,
+        target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::borrow_sui_from_obligation`,
         typeArguments: [LENDING_MARKET_TYPE],
         arguments: [
           transaction.object(strategyOwnerCap),
@@ -159,7 +155,7 @@ export const strategyBorrow = (
         ],
       })
     : transaction.moveCall({
-        target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::borrow_from_obligation`,
+        target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::borrow_from_obligation`,
         typeArguments: [LENDING_MARKET_TYPE, coinType],
         arguments: [
           transaction.object(strategyOwnerCap),
@@ -178,7 +174,7 @@ export const strategyWithdraw = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::withdraw_from_obligation_and_redeem`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::withdraw_from_obligation_and_redeem`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -198,7 +194,7 @@ const strategyClaimRewards = (
   transaction: Transaction,
 ) =>
   transaction.moveCall({
-    target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::claim_rewards`,
+    target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::claim_rewards`,
     typeArguments: [LENDING_MARKET_TYPE, coinType],
     arguments: [
       transaction.object(strategyOwnerCap),
@@ -251,12 +247,12 @@ const strategyClaimRewardsAndMergeCoins = (
 
   return mergedCoinsMap;
 };
-export const strategyClaimRewardsAndSwap = async (
+export const strategyClaimRewardsAndSwapForCoinType = async (
   address: string,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
-  lstReserve: ParsedReserve,
+  depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   isDepositing: boolean,
   transaction: Transaction,
@@ -271,10 +267,10 @@ export const strategyClaimRewardsAndSwap = async (
 
   // 2) Prepare
   const nonSwappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType === lstReserve.coinType,
+    (coinType) => coinType === depositReserve.coinType,
   );
   const swappedCoinTypes = Object.keys(mergedCoinsMap).filter(
-    (coinType) => coinType !== lstReserve.coinType,
+    (coinType) => coinType !== depositReserve.coinType,
   );
 
   let resultCoin: TransactionObjectArgument | undefined = undefined;
@@ -307,13 +303,13 @@ export const strategyClaimRewardsAndSwap = async (
             // Get routes
             const routers = await cetusSdk.findRouters({
               from: coinType,
-              target: lstReserve.coinType,
+              target: depositReserve.coinType,
               amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
               byAmountIn: true,
             });
             if (!routers)
               throw new Error(`No swap quote found for ${coinType}`);
-            console.log("[strategyClaimRewardsAndSwap] routers", {
+            console.log("[strategyClaimRewardsAndSwapForCoinType] routers", {
               coinType,
               routers,
             });
@@ -323,15 +319,19 @@ export const strategyClaimRewardsAndSwap = async (
         ),
     ),
   );
-  console.log("[strategyClaimRewardsAndSwap] amountsAndSortedQuotesMap", {
-    amountsAndSortedQuotesMap,
-  });
+  console.log(
+    "[strategyClaimRewardsAndSwapForCoinType] amountsAndSortedQuotesMap",
+    { amountsAndSortedQuotesMap },
+  );
 
   // 3.2.2) Swap
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
-    console.log("[strategyClaimRewardsAndSwap] swapping coinType", coinType);
+    console.log(
+      "[strategyClaimRewardsAndSwapForCoinType] swapping coinType",
+      coinType,
+    );
     const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
@@ -356,9 +356,9 @@ export const strategyClaimRewardsAndSwap = async (
   if (isDepositing) {
     strategyDeposit(
       resultCoin,
-      lstReserve.coinType,
+      depositReserve.coinType,
       strategyOwnerCap,
-      lstReserve.arrayIndex,
+      depositReserve.arrayIndex,
       transaction,
     );
   } else {
@@ -369,19 +369,21 @@ export const strategyClaimRewardsAndSwap = async (
   }
 };
 
-export const strategySwapNonLstDepositsForLst = async (
+export const strategySwapSomeDepositsForCoinType = async (
+  strategyType: StrategyType,
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   obligation: ParsedObligation,
-  lstReserve: ParsedReserve,
+  noSwapCoinTypes: string[], // coinTypes to not swap for depositReserve.coinType
+  depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
 ) => {
-  // 1) MAX Withdraw non-LST deposits
-  const nonLstDeposits = obligation.deposits.filter(
-    (deposit) => deposit.coinType !== lstReserve.coinType,
+  // 1) MAX withdraw non-swapCoinTypes deposits
+  const swapCoinTypeDeposits = obligation.deposits.filter(
+    (deposit) => !noSwapCoinTypes.includes(deposit.coinType),
   );
-  if (nonLstDeposits.length === 0) return;
+  if (swapCoinTypeDeposits.length === 0) return;
 
   const withdrawnCoinsMap: Record<
     string,
@@ -391,7 +393,7 @@ export const strategySwapNonLstDepositsForLst = async (
     }
   > = {};
 
-  for (const deposit of nonLstDeposits) {
+  for (const deposit of swapCoinTypeDeposits) {
     const [withdrawnCoin] = strategyWithdraw(
       deposit.coinType,
       strategyOwnerCap,
@@ -428,13 +430,13 @@ export const strategySwapNonLstDepositsForLst = async (
           // Get routes
           const routers = await cetusSdk.findRouters({
             from: deposit.coinType,
-            target: lstReserve.coinType,
+            target: depositReserve.coinType,
             amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
             byAmountIn: true,
           });
           if (!routers)
             throw new Error(`No swap quote found for ${deposit.coinType}`);
-          console.log("[strategySwapNonLstDepositsForLst] routers", {
+          console.log("[strategySwapSomeDepositsForCoinType] routers", {
             coinType: deposit.coinType,
             routers,
           });
@@ -444,16 +446,17 @@ export const strategySwapNonLstDepositsForLst = async (
       ),
     ),
   );
-  console.log("[strategySwapNonLstDepositsForLst] amountsAndSortedQuotesMap", {
-    amountsAndSortedQuotesMap,
-  });
+  console.log(
+    "[strategySwapSomeDepositsForCoinType] amountsAndSortedQuotesMap",
+    { amountsAndSortedQuotesMap },
+  );
 
   // 2.2) Swap
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
     console.log(
-      "[strategySwapNonLstDepositsForLst] swapping coinType",
+      "[strategySwapSomeDepositsForCoinType] swapping coinType",
       coinType,
     );
     const slippagePercent = 3;
@@ -478,12 +481,12 @@ export const strategySwapNonLstDepositsForLst = async (
   // 3) Deposit
   if (!resultCoin) throw new Error("No coin to deposit or transfer");
 
-  console.log("[strategySwapNonLstDepositsForLst] depositing resultCoin");
+  console.log("[strategySwapSomeDepositsForCoinType] depositing resultCoin");
   strategyDeposit(
     resultCoin,
-    lstReserve.coinType,
+    depositReserve.coinType,
     strategyOwnerCap,
-    lstReserve.arrayIndex,
+    depositReserve.arrayIndex,
     transaction,
   );
 };
@@ -498,7 +501,7 @@ export const createStrategyOwnerCapIfNoneExists = (
   if (strategyOwnerCap) strategyOwnerCapId = strategyOwnerCap.id;
   else {
     strategyOwnerCapId = transaction.moveCall({
-      target: `${STRATEGY_WRAPPER_PACKAGE_ID}::strategy_wrapper::create_strategy_owner_cap`,
+      target: `${STRATEGY_WRAPPER_PACKAGE_ID_V4}::strategy_wrapper::create_strategy_owner_cap`,
       typeArguments: [LENDING_MARKET_TYPE],
       arguments: [
         transaction.object(LENDING_MARKET_ID),

@@ -33,11 +33,13 @@
     "bignumber.js": "^9.1.2",
     "bn.js": "^5.2.2",
     "crypto-js": "^4.2.0",
+    "lodash": "^4.17.21",
     "p-limit": "3.1.0",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/bn.js": "^5.2.0",
+    "@types/lodash": "^4.17.20",
     "ts-node": "^10.9.2"
   },
   "peerDependencies": {

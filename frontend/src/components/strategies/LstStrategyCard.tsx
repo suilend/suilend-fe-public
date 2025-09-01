@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
-import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
 
@@ -20,7 +19,7 @@ import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import useHistoricalTvlSuiAmountMap from "@/hooks/useHistoricalTvlSuiAmountMap";
+import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
 import { cn } from "@/lib/utils";
 
 interface LstStrategyCardProps {
@@ -43,29 +42,32 @@ export default function LstStrategyCard({
     suiReserve,
     suiBorrowFeePercent,
 
-    getLstReserve,
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
 
     exposureMap,
 
+    getDepositReserves,
+    getDefaultCurrencyReserve,
+
+    getDepositedAmount,
+    getBorrowedAmount,
+    getTvlAmount,
     getExposure,
     getStepMaxSuiBorrowedAmount,
-    getStepMaxLstWithdrawnAmount,
+    getStepMaxWithdrawnAmount,
 
     getSimulatedObligation,
     simulateLoopToExposure,
-    simulateUnloopToExposure,
     simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
-    getDepositedSuiAmount,
-    getBorrowedSuiAmount,
-    getTvlSuiAmount,
-    getUnclaimedRewardsSuiAmount,
-    getHistoricalTvlSuiAmount,
+    getUnclaimedRewardsAmount,
+    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy
@@ -88,14 +90,17 @@ export default function LstStrategyCard({
   );
 
   // LST
-  const lstReserve = useMemo(
-    () => getLstReserve(strategyType),
-    [getLstReserve, strategyType],
-  );
   const lst = useMemo(
-    () => lstMap[lstReserve.coinType],
-    [lstMap, lstReserve.coinType],
+    () => lstMap[strategyInfo.depositLstCoinType],
+    [lstMap, strategyInfo.depositLstCoinType],
   );
+
+  // Reserves
+  const depositReserves = useMemo(
+    () => getDepositReserves(strategyType),
+    [getDepositReserves, strategyType],
+  );
+  const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
   // Open
   const openLstStrategyDialog = useCallback(() => {
@@ -119,41 +124,51 @@ export default function LstStrategyCard({
 
   // Stats
   // Stats - TVL
-  const tvlSuiAmount = getTvlSuiAmount(obligation);
+  const tvlAmount = getTvlAmount(strategyType, obligation);
+  const tvlAmountSnapshot = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
-  const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
+  const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
 
   // Stats - Realized PnL
-  const { historicalTvlSuiAmountMap } = useHistoricalTvlSuiAmountMap(
+  const { historicalTvlAmountMap } = useHistoricalTvlAmountMap(
     strategyType,
     obligation,
   );
-  const realizedPnlSuiAmount = useMemo(
+  const historicalTvlAmount = useMemo(
     () =>
-      !!obligation && hasPosition(obligation)
-        ? historicalTvlSuiAmountMap[obligation.id] === undefined
-          ? undefined
-          : tvlSuiAmount.minus(historicalTvlSuiAmountMap[obligation.id]!)
-        : new BigNumber(0),
-    [obligation, hasPosition, historicalTvlSuiAmountMap, tvlSuiAmount],
+      !obligation || !hasPosition(obligation)
+        ? undefined
+        : historicalTvlAmountMap[obligation.id],
+    [obligation, hasPosition, historicalTvlAmountMap],
   );
 
-  // Stats - Total PnL
-  const unclaimedRewardsSuiAmount = getUnclaimedRewardsSuiAmount(obligation);
+  const realizedPnlAmount = useMemo(() => {
+    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-  const totalPnlSuiAmount = useMemo(
+    return historicalTvlAmount === undefined
+      ? undefined
+      : tvlAmountSnapshot.current.minus(historicalTvlAmount);
+  }, [obligation, hasPosition, historicalTvlAmount]);
+
+  // Stats - Total PnL
+  const unclaimedRewardsAmount = getUnclaimedRewardsAmount(
+    strategyType,
+    obligation,
+  );
+
+  const totalPnlAmount = useMemo(
     () =>
-      realizedPnlSuiAmount === undefined
+      realizedPnlAmount === undefined
         ? undefined
-        : realizedPnlSuiAmount.plus(unclaimedRewardsSuiAmount),
-    [realizedPnlSuiAmount, unclaimedRewardsSuiAmount],
+        : realizedPnlAmount.plus(unclaimedRewardsAmount),
+    [realizedPnlAmount, unclaimedRewardsAmount],
   );
 
   // Stats - Exposure
   const exposure = useMemo(
-    () => getExposure(obligation),
-    [getExposure, obligation],
+    () => getExposure(strategyType, obligation),
+    [getExposure, strategyType, obligation],
   );
 
   // Stats - Health
@@ -204,39 +219,41 @@ export default function LstStrategyCard({
                   </span>
                 </>
               }
-              value={`${formatToken(tvlSuiAmount, { exact: false })} SUI`}
-              valueTooltip={`${formatToken(tvlSuiAmount, { dp: SUI_DECIMALS })} SUI`}
+              value={`${formatToken(tvlAmount, { exact: false })} ${defaultCurrencyReserve.token.symbol}`}
+              valueTooltip={`${formatToken(tvlAmount, {
+                dp: defaultCurrencyReserve.token.decimals,
+              })} ${defaultCurrencyReserve.token.symbol}`}
               horizontal
             />
 
             {/* Total PnL */}
             <PnlLabelWithValue
-              reserve={suiReserve}
+              reserve={defaultCurrencyReserve}
               label="Total PnL"
               labelTooltip="Total PnL is the difference between the sum of your Equity and unclaimed rewards, and the net amount deposited."
-              pnlAmount={totalPnlSuiAmount}
+              pnlAmount={totalPnlAmount}
               pnlTooltip={
-                realizedPnlSuiAmount === undefined ||
-                totalPnlSuiAmount === undefined ? undefined : (
+                realizedPnlAmount === undefined ||
+                totalPnlAmount === undefined ? undefined : (
                   <div className="flex flex-col gap-2">
                     {/* Realized PnL */}
                     <div className="flex flex-row items-center justify-between gap-4">
                       <TLabelSans>Realized PnL</TLabelSans>
                       <TBody
                         className={cn(
-                          realizedPnlSuiAmount.gt(0) && "text-success",
-                          realizedPnlSuiAmount.lt(0) && "text-destructive",
+                          realizedPnlAmount.gt(0) && "text-success",
+                          realizedPnlAmount.lt(0) && "text-destructive",
                         )}
                       >
-                        {new BigNumber(realizedPnlSuiAmount).eq(0)
+                        {new BigNumber(realizedPnlAmount).eq(0)
                           ? null
-                          : new BigNumber(realizedPnlSuiAmount).gte(0)
+                          : new BigNumber(realizedPnlAmount).gte(0)
                             ? "+"
                             : "-"}
-                        {formatToken(realizedPnlSuiAmount.abs(), {
-                          dp: suiReserve.token.decimals,
+                        {formatToken(realizedPnlAmount.abs(), {
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {suiReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
 
@@ -245,19 +262,19 @@ export default function LstStrategyCard({
                       <TLabelSans>Unclaimed rewards</TLabelSans>
                       <TBody
                         className={cn(
-                          unclaimedRewardsSuiAmount.gt(0) && "text-success",
-                          unclaimedRewardsSuiAmount.lt(0) && "text-destructive",
+                          unclaimedRewardsAmount.gt(0) && "text-success",
+                          unclaimedRewardsAmount.lt(0) && "text-destructive",
                         )}
                       >
-                        {new BigNumber(unclaimedRewardsSuiAmount).eq(0)
+                        {new BigNumber(unclaimedRewardsAmount).eq(0)
                           ? null
-                          : new BigNumber(unclaimedRewardsSuiAmount).gte(0)
+                          : new BigNumber(unclaimedRewardsAmount).gte(0)
                             ? "+"
                             : "-"}
-                        {formatToken(unclaimedRewardsSuiAmount.abs(), {
-                          dp: suiReserve.token.decimals,
+                        {formatToken(unclaimedRewardsAmount.abs(), {
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {suiReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
 
@@ -268,19 +285,19 @@ export default function LstStrategyCard({
                       <TLabelSans>Total PnL</TLabelSans>
                       <TBody
                         className={cn(
-                          totalPnlSuiAmount.gt(0) && "text-success",
-                          totalPnlSuiAmount.lt(0) && "text-destructive",
+                          totalPnlAmount.gt(0) && "text-success",
+                          totalPnlAmount.lt(0) && "text-destructive",
                         )}
                       >
-                        {new BigNumber(totalPnlSuiAmount).eq(0)
+                        {new BigNumber(totalPnlAmount).eq(0)
                           ? null
-                          : new BigNumber(totalPnlSuiAmount).gte(0)
+                          : new BigNumber(totalPnlAmount).gte(0)
                             ? "+"
                             : "-"}
-                        {formatToken(totalPnlSuiAmount.abs(), {
-                          dp: suiReserve.token.decimals,
+                        {formatToken(totalPnlAmount.abs(), {
+                          dp: defaultCurrencyReserve.token.decimals,
                         })}{" "}
-                        {suiReserve.token.symbol}
+                        {defaultCurrencyReserve.token.symbol}
                       </TBody>
                     </div>
                   </div>
