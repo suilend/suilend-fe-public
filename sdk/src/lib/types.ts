@@ -1,3 +1,5 @@
+import BigNumber from "bignumber.js";
+
 import { RewardSummary } from "./liquidityMining";
 import { StrategyType } from "./strategyOwnerCap";
 
