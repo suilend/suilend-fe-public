@@ -100,7 +100,7 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     queryParam: "USDC-sSUI-SUI-looping",
     header: {
       coinTypes: [NORMALIZED_USDC_COINTYPE],
-      title: "USDC",
+      title: "USDC sSUI/SUI",
       tooltip:
         "Sets up a USDC sSUI/SUI Looping strategy by depositing USDC and looping sSUI/SUI to the desired leverage",
       type: "Looping",
