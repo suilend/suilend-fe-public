@@ -45,6 +45,7 @@ const useHistoricalTvlAmountMap = (
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Stats

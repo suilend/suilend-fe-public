@@ -202,6 +202,11 @@ interface LstStrategyContext {
     obligation?: ParsedObligation,
     exposure?: BigNumber,
   ) => BigNumber;
+  getLiquidationPrice: (
+    strategyType: StrategyType,
+    obligation?: ParsedObligation,
+    exposure?: BigNumber,
+  ) => BigNumber | null;
 }
 type LoadedLstStrategyContext = LstStrategyContext & {
   lstMap: Record<
@@ -303,6 +308,9 @@ const defaultContextValue: LstStrategyContext = {
     throw Error("LstStrategyContextProvider not initialized");
   },
   getHealthPercent: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
+  getLiquidationPrice: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 };
@@ -523,7 +531,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       },
       [StrategyType.USDC_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
-        max: new BigNumber(3), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
+        max: new BigNumber(3.2), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
         default: new BigNumber(3),
       },
     }),
@@ -1588,6 +1596,76 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     [hasPosition, getDefaultCurrencyReserve, simulateDepositAndLoopToExposure],
   );
 
+  // Stats - Liquidation price
+  const getLiquidationPrice = useCallback(
+    (
+      strategyType: StrategyType,
+      obligation?: ParsedObligation,
+      exposure?: BigNumber,
+    ): BigNumber | null => {
+      if (strategyType !== StrategyType.USDC_sSUI_SUI_LOOPING)
+        return new BigNumber(0); // Not shown in UI
+
+      const depositReserves = getDepositReserves(strategyType);
+
+      let _obligation;
+      if (!!obligation && hasPosition(obligation)) {
+        _obligation = obligation;
+      } else {
+        if (exposure === undefined) return new BigNumber(0); // Not shown in UI
+
+        const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
+
+        _obligation = simulateDepositAndLoopToExposure(
+          strategyType,
+          [],
+          new BigNumber(0),
+          {
+            coinType: defaultCurrencyReserve.coinType,
+            depositedAmount: new BigNumber(1), // Any number will do
+          },
+          exposure,
+        ).obligation;
+      }
+
+      const usdcDeposit = _obligation.deposits.find(
+        (d) => d.coinType === depositReserves.base!.coinType,
+      );
+      const lstDeposit = _obligation.deposits.find(
+        (d) => d.coinType === depositReserves.lst.coinType,
+      );
+      if (!usdcDeposit || usdcDeposit.depositedAmount.eq(0)) return null;
+
+      const suiBorrow = _obligation.borrows.find((b) => isSui(b.coinType));
+      if (!suiBorrow || suiBorrow.borrowedAmount.eq(0)) return null;
+
+      const result = new BigNumber(
+        usdcDeposit.depositedAmount
+          .times(depositReserves.base!.price)
+          .times(+depositReserves.base!.config.closeLtvPct / 100),
+      ).div(
+        new BigNumber(
+          suiBorrow.borrowedAmount.times(
+            suiReserve.config.borrowWeightBps.div(10000),
+          ),
+        ).minus(
+          (lstDeposit?.depositedAmount ?? new BigNumber(0)).times(
+            +depositReserves.lst.config.closeLtvPct / 100,
+          ),
+        ),
+      );
+
+      return result;
+    },
+    [
+      getDepositReserves,
+      hasPosition,
+      getDefaultCurrencyReserve,
+      simulateDepositAndLoopToExposure,
+      suiReserve,
+    ],
+  );
+
   // Context
   const contextValue: LstStrategyContext = useMemo(
     () => ({
@@ -1633,6 +1711,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getHistoricalTvlAmount,
       getAprPercent,
       getHealthPercent,
+      getLiquidationPrice,
     }),
     [
       isMoreParametersOpen,
@@ -1660,6 +1739,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getHistoricalTvlAmount,
       getAprPercent,
       getHealthPercent,
+      getLiquidationPrice,
     ],
   );
 

@@ -57,6 +57,7 @@ export default function LstStrategyHeader({
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy

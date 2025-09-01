@@ -23,7 +23,7 @@ import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { ParsedReserve, QuoteProvider, getRewardsMap } from "@suilend/sdk";
+import { ParsedReserve, getRewardsMap } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -42,6 +42,7 @@ import {
   TX_TOAST_DURATION,
   formatInteger,
   formatList,
+  formatNumber,
   formatPercent,
   formatToken,
   formatUsd,
@@ -86,7 +87,7 @@ import {
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
-import { useAggSdks } from "@/lib/swap";
+import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -183,24 +184,14 @@ export default function LstStrategyDialog({
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
   const MoreParametersIcon = isMoreParametersOpen ? ChevronLeft : ChevronRight;
 
   const { md } = useBreakpoint();
 
   // send.ag
-  const { sdkMap, partnerIdMap } = useAggSdks();
-  const cetusSdk = sdkMap[QuoteProvider.CETUS];
-
-  const activeProviders = useMemo(
-    () => [
-      // QuoteProvider.AFTERMATH,
-      QuoteProvider.CETUS,
-      QuoteProvider._7K,
-      QuoteProvider.FLOWX,
-    ],
-    [],
-  );
+  const cetusSdk = useCetusSdk();
 
   // Tabs
   const tabs = [
@@ -841,6 +832,18 @@ export default function LstStrategyDialog({
     adjustExposure,
   );
 
+  // Stats - Liquidation price
+  const liquidationPrice = getLiquidationPrice(
+    strategyType,
+    obligation,
+    exposure,
+  );
+  const adjustLiquidationPrice = getLiquidationPrice(
+    strategyType,
+    undefined,
+    adjustExposure,
+  );
+
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, exposure);
   const adjustAprPercent = getAprPercent(
@@ -1105,7 +1108,7 @@ export default function LstStrategyDialog({
                 trimTrailingZeros: true,
               })} ${currencyReserve.token.symbol}`
             : selectedTab === Tab.ADJUST
-              ? `Adjust to ${adjustExposure.toFixed(1)}x`
+              ? `Adjust leverage to ${adjustExposure.toFixed(1)}x`
               : "--", // Should not happen
     };
   })();
@@ -2946,7 +2949,7 @@ export default function LstStrategyDialog({
         const txUrl = explorer.buildTxUrl(res.digest);
 
         toast.success(
-          `Adjusted to ${new BigNumber(adjustSliderValue).toFixed(1)}x`,
+          `Adjusted leverage to ${new BigNumber(adjustSliderValue).toFixed(1)}x`,
           {
             action: (
               <TextLink className="block" href={txUrl}>
@@ -2970,7 +2973,7 @@ export default function LstStrategyDialog({
             : selectedTab === Tab.WITHDRAW
               ? "withdraw from"
               : selectedTab === Tab.ADJUST
-                ? "adjust"
+                ? "adjust leverage"
                 : "--" // Should not happen
         } ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
         err as Error,
@@ -3110,8 +3113,12 @@ export default function LstStrategyDialog({
           className={cn(
             "flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch",
             !!obligation && hasPosition(obligation)
-              ? "md:min-h-[346px]"
-              : "md:min-h-[406px]",
+              ? strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+                ? "md:min-h-[calc(346px+20px+12px)]"
+                : "md:min-h-[346px]"
+              : strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+                ? "md:min-h-[calc(406px+20px+12px)]"
+                : "md:min-h-[406px]",
           )}
           style={{
             height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
@@ -3360,8 +3367,8 @@ export default function LstStrategyDialog({
                         dp: selectedTab === Tab.ADJUST ? 2 : 0,
                       })}
                       {selectedTab === Tab.ADJUST &&
-                        formatPercent(adjustHealthPercent, { dp: 0 }) !==
-                          formatPercent(healthPercent, { dp: 2 }) && (
+                        formatNumber(adjustHealthPercent, { dp: 0 }) !==
+                          formatNumber(healthPercent, { dp: 2 }) && (
                           <>
                             <FromToArrow />
                             {formatPercent(adjustHealthPercent, { dp: 0 })}
@@ -3371,6 +3378,41 @@ export default function LstStrategyDialog({
                   }
                   horizontal
                 />
+
+                {strategyType === StrategyType.USDC_sSUI_SUI_LOOPING && (
+                  <LabelWithValue
+                    label="Liquidation price"
+                    value={
+                      <>
+                        {liquidationPrice !== null ? (
+                          <>
+                            <span className="text-muted-foreground">
+                              {"1 SUI ≈ "}
+                            </span>
+                            {formatUsd(liquidationPrice)}
+                          </>
+                        ) : (
+                          "--"
+                        )}
+                        {selectedTab === Tab.ADJUST &&
+                          (adjustLiquidationPrice !== null
+                            ? formatUsd(adjustLiquidationPrice)
+                            : "--") !==
+                            (liquidationPrice !== null
+                              ? formatUsd(liquidationPrice)
+                              : "--") && (
+                            <>
+                              <FromToArrow />
+                              {adjustLiquidationPrice !== null
+                                ? formatUsd(adjustLiquidationPrice)
+                                : "--"}
+                            </>
+                          )}
+                      </>
+                    }
+                    horizontal
+                  />
+                )}
 
                 {selectedTab === Tab.DEPOSIT ? (
                   <>

@@ -44,6 +44,7 @@ export default function LstStrategyDialogParametersPanel({
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   return (

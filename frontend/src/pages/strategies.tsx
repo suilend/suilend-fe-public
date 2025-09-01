@@ -100,6 +100,7 @@ function Page() {
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // send.ag
@@ -110,7 +111,8 @@ function Page() {
     () =>
       Object.values(StrategyType).filter((strategyType) =>
         strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-          ? process.env.NODE_ENV === "development"
+          ? process.env.NODE_ENV === "development" ||
+            Date.now() >= 1756731600000 // 2025/09/01 13:00:00 UTC
           : true,
       ),
     [],

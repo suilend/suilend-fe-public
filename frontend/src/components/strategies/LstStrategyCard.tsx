@@ -67,6 +67,7 @@ export default function LstStrategyCard({
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
+    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy
@@ -127,7 +128,7 @@ export default function LstStrategyCard({
   const tvlAmountSnapshot = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
-  const aprPercent = getAprPercent(strategyType, obligation, defaultExposure);
+  const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
 
   // Stats - Realized PnL
   const { historicalTvlAmountMap } = useHistoricalTvlAmountMap(
