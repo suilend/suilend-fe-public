@@ -116,7 +116,7 @@ function Page() {
         strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
           ? process.env.NODE_ENV === "development" ||
             router.query.usdc === "true" ||
-            Date.now() >= 1756731600000 // 2025/09/01 13:00:00 UTC
+            Date.now() >= 1756818000000 // 2025/09/02 13:00:00 UTC
           : true,
       ),
     [router.query.usdc],
