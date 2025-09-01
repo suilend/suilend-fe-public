@@ -172,15 +172,11 @@ const getAftermathQuote = async (
         provider: path.protocolName,
         in: {
           coinType: normalizeStructTag(path.coinIn.type),
-          amount: new BigNumber(path.coinIn.amount.toString()).div(
-            10 ** tokenIn.decimals,
-          ),
+          amount: new BigNumber(path.coinIn.amount.toString()),
         },
         out: {
           coinType: normalizeStructTag(path.coinOut.type),
-          amount: new BigNumber(path.coinOut.amount.toString()).div(
-            10 ** tokenOut.decimals,
-          ),
+          amount: new BigNumber(path.coinOut.amount.toString()),
         },
       })),
     })),
@@ -270,15 +266,11 @@ const getCetusQuote = async (
         provider: path.provider,
         in: {
           coinType: normalizeStructTag(path.from),
-          amount: new BigNumber(path.amountIn.toString()).div(
-            10 ** tokenIn.decimals,
-          ),
+          amount: new BigNumber(path.amountIn.toString()),
         },
         out: {
           coinType: normalizeStructTag(path.target),
-          amount: new BigNumber(path.amountOut.toString()).div(
-            10 ** tokenOut.decimals,
-          ),
+          amount: new BigNumber(path.amountOut.toString()),
         },
       })),
     })),
@@ -303,11 +295,15 @@ const get7kQuote = async (
     provider: QuoteProvider._7K,
     in: {
       coinType: tokenIn.coinType,
-      amount: new BigNumber(quote.swapAmount),
+      amount: new BigNumber(quote.swapAmountWithDecimal).div(
+        10 ** tokenIn.decimals,
+      ),
     },
     out: {
       coinType: tokenOut.coinType,
-      amount: new BigNumber(quote.returnAmount),
+      amount: new BigNumber(quote.returnAmountWithDecimal).div(
+        10 ** tokenOut.decimals,
+      ),
     },
     routes: (quote.routes ?? []).map((route: any, routeIndex: number) => ({
       percent: new BigNumber(route.tokenInAmount)
@@ -320,11 +316,25 @@ const get7kQuote = async (
         provider: hop.pool.type,
         in: {
           coinType: normalizeStructTag(hop.tokenIn),
-          amount: new BigNumber(hop.tokenInAmount),
+          amount: new BigNumber(hop.tokenInAmount).times(
+            10 **
+              hop.pool.allTokens.find(
+                (t: any) =>
+                  normalizeStructTag(t.address) ===
+                  normalizeStructTag(hop.tokenIn),
+              )!.decimal,
+          ),
         },
         out: {
           coinType: normalizeStructTag(hop.tokenOut),
-          amount: new BigNumber(hop.tokenOutAmount),
+          amount: new BigNumber(hop.tokenOutAmount).times(
+            10 **
+              hop.pool.allTokens.find(
+                (t: any) =>
+                  normalizeStructTag(t.address) ===
+                  normalizeStructTag(hop.tokenOut),
+              )!.decimal,
+          ),
         },
       })),
     })),
@@ -371,15 +381,11 @@ const getFlowXQuote = async (
         provider: hop.protocol(),
         in: {
           coinType: normalizeStructTag(hop.input.coinType),
-          amount: new BigNumber(hop.amountIn.toString()).div(
-            10 ** tokenIn.decimals,
-          ),
+          amount: new BigNumber(hop.amountIn.toString()),
         },
         out: {
           coinType: normalizeStructTag(hop.output.coinType),
-          amount: new BigNumber(hop.amountOut.toString()).div(
-            10 ** tokenOut.decimals,
-          ),
+          amount: new BigNumber(hop.amountOut.toString()),
         },
       })),
     })),

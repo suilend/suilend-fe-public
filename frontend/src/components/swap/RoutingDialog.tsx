@@ -207,7 +207,7 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
           contentProps={{ style: { maxWidth: "none" } }}
           content={
             <TBodySans className="text-xs">
-              {formatToken(data.in.amount, {
+              {formatToken(data.in.amount.div(10 ** data.in.token.decimals), {
                 dp: data.in.token.decimals,
               })}{" "}
               <TextLink
@@ -218,7 +218,7 @@ function ExchangeNode({ data }: ExchangeNodeProps) {
                 {data.in.token.symbol}
               </TextLink>
               <FromToArrow />
-              {formatToken(data.out.amount, {
+              {formatToken(data.out.amount.div(10 ** data.out.token.decimals), {
                 dp: data.out.token.decimals,
               })}{" "}
               <TextLink
