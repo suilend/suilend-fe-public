@@ -532,7 +532,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       [StrategyType.USDC_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
         max: new BigNumber(3.2), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
-        default: new BigNumber(3),
+        default: new BigNumber(3.2),
       },
     }),
     [],
