@@ -375,6 +375,7 @@ export const strategySwapSomeDepositsForCoinType = async (
   cetusPartnerId: string,
   obligation: ParsedObligation,
   noSwapCoinTypes: string[], // coinTypes to not swap for depositReserve.coinType
+  swapPercent: BigNumber, // percent of deposit to swap for depositReserve.coinType (0-100)
   depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   transaction: Transaction,
@@ -398,7 +399,19 @@ export const strategySwapSomeDepositsForCoinType = async (
       deposit.coinType,
       strategyOwnerCap,
       deposit.reserve.arrayIndex,
-      BigInt(MAX_U64.toString()),
+      swapPercent.eq(100)
+        ? BigInt(MAX_U64.toString())
+        : BigInt(
+            new BigNumber(
+              new BigNumber(deposit.depositedAmount.times(swapPercent.div(100)))
+                .times(10 ** deposit.reserve.token.decimals)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+            )
+              .div(deposit.reserve.cTokenExchangeRate)
+              .integerValue(BigNumber.ROUND_UP)
+              .toString(),
+          ),
       transaction,
     );
 
@@ -423,7 +436,9 @@ export const strategySwapSomeDepositsForCoinType = async (
       Object.entries(withdrawnCoinsMap).map(([coinType, { deposit, coin }]) =>
         (async () => {
           // Get amount
-          const amount = deposit.depositedAmount
+          const amount = new BigNumber(
+            deposit.depositedAmount.times(swapPercent.div(100)),
+          )
             .times(10 ** deposit.reserve.token.decimals)
             .integerValue(BigNumber.ROUND_DOWN); // Use underestimate (deposits keep accruing if deposit APR >0)
 

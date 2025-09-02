@@ -2726,7 +2726,7 @@ export default function LstStrategyDialog({
     try {
       let transaction = new Transaction();
 
-      // 1) Refresh pyth oracles (LST, SUI, and any other deposits/borrows) - required when borrowing or withdrawing
+      // 1) Refresh pyth oracles (base, LST, SUI, and any other deposits/borrows) - required when borrowing or withdrawing
       await appData.suilendClient.refreshAll(
         transaction,
         undefined,
@@ -2743,32 +2743,144 @@ export default function LstStrategyDialog({
         ),
       );
 
-      // 2) Swap non-base/non-LST deposits (e.g. autoclaimed+deposited rewards) for LST (or base if no base deposit (edge case))
+      // 2) Rebalance position if needed
       if (!!strategyOwnerCap && !!obligation) {
         try {
           const txCopy = Transaction.from(transaction);
-          await strategySwapSomeDepositsForCoinType(
-            strategyType,
-            cetusSdk,
-            CETUS_PARTNER_ID,
-            obligation,
-            depositReserves.base !== undefined
-              ? obligation.deposits.some(
-                  (d) => d.coinType === depositReserves.base!.coinType,
-                )
-                ? [depositReserves.base.coinType, depositReserves.lst.coinType] // If has base deposit, swap non-base/non-LST deposits
-                : [depositReserves.base.coinType] // If no base deposit, swap non-base deposits (i.e. swap any LST deposits for base)
-              : [depositReserves.lst.coinType],
-            depositReserves.base !== undefined
-              ? obligation.deposits.some(
-                  (d) => d.coinType === depositReserves.base!.coinType,
-                )
-                ? depositReserves.lst // If has base deposit, swap non-base/non-LST deposits for LST
-                : depositReserves.base // If no base deposit, swap non-base deposits for base
-              : depositReserves.lst,
-            strategyOwnerCap.id,
-            txCopy,
-          );
+          // Base+LST
+          if (depositReserves.base !== undefined) {
+            const baseDeposit = obligation.deposits.find(
+              (d) => d.coinType === depositReserves.base!.coinType,
+            );
+
+            // Base+LST: Base deposits
+            if (baseDeposit && baseDeposit.depositedAmount.gt(0)) {
+              const hasNonBaseNonLstDeposits = obligation.deposits.some(
+                (d) =>
+                  d.coinType !== depositReserves.base!.coinType &&
+                  d.coinType !== depositReserves.lst.coinType &&
+                  d.depositedAmount.gt(0),
+              );
+
+              // Base+LST: Base and non-base/non-LST deposits
+              if (hasNonBaseNonLstDeposits) {
+                // Swap non-base/non-LST deposits (e.g. autoclaimed+deposited non-base/non-LST rewards) for LST
+                await strategySwapSomeDepositsForCoinType(
+                  strategyType,
+                  cetusSdk,
+                  CETUS_PARTNER_ID,
+                  obligation,
+                  [
+                    depositReserves.base!.coinType,
+                    depositReserves.lst.coinType,
+                  ],
+                  new BigNumber(100),
+                  depositReserves.lst,
+                  strategyOwnerCap.id,
+                  txCopy,
+                );
+              }
+
+              // Base+LST: Base and no non-base/non-LST deposits
+              else {
+                // Swap excess LST deposits for base (don't want to accumulate too many LST rewards)
+                const lstDeposit = obligation.deposits.find(
+                  (d) => d.coinType === depositReserves.lst.coinType,
+                );
+                const lstDepositedAmount =
+                  lstDeposit?.depositedAmount ?? new BigNumber(0);
+
+                const { deposits: simulatedDeposits } =
+                  simulateDepositAndLoopToExposure(
+                    strategyType,
+                    [],
+                    new BigNumber(0),
+                    {
+                      coinType: depositReserves.base!.coinType,
+                      depositedAmount: baseDeposit.depositedAmount,
+                    },
+                    exposure,
+                  );
+
+                const simulatedLstDeposit = simulatedDeposits.find(
+                  (d) => d.coinType === depositReserves.lst.coinType,
+                );
+                const simulatedLstDepositedAmount =
+                  simulatedLstDeposit!.depositedAmount;
+
+                const swapPercent = BigNumber.min(
+                  new BigNumber(
+                    lstDepositedAmount.minus(simulatedLstDepositedAmount),
+                  )
+                    .div(lstDepositedAmount)
+                    .times(100),
+                  3, // Max 3% of LST deposits swapped for base at a time
+                );
+                console.log(
+                  "XXXX:",
+                  JSON.stringify(
+                    {
+                      lstDepositedAmount: lstDepositedAmount.toFixed(20),
+                      simulatedLstDepositedAmount:
+                        simulatedLstDepositedAmount.toFixed(20),
+                      swapPercent: swapPercent.toFixed(20),
+                    },
+                    null,
+                    2,
+                  ),
+                );
+
+                if (swapPercent.gt(1)) {
+                  // Swap excess LST deposits for base
+                  await strategySwapSomeDepositsForCoinType(
+                    strategyType,
+                    cetusSdk,
+                    CETUS_PARTNER_ID,
+                    obligation,
+                    [depositReserves.base!.coinType],
+                    swapPercent,
+                    depositReserves.base,
+                    strategyOwnerCap.id,
+                    txCopy,
+                  );
+                } else {
+                  // DO NOTHING
+                }
+              }
+            }
+
+            // Base+LST: Non-base deposits only
+            else {
+              // Swap non-base deposits (e.g. autoclaimed+deposited non-base rewards) for base
+              await strategySwapSomeDepositsForCoinType(
+                strategyType,
+                cetusSdk,
+                CETUS_PARTNER_ID,
+                obligation,
+                [depositReserves.base.coinType],
+                new BigNumber(100),
+                depositReserves.base,
+                strategyOwnerCap.id,
+                txCopy,
+              );
+            }
+          }
+
+          // LST
+          else {
+            // Swap non-LST deposits (e.g. autoclaimed+deposited non-LST rewards) for LST
+            await strategySwapSomeDepositsForCoinType(
+              strategyType,
+              cetusSdk,
+              CETUS_PARTNER_ID,
+              obligation,
+              [depositReserves.lst.coinType],
+              new BigNumber(100),
+              depositReserves.lst,
+              strategyOwnerCap.id,
+              txCopy,
+            );
+          }
           await dryRunTransaction(txCopy); // Throws error is fails
 
           transaction = txCopy;
