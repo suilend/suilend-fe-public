@@ -11,8 +11,8 @@ export default function LstStrategyDialogParametersPanel({
   strategyType,
 }: LstStrategyDialogParametersPanelProps) {
   const {
-    isMoreParametersOpen,
-    setIsMoreParametersOpen,
+    isLearnMoreOpen,
+    setIsLearnMoreOpen,
 
     hasPosition,
 

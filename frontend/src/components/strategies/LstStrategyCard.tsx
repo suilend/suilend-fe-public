@@ -35,8 +35,8 @@ export default function LstStrategyCard({
   const { userData } = useLoadedUserContext();
 
   const {
-    isMoreParametersOpen,
-    setIsMoreParametersOpen,
+    isLearnMoreOpen,
+    setIsLearnMoreOpen,
 
     hasPosition,
 

@@ -72,9 +72,9 @@ export const addOrInsertDeposit = (
 };
 
 interface LstStrategyContext {
-  // More parameters
-  isMoreParametersOpen: boolean;
-  setIsMoreParametersOpen: Dispatch<SetStateAction<boolean>>;
+  // Learn more
+  isLearnMoreOpen: boolean;
+  setIsLearnMoreOpen: Dispatch<SetStateAction<boolean>>;
 
   // Obligations
   hasPosition: (obligation: ParsedObligation) => boolean;
@@ -227,9 +227,9 @@ type LoadedLstStrategyContext = LstStrategyContext & {
 };
 
 const defaultContextValue: LstStrategyContext = {
-  // More parameters
-  isMoreParametersOpen: false,
-  setIsMoreParametersOpen: () => {
+  // Learn more
+  isLearnMoreOpen: false,
+  setIsLearnMoreOpen: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -329,9 +329,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { userData } = useLoadedUserContext();
   const { allAppData, appData, isLst } = useLoadedAppContext();
 
-  // More parameters
-  const [isMoreParametersOpen, setIsMoreParametersOpen] =
-    useLocalStorage<boolean>("LstStrategyContext_isMoreParametersOpen", false);
+  // Learn more
+  const [isLearnMoreOpen, setIsLearnMoreOpen] = useLocalStorage<boolean>(
+    "LstStrategyContext_isLearnMoreOpen",
+    false,
+  );
 
   // Obligations
   const hasPosition = useCallback(
@@ -1685,9 +1687,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: LstStrategyContext = useMemo(
     () => ({
-      // More parameters
-      isMoreParametersOpen,
-      setIsMoreParametersOpen,
+      // Learn more
+      isLearnMoreOpen,
+      setIsLearnMoreOpen,
 
       // Obligations
       hasPosition,
@@ -1730,8 +1732,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getLiquidationPrice,
     }),
     [
-      isMoreParametersOpen,
-      setIsMoreParametersOpen,
+      isLearnMoreOpen,
+      setIsLearnMoreOpen,
       hasPosition,
       suiReserve,
       suiBorrowFeePercent,

@@ -12,8 +12,8 @@ const useHistoricalTvlAmountMap = (
   obligation?: ParsedObligation,
 ) => {
   const {
-    isMoreParametersOpen,
-    setIsMoreParametersOpen,
+    isLearnMoreOpen,
+    setIsLearnMoreOpen,
 
     hasPosition,
 

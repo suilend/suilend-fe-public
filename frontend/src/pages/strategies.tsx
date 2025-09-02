@@ -70,8 +70,8 @@ function Page() {
   const { userData, refresh } = useLoadedUserContext();
 
   const {
-    isMoreParametersOpen,
-    setIsMoreParametersOpen,
+    isLearnMoreOpen,
+    setIsLearnMoreOpen,
 
     hasPosition,
 

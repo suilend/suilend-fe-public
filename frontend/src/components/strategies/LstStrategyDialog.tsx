@@ -151,8 +151,8 @@ export default function LstStrategyDialog({
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
-    isMoreParametersOpen,
-    setIsMoreParametersOpen,
+    isLearnMoreOpen,
+    setIsLearnMoreOpen,
 
     hasPosition,
 
@@ -186,7 +186,7 @@ export default function LstStrategyDialog({
     getHealthPercent,
     getLiquidationPrice,
   } = useLoadedLstStrategyContext();
-  const MoreParametersIcon = isMoreParametersOpen ? ChevronLeft : ChevronRight;
+  const LearnMoreIcon = isLearnMoreOpen ? ChevronLeft : ChevronRight;
 
   const { md } = useBreakpoint();
 
@@ -3208,9 +3208,9 @@ export default function LstStrategyDialog({
           <Button
             className="h-fit w-10 rounded-l-none rounded-r-md px-0 py-3"
             labelClassName="uppercase"
-            endIcon={<MoreParametersIcon className="h-4 w-4" />}
+            endIcon={<LearnMoreIcon className="h-4 w-4" />}
             variant="secondary"
-            onClick={() => setIsMoreParametersOpen((o) => !o)}
+            onClick={() => setIsLearnMoreOpen((o) => !o)}
           >
             Learn more
           </Button>
@@ -3672,7 +3672,7 @@ export default function LstStrategyDialog({
                 )}
               </div>
 
-              {!md && isMoreParametersOpen && (
+              {!md && isLearnMoreOpen && (
                 <>
                   <Separator />
                   <LstStrategyDialogParametersPanel
@@ -3685,10 +3685,9 @@ export default function LstStrategyDialog({
             <div className="flex w-full flex-col gap-3">
               {!md && (
                 <Collapsible
-                  open={isMoreParametersOpen}
-                  onOpenChange={setIsMoreParametersOpen}
-                  closedTitle="More parameters"
-                  openTitle="Less parameters"
+                  open={isLearnMoreOpen}
+                  onOpenChange={setIsLearnMoreOpen}
+                  title="Learn more"
                   hasSeparator
                 />
               )}
@@ -3714,7 +3713,7 @@ export default function LstStrategyDialog({
             <div className="-mt-4 h-0 w-[28rem] max-w-full" />
           </div>
 
-          {md && isMoreParametersOpen && (
+          {md && isLearnMoreOpen && (
             <div className="flex h-[440px] w-[28rem] flex-col gap-4">
               <LstStrategyDialogParametersPanel strategyType={strategyType} />
             </div>
