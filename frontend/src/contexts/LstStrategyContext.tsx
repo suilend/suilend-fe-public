@@ -900,7 +900,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           deposits,
           suiBorrowedAmount,
         )
-          .times(0.98) // 2% buffer
+          .times(0.9) // 10% buffer
           .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
         const stepMaxLstDepositedAmount = new BigNumber(
           stepMaxSuiBorrowedAmount.minus(

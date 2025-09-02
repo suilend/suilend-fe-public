@@ -1205,7 +1205,7 @@ export default function LstStrategyDialog({
         deposits,
         suiBorrowedAmount,
       )
-        .times(0.95) // 5% buffer
+        .times(0.9) // 10% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxLstDepositedAmount = new BigNumber(
         stepMaxSuiBorrowedAmount.minus(
@@ -1983,7 +1983,7 @@ export default function LstStrategyDialog({
         suiBorrowedAmount,
         depositReserves.lst.coinType,
       )
-        .times(0.95) // 5% buffer
+        .times(0.9) // 10% buffer
         .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
       const stepMaxSuiRepaidAmount = new BigNumber(
         new BigNumber(
