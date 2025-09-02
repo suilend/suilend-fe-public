@@ -109,24 +109,11 @@ function Page() {
   // send.ag
   const cetusSdk = useCetusSdk();
 
-  // Strategy types
-  const strategyTypes = useMemo(
-    () =>
-      Object.values(StrategyType).filter((strategyType) =>
-        strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-          ? process.env.NODE_ENV === "development" ||
-            router.query.usdc === "true" ||
-            Date.now() >= 1756818000000 // 2025/09/02 13:00:00 UTC
-          : true,
-      ),
-    [router.query.usdc],
-  );
-
   // Obligations
   const strategyOwnerCapObligationMap: Record<
     StrategyType,
     { strategyOwnerCap: StrategyOwnerCap; obligation: ParsedObligation }
-  > = strategyTypes.reduce(
+  > = Object.values(StrategyType).reduce(
     (acc, strategyType) => {
       const strategyOwnerCap: StrategyOwnerCap | undefined =
         userData.strategyOwnerCaps.find(
@@ -274,7 +261,7 @@ function Page() {
         <title>Suilend | Strategies</title>
       </Head>
 
-      {strategyTypes.map((strategyType) => (
+      {Object.values(StrategyType).map((strategyType) => (
         <LstStrategyDialog key={strategyType} strategyType={strategyType} />
       ))}
 
@@ -390,18 +377,17 @@ function Page() {
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {strategyTypes.map((strategyType) => {
-                const obligation =
-                  strategyOwnerCapObligationMap[strategyType]?.obligation;
-
-                if (!obligation || !hasPosition(obligation)) return null;
-                return (
-                  <LstStrategyCard
-                    key={strategyType}
-                    strategyType={strategyType}
-                  />
-                );
-              })}
+              {Object.entries(strategyOwnerCapObligationMap).map(
+                ([strategyType, { obligation }]) => {
+                  if (!hasPosition(obligation)) return null;
+                  return (
+                    <LstStrategyCard
+                      key={strategyType}
+                      strategyType={strategyType as StrategyType}
+                    />
+                  );
+                },
+              )}
             </div>
           </div>
         )}
@@ -419,19 +405,27 @@ function Page() {
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {strategyTypes.map((strategyType) => {
-                const obligation =
-                  strategyOwnerCapObligationMap[strategyType]?.obligation;
+              {Object.values(StrategyType)
+                .filter((strategyType) =>
+                  strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+                    ? process.env.NODE_ENV === "development" ||
+                      router.query.usdc === "true" ||
+                      Date.now() >= 1756818000000 // 2025/09/02 13:00:00 UTC
+                    : true,
+                )
+                .map((strategyType) => {
+                  const obligation =
+                    strategyOwnerCapObligationMap[strategyType]?.obligation;
 
-                if (!obligation || !hasPosition(obligation))
-                  return (
-                    <LstStrategyCard
-                      key={strategyType}
-                      strategyType={strategyType}
-                    />
-                  );
-                return null;
-              })}
+                  if (!obligation || !hasPosition(obligation))
+                    return (
+                      <LstStrategyCard
+                        key={strategyType}
+                        strategyType={strategyType}
+                      />
+                    );
+                  return null;
+                })}
 
               <ComingSoonStrategyCard />
             </div>
