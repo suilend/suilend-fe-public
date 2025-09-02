@@ -125,8 +125,8 @@ export default function LstStrategyCard({
 
   // Stats
   // Stats - TVL
-  const tvlAmount = getTvlAmount(strategyType, obligation);
-  const tvlAmountSnapshot = useRef<BigNumber>(tvlAmount);
+  const tvlAmount = getTvlAmount(strategyType, obligation, true);
+  const tvlAmountSnapshotRef = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
@@ -149,7 +149,7 @@ export default function LstStrategyCard({
 
     return historicalTvlAmount === undefined
       ? undefined
-      : tvlAmountSnapshot.current.minus(historicalTvlAmount);
+      : tvlAmountSnapshotRef.current.minus(historicalTvlAmount);
   }, [obligation, hasPosition, historicalTvlAmount]);
 
   // Stats - Total PnL

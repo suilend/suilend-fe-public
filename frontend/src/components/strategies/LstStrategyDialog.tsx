@@ -822,7 +822,7 @@ export default function LstStrategyDialog({
 
   // Stats
   // Stats - TVL
-  const tvlAmount = getTvlAmount(strategyType, obligation);
+  const tvlAmount = getTvlAmount(strategyType, obligation, true);
 
   // Stats - Health
   const healthPercent = getHealthPercent(strategyType, obligation, exposure);
