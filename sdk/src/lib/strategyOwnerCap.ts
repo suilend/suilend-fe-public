@@ -332,14 +332,13 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
       "[strategyClaimRewardsAndSwapForCoinType] swapping coinType",
       coinType,
     );
-    const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
     try {
       coinOut = await cetusSdk.fixableRouterSwapV3({
         router: routers,
         inputCoin: coinIn,
-        slippage: slippagePercent / 100,
+        slippage: 3 / 100,
         txb: transaction,
         partner: cetusPartnerId,
       });
@@ -474,14 +473,13 @@ export const strategySwapSomeDepositsForCoinType = async (
       "[strategySwapSomeDepositsForCoinType] swapping coinType",
       coinType,
     );
-    const slippagePercent = 3;
 
     let coinOut: TransactionObjectArgument;
     try {
       coinOut = await cetusSdk.fixableRouterSwapV3({
         router: routers,
         inputCoin: coinIn,
-        slippage: slippagePercent / 100,
+        slippage: 3 / 100,
         txb: transaction,
         partner: cetusPartnerId,
       });

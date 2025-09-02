@@ -1399,7 +1399,9 @@ export default function LstStrategyDialog({
     if (suiBorrowedAmount.eq(targetSuiBorrowedAmount))
       return { deposits, suiBorrowedAmount, transaction };
 
-    const fullyRepaySuiBorrowsUsingLst = async (fullyWithdrawLst?: boolean) => {
+    const fullyRepaySuiBorrowsUsingLst = async (
+      swapRemainingLstForBase: boolean,
+    ) => {
       // const _suiBorrowedAmount = suiBorrowedAmount;
       const suiFullRepaymentAmount = BigNumber.max(
         suiBorrowedAmount.plus(10 ** -3), // 0.001 SUI buffer
@@ -1409,25 +1411,30 @@ export default function LstStrategyDialog({
       console.log(
         `[unloopToExposure.fullyRepaySuiBorrowsUsingLst] |`,
         JSON.stringify({
-          fullyWithdrawLst,
+          swapRemainingLstForBase,
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
           suiFullRepaymentAmount: suiFullRepaymentAmount.toFixed(20),
         }),
       );
 
       // 1) (MAX) Withdraw LST
-      const lstWithdrawnAmount = fullyWithdrawLst
-        ? deposits.find((d) => d.coinType === depositReserves.lst.coinType)!
-            .depositedAmount
-        : suiFullRepaymentAmount
-            .div(new BigNumber(1).minus(lst.redeemFeePercent.div(100))) // Potential rounding issue (max 1 MIST)
-            .div(lst.lstToSuiExchangeRate)
-            .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+      const lstWithdrawnAmount = suiFullRepaymentAmount
+        .div(new BigNumber(1).minus(lst.redeemFeePercent.div(100))) // Potential rounding issue (max 1 MIST)
+        .div(lst.lstToSuiExchangeRate)
+        .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+      const remainingLstWithdrawnAmount = swapRemainingLstForBase
+        ? new BigNumber(
+            deposits.find(
+              (d) => d.coinType === depositReserves.lst.coinType,
+            )!.depositedAmount,
+          ).minus(lstWithdrawnAmount)
+        : new BigNumber(0);
 
       console.log(
         `[unloopToExposure.fullyRepaySuiBorrowsUsingLst] withdraw_lst |`,
         JSON.stringify({
           lstWithdrawnAmount: lstWithdrawnAmount.toFixed(20),
+          remainingLstWithdrawnAmount: remainingLstWithdrawnAmount.toFixed(20),
         }),
       );
 
@@ -1438,27 +1445,43 @@ export default function LstStrategyDialog({
         appData.suilendClient.findReserveArrayIndex(
           depositReserves.lst.coinType,
         ),
-        fullyWithdrawLst
-          ? BigInt(MAX_U64.toString())
-          : BigInt(
-              new BigNumber(
-                lstWithdrawnAmount
-                  .times(10 ** LST_DECIMALS)
-                  .integerValue(BigNumber.ROUND_DOWN)
-                  .toString(),
-              )
-                .div(depositReserves.lst.cTokenExchangeRate)
-                .integerValue(BigNumber.ROUND_UP)
-                .toString(),
-            ),
+        BigInt(
+          new BigNumber(
+            lstWithdrawnAmount
+              .times(10 ** LST_DECIMALS)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          )
+            .div(depositReserves.lst.cTokenExchangeRate)
+            .integerValue(BigNumber.ROUND_UP)
+            .toString(),
+        ),
         transaction,
       );
+      let remainingLstWithdrawnLstCoin;
+      if (depositReserves.base !== undefined && swapRemainingLstForBase) {
+        [remainingLstWithdrawnLstCoin] = strategyWithdraw(
+          depositReserves.lst.coinType,
+          strategyOwnerCapId,
+          appData.suilendClient.findReserveArrayIndex(
+            depositReserves.lst.coinType,
+          ),
+          BigInt(MAX_U64.toString()),
+          transaction,
+        );
+      }
 
       // 1.2) Update state
       deposits = addOrInsertDeposit(deposits, {
         coinType: depositReserves.lst.coinType,
         depositedAmount: lstWithdrawnAmount.times(-1),
       });
+      if (depositReserves.base !== undefined && swapRemainingLstForBase) {
+        deposits = addOrInsertDeposit(deposits, {
+          coinType: depositReserves.lst.coinType,
+          depositedAmount: remainingLstWithdrawnAmount.times(-1), // Should be 0 after this
+        });
+      }
 
       console.log(
         `[unloopToExposure.fullyRepaySuiBorrowsUsingLst] withdraw_lst.update_state |`,
@@ -1506,7 +1529,7 @@ export default function LstStrategyDialog({
         suiFullRepaymentCoin,
         transaction,
       );
-      transaction.transferObjects([suiFullRepaymentCoin], _address);
+      transaction.transferObjects([suiFullRepaymentCoin], _address); // Transfer remaining SUI to user
 
       // 2.3) Update state
       suiBorrowedAmount = BigNumber.max(
@@ -1529,7 +1552,80 @@ export default function LstStrategyDialog({
         ),
       );
 
-      // 3) Redeposit remaining SUI
+      // 3) Redeposit remaining SUI (not possible because suiFullRepaymentCoin is a mutable reference (?))
+
+      // 4) Swap remaining LST for base
+      if (
+        depositReserves.base !== undefined &&
+        swapRemainingLstForBase &&
+        remainingLstWithdrawnLstCoin
+      ) {
+        // 4.1) Get routers
+        const routers = await cetusSdk.findRouters({
+          from: depositReserves.lst.coinType,
+          target: depositReserves.base.coinType,
+          amount: new BN(
+            remainingLstWithdrawnAmount
+              .times(10 ** depositReserves.lst.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ),
+          byAmountIn: true,
+        });
+        if (!routers) throw new Error("No swap quote found");
+
+        console.log(
+          `[unloopToExposure.fullyRepaySuiBorrowsUsingLst] swap_remaining_lst_for_base.get_routers`,
+          { routers },
+        );
+
+        // 4.2) Swap
+        let baseCoin: TransactionObjectArgument;
+        try {
+          baseCoin = await cetusSdk.fixableRouterSwapV3({
+            router: routers,
+            inputCoin: remainingLstWithdrawnLstCoin,
+            slippage: 3 / 100,
+            txb: transaction,
+            partner: CETUS_PARTNER_ID,
+          });
+        } catch (err) {
+          throw new Error("No swap quote found");
+        }
+
+        // 4.3) Deposit base
+        strategyDeposit(
+          baseCoin,
+          depositReserves.base.coinType,
+          strategyOwnerCapId,
+          appData.suilendClient.findReserveArrayIndex(
+            depositReserves.base.coinType,
+          ),
+          transaction,
+        );
+
+        // 4.4) Update state
+        console.log("XXXX0101", routers.amountOut.toString());
+        deposits = addOrInsertDeposit(deposits, {
+          coinType: depositReserves.base.coinType,
+          depositedAmount: new BigNumber(
+            new BigNumber(routers.amountOut.toString()).div(
+              10 ** depositReserves.base.token.decimals,
+            ),
+          ).times(-1),
+        });
+
+        console.log(
+          `[unloopToExposure.fullyRepaySuiBorrowsUsingLst] swap_remaining_lst_for_base.update_state |`,
+          JSON.stringify({
+            deposits: deposits.map((d) => ({
+              coinType: d.coinType,
+              depositedAmount: d.depositedAmount.toFixed(20),
+            })),
+            suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+          }),
+        );
+      }
     };
     const fullyRepaySuiBorrowsUsingBase = async () => {
       if (depositReserves.base === undefined) return;
@@ -1727,7 +1823,7 @@ export default function LstStrategyDialog({
         suiFullRepaymentCoin,
         transaction,
       );
-      transaction.transferObjects([suiFullRepaymentCoin], _address);
+      transaction.transferObjects([suiFullRepaymentCoin], _address); // Transfer remaining SUI to user
 
       // 4.2) Update state
       suiBorrowedAmount = BigNumber.max(
@@ -1750,7 +1846,7 @@ export default function LstStrategyDialog({
         ),
       );
 
-      // // 5) Redeposit remaining SUI
+      // // 5) Redeposit remaining SUI (not possible because coin is a mutable reference (?))
       // // 5.1) Get routers
       // const routers2 = await cetusSdk.findRouters({
       //   from: NORMALIZED_SUI_COINTYPE,
@@ -1844,9 +1940,11 @@ export default function LstStrategyDialog({
 
       if (targetSuiBorrowedAmount.eq(0)) {
         if (depositReserves.base !== undefined) {
-          const lstDepositedAmount = deposits.find(
+          const lstDeposit = deposits.find(
             (d) => d.coinType === depositReserves.lst.coinType,
-          )!.depositedAmount;
+          );
+          const lstDepositedAmount =
+            lstDeposit?.depositedAmount ?? new BigNumber(0);
 
           // Ran out of LST
           if (lstDepositedAmount.lte(E)) {
@@ -1869,7 +1967,7 @@ export default function LstStrategyDialog({
         } else {
           // SUI borrows almost fully repaid
           if (pendingSuiBorrowedAmount.lte(E)) {
-            await fullyRepaySuiBorrowsUsingLst();
+            await fullyRepaySuiBorrowsUsingLst(false);
             break;
           }
         }
@@ -2392,40 +2490,42 @@ export default function LstStrategyDialog({
 
     // 1) Unloop to targetSuiBorrowedAmount SUI borrows
     // 1.1) Unloop
-    const {
-      deposits: newDeposits,
-      suiBorrowedAmount: newSuiBorrowedAmount,
-      transaction: newTransaction,
-    } = await unloopToExposureTx(
-      _address,
-      strategyOwnerCapId,
-      obligationId,
-      deposits,
-      suiBorrowedAmount,
-      targetSuiBorrowedAmount, // Pass targetSuiBorrowedAmount
-      undefined, // Don't pass targetExposure
-      transaction,
-    );
+    if (suiBorrowedAmount.gt(targetSuiBorrowedAmount)) {
+      const {
+        deposits: newDeposits,
+        suiBorrowedAmount: newSuiBorrowedAmount,
+        transaction: newTransaction,
+      } = await unloopToExposureTx(
+        _address,
+        strategyOwnerCapId,
+        obligationId,
+        deposits,
+        suiBorrowedAmount,
+        targetSuiBorrowedAmount, // Pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetExposure
+        transaction,
+      );
 
-    // 1.2) Update state
-    deposits = newDeposits;
-    suiBorrowedAmount = newSuiBorrowedAmount;
-    transaction = newTransaction;
+      // 1.2) Update state
+      deposits = newDeposits;
+      suiBorrowedAmount = newSuiBorrowedAmount;
+      transaction = newTransaction;
 
-    console.log(
-      `[withdraw] unloop.update_state |`,
-      JSON.stringify(
-        {
-          deposits: deposits.map((d) => ({
-            coinType: d.coinType,
-            depositedAmount: d.depositedAmount.toFixed(20),
-          })),
-          suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
-        },
-        null,
-        2,
-      ),
-    );
+      console.log(
+        `[withdraw] unloop.update_state |`,
+        JSON.stringify(
+          {
+            deposits: deposits.map((d) => ({
+              coinType: d.coinType,
+              depositedAmount: d.depositedAmount.toFixed(20),
+            })),
+            suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+          },
+          null,
+          2,
+        ),
+      );
+    }
 
     // 2) Withdraw base or LST
     // 2.1) Withdraw
@@ -2704,7 +2804,7 @@ export default function LstStrategyDialog({
         targetExposure, // Pass targetExposure
         transaction,
       );
-    else
+    else if (targetExposure.lt(exposure))
       return unloopToExposureTx(
         _address,
         strategyOwnerCapId,
@@ -2715,6 +2815,7 @@ export default function LstStrategyDialog({
         targetExposure, // Pass targetExposure
         transaction,
       );
+    else return { deposits, suiBorrowedAmount, transaction };
   };
 
   const onSubmitClick = async () => {
@@ -2815,19 +2916,6 @@ export default function LstStrategyDialog({
                     .div(lstDepositedAmount)
                     .times(100),
                   3, // Max 3% of LST deposits swapped for base at a time
-                );
-                console.log(
-                  "XXXX:",
-                  JSON.stringify(
-                    {
-                      lstDepositedAmount: lstDepositedAmount.toFixed(20),
-                      simulatedLstDepositedAmount:
-                        simulatedLstDepositedAmount.toFixed(20),
-                      swapPercent: swapPercent.toFixed(20),
-                    },
-                    null,
-                    2,
-                  ),
                 );
 
                 if (swapPercent.gt(1)) {
