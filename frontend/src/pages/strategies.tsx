@@ -42,8 +42,8 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
-import LstStrategyCard from "@/components/strategies/LstStrategyCard";
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
+import StrategyCard from "@/components/strategies/StrategyCard";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   LstStrategyContextProvider,
@@ -381,7 +381,7 @@ function Page() {
                 ([strategyType, { obligation }]) => {
                   if (!hasPosition(obligation)) return null;
                   return (
-                    <LstStrategyCard
+                    <StrategyCard
                       key={strategyType}
                       strategyType={strategyType as StrategyType}
                     />
@@ -419,7 +419,7 @@ function Page() {
 
                   if (!obligation || !hasPosition(obligation))
                     return (
-                      <LstStrategyCard
+                      <StrategyCard
                         key={strategyType}
                         strategyType={strategyType}
                       />

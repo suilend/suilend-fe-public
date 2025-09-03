@@ -14,8 +14,8 @@ import { shallowPushQuery } from "@suilend/sui-fe-next";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
-import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
+import StrategyHeader from "@/components/strategies/StrategyHeader";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -23,13 +23,11 @@ import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
 import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-interface LstStrategyCardProps {
+interface StrategyCardProps {
   strategyType: StrategyType;
 }
 
-export default function LstStrategyCard({
-  strategyType,
-}: LstStrategyCardProps) {
+export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const router = useRouter();
 
   const { userData } = useLoadedUserContext();
@@ -88,12 +86,6 @@ export default function LstStrategyCard({
   const defaultExposure = useMemo(
     () => exposureMap[strategyType].default,
     [strategyType, exposureMap],
-  );
-
-  // LST
-  const lst = useMemo(
-    () => lstMap[strategyInfo.depositLstCoinType],
-    [lstMap, strategyInfo.depositLstCoinType],
   );
 
   // Reserves
@@ -188,7 +180,7 @@ export default function LstStrategyCard({
       <div className="relative z-[3] flex flex-col gap-4 rounded-[3px] p-4">
         <div className="flex w-full flex-row justify-between">
           {/* Left */}
-          <LstStrategyHeader strategyType={strategyType} />
+          <StrategyHeader strategyType={strategyType} />
 
           {/* Right */}
           <div className="flex flex-row justify-end gap-6">
@@ -213,8 +205,8 @@ export default function LstStrategyCard({
                 labelTooltip={
                   <>
                     Equity is calculated as the sum of the net amount deposited,
-                    deposit interest, LST staking yield, and claimed rewards,
-                    minus borrow interest.
+                    deposit interest, LST staking yield (if applicable), and
+                    claimed rewards, minus borrow interest.
                     <br />
                     <span className="mt-2 block">
                       Equity does not include unclaimed rewards.

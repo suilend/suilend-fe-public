@@ -14,13 +14,11 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 
-interface LstStrategyHeaderProps {
+interface StrategyHeaderProps {
   strategyType: StrategyType;
 }
 
-export default function LstStrategyHeader({
-  strategyType,
-}: LstStrategyHeaderProps) {
+export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
   const { appData } = useLoadedAppContext();
 
   const {
@@ -77,12 +75,6 @@ export default function LstStrategyHeader({
   const defaultExposure = useMemo(
     () => exposureMap[strategyType].default,
     [strategyType, exposureMap],
-  );
-
-  // LST
-  const lst = useMemo(
-    () => lstMap[strategyInfo.depositLstCoinType],
-    [lstMap, strategyInfo.depositLstCoinType],
   );
 
   // Reserves

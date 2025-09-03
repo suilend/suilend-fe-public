@@ -72,7 +72,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
-import LstStrategyHeader from "@/components/strategies/LstStrategyHeader";
+import StrategyHeader from "@/components/strategies/StrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -3322,7 +3322,7 @@ export default function LstStrategyDialog({
         }
       >
         <div className="mb-4 flex w-full flex-col gap-4 sm:h-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <LstStrategyHeader strategyType={strategyType} />
+          <StrategyHeader strategyType={strategyType} />
 
           {hasClaimableRewards && (
             <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">
