@@ -1405,7 +1405,7 @@ export default function LstStrategyDialog({
       // const _suiBorrowedAmount = suiBorrowedAmount;
       const suiFullRepaymentAmount = BigNumber.max(
         suiBorrowedAmount.plus(10 ** -3), // 0.001 SUI buffer
-        suiBorrowedAmount.times(1.01), // 1% buffer
+        suiBorrowedAmount.times(1.001), // 0.1% buffer
       ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
       console.log(
@@ -1633,7 +1633,7 @@ export default function LstStrategyDialog({
       // const _suiBorrowedAmount = suiBorrowedAmount;
       const suiFullRepaymentAmount = BigNumber.max(
         suiBorrowedAmount.plus(10 ** -3), // 0.001 SUI buffer
-        suiBorrowedAmount.times(1.01), // 1% buffer
+        suiBorrowedAmount.times(1.001), // 0.1% buffer
       ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
 
       console.log(
@@ -2884,53 +2884,57 @@ export default function LstStrategyDialog({
 
               // Base+LST: Base and no non-base/non-LST deposits
               else {
-                // Swap excess LST deposits for base (don't want to accumulate too many LST rewards)
-                const lstDeposit = obligation.deposits.find(
-                  (d) => d.coinType === depositReserves.lst.coinType,
-                );
+                // Swap excess LST deposits for base (don't want to accumulate too much LST beyond what's needed to fully repay SUI borrows)
                 const lstDepositedAmount =
-                  lstDeposit?.depositedAmount ?? new BigNumber(0);
+                  obligation.deposits.find(
+                    (d) => d.coinType === depositReserves.lst.coinType,
+                  )?.depositedAmount ?? new BigNumber(0);
+                const suiBorrowedAmount =
+                  obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0);
 
-                const { deposits: simulatedDeposits } =
-                  simulateDepositAndLoopToExposure(
-                    strategyType,
-                    [],
-                    new BigNumber(0),
-                    {
-                      coinType: depositReserves.base!.coinType,
-                      depositedAmount: baseDeposit.depositedAmount,
-                    },
-                    exposure,
+                // Base+LST: Base and no non-base/non-LST deposits, and SUI borrows
+                if (suiBorrowedAmount.gt(0)) {
+                  const suiFullRepaymentAmount = BigNumber.max(
+                    suiBorrowedAmount.plus(10 ** -3), // 0.001 SUI buffer
+                    suiBorrowedAmount.times(1.001), // 0.1% buffer
+                  ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+
+                  const lstWithdrawnAmount = suiFullRepaymentAmount
+                    .div(new BigNumber(1).minus(lst.redeemFeePercent.div(100))) // Potential rounding issue (max 1 MIST)
+                    .div(lst.lstToSuiExchangeRate)
+                    .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+
+                  const swapPercent = BigNumber.min(
+                    new BigNumber(lstDepositedAmount.minus(lstWithdrawnAmount))
+                      .div(lstDepositedAmount)
+                      .times(100),
+                    3, // Max 3% of LST deposits swapped for base at a time
                   );
 
-                const simulatedLstDeposit = simulatedDeposits.find(
-                  (d) => d.coinType === depositReserves.lst.coinType,
-                );
-                const simulatedLstDepositedAmount =
-                  simulatedLstDeposit!.depositedAmount;
+                  // console.log("XXXXXX", {
+                  //   suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+                  //   suiFullRepaymentAmount: suiFullRepaymentAmount.toFixed(20),
+                  //   lstDepositedAmount: lstDepositedAmount.toFixed(20),
+                  //   lstWithdrawnAmount: lstWithdrawnAmount.toFixed(20),
+                  //   swapPercent: swapPercent.toFixed(20),
+                  // });
 
-                const swapPercent = BigNumber.min(
-                  new BigNumber(
-                    lstDepositedAmount.minus(simulatedLstDepositedAmount),
-                  )
-                    .div(lstDepositedAmount)
-                    .times(100),
-                  3, // Max 3% of LST deposits swapped for base at a time
-                );
-
-                if (swapPercent.gt(1)) {
-                  // Swap excess LST deposits for base
-                  await strategySwapSomeDepositsForCoinType(
-                    strategyType,
-                    cetusSdk,
-                    CETUS_PARTNER_ID,
-                    obligation,
-                    [depositReserves.base!.coinType],
-                    swapPercent,
-                    depositReserves.base,
-                    strategyOwnerCap.id,
-                    txCopy,
-                  );
+                  if (swapPercent.gt(0.5)) {
+                    // Swap excess LST deposits for base (a minimum of 0.5% of LST deposits must be swapped)
+                    await strategySwapSomeDepositsForCoinType(
+                      strategyType,
+                      cetusSdk,
+                      CETUS_PARTNER_ID,
+                      obligation,
+                      [depositReserves.base!.coinType],
+                      swapPercent,
+                      depositReserves.base,
+                      strategyOwnerCap.id,
+                      txCopy,
+                    );
+                  } else {
+                    // DO NOTHING
+                  }
                 } else {
                   // DO NOTHING
                 }
