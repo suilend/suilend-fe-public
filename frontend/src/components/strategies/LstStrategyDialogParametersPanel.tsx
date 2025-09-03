@@ -28,14 +28,14 @@ export default function LstStrategyDialogParametersPanel({
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getSimulatedObligation,
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxSuiBorrowedAmount,
+    getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    getSimulatedObligation,
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
@@ -63,6 +63,8 @@ export default function LstStrategyDialogParametersPanel({
                     "STRAT rewards (from depositing stratSUI) and sSUI rewards (from borrowing SUI)",
                   [StrategyType.USDC_sSUI_SUI_LOOPING]:
                     "sSUI rewards (from borrowing SUI)",
+                  [StrategyType.xBTC_wBTC_LOOPING]:
+                    "DEEP rewards (from depositing xBTC, and borrowing wBTC)",
                 }[strategyType]
               }{" "}
               are auto-claimed and redeposited every 2 weeks.

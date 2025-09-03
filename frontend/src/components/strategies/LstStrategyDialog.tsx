@@ -168,14 +168,14 @@ export default function LstStrategyDialog({
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getSimulatedObligation,
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxSuiBorrowedAmount,
+    getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    getSimulatedObligation,
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
@@ -945,11 +945,21 @@ export default function LstStrategyDialog({
 
     const exposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     );
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     ).times(defaultCurrencyReserve.price);
     const targetTvlAmountUsd = tvlAmountUsd.minus(depositWithdrawnAmountUsd);
     const targetSuiBorrowedAmount = targetTvlAmountUsd
@@ -1232,7 +1242,12 @@ export default function LstStrategyDialog({
 
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     ).times(defaultCurrencyReserve.price);
     const targetSuiBorrowedAmount =
       _targetSuiBorrowedAmount ??
@@ -1252,7 +1267,12 @@ export default function LstStrategyDialog({
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
         strategyType,
-        getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+        getSimulatedObligation(strategyType, deposits, [
+          {
+            coinType: NORMALIZED_SUI_COINTYPE,
+            borrowedAmount: suiBorrowedAmount,
+          },
+        ]),
       );
       const pendingSuiBorrowedAmount =
         targetSuiBorrowedAmount.minus(suiBorrowedAmount);
@@ -1278,10 +1298,16 @@ export default function LstStrategyDialog({
 
       // 1) Borrow SUI
       // 1.1) Max
-      const stepMaxSuiBorrowedAmount = getStepMaxSuiBorrowedAmount(
+      const stepMaxSuiBorrowedAmount = getStepMaxBorrowedAmount(
         strategyType,
         deposits,
-        suiBorrowedAmount,
+        [
+          {
+            coinType: NORMALIZED_SUI_COINTYPE,
+            borrowedAmount: suiBorrowedAmount,
+          },
+        ],
+        NORMALIZED_SUI_COINTYPE,
       )
         .times(0.9) // 10% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
@@ -1457,7 +1483,12 @@ export default function LstStrategyDialog({
 
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     ).times(defaultCurrencyReserve.price);
     const targetSuiBorrowedAmount =
       _targetSuiBorrowedAmount ??
@@ -1993,7 +2024,12 @@ export default function LstStrategyDialog({
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
         strategyType,
-        getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+        getSimulatedObligation(strategyType, deposits, [
+          {
+            coinType: NORMALIZED_SUI_COINTYPE,
+            borrowedAmount: suiBorrowedAmount,
+          },
+        ]),
       );
       const pendingSuiBorrowedAmount = suiBorrowedAmount.minus(
         targetSuiBorrowedAmount,
@@ -2058,7 +2094,12 @@ export default function LstStrategyDialog({
       const stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
         strategyType,
         deposits,
-        suiBorrowedAmount,
+        [
+          {
+            coinType: NORMALIZED_SUI_COINTYPE,
+            borrowedAmount: suiBorrowedAmount,
+          },
+        ],
         depositReserves.lst.coinType,
       )
         .times(0.9) // 10% buffer
@@ -2541,11 +2582,21 @@ export default function LstStrategyDialog({
 
     const exposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     );
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     ).times(defaultCurrencyReserve.price);
     const targetTvlAmountUsd = tvlAmountUsd.minus(depositWithdrawnAmountUsd);
     const targetSuiBorrowedAmount = targetTvlAmountUsd
@@ -2640,11 +2691,21 @@ export default function LstStrategyDialog({
 
     const newExposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     );
     const newTvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+      getSimulatedObligation(strategyType, deposits, [
+        {
+          coinType: NORMALIZED_SUI_COINTYPE,
+          borrowedAmount: suiBorrowedAmount,
+        },
+      ]),
     ).times(defaultCurrencyReserve.price);
 
     console.log(
