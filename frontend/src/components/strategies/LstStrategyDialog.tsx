@@ -201,7 +201,7 @@ export default function LstStrategyDialog({
       id: Tab.ADJUST,
       title: "Adjust",
       tooltip:
-        "Increase or decrease leverage without changing your position size (deposited amount)",
+        "Increase or decrease leverage without changing your Equity (deposited amount)",
     },
   ];
 
@@ -822,7 +822,7 @@ export default function LstStrategyDialog({
 
   // Stats
   // Stats - TVL
-  const tvlAmount = getTvlAmount(strategyType, obligation, true);
+  const tvlAmount = getTvlAmount(strategyType, obligation);
 
   // Stats - Health
   const healthPercent = getHealthPercent(strategyType, obligation, exposure);
@@ -908,12 +908,91 @@ export default function LstStrategyDialog({
 
   const withdrawFeesAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+    if (new BigNumber(value || 0).lte(0)) return new BigNumber(0);
 
-    return new BigNumber(0); // No fees
-  }, [obligation, hasPosition]);
-  const generalWithdrawFeesPercent = useMemo(() => {
-    return new BigNumber(0); // No fees
-  }, []);
+    const deposits = obligation.deposits;
+    const suiBorrowedAmount =
+      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow (SUI)
+    const withdraw: Withdraw = {
+      coinType: currencyReserve.coinType,
+      withdrawnAmount: new BigNumber(value),
+    };
+
+    // From withdrawTx:
+    const depositReserve =
+      depositReserves.base !== undefined
+        ? depositReserves.base
+        : depositReserves.lst;
+
+    const depositWithdrawnAmount = (
+      depositReserves.base !== undefined
+        ? withdraw.withdrawnAmount
+        : isSui(withdraw.coinType)
+          ? withdraw.withdrawnAmount
+              .div(new BigNumber(1).minus(lst.redeemFeePercent.div(100)))
+              .div(lst.lstToSuiExchangeRate)
+          : withdraw.withdrawnAmount
+    ).decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_DOWN);
+    const depositWithdrawnAmountUsd = depositWithdrawnAmount
+      .times(depositReserve.price)
+      .times(
+        depositReserves.base !== undefined
+          ? 1
+          : lst.lstToSuiExchangeRate.times(
+              new BigNumber(1).minus(lst.redeemFeePercent.div(100)),
+            ),
+      );
+
+    const exposure = getExposure(
+      strategyType,
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+    );
+    const tvlAmountUsd = getTvlAmount(
+      strategyType,
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+    ).times(defaultCurrencyReserve.price);
+    const targetTvlAmountUsd = tvlAmountUsd.minus(depositWithdrawnAmountUsd);
+    const targetSuiBorrowedAmount = targetTvlAmountUsd
+      .times(exposure.minus(1))
+      .div(suiReserve.price)
+      .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+
+    // --- End withdrawTx code ---
+
+    const suiRepaidAmount = suiBorrowedAmount.minus(targetSuiBorrowedAmount);
+    let lstRedeemFeeSui = suiRepaidAmount
+      .times(lst.redeemFeePercent.div(100))
+      .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP);
+    if (isSui(withdraw.coinType)) {
+      lstRedeemFeeSui = lstRedeemFeeSui.plus(
+        depositWithdrawnAmount.times(lst.redeemFeePercent.div(100)),
+      );
+    }
+
+    const lstRedeemFeeUsd = lstRedeemFeeSui.times(suiReserve.price);
+    const lstRedeemFee = lstRedeemFeeUsd.div(defaultCurrencyReserve.price);
+
+    return lstRedeemFee.decimalPlaces(
+      defaultCurrencyReserve.token.decimals,
+      BigNumber.ROUND_DOWN,
+    );
+  }, [
+    obligation,
+    hasPosition,
+    value,
+    currencyReserve.coinType,
+    depositReserves.base,
+    depositReserves.lst,
+    lst.redeemFeePercent,
+    lst.lstToSuiExchangeRate,
+    getExposure,
+    strategyType,
+    getSimulatedObligation,
+    getTvlAmount,
+    suiReserve.price,
+    defaultCurrencyReserve.price,
+    defaultCurrencyReserve.token.decimals,
+  ]);
 
   const adjustFeesAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
@@ -924,15 +1003,14 @@ export default function LstStrategyDialog({
 
     let resultSui = new BigNumber(0);
 
-    const targetExposure = adjustExposure;
-    if (targetExposure.gt(exposure)) {
+    if (adjustExposure.gt(exposure)) {
       const { suiBorrowedAmount: newSuiBorrowedAmount } =
         simulateLoopToExposure(
           strategyType,
           deposits,
           suiBorrowedAmount,
           undefined, // Don't pass targetSuiBorrowedAmount
-          targetExposure, // Pass targetExposure
+          adjustExposure, // Pass targetExposure
         );
 
       const suiBorrowFeeSuiAmount = new BigNumber(
@@ -1552,7 +1630,7 @@ export default function LstStrategyDialog({
         ),
       );
 
-      // 3) Redeposit remaining SUI (not possible because suiFullRepaymentCoin is a mutable reference (?))
+      // 3) Redeposit remaining SUI (TODO)
 
       // 4) Swap remaining LST for base
       if (
@@ -2461,6 +2539,10 @@ export default function LstStrategyDialog({
             ),
       );
 
+    const exposure = getExposure(
+      strategyType,
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
+    );
     const tvlAmountUsd = getTvlAmount(
       strategyType,
       getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
@@ -2479,6 +2561,7 @@ export default function LstStrategyDialog({
           depositWithdrawnAmount: depositWithdrawnAmount.toFixed(20),
           depositWithdrawnAmountUsd: depositWithdrawnAmountUsd.toFixed(20),
 
+          exposure: exposure.toFixed(20),
           tvlAmountUsd: tvlAmountUsd.toFixed(20),
           targetTvlAmountUsd: targetTvlAmountUsd.toFixed(20),
           targetSuiBorrowedAmount: targetSuiBorrowedAmount.toFixed(20),
@@ -2520,6 +2603,8 @@ export default function LstStrategyDialog({
               depositedAmount: d.depositedAmount.toFixed(20),
             })),
             suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
+
+            targetSuiBorrowedAmount: targetSuiBorrowedAmount.toFixed(20),
           },
           null,
           2,
@@ -2572,12 +2657,12 @@ export default function LstStrategyDialog({
           })),
           suiBorrowedAmount: suiBorrowedAmount.toFixed(20),
 
-          originalExposure: exposure.toFixed(20),
+          exposure: exposure.toFixed(20),
           newExposure: newExposure.toFixed(20),
 
-          originalTvlAmountUsd: tvlAmountUsd.toFixed(20),
-          newTvlAmountUsd: newTvlAmountUsd.toFixed(20),
+          tvlAmountUsd: tvlAmountUsd.toFixed(20),
           targetTvlAmountUsd: targetTvlAmountUsd.toFixed(20),
+          newTvlAmountUsd: newTvlAmountUsd.toFixed(20),
         },
         null,
         2,
@@ -3138,7 +3223,7 @@ export default function LstStrategyDialog({
           obligation.id,
           obligation.deposits,
           obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
-          new BigNumber(adjustSliderValue),
+          adjustExposure,
           transaction,
         );
         transaction = adjustTransaction;
@@ -3152,17 +3237,14 @@ export default function LstStrategyDialog({
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
-        toast.success(
-          `Adjusted leverage to ${new BigNumber(adjustSliderValue).toFixed(1)}x`,
-          {
-            action: (
-              <TextLink className="block" href={txUrl}>
-                View tx on {explorer.name}
-              </TextLink>
-            ),
-            duration: TX_TOAST_DURATION,
-          },
-        );
+        toast.success(`Adjusted leverage to ${adjustExposure.toFixed(1)}x`, {
+          action: (
+            <TextLink className="block" href={txUrl}>
+              View tx on {explorer.name}
+            </TextLink>
+          ),
+          duration: TX_TOAST_DURATION,
+        });
       } else {
         throw new Error("Invalid tab");
       }
@@ -3318,11 +3400,11 @@ export default function LstStrategyDialog({
             "flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch",
             !!obligation && hasPosition(obligation)
               ? strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-                ? "md:min-h-[calc(346px+20px+12px)]"
-                : "md:min-h-[346px]"
+                ? "md:min-h-[calc(314px+20px+12px)]"
+                : "md:min-h-[314px]"
               : strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
-                ? "md:min-h-[calc(406px+20px+12px)]"
-                : "md:min-h-[406px]",
+                ? "md:min-h-[calc(374px+20px+12px)]"
+                : "md:min-h-[374px]",
           )}
           style={{
             height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
@@ -3619,34 +3701,26 @@ export default function LstStrategyDialog({
                 )}
 
                 {selectedTab === Tab.DEPOSIT ? (
-                  <>
-                    <LabelWithValue
-                      label="Deposit fee"
-                      value={`${formatToken(
-                        depositFeesAmount.times(
-                          depositReserves.base !== undefined
+                  <LabelWithValue
+                    label="Deposit fee"
+                    value={`${formatToken(
+                      depositFeesAmount.times(
+                        depositReserves.base !== undefined
+                          ? 1
+                          : isSui(currencyReserve.coinType)
                             ? 1
-                            : isSui(currencyReserve.coinType)
-                              ? 1
-                              : lst.suiToLstExchangeRate,
-                        ),
-                        {
-                          dp: currencyReserve.token.decimals,
-                          trimTrailingZeros: true,
-                        },
-                      )} ${currencyReserve.token.symbol}`}
-                      horizontal
-                    />
-
-                    <LabelWithValue
-                      label="Withdraw fee"
-                      value={formatPercent(generalWithdrawFeesPercent)}
-                      horizontal
-                    />
-                  </>
+                            : lst.suiToLstExchangeRate,
+                      ),
+                      {
+                        dp: currencyReserve.token.decimals,
+                        trimTrailingZeros: true,
+                      },
+                    )} ${currencyReserve.token.symbol}`}
+                    horizontal
+                  />
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
-                    label="Withdraw fee"
+                    label={`Withdraw fee (${useMaxAmount ? "deducted" : "added"})`}
                     value={`${formatToken(
                       withdrawFeesAmount.times(
                         depositReserves.base !== undefined

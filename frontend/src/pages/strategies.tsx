@@ -363,7 +363,6 @@ function Page() {
                       const tvlAmount = getTvlAmount(
                         strategyType as StrategyType,
                         obligation,
-                        true,
                       );
 
                       return acc.plus(

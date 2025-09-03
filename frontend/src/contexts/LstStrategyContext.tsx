@@ -119,7 +119,6 @@ interface LstStrategyContext {
   getDepositedAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
-    excludeLstRedemptionFees?: boolean,
   ) => BigNumber;
   getBorrowedAmount: (
     strategyType: StrategyType,
@@ -128,7 +127,6 @@ interface LstStrategyContext {
   getTvlAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
-    excludeLstRedemptionFees?: boolean,
   ) => BigNumber;
   getExposure: (
     strategyType: StrategyType,
@@ -578,11 +576,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
   // Calculations
   const getDepositedAmount = useCallback(
-    (
-      strategyType: StrategyType,
-      obligation?: ParsedObligation,
-      excludeLstRedemptionFees?: boolean,
-    ) => {
+    (strategyType: StrategyType, obligation?: ParsedObligation) => {
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
@@ -595,17 +589,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           const lstToSuiExchangeRate =
             lstMap?.[deposit.coinType]?.lstToSuiExchangeRate ??
             new BigNumber(1);
-          const redeemFeePercent =
-            lstMap?.[deposit.coinType]?.redeemFeePercent ?? new BigNumber(0);
+          // const redeemFeePercent =
+          //   lstMap?.[deposit.coinType]?.redeemFeePercent ?? new BigNumber(0);
 
           resultSui = resultSui.plus(
-            deposit.depositedAmount
-              .times(lstToSuiExchangeRate)
-              .times(
-                excludeLstRedemptionFees
-                  ? 1
-                  : new BigNumber(1).minus(redeemFeePercent.div(100)),
-              ),
+            deposit.depositedAmount.times(lstToSuiExchangeRate), // Don't include LST redemption fees (i.e. don't multiply by `new BigNumber(1).minus(redeemFeePercent.div(100))`)
           );
         } else {
           const depositReserve = appData.reserveMap[deposit.coinType];
@@ -659,18 +647,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   const getTvlAmount = useCallback(
-    (
-      strategyType: StrategyType,
-      obligation?: ParsedObligation,
-      excludeLstRedemptionFees?: boolean,
-    ): BigNumber => {
+    (strategyType: StrategyType, obligation?: ParsedObligation): BigNumber => {
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
-      return getDepositedAmount(
-        strategyType,
-        obligation,
-        excludeLstRedemptionFees,
-      ).minus(getBorrowedAmount(strategyType, obligation));
+      return getDepositedAmount(strategyType, obligation).minus(
+        getBorrowedAmount(strategyType, obligation),
+      );
     },
     [hasPosition, getDepositedAmount, getBorrowedAmount],
   );
@@ -1405,7 +1387,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // Return early if no events for current position
         if (currentPositionFilteredSortedEvents.length === 0) {
           console.log("XXX no events for current position", strategyType);
-          return getTvlAmount(strategyType, obligation, true); // Return current TVL (no PnL)
+          return getTvlAmount(strategyType, obligation); // Return current TVL (no PnL)
         }
 
         // Get historical LST to SUI exchange rates for the relevant timestamps (current position deposits and withdraws)

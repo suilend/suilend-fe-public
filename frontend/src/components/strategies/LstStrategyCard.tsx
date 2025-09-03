@@ -125,7 +125,7 @@ export default function LstStrategyCard({
 
   // Stats
   // Stats - TVL
-  const tvlAmount = getTvlAmount(strategyType, obligation, true);
+  const tvlAmount = getTvlAmount(strategyType, obligation);
   const tvlAmountSnapshotRef = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
