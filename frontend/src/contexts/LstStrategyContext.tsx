@@ -438,19 +438,20 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                 0,
             ).div(100);
 
-            const totalSuiSupply = new BigNumber(
-              lstInfo.liquidStakingInfo.storage.totalSuiSupply.toString(),
-            ).div(10 ** SUI_DECIMALS);
-            const totalLstSupply = new BigNumber(
-              lstInfo.liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
-            ).div(10 ** LST_DECIMALS);
+            const res = await fetch(
+              `${API_URL}/springsui/historical-rates?coinType=${lstCoinType}&timestamps=${Math.floor(Date.now() / 1000)}`,
+            );
+            const json: { timestamp: number; value: string }[] =
+              await res.json();
+            if ((json as any)?.statusCode === 500)
+              throw new Error(
+                `Failed to fetch historical LST to SUI exchange rates for ${lstCoinType}`,
+              );
 
-            const suiToLstExchangeRate = !totalSuiSupply.eq(0)
-              ? totalLstSupply.div(totalSuiSupply)
+            const suiToLstExchangeRate = !new BigNumber(json[0].value).eq(0)
+              ? new BigNumber(1).div(new BigNumber(json[0].value))
               : new BigNumber(1);
-            const lstToSuiExchangeRate = !totalLstSupply.eq(0)
-              ? totalSuiSupply.div(totalLstSupply)
-              : new BigNumber(1);
+            const lstToSuiExchangeRate = new BigNumber(json[0].value);
 
             return [
               lstCoinType,
