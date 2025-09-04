@@ -180,6 +180,7 @@ export default function LstStrategyDialog({
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
+    getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,

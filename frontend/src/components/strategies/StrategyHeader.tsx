@@ -51,6 +51,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
+    getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,

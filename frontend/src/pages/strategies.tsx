@@ -99,6 +99,7 @@ function Page() {
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
+    getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,
