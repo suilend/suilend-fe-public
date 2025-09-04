@@ -906,7 +906,6 @@ export default function LstStrategyDialog({
     currencyReserve.token.decimals,
   ]);
 
-  console.log("XXXX", +lst.lstToSuiExchangeRate);
   const withdrawFeesAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
     if (new BigNumber(value || 0).lte(0)) return new BigNumber(0);
