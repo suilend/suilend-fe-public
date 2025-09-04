@@ -39,6 +39,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getSimulatedObligation,
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
@@ -46,7 +47,6 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    getSimulatedObligation,
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,

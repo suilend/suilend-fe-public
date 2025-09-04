@@ -50,6 +50,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getSimulatedObligation,
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
@@ -57,7 +58,6 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    getSimulatedObligation,
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,

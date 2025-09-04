@@ -29,6 +29,7 @@ const useHistoricalTvlAmountMap = (
     getDepositReserves,
     getDefaultCurrencyReserve,
 
+    getSimulatedObligation,
     getDepositedAmount,
     getBorrowedAmount,
     getTvlAmount,
@@ -36,7 +37,6 @@ const useHistoricalTvlAmountMap = (
     getStepMaxSuiBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    getSimulatedObligation,
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,

@@ -37,6 +37,7 @@ import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_stak
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
 import {
   API_URL,
+  MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   isSui,
@@ -116,6 +117,11 @@ interface LstStrategyContext {
   getDefaultCurrencyReserve: (strategyType: StrategyType) => ParsedReserve;
 
   // Calculations
+  getSimulatedObligation: (
+    strategyType: StrategyType,
+    deposits: Deposit[],
+    suiBorrowedAmount: BigNumber,
+  ) => ParsedObligation;
   getDepositedAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
@@ -145,11 +151,6 @@ interface LstStrategyContext {
   ) => BigNumber;
 
   // Simulate
-  getSimulatedObligation: (
-    strategyType: StrategyType,
-    deposits: Deposit[],
-    suiBorrowedAmount: BigNumber,
-  ) => ParsedObligation;
   simulateLoopToExposure: (
     strategyType: StrategyType,
     deposits: Deposit[],
@@ -264,6 +265,9 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Calculations
+  getSimulatedObligation: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
   getDepositedAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
@@ -284,9 +288,6 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Simulate
-  getSimulatedObligation: () => {
-    throw Error("LstStrategyContextProvider not initialized");
-  },
   simulateLoopToExposure: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
@@ -435,19 +436,20 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                 0,
             ).div(100);
 
-            const totalSuiSupply = new BigNumber(
-              lstInfo.liquidStakingInfo.storage.totalSuiSupply.toString(),
-            ).div(10 ** SUI_DECIMALS);
-            const totalLstSupply = new BigNumber(
-              lstInfo.liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
-            ).div(10 ** LST_DECIMALS);
+            const res = await fetch(
+              `${API_URL}/springsui/historical-rates?coinType=${lstCoinType}&timestamps=${Math.floor(Date.now() / 1000)}`,
+            );
+            const json: { timestamp: number; value: string }[] =
+              await res.json();
+            if ((json as any)?.statusCode === 500)
+              throw new Error(
+                `Failed to fetch historical LST to SUI exchange rates for ${lstCoinType}`,
+              );
 
-            const suiToLstExchangeRate = !totalSuiSupply.eq(0)
-              ? totalLstSupply.div(totalSuiSupply)
+            const suiToLstExchangeRate = !new BigNumber(json[0].value).eq(0)
+              ? new BigNumber(1).div(new BigNumber(json[0].value))
               : new BigNumber(1);
-            const lstToSuiExchangeRate = !totalLstSupply.eq(0)
-              ? totalSuiSupply.div(totalLstSupply)
-              : new BigNumber(1);
+            const lstToSuiExchangeRate = new BigNumber(json[0].value);
 
             return [
               lstCoinType,
@@ -575,6 +577,88 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Calculations
+  const getSimulatedObligation = useCallback(
+    (
+      strategyType: StrategyType,
+      deposits: Deposit[],
+      suiBorrowedAmount: BigNumber,
+    ): ParsedObligation => {
+      const obligation = {
+        deposits: deposits.reduce(
+          (acc, deposit) => {
+            const depositReserve = appData.reserveMap[deposit.coinType];
+
+            return [
+              ...acc,
+              {
+                depositedAmount: deposit.depositedAmount,
+                depositedAmountUsd: deposit.depositedAmount.times(
+                  depositReserve.price,
+                ),
+                reserve: depositReserve,
+                coinType: depositReserve.coinType,
+              },
+            ];
+          },
+          [] as {
+            depositedAmount: BigNumber;
+            depositedAmountUsd: BigNumber;
+            reserve: ParsedReserve;
+            coinType: string;
+          }[],
+        ),
+        borrows: [
+          {
+            borrowedAmount: suiBorrowedAmount,
+            borrowedAmountUsd: suiBorrowedAmount.times(suiReserve.price),
+            reserve: suiReserve,
+            coinType: NORMALIZED_SUI_COINTYPE,
+          },
+        ],
+
+        netValueUsd: deposits
+          .reduce((acc, deposit) => {
+            const depositReserve = appData.reserveMap[deposit.coinType];
+
+            return acc.plus(
+              deposit.depositedAmount.times(depositReserve.price),
+            );
+          }, new BigNumber(0))
+          .minus(suiBorrowedAmount.times(suiReserve.price)),
+        weightedBorrowsUsd: new BigNumber(
+          suiBorrowedAmount.times(suiReserve.price),
+        ).times(suiReserve.config.borrowWeightBps.div(10000)),
+        maxPriceWeightedBorrowsUsd: new BigNumber(
+          suiBorrowedAmount.times(suiReserve.maxPrice),
+        ).times(suiReserve.config.borrowWeightBps.div(10000)),
+        minPriceBorrowLimitUsd: BigNumber.min(
+          deposits.reduce((acc, deposit) => {
+            const depositReserve = appData.reserveMap[deposit.coinType];
+
+            return acc.plus(
+              deposit.depositedAmount
+                .times(depositReserve.minPrice)
+                .times(depositReserve.config.openLtvPct / 100),
+            );
+          }, new BigNumber(0)),
+          30 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $30m (account borrow limit)
+        ),
+        unhealthyBorrowValueUsd: deposits.reduce((acc, deposit) => {
+          const depositReserve = appData.reserveMap[deposit.coinType];
+
+          return acc.plus(
+            deposit.depositedAmount
+              .times(depositReserve.price)
+              .times(depositReserve.config.closeLtvPct / 100),
+          );
+        }, new BigNumber(0)),
+      } as ParsedObligation;
+
+      return obligation;
+    },
+    [appData.reserveMap, suiReserve],
+  );
+
   const getDepositedAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation) => {
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
@@ -717,119 +801,37 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       suiBorrowedAmount: BigNumber,
       withdrawCoinType: string,
     ): BigNumber => {
+      const obligation = getSimulatedObligation(
+        strategyType,
+        deposits,
+        suiBorrowedAmount,
+      );
+
       const withdrawReserve = appData.reserveMap[withdrawCoinType];
 
-      return BigNumber.min(
-        new BigNumber(
-          deposits
-            .reduce((acc, deposit) => {
-              const depositReserve = appData.reserveMap[deposit.coinType];
-
-              return acc.plus(
-                deposit.depositedAmount
-                  .times(depositReserve.minPrice)
-                  .times(depositReserve.config.openLtvPct / 100),
-              );
-            }, new BigNumber(0))
-            .minus(
-              suiBorrowedAmount
-                .times(suiReserve.maxPrice)
-                .times(suiReserve.config.borrowWeightBps.div(10000)),
-            ),
-        )
-          .div(withdrawReserve.minPrice)
-          .div(withdrawReserve.config.openLtvPct / 100),
-        deposits.find(
-          (deposit) => deposit.coinType === withdrawReserve.coinType,
-        )?.depositedAmount ?? new BigNumber(0),
-      ).decimalPlaces(withdrawReserve.token.decimals, BigNumber.ROUND_DOWN);
+      return obligation.maxPriceWeightedBorrowsUsd.gt(
+        obligation.minPriceBorrowLimitUsd,
+      )
+        ? new BigNumber(0)
+        : withdrawReserve.config.openLtvPct > 0
+          ? BigNumber.min(
+              obligation.minPriceBorrowLimitUsd
+                .minus(obligation.maxPriceWeightedBorrowsUsd)
+                .div(withdrawReserve.minPrice)
+                .div(withdrawReserve.config.openLtvPct / 100),
+              deposits.find(
+                (deposit) => deposit.coinType === withdrawReserve.coinType,
+              )?.depositedAmount ?? new BigNumber(0),
+            ).decimalPlaces(
+              withdrawReserve.token.decimals,
+              BigNumber.ROUND_DOWN,
+            )
+          : MAX_U64; // Infinity
     },
-    [appData.reserveMap, suiReserve],
+    [getSimulatedObligation, appData.reserveMap],
   );
 
   // Simulate
-  const getSimulatedObligation = useCallback(
-    (
-      strategyType: StrategyType,
-      deposits: Deposit[],
-      suiBorrowedAmount: BigNumber,
-    ): ParsedObligation => {
-      const obligation = {
-        deposits: deposits.reduce(
-          (acc, deposit) => {
-            const depositReserve = appData.reserveMap[deposit.coinType];
-
-            return [
-              ...acc,
-              {
-                depositedAmount: deposit.depositedAmount,
-                depositedAmountUsd: deposit.depositedAmount.times(
-                  depositReserve.price,
-                ),
-                reserve: depositReserve,
-                coinType: depositReserve.coinType,
-              },
-            ];
-          },
-          [] as {
-            depositedAmount: BigNumber;
-            depositedAmountUsd: BigNumber;
-            reserve: ParsedReserve;
-            coinType: string;
-          }[],
-        ),
-        borrows: [
-          {
-            borrowedAmount: suiBorrowedAmount,
-            borrowedAmountUsd: suiBorrowedAmount.times(suiReserve.price),
-            reserve: suiReserve,
-            coinType: NORMALIZED_SUI_COINTYPE,
-          },
-        ],
-
-        netValueUsd: deposits
-          .reduce((acc, deposit) => {
-            const depositReserve = appData.reserveMap[deposit.coinType];
-
-            return acc.plus(
-              deposit.depositedAmount.times(depositReserve.price),
-            );
-          }, new BigNumber(0))
-          .minus(suiBorrowedAmount.times(suiReserve.price)),
-        weightedBorrowsUsd: new BigNumber(
-          suiBorrowedAmount.times(suiReserve.price),
-        ).times(suiReserve.config.borrowWeightBps.div(10000)),
-        maxPriceWeightedBorrowsUsd: new BigNumber(
-          suiBorrowedAmount.times(suiReserve.maxPrice),
-        ).times(suiReserve.config.borrowWeightBps.div(10000)),
-        minPriceBorrowLimitUsd: BigNumber.min(
-          deposits.reduce((acc, deposit) => {
-            const depositReserve = appData.reserveMap[deposit.coinType];
-
-            return acc.plus(
-              deposit.depositedAmount
-                .times(depositReserve.minPrice)
-                .times(depositReserve.config.openLtvPct / 100),
-            );
-          }, new BigNumber(0)),
-          30 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $30m (account borrow limit)
-        ),
-        unhealthyBorrowValueUsd: deposits.reduce((acc, deposit) => {
-          const depositReserve = appData.reserveMap[deposit.coinType];
-
-          return acc.plus(
-            deposit.depositedAmount
-              .times(depositReserve.price)
-              .times(depositReserve.config.closeLtvPct / 100),
-          );
-        }, new BigNumber(0)),
-      } as ParsedObligation;
-
-      return obligation;
-    },
-    [appData.reserveMap, suiReserve],
-  );
-
   const simulateLoopToExposure = useCallback(
     (
       strategyType: StrategyType,
@@ -1693,6 +1695,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getDefaultCurrencyReserve,
 
       // Calculations
+      getSimulatedObligation,
       getDepositedAmount,
       getBorrowedAmount,
       getTvlAmount,
@@ -1701,7 +1704,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getStepMaxWithdrawnAmount,
 
       // Simulate
-      getSimulatedObligation,
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
