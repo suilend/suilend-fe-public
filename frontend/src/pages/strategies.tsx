@@ -75,9 +75,6 @@ function Page() {
 
     hasPosition,
 
-    suiReserve,
-    suiBorrowFeePercent,
-
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
@@ -85,6 +82,7 @@ function Page() {
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -95,9 +93,12 @@ function Page() {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
+    lst_simulateLoopToExposure,
+    lst_simulateDeposit,
+    lst_simulateDepositAndLoopToExposure,
+    btc_simulateLoopToExposure,
+    btc_simulateDeposit,
+    btc_simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -184,12 +185,17 @@ function Page() {
         strategyType,
         { strategyOwnerCap, obligation },
       ] of Object.entries(strategyOwnerCapObligationMap)) {
+        const depositReserves = getDepositReserves(
+          strategyType as StrategyType,
+        );
+        const depositReserve = depositReserves.lst ?? depositReserves.base!; // Must have base if no LST
+
         await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          getDepositReserves(strategyType as StrategyType).lst,
+          depositReserve,
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
           transaction,

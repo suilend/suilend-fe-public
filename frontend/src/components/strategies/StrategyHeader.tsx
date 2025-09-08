@@ -27,9 +27,6 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
 
     hasPosition,
 
-    suiReserve,
-    suiBorrowFeePercent,
-
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
@@ -37,6 +34,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -47,9 +45,12 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
+    lst_simulateLoopToExposure,
+    lst_simulateDeposit,
+    lst_simulateDepositAndLoopToExposure,
+    btc_simulateLoopToExposure,
+    btc_simulateDeposit,
+    btc_simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -82,6 +83,10 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
   const depositReserves = useMemo(
     () => getDepositReserves(strategyType),
     [getDepositReserves, strategyType],
+  );
+  const borrowReserve = useMemo(
+    () => getBorrowReserve(strategyType),
+    [getBorrowReserve, strategyType],
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 

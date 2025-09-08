@@ -16,9 +16,6 @@ export default function LstStrategyDialogParametersPanel({
 
     hasPosition,
 
-    suiReserve,
-    suiBorrowFeePercent,
-
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
@@ -26,6 +23,7 @@ export default function LstStrategyDialogParametersPanel({
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -36,9 +34,12 @@ export default function LstStrategyDialogParametersPanel({
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
+    lst_simulateLoopToExposure,
+    lst_simulateDeposit,
+    lst_simulateDepositAndLoopToExposure,
+    btc_simulateLoopToExposure,
+    btc_simulateDeposit,
+    btc_simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

@@ -40,9 +40,6 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
 
     hasPosition,
 
-    suiReserve,
-    suiBorrowFeePercent,
-
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
@@ -50,6 +47,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -60,9 +58,12 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
+    lst_simulateLoopToExposure,
+    lst_simulateDeposit,
+    lst_simulateDepositAndLoopToExposure,
+    btc_simulateLoopToExposure,
+    btc_simulateDeposit,
+    btc_simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -95,6 +96,10 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const depositReserves = useMemo(
     () => getDepositReserves(strategyType),
     [getDepositReserves, strategyType],
+  );
+  const borrowReserve = useMemo(
+    () => getBorrowReserve(strategyType),
+    [getBorrowReserve, strategyType],
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
