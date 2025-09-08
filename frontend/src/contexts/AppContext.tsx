@@ -57,6 +57,10 @@ export interface AppData {
 export interface AllAppData {
   allLendingMarketData: Record<string, AppData>;
   lstAprPercentMap: Record<string, BigNumber>;
+  okxAprPercentMap: {
+    xBtcDepositAprPercent: BigNumber;
+    usdcBorrowAprPercent: BigNumber;
+  };
 }
 
 interface AppContext {
