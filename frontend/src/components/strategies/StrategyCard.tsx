@@ -8,15 +8,17 @@ import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
-import { formatPercent, formatToken } from "@suilend/sui-fe";
+import { formatPercent, formatToken, formatUsd } from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import Tooltip from "@/components/shared/Tooltip";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import StrategyHeader from "@/components/strategies/StrategyHeader";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
@@ -62,6 +64,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     simulateDeposit,
     simulateDepositAndLoopToExposure,
 
+    getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
     getHistoricalTvlAmount,
     getAprPercent,
@@ -116,12 +119,20 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   );
 
   // Stats
+  // Stats - Global TVL
+  const globalTvlAmountUsd = getGlobalTvlAmountUsd(strategyType);
+
   // Stats - TVL
   const tvlAmount = getTvlAmount(strategyType, obligation);
   const tvlAmountSnapshotRef = useRef<BigNumber>(tvlAmount);
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
+
+  // Stats - Unclaimed rewards
+  const unclaimedRewardsAmountSnapshotRef = useRef<BigNumber>(
+    getUnclaimedRewardsAmount(strategyType, obligation),
+  );
 
   // Stats - Realized PnL
   const { historicalTvlAmountMap } = useHistoricalTvlAmountMap(
@@ -145,17 +156,12 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   }, [obligation, hasPosition, historicalTvlAmount]);
 
   // Stats - Total PnL
-  const unclaimedRewardsAmount = getUnclaimedRewardsAmount(
-    strategyType,
-    obligation,
-  );
-
   const totalPnlAmount = useMemo(
     () =>
       realizedPnlAmount === undefined
         ? undefined
-        : realizedPnlAmount.plus(unclaimedRewardsAmount),
-    [realizedPnlAmount, unclaimedRewardsAmount],
+        : realizedPnlAmount.plus(unclaimedRewardsAmountSnapshotRef.current),
+    [realizedPnlAmount],
   );
 
   // Stats - Exposure
@@ -184,6 +190,28 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
 
           {/* Right */}
           <div className="flex flex-row justify-end gap-6">
+            {/* Global TVL */}
+            <div className="flex w-fit flex-col items-end gap-1">
+              <TLabelSans>TVL</TLabelSans>
+              {globalTvlAmountUsd === undefined ? (
+                <Skeleton className="h-5 w-16" />
+              ) : (
+                <Tooltip
+                  title={
+                    globalTvlAmountUsd !== null
+                      ? formatUsd(globalTvlAmountUsd, { exact: true })
+                      : undefined
+                  }
+                >
+                  <TBody className="text-right">
+                    {globalTvlAmountUsd !== null
+                      ? formatUsd(globalTvlAmountUsd)
+                      : "--"}
+                  </TBody>
+                </Tooltip>
+              )}
+            </div>
+
             {/* APR/Max APR */}
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>
@@ -213,11 +241,35 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
                     </span>
                   </>
                 }
-                value={`${formatToken(tvlAmount, { exact: false })} ${defaultCurrencyReserve.token.symbol}`}
-                valueTooltip={`${formatToken(tvlAmount, {
-                  dp: defaultCurrencyReserve.token.decimals,
-                })} ${defaultCurrencyReserve.token.symbol}`}
+                value="0"
                 horizontal
+                customChild={
+                  <div className="flex flex-row items-baseline gap-2">
+                    <Tooltip
+                      title={`${formatUsd(
+                        tvlAmount.times(defaultCurrencyReserve.price),
+                        { exact: true },
+                      )}`}
+                    >
+                      <TLabel>
+                        {formatUsd(
+                          tvlAmount.times(defaultCurrencyReserve.price),
+                        )}
+                      </TLabel>
+                    </Tooltip>
+
+                    <Tooltip
+                      title={`${formatToken(tvlAmount, {
+                        dp: defaultCurrencyReserve.token.decimals,
+                      })} ${defaultCurrencyReserve.token.symbol}`}
+                    >
+                      <TBody>
+                        {formatToken(tvlAmount, { exact: false })}{" "}
+                        {defaultCurrencyReserve.token.symbol}
+                      </TBody>
+                    </Tooltip>
+                  </div>
+                }
               />
 
               {/* Total PnL */}
@@ -256,18 +308,25 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
                         <TLabelSans>Unclaimed rewards</TLabelSans>
                         <TBody
                           className={cn(
-                            unclaimedRewardsAmount.gt(0) && "text-success",
-                            unclaimedRewardsAmount.lt(0) && "text-destructive",
+                            unclaimedRewardsAmountSnapshotRef.current.gt(0) &&
+                              "text-success",
+                            unclaimedRewardsAmountSnapshotRef.current.lt(0) &&
+                              "text-destructive",
                           )}
                         >
-                          {new BigNumber(unclaimedRewardsAmount).eq(0)
+                          {new BigNumber(
+                            unclaimedRewardsAmountSnapshotRef.current,
+                          ).eq(0)
                             ? null
-                            : new BigNumber(unclaimedRewardsAmount).gte(0)
+                            : new BigNumber(
+                                  unclaimedRewardsAmountSnapshotRef.current,
+                                ).gte(0)
                               ? "+"
                               : "-"}
-                          {formatToken(unclaimedRewardsAmount.abs(), {
-                            dp: defaultCurrencyReserve.token.decimals,
-                          })}{" "}
+                          {formatToken(
+                            unclaimedRewardsAmountSnapshotRef.current.abs(),
+                            { dp: defaultCurrencyReserve.token.decimals },
+                          )}{" "}
                           {defaultCurrencyReserve.token.symbol}
                         </TBody>
                       </div>

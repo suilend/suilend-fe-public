@@ -2,6 +2,11 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import {
+  NORMALIZED_USDC_COINTYPE,
+  NORMALIZED_xBTC_COINTYPE,
+} from "@suilend/sui-fe";
+
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
@@ -13,6 +18,7 @@ import {
   HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
+import OkxAprBadge from "@/components/dashboard/market-table/OkxAprBadge";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
@@ -40,6 +46,8 @@ interface MarketCardProps {
 }
 
 function MarketCard({ rowData, onClick }: MarketCardProps) {
+  const { allAppData } = useLoadedAppContext();
+
   return (
     <Card
       className={cn(
@@ -51,7 +59,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
       onClick={onClick}
     >
       <div className="flex w-full flex-col gap-4 p-4">
-        <div className="flex w-full flex-row justify-between">
+        <div className="flex w-full flex-row items-start justify-between">
           <AssetCell
             tableType={MarketCardListType.MARKET_CARD_LIST}
             {...rowData}
@@ -60,11 +68,35 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
           <div className="flex flex-row justify-end gap-6">
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>Deposit APR</TLabelSans>
-              <DepositAprCell {...rowData} />
+
+              <div className="flex flex-col items-end gap-2">
+                <DepositAprCell {...rowData} />
+
+                {rowData.token.coinType === NORMALIZED_xBTC_COINTYPE && (
+                  <OkxAprBadge
+                    href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
+                    aprPercent={
+                      allAppData.okxAprPercentMap.xBtcDepositAprPercent
+                    }
+                  />
+                )}
+              </div>
             </div>
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>Borrow APR</TLabelSans>
-              <BorrowAprCell {...rowData} />
+
+              <div className="flex flex-col items-end gap-2">
+                <BorrowAprCell {...rowData} />
+
+                {rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
+                  <OkxAprBadge
+                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
+                    aprPercent={
+                      allAppData.okxAprPercentMap.usdcBorrowAprPercent
+                    }
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>

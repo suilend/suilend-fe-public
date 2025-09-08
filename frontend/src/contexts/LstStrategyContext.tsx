@@ -187,6 +187,9 @@ interface LstStrategyContext {
   };
 
   // Stats
+  getGlobalTvlAmountUsd: (
+    strategyType: StrategyType,
+  ) => BigNumber | null | undefined;
   getUnclaimedRewardsAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
@@ -301,6 +304,9 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Stats
+  getGlobalTvlAmountUsd: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
   getUnclaimedRewardsAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
@@ -1170,6 +1176,64 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Stats
+  // Stats - Global TVL
+  const [globalTvlAmountUsdMap, setGlobalTvlAmountUsdMap] = useState<
+    Record<StrategyType, BigNumber | null>
+  >(
+    Object.values(StrategyType).reduce(
+      (acc, strategyType) => ({ ...acc, [strategyType]: undefined }),
+      {} as Record<StrategyType, BigNumber>,
+    ),
+  );
+
+  const getGlobalTvlAmountUsd = useCallback(
+    (strategyType: StrategyType): BigNumber | null | undefined =>
+      globalTvlAmountUsdMap[strategyType],
+    [globalTvlAmountUsdMap],
+  );
+
+  const fetchGlobalTvlAmountUsdMap = useCallback(async () => {
+    (async () => {
+      try {
+        const url = `${API_URL}/strategies/tvl`;
+        const res = await fetch(url);
+        const json: {
+          strategies: {
+            strategyType: StrategyType;
+            tvlUsd: string;
+          }[];
+        } = await res.json();
+        if ((json as any)?.statusCode === 500)
+          throw new Error("Failed to fetch Strategies TVL");
+
+        const result = Object.values(StrategyType).reduce(
+          (acc, strategyType) => {
+            const entry = json.strategies.find(
+              (s) => `${s.strategyType}` === strategyType,
+            );
+            const tvlUsd: BigNumber | null = entry
+              ? new BigNumber(entry.tvlUsd)
+              : null;
+
+            return { ...acc, [strategyType]: tvlUsd };
+          },
+          {} as Record<StrategyType, BigNumber | null>,
+        );
+        setGlobalTvlAmountUsdMap(result);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  const didFetchGlobalTvlAmountUsdMapRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (didFetchGlobalTvlAmountUsdMapRef.current) return;
+    didFetchGlobalTvlAmountUsdMapRef.current = true;
+
+    fetchGlobalTvlAmountUsdMap();
+  }, [fetchGlobalTvlAmountUsdMap]);
+
   // Stats - Unclaimed rewards
   const getUnclaimedRewardsAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation): BigNumber => {
@@ -1791,6 +1855,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateDepositAndLoopToExposure,
 
       // Stats
+      getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistoricalTvlAmount,
       getAprPercent,
@@ -1819,6 +1884,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
+      getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistoricalTvlAmount,
       getAprPercent,

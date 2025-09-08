@@ -148,7 +148,7 @@ export default function FeeReceiversCard() {
                 </div>
 
                 {/* Weight */}
-                <div className="w-[80p] md:w-[120px]">
+                <div className="w-[80px] md:w-[120px]">
                   <Input
                     label={index === 0 ? "weight" : undefined}
                     id={`weight-${row.id}`}
