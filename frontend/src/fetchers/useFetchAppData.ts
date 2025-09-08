@@ -260,12 +260,12 @@ export default function useFetchAppData() {
             } = await res.json();
 
             return {
-              xBtcDepositAprPercent: new BigNumber(json.data.xbtc.apy).times(
-                100,
-              ),
-              usdcBorrowAprPercent: new BigNumber(json.data.usdc.apy).times(
-                100,
-              ),
+              xBtcDepositAprPercent: new BigNumber(
+                Math.log(1 + json.data.xbtc.bonusApy),
+              ).times(100),
+              usdcBorrowAprPercent: new BigNumber(
+                Math.log(1 + json.data.usdc.bonusApy),
+              ).times(100),
             };
           } catch (err) {
             console.error(err);

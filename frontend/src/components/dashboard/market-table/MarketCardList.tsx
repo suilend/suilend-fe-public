@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { Side } from "@suilend/sdk";
 import {
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
@@ -74,10 +75,11 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
 
                 {rowData.token.coinType === NORMALIZED_xBTC_COINTYPE && (
                   <OkxAprBadge
-                    href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
+                    side={Side.DEPOSIT}
                     aprPercent={
                       allAppData.okxAprPercentMap.xBtcDepositAprPercent
                     }
+                    href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
                   />
                 )}
               </div>
@@ -90,10 +92,11 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
 
                 {rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
                   <OkxAprBadge
-                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
+                    side={Side.BORROW}
                     aprPercent={
                       allAppData.okxAprPercentMap.usdcBorrowAprPercent
                     }
+                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
                   />
                 )}
               </div>
