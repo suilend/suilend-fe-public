@@ -280,14 +280,15 @@ export default function MarketTable() {
             return null;
 
           return (
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col items-end gap-2">
               <DepositAprCell {...(row.original as ReservesRowData)} />
 
               {(row.original as ReservesRowData).token.coinType ===
                 NORMALIZED_xBTC_COINTYPE && (
                 <OkxAprBadge
-                  href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
+                  side={Side.DEPOSIT}
                   aprPercent={allAppData.okxAprPercentMap.xBtcDepositAprPercent}
+                  href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
                 />
               )}
             </div>
@@ -305,14 +306,15 @@ export default function MarketTable() {
             return null;
 
           return (
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex flex-col items-end gap-2">
               <BorrowAprCell {...(row.original as ReservesRowData)} />
 
               {(row.original as ReservesRowData).token.coinType ===
                 NORMALIZED_USDC_COINTYPE && (
                 <OkxAprBadge
-                  href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
+                  side={Side.BORROW}
                   aprPercent={allAppData.okxAprPercentMap.usdcBorrowAprPercent}
+                  href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
                 />
               )}
             </div>
