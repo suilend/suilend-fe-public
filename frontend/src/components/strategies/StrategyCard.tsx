@@ -129,6 +129,11 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
 
+  // Stats - Unclaimed rewards
+  const unclaimedRewardsAmountSnapshotRef = useRef<BigNumber>(
+    getUnclaimedRewardsAmount(strategyType, obligation),
+  );
+
   // Stats - Realized PnL
   const { historicalTvlAmountMap } = useHistoricalTvlAmountMap(
     strategyType,
@@ -151,17 +156,12 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   }, [obligation, hasPosition, historicalTvlAmount]);
 
   // Stats - Total PnL
-  const unclaimedRewardsAmount = getUnclaimedRewardsAmount(
-    strategyType,
-    obligation,
-  );
-
   const totalPnlAmount = useMemo(
     () =>
       realizedPnlAmount === undefined
         ? undefined
-        : realizedPnlAmount.plus(unclaimedRewardsAmount),
-    [realizedPnlAmount, unclaimedRewardsAmount],
+        : realizedPnlAmount.plus(unclaimedRewardsAmountSnapshotRef.current),
+    [realizedPnlAmount],
   );
 
   // Stats - Exposure
@@ -308,18 +308,25 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
                         <TLabelSans>Unclaimed rewards</TLabelSans>
                         <TBody
                           className={cn(
-                            unclaimedRewardsAmount.gt(0) && "text-success",
-                            unclaimedRewardsAmount.lt(0) && "text-destructive",
+                            unclaimedRewardsAmountSnapshotRef.current.gt(0) &&
+                              "text-success",
+                            unclaimedRewardsAmountSnapshotRef.current.lt(0) &&
+                              "text-destructive",
                           )}
                         >
-                          {new BigNumber(unclaimedRewardsAmount).eq(0)
+                          {new BigNumber(
+                            unclaimedRewardsAmountSnapshotRef.current,
+                          ).eq(0)
                             ? null
-                            : new BigNumber(unclaimedRewardsAmount).gte(0)
+                            : new BigNumber(
+                                  unclaimedRewardsAmountSnapshotRef.current,
+                                ).gte(0)
                               ? "+"
                               : "-"}
-                          {formatToken(unclaimedRewardsAmount.abs(), {
-                            dp: defaultCurrencyReserve.token.decimals,
-                          })}{" "}
+                          {formatToken(
+                            unclaimedRewardsAmountSnapshotRef.current.abs(),
+                            { dp: defaultCurrencyReserve.token.decimals },
+                          )}{" "}
                           {defaultCurrencyReserve.token.symbol}
                         </TBody>
                       </div>
