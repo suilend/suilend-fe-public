@@ -410,8 +410,7 @@ function Page() {
                 .filter((strategyType) =>
                   strategyType === StrategyType.AUSD_sSUI_SUI_LOOPING
                     ? process.env.NODE_ENV === "development" ||
-                      router.query.ausd === "true" ||
-                      Date.now() >= 1757422800000 // 2025/09/09 13:00:00 UTC
+                      router.query.ausd === "true"
                     : true,
                 )
                 .map((strategyType) => {
