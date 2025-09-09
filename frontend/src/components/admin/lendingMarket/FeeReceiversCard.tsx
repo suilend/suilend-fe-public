@@ -49,7 +49,7 @@ export default function FeeReceiversCard() {
           (receiver, index) => ({
             id: uuidv4(),
             address: receiver,
-            weight: feeReceivers.weights[index].toString(),
+            weight: feeReceivers.weights[index],
           }),
         );
 
