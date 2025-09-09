@@ -263,6 +263,7 @@ export default function LiquidateDialog({
         .integerValue(BigNumber.ROUND_DOWN)
         .toString();
 
+      await appData.suilendClient.refreshAll(transaction, obligation.original);
       forgive(
         transaction,
         [appData.suilendClient.lendingMarket.$typeArgs[0], borrow.coinType],
