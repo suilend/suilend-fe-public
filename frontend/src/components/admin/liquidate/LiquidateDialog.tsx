@@ -26,7 +26,7 @@ import {
   getObligationHistoryPage,
 } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import { formatToken, formatUsd, isSui } from "@suilend/sui-fe";
+import { MAX_U64, formatToken, formatUsd, isSui } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -166,7 +166,7 @@ export default function LiquidateDialog({
   // Liquidate
   const [liquidateAmount, setLiquidateAmount] = useState<string>("");
 
-  const onMaxClick = () => {
+  const onLiquidateMaxClick = () => {
     if (!parsedObligation) return;
     if (!selectedRepayAsset) return;
 
@@ -241,6 +241,14 @@ export default function LiquidateDialog({
       });
     }
   }
+
+  // Forgive
+  const [forgiveAmount, setForgiveAmount] = useState<string>("");
+
+  const onForgiveMaxClick = () => {
+    setForgiveAmount(MAX_U64.toString());
+  };
+
   async function forgiveObligation(
     obligation: ParsedObligation,
     repayAssetSymbol: string,
@@ -258,7 +266,7 @@ export default function LiquidateDialog({
       );
       if (!borrow) return;
 
-      const submitAmount = new BigNumber(liquidateAmount)
+      const submitAmount = new BigNumber(forgiveAmount)
         .times(10 ** borrow.reserve.mintDecimals)
         .integerValue(BigNumber.ROUND_DOWN)
         .toString();
@@ -280,7 +288,7 @@ export default function LiquidateDialog({
       await signExecuteAndWaitForTransaction(transaction);
 
       toast.success("Forgave debt");
-      setLiquidateAmount("");
+      setForgiveAmount("");
     } catch (err) {
       toast.error("Failed to forgive debt", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -356,9 +364,11 @@ export default function LiquidateDialog({
             value={parsedObligation.maxPriceWeightedBorrowsUsd}
             isUsd
           />
+
           <div className="col-span-2">
             <UtilizationBar obligation={parsedObligation} />
           </div>
+
           <div className="col-span-2 flex flex-row items-end gap-2">
             <DataTable<RowData>
               columns={getColumnDefinition(false)}
@@ -380,6 +390,7 @@ export default function LiquidateDialog({
               }}
             />
           </div>
+
           <div className="col-span-2 flex flex-row items-end gap-2">
             <DataTable<RowData>
               columns={getColumnDefinition(true)}
@@ -402,48 +413,68 @@ export default function LiquidateDialog({
             />
           </div>
 
-          <div className="col-span-2 flex flex-row items-end gap-2">
-            <div className="flex flex-row gap-1">
-              <Input
-                id="liquidateAmount"
-                value={liquidateAmount}
-                onChange={setLiquidateAmount}
-              />
+          <div className="col-span-2 flex flex-col gap-2">
+            <div className="col-span-2 flex flex-row items-end gap-2">
+              <div className="flex flex-row gap-1">
+                <Input
+                  id="liquidateAmount"
+                  value={liquidateAmount}
+                  onChange={setLiquidateAmount}
+                />
+                <Button
+                  className="h-10"
+                  variant="secondaryOutline"
+                  onClick={onLiquidateMaxClick}
+                >
+                  MAX
+                </Button>
+              </div>
+
               <Button
                 className="h-10"
-                variant="secondaryOutline"
-                onClick={onMaxClick}
+                tooltip="Liquidate this obligation"
+                onClick={() =>
+                  liquidateObligation(
+                    parsedObligation,
+                    selectedRepayAsset,
+                    selectedWithdrawAsset,
+                  )
+                }
+                disabled={
+                  selectedRepayAsset === "" || selectedWithdrawAsset === ""
+                }
               >
-                MAX
+                Liquidate
               </Button>
             </div>
 
-            <Button
-              className="h-10"
-              tooltip="Liquidate this obligation"
-              onClick={() =>
-                liquidateObligation(
-                  parsedObligation,
-                  selectedRepayAsset,
-                  selectedWithdrawAsset,
-                )
-              }
-              disabled={
-                selectedRepayAsset === "" || selectedWithdrawAsset === ""
-              }
-            >
-              Liquidate
-            </Button>
-            <Button
-              className="h-10"
-              tooltip="Forgive debt"
-              onClick={() =>
-                forgiveObligation(parsedObligation, selectedRepayAsset)
-              }
-              disabled={selectedRepayAsset === ""}
-            >
-              Forgive
-            </Button>
+            <div className="col-span-2 flex flex-row items-end gap-2">
+              <div className="flex flex-row gap-1">
+                <Input
+                  id="forgiveAmount"
+                  value={forgiveAmount}
+                  onChange={setForgiveAmount}
+                />
+                <Button
+                  className="h-10"
+                  variant="secondaryOutline"
+                  onClick={onForgiveMaxClick}
+                >
+                  MAX
+                </Button>
+              </div>
+
+              <Button
+                className="h-10"
+                tooltip="Forgive debt"
+                onClick={() =>
+                  forgiveObligation(parsedObligation, selectedRepayAsset)
+                }
+                disabled={selectedRepayAsset === ""}
+              >
+                Forgive
+              </Button>
+            </div>
           </div>
 
           <div className="col-span-2 flex flex-row items-end gap-2">
