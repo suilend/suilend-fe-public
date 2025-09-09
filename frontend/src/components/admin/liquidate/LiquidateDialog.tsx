@@ -266,10 +266,13 @@ export default function LiquidateDialog({
       );
       if (!borrow) return;
 
-      const submitAmount = new BigNumber(forgiveAmount)
-        .times(10 ** borrow.reserve.mintDecimals)
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString();
+      const submitAmount =
+        forgiveAmount === MAX_U64.toString()
+          ? MAX_U64.toString()
+          : new BigNumber(forgiveAmount)
+              .times(10 ** borrow.reserve.mintDecimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString();
 
       await appData.suilendClient.refreshAll(transaction, obligation.original);
       forgive(
