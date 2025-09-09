@@ -3400,10 +3400,16 @@ export default function LstStrategyDialog({
           className={cn(
             "flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch",
             !!obligation && hasPosition(obligation)
-              ? strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+              ? [
+                  StrategyType.USDC_sSUI_SUI_LOOPING,
+                  StrategyType.AUSD_sSUI_SUI_LOOPING,
+                ].includes(strategyType)
                 ? "md:min-h-[calc(314px+20px+12px)]"
                 : "md:min-h-[314px]"
-              : strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+              : [
+                    StrategyType.USDC_sSUI_SUI_LOOPING,
+                    StrategyType.AUSD_sSUI_SUI_LOOPING,
+                  ].includes(strategyType)
                 ? "md:min-h-[calc(374px+20px+12px)]"
                 : "md:min-h-[374px]",
           )}
@@ -3666,7 +3672,10 @@ export default function LstStrategyDialog({
                   horizontal
                 />
 
-                {strategyType === StrategyType.USDC_sSUI_SUI_LOOPING && (
+                {[
+                  StrategyType.USDC_sSUI_SUI_LOOPING,
+                  StrategyType.AUSD_sSUI_SUI_LOOPING,
+                ].includes(strategyType) && (
                   <LabelWithValue
                     label="Liquidation price"
                     value={

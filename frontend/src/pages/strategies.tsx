@@ -408,10 +408,10 @@ function Page() {
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {Object.values(StrategyType)
                 .filter((strategyType) =>
-                  strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+                  strategyType === StrategyType.AUSD_sSUI_SUI_LOOPING
                     ? process.env.NODE_ENV === "development" ||
-                      router.query.usdc === "true" ||
-                      Date.now() >= 1756818000000 // 2025/09/02 13:00:00 UTC
+                      router.query.ausd === "true" ||
+                      Date.now() >= 1757422800000 // 2025/09/09 13:00:00 UTC
                     : true,
                 )
                 .map((strategyType) => {

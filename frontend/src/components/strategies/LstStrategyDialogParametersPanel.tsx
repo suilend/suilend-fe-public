@@ -64,9 +64,11 @@ export default function LstStrategyDialogParametersPanel({
                     "STRAT rewards (from depositing stratSUI) and sSUI rewards (from borrowing SUI)",
                   [StrategyType.USDC_sSUI_SUI_LOOPING]:
                     "sSUI rewards (from borrowing SUI)",
+                  [StrategyType.AUSD_sSUI_SUI_LOOPING]:
+                    "sSUI rewards (from depositing AUSD, and borrowing SUI)",
                 }[strategyType]
               }{" "}
-              are auto-claimed and redeposited every 2 weeks.
+              are autoclaimed and redeposited every 2 weeks.
               <br />
               <br />
               You can also claim them manually at any time by clicking the{" "}

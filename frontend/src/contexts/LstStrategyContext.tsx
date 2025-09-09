@@ -544,6 +544,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         max: new BigNumber(3.2), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
         default: new BigNumber(3.2),
       },
+      [StrategyType.AUSD_sSUI_SUI_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(3.2), // Actual max: 1 + (AUSD Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where AUSD Open LTV % = 77% and sSUI Open LTV % = 70%
+        default: new BigNumber(3.2),
+      },
     }),
     [],
   );
@@ -1669,7 +1674,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       obligation?: ParsedObligation,
       exposure?: BigNumber,
     ): BigNumber | null => {
-      if (strategyType !== StrategyType.USDC_sSUI_SUI_LOOPING)
+      if (
+        ![
+          StrategyType.USDC_sSUI_SUI_LOOPING,
+          StrategyType.AUSD_sSUI_SUI_LOOPING,
+        ].includes(strategyType)
+      )
         return new BigNumber(0); // Not shown in UI
 
       const depositReserves = getDepositReserves(strategyType);
