@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import { SuiPriceServiceConnection } from "@pythnetwork/pyth-sui-js";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
@@ -8,6 +9,7 @@ import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
+import { forgive } from "@suilend/sdk/_generated/suilend/lending-market/functions";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
@@ -239,6 +241,52 @@ export default function LiquidateDialog({
       });
     }
   }
+  async function forgiveObligation(
+    obligation: ParsedObligation,
+    repayAssetSymbol: string,
+  ) {
+    if (!address) throw new Error("Wallet not connected");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
+
+    const transaction = new Transaction();
+    transaction.setSender(address);
+
+    try {
+      const borrow = obligation.borrows.find(
+        (b) => b.reserve.token.symbol === repayAssetSymbol,
+      );
+      if (!borrow) return;
+
+      const submitAmount = new BigNumber(liquidateAmount)
+        .times(10 ** borrow.reserve.mintDecimals)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString();
+
+      forgive(
+        transaction,
+        [appData.suilendClient.lendingMarket.$typeArgs[0], borrow.coinType],
+        {
+          lendingMarketOwnerCap: appData.lendingMarket.ownerCapId,
+          lendingMarket: appData.lendingMarket.id,
+          reserveArrayIndex: borrow.reserve.arrayIndex,
+          obligationId: obligation.original.id,
+          clock: SUI_CLOCK_OBJECT_ID,
+          maxForgiveAmount: BigInt(submitAmount),
+        },
+      );
+
+      await signExecuteAndWaitForTransaction(transaction);
+
+      toast.success("Forgave debt");
+      setLiquidateAmount("");
+    } catch (err) {
+      toast.error("Failed to forgive debt", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  }
+
   let parsedObligation: ParsedObligation | null = null;
   if (fixedObligation) {
     parsedObligation = fixedObligation;
@@ -374,7 +422,7 @@ export default function LiquidateDialog({
               tooltip="Liquidate this obligation"
               onClick={() =>
                 liquidateObligation(
-                  parsedObligation as ParsedObligation,
+                  parsedObligation,
                   selectedRepayAsset,
                   selectedWithdrawAsset,
                 )
@@ -384,6 +432,16 @@ export default function LiquidateDialog({
               }
             >
               Liquidate
+            </Button>
+            <Button
+              className="h-10"
+              tooltip="Forgive debt"
+              onClick={() =>
+                forgiveObligation(parsedObligation, selectedRepayAsset)
+              }
+              disabled={selectedRepayAsset === ""}
+            >
+              Forgive
             </Button>
           </div>
 
