@@ -40,6 +40,7 @@ const useHistoricalTvlAmountMap = (
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

@@ -183,6 +183,16 @@ interface LstStrategyContext {
     suiBorrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
+  simulateRepay: (
+    strategyType: StrategyType,
+    deposits: Deposit[],
+    suiBorrowedAmount: BigNumber,
+    suiRepaidAmount: BigNumber,
+  ) => {
+    deposits: Deposit[];
+    suiBorrowedAmount: BigNumber;
+    obligation: ParsedObligation;
+  };
 
   // Stats
   getGlobalTvlAmountUsd: (
@@ -298,6 +308,9 @@ const defaultContextValue: LstStrategyContext = {
     throw Error("LstStrategyContextProvider not initialized");
   },
   simulateDepositAndLoopToExposure: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
+  simulateRepay: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -1107,6 +1120,46 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     [getSimulatedObligation, simulateDeposit, simulateLoopToExposure],
   );
 
+  const simulateRepay = useCallback(
+    (
+      strategyType: StrategyType,
+      _deposits: Deposit[],
+      _suiBorrowedAmount: BigNumber,
+      suiRepaidAmount: BigNumber,
+    ): {
+      deposits: Deposit[];
+      suiBorrowedAmount: BigNumber;
+      obligation: ParsedObligation;
+    } => {
+      const depositReserves = getDepositReserves(strategyType);
+      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
+
+      //
+
+      const deposits = cloneDeep(_deposits);
+      let suiBorrowedAmount = _suiBorrowedAmount;
+
+      // 1) Repay SUI
+      // 1.1) Split coins
+
+      // 1.2) Repay SUI
+
+      // 1.3) Update state
+      suiBorrowedAmount = suiBorrowedAmount.minus(suiRepaidAmount);
+
+      return {
+        deposits,
+        suiBorrowedAmount,
+        obligation: getSimulatedObligation(
+          strategyType,
+          deposits,
+          suiBorrowedAmount,
+        ),
+      };
+    },
+    [getDepositReserves, getDefaultCurrencyReserve, getSimulatedObligation],
+  );
+
   // Stats
   // Stats - Global TVL
   const [globalTvlAmountUsdMap, setGlobalTvlAmountUsdMap] = useState<
@@ -1657,6 +1710,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd;
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
+      return new BigNumber(99);
       if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
       return new BigNumber(100).minus(
         new BigNumber(weightedBorrowsUsd.minus(borrowLimitUsd))
@@ -1781,6 +1835,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
+      simulateRepay,
 
       // Stats
       getGlobalTvlAmountUsd,
@@ -1812,6 +1867,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
+      simulateRepay,
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistoricalTvlAmount,

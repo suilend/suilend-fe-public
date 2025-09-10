@@ -50,6 +50,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

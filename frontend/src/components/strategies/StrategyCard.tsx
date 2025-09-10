@@ -63,6 +63,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

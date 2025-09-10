@@ -39,6 +39,7 @@ export default function LstStrategyDialogParametersPanel({
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

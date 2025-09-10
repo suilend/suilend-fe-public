@@ -179,6 +179,7 @@ export default function LstStrategyDialog({
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -193,33 +194,6 @@ export default function LstStrategyDialog({
 
   // send.ag
   const cetusSdk = useCetusSdk();
-
-  // Tabs
-  const tabs = [
-    { id: Tab.DEPOSIT, title: "Deposit" },
-    { id: Tab.WITHDRAW, title: "Withdraw" },
-    {
-      id: Tab.ADJUST,
-      title: "Adjust",
-      tooltip:
-        "Increase or decrease leverage without changing your Equity (deposited amount)",
-    },
-  ];
-
-  const selectedTab = useMemo(
-    () =>
-      queryParams[QueryParams.TAB] &&
-      Object.values(Tab).includes(queryParams[QueryParams.TAB])
-        ? queryParams[QueryParams.TAB]
-        : Tab.DEPOSIT,
-    [queryParams],
-  );
-  const onSelectedTabChange = useCallback(
-    (tab: Tab) => {
-      shallowPushQuery(router, { ...router.query, [QueryParams.TAB]: tab });
-    },
-    [router],
-  );
 
   // Strategy
   const strategyInfo = useMemo(
@@ -275,6 +249,42 @@ export default function LstStrategyDialog({
   );
   const obligation = userData.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
+  );
+
+  // Tabs
+  const canAdjust = getHealthPercent(
+    strategyType,
+    obligation,
+    !!obligation && hasPosition(obligation)
+      ? getExposure(strategyType, obligation)
+      : new BigNumber(1),
+  ).eq(100);
+
+  const tabs = [
+    { id: Tab.DEPOSIT, title: "Deposit" },
+    { id: Tab.WITHDRAW, title: "Withdraw" },
+    {
+      id: Tab.ADJUST,
+      title: canAdjust ? "Adjust" : "Repay",
+      tooltip: canAdjust
+        ? "Increase or decrease leverage without changing your Equity (deposited amount)"
+        : `Repay part of your borrowed ${appData.coinMetadataMap[strategyInfo.borrowCoinType].symbol} to get back to 100% health`,
+    },
+  ];
+
+  const selectedTab = useMemo(
+    () =>
+      queryParams[QueryParams.TAB] &&
+      Object.values(Tab).includes(queryParams[QueryParams.TAB])
+        ? queryParams[QueryParams.TAB]
+        : Tab.DEPOSIT,
+    [queryParams],
+  );
+  const onSelectedTabChange = useCallback(
+    (tab: Tab) => {
+      shallowPushQuery(router, { ...router.query, [QueryParams.TAB]: tab });
+    },
+    [router],
   );
 
   // Rewards
@@ -383,21 +393,35 @@ export default function LstStrategyDialog({
 
   const currencyReserveOptions = useMemo(
     () =>
-      strategyInfo.currencyCoinTypes.map((currencyCoinType) => ({
-        id: currencyCoinType,
-        name: appData.coinMetadataMap[currencyCoinType].symbol,
-      })),
-    [strategyInfo.currencyCoinTypes, appData.coinMetadataMap],
+      selectedTab === Tab.ADJUST && !canAdjust
+        ? [{ id: NORMALIZED_SUI_COINTYPE, name: "SUI" }]
+        : strategyInfo.currencyCoinTypes.map((_currencyCoinType) => ({
+            id: _currencyCoinType,
+            name: appData.coinMetadataMap[_currencyCoinType].symbol,
+          })),
+    [
+      selectedTab,
+      canAdjust,
+      strategyInfo.currencyCoinTypes,
+      appData.coinMetadataMap,
+    ],
   );
   const currencyReserve = useMemo(
-    () => appData.reserveMap[currencyCoinType],
-    [currencyCoinType, appData.reserveMap],
+    () =>
+      selectedTab === Tab.ADJUST && !canAdjust
+        ? suiReserve
+        : appData.reserveMap[currencyCoinType],
+    [selectedTab, canAdjust, suiReserve, currencyCoinType, appData.reserveMap],
   );
 
   const currencyReserveBalance = useMemo(
-    () => getBalance(currencyCoinType),
-    [currencyCoinType, getBalance],
+    () => getBalance(currencyReserve.coinType),
+    [getBalance, currencyReserve.coinType],
   );
+
+  // Value
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [value, setValue] = useState<string>("");
 
   // Stats
   // Stats - Exposure
@@ -408,15 +432,25 @@ export default function LstStrategyDialog({
         : new BigNumber(depositSliderValue),
     [obligation, hasPosition, getExposure, strategyType, depositSliderValue],
   );
+  const repayExposure =
+    !!obligation && hasPosition(obligation)
+      ? getExposure(
+          strategyType,
+          getSimulatedObligation(
+            strategyType,
+            obligation.deposits,
+            (obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)).minus(
+              value || 0,
+            ),
+          ),
+        )
+      : new BigNumber(1); // Not shown in UI
   const adjustExposure = useMemo(
     () => new BigNumber(adjustSliderValue),
     [adjustSliderValue],
   );
 
-  // Value
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState<string>("");
-
+  // Value - Max
   const getMaxDepositCalculations = useCallback(
     (_currencyCoinType: string) => {
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
@@ -715,6 +749,48 @@ export default function LstStrategyDialog({
     ],
   );
   // TODO: getMaxAdjustUpCalculations, getMaxAdjustDownCalculations
+  const getMaxRepayCalculations = useCallback(
+    (_currencyCoinType: string) => {
+      const _currencyReserve = appData.reserveMap[_currencyCoinType];
+
+      const targetSuiRepaidAmount = new BigNumber(5); // TODO
+
+      const result = [
+        // Balance
+        {
+          reason: `Insufficient ${_currencyReserve.token.symbol}`,
+          isDisabled: true,
+          value: getBalance(_currencyReserve.coinType),
+        },
+        ...(isSui(_currencyReserve.coinType)
+          ? [
+              {
+                reason: `${STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
+                isDisabled: true,
+                value: getBalance(_currencyReserve.coinType).minus(
+                  STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+                ),
+              },
+            ]
+          : []),
+
+        {
+          reason: "Repay amount exceeds borrowed amount",
+          isDisabled: true,
+          value: targetSuiRepaidAmount.times(
+            isSui(_currencyReserve.coinType) ? 1 : lst.suiToLstExchangeRate,
+          ),
+        },
+      ];
+      console.log(
+        "[getMaxRepayCalculations] result:",
+        JSON.stringify(result, null, 2),
+      );
+
+      return result;
+    },
+    [appData.reserveMap, getBalance, lst.suiToLstExchangeRate],
+  );
 
   const getMaxAmount = useCallback(
     (_currencyCoinType?: string) => {
@@ -723,17 +799,23 @@ export default function LstStrategyDialog({
           ? appData.reserveMap[_currencyCoinType]
           : currencyReserve;
 
-      if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+      if (
+        selectedTab === Tab.DEPOSIT ||
+        selectedTab === Tab.WITHDRAW ||
+        (selectedTab === Tab.ADJUST && !canAdjust)
+      ) {
         const maxCalculations =
           selectedTab === Tab.DEPOSIT
             ? getMaxDepositCalculations(_currencyReserve.coinType)
-            : getMaxWithdrawCalculations(_currencyReserve.coinType);
+            : selectedTab === Tab.WITHDRAW
+              ? getMaxWithdrawCalculations(_currencyReserve.coinType)
+              : getMaxRepayCalculations(_currencyReserve.coinType);
 
         return BigNumber.max(
           new BigNumber(0),
           BigNumber.min(...maxCalculations.map((calc) => calc.value)),
         );
-      } else if (selectedTab === Tab.ADJUST) {
+      } else if (selectedTab === Tab.ADJUST && canAdjust) {
         return new BigNumber(0); // Not relevant here
       }
 
@@ -743,8 +825,10 @@ export default function LstStrategyDialog({
       appData.reserveMap,
       currencyReserve,
       selectedTab,
+      canAdjust,
       getMaxDepositCalculations,
       getMaxWithdrawCalculations,
+      getMaxRepayCalculations,
     ],
   );
   const [useMaxAmount, setUseMaxAmount] = useState<boolean>(false);
@@ -827,6 +911,20 @@ export default function LstStrategyDialog({
 
   // Stats - Health
   const healthPercent = getHealthPercent(strategyType, obligation, exposure);
+  const repayHealthPercent =
+    !!obligation && hasPosition(obligation)
+      ? getHealthPercent(
+          strategyType,
+          getSimulatedObligation(
+            strategyType,
+            obligation.deposits,
+            (obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)).minus(
+              value || 0,
+            ),
+          ),
+          exposure,
+        )
+      : new BigNumber(100); // Not shown in UI
   const adjustHealthPercent = getHealthPercent(
     strategyType,
     undefined,
@@ -839,6 +937,20 @@ export default function LstStrategyDialog({
     obligation,
     exposure,
   );
+  const repayLiquidationPrice =
+    !!obligation && hasPosition(obligation)
+      ? getLiquidationPrice(
+          strategyType,
+          getSimulatedObligation(
+            strategyType,
+            obligation.deposits,
+            (obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)).minus(
+              value || 0,
+            ),
+          ),
+          exposure,
+        )
+      : new BigNumber(10000000); // Not shown in UI
   const adjustLiquidationPrice = getLiquidationPrice(
     strategyType,
     undefined,
@@ -847,6 +959,20 @@ export default function LstStrategyDialog({
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, exposure);
+  const repayAprPercent =
+    !!obligation && hasPosition(obligation)
+      ? getAprPercent(
+          strategyType,
+          getSimulatedObligation(
+            strategyType,
+            obligation.deposits,
+            (obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0)).minus(
+              value || 0,
+            ),
+          ),
+          exposure,
+        )
+      : new BigNumber(0); // Not shown in UI
   const adjustAprPercent = getAprPercent(
     strategyType,
     undefined,
@@ -1052,10 +1178,21 @@ export default function LstStrategyDialog({
 
   // Submit
   const getSubmitButtonNoValueState = (): SubmitButtonState | undefined => {
+    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+      if (!canAdjust)
+        return {
+          isDisabled: true,
+          title: "Disabled until back at 100% health",
+        };
+    }
+
     if (selectedTab === Tab.DEPOSIT) {
       // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
       const safeDepositLimitMap: {
-        base?: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
+        base?: {
+          safeDepositLimit: BigNumber;
+          safeDepositLimitUsd: BigNumber;
+        };
         lst: { safeDepositLimit: BigNumber; safeDepositLimitUsd: BigNumber };
       } = {
         base:
@@ -1120,24 +1257,32 @@ export default function LstStrategyDialog({
       }
     } else if (selectedTab === Tab.WITHDRAW) {
       // N/A
-    } else if (selectedTab === Tab.ADJUST) {
+    } else if (selectedTab === Tab.ADJUST && !canAdjust) {
+      // N/A
+    } else if (selectedTab === Tab.ADJUST && canAdjust) {
       // TODO
     }
 
     return undefined;
   };
   const getSubmitButtonState = (): SubmitButtonState | undefined => {
-    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+    if (
+      selectedTab === Tab.DEPOSIT ||
+      selectedTab === Tab.WITHDRAW ||
+      (selectedTab === Tab.ADJUST && !canAdjust)
+    ) {
       const maxCalculations =
         selectedTab === Tab.DEPOSIT
           ? getMaxDepositCalculations(currencyReserve.coinType)
-          : getMaxWithdrawCalculations(currencyReserve.coinType);
+          : selectedTab === Tab.WITHDRAW
+            ? getMaxWithdrawCalculations(currencyReserve.coinType)
+            : getMaxRepayCalculations(currencyReserve.coinType);
 
       for (const calc of maxCalculations) {
         if (new BigNumber(value).gt(calc.value))
           return { isDisabled: calc.isDisabled, title: calc.reason };
       }
-    } else if (selectedTab === Tab.ADJUST) {
+    } else if (selectedTab === Tab.ADJUST && canAdjust) {
       // TODO
     }
 
@@ -1156,19 +1301,18 @@ export default function LstStrategyDialog({
     )
       return getSubmitButtonNoValueState() as SubmitButtonState;
 
-    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+    if (
+      selectedTab === Tab.DEPOSIT ||
+      selectedTab === Tab.WITHDRAW ||
+      (selectedTab === Tab.ADJUST && !canAdjust)
+    ) {
       if (value === "") return { isDisabled: true, title: "Enter an amount" };
       if (new BigNumber(value).lt(0))
         return { isDisabled: true, title: "Enter a +ve amount" };
       if (new BigNumber(value).eq(0))
         return { isDisabled: true, title: "Enter a non-zero amount" };
-
-      if (healthPercent.lt(100)) {
-        return {
-          isDisabled: true,
-          title: "Adjust leverage to 100% health",
-        };
-      }
+    } else if (selectedTab === Tab.ADJUST && canAdjust) {
+      // N/A
     }
 
     if (getSubmitButtonState())
@@ -1186,9 +1330,14 @@ export default function LstStrategyDialog({
                 dp: currencyReserve.token.decimals,
                 trimTrailingZeros: true,
               })} ${currencyReserve.token.symbol}`
-            : selectedTab === Tab.ADJUST
-              ? `Adjust leverage to ${adjustExposure.toFixed(1)}x`
-              : "--", // Should not happen
+            : selectedTab === Tab.ADJUST && !canAdjust
+              ? `Repay ${formatToken(new BigNumber(value), {
+                  dp: currencyReserve.token.decimals,
+                  trimTrailingZeros: true,
+                })} ${currencyReserve.token.symbol}`
+              : selectedTab === Tab.ADJUST && canAdjust
+                ? `Adjust leverage to ${adjustExposure.toFixed(1)}x`
+                : "--", // Should not happen
     };
   })();
 
@@ -2841,6 +2990,67 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
+  const repayTx = async (
+    _address: string,
+    strategyOwnerCapId: TransactionObjectInput,
+    obligationId: string,
+    _deposits: Deposit[],
+    _suiBorrowedAmount: BigNumber,
+    suiRepaidAmount: BigNumber,
+    transaction: Transaction,
+  ): Promise<{
+    deposits: Deposit[];
+    suiBorrowedAmount: BigNumber;
+    transaction: Transaction;
+  }> => {
+    console.log(
+      `[repay] args |`,
+      JSON.stringify(
+        {
+          _address,
+          strategyOwnerCapId,
+          obligationId,
+          _deposits: _deposits.map((d) => ({
+            coinType: d.coinType,
+            depositedAmount: d.depositedAmount.toFixed(20),
+          })),
+          _suiBorrowedAmount: _suiBorrowedAmount.toFixed(20),
+          suiRepaidAmount: suiRepaidAmount.toFixed(20),
+        },
+        null,
+        2,
+      ),
+    );
+
+    //
+
+    const deposits = cloneDeep(_deposits);
+    let suiBorrowedAmount = _suiBorrowedAmount;
+
+    // 1) Repay SUI
+    // 1.1) Split coins
+    const suiCoin = transaction.splitCoins(transaction.gas, [
+      suiRepaidAmount
+        .times(10 ** SUI_DECIMALS)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString(),
+    ]);
+
+    // 1.2) Repay SUI
+    appData.suilendClient.repay(
+      obligationId,
+      NORMALIZED_SUI_COINTYPE,
+      suiCoin,
+      transaction,
+    );
+    transaction.transferObjects([suiCoin], _address); // Transfer remaining SUI to user
+
+    // 1.3) Update state
+    suiBorrowedAmount = suiBorrowedAmount.minus(suiRepaidAmount);
+
+    return { deposits, suiBorrowedAmount, transaction };
+  };
+
   const adjustTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
@@ -3217,17 +3427,32 @@ export default function LstStrategyDialog({
         if (!strategyOwnerCap || !obligation)
           throw Error("StrategyOwnerCap or Obligation not found");
 
-        // 3) Adjust
-        const { transaction: adjustTransaction } = await adjustTx(
-          address,
-          strategyOwnerCap.id,
-          obligation.id,
-          obligation.deposits,
-          obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
-          adjustExposure,
-          transaction,
-        );
-        transaction = adjustTransaction;
+        // 3) Adjust or repay
+        if (!canAdjust) {
+          // Repay
+          const { transaction: repayTransaction } = await repayTx(
+            address,
+            strategyOwnerCap.id,
+            obligation.id,
+            obligation.deposits,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+            new BigNumber(value),
+            transaction,
+          );
+          transaction = repayTransaction;
+        } else {
+          // Adjust
+          const { transaction: adjustTransaction } = await adjustTx(
+            address,
+            strategyOwnerCap.id,
+            obligation.id,
+            obligation.deposits,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+            adjustExposure,
+            transaction,
+          );
+          transaction = adjustTransaction;
+        }
 
         // 4) Rebalance LST
         lst.client.rebalance(
@@ -3260,9 +3485,15 @@ export default function LstStrategyDialog({
             : selectedTab === Tab.WITHDRAW
               ? "withdraw from"
               : selectedTab === Tab.ADJUST
-                ? "adjust leverage"
+                ? canAdjust
+                  ? "adjust"
+                  : "repay"
                 : "--" // Should not happen
-        } ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
+        } ${strategyInfo.header.title} ${strategyInfo.header.type} strategy${
+          selectedTab === Tab.ADJUST
+            ? ` ${canAdjust ? "leverage" : "borrows"}`
+            : ""
+        }`,
         err as Error,
         undefined,
         true,
@@ -3419,7 +3650,9 @@ export default function LstStrategyDialog({
         >
           <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
             {/* Amount */}
-            {(selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) && (
+            {(selectedTab === Tab.DEPOSIT ||
+              selectedTab === Tab.WITHDRAW ||
+              (selectedTab === Tab.ADJUST && !canAdjust)) && (
               <div className="relative flex w-full flex-col">
                 <div className="relative z-[2] w-full">
                   <StrategyInput
@@ -3428,7 +3661,11 @@ export default function LstStrategyDialog({
                     onChange={onValueChange}
                     reserveOptions={currencyReserveOptions}
                     reserve={currencyReserve}
-                    onReserveChange={onCurrencyReserveChange}
+                    onReserveChange={
+                      selectedTab === Tab.ADJUST && !canAdjust
+                        ? () => {}
+                        : onCurrencyReserveChange
+                    }
                     tab={selectedTab}
                     useMaxAmount={useMaxAmount}
                     onMaxClick={useMaxValueWrapper}
@@ -3439,10 +3676,13 @@ export default function LstStrategyDialog({
                   <div
                     className={cn(
                       "flex flex-row items-center gap-1.5",
-                      selectedTab === Tab.DEPOSIT && "cursor-pointer",
+                      (selectedTab === Tab.DEPOSIT ||
+                        (selectedTab === Tab.ADJUST && !canAdjust)) &&
+                        "cursor-pointer",
                     )}
                     onClick={
-                      selectedTab === Tab.DEPOSIT
+                      selectedTab === Tab.DEPOSIT ||
+                      (selectedTab === Tab.ADJUST && !canAdjust)
                         ? useMaxValueWrapper
                         : undefined
                     }
@@ -3514,7 +3754,7 @@ export default function LstStrategyDialog({
             {/* Exposure */}
             {((selectedTab === Tab.DEPOSIT &&
               (!obligation || !hasPosition(obligation))) ||
-              selectedTab === Tab.ADJUST) && (
+              (selectedTab === Tab.ADJUST && canAdjust)) && (
               <div className="flex w-full flex-col gap-2">
                 {/* Slider */}
                 <div className="relative flex h-4 w-full flex-row items-center">
@@ -3615,11 +3855,15 @@ export default function LstStrategyDialog({
                     <>
                       {exposure.toFixed(selectedTab === Tab.ADJUST ? 6 : 1)}x
                       {selectedTab === Tab.ADJUST &&
-                        `${adjustExposure.toFixed(1)}x` !==
+                        `${(!canAdjust ? repayExposure : adjustExposure).toFixed(1)}x` !==
                           `${exposure.toFixed(6)}x` && (
                           <>
                             <FromToArrow />
-                            {adjustExposure.toFixed(1)}x
+                            {(!canAdjust
+                              ? repayExposure
+                              : adjustExposure
+                            ).toFixed(1)}
+                            x
                           </>
                         )}
                     </>
@@ -3640,11 +3884,14 @@ export default function LstStrategyDialog({
                         dp: selectedTab === Tab.ADJUST ? 4 : 2,
                       })}
                       {selectedTab === Tab.ADJUST &&
-                        formatPercent(adjustAprPercent) !==
-                          formatPercent(aprPercent, { dp: 4 }) && (
+                        formatPercent(
+                          !canAdjust ? repayAprPercent : adjustAprPercent,
+                        ) !== formatPercent(aprPercent, { dp: 4 }) && (
                           <>
                             <FromToArrow />
-                            {formatPercent(adjustAprPercent)}
+                            {formatPercent(
+                              !canAdjust ? repayAprPercent : adjustAprPercent,
+                            )}
                           </>
                         )}
                     </>
@@ -3660,11 +3907,18 @@ export default function LstStrategyDialog({
                         dp: selectedTab === Tab.ADJUST ? 2 : 0,
                       })}
                       {selectedTab === Tab.ADJUST &&
-                        formatNumber(adjustHealthPercent, { dp: 0 }) !==
-                          formatNumber(healthPercent, { dp: 2 }) && (
+                        formatNumber(
+                          !canAdjust ? repayHealthPercent : adjustHealthPercent,
+                          { dp: 0 },
+                        ) !== formatNumber(healthPercent, { dp: 2 }) && (
                           <>
                             <FromToArrow />
-                            {formatPercent(adjustHealthPercent, { dp: 0 })}
+                            {formatPercent(
+                              !canAdjust
+                                ? repayHealthPercent
+                                : adjustHealthPercent,
+                              { dp: 0 },
+                            )}
                           </>
                         )}
                     </>
@@ -3691,16 +3945,28 @@ export default function LstStrategyDialog({
                           "--"
                         )}
                         {selectedTab === Tab.ADJUST &&
-                          (adjustLiquidationPrice !== null
-                            ? formatUsd(adjustLiquidationPrice)
+                          ((!canAdjust
+                            ? repayLiquidationPrice
+                            : adjustLiquidationPrice) !== null
+                            ? formatUsd(
+                                (!canAdjust
+                                  ? repayLiquidationPrice
+                                  : adjustLiquidationPrice)!,
+                              )
                             : "--") !==
                             (liquidationPrice !== null
                               ? formatUsd(liquidationPrice)
                               : "--") && (
                             <>
                               <FromToArrow />
-                              {adjustLiquidationPrice !== null
-                                ? formatUsd(adjustLiquidationPrice)
+                              {(!canAdjust
+                                ? repayLiquidationPrice
+                                : adjustLiquidationPrice) !== null
+                                ? formatUsd(
+                                    (!canAdjust
+                                      ? repayLiquidationPrice
+                                      : adjustLiquidationPrice)!,
+                                  )
                                 : "--"}
                             </>
                           )}
