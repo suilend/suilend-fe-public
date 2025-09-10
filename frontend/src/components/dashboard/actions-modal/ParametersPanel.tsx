@@ -24,6 +24,7 @@ import PythLogo from "@/components/dashboard/actions-modal/PythLogo";
 import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
+import { TBody, TLabel } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
@@ -53,22 +54,26 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       </div>
 
       <LabelWithValue
+        className="items-start"
+        labelClassName="my-[2px]"
         label="Deposits"
-        value={`${formatToken(reserve.depositedAmount, { dp: 0 })} ${reserve.symbol}`}
+        value=""
         horizontal
+        customChild={
+          <div className="flex flex-col items-end gap-1">
+            <TBody>{`${formatToken(reserve.depositedAmount, { dp: 0 })} ${reserve.symbol}`}</TBody>
+            <TLabel>
+              {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+                ? formatUsd(reserve.depositedAmountUsd, { dp: 0, exact: true })
+                : "--"}
+            </TLabel>
+          </div>
+        }
       />
+
       <LabelWithValue
         label="Deposit limit"
         value={`${formatToken(reserve.config.depositLimit, { dp: 0 })} ${reserve.symbol}`}
-        horizontal
-      />
-      <LabelWithValue
-        label="Deposits (USD)"
-        value={
-          !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
-            ? formatUsd(reserve.depositedAmountUsd, { dp: 0, exact: true })
-            : "--"
-        }
         horizontal
       />
       <LabelWithValue
@@ -83,22 +88,26 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       <Separator />
 
       <LabelWithValue
+        className="items-start"
+        labelClassName="my-[2px]"
         label="Borrows"
-        value={`${formatToken(reserve.borrowedAmount, { dp: 0 })} ${reserve.symbol}`}
+        value=""
         horizontal
+        customChild={
+          <div className="flex flex-col items-end gap-1">
+            <TBody>{`${formatToken(reserve.borrowedAmount, { dp: 0 })} ${reserve.symbol}`}</TBody>
+            <TLabel>
+              {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+                ? formatUsd(reserve.borrowedAmountUsd, { dp: 0, exact: true })
+                : "--"}
+            </TLabel>
+          </div>
+        }
       />
+
       <LabelWithValue
         label="Borrow limit"
         value={`${formatToken(reserve.config.borrowLimit, { dp: 0 })} ${reserve.symbol}`}
-        horizontal
-      />
-      <LabelWithValue
-        label="Borrows (USD)"
-        value={
-          !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
-            ? formatUsd(reserve.borrowedAmountUsd, { dp: 0, exact: true })
-            : "--"
-        }
         horizontal
       />
       <LabelWithValue
