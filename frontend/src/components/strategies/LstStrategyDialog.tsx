@@ -113,7 +113,6 @@ const getReserveSafeDepositLimit = (reserve: ParsedReserve) => {
 export enum QueryParams {
   STRATEGY_NAME = "strategy",
   TAB = "action",
-  // PARAMETERS_PANEL_TAB = "parametersPanelTab",
 }
 
 export enum Tab {
@@ -137,9 +136,6 @@ export default function LstStrategyDialog({
         | string
         | undefined,
       [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
-      // [QueryParams.PARAMETERS_PANEL_TAB]: router.query[
-      //   QueryParams.PARAMETERS_PANEL_TAB
-      // ] as ParametersPanelTab | undefined,
     }),
     [router.query],
   );
@@ -151,8 +147,8 @@ export default function LstStrategyDialog({
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -182,12 +178,13 @@ export default function LstStrategyDialog({
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
     getLiquidationPrice,
   } = useLoadedLstStrategyContext();
-  const LearnMoreIcon = isLearnMoreOpen ? ChevronLeft : ChevronRight;
+  const MoreDetailsIcon = isMoreDetailsOpen ? ChevronLeft : ChevronRight;
 
   const { md } = useBreakpoint();
 
@@ -3285,7 +3282,7 @@ export default function LstStrategyDialog({
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
       dialogContentInnerClassName="max-w-max"
-      dialogContentInnerChildrenWrapperClassName="pt-4"
+      dialogContentInnerChildrenWrapperClassName="pt-4 overflow-hidden"
       contentInnerDecorator={
         // More parameters
         <div
@@ -3295,11 +3292,11 @@ export default function LstStrategyDialog({
           <Button
             className="h-fit w-10 rounded-l-none rounded-r-md px-0 py-3"
             labelClassName="uppercase"
-            endIcon={<LearnMoreIcon className="h-4 w-4" />}
+            endIcon={<MoreDetailsIcon className="h-4 w-4" />}
             variant="secondary"
-            onClick={() => setIsLearnMoreOpen((o) => !o)}
+            onClick={() => setIsMoreDetailsOpen((o) => !o)}
           >
-            Learn more
+            More details
           </Button>
         </div>
       }
@@ -3760,7 +3757,7 @@ export default function LstStrategyDialog({
                 )}
               </div>
 
-              {!md && isLearnMoreOpen && (
+              {!md && isMoreDetailsOpen && (
                 <>
                   <Separator />
                   <LstStrategyDialogParametersPanel
@@ -3773,9 +3770,9 @@ export default function LstStrategyDialog({
             <div className="flex w-full flex-col gap-3">
               {!md && (
                 <Collapsible
-                  open={isLearnMoreOpen}
-                  onOpenChange={setIsLearnMoreOpen}
-                  title="Learn more"
+                  open={isMoreDetailsOpen}
+                  onOpenChange={setIsMoreDetailsOpen}
+                  title="More details"
                   hasSeparator
                 />
               )}
@@ -3801,7 +3798,7 @@ export default function LstStrategyDialog({
             <div className="-mt-4 h-0 w-[28rem] max-w-full" />
           </div>
 
-          {md && isLearnMoreOpen && (
+          {md && isMoreDetailsOpen && (
             <div className="flex h-[440px] w-[28rem] flex-col gap-4">
               <LstStrategyDialogParametersPanel strategyType={strategyType} />
             </div>

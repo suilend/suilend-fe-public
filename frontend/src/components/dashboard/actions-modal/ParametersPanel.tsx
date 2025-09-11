@@ -346,7 +346,7 @@ function TabButton({ isActive, onClick, children }: TabButtonProps) {
   );
 }
 
-interface ParametersTabContentProps {
+interface ParametersPanelProps {
   side: Side;
   reserve: ParsedReserve;
 }
@@ -354,7 +354,7 @@ interface ParametersTabContentProps {
 export default function ParametersPanel({
   side,
   reserve,
-}: ParametersTabContentProps) {
+}: ParametersPanelProps) {
   const { selectedParametersPanelTab, onSelectedParametersPanelTabChange } =
     useActionsModalContext();
 
