@@ -1430,14 +1430,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             timestampS: claimRewardEvent.timestamp,
             eventIndex: claimRewardEvent.eventIndex,
             coinType: normalizeStructTag(claimRewardEvent.coinType),
-            liquidityAmount: new BigNumber(
-              claimRewardEvent.liquidityAmount,
-            ).div(
-              10 **
-                appData.coinMetadataMap[
-                  normalizeStructTag(claimRewardEvent.coinType)
-                ].decimals,
-            ),
+            liquidityAmount: new BigNumber(claimRewardEvent.liquidityAmount),
             digest: claimRewardEvent.digest,
           });
         }
@@ -1450,7 +1443,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       return sortedEvents;
     },
-    [hasPosition, appData.coinMetadataMap],
+    [],
   );
 
   // Stats - Historical TVL
