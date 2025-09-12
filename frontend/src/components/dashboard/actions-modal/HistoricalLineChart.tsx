@@ -18,6 +18,7 @@ interface HistoricalLineChartProps {
   data: ChartData[];
   tickFormatterY: (value: number) => string;
   fields: string[];
+  fieldStackIdMap: Record<string, string>;
   getFieldColor: (field: string) => string;
   tooltipContent: ContentType<any, any>;
 }
@@ -26,6 +27,7 @@ export default function HistoricalLineChart({
   data,
   tickFormatterY,
   fields,
+  fieldStackIdMap,
   getFieldColor,
   tooltipContent,
 }: HistoricalLineChartProps) {
@@ -41,21 +43,31 @@ export default function HistoricalLineChart({
   const minX = data.length > 0 ? Math.min(...data.map((d) => d.timestampS)) : 0;
   const maxX = data.length > 0 ? Math.max(...data.map((d) => d.timestampS)) : 0;
 
-  let minY = Math.min(
-    0,
-    ...data.map((d) =>
-      fields.reduce((acc: number, field) => acc + (d[field] ?? 0), 0),
-    ),
-  );
-  if (minY < 0) minY -= 1;
+  const stackData: number[][] = [];
+  for (const stackId of Array.from(new Set(Object.values(fieldStackIdMap)))) {
+    if (stackId === "0") continue; // Not shown in chart
 
-  let maxY = Math.max(
-    0,
-    ...data.map((d) =>
-      fields.reduce((acc: number, field) => acc + (d[field] ?? 0), 0),
-    ),
-  );
-  if (maxY > 0) maxY += 1;
+    const stackFields = fields.filter(
+      (field) => fieldStackIdMap[field] === stackId,
+    );
+
+    for (let i = 0; i < stackFields.length; i++) {
+      stackData.push(
+        data.map((d) =>
+          stackFields
+            .slice(0, i + 1)
+            .reduce((acc: number, field) => acc + (d[field] ?? 0), 0),
+        ),
+      );
+    }
+  }
+
+  let minY = Math.min(0, ...stackData.reduce((acc, d) => [...acc, ...d], []));
+  let maxY = Math.max(0, ...stackData.reduce((acc, d) => [...acc, ...d], []));
+
+  const range = maxY - minY;
+  if (minY < 0) minY -= range * 0.1;
+  if (maxY > 0) maxY += range * 0.1;
 
   // Ticks
   const ticksX =
@@ -130,24 +142,26 @@ export default function HistoricalLineChart({
           tickFormatter={tickFormatterY}
           domain={domainY}
         />
-        {fields.map((field) => {
-          const color = getFieldColor(field);
+        {fields
+          .filter((field) => fieldStackIdMap[field] !== "0")
+          .map((field) => {
+            const color = getFieldColor(field);
 
-          return (
-            <Recharts.Area
-              key={field}
-              type="monotone"
-              stackId="1"
-              dataKey={field}
-              isAnimationActive={false}
-              stroke={color}
-              fill={color}
-              fillOpacity={0.1}
-              dot={line.dot}
-              strokeWidth={line.strokeWidth}
-            />
-          );
-        })}
+            return (
+              <Recharts.Area
+                key={field}
+                type="monotone"
+                stackId={fieldStackIdMap[field]}
+                dataKey={field}
+                isAnimationActive={false}
+                stroke={color}
+                fill={color}
+                fillOpacity={0.1}
+                dot={line.dot}
+                strokeWidth={line.strokeWidth}
+              />
+            );
+          })}
         {data.length > 0 && (
           <Recharts.Tooltip
             isAnimationActive={false}

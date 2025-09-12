@@ -134,11 +134,13 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
 interface HistoricalAprLineChartProps {
   reserve: ParsedReserve;
   side: Side;
+  noInitialFetch?: boolean;
 }
 
 export default function HistoricalAprLineChart({
   reserve,
   side,
+  noInitialFetch,
 }: HistoricalAprLineChartProps) {
   const { allAppData, appData, isLst } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
@@ -165,7 +167,8 @@ export default function HistoricalAprLineChart({
   useEffect(() => {
     const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
     if (events === undefined) {
-      if (didFetchInitialReserveAssetDataEventsRef.current) return;
+      if (noInitialFetch || didFetchInitialReserveAssetDataEventsRef.current)
+        return;
 
       fetchReserveAssetDataEvents(reserve, days);
       didFetchInitialReserveAssetDataEventsRef.current = true;
@@ -192,6 +195,7 @@ export default function HistoricalAprLineChart({
     reserveAssetDataEventsMap,
     reserve,
     days,
+    noInitialFetch,
     fetchReserveAssetDataEvents,
     aprRewardReserves,
   ]);
@@ -288,16 +292,25 @@ export default function HistoricalAprLineChart({
   const isLoading = chartData === undefined;
 
   // Fields
-  const fields =
-    (chartData ?? []).length > 0
-      ? Array.from(
-          new Set(
-            (chartData ?? [])
-              .map((d) => Object.keys(d).filter((key) => key !== "timestampS"))
-              .flat(),
-          ),
-        )
-      : [];
+  const fields = useMemo(
+    () =>
+      (chartData ?? []).length > 0
+        ? Array.from(
+            new Set(
+              (chartData ?? [])
+                .map((d) =>
+                  Object.keys(d).filter((key) => key !== "timestampS"),
+                )
+                .flat(),
+            ),
+          )
+        : [],
+    [chartData],
+  );
+  const fieldStackIdMap = useMemo(
+    () => fields.reduce((acc, field) => ({ ...acc, [field]: "1" }), {}),
+    [fields],
+  );
 
   return (
     <div className="-mx-4 flex flex-col">
@@ -335,6 +348,7 @@ export default function HistoricalAprLineChart({
             formatPercent(new BigNumber(value), { dp: 1 })
           }
           fields={fields}
+          fieldStackIdMap={fieldStackIdMap}
           getFieldColor={getFieldColor}
           tooltipContent={({ active, payload, viewBox, coordinate }) => {
             if (!active || !payload?.[0]?.payload) return null;

@@ -52,7 +52,11 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       <div className="mb-1 flex w-full flex-col gap-4">
         <HistoricalAprLineChart reserve={reserve} side={side} />
         <Separator />
-        <HistoricalDepositBorrowLineChart reserve={reserve} side={side} />
+        <HistoricalDepositBorrowLineChart
+          reserve={reserve}
+          side={side}
+          noInitialFetch
+        />
         <Separator />
       </div>
 
@@ -117,6 +121,26 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
         label="Borrow limit (USD)"
         value={formatUsd(reserve.config.borrowLimitUsd, { dp: 0, exact: true })}
         horizontal
+      />
+
+      <Separator />
+
+      <LabelWithValue
+        className="items-start"
+        labelClassName="my-[2px]"
+        label="TVL"
+        value=""
+        horizontal
+        customChild={
+          <div className="flex flex-col items-end gap-1">
+            <TBody>{`${formatToken(reserve.availableAmount, { dp: 0 })} ${reserve.symbol}`}</TBody>
+            <TLabel>
+              {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+                ? formatUsd(reserve.availableAmountUsd, { dp: 0, exact: true })
+                : "--"}
+            </TLabel>
+          </div>
+        }
       />
 
       <Separator />

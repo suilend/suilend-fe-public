@@ -7,13 +7,23 @@ import { useLocalStorage } from "usehooks-ts";
 
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { COINTYPE_COLOR_MAP, Token, formatToken } from "@suilend/sui-fe";
+import {
+  COINTYPE_COLOR_MAP,
+  Token,
+  formatToken,
+  formatUsd,
+} from "@suilend/sui-fe";
 
 import HistoricalLineChart, {
   ChartData,
 } from "@/components/dashboard/actions-modal/HistoricalLineChart";
 import Button from "@/components/shared/Button";
-import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { ViewBox, getTooltipStyle } from "@/lib/chart";
 import {
@@ -25,7 +35,8 @@ import {
 } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
-const getFieldColor = (token: Token) => {
+const getFieldColor = (field: string, token: Token) => {
+  if (field === "tvlAmount") return "hsl(var(--foreground))";
   return COINTYPE_COLOR_MAP[token.coinType] ?? "hsl(var(--muted))";
 };
 
@@ -60,19 +71,61 @@ function TooltipContent({
           {format(new Date(d.timestampS * 1000), "MM/dd HH:mm")}
         </TLabelSans>
 
-        <div className="flex w-full flex-row items-center justify-between gap-4">
+        {/* Deposits/Borrows */}
+        <div className="flex w-full flex-row justify-between gap-4">
           <TBodySans>{capitalize(side)}s</TBodySans>
-          <TBody style={{ color: getFieldColor(token) }}>
-            {formatToken(
-              new BigNumber(
-                d[
-                  side === Side.DEPOSIT ? "depositedAmount" : "borrowedAmount"
-                ]!,
-              ),
-              { exact: false },
-            )}{" "}
-            {token.symbol}
-          </TBody>
+
+          <div className="flex flex-col items-end gap-1">
+            <TBody
+              style={{
+                color: getFieldColor(
+                  side === Side.DEPOSIT ? "depositedAmount" : "borrowedAmount",
+                  token,
+                ),
+              }}
+            >
+              {formatToken(
+                new BigNumber(
+                  d[
+                    side === Side.DEPOSIT ? "depositedAmount" : "borrowedAmount"
+                  ] ?? 0,
+                ),
+                { exact: false },
+              )}{" "}
+              {token.symbol}
+            </TBody>
+            <TLabel>
+              {formatUsd(
+                new BigNumber(
+                  d[
+                    side === Side.DEPOSIT
+                      ? "depositedAmountUsd"
+                      : "borrowedAmountUsd"
+                  ] ?? 0,
+                ),
+                { exact: false },
+              )}
+            </TLabel>
+          </div>
+        </div>
+
+        {/* TVL */}
+        <div className="flex w-full flex-row justify-between gap-4">
+          <TBodySans>TVL</TBodySans>
+
+          <div className="flex flex-col items-end gap-1">
+            <TBody
+              style={{
+                color: getFieldColor("tvlAmount", token),
+              }}
+            >
+              {formatToken(new BigNumber(d.tvlAmount ?? 0), { exact: false })}{" "}
+              {token.symbol}
+            </TBody>
+            <TLabel>
+              {formatUsd(new BigNumber(d.tvlAmountUsd ?? 0), { exact: false })}
+            </TLabel>
+          </div>
         </div>
       </div>
     </div>
@@ -82,11 +135,13 @@ function TooltipContent({
 interface HistoricalDepositBorrowLineChartProps {
   reserve: ParsedReserve;
   side: Side;
+  noInitialFetch?: boolean;
 }
 
 export default function HistoricalDepositBorrowLineChart({
   reserve,
   side,
+  noInitialFetch,
 }: HistoricalDepositBorrowLineChartProps) {
   const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
     useReserveAssetDataEventsContext();
@@ -98,12 +153,19 @@ export default function HistoricalDepositBorrowLineChart({
   useEffect(() => {
     const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
     if (events === undefined) {
-      if (didFetchInitialReserveAssetDataEventsRef.current) return;
+      if (noInitialFetch || didFetchInitialReserveAssetDataEventsRef.current)
+        return;
 
       fetchReserveAssetDataEvents(reserve, days);
       didFetchInitialReserveAssetDataEventsRef.current = true;
     }
-  }, [reserveAssetDataEventsMap, reserve, days, fetchReserveAssetDataEvents]);
+  }, [
+    reserveAssetDataEventsMap,
+    reserve,
+    days,
+    noInitialFetch,
+    fetchReserveAssetDataEvents,
+  ]);
 
   const onDaysClick = (value: Days) => {
     setDays(value);
@@ -141,6 +203,14 @@ export default function HistoricalDepositBorrowLineChart({
             ? +event.depositedAmount
             : +event.borrowedAmount
           : undefined,
+        [side === Side.DEPOSIT ? "depositedAmountUsd" : "borrowedAmountUsd"]:
+          event
+            ? side === Side.DEPOSIT
+              ? +event.depositedAmountUsd
+              : +event.borrowedAmountUsd
+            : undefined,
+        tvlAmount: event ? +event.availableAmount : undefined,
+        tvlAmountUsd: event ? +event.availableAmountUsd : undefined,
       };
       result.push(d);
     });
@@ -150,16 +220,30 @@ export default function HistoricalDepositBorrowLineChart({
   const isLoading = chartData === undefined;
 
   // Fields
-  const fields =
-    (chartData ?? []).length > 0
-      ? Array.from(
-          new Set(
-            (chartData ?? [])
-              .map((d) => Object.keys(d).filter((key) => key !== "timestampS"))
-              .flat(),
-          ),
-        )
-      : [];
+  const fields = useMemo(
+    () =>
+      (chartData ?? []).length > 0
+        ? Array.from(
+            new Set(
+              (chartData ?? [])
+                .map((d) =>
+                  Object.keys(d).filter((key) => key !== "timestampS"),
+                )
+                .flat(),
+            ),
+          )
+        : [],
+    [chartData],
+  );
+  const fieldStackIdMap = useMemo(
+    () => ({
+      [side === Side.DEPOSIT ? "depositedAmount" : "borrowedAmount"]: "1",
+      [side === Side.DEPOSIT ? "depositedAmountUsd" : "borrowedAmountUsd"]: "0", // Not shown in chart
+      tvlAmount: "2",
+      tvlAmountUsd: "0", // Not shown in chart
+    }),
+    [side],
+  );
 
   return (
     <div className="-mx-4 flex flex-col">
@@ -195,7 +279,8 @@ export default function HistoricalDepositBorrowLineChart({
             formatToken(new BigNumber(value), { exact: false })
           }
           fields={fields}
-          getFieldColor={() => getFieldColor(reserve.token)}
+          fieldStackIdMap={fieldStackIdMap}
+          getFieldColor={(field: string) => getFieldColor(field, reserve.token)}
           tooltipContent={({ active, payload, viewBox, coordinate }) => {
             if (!active || !payload?.[0]?.payload) return null;
             return (
