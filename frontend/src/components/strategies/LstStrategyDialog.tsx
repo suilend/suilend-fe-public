@@ -3282,7 +3282,7 @@ export default function LstStrategyDialog({
       trigger={children}
       dialogContentProps={{ className: "md:inset-x-10" }}
       dialogContentInnerClassName="max-w-max"
-      dialogContentInnerChildrenWrapperClassName="pt-4 overflow-hidden"
+      dialogContentInnerChildrenWrapperClassName="pt-4"
       contentInnerDecorator={
         // More parameters
         <div

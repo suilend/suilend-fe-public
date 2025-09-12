@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef } from "react";
 import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import { capitalize } from "lodash";
-import * as Recharts from "recharts";
 import { useLocalStorage } from "usehooks-ts";
 
 import { getDedupedAprRewards } from "@suilend/sdk";
@@ -16,20 +15,21 @@ import {
   formatPercent,
   getToken,
 } from "@suilend/sui-fe";
-import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
+import HistoricalLineChart, {
+  ChartData,
+} from "@/components/dashboard/actions-modal/HistoricalLineChart";
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import Button from "@/components/shared/Button";
-import CartesianGridVerticalLine from "@/components/shared/CartesianGridVerticalLine";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import useBreakpoint from "@/hooks/useBreakpoint";
-import { ViewBox, axis, getTooltipStyle, line, tooltip } from "@/lib/chart";
+import { ViewBox, getTooltipStyle } from "@/lib/chart";
 import {
   DAYS,
+  DAYS_MAP,
   DAY_S,
   Days,
   RESERVE_EVENT_SAMPLE_INTERVAL_S_MAP,
@@ -48,11 +48,6 @@ const getFieldColor = (field: string) => {
   if (isReward(field))
     return COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))";
   return "";
-};
-
-type ChartData = {
-  timestampS: number;
-  [interestAprPercent: string]: number | undefined;
 };
 
 interface TooltipContentProps {
@@ -136,197 +131,6 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
   );
 }
 
-interface ChartProps {
-  side: Side;
-  data: ChartData[];
-}
-
-function Chart({ side, data }: ChartProps) {
-  const { sm } = useBreakpoint();
-  const isTouchscreen = useIsTouchscreen();
-
-  const sampleIntervalS =
-    data.length > 1 ? data[1].timestampS - data[0].timestampS : 1;
-  const samplesPerDay = DAY_S / sampleIntervalS;
-  const days = data.length / samplesPerDay;
-
-  // Data
-  const allFields =
-    data.length > 0
-      ? Array.from(
-          new Set(
-            data
-              .map((d) => Object.keys(d).filter((key) => key !== "timestampS"))
-              .flat(),
-          ),
-        )
-      : [];
-
-  const fieldsMap = {
-    [Side.DEPOSIT]: allFields.filter((field) =>
-      field.startsWith("depositInterestAprPercent"),
-    ),
-    [Side.BORROW]: allFields.filter((field) =>
-      field.startsWith("borrowInterestAprPercent"),
-    ),
-  };
-  const fields = fieldsMap[side];
-
-  // Min/max
-  const minX = data.length > 0 ? Math.min(...data.map((d) => d.timestampS)) : 0;
-  const maxX = data.length > 0 ? Math.max(...data.map((d) => d.timestampS)) : 0;
-
-  let minY = Math.min(
-    0,
-    ...data.map(
-      (d) =>
-        d[
-          side === Side.DEPOSIT
-            ? "depositInterestAprPercent__base"
-            : "borrowInterestAprPercent__base"
-        ] ?? 0,
-    ),
-    ...data.map((d) =>
-      fields.reduce((acc: number, field) => acc + (d[field] ?? 0), 0),
-    ),
-  );
-  if (minY < 0) minY -= 1;
-
-  let maxY = Math.max(
-    0,
-    ...data.map(
-      (d) =>
-        d[
-          side === Side.DEPOSIT
-            ? "depositInterestAprPercent__base"
-            : "borrowInterestAprPercent__base"
-        ] ?? 0,
-    ),
-    ...data.map((d) =>
-      fields.reduce((acc: number, field) => acc + (d[field] ?? 0), 0),
-    ),
-  );
-  if (maxY > 0) maxY += 1;
-
-  // Ticks
-  const ticksX =
-    data.length > 0
-      ? data
-          .filter((d) => {
-            if (days === 1)
-              return d.timestampS % ((sm ? 4 : 8) * 60 * 60) === 0;
-            if (days === 7) return d.timestampS % ((sm ? 1 : 2) * DAY_S) === 0;
-            if (days === 30)
-              return d.timestampS % ((sm ? 5 : 10) * DAY_S) === 0;
-            return false;
-          })
-          .map((d) => {
-            if (days === 1) return d.timestampS;
-            return d.timestampS + new Date().getTimezoneOffset() * 60;
-          })
-      : [];
-  const ticksY =
-    data.length > 0
-      ? Array.from({ length: 4 }).map(
-          (_, index, array) =>
-            minY + ((maxY - minY) / (array.length - 1)) * index,
-        )
-      : [];
-
-  const tickFormatterX = (timestampS: number) => {
-    if (days === 1) return format(new Date(timestampS * 1000), "HH:mm");
-    return format(new Date(timestampS * 1000), "MM/dd");
-  };
-  const tickFormatterY = (value: number) =>
-    formatPercent(new BigNumber(value), { dp: 1 });
-
-  // Domain
-  const domainX = data.length > 0 ? [minX, maxX] : undefined;
-  const domainY = data.length > 0 ? [minY, maxY] : undefined;
-
-  return (
-    <Recharts.ResponsiveContainer width="100%" height="100%">
-      <Recharts.AreaChart
-        data={data}
-        margin={{
-          top: 8,
-          right: 16 + 8,
-          bottom: -30 + 2 + 16,
-          left: -60 + (16 + 40),
-        }}
-      >
-        <Recharts.CartesianGrid
-          strokeDasharray="1 4"
-          stroke="hsla(var(--secondary) / 20%)"
-          fill="transparent"
-          horizontal={false}
-          vertical={(props) => <CartesianGridVerticalLine {...props} />}
-        />
-        <Recharts.XAxis
-          type="number"
-          dataKey="timestampS"
-          ticks={ticksX}
-          tickMargin={axis.tickMargin}
-          tick={axis.tick}
-          axisLine={axis.axisLine}
-          tickLine={axis.tickLine}
-          tickFormatter={tickFormatterX}
-          domain={domainX}
-        />
-        <Recharts.YAxis
-          type="number"
-          ticks={ticksY}
-          tickMargin={axis.tickMargin}
-          tick={axis.tick}
-          axisLine={axis.axisLine}
-          tickLine={axis.tickLine}
-          tickFormatter={tickFormatterY}
-          domain={domainY}
-        />
-        {fields.map((field) => {
-          const color = getFieldColor(field);
-
-          return (
-            <Recharts.Area
-              key={field}
-              type="monotone"
-              stackId="1"
-              dataKey={field}
-              isAnimationActive={false}
-              stroke={color}
-              fill={color}
-              fillOpacity={0.1}
-              dot={line.dot}
-              strokeWidth={line.strokeWidth}
-            />
-          );
-        })}
-        {data.length > 0 && (
-          <Recharts.Tooltip
-            isAnimationActive={false}
-            filterNull={false}
-            cursor={tooltip.cursor}
-            trigger={isTouchscreen ? "hover" : "hover"}
-            wrapperStyle={tooltip.wrapperStyle}
-            content={({ active, payload, viewBox, coordinate }) => {
-              if (!active || !payload?.[0]?.payload) return null;
-              return (
-                <TooltipContent
-                  side={side}
-                  fields={fields}
-                  d={payload[0].payload as ChartData}
-                  viewBox={viewBox as any}
-                  x={coordinate?.x}
-                />
-              );
-            }}
-          />
-        )}
-      </Recharts.AreaChart>
-    </Recharts.ResponsiveContainer>
-  );
-}
-
 interface HistoricalAprLineChartProps {
   reserve: ParsedReserve;
   side: Side;
@@ -343,10 +147,7 @@ export default function HistoricalAprLineChart({
     useReserveAssetDataEventsContext();
 
   // Events
-  const [days, setDays] = useLocalStorage<Days>(
-    "historicalAprLineChartDays",
-    7,
-  );
+  const [days, setDays] = useLocalStorage<Days>("historicalLineChart_days", 7);
 
   const aprRewardReserves = useMemo(() => {
     const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
@@ -486,6 +287,18 @@ export default function HistoricalAprLineChart({
   ]);
   const isLoading = chartData === undefined;
 
+  // Fields
+  const fields =
+    (chartData ?? []).length > 0
+      ? Array.from(
+          new Set(
+            (chartData ?? [])
+              .map((d) => Object.keys(d).filter((key) => key !== "timestampS"))
+              .flat(),
+          ),
+        )
+      : [];
+
   return (
     <div className="-mx-4 flex flex-col">
       <div className="flex w-full flex-row items-center justify-between px-4">
@@ -506,9 +319,7 @@ export default function HistoricalAprLineChart({
               size="sm"
               onClick={() => onDaysClick(_days)}
             >
-              {_days === 1 && "1D"}
-              {_days === 7 && "1W"}
-              {_days === 30 && "1M"}
+              {DAYS_MAP[_days]}
             </Button>
           ))}
         </div>
@@ -518,7 +329,26 @@ export default function HistoricalAprLineChart({
         className="historical-apr-line-chart h-[140px] w-full shrink-0 transform-gpu md:h-[160px]"
         is-loading={isLoading ? "true" : "false"}
       >
-        <Chart side={side} data={chartData ?? []} />
+        <HistoricalLineChart
+          data={chartData ?? []}
+          tickFormatterY={(value) =>
+            formatPercent(new BigNumber(value), { dp: 1 })
+          }
+          fields={fields}
+          getFieldColor={getFieldColor}
+          tooltipContent={({ active, payload, viewBox, coordinate }) => {
+            if (!active || !payload?.[0]?.payload) return null;
+            return (
+              <TooltipContent
+                side={side}
+                fields={fields}
+                d={payload[0].payload as ChartData}
+                viewBox={viewBox as any}
+                x={coordinate?.x}
+              />
+            );
+          }}
+        />
       </div>
     </div>
   );

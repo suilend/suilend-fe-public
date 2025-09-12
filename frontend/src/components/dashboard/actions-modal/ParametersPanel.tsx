@@ -20,6 +20,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";
+import HistoricalDepositBorrowLineChart from "@/components/dashboard/actions-modal/HistoricalDepositBorrowLineChart";
 import PythLogo from "@/components/dashboard/actions-modal/PythLogo";
 import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";
@@ -50,6 +51,8 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
     <>
       <div className="mb-1 flex w-full flex-col gap-4">
         <HistoricalAprLineChart reserve={reserve} side={side} />
+        <Separator />
+        <HistoricalDepositBorrowLineChart reserve={reserve} side={side} />
         <Separator />
       </div>
 
