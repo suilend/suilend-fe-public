@@ -1,14 +1,18 @@
 import { KioskData, KioskOwnerCap } from "@mysten/kiosk";
 import { KioskClient } from "@mysten/kiosk";
-import { SuiObjectResponse } from "@mysten/sui/client";
+import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 
 import { SuilendClient } from "@suilend/sdk";
 import {
+  NORMALIZED_SEND_POINTS_S1_COINTYPE,
+  NORMALIZED_SEND_POINTS_S2_COINTYPE,
+  NORMALIZED_STEAMM_POINTS_COINTYPE,
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
   NORMALIZED_mSEND_SERIES_5_COINTYPE,
   formatInteger,
+  getAllCoins,
   isSendPointsS1,
   isSendPointsS2,
   isSteammPoints,
@@ -678,13 +682,21 @@ export const allocations: {
 };
 
 // Redeem
-export const redeemPointsMsend = (
+export const redeemPointsMsend = async (
   type: "SEND_POINTS_S1" | "SEND_POINTS_S2" | "STEAMM_POINTS",
+  suiClient: SuiClient,
   suilendClient: SuilendClient,
+  getBalance: (coinType: string) => BigNumber,
   userData: UserData,
   address: string,
   transaction: Transaction,
 ) => {
+  const pointsCoinType = {
+    SEND_POINTS_S1: NORMALIZED_SEND_POINTS_S1_COINTYPE,
+    SEND_POINTS_S2: NORMALIZED_SEND_POINTS_S2_COINTYPE,
+    STEAMM_POINTS: NORMALIZED_STEAMM_POINTS_COINTYPE,
+  }[type];
+
   // Claim points rewards
   const pointsCoins = [];
 
@@ -718,6 +730,18 @@ export const redeemPointsMsend = (
       );
       pointsCoins.push(pointsCoin);
     }
+  }
+
+  // Add balance coins
+  const balance = getBalance(pointsCoinType);
+  if (balance.gt(0)) {
+    const allCoinsPoints = await getAllCoins(
+      suiClient,
+      address,
+      pointsCoinType,
+    );
+
+    pointsCoins.push(...allCoinsPoints.map((c) => c.coinObjectId));
   }
 
   // Merge points coins
