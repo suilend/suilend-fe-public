@@ -274,13 +274,13 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
           {
             {
               [StrategyType.sSUI_SUI_LOOPING]:
-                "sSUI rewards (from depositing sSUI, and borrowing SUI)",
+                "sSUI rewards (for depositing sSUI, and for borrowing SUI)",
               [StrategyType.stratSUI_SUI_LOOPING]:
-                "STRAT rewards (from depositing stratSUI) and sSUI rewards (from borrowing SUI)",
+                "STRAT rewards (for depositing stratSUI) and sSUI rewards (for borrowing SUI)",
               [StrategyType.USDC_sSUI_SUI_LOOPING]:
-                "sSUI rewards (from borrowing SUI)",
+                "sSUI rewards (for depositing sSUI, and for borrowing SUI)",
               [StrategyType.AUSD_sSUI_SUI_LOOPING]:
-                "sSUI rewards (from depositing AUSD, and borrowing SUI)",
+                "sSUI rewards (for depositing AUSD, for depositing sSUI, and for borrowing SUI)",
             }[strategyType]
           }{" "}
           are autoclaimed and redeposited every 2 weeks.
