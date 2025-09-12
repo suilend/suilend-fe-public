@@ -10,7 +10,12 @@ import { getDedupedAprRewards } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import { COINTYPE_COLOR_MAP, formatPercent, getToken } from "@suilend/sui-fe";
+import {
+  COINTYPE_COLOR_MAP,
+  NORMALIZED_SUI_COINTYPE,
+  formatPercent,
+  getToken,
+} from "@suilend/sui-fe";
 import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
@@ -33,11 +38,13 @@ import {
 import { cn } from "@/lib/utils";
 
 const isBase = (field: string) => field.endsWith("__base");
+const isStakingYield = (field: string) => field.endsWith("__staking_yield");
 const isReward = (field: string) => !isBase(field);
 
 const getFieldCoinType = (field: string) => field.split("__")[1];
 const getFieldColor = (field: string) => {
   if (isBase(field)) return "hsl(var(--success))";
+  if (isStakingYield(field)) return COINTYPE_COLOR_MAP[NORMALIZED_SUI_COINTYPE]; // SUI color
   if (isReward(field))
     return COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))";
   return "";
@@ -104,6 +111,8 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
             >
               {isBase(field) ? (
                 <TLabelSans>Interest</TLabelSans>
+              ) : isStakingYield(field) ? (
+                <TLabelSans>Staking yield*</TLabelSans>
               ) : (
                 <>
                   <TLabelSans>Rewards in</TLabelSans>
@@ -327,7 +336,7 @@ export default function HistoricalAprLineChart({
   reserve,
   side,
 }: HistoricalAprLineChartProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData, appData, isLst } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
 
   const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
@@ -456,13 +465,25 @@ export default function HistoricalAprLineChart({
               ? +event.depositAprPercent
               : +event.borrowAprPercent
             : undefined,
+          [`${side}InterestAprPercent__staking_yield`]:
+            event && side === Side.DEPOSIT && isLst(event.coinType)
+              ? +allAppData.lstAprPercentMap[event.coinType]
+              : undefined,
         },
       );
       result.push(d);
     });
 
     return result as ChartData[];
-  }, [reserveAssetDataEventsMap, reserve, days, aprRewardReserves, side]);
+  }, [
+    reserveAssetDataEventsMap,
+    reserve,
+    days,
+    aprRewardReserves,
+    side,
+    isLst,
+    allAppData.lstAprPercentMap,
+  ]);
   const isLoading = chartData === undefined;
 
   return (
