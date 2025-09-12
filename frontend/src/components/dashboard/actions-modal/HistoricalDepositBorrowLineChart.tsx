@@ -36,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const getFieldColor = (field: string, token: Token) => {
-  if (field === "tvlAmount") return "hsl(var(--foreground))";
+  if (field === "availableAmount") return "hsl(var(--foreground))";
   return COINTYPE_COLOR_MAP[token.coinType] ?? "hsl(var(--muted))";
 };
 
@@ -64,7 +64,7 @@ function TooltipContent({
     // Subset of TooltipContent className
     <div
       className="absolute rounded-md border bg-popover px-3 py-1.5 shadow-md"
-      style={getTooltipStyle(240, viewBox, x)}
+      style={getTooltipStyle(260, viewBox, x)}
     >
       <div className="flex w-full flex-col gap-2">
         <TLabelSans>
@@ -109,21 +109,25 @@ function TooltipContent({
           </div>
         </div>
 
-        {/* TVL */}
+        {/* Available amount */}
         <div className="flex w-full flex-row justify-between gap-4">
-          <TBodySans>TVL</TBodySans>
+          <TBodySans>Available amount</TBodySans>
 
           <div className="flex flex-col items-end gap-1">
             <TBody
               style={{
-                color: getFieldColor("tvlAmount", token),
+                color: getFieldColor("availableAmount", token),
               }}
             >
-              {formatToken(new BigNumber(d.tvlAmount ?? 0), { exact: false })}{" "}
+              {formatToken(new BigNumber(d.availableAmount ?? 0), {
+                exact: false,
+              })}{" "}
               {token.symbol}
             </TBody>
             <TLabel>
-              {formatUsd(new BigNumber(d.tvlAmountUsd ?? 0), { exact: false })}
+              {formatUsd(new BigNumber(d.availableAmountUsd ?? 0), {
+                exact: false,
+              })}
             </TLabel>
           </div>
         </div>
@@ -209,8 +213,8 @@ export default function HistoricalDepositBorrowLineChart({
               ? +event.depositedAmountUsd
               : +event.borrowedAmountUsd
             : undefined,
-        tvlAmount: event ? +event.availableAmount : undefined,
-        tvlAmountUsd: event ? +event.availableAmountUsd : undefined,
+        availableAmount: event ? +event.availableAmount : undefined,
+        availableAmountUsd: event ? +event.availableAmountUsd : undefined,
       };
       result.push(d);
     });
@@ -239,8 +243,8 @@ export default function HistoricalDepositBorrowLineChart({
     () => ({
       [side === Side.DEPOSIT ? "depositedAmount" : "borrowedAmount"]: "1",
       [side === Side.DEPOSIT ? "depositedAmountUsd" : "borrowedAmountUsd"]: "0", // Not shown in chart
-      tvlAmount: "2",
-      tvlAmountUsd: "0", // Not shown in chart
+      availableAmount: "2",
+      availableAmountUsd: "0", // Not shown in chart
     }),
     [side],
   );

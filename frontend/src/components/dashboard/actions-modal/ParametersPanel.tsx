@@ -128,7 +128,7 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
       <LabelWithValue
         className="items-start"
         labelClassName="my-[2px]"
-        label="TVL"
+        label="Available amount"
         value=""
         horizontal
         customChild={
