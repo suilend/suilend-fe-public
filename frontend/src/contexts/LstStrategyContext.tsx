@@ -238,6 +238,16 @@ interface LstStrategyContext {
     suiBorrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
+  simulateRepay: (
+    strategyType: StrategyType,
+    deposits: Deposit[],
+    suiBorrowedAmount: BigNumber,
+    suiRepaidAmount: BigNumber,
+  ) => {
+    deposits: Deposit[];
+    suiBorrowedAmount: BigNumber;
+    obligation: ParsedObligation;
+  };
 
   // Stats
   getGlobalTvlAmountUsd: (
@@ -357,6 +367,9 @@ const defaultContextValue: LstStrategyContext = {
     throw Error("LstStrategyContextProvider not initialized");
   },
   simulateDepositAndLoopToExposure: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
+  simulateRepay: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -654,8 +667,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     (
       strategyType: StrategyType,
       deposits: Deposit[],
-      suiBorrowedAmount: BigNumber,
+      _suiBorrowedAmount: BigNumber,
     ): ParsedObligation => {
+      const suiBorrowedAmount = BigNumber.max(
+        new BigNumber(0),
+        _suiBorrowedAmount,
+      ); // Can't be negative
+
       const obligation = {
         deposits: deposits.reduce(
           (acc, deposit) => {
@@ -1169,6 +1187,46 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     [getSimulatedObligation, simulateDeposit, simulateLoopToExposure],
   );
 
+  const simulateRepay = useCallback(
+    (
+      strategyType: StrategyType,
+      _deposits: Deposit[],
+      _suiBorrowedAmount: BigNumber,
+      suiRepaidAmount: BigNumber,
+    ): {
+      deposits: Deposit[];
+      suiBorrowedAmount: BigNumber;
+      obligation: ParsedObligation;
+    } => {
+      const depositReserves = getDepositReserves(strategyType);
+      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
+
+      //
+
+      const deposits = cloneDeep(_deposits);
+      let suiBorrowedAmount = _suiBorrowedAmount;
+
+      // 1) Repay SUI
+      // 1.1) Split coins
+
+      // 1.2) Repay SUI
+
+      // 1.3) Update state
+      suiBorrowedAmount = suiBorrowedAmount.minus(suiRepaidAmount);
+
+      return {
+        deposits,
+        suiBorrowedAmount,
+        obligation: getSimulatedObligation(
+          strategyType,
+          deposits,
+          suiBorrowedAmount,
+        ),
+      };
+    },
+    [getDepositReserves, getDefaultCurrencyReserve, getSimulatedObligation],
+  );
+
   // Stats
   // Stats - Global TVL
   const [globalTvlAmountUsdMap, setGlobalTvlAmountUsdMap] = useState<
@@ -1657,7 +1715,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         return undefined;
       }
     },
-    [hasPosition, getDepositReserves, getDefaultCurrencyReserve, getTvlAmount],
+    [
+      hasPosition,
+      getDepositReserves,
+      getDefaultCurrencyReserve,
+      getHistory,
+      getTvlAmount,
+    ],
   );
 
   // Stats - APR
@@ -1691,7 +1755,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         _obligation,
         userData.rewardMap,
         allAppData.lstAprPercentMap,
-        !obligation || !hasPosition(obligation),
+        !obligation ||
+          !hasPosition(obligation) ||
+          obligation.deposits.some((d) => !d.userRewardManager), // Simulated obligations don't have userRewardManager
       );
     },
     [
@@ -1858,6 +1924,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
+      simulateRepay,
 
       // Stats
       getGlobalTvlAmountUsd,
@@ -1890,6 +1957,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
+      simulateRepay,
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistory,

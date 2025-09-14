@@ -84,6 +84,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
+    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
