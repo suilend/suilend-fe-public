@@ -186,6 +186,11 @@ function Page() {
         strategyType,
         { strategyOwnerCap, obligation },
       ] of Object.entries(strategyOwnerCapObligationMap)) {
+        if (
+          Object.keys(allRewardsMap[strategyType as StrategyType]).length === 0
+        )
+          continue;
+
         await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
