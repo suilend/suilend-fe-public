@@ -667,8 +667,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     (
       strategyType: StrategyType,
       deposits: Deposit[],
-      suiBorrowedAmount: BigNumber,
+      _suiBorrowedAmount: BigNumber,
     ): ParsedObligation => {
+      const suiBorrowedAmount = BigNumber.max(
+        new BigNumber(0),
+        _suiBorrowedAmount,
+      ); // Can't be negative
+
       const obligation = {
         deposits: deposits.reduce(
           (acc, deposit) => {
@@ -1710,7 +1715,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         return undefined;
       }
     },
-    [hasPosition, getDepositReserves, getDefaultCurrencyReserve, getTvlAmount],
+    [
+      hasPosition,
+      getDepositReserves,
+      getDefaultCurrencyReserve,
+      getHistory,
+      getTvlAmount,
+    ],
   );
 
   // Stats - APR
@@ -1744,7 +1755,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         _obligation,
         userData.rewardMap,
         allAppData.lstAprPercentMap,
-        !obligation || !hasPosition(obligation),
+        !obligation ||
+          !hasPosition(obligation) ||
+          obligation.deposits.some((d) => !d.userRewardManager), // Simulated obligations don't have userRewardManager
       );
     },
     [
@@ -1787,7 +1800,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd;
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
-      return new BigNumber(99);
       if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
       return new BigNumber(100).minus(
         new BigNumber(weightedBorrowsUsd.minus(borrowLimitUsd))
