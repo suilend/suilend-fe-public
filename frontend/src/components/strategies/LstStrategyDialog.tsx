@@ -113,7 +113,6 @@ const getReserveSafeDepositLimit = (reserve: ParsedReserve) => {
 export enum QueryParams {
   STRATEGY_NAME = "strategy",
   TAB = "action",
-  // PARAMETERS_PANEL_TAB = "parametersPanelTab",
 }
 
 export enum Tab {
@@ -137,9 +136,6 @@ export default function LstStrategyDialog({
         | string
         | undefined,
       [QueryParams.TAB]: router.query[QueryParams.TAB] as Tab | undefined,
-      // [QueryParams.PARAMETERS_PANEL_TAB]: router.query[
-      //   QueryParams.PARAMETERS_PANEL_TAB
-      // ] as ParametersPanelTab | undefined,
     }),
     [router.query],
   );
@@ -151,8 +147,8 @@ export default function LstStrategyDialog({
   const { getBalance, userData, refresh } = useLoadedUserContext();
 
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -183,12 +179,13 @@ export default function LstStrategyDialog({
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
     getLiquidationPrice,
   } = useLoadedLstStrategyContext();
-  const LearnMoreIcon = isLearnMoreOpen ? ChevronLeft : ChevronRight;
+  const MoreDetailsIcon = isMoreDetailsOpen ? ChevronLeft : ChevronRight;
 
   const { md } = useBreakpoint();
 
@@ -3333,7 +3330,7 @@ export default function LstStrategyDialog({
                 })
               : null,
             currencyReserve.token.symbol,
-            `into ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
+            `into the ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -3404,7 +3401,7 @@ export default function LstStrategyDialog({
                 })
               : null,
             currencyReserve.token.symbol,
-            `from ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
+            `from the ${strategyInfo.header.title} ${strategyInfo.header.type} strategy`,
           ]
             .filter(Boolean)
             .join(" "),
@@ -3481,9 +3478,9 @@ export default function LstStrategyDialog({
       showErrorToast(
         `Failed to ${
           selectedTab === Tab.DEPOSIT
-            ? "deposit into"
+            ? "deposit into the"
             : selectedTab === Tab.WITHDRAW
-              ? "withdraw from"
+              ? "withdraw from the"
               : selectedTab === Tab.ADJUST
                 ? canAdjust
                   ? "adjust"
@@ -3491,7 +3488,7 @@ export default function LstStrategyDialog({
                 : "--" // Should not happen
         } ${strategyInfo.header.title} ${strategyInfo.header.type} strategy${
           selectedTab === Tab.ADJUST
-            ? ` ${canAdjust ? "leverage" : "borrows"}`
+            ? ` ${canAdjust ? "position leverage" : "position borrows"}`
             : ""
         }`,
         err as Error,
@@ -3526,11 +3523,11 @@ export default function LstStrategyDialog({
           <Button
             className="h-fit w-10 rounded-l-none rounded-r-md px-0 py-3"
             labelClassName="uppercase"
-            endIcon={<LearnMoreIcon className="h-4 w-4" />}
+            endIcon={<MoreDetailsIcon className="h-4 w-4" />}
             variant="secondary"
-            onClick={() => setIsLearnMoreOpen((o) => !o)}
+            onClick={() => setIsMoreDetailsOpen((o) => !o)}
           >
-            Learn more
+            More details
           </Button>
         </div>
       }
@@ -3645,7 +3642,7 @@ export default function LstStrategyDialog({
                 : "md:min-h-[374px]",
           )}
           style={{
-            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
+            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${hasClaimableRewards ? 16 + 32 : 0 /* Claim rewards */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
           }}
         >
           <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
@@ -4026,7 +4023,7 @@ export default function LstStrategyDialog({
                 )}
               </div>
 
-              {!md && isLearnMoreOpen && (
+              {!md && isMoreDetailsOpen && (
                 <>
                   <Separator />
                   <LstStrategyDialogParametersPanel
@@ -4039,9 +4036,9 @@ export default function LstStrategyDialog({
             <div className="flex w-full flex-col gap-3">
               {!md && (
                 <Collapsible
-                  open={isLearnMoreOpen}
-                  onOpenChange={setIsLearnMoreOpen}
-                  title="Learn more"
+                  open={isMoreDetailsOpen}
+                  onOpenChange={setIsMoreDetailsOpen}
+                  title="More details"
                   hasSeparator
                 />
               )}
@@ -4067,7 +4064,7 @@ export default function LstStrategyDialog({
             <div className="-mt-4 h-0 w-[28rem] max-w-full" />
           </div>
 
-          {md && isLearnMoreOpen && (
+          {md && isMoreDetailsOpen && (
             <div className="flex h-[440px] w-[28rem] flex-col gap-4">
               <LstStrategyDialogParametersPanel strategyType={strategyType} />
             </div>

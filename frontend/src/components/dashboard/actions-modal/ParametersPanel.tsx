@@ -20,6 +20,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";
+import HistoricalDepositBorrowLineChart from "@/components/dashboard/actions-modal/HistoricalDepositBorrowLineChart";
 import PythLogo from "@/components/dashboard/actions-modal/PythLogo";
 import AprLineChart from "@/components/shared/AprLineChart";
 import Button from "@/components/shared/Button";
@@ -50,6 +51,12 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
     <>
       <div className="mb-1 flex w-full flex-col gap-4">
         <HistoricalAprLineChart reserve={reserve} side={side} />
+        <Separator />
+        <HistoricalDepositBorrowLineChart
+          reserve={reserve}
+          side={side}
+          noInitialFetch
+        />
         <Separator />
       </div>
 
@@ -114,6 +121,26 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
         label="Borrow limit (USD)"
         value={formatUsd(reserve.config.borrowLimitUsd, { dp: 0, exact: true })}
         horizontal
+      />
+
+      <Separator />
+
+      <LabelWithValue
+        className="items-start"
+        labelClassName="my-[2px]"
+        label="Available amount"
+        value=""
+        horizontal
+        customChild={
+          <div className="flex flex-col items-end gap-1">
+            <TBody>{`${formatToken(reserve.availableAmount, { dp: 0 })} ${reserve.symbol}`}</TBody>
+            <TLabel>
+              {!TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
+                ? formatUsd(reserve.availableAmountUsd, { dp: 0, exact: true })
+                : "--"}
+            </TLabel>
+          </div>
+        }
       />
 
       <Separator />
@@ -346,7 +373,7 @@ function TabButton({ isActive, onClick, children }: TabButtonProps) {
   );
 }
 
-interface ParametersTabContentProps {
+interface ParametersPanelProps {
   side: Side;
   reserve: ParsedReserve;
 }
@@ -354,7 +381,7 @@ interface ParametersTabContentProps {
 export default function ParametersPanel({
   side,
   reserve,
-}: ParametersTabContentProps) {
+}: ParametersPanelProps) {
   const { selectedParametersPanelTab, onSelectedParametersPanelTabChange } =
     useActionsModalContext();
 

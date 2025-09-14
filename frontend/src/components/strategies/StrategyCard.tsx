@@ -35,8 +35,8 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const { userData } = useLoadedUserContext();
 
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -67,6 +67,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,

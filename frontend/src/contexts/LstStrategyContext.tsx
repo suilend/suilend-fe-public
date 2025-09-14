@@ -50,6 +50,61 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { EventType } from "@/lib/events";
 
+export type DepositEvent = {
+  type: EventType.DEPOSIT;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
+  digest: string;
+};
+export type WithdrawEvent = {
+  type: EventType.WITHDRAW;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
+  digest: string;
+};
+export type BorrowEvent = {
+  type: EventType.BORROW;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
+  digest: string;
+};
+export type RepayEvent = {
+  type: EventType.REPAY;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
+  digest: string;
+};
+export type ObligationDataEvent = {
+  type: EventType.OBLIGATION_DATA;
+  timestampS: number;
+  eventIndex: number;
+  depositedValueUsd: BigNumber;
+  digest: string;
+};
+export type ClaimRewardEvent = {
+  type: EventType.CLAIM_REWARD;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
+  digest: string;
+};
+export type HistoryEvent =
+  | DepositEvent
+  | WithdrawEvent
+  | BorrowEvent
+  | RepayEvent
+  | ObligationDataEvent
+  | ClaimRewardEvent;
+
 export const E = 10 ** -6;
 export const LST_DECIMALS = 9;
 
@@ -73,9 +128,9 @@ export const addOrInsertDeposit = (
 };
 
 interface LstStrategyContext {
-  // Learn more
-  isLearnMoreOpen: boolean;
-  setIsLearnMoreOpen: Dispatch<SetStateAction<boolean>>;
+  // More details
+  isMoreDetailsOpen: boolean;
+  setIsMoreDetailsOpen: Dispatch<SetStateAction<boolean>>;
 
   // Obligations
   hasPosition: (obligation: ParsedObligation) => boolean;
@@ -202,6 +257,10 @@ interface LstStrategyContext {
     strategyType: StrategyType,
     obligation?: ParsedObligation,
   ) => BigNumber;
+  getHistory: (
+    strategyType: StrategyType,
+    obligation?: ParsedObligation,
+  ) => Promise<HistoryEvent[]>;
   getHistoricalTvlAmount: (
     strategyType: StrategyType,
     obligation?: ParsedObligation,
@@ -239,9 +298,9 @@ type LoadedLstStrategyContext = LstStrategyContext & {
 };
 
 const defaultContextValue: LstStrategyContext = {
-  // Learn more
-  isLearnMoreOpen: false,
-  setIsLearnMoreOpen: () => {
+  // More details
+  isMoreDetailsOpen: false,
+  setIsMoreDetailsOpen: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -321,6 +380,9 @@ const defaultContextValue: LstStrategyContext = {
   getUnclaimedRewardsAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
+  getHistory: () => {
+    throw Error("LstStrategyContextProvider not initialized");
+  },
   getHistoricalTvlAmount: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
@@ -347,9 +409,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { userData } = useLoadedUserContext();
   const { allAppData, appData, isLst } = useLoadedAppContext();
 
-  // Learn more
-  const [isLearnMoreOpen, setIsLearnMoreOpen] = useLocalStorage<boolean>(
-    "LstStrategyContext_isLearnMoreOpen",
+  // More details
+  const [isMoreDetailsOpen, setIsMoreDetailsOpen] = useLocalStorage<boolean>(
+    "LstStrategyContext_isMoreDetailsOpen",
     false,
   );
 
@@ -1271,6 +1333,172 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
+  // Stats - History
+  const getHistory = useCallback(
+    async (
+      strategyType: StrategyType,
+      obligation?: ParsedObligation,
+    ): Promise<HistoryEvent[]> => {
+      if (!obligation) return [];
+
+      type DepositResult = {
+        deposit: {
+          timestamp: number;
+          eventIndex: number;
+          coinType: string;
+          digest: string;
+        };
+        liquidityAmount: string;
+      };
+      type WithdrawResult = {
+        withdraw: {
+          timestamp: number;
+          eventIndex: number;
+          coinType: string;
+          digest: string;
+        };
+        liquidityAmount: string;
+      };
+      type BorrowResult = {
+        timestamp: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: string; // Includes origination fees
+        digest: string;
+      };
+      type RepayResult = {
+        timestamp: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: string;
+        digest: string;
+      };
+      type ObligationDataEventResult = {
+        timestamp: number;
+        eventIndex: number;
+        depositedValueUsd: string;
+        digest: string;
+      };
+      type ClaimRewardEventResult = {
+        timestamp: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: string;
+        digest: string;
+      };
+      type Results = {
+        deposits: DepositResult[];
+        withdraws: WithdrawResult[];
+        borrows: BorrowResult[];
+        repays: RepayResult[];
+        obligationDataEvents: ObligationDataEventResult[];
+        claimRewardEvents: ClaimRewardEventResult[];
+      };
+
+      type Page = {
+        results: Results;
+        cursor: string | null;
+      };
+
+      const getPage = async (cursor?: string): Promise<Page> => {
+        const url = `${API_URL}/obligations/history?${new URLSearchParams({
+          obligationId: obligation.id,
+          ...(cursor ? { cursor } : {}),
+        })}`;
+        const res = await fetch(url);
+        const json: Page = await res.json();
+        if ((json as any)?.statusCode === 500)
+          throw new Error("Failed to fetch obligation history");
+
+        return json;
+      };
+
+      // Get all pages
+      const pages: Page[] = [];
+      let page = await getPage();
+      pages.push(page);
+
+      while (page.cursor !== null) {
+        page = await getPage(page.cursor);
+        pages.push(page);
+      }
+
+      // Process pages
+      const events: HistoryEvent[] = [];
+      for (const page of pages) {
+        for (const deposit of page.results.deposits) {
+          events.push({
+            type: EventType.DEPOSIT,
+            timestampS: deposit.deposit.timestamp,
+            eventIndex: deposit.deposit.eventIndex,
+            coinType: normalizeStructTag(deposit.deposit.coinType),
+            liquidityAmount: new BigNumber(deposit.liquidityAmount),
+            digest: deposit.deposit.digest,
+          });
+        }
+        for (const withdraw of page.results.withdraws) {
+          events.push({
+            type: EventType.WITHDRAW,
+            timestampS: withdraw.withdraw.timestamp,
+            eventIndex: withdraw.withdraw.eventIndex,
+            coinType: normalizeStructTag(withdraw.withdraw.coinType),
+            liquidityAmount: new BigNumber(withdraw.liquidityAmount),
+            digest: withdraw.withdraw.digest,
+          });
+        }
+        for (const borrow of page.results.borrows) {
+          events.push({
+            type: EventType.BORROW,
+            timestampS: borrow.timestamp,
+            eventIndex: borrow.eventIndex,
+            coinType: normalizeStructTag(borrow.coinType),
+            liquidityAmount: new BigNumber(borrow.liquidityAmount),
+            digest: borrow.digest,
+          });
+        }
+        for (const repay of page.results.repays) {
+          events.push({
+            type: EventType.REPAY,
+            timestampS: repay.timestamp,
+            eventIndex: repay.eventIndex,
+            coinType: normalizeStructTag(repay.coinType),
+            liquidityAmount: new BigNumber(repay.liquidityAmount),
+            digest: repay.digest,
+          });
+        }
+        for (const obligationDataEvent of page.results.obligationDataEvents) {
+          events.push({
+            type: EventType.OBLIGATION_DATA,
+            timestampS: obligationDataEvent.timestamp,
+            eventIndex: obligationDataEvent.eventIndex,
+            depositedValueUsd: new BigNumber(
+              obligationDataEvent.depositedValueUsd,
+            ).div(WAD),
+            digest: obligationDataEvent.digest,
+          });
+        }
+        for (const claimRewardEvent of page.results.claimRewardEvents) {
+          events.push({
+            type: EventType.CLAIM_REWARD,
+            timestampS: claimRewardEvent.timestamp,
+            eventIndex: claimRewardEvent.eventIndex,
+            coinType: normalizeStructTag(claimRewardEvent.coinType),
+            liquidityAmount: new BigNumber(claimRewardEvent.liquidityAmount),
+            digest: claimRewardEvent.digest,
+          });
+        }
+      }
+      const sortedEvents = events.sort((a, b) => {
+        if (a.timestampS !== b.timestampS) return a.timestampS - b.timestampS; // Sort by timestamp (asc)
+        if (a.eventIndex !== b.eventIndex) return a.eventIndex - b.eventIndex; // Sort by eventIndex (asc) if timestamp is the same
+        return 0; // Should never happen
+      });
+
+      return sortedEvents;
+    },
+    [],
+  );
+
   // Stats - Historical TVL
   const getHistoricalTvlAmount = useCallback(
     async (
@@ -1282,166 +1510,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const depositReserves = getDepositReserves(strategyType);
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
-      type ActionEvent = {
-        type:
-          | EventType.DEPOSIT
-          | EventType.WITHDRAW
-          | EventType.BORROW
-          | EventType.REPAY;
-        timestampS: number;
-        eventIndex: number;
-        coinType: string;
-        liquidityAmount: BigNumber;
-      };
-      type ObligationDataEvent = {
-        type: EventType.OBLIGATION_DATA;
-        timestampS: number;
-        eventIndex: number;
-        depositedValueUsd: BigNumber;
-      };
-      type ClaimRewardEvent = {
-        type: EventType.CLAIM_REWARD;
-        timestampS: number;
-        eventIndex: number;
-        coinType: string;
-        liquidityAmount: BigNumber;
-      };
-      type Page = {
-        events: (ActionEvent | ObligationDataEvent | ClaimRewardEvent)[];
-        cursor: string | null;
-      };
-
       try {
-        const getPage = async (cursor?: string): Promise<Page> => {
-          const url = `${API_URL}/obligations/history?${new URLSearchParams({
-            obligationId: obligation.id,
-            ...(cursor ? { cursor } : {}),
-          })}`;
-          const res = await fetch(url);
-          const json: {
-            results: {
-              deposits: {
-                deposit: {
-                  timestamp: number;
-                  eventIndex: number;
-                  coinType: string;
-                };
-                liquidityAmount: string;
-              }[];
-              withdraws: {
-                withdraw: {
-                  timestamp: number;
-                  eventIndex: number;
-                  coinType: string;
-                };
-                liquidityAmount: string;
-              }[];
-              borrows: {
-                timestamp: number;
-                eventIndex: number;
-                coinType: string;
-                liquidityAmount: string; // Includes origination fees
-              }[];
-              repays: {
-                timestamp: number;
-                eventIndex: number;
-                coinType: string;
-                liquidityAmount: string;
-              }[];
-              obligationDataEvents: {
-                timestamp: number;
-                eventIndex: number;
-                depositedValueUsd: string;
-              }[];
-              claimRewardEvents: {
-                timestamp: number;
-                eventIndex: number;
-                coinType: string;
-                liquidityAmount: string;
-              }[];
-            };
-            cursor: string | null;
-          } = await res.json();
-          if ((json as any)?.statusCode === 500)
-            throw new Error("Failed to fetch obligation history");
-
-          const events: Page["events"] = [];
-          for (const deposit of json.results.deposits) {
-            events.push({
-              type: EventType.DEPOSIT,
-              timestampS: deposit.deposit.timestamp,
-              eventIndex: deposit.deposit.eventIndex,
-              coinType: normalizeStructTag(deposit.deposit.coinType),
-              liquidityAmount: new BigNumber(deposit.liquidityAmount),
-            });
-          }
-          for (const withdraw of json.results.withdraws) {
-            events.push({
-              type: EventType.WITHDRAW,
-              timestampS: withdraw.withdraw.timestamp,
-              eventIndex: withdraw.withdraw.eventIndex,
-              coinType: normalizeStructTag(withdraw.withdraw.coinType),
-              liquidityAmount: new BigNumber(withdraw.liquidityAmount),
-            });
-          }
-          for (const borrow of json.results.borrows) {
-            events.push({
-              type: EventType.BORROW,
-              timestampS: borrow.timestamp,
-              eventIndex: borrow.eventIndex,
-              coinType: normalizeStructTag(borrow.coinType),
-              liquidityAmount: new BigNumber(borrow.liquidityAmount),
-            });
-          }
-          for (const repay of json.results.repays) {
-            events.push({
-              type: EventType.REPAY,
-              timestampS: repay.timestamp,
-              eventIndex: repay.eventIndex,
-              coinType: normalizeStructTag(repay.coinType),
-              liquidityAmount: new BigNumber(repay.liquidityAmount),
-            });
-          }
-          for (const obligationDataEvent of json.results.obligationDataEvents) {
-            events.push({
-              type: EventType.OBLIGATION_DATA,
-              timestampS: obligationDataEvent.timestamp,
-              eventIndex: obligationDataEvent.eventIndex,
-              depositedValueUsd: new BigNumber(
-                obligationDataEvent.depositedValueUsd,
-              ).div(WAD),
-            });
-          }
-          for (const claimRewardEvent of json.results.claimRewardEvents) {
-            events.push({
-              type: EventType.CLAIM_REWARD,
-              timestampS: claimRewardEvent.timestamp,
-              eventIndex: claimRewardEvent.eventIndex,
-              coinType: normalizeStructTag(claimRewardEvent.coinType),
-              liquidityAmount: new BigNumber(claimRewardEvent.liquidityAmount),
-            });
-          }
-          return { events, cursor: json.cursor };
-        };
-
-        // Get all pages
-        const pages: Page[] = [];
-        let page = await getPage();
-        pages.push(page);
-
-        while (page.cursor !== null) {
-          page = await getPage(page.cursor);
-          pages.push(page);
-        }
-        // console.log("XXX pages:", pages);
+        type ActionEvent =
+          | DepositEvent
+          | WithdrawEvent
+          | BorrowEvent
+          | RepayEvent;
 
         // Combine, sort, and filter events
-        const events = pages.flatMap((page) => page.events);
-        const sortedEvents = events.sort((a, b) => {
-          if (a.timestampS !== b.timestampS) return a.timestampS - b.timestampS; // Sort by timestamp (asc)
-          if (a.eventIndex !== b.eventIndex) return a.eventIndex - b.eventIndex; // Sort by eventIndex (asc) if timestamp is the same
-          return 0; // Should never happen
-        });
+        const sortedEvents = await getHistory(strategyType, obligation);
         // console.log(
         //   `XXX sortedEvents: ${JSON.stringify(
         //     sortedEvents.map((e, i) => ({ index: i, ...e })),
@@ -1799,9 +1876,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: LstStrategyContext = useMemo(
     () => ({
-      // Learn more
-      isLearnMoreOpen,
-      setIsLearnMoreOpen,
+      // More details
+      isMoreDetailsOpen,
+      setIsMoreDetailsOpen,
 
       // Obligations
       hasPosition,
@@ -1840,14 +1917,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       // Stats
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
+      getHistory,
       getHistoricalTvlAmount,
       getAprPercent,
       getHealthPercent,
       getLiquidationPrice,
     }),
     [
-      isLearnMoreOpen,
-      setIsLearnMoreOpen,
+      isMoreDetailsOpen,
+      setIsMoreDetailsOpen,
       hasPosition,
       suiReserve,
       suiBorrowFeePercent,
@@ -1870,6 +1948,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateRepay,
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
+      getHistory,
       getHistoricalTvlAmount,
       getAprPercent,
       getHealthPercent,
