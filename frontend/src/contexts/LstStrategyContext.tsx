@@ -40,6 +40,7 @@ import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  SUI_COINTYPE,
   isSui,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
@@ -1575,6 +1576,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             if (!depositReserves.base) return true; // No filtering if depositReserves.base is undefined (include LST/SUI looping events)
             return (
               event.type === EventType.OBLIGATION_DATA ||
+              event.type === EventType.REPAY ||
               (event as ActionEvent | ClaimRewardEvent).coinType ===
                 depositReserves.base.coinType // e.g. USDC
             );
@@ -1605,7 +1607,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                   [EventType.DEPOSIT, EventType.WITHDRAW].includes(
                     event.type,
                   ) &&
-                  (event as ActionEvent).coinType ===
+                  (event as DepositEvent | WithdrawEvent).coinType ===
                     depositReserves.lst.coinType,
               )
               .map((event) => event.timestampS),
@@ -1633,6 +1635,58 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // console.log(
         //   "XXX lstToSuiExchangeRateMap:",
         //   JSON.stringify(lstToSuiExchangeRateMap, null, 2),
+        // );
+
+        // Get historical SUI to base prices for the relevant timestamps (current position repays)
+        const suiToBaseExchangeRateTimestampsS = !depositReserves.base
+          ? []
+          : Array.from(
+              new Set(
+                currentPositionFilteredSortedEvents
+                  .filter(
+                    (event) =>
+                      event.type === EventType.REPAY &&
+                      isSui((event as RepayEvent).coinType),
+                  )
+                  .map((event) => event.timestampS),
+              ),
+            );
+
+        const suiToBasePriceMap: Record<number, BigNumber> = {};
+        if (suiToBaseExchangeRateTimestampsS.length > 0) {
+          const jsons = await Promise.all(
+            suiToBaseExchangeRateTimestampsS.map(async (timestamp) => {
+              const res = await fetch(
+                `${API_URL}/proxy/history-price?${new URLSearchParams({
+                  address: SUI_COINTYPE,
+                  type: "1m",
+                  time_from: `${timestamp}`,
+                  time_to: `${timestamp + 60}`,
+                })}`,
+              );
+              const json: {
+                data: {
+                  items: { address: string; unixTime: number; value: number }[];
+                };
+              } = await res.json();
+              if ((json as any)?.statusCode === 500)
+                throw new Error(
+                  `Failed to fetch historical SUI to base price for timestamp ${timestamp}`,
+                );
+
+              return {
+                timestampS: json.data.items[0].unixTime,
+                value: new BigNumber(json.data.items[0].value),
+              };
+            }),
+          );
+
+          for (const json of jsons)
+            suiToBasePriceMap[json.timestampS] = json.value;
+        }
+        // console.log(
+        //   "XXX suiToBasePriceMap:",
+        //   JSON.stringify(suiToBasePriceMap, null, 2),
         // );
 
         // Calculate current position
@@ -1697,7 +1751,23 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
           } else if (event.type === EventType.REPAY) {
-            borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
+            if (!depositReserves.base) {
+              borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
+            } else {
+              const timestampSRoundedToNextMinute =
+                Math.ceil(event.timestampS / 60) * 60;
+              const suiToBasePrice =
+                suiToBasePriceMap[timestampSRoundedToNextMinute];
+              if (suiToBasePrice === undefined) {
+                throw new Error(
+                  `suiToBasePrice is undefined for timestamp ${event.timestampS} (rounded to next minute ${timestampSRoundedToNextMinute})`,
+                );
+              }
+
+              borrowedAmount = borrowedAmount.minus(
+                event.liquidityAmount.times(suiToBasePrice),
+              );
+            }
             // console.log(
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
@@ -1797,7 +1867,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       }
 
       const weightedBorrowsUsd = getWeightedBorrowsUsd(_obligation);
-      const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd;
+      const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(0.99); // 1% buffer
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
       if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
