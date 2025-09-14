@@ -818,7 +818,7 @@ export default function LstStrategyDialog({
       );
       const targetSuiRepaidAmount = new BigNumber(
         suiBorrowedAmount.minus(targetSuiBorrowedAmount),
-      ).times(1.01); // 1% buffer, so health doesn't immediately go below 100% if the price of SUI goes up slightly
+      ).times(1.03); // 3% buffer, so health doesn't immediately go below 100% if the price of SUI goes up slightly
       // console.log(
       //   "XXX222",
       //   suiBorrowedAmount.minus(targetSuiBorrowedAmount).toFixed(20),
