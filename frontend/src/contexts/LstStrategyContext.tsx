@@ -40,7 +40,6 @@ import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
-  SUI_COINTYPE,
   isSui,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
@@ -239,16 +238,6 @@ interface LstStrategyContext {
     suiBorrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
-  simulateRepay: (
-    strategyType: StrategyType,
-    deposits: Deposit[],
-    suiBorrowedAmount: BigNumber,
-    suiRepaidAmount: BigNumber,
-  ) => {
-    deposits: Deposit[];
-    suiBorrowedAmount: BigNumber;
-    obligation: ParsedObligation;
-  };
 
   // Stats
   getGlobalTvlAmountUsd: (
@@ -368,9 +357,6 @@ const defaultContextValue: LstStrategyContext = {
     throw Error("LstStrategyContextProvider not initialized");
   },
   simulateDepositAndLoopToExposure: () => {
-    throw Error("LstStrategyContextProvider not initialized");
-  },
-  simulateRepay: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -617,13 +603,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       },
       [StrategyType.USDC_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
-        max: new BigNumber(3.2), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
-        default: new BigNumber(3.2),
+        max: new BigNumber(3), // Actual max: 1 + (USDC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where USDC Open LTV % = 77% and sSUI Open LTV % = 70%
+        default: new BigNumber(3),
       },
       [StrategyType.AUSD_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
-        max: new BigNumber(3.2), // Actual max: 1 + (AUSD Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where AUSD Open LTV % = 77% and sSUI Open LTV % = 70%
-        default: new BigNumber(3.2),
+        max: new BigNumber(3), // Actual max: 1 + (AUSD Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where AUSD Open LTV % = 77% and sSUI Open LTV % = 70%
+        default: new BigNumber(3),
       },
     }),
     [],
@@ -1188,46 +1174,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     [getSimulatedObligation, simulateDeposit, simulateLoopToExposure],
   );
 
-  const simulateRepay = useCallback(
-    (
-      strategyType: StrategyType,
-      _deposits: Deposit[],
-      _suiBorrowedAmount: BigNumber,
-      suiRepaidAmount: BigNumber,
-    ): {
-      deposits: Deposit[];
-      suiBorrowedAmount: BigNumber;
-      obligation: ParsedObligation;
-    } => {
-      const depositReserves = getDepositReserves(strategyType);
-      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
-
-      //
-
-      const deposits = cloneDeep(_deposits);
-      let suiBorrowedAmount = _suiBorrowedAmount;
-
-      // 1) Repay SUI
-      // 1.1) Split coins
-
-      // 1.2) Repay SUI
-
-      // 1.3) Update state
-      suiBorrowedAmount = suiBorrowedAmount.minus(suiRepaidAmount);
-
-      return {
-        deposits,
-        suiBorrowedAmount,
-        obligation: getSimulatedObligation(
-          strategyType,
-          deposits,
-          suiBorrowedAmount,
-        ),
-      };
-    },
-    [getDepositReserves, getDefaultCurrencyReserve, getSimulatedObligation],
-  );
-
   // Stats
   // Stats - Global TVL
   const [globalTvlAmountUsdMap, setGlobalTvlAmountUsdMap] = useState<
@@ -1573,10 +1519,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
         const currentPositionFilteredSortedEvents =
           currentPositionSortedEvents.filter((event) => {
-            if (!depositReserves.base) return true; // No filtering if depositReserves.base is undefined (include LST/SUI looping events)
+            if (depositReserves.base === undefined) return true; // No filtering if depositReserves.base is undefined (include LST/SUI looping events)
             return (
               event.type === EventType.OBLIGATION_DATA ||
-              event.type === EventType.REPAY ||
               (event as ActionEvent | ClaimRewardEvent).coinType ===
                 depositReserves.base.coinType // e.g. USDC
             );
@@ -1635,58 +1580,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         // console.log(
         //   "XXX lstToSuiExchangeRateMap:",
         //   JSON.stringify(lstToSuiExchangeRateMap, null, 2),
-        // );
-
-        // Get historical SUI to base prices for the relevant timestamps (current position repays)
-        const suiToBaseExchangeRateTimestampsS = !depositReserves.base
-          ? []
-          : Array.from(
-              new Set(
-                currentPositionFilteredSortedEvents
-                  .filter(
-                    (event) =>
-                      event.type === EventType.REPAY &&
-                      isSui((event as RepayEvent).coinType),
-                  )
-                  .map((event) => event.timestampS),
-              ),
-            );
-
-        const suiToBasePriceMap: Record<number, BigNumber> = {};
-        if (suiToBaseExchangeRateTimestampsS.length > 0) {
-          const jsons = await Promise.all(
-            suiToBaseExchangeRateTimestampsS.map(async (timestamp) => {
-              const res = await fetch(
-                `${API_URL}/proxy/history-price?${new URLSearchParams({
-                  address: SUI_COINTYPE,
-                  type: "1m",
-                  time_from: `${timestamp}`,
-                  time_to: `${timestamp + 60}`,
-                })}`,
-              );
-              const json: {
-                data: {
-                  items: { address: string; unixTime: number; value: number }[];
-                };
-              } = await res.json();
-              if ((json as any)?.statusCode === 500)
-                throw new Error(
-                  `Failed to fetch historical SUI to base price for timestamp ${timestamp}`,
-                );
-
-              return {
-                timestampS: json.data.items[0].unixTime,
-                value: new BigNumber(json.data.items[0].value),
-              };
-            }),
-          );
-
-          for (const json of jsons)
-            suiToBasePriceMap[json.timestampS] = json.value;
-        }
-        // console.log(
-        //   "XXX suiToBasePriceMap:",
-        //   JSON.stringify(suiToBasePriceMap, null, 2),
         // );
 
         // Calculate current position
@@ -1751,23 +1644,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
           } else if (event.type === EventType.REPAY) {
-            if (!depositReserves.base) {
-              borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
-            } else {
-              const timestampSRoundedToNextMinute =
-                Math.ceil(event.timestampS / 60) * 60;
-              const suiToBasePrice =
-                suiToBasePriceMap[timestampSRoundedToNextMinute];
-              if (suiToBasePrice === undefined) {
-                throw new Error(
-                  `suiToBasePrice is undefined for timestamp ${event.timestampS} (rounded to next minute ${timestampSRoundedToNextMinute})`,
-                );
-              }
-
-              borrowedAmount = borrowedAmount.minus(
-                event.liquidityAmount.times(suiToBasePrice),
-              );
-            }
+            borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
             // console.log(
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
@@ -1994,7 +1871,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
-      simulateRepay,
 
       // Stats
       getGlobalTvlAmountUsd,
@@ -2027,7 +1903,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       simulateLoopToExposure,
       simulateDeposit,
       simulateDepositAndLoopToExposure,
-      simulateRepay,
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistory,

@@ -98,7 +98,6 @@ function Page() {
     simulateLoopToExposure,
     simulateDeposit,
     simulateDepositAndLoopToExposure,
-    simulateRepay,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
