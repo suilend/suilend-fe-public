@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-import { formatDate } from "date-fns";
+import { addDays, formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -143,7 +143,40 @@ export default function AddRewardsDialog() {
         </Button>
       }
       headerProps={{
-        title: { icon: <Sparkle />, children: "Add Rewards" },
+        title: {
+          icon: <Sparkle />,
+          children: (
+            <>
+              Add Rewards
+              <Button
+                className="uppercase"
+                variant="secondaryOutline"
+                size="sm"
+                onClick={() => {
+                  // Get next bi-weekly Tuesday UTC starting from 1757980800000
+                  const getNextBiWeeklyTuesdayUTC = () => {
+                    const referenceMs = 1757980800000;
+                    const twoWeeksMs = 14 * 24 * 60 * 60 * 1000;
+                    const nowMs = Date.now();
+
+                    let nextMs = referenceMs;
+                    while (nextMs <= nowMs) nextMs += twoWeeksMs;
+
+                    const date = new Date(nextMs);
+                    date.setUTCHours(0, 0, 0, 0);
+                    return date;
+                  };
+
+                  const nextTuesday = getNextBiWeeklyTuesdayUTC();
+                  setStartTimeMs(nextTuesday.getTime().toString());
+                  setEndTimeMs(addDays(nextTuesday, 14).getTime().toString());
+                }}
+              >
+                00:00 Bi-Weekly Tuesday (UTC)
+              </Button>
+            </>
+          ),
+        },
       }}
       footerProps={{
         children: (
