@@ -30,6 +30,7 @@ import {
   BorrowEvent,
   ClaimRewardEvent,
   DepositEvent,
+  ForgiveEvent,
   HistoryEvent,
   RepayEvent,
   WithdrawEvent,
@@ -424,9 +425,10 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                   <div className="flex-1">
                     {[
                       EventType.DEPOSIT,
-                      EventType.WITHDRAW,
                       EventType.BORROW,
+                      EventType.WITHDRAW,
                       EventType.REPAY,
+                      EventType.FORGIVE,
                       EventType.CLAIM_REWARD,
                     ].includes(event.type) ? (
                       <TokenAmount
@@ -434,9 +436,10 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                           (
                             event as
                               | DepositEvent
-                              | WithdrawEvent
                               | BorrowEvent
+                              | WithdrawEvent
                               | RepayEvent
+                              | ForgiveEvent
                               | ClaimRewardEvent
                           ).liquidityAmount
                         }
@@ -444,21 +447,31 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                           (
                             event as
                               | DepositEvent
-                              | WithdrawEvent
                               | BorrowEvent
+                              | WithdrawEvent
                               | RepayEvent
+                              | ForgiveEvent
                               | ClaimRewardEvent
                           ).coinType,
                           appData.coinMetadataMap[
                             (
                               event as
                                 | DepositEvent
-                                | WithdrawEvent
                                 | BorrowEvent
+                                | WithdrawEvent
                                 | RepayEvent
+                                | ForgiveEvent
                                 | ClaimRewardEvent
                             ).coinType
                           ],
+                        )}
+                      />
+                    ) : event.type === EventType.LIQUIDATE ? (
+                      <TokenAmount
+                        amount={event.withdrawAmount}
+                        token={getToken(
+                          event.withdrawCoinType,
+                          appData.coinMetadataMap[event.withdrawCoinType],
                         )}
                       />
                     ) : null}

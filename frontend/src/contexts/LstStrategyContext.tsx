@@ -58,16 +58,16 @@ export type DepositEvent = {
   liquidityAmount: BigNumber;
   digest: string;
 };
-export type WithdrawEvent = {
-  type: EventType.WITHDRAW;
+export type BorrowEvent = {
+  type: EventType.BORROW;
   timestampS: number;
   eventIndex: number;
   coinType: string;
   liquidityAmount: BigNumber;
   digest: string;
 };
-export type BorrowEvent = {
-  type: EventType.BORROW;
+export type WithdrawEvent = {
+  type: EventType.WITHDRAW;
   timestampS: number;
   eventIndex: number;
   coinType: string;
@@ -82,11 +82,22 @@ export type RepayEvent = {
   liquidityAmount: BigNumber;
   digest: string;
 };
-export type ObligationDataEvent = {
-  type: EventType.OBLIGATION_DATA;
+export type LiquidateEvent = {
+  type: EventType.LIQUIDATE;
   timestampS: number;
   eventIndex: number;
-  depositedValueUsd: BigNumber;
+  withdrawCoinType: string;
+  repayCoinType: string;
+  withdrawAmount: BigNumber;
+  repayAmount: BigNumber;
+  digest: string;
+};
+export type ForgiveEvent = {
+  type: EventType.FORGIVE;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  liquidityAmount: BigNumber;
   digest: string;
 };
 export type ClaimRewardEvent = {
@@ -97,13 +108,22 @@ export type ClaimRewardEvent = {
   liquidityAmount: BigNumber;
   digest: string;
 };
+export type ObligationDataEvent = {
+  type: EventType.OBLIGATION_DATA;
+  timestampS: number;
+  eventIndex: number;
+  depositedValueUsd: BigNumber;
+  digest: string;
+};
 export type HistoryEvent =
   | DepositEvent
-  | WithdrawEvent
   | BorrowEvent
+  | WithdrawEvent
   | RepayEvent
-  | ObligationDataEvent
-  | ClaimRewardEvent;
+  | LiquidateEvent
+  | ForgiveEvent
+  | ClaimRewardEvent
+  | ObligationDataEvent;
 
 export const E = 10 ** -6;
 export const LST_DECIMALS = 9;
@@ -1302,6 +1322,13 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         };
         liquidityAmount: string;
       };
+      type BorrowResult = {
+        timestamp: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: string; // Includes origination fees
+        digest: string;
+      };
       type WithdrawResult = {
         withdraw: {
           timestamp: number;
@@ -1311,14 +1338,30 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         };
         liquidityAmount: string;
       };
-      type BorrowResult = {
+      type RepayResult = {
         timestamp: number;
         eventIndex: number;
         coinType: string;
-        liquidityAmount: string; // Includes origination fees
+        liquidityAmount: string;
         digest: string;
       };
-      type RepayResult = {
+      type LiquidateResult = {
+        timestamp: number;
+        eventIndex: number;
+        withdrawCoinType: string;
+        repayCoinType: string;
+        withdrawAmount: string;
+        repayAmount: string;
+        digest: string;
+      };
+      type ForgiveResult = {
+        timestamp: number;
+        eventIndex: number;
+        coinType: string;
+        liquidityAmount: string;
+        digest: string;
+      };
+      type ClaimRewardEventResult = {
         timestamp: number;
         eventIndex: number;
         coinType: string;
@@ -1331,20 +1374,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         depositedValueUsd: string;
         digest: string;
       };
-      type ClaimRewardEventResult = {
-        timestamp: number;
-        eventIndex: number;
-        coinType: string;
-        liquidityAmount: string;
-        digest: string;
-      };
       type Results = {
         deposits: DepositResult[];
-        withdraws: WithdrawResult[];
         borrows: BorrowResult[];
+        withdraws: WithdrawResult[];
         repays: RepayResult[];
-        obligationDataEvents: ObligationDataEventResult[];
+        liquidateEvents: LiquidateResult[];
+        forgiveEvents: ForgiveResult[];
         claimRewardEvents: ClaimRewardEventResult[];
+        obligationDataEvents: ObligationDataEventResult[];
       };
 
       type Page = {
@@ -1388,16 +1426,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             digest: deposit.deposit.digest,
           });
         }
-        for (const withdraw of page.results.withdraws) {
-          events.push({
-            type: EventType.WITHDRAW,
-            timestampS: withdraw.withdraw.timestamp,
-            eventIndex: withdraw.withdraw.eventIndex,
-            coinType: normalizeStructTag(withdraw.withdraw.coinType),
-            liquidityAmount: new BigNumber(withdraw.liquidityAmount),
-            digest: withdraw.withdraw.digest,
-          });
-        }
         for (const borrow of page.results.borrows) {
           events.push({
             type: EventType.BORROW,
@@ -1406,6 +1434,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             coinType: normalizeStructTag(borrow.coinType),
             liquidityAmount: new BigNumber(borrow.liquidityAmount),
             digest: borrow.digest,
+          });
+        }
+        for (const withdraw of page.results.withdraws) {
+          events.push({
+            type: EventType.WITHDRAW,
+            timestampS: withdraw.withdraw.timestamp,
+            eventIndex: withdraw.withdraw.eventIndex,
+            coinType: normalizeStructTag(withdraw.withdraw.coinType),
+            liquidityAmount: new BigNumber(withdraw.liquidityAmount),
+            digest: withdraw.withdraw.digest,
           });
         }
         for (const repay of page.results.repays) {
@@ -1418,15 +1456,28 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             digest: repay.digest,
           });
         }
-        for (const obligationDataEvent of page.results.obligationDataEvents) {
+        for (const liquidateEvent of page.results.liquidateEvents) {
           events.push({
-            type: EventType.OBLIGATION_DATA,
-            timestampS: obligationDataEvent.timestamp,
-            eventIndex: obligationDataEvent.eventIndex,
-            depositedValueUsd: new BigNumber(
-              obligationDataEvent.depositedValueUsd,
-            ).div(WAD),
-            digest: obligationDataEvent.digest,
+            type: EventType.LIQUIDATE,
+            timestampS: liquidateEvent.timestamp,
+            eventIndex: liquidateEvent.eventIndex,
+            withdrawCoinType: normalizeStructTag(
+              liquidateEvent.withdrawCoinType,
+            ),
+            repayCoinType: normalizeStructTag(liquidateEvent.repayCoinType),
+            withdrawAmount: new BigNumber(liquidateEvent.withdrawAmount),
+            repayAmount: new BigNumber(liquidateEvent.repayAmount),
+            digest: liquidateEvent.digest,
+          });
+        }
+        for (const forgiveEvent of page.results.forgiveEvents) {
+          events.push({
+            type: EventType.FORGIVE,
+            timestampS: forgiveEvent.timestamp,
+            eventIndex: forgiveEvent.eventIndex,
+            coinType: normalizeStructTag(forgiveEvent.coinType),
+            liquidityAmount: new BigNumber(forgiveEvent.liquidityAmount),
+            digest: forgiveEvent.digest,
           });
         }
         for (const claimRewardEvent of page.results.claimRewardEvents) {
@@ -1437,6 +1488,17 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             coinType: normalizeStructTag(claimRewardEvent.coinType),
             liquidityAmount: new BigNumber(claimRewardEvent.liquidityAmount),
             digest: claimRewardEvent.digest,
+          });
+        }
+        for (const obligationDataEvent of page.results.obligationDataEvents) {
+          events.push({
+            type: EventType.OBLIGATION_DATA,
+            timestampS: obligationDataEvent.timestamp,
+            eventIndex: obligationDataEvent.eventIndex,
+            depositedValueUsd: new BigNumber(
+              obligationDataEvent.depositedValueUsd,
+            ).div(WAD),
+            digest: obligationDataEvent.digest,
           });
         }
       }
