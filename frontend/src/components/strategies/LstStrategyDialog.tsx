@@ -20,14 +20,7 @@ import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import BN from "bn.js";
 import { cloneDeep } from "lodash";
-import {
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Wallet,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ParsedReserve, getRewardsMap } from "@suilend/sdk";
@@ -46,7 +39,6 @@ import {
   MAX_U64,
   MS_PER_YEAR,
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_USDC_COINTYPE,
   TX_TOAST_DURATION,
   formatInteger,
   formatList,
@@ -78,12 +70,7 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import {
-  TBody,
-  TBodySans,
-  TLabel,
-  TLabelSans,
-} from "@/components/shared/Typography";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
 import StrategyHeader from "@/components/strategies/StrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
@@ -3044,12 +3031,26 @@ export default function LstStrategyDialog({
 
     // 1) Deposit additional base (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
     // 1.1) Split coins
-    const baseCoin = transaction.splitCoins(transaction.gas, [
-      additionalBaseDepositedAmount
-        .times(10 ** depositReserves.base.token.decimals)
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString(),
-    ]);
+    const allCoinsBase = await getAllCoins(
+      suiClient,
+      _address,
+      depositReserves.base.coinType,
+    );
+    const mergeCoinBase = mergeAllCoins(
+      depositReserves.base.coinType,
+      transaction,
+      allCoinsBase,
+    );
+
+    const baseCoin = transaction.splitCoins(
+      transaction.object(mergeCoinBase.coinObjectId),
+      [
+        additionalBaseDepositedAmount
+          .times(10 ** depositReserves.base.token.decimals)
+          .integerValue(BigNumber.ROUND_DOWN)
+          .toString(),
+      ],
+    );
 
     // 1.2) Deposit additional base
     strategyDeposit(
