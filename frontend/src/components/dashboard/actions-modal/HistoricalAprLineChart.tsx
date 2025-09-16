@@ -11,6 +11,7 @@ import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   COINTYPE_COLOR_MAP,
+  MS_PER_YEAR,
   NORMALIZED_SUI_COINTYPE,
   formatPercent,
   getToken,
@@ -145,8 +146,12 @@ export default function HistoricalAprLineChart({
   const { allAppData, appData, isLst } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
 
-  const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
-    useReserveAssetDataEventsContext();
+  const {
+    reserveAssetDataEventsMap,
+    fetchReserveAssetDataEvents,
+    lstExchangeRateMap,
+    fetchLstExchangeRates,
+  } = useReserveAssetDataEventsContext();
 
   // Events
   const [days, setDays] = useLocalStorage<Days>("historicalLineChart_days", 7);
@@ -161,6 +166,7 @@ export default function HistoricalAprLineChart({
   }, [userData.rewardMap, reserve.coinType, side, appData.reserveMap]);
 
   const didFetchInitialReserveAssetDataEventsRef = useRef<boolean>(false);
+  const didFetchInitialLstExchangeRatesRef = useRef<boolean>(false);
   const didFetchInitialRewardReservesAssetDataEventsRef = useRef<
     Record<string, boolean>
   >({});
@@ -172,6 +178,19 @@ export default function HistoricalAprLineChart({
 
       fetchReserveAssetDataEvents(reserve, days);
       didFetchInitialReserveAssetDataEventsRef.current = true;
+    }
+
+    // LST exchange rates
+    const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+    if (
+      side === Side.DEPOSIT &&
+      isLst(reserve.coinType) &&
+      lstExchangeRates === undefined
+    ) {
+      if (didFetchInitialLstExchangeRatesRef.current) return;
+
+      fetchLstExchangeRates(reserve.coinType, days);
+      didFetchInitialLstExchangeRatesRef.current = true;
     }
 
     // Rewards
@@ -197,6 +216,10 @@ export default function HistoricalAprLineChart({
     days,
     noInitialFetch,
     fetchReserveAssetDataEvents,
+    side,
+    isLst,
+    lstExchangeRateMap,
+    fetchLstExchangeRates,
     aprRewardReserves,
   ]);
 
@@ -205,6 +228,15 @@ export default function HistoricalAprLineChart({
 
     const events = reserveAssetDataEventsMap?.[reserve.id]?.[value];
     if (events === undefined) fetchReserveAssetDataEvents(reserve, value);
+
+    // LST exchange rates
+    const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[value];
+    if (
+      side === Side.DEPOSIT &&
+      isLst(reserve.coinType) &&
+      lstExchangeRates === undefined
+    )
+      fetchLstExchangeRates(reserve.coinType, value);
 
     // Rewards
     aprRewardReserves.forEach((rewardReserve) => {
@@ -219,6 +251,12 @@ export default function HistoricalAprLineChart({
     const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
     if (events === undefined) return;
     if (events.length === 0) return [];
+    if (
+      side === Side.DEPOSIT &&
+      isLst(reserve.coinType) &&
+      lstExchangeRateMap?.[reserve.coinType]?.[days] === undefined
+    )
+      return;
     if (
       aprRewardReserves.some(
         (rewardReserve) =>
@@ -237,7 +275,7 @@ export default function HistoricalAprLineChart({
       Date.now() / 1000 - ((Date.now() / 1000) % sampleIntervalS);
     const timestampsS = Array.from({ length: n })
       .map((_, index) => lastTimestampS - index * sampleIntervalS)
-      .reverse();
+      .reverse(); // Oldest to newest
 
     const result: (Pick<ChartData, "timestampS"> & Partial<ChartData>)[] = [];
     timestampsS.forEach((timestampS) => {
@@ -272,7 +310,56 @@ export default function HistoricalAprLineChart({
             : undefined,
           [`${side}InterestAprPercent__staking_yield`]:
             event && side === Side.DEPOSIT && isLst(event.coinType)
-              ? +allAppData.lstAprPercentMap[event.coinType]
+              ? (() => {
+                  const prevLstExchangeRate = lstExchangeRateMap?.[
+                    reserve.coinType
+                  ]?.[days].findLast((e) => e.timestampS < timestampS);
+                  const lstExchangeRate = lstExchangeRateMap?.[
+                    reserve.coinType
+                  ]?.[days].find((e) => e.timestampS >= timestampS);
+                  // console.log("XXXXXXX", [
+                  //   prevLstExchangeRate
+                  //     ? formatDate(
+                  //         new Date(prevLstExchangeRate?.timestampS * 1000),
+                  //         "MM/dd HH:mm",
+                  //       )
+                  //     : undefined,
+                  //   formatDate(new Date(timestampS * 1000), "MM/dd HH:mm"),
+                  //   lstExchangeRate
+                  //     ? formatDate(
+                  //         new Date(lstExchangeRate?.timestampS * 1000),
+                  //         "MM/dd HH:mm",
+                  //       )
+                  //     : undefined,
+                  // ]);
+
+                  if (lstExchangeRate === undefined) {
+                    return result.at(-1)?.[
+                      `${side}InterestAprPercent__staking_yield`
+                    ];
+                  }
+                  if (
+                    prevLstExchangeRate === undefined ||
+                    lstExchangeRate === undefined
+                  )
+                    return undefined;
+
+                  const proportionOfYear = new BigNumber(
+                    lstExchangeRate.timestampS - prevLstExchangeRate.timestampS,
+                  ).div(MS_PER_YEAR / 1000);
+
+                  const aprPercent = proportionOfYear.eq(0)
+                    ? new BigNumber(0)
+                    : new BigNumber(
+                        lstExchangeRate.value
+                          .div(prevLstExchangeRate.value)
+                          .minus(1),
+                      )
+                        .div(proportionOfYear)
+                        .times(100);
+
+                  return +aprPercent;
+                })()
               : undefined,
         },
       );
@@ -284,10 +371,10 @@ export default function HistoricalAprLineChart({
     reserveAssetDataEventsMap,
     reserve,
     days,
-    aprRewardReserves,
     side,
     isLst,
-    allAppData.lstAprPercentMap,
+    lstExchangeRateMap,
+    aprRewardReserves,
   ]);
   const isLoading = chartData === undefined;
 
