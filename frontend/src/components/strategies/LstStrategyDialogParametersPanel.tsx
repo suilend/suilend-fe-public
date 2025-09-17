@@ -80,12 +80,9 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    lst_simulateLoopToExposure,
-    lst_simulateDeposit,
-    lst_simulateDepositAndLoopToExposure,
-    btc_simulateLoopToExposure,
-    btc_simulateDeposit,
-    btc_simulateDepositAndLoopToExposure,
+    simulateLoopToExposure,
+    simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -117,7 +114,10 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
 
   // LST
   const lst = useMemo(
-    () => lstMap[strategyInfo.depositLstCoinType],
+    () =>
+      strategyInfo.depositLstCoinType !== undefined
+        ? lstMap[strategyInfo.depositLstCoinType]
+        : undefined,
     [lstMap, strategyInfo.depositLstCoinType],
   );
 
@@ -125,6 +125,10 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
   const depositReserves = useMemo(
     () => getDepositReserves(strategyType),
     [getDepositReserves, strategyType],
+  );
+  const borrowReserve = useMemo(
+    () => getBorrowReserve(strategyType),
+    [getBorrowReserve, strategyType],
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
@@ -177,7 +181,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
               </div>
             )}
 
-            {/* LST/SUI Looping (right) */}
+            {/* LST Looping (right) */}
             <div className="relative h-full flex-1">
               <div className="absolute inset-x-10 inset-y-4 rounded-[16px] border border-dashed border-muted" />
 
@@ -189,8 +193,12 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 )}
               >
                 <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                  <TokenLogo token={depositReserves.lst.token} size={20} />
-                  <TBody>{depositReserves.lst.token.symbol}</TBody>
+                  {depositReserves.lst && (
+                    <>
+                      <TokenLogo token={depositReserves.lst.token} size={20} />
+                      <TBody>{depositReserves.lst.token.symbol}</TBody>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -325,9 +333,9 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    lst_simulateLoopToExposure,
-    lst_simulateDeposit,
-    lst_simulateDepositAndLoopToExposure,
+    simulateLoopToExposure,
+    simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,

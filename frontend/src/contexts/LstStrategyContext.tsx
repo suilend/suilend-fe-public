@@ -40,8 +40,6 @@ import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
-  NORMALIZED_wBTC_COINTYPE,
-  NORMALIZED_xBTC_COINTYPE,
   isSui,
 } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
@@ -128,7 +126,7 @@ export type HistoryEvent =
   | ObligationDataEvent;
 
 export const E = 10 ** -6;
-export const LST_DECIMALS = 9;
+export const DECIMALS = 9;
 
 export type Deposit = { coinType: string; depositedAmount: BigNumber };
 export type Borrow = { coinType: string; borrowedAmount: BigNumber };
@@ -227,7 +225,7 @@ interface LstStrategyContext {
   ) => BigNumber;
 
   // Simulate
-  lst_simulateLoopToExposure: (
+  simulateLoopToExposure: (
     strategyType: StrategyType,
     deposits: Deposit[],
     suiBorrowedAmount: BigNumber,
@@ -238,7 +236,7 @@ interface LstStrategyContext {
     borrows: Borrow[];
     obligation: ParsedObligation;
   };
-  lst_simulateDeposit: (
+  simulateDeposit: (
     strategyType: StrategyType,
     deposits: Deposit[],
     suiBorrowedAmount: BigNumber,
@@ -248,42 +246,10 @@ interface LstStrategyContext {
     borrows: Borrow[];
     obligation: ParsedObligation;
   };
-  lst_simulateDepositAndLoopToExposure: (
+  simulateDepositAndLoopToExposure: (
     strategyType: StrategyType,
     deposits: Deposit[],
     suiBorrowedAmount: BigNumber,
-    deposit: Deposit,
-    targetExposure: BigNumber,
-  ) => {
-    deposits: Deposit[];
-    borrows: Borrow[];
-    obligation: ParsedObligation;
-  };
-  btc_simulateLoopToExposure: (
-    strategyType: StrategyType.xBTC_wBTC_LOOPING,
-    xBtcDepositedAmount: BigNumber,
-    wBtcBorrowedAmount: BigNumber,
-    targetWbtcBorrowedAmount: BigNumber | undefined,
-    targetExposure: BigNumber | undefined, // Must be defined if targetWbtcBorrowedAmount is undefined
-  ) => {
-    deposits: Deposit[];
-    borrows: Borrow[];
-    obligation: ParsedObligation;
-  };
-  btc_simulateDeposit: (
-    strategyType: StrategyType.xBTC_wBTC_LOOPING,
-    xBtcDepositedAmount: BigNumber,
-    wBtcBorrowedAmount: BigNumber,
-    deposit: Deposit,
-  ) => {
-    deposits: Deposit[];
-    borrows: Borrow[];
-    obligation: ParsedObligation;
-  };
-  btc_simulateDepositAndLoopToExposure: (
-    strategyType: StrategyType.xBTC_wBTC_LOOPING,
-    xBtcDepositedAmount: BigNumber,
-    wBtcBorrowedAmount: BigNumber,
     deposit: Deposit,
     targetExposure: BigNumber,
   ) => {
@@ -402,22 +368,13 @@ const defaultContextValue: LstStrategyContext = {
   },
 
   // Simulate
-  lst_simulateLoopToExposure: () => {
+  simulateLoopToExposure: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
-  lst_simulateDeposit: () => {
+  simulateDeposit: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
-  lst_simulateDepositAndLoopToExposure: () => {
-    throw Error("LstStrategyContextProvider not initialized");
-  },
-  btc_simulateLoopToExposure: () => {
-    throw Error("LstStrategyContextProvider not initialized");
-  },
-  btc_simulateDeposit: () => {
-    throw Error("LstStrategyContextProvider not initialized");
-  },
-  btc_simulateDepositAndLoopToExposure: () => {
+  simulateDepositAndLoopToExposure: () => {
     throw Error("LstStrategyContextProvider not initialized");
   },
 
@@ -1043,7 +1000,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // Simulate
-  const lst_simulateLoopToExposure = useCallback(
+  const simulateLoopToExposure = useCallback(
     (
       strategyType: StrategyType,
       _deposits: Deposit[],
@@ -1126,7 +1083,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           ),
         )
           .times(suiToLstExchangeRate)
-          .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+          .decimalPlaces(DECIMALS, BigNumber.ROUND_DOWN);
 
         // 1.2) Borrow
         const stepSuiBorrowedAmount = BigNumber.min(
@@ -1148,7 +1105,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           ),
         )
           .times(suiToLstExchangeRate)
-          .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+          .decimalPlaces(DECIMALS, BigNumber.ROUND_DOWN);
         const isMaxDeposit = stepLstDepositedAmount.eq(
           stepMaxLstDepositedAmount,
         );
@@ -1189,7 +1146,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  const lst_simulateDeposit = useCallback(
+  const simulateDeposit = useCallback(
     (
       strategyType: StrategyType,
       _deposits: Deposit[],
@@ -1224,7 +1181,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           suiAmount
             .minus(getLstMintFee(depositReserves.lst.coinType, suiAmount))
             .times(suiToLstExchangeRate),
-        ).decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+        ).decimalPlaces(DECIMALS, BigNumber.ROUND_DOWN);
 
         // 1.1.1) Split coins
 
@@ -1285,7 +1242,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  const lst_simulateDepositAndLoopToExposure = useCallback(
+  const simulateDepositAndLoopToExposure = useCallback(
     (
       strategyType: StrategyType,
       _deposits: Deposit[],
@@ -1319,12 +1276,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         deposits: newDeposits,
         borrows: newBorrows,
         obligation: newObligation,
-      } = lst_simulateDeposit(
-        strategyType,
-        deposits,
-        suiBorrowedAmount,
-        deposit,
-      );
+      } = simulateDeposit(strategyType, deposits, suiBorrowedAmount, deposit);
 
       // 1.2) Update state
       deposits = newDeposits;
@@ -1338,7 +1290,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           deposits: newDeposits2,
           borrows: newBorrows2,
           obligation: newObligation2,
-        } = lst_simulateLoopToExposure(
+        } = simulateLoopToExposure(
           strategyType,
           deposits,
           suiBorrowedAmount,
@@ -1368,143 +1320,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       getSimulatedObligation,
-      lst_simulateDeposit,
-      lst_simulateLoopToExposure,
+      simulateDeposit,
+      simulateLoopToExposure,
     ],
-  );
-
-  const btc_simulateLoopToExposure = useCallback(
-    (
-      strategyType: StrategyType.xBTC_wBTC_LOOPING,
-      _xBtcDepositedAmount: BigNumber,
-      _wBtcBorrowedAmount: BigNumber,
-      _targetWbtcBorrowedAmount: BigNumber | undefined,
-      _targetExposure: BigNumber | undefined, // Must be defined if _targetWbtcBorrowedAmount is undefined
-    ): {
-      deposits: Deposit[];
-      borrows: Borrow[];
-      obligation: ParsedObligation;
-    } => {
-      return {
-        deposits: [
-          {
-            coinType: NORMALIZED_xBTC_COINTYPE,
-            depositedAmount: _xBtcDepositedAmount,
-          },
-        ],
-        borrows: [
-          {
-            coinType: NORMALIZED_wBTC_COINTYPE,
-            borrowedAmount: _wBtcBorrowedAmount,
-          },
-        ],
-        obligation: getSimulatedObligation(
-          strategyType,
-          [
-            {
-              coinType: NORMALIZED_xBTC_COINTYPE,
-              depositedAmount: _xBtcDepositedAmount,
-            },
-          ],
-          [
-            {
-              coinType: NORMALIZED_wBTC_COINTYPE,
-              borrowedAmount: _wBtcBorrowedAmount,
-            },
-          ],
-        ),
-      };
-    },
-    [getSimulatedObligation],
-  );
-
-  const btc_simulateDeposit = useCallback(
-    (
-      strategyType: StrategyType.xBTC_wBTC_LOOPING,
-      _xBtcDepositedAmount: BigNumber,
-      _wBtcBorrowedAmount: BigNumber,
-      deposit: Deposit,
-    ): {
-      deposits: Deposit[];
-      borrows: Borrow[];
-      obligation: ParsedObligation;
-    } => {
-      return {
-        deposits: [
-          {
-            coinType: NORMALIZED_xBTC_COINTYPE,
-            depositedAmount: _xBtcDepositedAmount,
-          },
-        ],
-        borrows: [
-          {
-            coinType: NORMALIZED_wBTC_COINTYPE,
-            borrowedAmount: _wBtcBorrowedAmount,
-          },
-        ],
-        obligation: getSimulatedObligation(
-          strategyType,
-          [
-            {
-              coinType: NORMALIZED_xBTC_COINTYPE,
-              depositedAmount: _xBtcDepositedAmount,
-            },
-          ],
-          [
-            {
-              coinType: NORMALIZED_wBTC_COINTYPE,
-              borrowedAmount: _wBtcBorrowedAmount,
-            },
-          ],
-        ),
-      };
-    },
-    [getSimulatedObligation],
-  );
-
-  const btc_simulateDepositAndLoopToExposure = useCallback(
-    (
-      strategyType: StrategyType.xBTC_wBTC_LOOPING,
-      _xBtcDepositedAmount: BigNumber,
-      _wBtcBorrowedAmount: BigNumber,
-      deposit: Deposit,
-      targetExposure: BigNumber,
-    ): {
-      deposits: Deposit[];
-      borrows: Borrow[];
-      obligation: ParsedObligation;
-    } => {
-      return {
-        deposits: [
-          {
-            coinType: NORMALIZED_xBTC_COINTYPE,
-            depositedAmount: _xBtcDepositedAmount,
-          },
-        ],
-        borrows: [
-          {
-            coinType: NORMALIZED_wBTC_COINTYPE,
-            borrowedAmount: _wBtcBorrowedAmount,
-          },
-        ],
-        obligation: getSimulatedObligation(
-          strategyType,
-          [
-            {
-              coinType: NORMALIZED_xBTC_COINTYPE,
-              depositedAmount: _xBtcDepositedAmount,
-            },
-          ],
-          [
-            {
-              coinType: NORMALIZED_wBTC_COINTYPE,
-              borrowedAmount: _wBtcBorrowedAmount,
-            },
-          ],
-        ),
-      };
-    },
-    [getSimulatedObligation],
   );
 
   // Stats
@@ -2082,27 +1900,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       } else {
         if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
-        _obligation = depositReserves.lst
-          ? lst_simulateDepositAndLoopToExposure(
-              strategyType,
-              [],
-              new BigNumber(0),
-              {
-                coinType: defaultCurrencyReserve.coinType,
-                depositedAmount: new BigNumber(1), // Any number will do
-              },
-              exposure,
-            ).obligation
-          : btc_simulateDepositAndLoopToExposure(
-              StrategyType.xBTC_wBTC_LOOPING,
-              new BigNumber(0),
-              new BigNumber(0),
-              {
-                coinType: defaultCurrencyReserve.coinType,
-                depositedAmount: new BigNumber(1), // Any number will do
-              },
-              exposure,
-            ).obligation;
+        _obligation = simulateDepositAndLoopToExposure(
+          strategyType,
+          [],
+          new BigNumber(0),
+          {
+            coinType: defaultCurrencyReserve.coinType,
+            depositedAmount: new BigNumber(1), // Any number will do
+          },
+          exposure,
+        ).obligation;
       }
 
       return getNetAprPercent(
@@ -2119,8 +1926,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       hasPosition,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateDepositAndLoopToExposure,
+      simulateDepositAndLoopToExposure,
       userData.rewardMap,
       allAppData.lstAprPercentMap,
     ],
@@ -2143,27 +1949,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       } else {
         if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
-        _obligation = depositReserves.lst
-          ? lst_simulateDepositAndLoopToExposure(
-              strategyType,
-              [],
-              new BigNumber(0),
-              {
-                coinType: defaultCurrencyReserve.coinType,
-                depositedAmount: new BigNumber(1), // Any number will do
-              },
-              exposure,
-            ).obligation
-          : btc_simulateDepositAndLoopToExposure(
-              StrategyType.xBTC_wBTC_LOOPING,
-              new BigNumber(0),
-              new BigNumber(0),
-              {
-                coinType: defaultCurrencyReserve.coinType,
-                depositedAmount: new BigNumber(1), // Any number will do
-              },
-              exposure,
-            ).obligation;
+        _obligation = simulateDepositAndLoopToExposure(
+          strategyType,
+          [],
+          new BigNumber(0),
+          {
+            coinType: defaultCurrencyReserve.coinType,
+            depositedAmount: new BigNumber(1), // Any number will do
+          },
+          exposure,
+        ).obligation;
       }
 
       const weightedBorrowsUsd = getWeightedBorrowsUsd(_obligation);
@@ -2182,8 +1977,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       hasPosition,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateDepositAndLoopToExposure,
+      simulateDepositAndLoopToExposure,
     ],
   );
 
@@ -2214,7 +2008,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       } else {
         if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
-        _obligation = lst_simulateDepositAndLoopToExposure(
+        _obligation = simulateDepositAndLoopToExposure(
           StrategyType.USDC_sSUI_SUI_LOOPING,
           [],
           new BigNumber(0),
@@ -2260,7 +2054,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       hasPosition,
-      lst_simulateDepositAndLoopToExposure,
+      simulateDepositAndLoopToExposure,
     ],
   );
 
@@ -2297,12 +2091,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getStepMaxWithdrawnAmount,
 
       // Simulate
-      lst_simulateLoopToExposure,
-      lst_simulateDeposit,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateLoopToExposure,
-      btc_simulateDeposit,
-      btc_simulateDepositAndLoopToExposure,
+      simulateLoopToExposure,
+      simulateDeposit,
+      simulateDepositAndLoopToExposure,
 
       // Stats
       getGlobalTvlAmountUsd,
@@ -2331,12 +2122,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getExposure,
       getStepMaxBorrowedAmount,
       getStepMaxWithdrawnAmount,
-      lst_simulateLoopToExposure,
-      lst_simulateDeposit,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateLoopToExposure,
-      btc_simulateDeposit,
-      btc_simulateDepositAndLoopToExposure,
+      simulateLoopToExposure,
+      simulateDeposit,
+      simulateDepositAndLoopToExposure,
       getGlobalTvlAmountUsd,
       getUnclaimedRewardsAmount,
       getHistory,

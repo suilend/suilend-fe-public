@@ -79,7 +79,6 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   Deposit,
   E,
-  LST_DECIMALS,
   Withdraw,
   addOrInsertDeposit,
   useLoadedLstStrategyContext,
@@ -213,12 +212,9 @@ export default function LstStrategyDialog({
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    lst_simulateLoopToExposure,
-    lst_simulateDeposit,
-    lst_simulateDepositAndLoopToExposure,
-    btc_simulateLoopToExposure,
-    btc_simulateDeposit,
-    btc_simulateDepositAndLoopToExposure,
+    simulateLoopToExposure,
+    simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -537,28 +533,16 @@ export default function LstStrategyDialog({
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
-      const { deposits, borrows } =
-        depositReserves.lst !== undefined
-          ? lst_simulateDepositAndLoopToExposure(
-              strategyType,
-              [],
-              new BigNumber(0),
-              {
-                coinType: _currencyReserve.coinType,
-                depositedAmount: simValue,
-              },
-              exposure,
-            )
-          : btc_simulateDepositAndLoopToExposure(
-              StrategyType.xBTC_wBTC_LOOPING,
-              new BigNumber(0),
-              new BigNumber(0),
-              {
-                coinType: _currencyReserve.coinType,
-                depositedAmount: simValue,
-              },
-              exposure,
-            );
+      const { deposits, borrows } = simulateDepositAndLoopToExposure(
+        strategyType,
+        [],
+        new BigNumber(0),
+        {
+          coinType: _currencyReserve.coinType,
+          depositedAmount: simValue,
+        },
+        exposure,
+      );
 
       // Calculate safe deposit limit (subtract 10 mins of deposit APR from cap)
       const safeDepositLimitMap: {
@@ -722,8 +706,7 @@ export default function LstStrategyDialog({
     },
     [
       appData.reserveMap,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateDepositAndLoopToExposure,
+      simulateDepositAndLoopToExposure,
       strategyType,
       exposure,
       borrowReserve.token.decimals,
@@ -746,28 +729,16 @@ export default function LstStrategyDialog({
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
-      const { deposits } =
-        depositReserves.lst !== undefined
-          ? lst_simulateDepositAndLoopToExposure(
-              strategyType,
-              [],
-              new BigNumber(0),
-              {
-                coinType: _currencyReserve.coinType,
-                depositedAmount: simValue,
-              },
-              exposure,
-            )
-          : btc_simulateDepositAndLoopToExposure(
-              StrategyType.xBTC_wBTC_LOOPING,
-              new BigNumber(0),
-              new BigNumber(0),
-              {
-                coinType: _currencyReserve.coinType,
-                depositedAmount: simValue,
-              },
-              exposure,
-            );
+      const { deposits } = simulateDepositAndLoopToExposure(
+        strategyType,
+        [],
+        new BigNumber(0),
+        {
+          coinType: _currencyReserve.coinType,
+          depositedAmount: simValue,
+        },
+        exposure,
+      );
 
       // Calculate minimum available amount (100 MIST equivalent)
       const depositMinAvailableAmountMap: {
@@ -863,8 +834,7 @@ export default function LstStrategyDialog({
     },
     [
       appData.reserveMap,
-      lst_simulateDepositAndLoopToExposure,
-      btc_simulateDepositAndLoopToExposure,
+      simulateDepositAndLoopToExposure,
       strategyType,
       exposure,
       depositReserves,
@@ -1193,22 +1163,14 @@ export default function LstStrategyDialog({
     let result = new BigNumber(0);
 
     if (adjustExposure.gt(exposure)) {
-      const { borrows: newBorrows } =
-        depositReserves.lst !== undefined
-          ? lst_simulateLoopToExposure(
-              strategyType,
-              deposits,
-              borrowedAmount,
-              undefined, // Don't pass targetSuiBorrowedAmount
-              adjustExposure, // Pass targetExposure
-            )
-          : btc_simulateLoopToExposure(
-              StrategyType.xBTC_wBTC_LOOPING,
-              deposits[0]?.depositedAmount ?? new BigNumber(0),
-              borrowedAmount,
-              undefined, // Don't pass targetWbtcBorrowedAmount
-              adjustExposure, // Pass targetExposure
-            );
+      const { borrows: newBorrows } = simulateLoopToExposure(
+        strategyType,
+        deposits,
+        borrowedAmount,
+        undefined, // Don't pass targetSuiBorrowedAmount
+        adjustExposure, // Pass targetExposure
+      );
+
       const newBorrowedAmount = newBorrows[0].borrowedAmount; // Assume exactly 1 borrow
 
       // Borrow fee
@@ -1244,9 +1206,7 @@ export default function LstStrategyDialog({
     hasPosition,
     adjustExposure,
     exposure,
-    depositReserves.lst,
-    lst_simulateLoopToExposure,
-    btc_simulateLoopToExposure,
+    simulateLoopToExposure,
     strategyType,
     borrowReserve.config.borrowFeeBps,
     borrowReserve.token.decimals,

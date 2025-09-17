@@ -93,12 +93,9 @@ function Page() {
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    lst_simulateLoopToExposure,
-    lst_simulateDeposit,
-    lst_simulateDepositAndLoopToExposure,
-    btc_simulateLoopToExposure,
-    btc_simulateDeposit,
-    btc_simulateDepositAndLoopToExposure,
+    simulateLoopToExposure,
+    simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
@@ -186,14 +183,15 @@ function Page() {
         strategyType,
         { strategyOwnerCap, obligation },
       ] of Object.entries(strategyOwnerCapObligationMap)) {
-        const depositReserves = getDepositReserves(
-          strategyType as StrategyType,
-        );
-        const depositReserve = depositReserves.lst ?? depositReserves.base!; // Must have base if no LST
         if (
           Object.keys(allRewardsMap[strategyType as StrategyType]).length === 0
         )
           continue;
+
+        const depositReserves = getDepositReserves(
+          strategyType as StrategyType,
+        );
+        const depositReserve = (depositReserves.lst ?? depositReserves.base)!; // Must have base if no LST
 
         await strategyClaimRewardsAndSwapForCoinType(
           address,
