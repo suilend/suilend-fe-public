@@ -941,6 +941,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         borrowedAmount,
       );
 
+      const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
+
+      // "Borrows cannot exceed borrow limit"
       return !obligation ||
         obligation.maxPriceWeightedBorrowsUsd.gt(
           obligation.minPriceBorrowLimitUsd,
@@ -953,7 +956,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
                 borrowReserve.config.borrowWeightBps.div(10000),
               ),
             )
-            .div(1 + borrowReserve.config.borrowFeeBps / 10000);
+            .div(1 + borrowFeePercent / 100);
     },
     [
       getDepositReserves,

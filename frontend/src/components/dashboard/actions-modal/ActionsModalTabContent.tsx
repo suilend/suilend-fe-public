@@ -220,9 +220,9 @@ export default function ActionsModalTabContent({
       : undefined;
 
   // Borrow fee
-  const borrowFee = new BigNumber(value || 0)
-    .times(reserve.config.borrowFeeBps)
-    .div(10000);
+  const borrowFee = new BigNumber(value || 0).times(
+    reserve.config.borrowFeeBps / 10000,
+  );
 
   // Submit
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);

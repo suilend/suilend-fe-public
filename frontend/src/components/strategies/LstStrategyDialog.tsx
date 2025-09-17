@@ -1176,7 +1176,6 @@ export default function LstStrategyDialog({
 
       // Borrow fee
       const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
-
       const borrowFeeAmount = new BigNumber(
         newBorrowedAmount.minus(borrowedAmount),
       ).times(
