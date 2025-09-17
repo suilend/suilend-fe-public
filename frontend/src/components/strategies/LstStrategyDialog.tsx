@@ -1375,10 +1375,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[loopToExposure] args |`,
       JSON.stringify(
@@ -1604,10 +1600,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[unloopToExposure] args |`,
       JSON.stringify(
@@ -1684,7 +1676,7 @@ export default function LstStrategyDialog({
       const remainingLstWithdrawnAmount = swapRemainingLstForBase
         ? new BigNumber(
             deposits.find(
-              (d) => d.coinType === depositReserves.lst!.coinType,
+              (d) => d.coinType === depositReserves.lst.coinType,
             )!.depositedAmount,
           ).minus(lstWithdrawnAmount)
         : new BigNumber(0);
@@ -1907,7 +1899,7 @@ export default function LstStrategyDialog({
 
       // 1) MAX withdraw LST
       const maxLstWithdrawnAmount = deposits.find(
-        (d) => d.coinType === depositReserves.lst!.coinType,
+        (d) => d.coinType === depositReserves.lst.coinType,
       )!.depositedAmount;
 
       const suiRepaidAmount_maxLst = new BigNumber(
@@ -2202,7 +2194,7 @@ export default function LstStrategyDialog({
       if (targetSuiBorrowedAmount.eq(0)) {
         if (depositReserves.base !== undefined) {
           const lstDeposit = deposits.find(
-            (d) => d.coinType === depositReserves.lst!.coinType,
+            (d) => d.coinType === depositReserves.lst.coinType,
           );
           const lstDepositedAmount =
             lstDeposit?.depositedAmount ?? new BigNumber(0);
@@ -2403,10 +2395,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[deposit] args |`,
       JSON.stringify(
@@ -2586,10 +2574,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[depositAndLoopToExposure] args |`,
       JSON.stringify(
@@ -2679,10 +2663,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[withdraw] args |`,
       JSON.stringify(
@@ -2897,10 +2877,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[maxWithdraw] args |`,
       JSON.stringify(
@@ -3181,10 +3157,6 @@ export default function LstStrategyDialog({
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (!depositReserves.lst || !lst) throw new Error("LST reserve not found");
-
-    const suiReserve = borrowReserve;
-
     console.log(
       `[adjust] args |`,
       JSON.stringify(
