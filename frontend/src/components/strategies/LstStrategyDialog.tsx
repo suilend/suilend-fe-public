@@ -786,8 +786,7 @@ export default function LstStrategyDialog({
               : depositReserves.lst !== undefined
                 ? isSui(_currencyReserve.coinType)
                   ? 1
-                  : (lstMap[depositReserves.lst.coinType]
-                      ?.suiToLstExchangeRate ?? 1)
+                  : (lst?.suiToLstExchangeRate ?? 1)
                 : 1,
           ),
         },
@@ -841,7 +840,7 @@ export default function LstStrategyDialog({
       depositReserves,
       getTvlAmount,
       obligation,
-      lstMap,
+      lst?.suiToLstExchangeRate,
     ],
   );
   // TODO: getMaxAdjustUpCalculations, getMaxAdjustDownCalculations
@@ -1091,21 +1090,11 @@ export default function LstStrategyDialog({
 
     const exposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     );
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     ).times(defaultCurrencyReserve.price);
     const targetTvlAmountUsd = tvlAmountUsd.minus(depositWithdrawnAmountUsd);
     const targetSuiBorrowedAmount = targetTvlAmountUsd
@@ -1164,15 +1153,13 @@ export default function LstStrategyDialog({
     let result = new BigNumber(0);
 
     if (adjustExposure.gt(exposure)) {
-      const { borrows: newBorrows } = simulateLoopToExposure(
+      const { borrowedAmount: newBorrowedAmount } = simulateLoopToExposure(
         strategyType,
         deposits,
         borrowedAmount,
         undefined, // Don't pass targetSuiBorrowedAmount
         adjustExposure, // Pass targetExposure
       );
-
-      const newBorrowedAmount = newBorrows[0].borrowedAmount;
 
       // Borrow fee
       const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
@@ -1419,12 +1406,7 @@ export default function LstStrategyDialog({
 
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     ).times(defaultCurrencyReserve.price);
     const targetSuiBorrowedAmount =
       _targetSuiBorrowedAmount ??
@@ -1444,12 +1426,7 @@ export default function LstStrategyDialog({
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
         strategyType,
-        getSimulatedObligation(strategyType, deposits, [
-          {
-            coinType: NORMALIZED_SUI_COINTYPE,
-            borrowedAmount: suiBorrowedAmount,
-          },
-        ]),
+        getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
       );
       const pendingSuiBorrowedAmount =
         targetSuiBorrowedAmount.minus(suiBorrowedAmount);
@@ -1664,12 +1641,7 @@ export default function LstStrategyDialog({
 
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     ).times(defaultCurrencyReserve.price);
     const targetSuiBorrowedAmount =
       _targetSuiBorrowedAmount ??
@@ -2210,12 +2182,7 @@ export default function LstStrategyDialog({
     for (let i = 0; i < 30; i++) {
       const exposure = getExposure(
         strategyType,
-        getSimulatedObligation(strategyType, deposits, [
-          {
-            coinType: NORMALIZED_SUI_COINTYPE,
-            borrowedAmount: suiBorrowedAmount,
-          },
-        ]),
+        getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
       );
       const pendingSuiBorrowedAmount = suiBorrowedAmount.minus(
         targetSuiBorrowedAmount,
@@ -2780,21 +2747,11 @@ export default function LstStrategyDialog({
 
     const exposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     );
     const tvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     ).times(defaultCurrencyReserve.price);
     const targetTvlAmountUsd = tvlAmountUsd.minus(depositWithdrawnAmountUsd);
     const targetSuiBorrowedAmount = targetTvlAmountUsd
@@ -2889,21 +2846,11 @@ export default function LstStrategyDialog({
 
     const newExposure = getExposure(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     );
     const newTvlAmountUsd = getTvlAmount(
       strategyType,
-      getSimulatedObligation(strategyType, deposits, [
-        {
-          coinType: NORMALIZED_SUI_COINTYPE,
-          borrowedAmount: suiBorrowedAmount,
-        },
-      ]),
+      getSimulatedObligation(strategyType, deposits, suiBorrowedAmount),
     ).times(defaultCurrencyReserve.price);
 
     console.log(
@@ -3916,8 +3863,7 @@ export default function LstStrategyDialog({
                                   : depositReserves.lst !== undefined
                                     ? isSui(currencyReserve.coinType)
                                       ? 1
-                                      : (lstMap[depositReserves.lst.coinType]
-                                          ?.suiToLstExchangeRate ?? 1)
+                                      : (lst?.suiToLstExchangeRate ?? 1)
                                     : 1,
                               ),
                               { dp: currencyReserve.token.decimals },
@@ -3933,8 +3879,7 @@ export default function LstStrategyDialog({
                               : depositReserves.lst !== undefined
                                 ? isSui(currencyReserve.coinType)
                                   ? 1
-                                  : (lstMap[depositReserves.lst.coinType]
-                                      ?.suiToLstExchangeRate ?? 1)
+                                  : (lst?.suiToLstExchangeRate ?? 1)
                                 : 1,
                           ),
                           { exact: false },
@@ -4188,8 +4133,7 @@ export default function LstStrategyDialog({
                           : depositReserves.lst !== undefined
                             ? isSui(currencyReserve.coinType)
                               ? 1
-                              : (lstMap[depositReserves.lst.coinType]
-                                  ?.suiToLstExchangeRate ?? 1)
+                              : (lst?.suiToLstExchangeRate ?? 1)
                             : 1,
                       ),
                       {
@@ -4209,8 +4153,7 @@ export default function LstStrategyDialog({
                           : depositReserves.lst !== undefined
                             ? isSui(currencyReserve.coinType)
                               ? 1
-                              : (lstMap[depositReserves.lst.coinType]
-                                  ?.suiToLstExchangeRate ?? 1)
+                              : (lst?.suiToLstExchangeRate ?? 1)
                             : 1,
                       ),
                       {
