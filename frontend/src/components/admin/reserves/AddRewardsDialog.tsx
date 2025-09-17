@@ -2,7 +2,7 @@ import { Fragment, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-import { formatDate } from "date-fns";
+import { addDays, formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -129,6 +129,22 @@ export default function AddRewardsDialog() {
     }
   };
 
+  // Next Tuesday UTC
+  const getNextTuesdayUTC = (offsetWeeks: number) => {
+    const referenceMs = 1757980800000;
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const nowMs = Date.now();
+
+    let nextMs = referenceMs;
+    while (nextMs <= nowMs) nextMs += oneWeekMs;
+
+    if (offsetWeeks > 0) nextMs += offsetWeeks * oneWeekMs;
+
+    const date = new Date(nextMs);
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  };
+
   return (
     <Dialog
       rootProps={{ open: isDialogOpen, onOpenChange: setIsDialogOpen }}
@@ -143,7 +159,10 @@ export default function AddRewardsDialog() {
         </Button>
       }
       headerProps={{
-        title: { icon: <Sparkle />, children: "Add Rewards" },
+        title: {
+          icon: <Sparkle />,
+          children: "Add Rewards",
+        },
       }}
       footerProps={{
         children: (
@@ -172,32 +191,85 @@ export default function AddRewardsDialog() {
     >
       <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
         <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
-        <Input
-          label="startTimeMs"
-          labelRight={
-            startTimeMs.length >= 13
-              ? formatDate(new Date(+startTimeMs), "yyyy-MM-dd HH:mm:ss")
-              : undefined
-          }
-          id="startTimeMs"
-          type="number"
-          value={startTimeMs}
-          onChange={setStartTimeMs}
-          endDecorator="ms"
-        />
-        <Input
-          label="endTimeMs"
-          labelRight={
-            endTimeMs.length >= 13
-              ? formatDate(new Date(+endTimeMs), "yyyy-MM-dd HH:mm:ss")
-              : undefined
-          }
-          id="endTimeMs"
-          type="number"
-          value={endTimeMs}
-          onChange={setEndTimeMs}
-          endDecorator="ms"
-        />
+        <div className="flex flex-col gap-2">
+          <Input
+            label="startTimeMs"
+            labelRight={
+              startTimeMs.length >= 13
+                ? formatDate(new Date(+startTimeMs), "yyyy-MM-dd HH:mm:ss")
+                : undefined
+            }
+            id="startTimeMs"
+            type="number"
+            value={startTimeMs}
+            onChange={setStartTimeMs}
+            endDecorator="ms"
+          />
+
+          <div className="flex flex-row gap-2">
+            {[0, 1, 2].map((offsetWeeks) => (
+              <Button
+                key={offsetWeeks}
+                className="rounded-full"
+                labelClassName="uppercase text-xs"
+                variant={
+                  startTimeMs ===
+                  getNextTuesdayUTC(offsetWeeks).getTime().toString()
+                    ? "secondary"
+                    : "secondaryOutline"
+                }
+                size="sm"
+                onClick={() => {
+                  setStartTimeMs(
+                    getNextTuesdayUTC(offsetWeeks).getTime().toString(),
+                  );
+                }}
+              >
+                Next+{offsetWeeks}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Input
+            label="endTimeMs"
+            labelRight={
+              endTimeMs.length >= 13
+                ? formatDate(new Date(+endTimeMs), "yyyy-MM-dd HH:mm:ss")
+                : undefined
+            }
+            id="endTimeMs"
+            type="number"
+            value={endTimeMs}
+            onChange={setEndTimeMs}
+            endDecorator="ms"
+          />
+
+          <div className="flex flex-row gap-2">
+            {[0, 1, 2].map((offsetWeeks) => (
+              <Button
+                key={offsetWeeks}
+                className="rounded-full"
+                labelClassName="uppercase text-xs"
+                variant={
+                  endTimeMs ===
+                  getNextTuesdayUTC(offsetWeeks).getTime().toString()
+                    ? "secondary"
+                    : "secondaryOutline"
+                }
+                size="sm"
+                onClick={() => {
+                  setEndTimeMs(
+                    getNextTuesdayUTC(offsetWeeks).getTime().toString(),
+                  );
+                }}
+              >
+                Next+{offsetWeeks}
+              </Button>
+            ))}
+          </div>
+        </div>
 
         {appData.lendingMarket.reserves.map((reserve, index) => {
           const poolInfo = getPoolInfo(steammPoolInfos, reserve.token.coinType);

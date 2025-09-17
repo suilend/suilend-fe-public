@@ -11,6 +11,7 @@ import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,
   ApiDepositEvent,
+  ApiForgiveEvent,
   ApiLiquidateEvent,
   ApiRepayEvent,
   ApiWithdrawEvent,
@@ -50,6 +51,7 @@ interface RowData {
     | ApiWithdrawEvent
     | ApiRepayEvent
     | ApiLiquidateEvent
+    | ApiForgiveEvent
     | ApiClaimRewardEvent;
   subRows?: RowData[];
 }
@@ -87,7 +89,10 @@ export default function HistoryTabContent({
           const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
           const { timestamp, eventType } = row.original;
 
-          if (isGroupRow && eventType === EventType.LIQUIDATE)
+          if (
+            isGroupRow &&
+            [EventType.LIQUIDATE, EventType.FORGIVE].includes(eventType)
+          )
             return (
               <TBodySans className="w-max text-muted-foreground">
                 Multiple
@@ -116,11 +121,14 @@ export default function HistoryTabContent({
             <div className="flex w-max flex-col gap-1">
               <TBodySans className="w-max">
                 {EventTypeNameMap[eventType]}
-                {isGroupRow && eventType === EventType.LIQUIDATE && (
-                  <span className="ml-1.5 text-muted-foreground">
-                    ({row.subRows.length})
-                  </span>
-                )}
+                {isGroupRow &&
+                  [EventType.LIQUIDATE, EventType.FORGIVE].includes(
+                    eventType,
+                  ) && (
+                    <span className="ml-1.5 text-muted-foreground">
+                      ({row.subRows.length})
+                    </span>
+                  )}
               </TBodySans>
               {(eventType === EventType.CLAIM_REWARD ||
                 eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS ||
@@ -145,13 +153,21 @@ export default function HistoryTabContent({
           const { eventType, event } = row.original;
 
           if (
-            [EventType.BORROW, EventType.WITHDRAW, EventType.REPAY].includes(
-              eventType,
-            )
+            [
+              EventType.BORROW,
+              EventType.WITHDRAW,
+              EventType.REPAY,
+              EventType.FORGIVE,
+            ].includes(eventType)
           ) {
             return value.includes(
-              (event as ApiBorrowEvent | ApiWithdrawEvent | ApiRepayEvent)
-                .coinType,
+              (
+                event as
+                  | ApiBorrowEvent
+                  | ApiWithdrawEvent
+                  | ApiRepayEvent
+                  | ApiForgiveEvent
+              ).coinType,
             );
           } else if (eventType === EventType.DEPOSIT) {
             if (row.subRows.length > 0) {
@@ -446,6 +462,38 @@ export default function HistoryTabContent({
                   {withdrawReserve.token.symbol}
                 </TLabelSans>
               </div>
+            );
+          } else if (eventType === EventType.FORGIVE) {
+            const forgiveEvent = event as ApiForgiveEvent;
+            const coinMetadata = appData.coinMetadataMap[forgiveEvent.coinType];
+
+            let amount = new BigNumber(0);
+
+            const subRows = isGroupRow ? row.subRows : [row];
+            for (const subRow of subRows) {
+              const subRowForgiveEvent = subRow.original
+                .event as ApiForgiveEvent;
+
+              const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
+                (e) =>
+                  e.digest === subRowForgiveEvent.digest &&
+                  e.coinType === subRowForgiveEvent.coinType,
+              );
+              if (!reserveAssetDataEvent)
+                return <TLabelSans className="w-max">N/A</TLabelSans>;
+
+              amount = amount.plus(
+                new BigNumber(subRowForgiveEvent.liquidityAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
+
+            return (
+              <TokenAmount
+                amount={amount}
+                token={getToken(forgiveEvent.coinType, coinMetadata)}
+              />
             );
           } else if (eventType === EventType.CLAIM_REWARD) {
             const claimedAmountMap: Record<string, BigNumber> = {};
@@ -851,6 +899,26 @@ export default function HistoryTabContent({
           break;
         }
 
+        // Group FORGIVE events by reserveId
+        case EventType.FORGIVE: {
+          const forgiveEvent = row.event as ApiForgiveEvent;
+
+          const lastRow = finalRows[finalRows.length - 1];
+          if (!lastRow || lastRow.eventType !== EventType.FORGIVE)
+            finalRows.push({ ...row, subRows: [row] });
+          else {
+            const lastForgiveEvent = lastRow.event as ApiForgiveEvent;
+
+            if (lastForgiveEvent.reserveId !== forgiveEvent.reserveId)
+              finalRows.push({ ...row, subRows: [row] });
+            else {
+              (lastRow.subRows as RowData[]).push(row);
+            }
+          }
+
+          break;
+        }
+
         // Group CLAIM_REWARD events by digest
         case EventType.CLAIM_REWARD: {
           const claimRewardEvent = row.event as ApiClaimRewardEvent;
@@ -954,6 +1022,8 @@ export default function HistoryTabContent({
       result.push(EventType.REPAY);
     if (rows.filter((row) => row.eventType === EventType.LIQUIDATE).length > 0)
       result.push(EventType.LIQUIDATE);
+    if (rows.filter((row) => row.eventType === EventType.FORGIVE).length > 0)
+      result.push(EventType.FORGIVE);
     if (
       rows.filter((row) => row.eventType === EventType.CLAIM_REWARD).length > 0
     )
@@ -986,6 +1056,7 @@ export default function HistoryTabContent({
                 ...rows.filter((row) => row.eventType === EventType.BORROW),
                 ...rows.filter((row) => row.eventType === EventType.WITHDRAW),
                 ...rows.filter((row) => row.eventType === EventType.REPAY),
+                ...rows.filter((row) => row.eventType === EventType.FORGIVE),
                 ...rows.filter(
                   (row) => row.eventType === EventType.CLAIM_REWARD,
                 ),
@@ -1001,6 +1072,7 @@ export default function HistoryTabContent({
                       | ApiBorrowEvent
                       | ApiWithdrawEvent
                       | ApiRepayEvent
+                      | ApiForgiveEvent
                       | ApiClaimRewardEvent
                   ).coinType,
               ),
@@ -1140,7 +1212,9 @@ export default function HistoryTabContent({
 
               return cn(
                 isGroupRow &&
-                  row.original.eventType === EventType.LIQUIDATE &&
+                  [EventType.FORGIVE, EventType.LIQUIDATE].includes(
+                    row.original.eventType,
+                  ) &&
                   row.getIsExpanded() &&
                   "!bg-muted/15",
                 isNested && "!bg-muted/10",
@@ -1154,6 +1228,7 @@ export default function HistoryTabContent({
                     EventType.DEPOSIT,
                     EventType.BORROW,
                     EventType.LIQUIDATE,
+                    EventType.FORGIVE,
                     EventType.CLAIM_REWARD,
                     EventType.CLAIM_AND_DEPOSIT_REWARDS,
                     EventType.CLAIM_AND_REPAY_REWARDS,
@@ -1164,7 +1239,12 @@ export default function HistoryTabContent({
             }
             onRowClick={(row) => {
               const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
-              if (isGroupRow && row.original.eventType === EventType.LIQUIDATE)
+              if (
+                isGroupRow &&
+                [EventType.FORGIVE, EventType.LIQUIDATE].includes(
+                  row.original.eventType,
+                )
+              )
                 return row.getToggleExpandedHandler();
             }}
           />

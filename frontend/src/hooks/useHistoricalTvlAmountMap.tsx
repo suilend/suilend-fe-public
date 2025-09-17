@@ -12,8 +12,8 @@ const useHistoricalTvlAmountMap = (
   obligation?: ParsedObligation,
 ) => {
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -44,6 +44,7 @@ const useHistoricalTvlAmountMap = (
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,

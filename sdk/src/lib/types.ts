@@ -104,19 +104,6 @@ export type ApiDepositEvent = {
   sender: string;
 };
 
-export type ApiWithdrawEvent = {
-  id: number;
-  lendingMarketId: string;
-  coinType: string;
-  reserveId: string;
-  obligationId: string;
-  ctokenAmount: string;
-  timestamp: number;
-  digest: string;
-  eventIndex: number;
-  sender: string;
-};
-
 export type ApiBorrowEvent = {
   id: number;
   lendingMarketId: string;
@@ -125,6 +112,19 @@ export type ApiBorrowEvent = {
   obligationId: string;
   liquidityAmount: string;
   originationFeeAmount: string;
+  timestamp: number;
+  digest: string;
+  eventIndex: number;
+  sender: string;
+};
+
+export type ApiWithdrawEvent = {
+  id: number;
+  lendingMarketId: string;
+  coinType: string;
+  reserveId: string;
+  obligationId: string;
+  ctokenAmount: string;
   timestamp: number;
   digest: string;
   eventIndex: number;
@@ -156,6 +156,19 @@ export type ApiLiquidateEvent = {
   withdrawAmount: string;
   protocolFeeAmount: string;
   liquidatorBonusAmount: string;
+  timestamp: number;
+  digest: string;
+  eventIndex: number;
+  sender: string;
+};
+
+export type ApiForgiveEvent = {
+  id: number;
+  lendingMarketId: string;
+  reserveId: string;
+  obligationId: string;
+  coinType: string;
+  liquidityAmount: string;
   timestamp: number;
   digest: string;
   eventIndex: number;

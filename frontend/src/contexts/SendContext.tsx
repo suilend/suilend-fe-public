@@ -661,11 +661,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     const isInEarlyUsersSnapshot = earlyUsersJson.includes(address);
 
     // SEND Points (S1)
-    const ownedSendPointsS1 = getPointsStats(
+    const unclaimedSendPointsS1 = getPointsStats(
       NORMALIZED_SEND_POINTS_S1_COINTYPE,
       userDataMainMarket.rewardMap,
       userDataMainMarket.obligations,
     ).totalPoints.total;
+    const balanceSendPointsS1 = getBalance(NORMALIZED_SEND_POINTS_S1_COINTYPE);
 
     const redeemedSendPointsS1Msend = transactionsSinceTge?.from.reduce(
       (acc, transaction) => {
@@ -888,7 +889,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     return {
       earlyUsers: { isInSnapshot: isInEarlyUsersSnapshot },
       sendPointsS1: {
-        owned: ownedSendPointsS1,
+        owned: unclaimedSendPointsS1.plus(balanceSendPointsS1),
         redeemedMsend: redeemedSendPointsS1Msend,
       },
       suilendCapsulesS1: {
@@ -918,12 +919,13 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   }, [
     address,
     mSendCoinMetadata,
-    transactionsSinceTge,
     ownedKiosks,
-    userDataMainMarket.rewardMap,
-    userDataMainMarket.obligations,
     ownedSuilendCapsulesObjectsMap,
     rootletsOwnedMsendObjectsMap,
+    userDataMainMarket.rewardMap,
+    userDataMainMarket.obligations,
+    getBalance,
+    transactionsSinceTge,
   ]);
 
   // S2
@@ -934,11 +936,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     if (ownedSuilendCapsulesObjectsMap === undefined) return undefined;
 
     // SEND Points (S2)
-    const ownedSendPointsS2 = getPointsStats(
+    const unclaimedSendPointsS2 = getPointsStats(
       NORMALIZED_SEND_POINTS_S2_COINTYPE,
       userDataMainMarket.rewardMap,
       userDataMainMarket.obligations,
     ).totalPoints.total;
+    const balanceSendPointsS2 = getBalance(NORMALIZED_SEND_POINTS_S2_COINTYPE);
 
     // const redeemedSendPointsS1Msend = transactionsSinceTge?.from.reduce(
     //   (acc, transaction) => {
@@ -961,11 +964,12 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     // );
 
     // STEAMM Points
-    const ownedSteammPoints = getPointsStats(
+    const unclaimedSteammPoints = getPointsStats(
       NORMALIZED_STEAMM_POINTS_COINTYPE,
       userDataSteammLmMarket.rewardMap,
       userDataSteammLmMarket.obligations,
     ).totalPoints.total;
+    const balanceSteammPoints = getBalance(NORMALIZED_STEAMM_POINTS_COINTYPE);
 
     // Suilend Capsules (S2)
     // const redeemedSuilendCapsulesS1Msend = transactionsSinceTge?.from.reduce(
@@ -990,10 +994,10 @@ export function SendContextProvider({ children }: PropsWithChildren) {
 
     return {
       sendPointsS2: {
-        owned: ownedSendPointsS2,
+        owned: unclaimedSendPointsS2.plus(balanceSendPointsS2),
       },
       steammPoints: {
-        owned: ownedSteammPoints,
+        owned: unclaimedSteammPoints.plus(balanceSteammPoints),
       },
       suilendCapsulesS2: {
         ownedObjectsMap: ownedSuilendCapsulesObjectsMap.s2,
@@ -1005,6 +1009,7 @@ export function SendContextProvider({ children }: PropsWithChildren) {
     ownedSuilendCapsulesObjectsMap,
     userDataMainMarket.rewardMap,
     userDataMainMarket.obligations,
+    getBalance,
     userDataSteammLmMarket.rewardMap,
     userDataSteammLmMarket.obligations,
   ]);

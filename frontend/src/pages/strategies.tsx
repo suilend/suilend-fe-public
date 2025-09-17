@@ -70,8 +70,8 @@ function Page() {
   const { userData, refresh } = useLoadedUserContext();
 
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -102,6 +102,7 @@ function Page() {
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
@@ -189,6 +190,10 @@ function Page() {
           strategyType as StrategyType,
         );
         const depositReserve = depositReserves.lst ?? depositReserves.base!; // Must have base if no LST
+        if (
+          Object.keys(allRewardsMap[strategyType as StrategyType]).length === 0
+        )
+          continue;
 
         await strategyClaimRewardsAndSwapForCoinType(
           address,
@@ -414,10 +419,10 @@ function Page() {
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {Object.values(StrategyType)
                 .filter((strategyType) =>
-                  strategyType === StrategyType.USDC_sSUI_SUI_LOOPING
+                  strategyType === StrategyType.AUSD_sSUI_SUI_LOOPING
                     ? process.env.NODE_ENV === "development" ||
-                      router.query.usdc === "true" ||
-                      Date.now() >= 1756818000000 // 2025/09/02 13:00:00 UTC
+                      router.query.ausd === "true" ||
+                      Date.now() >= 1757941200000 // 2025/09/15 13:00:00 UTC
                     : true,
                 )
                 .map((strategyType) => {
@@ -443,7 +448,7 @@ function Page() {
         <div className="flex w-full flex-col gap-4">
           <TBody className="uppercase">Learn more</TBody>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {/* 1 */}
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>What is Suilend Strategies?</TBodySans>
@@ -506,16 +511,19 @@ function Page() {
               <TLabelSans>
                 Standard DeFi risks apply.
                 <br />
-                <br />• Liquidation Risk: if borrows exceed your borrow power
-                due to interest accruing
+                <br />• Liquidation Risk: if your borrows exceed your
+                liquidation threshold due to interest accruing
                 <br />• Smart Contract Risk: tied to SpringSui-issued LSTs such
                 as sSUI.
-                {/* or stratSUI. */}
                 <br />• Oracle Risk: depending on strategy ({`doesn't`} apply to
                 SpringSui LST/SUI Looping strategies)
                 <br />
                 <br />
-                Always size your position based on your risk tolerance.
+                Note: If your health is {"<100%"}, you will need{" "}
+                <b>additional capital</b> (returned in the same transaction) to
+                decrease your leverage and bring your health back up to 100%.
+                You {"won't"} be able to deposit or withdraw while your health
+                is {"<100%"}.
               </TLabelSans>
             </div>
 
@@ -565,8 +573,9 @@ function Page() {
               <TBodySans>Do I need to manage my position?</TBodySans>
               <TLabelSans>
                 Suilend Strategies is designed to be low-maintenance and
-                requires minimal management, but you can adjust your leverage,
-                deposit, or withdraw at any time.
+                requires minimal management. You can adjust your leverage,
+                deposit, or withdraw at any time (provided your health is 100%,
+                see {`"What are the risks?"`} for more details).
                 <br />
                 <br />
                 Rewards that are listed on Suilend will be autoclaimed and
@@ -585,10 +594,6 @@ function Page() {
                 For example:
                 <br />• 1.5-2x leverage: Lower risk, moderate yield
                 <br />• 2.5-3x leverage: Higher liquidation risk, high yield
-                <br />
-                <br />
-                You can adjust your leverage for each strategy at any time
-                through the UI.
               </TLabelSans>
             </div>
           </div>

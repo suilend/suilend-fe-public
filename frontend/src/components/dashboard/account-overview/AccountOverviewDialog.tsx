@@ -11,6 +11,7 @@ import {
   ApiBorrowEvent,
   ApiClaimRewardEvent,
   ApiDepositEvent,
+  ApiForgiveEvent,
   ApiLiquidateEvent,
   ApiObligationDataEvent,
   ApiRepayEvent,
@@ -62,6 +63,7 @@ export type EventsData = {
   withdraw: ApiWithdrawEvent[];
   repay: ApiRepayEvent[];
   liquidate: ApiLiquidateEvent[];
+  forgive: ApiForgiveEvent[];
   claimReward: ApiClaimRewardEvent[];
   obligationData: ApiObligationDataEvent[];
 };
@@ -160,7 +162,7 @@ export default function AccountOverviewDialog() {
           { claimReward, autoclaimDigests: _autoclaimDigests },
           json3,
         ] = await Promise.all([
-          // Deposit, borrow, withdraw, repay, and liquidate events joined with reserve asset data
+          // Deposit, borrow, withdraw, repay, liquidate, and forgive events joined with reserve asset data
           (async () => {
             const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: [
@@ -169,6 +171,7 @@ export default function AccountOverviewDialog() {
                 EventType.WITHDRAW,
                 EventType.REPAY,
                 EventType.LIQUIDATE,
+                EventType.FORGIVE,
               ].join(","),
               joinEventTypes: EventType.RESERVE_ASSET_DATA,
               obligationId,
@@ -180,6 +183,7 @@ export default function AccountOverviewDialog() {
               withdraw: ApiWithdrawEvent[];
               repay: ApiRepayEvent[];
               liquidate: ApiLiquidateEvent[];
+              forgive: ApiForgiveEvent[];
             } = await res.json();
 
             return json;
@@ -211,6 +215,7 @@ export default function AccountOverviewDialog() {
           ...(data.borrow ?? []),
           ...(data.withdraw ?? []),
           ...(data.repay ?? []),
+          ...(data.forgive ?? []),
           ...(data.claimReward ?? []),
         ]) {
           event.coinType = normalizeStructTag(event.coinType);
@@ -225,6 +230,7 @@ export default function AccountOverviewDialog() {
           withdraw: (data.withdraw ?? []).slice().sort(eventSortAsc),
           repay: (data.repay ?? []).slice().sort(eventSortAsc),
           liquidate: (data.liquidate ?? []).slice().sort(eventSortAsc),
+          forgive: (data.forgive ?? []).slice().sort(eventSortAsc),
           claimReward: (data.claimReward ?? []).slice().sort(eventSortAsc),
           obligationData: (data.obligationData ?? [])
             .slice()

@@ -21,6 +21,7 @@ export enum EventType {
   WITHDRAW = "withdraw",
   REPAY = "repay",
   LIQUIDATE = "liquidate",
+  FORGIVE = "forgive",
   CLAIM_REWARD = "claimReward",
   CLAIM_AND_DEPOSIT_REWARDS = "claimAndDepositRewards",
   CLAIM_AND_REPAY_REWARDS = "claimAndRepayRewards",
@@ -41,6 +42,7 @@ export const EventTypeNameMap: Record<EventType, string> = {
   [EventType.WITHDRAW]: "Withdraw",
   [EventType.REPAY]: "Repay",
   [EventType.LIQUIDATE]: "Liquidation",
+  [EventType.FORGIVE]: "Forgive",
   [EventType.CLAIM_REWARD]: "Claim rewards",
   [EventType.CLAIM_AND_DEPOSIT_REWARDS]: "Claim and deposit",
   [EventType.CLAIM_AND_REPAY_REWARDS]: "Claim and repay",
@@ -76,6 +78,13 @@ export const RESERVE_EVENT_SAMPLE_INTERVAL_S_MAP: Record<Days, number> = {
   1: 15 * 60,
   7: 2 * 60 * 60,
   30: 8 * 60 * 60,
+  // 90: 24 * 60 * 60,
+};
+export const DAYS_MAP: Record<Days, string> = {
+  1: "1D",
+  7: "1W",
+  30: "1M",
+  // 90: "3M",
 };
 
 export const calculateRewardAprPercent = (

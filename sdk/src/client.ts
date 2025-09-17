@@ -194,10 +194,11 @@ export class SuilendClient {
       },
     });
 
-    const data = (feeReceiver.data?.content as any).fields.value.fields;
-    const feeReceivers = FeeReceivers.fromFields(data);
-
-    return feeReceivers;
+    const receivers = (feeReceiver.data?.content as any).fields.value.fields
+      .receivers as string[];
+    const weights = (feeReceiver.data?.content as any).fields.value.fields
+      .weights as string[];
+    return { receivers, weights };
   }
 
   static createNewLendingMarket(

@@ -22,8 +22,8 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
   const { appData } = useLoadedAppContext();
 
   const {
-    isLearnMoreOpen,
-    setIsLearnMoreOpen,
+    isMoreDetailsOpen,
+    setIsMoreDetailsOpen,
 
     hasPosition,
 
@@ -54,6 +54,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
+    getHistory,
     getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
