@@ -998,16 +998,16 @@ export default function LstStrategyDialog({
   // Stats - Fees
   const depositFeesAmount = useMemo(() => {
     const deposits = obligation?.deposits ?? [];
-    const suiBorrowedAmount =
+    const borrowedAmount =
       (obligation?.borrows ?? [])[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
 
-    let resultSui = new BigNumber(0);
+    let result = new BigNumber(0);
 
-    const { suiBorrowedAmount: newSuiBorrowedAmount } =
+    const { borrowedAmount: newBorrowedAmount } =
       simulateDepositAndLoopToExposure(
         strategyType,
         deposits,
-        suiBorrowedAmount,
+        borrowedAmount,
         {
           coinType: currencyReserve.coinType,
           depositedAmount: new BigNumber(value || 0),
@@ -1015,26 +1015,26 @@ export default function LstStrategyDialog({
         exposure,
       );
 
-    const suiBorrowFeeSuiAmount = new BigNumber(
-      newSuiBorrowedAmount.minus(suiBorrowedAmount),
+    // Borrow fee
+    const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
+    const borrowFeeAmount = new BigNumber(
+      newBorrowedAmount.minus(borrowedAmount),
     ).times(
-      new BigNumber(suiBorrowFeePercent.div(100)).div(
-        new BigNumber(1).plus(suiBorrowFeePercent.div(100)),
-      ),
+      new BigNumber(borrowFeePercent / 100).div(1 + borrowFeePercent / 100),
     );
 
-    resultSui = suiBorrowFeeSuiAmount.decimalPlaces(
-      SUI_DECIMALS,
+    result = borrowFeeAmount.decimalPlaces(
+      borrowReserve.token.decimals,
       BigNumber.ROUND_DOWN,
     );
 
-    const resultUsd = resultSui.times(suiReserve.price);
-    const result = resultUsd.div(currencyReserve.price);
+    // Result
+    const resultUsd = result.times(borrowReserve.price);
+    const resultCurrency = resultUsd
+      .div(currencyReserve.price)
+      .decimalPlaces(currencyReserve.token.decimals, BigNumber.ROUND_DOWN);
 
-    return result.decimalPlaces(
-      currencyReserve.token.decimals,
-      BigNumber.ROUND_DOWN,
-    );
+    return resultCurrency;
   }, [
     obligation?.deposits,
     obligation?.borrows,
@@ -1043,8 +1043,9 @@ export default function LstStrategyDialog({
     currencyReserve.coinType,
     value,
     exposure,
-    suiBorrowFeePercent,
-    suiReserve.price,
+    borrowReserve.config.borrowFeeBps,
+    borrowReserve.token.decimals,
+    borrowReserve.price,
     currencyReserve.price,
     currencyReserve.token.decimals,
   ]);
@@ -1054,8 +1055,9 @@ export default function LstStrategyDialog({
     if (new BigNumber(value || 0).lte(0)) return new BigNumber(0);
 
     const deposits = obligation.deposits;
-    const suiBorrowedAmount =
+    const borrowedAmount =
       obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
+
     const withdraw: Withdraw = {
       coinType: currencyReserve.coinType,
       withdrawnAmount: new BigNumber(value),
@@ -1155,7 +1157,7 @@ export default function LstStrategyDialog({
         strategyType,
         deposits,
         borrowedAmount,
-        undefined, // Don't pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetBorrowedAmount
         adjustExposure, // Pass targetExposure
       );
 
@@ -1359,7 +1361,7 @@ export default function LstStrategyDialog({
     };
   })();
 
-  const lst_loopToExposureTx = async (
+  const loopToExposureTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
@@ -1453,13 +1455,7 @@ export default function LstStrategyDialog({
       const stepMaxSuiBorrowedAmount = getStepMaxBorrowedAmount(
         strategyType,
         deposits,
-        [
-          {
-            coinType: NORMALIZED_SUI_COINTYPE,
-            borrowedAmount: suiBorrowedAmount,
-          },
-        ],
-        NORMALIZED_SUI_COINTYPE,
+        suiBorrowedAmount,
       )
         .times(0.9) // 10% buffer
         .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
@@ -1594,7 +1590,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_unloopToExposureTx = async (
+  const unloopToExposureTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
@@ -2245,12 +2241,7 @@ export default function LstStrategyDialog({
       const stepMaxLstWithdrawnAmount = getStepMaxWithdrawnAmount(
         strategyType,
         deposits,
-        [
-          {
-            coinType: NORMALIZED_SUI_COINTYPE,
-            borrowedAmount: suiBorrowedAmount,
-          },
-        ],
+        suiBorrowedAmount,
         depositReserves.lst.coinType,
       )
         .times(0.9) // 10% buffer
@@ -2399,7 +2390,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_depositTx = async (
+  const depositTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
@@ -2581,7 +2572,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_depositAndLoopToExposureTx = async (
+  const depositAndLoopToExposureTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
@@ -2633,7 +2624,7 @@ export default function LstStrategyDialog({
       deposits: newDeposits,
       suiBorrowedAmount: newSuiBorrowedAmount,
       transaction: newTransaction,
-    } = await lst_depositTx(
+    } = await depositTx(
       _address,
       strategyOwnerCapId,
       obligationId,
@@ -2655,13 +2646,13 @@ export default function LstStrategyDialog({
         deposits: newDeposits2,
         suiBorrowedAmount: newSuiBorrowedAmount2,
         transaction: newTransaction2,
-      } = await lst_loopToExposureTx(
+      } = await loopToExposureTx(
         _address,
         strategyOwnerCapId,
         obligationId,
         deposits,
         suiBorrowedAmount,
-        undefined, // Don't pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetBorrowedAmount
         targetExposure, // Pass targetExposure
         transaction,
       );
@@ -2675,7 +2666,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_withdrawTx = async (
+  const withdrawTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
@@ -2782,7 +2773,7 @@ export default function LstStrategyDialog({
         deposits: newDeposits,
         suiBorrowedAmount: newSuiBorrowedAmount,
         transaction: newTransaction,
-      } = await lst_unloopToExposureTx(
+      } = await unloopToExposureTx(
         _address,
         strategyOwnerCapId,
         obligationId,
@@ -2893,7 +2884,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_maxWithdrawTx = async (
+  const maxWithdrawTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
@@ -2946,13 +2937,13 @@ export default function LstStrategyDialog({
         deposits: newDeposits,
         suiBorrowedAmount: newSuiBorrowedAmount,
         transaction: newTransaction,
-      } = await lst_unloopToExposureTx(
+      } = await unloopToExposureTx(
         _address,
         strategyOwnerCapId,
         obligationId,
         deposits,
         suiBorrowedAmount,
-        undefined, // Don't pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetBorrowedAmount
         new BigNumber(1), // Pass targetExposure
         transaction,
       );
@@ -3048,7 +3039,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_depositAdjustWithdrawTx = async (
+  const depositAdjustWithdrawTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
@@ -3141,7 +3132,7 @@ export default function LstStrategyDialog({
       obligationId,
       deposits,
       suiBorrowedAmount,
-      undefined, // Don't pass targetSuiBorrowedAmount
+      undefined, // Don't pass targetBorrowedAmount
       depositAdjustWithdrawExposure, // Pass targetExposure
       transaction,
     );
@@ -3177,7 +3168,7 @@ export default function LstStrategyDialog({
     return { deposits, suiBorrowedAmount, transaction };
   };
 
-  const lst_adjustTx = async (
+  const adjustTx = async (
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
@@ -3220,24 +3211,24 @@ export default function LstStrategyDialog({
 
     // 1) Loop or unloop to target exposure
     if (targetExposure.gt(exposure))
-      return lst_loopToExposureTx(
+      return loopToExposureTx(
         _address,
         strategyOwnerCapId,
         obligationId,
         deposits,
         suiBorrowedAmount,
-        undefined, // Don't pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetBorrowedAmount
         targetExposure, // Pass targetExposure
         transaction,
       );
     else if (targetExposure.lt(exposure))
-      return lst_unloopToExposureTx(
+      return unloopToExposureTx(
         _address,
         strategyOwnerCapId,
         obligationId,
         deposits,
         suiBorrowedAmount,
-        undefined, // Don't pass targetSuiBorrowedAmount
+        undefined, // Don't pass targetBorrowedAmount
         targetExposure, // Pass targetExposure
         transaction,
       );
@@ -3490,7 +3481,7 @@ export default function LstStrategyDialog({
 
         // 3) Withdraw
         const { transaction: withdrawTransaction } = !useMaxAmount
-          ? await lst_withdrawTx(
+          ? await withdrawTx(
               address,
               strategyOwnerCap.id,
               obligation.id,
@@ -3502,7 +3493,7 @@ export default function LstStrategyDialog({
               },
               transaction,
             )
-          : await lst_maxWithdrawTx(
+          : await maxWithdrawTx(
               address,
               strategyOwnerCap.id,
               obligation.id,
@@ -3570,7 +3561,7 @@ export default function LstStrategyDialog({
 
           // Deposit-adjust-withdraw
           const { transaction: depositAdjustWithdrawTransaction } =
-            await lst_depositAdjustWithdrawTx(
+            await depositAdjustWithdrawTx(
               address,
               strategyOwnerCap.id,
               obligation.id,
@@ -3582,7 +3573,7 @@ export default function LstStrategyDialog({
           transaction = depositAdjustWithdrawTransaction;
         } else {
           // Adjust
-          const { transaction: adjustTransaction } = await lst_adjustTx(
+          const { transaction: adjustTransaction } = await adjustTx(
             address,
             strategyOwnerCap.id,
             obligation.id,
