@@ -40,6 +40,8 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
 
     hasPosition,
 
+    suiReserve,
+
     lstMap,
     getLstMintFee,
     getLstRedeemFee,

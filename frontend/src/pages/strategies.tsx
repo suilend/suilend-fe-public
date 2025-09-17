@@ -75,6 +75,8 @@ function Page() {
 
     hasPosition,
 
+    suiReserve,
+
     lstMap,
     getLstMintFee,
     getLstRedeemFee,

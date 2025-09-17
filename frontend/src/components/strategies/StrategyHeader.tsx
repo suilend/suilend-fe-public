@@ -27,6 +27,8 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
 
     hasPosition,
 
+    suiReserve,
+
     lstMap,
     getLstMintFee,
     getLstRedeemFee,

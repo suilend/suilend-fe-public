@@ -79,6 +79,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
   Deposit,
   E,
+  LST_DECIMALS,
   Withdraw,
   addOrInsertDeposit,
   useLoadedLstStrategyContext,
@@ -193,6 +194,8 @@ export default function LstStrategyDialog({
     setIsMoreDetailsOpen,
 
     hasPosition,
+
+    suiReserve,
 
     lstMap,
     getLstMintFee,
@@ -413,7 +416,7 @@ export default function LstStrategyDialog({
         cetusSdk,
         CETUS_PARTNER_ID,
         rewardsMap,
-        depositReserves.lst ?? depositReserves.base!, // Must have base if no LST
+        (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
         strategyOwnerCap.id,
         !!obligation && hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
         transaction,
@@ -533,7 +536,7 @@ export default function LstStrategyDialog({
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
-      const { deposits, borrows } = simulateDepositAndLoopToExposure(
+      const { deposits, borrowedAmount } = simulateDepositAndLoopToExposure(
         strategyType,
         [],
         new BigNumber(0),
@@ -563,9 +566,7 @@ export default function LstStrategyDialog({
       const borrowMinAvailableAmount = new BigNumber(100).div(
         10 ** borrowReserve.token.decimals,
       );
-      const borrowFeePercent = new BigNumber(
-        borrowReserve.config.borrowFeeBps,
-      ).div(100);
+      const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
 
       // Factor
       const depositFactorMap: {
@@ -585,7 +586,7 @@ export default function LstStrategyDialog({
                 ?.depositedAmount.div(simValue) ?? new BigNumber(0)) // No LST deposits if depositReserves.base !== undefined AND exposure.eq(1)
             : undefined,
       };
-      const borrowFactor = borrows[0].borrowedAmount.div(simValue); // Assume exactly 1 borrow
+      const borrowFactor = borrowedAmount.div(simValue);
 
       const result = [
         // Balance
@@ -658,7 +659,7 @@ export default function LstStrategyDialog({
                 value: new BigNumber(
                   borrowReserve.availableAmount
                     .minus(borrowMinAvailableAmount)
-                    .div(new BigNumber(1).plus(borrowFeePercent.div(100))),
+                    .div(1 + borrowFeePercent / 100),
                 ).div(borrowFactor),
               },
               {
@@ -667,7 +668,7 @@ export default function LstStrategyDialog({
                 value: new BigNumber(
                   borrowReserve.config.borrowLimit
                     .minus(borrowReserve.borrowedAmount)
-                    .div(new BigNumber(1).plus(borrowFeePercent.div(100))),
+                    .div(1 + borrowFeePercent / 100),
                 ).div(borrowFactor),
               },
               {
@@ -679,7 +680,7 @@ export default function LstStrategyDialog({
                       borrowReserve.borrowedAmount.times(borrowReserve.price),
                     )
                     .div(borrowReserve.price)
-                    .div(new BigNumber(1).plus(borrowFeePercent.div(100))),
+                    .div(1 + borrowFeePercent / 100),
                 ).div(borrowFactor),
               },
               // "Borrows cannot exceed borrow limit" is not relevant here
@@ -690,7 +691,7 @@ export default function LstStrategyDialog({
                   appData.lendingMarket.rateLimiter.remainingOutflow
                     .div(borrowReserve.maxPrice)
                     .div(borrowReserve.config.borrowWeightBps.div(10000))
-                    .div(new BigNumber(1).plus(borrowFeePercent.div(100))),
+                    .div(1 + borrowFeePercent / 100),
                 ).div(borrowFactor),
               },
               // "IKA max utilization limit" is not relevant here
@@ -1174,16 +1175,12 @@ export default function LstStrategyDialog({
       const newBorrowedAmount = newBorrows[0].borrowedAmount; // Assume exactly 1 borrow
 
       // Borrow fee
-      const borrowFeePercent = new BigNumber(
-        borrowReserve.config.borrowFeeBps,
-      ).div(100);
+      const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
 
       const borrowFeeAmount = new BigNumber(
         newBorrowedAmount.minus(borrowedAmount),
       ).times(
-        new BigNumber(borrowFeePercent.div(100)).div(
-          new BigNumber(1).plus(borrowFeePercent.div(100)),
-        ),
+        new BigNumber(borrowFeePercent / 100).div(1 + borrowFeePercent / 100),
       );
 
       result = borrowFeeAmount.decimalPlaces(

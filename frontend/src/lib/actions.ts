@@ -120,7 +120,11 @@ const getMaxCalculations = (
             ? new BigNumber(0)
             : obligation.minPriceBorrowLimitUsd
                 .minus(obligation.maxPriceWeightedBorrowsUsd)
-                .div(reserve.maxPrice.times(borrowFeePercent / 100))
+                .div(
+                  reserve.maxPrice.times(
+                    reserve.config.borrowWeightBps.div(10000),
+                  ),
+                )
                 .div(1 + borrowFeePercent / 100),
       },
       {

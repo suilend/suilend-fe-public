@@ -17,6 +17,8 @@ const useHistoricalTvlAmountMap = (
 
     hasPosition,
 
+    suiReserve,
+
     lstMap,
     getLstMintFee,
     getLstRedeemFee,

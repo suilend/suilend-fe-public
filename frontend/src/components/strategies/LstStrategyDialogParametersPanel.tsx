@@ -62,6 +62,8 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
 
     hasPosition,
 
+    suiReserve,
+
     lstMap,
     getLstMintFee,
     getLstRedeemFee,
@@ -110,15 +112,6 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
   const defaultExposure = useMemo(
     () => exposureMap[strategyType].default,
     [strategyType, exposureMap],
-  );
-
-  // LST
-  const lst = useMemo(
-    () =>
-      strategyInfo.depositLstCoinType !== undefined
-        ? lstMap[strategyInfo.depositLstCoinType]
-        : undefined,
-    [lstMap, strategyInfo.depositLstCoinType],
   );
 
   // Reserves
@@ -321,6 +314,8 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
     setIsMoreDetailsOpen,
 
     hasPosition,
+
+    suiReserve,
 
     lstMap,
     getLstMintFee,
