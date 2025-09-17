@@ -16,7 +16,7 @@ import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
-import { NORMALIZED_SUI_COINTYPE, getToken } from "@suilend/sui-fe";
+import { getToken } from "@suilend/sui-fe";
 import { shallowPushQuery, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { TokenAmount } from "@/components/dashboard/account-overview/AccountOverviewDialog";
@@ -146,42 +146,43 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
           {/* Top */}
           <div className="relative z-[2] flex h-[160px] w-full flex-row gap-0">
             {/* Base (left) */}
-            {depositReserves.base !== undefined && (
-              <div className="relative h-full w-20">
-                <div className="absolute inset-y-4 left-10 w-px border-l border-dashed border-muted" />
+            {depositReserves.base !== undefined &&
+              depositReserves.lst !== undefined && (
+                <div className="relative h-full w-20">
+                  <div className="absolute inset-y-4 left-10 w-px border-l border-dashed border-muted" />
 
-                {/* Base (left-top) */}
-                <div
-                  className={cn(
-                    "absolute left-10 top-4",
-                    "flex h-0 w-0 flex-row items-center justify-center",
-                  )}
-                >
-                  <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                    <TokenLogo token={depositReserves.base.token} size={20} />
-                    <TBody>{depositReserves.base.token.symbol}</TBody>
+                  {/* Base (left-top) */}
+                  <div
+                    className={cn(
+                      "absolute left-10 top-4",
+                      "flex h-0 w-0 flex-row items-center justify-center",
+                    )}
+                  >
+                    <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
+                      <TokenLogo token={depositReserves.base.token} size={20} />
+                      <TBody>{depositReserves.base.token.symbol}</TBody>
+                    </div>
+                  </div>
+
+                  {/* Borrow (left-bottom) */}
+                  <div
+                    className={cn(
+                      "absolute bottom-4 left-10",
+                      "flex h-0 w-0 flex-row items-center justify-center",
+                    )}
+                  >
+                    <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
+                      <TBody className="w-max uppercase">Borrow</TBody>
+                    </div>
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-popover pb-0.5">
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Borrow (left-bottom) */}
-                <div
-                  className={cn(
-                    "absolute bottom-4 left-10",
-                    "flex h-0 w-0 flex-row items-center justify-center",
-                  )}
-                >
-                  <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                    <TBody className="w-max uppercase">Borrow</TBody>
-                  </div>
-
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-popover pb-0.5">
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* LST Looping (right) */}
+            {/* Base/BorrowAsset or LST/BorrowAsset Looping (right) */}
             <div className="relative h-full flex-1">
               <div className="absolute inset-x-10 inset-y-4 rounded-[16px] border border-dashed border-muted" />
 
@@ -193,10 +194,18 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 )}
               >
                 <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                  {depositReserves.lst && (
+                  {depositReserves.lst !== undefined ? (
                     <>
                       <TokenLogo token={depositReserves.lst.token} size={20} />
                       <TBody>{depositReserves.lst.token.symbol}</TBody>
+                    </>
+                  ) : (
+                    <>
+                      <TokenLogo
+                        token={depositReserves.base!.token}
+                        size={20}
+                      />
+                      <TBody>{depositReserves.base!.token.symbol}</TBody>
                     </>
                   )}
                 </div>
@@ -218,7 +227,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 </div>
               </div>
 
-              {/* SUI (center-bottom) */}
+              {/* BorrowAsset (center-bottom) */}
               <div
                 className={cn(
                   "absolute bottom-4 left-1/2 -translate-x-1/2",
@@ -226,14 +235,8 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 )}
               >
                 <div className="flex h-8 w-max flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                  <TokenLogo
-                    token={getToken(
-                      NORMALIZED_SUI_COINTYPE,
-                      appData.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
-                    )}
-                    size={20}
-                  />
-                  <TBody>SUI</TBody>
+                  <TokenLogo token={borrowReserve.token} size={20} />
+                  <TBody>{borrowReserve.token.symbol}</TBody>
                 </div>
 
                 {depositReserves.base !== undefined && (
@@ -243,7 +246,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 )}
               </div>
 
-              {/* Stake (left-center) */}
+              {/* Swap or Stake (left-center) */}
               <div
                 className={cn(
                   "absolute left-10 top-1/2 -translate-y-1/2",
@@ -251,7 +254,9 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 )}
               >
                 <div className="flex h-8 flex-row items-center justify-center gap-2 rounded-full bg-border px-3">
-                  <TBody className="w-max uppercase">Stake</TBody>
+                  <TBody className="w-max uppercase">
+                    {depositReserves.lst !== undefined ? "Stake" : "Swap"}
+                  </TBody>
                 </div>
 
                 <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-popover pt-0.5">
@@ -262,19 +267,20 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
           </div>
 
           {/* Bottom */}
-          {depositReserves.base !== undefined && (
-            <div className="relative z-[1] flex h-[40px] w-full flex-row gap-0">
-              {/* Left */}
-              <div className="relative h-full w-20">
-                <div className="absolute inset-y-0 left-10 right-0 rounded-bl-[16px] border border-r-0 border-t-0 border-dashed border-muted" />
-              </div>
+          {depositReserves.base !== undefined &&
+            depositReserves.lst !== undefined && (
+              <div className="relative z-[1] flex h-[40px] w-full flex-row gap-0">
+                {/* Left */}
+                <div className="relative h-full w-20">
+                  <div className="absolute inset-y-0 left-10 right-0 rounded-bl-[16px] border border-r-0 border-t-0 border-dashed border-muted" />
+                </div>
 
-              {/* Right */}
-              <div className="relative h-full flex-1">
-                <div className="absolute inset-y-0 left-0 right-1/2 rounded-br-[16px] border border-l-0 border-t-0 border-dashed border-muted" />
+                {/* Right */}
+                <div className="relative h-full flex-1">
+                  <div className="absolute inset-y-0 left-0 right-1/2 rounded-br-[16px] border border-l-0 border-t-0 border-dashed border-muted" />
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
 
@@ -292,7 +298,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
               [StrategyType.AUSD_sSUI_SUI_LOOPING]:
                 "sSUI rewards (for depositing AUSD, for depositing sSUI, and for borrowing SUI)",
               [StrategyType.xBTC_wBTC_LOOPING]:
-                "DEEP rewards (from depositing xBTC, and borrowing wBTC)",
+                "DEEP rewards (for depositing xBTC)",
             }[strategyType]
           }{" "}
           are autoclaimed and redeposited every 2 weeks.

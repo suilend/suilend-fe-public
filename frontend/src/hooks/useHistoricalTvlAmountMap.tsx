@@ -35,12 +35,9 @@ const useHistoricalTvlAmountMap = (
     getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
-    lst_simulateLoopToExposure,
-    lst_simulateDeposit,
-    lst_simulateDepositAndLoopToExposure,
-    btc_simulateLoopToExposure,
-    btc_simulateDeposit,
-    btc_simulateDepositAndLoopToExposure,
+    simulateLoopToExposure,
+    simulateDeposit,
+    simulateDepositAndLoopToExposure,
 
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
