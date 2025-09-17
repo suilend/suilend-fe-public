@@ -329,7 +329,7 @@ export default function LstStrategyDialog({
               coinType: depositReserves.base!.coinType,
               depositedAmount: additionalBaseDepositedAmount,
             }),
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
           ),
           undefined,
         );
@@ -1002,7 +1002,7 @@ export default function LstStrategyDialog({
   const depositFeesAmount = useMemo(() => {
     const deposits = obligation?.deposits ?? [];
     const suiBorrowedAmount =
-      (obligation?.borrows ?? [])[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow (SUI)
+      (obligation?.borrows ?? [])[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
 
     let resultSui = new BigNumber(0);
 
@@ -1058,7 +1058,7 @@ export default function LstStrategyDialog({
 
     const deposits = obligation.deposits;
     const suiBorrowedAmount =
-      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow (SUI)
+      obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
     const withdraw: Withdraw = {
       coinType: currencyReserve.coinType,
       withdrawnAmount: new BigNumber(value),
@@ -1172,7 +1172,7 @@ export default function LstStrategyDialog({
         adjustExposure, // Pass targetExposure
       );
 
-      const newBorrowedAmount = newBorrows[0].borrowedAmount; // Assume exactly 1 borrow
+      const newBorrowedAmount = newBorrows[0].borrowedAmount;
 
       // Borrow fee
       const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
@@ -3479,7 +3479,7 @@ export default function LstStrategyDialog({
             strategyOwnerCapId,
             obligation?.id,
             obligation?.deposits ?? [],
-            (obligation?.borrows ?? [])[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+            (obligation?.borrows ?? [])[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
             {
               coinType: currencyReserve.coinType,
               depositedAmount: new BigNumber(value),
@@ -3550,7 +3550,7 @@ export default function LstStrategyDialog({
               strategyOwnerCap.id,
               obligation.id,
               obligation.deposits,
-              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
               {
                 coinType: currencyReserve.coinType,
                 withdrawnAmount: new BigNumber(value),
@@ -3562,7 +3562,7 @@ export default function LstStrategyDialog({
               strategyOwnerCap.id,
               obligation.id,
               obligation.deposits,
-              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
               currencyReserve.coinType,
               transaction,
             );
@@ -3630,7 +3630,7 @@ export default function LstStrategyDialog({
               strategyOwnerCap.id,
               obligation.id,
               obligation.deposits,
-              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+              obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
               depositAdjustWithdrawAdditionalBaseDepositedAmount,
               transaction,
             );
@@ -3642,7 +3642,7 @@ export default function LstStrategyDialog({
             strategyOwnerCap.id,
             obligation.id,
             obligation.deposits,
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
             adjustExposure,
             transaction,
           );
