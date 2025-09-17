@@ -193,14 +193,13 @@ function Page() {
         const depositReserves = getDepositReserves(
           strategyType as StrategyType,
         );
-        const depositReserve = (depositReserves.lst ?? depositReserves.base)!; // Must have base if no LST
 
         await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          depositReserve,
+          (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
           transaction,
