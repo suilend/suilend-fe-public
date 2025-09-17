@@ -1206,7 +1206,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       // 1) Deposit
       // 1.1) SUI
       if (isSui(deposit.coinType)) {
-        if (!depositReserves.lst) throw new Error("LST reserve not found");
+        if (depositReserves.lst === undefined)
+          throw new Error("LST reserve not found");
 
         const suiToLstExchangeRate =
           lstMap?.[depositReserves.lst.coinType]?.suiToLstExchangeRate ??
