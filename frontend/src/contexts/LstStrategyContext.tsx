@@ -832,7 +832,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       isLst,
       lstMap,
       appData.reserveMap,
-      suiReserve,
+      suiReserve.price,
     ],
   );
   const getBorrowedAmount = useCallback(
@@ -875,7 +875,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getDefaultCurrencyReserve,
       hasPosition,
       isLst,
-      suiReserve,
+      suiReserve.price,
     ],
   );
 
@@ -1464,7 +1464,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       isLst,
       lstMap,
       appData.rewardPriceMap,
-      suiReserve,
+      suiReserve.price,
     ],
   );
 
