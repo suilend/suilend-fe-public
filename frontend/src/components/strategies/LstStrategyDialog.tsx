@@ -783,11 +783,9 @@ export default function LstStrategyDialog({
           value: getTvlAmount(strategyType, obligation).times(
             depositReserves.base !== undefined
               ? 1
-              : depositReserves.lst !== undefined
-                ? isSui(_currencyReserve.coinType)
-                  ? 1
-                  : (lst?.suiToLstExchangeRate ?? 1)
-                : 1,
+              : isSui(_currencyReserve.coinType)
+                ? 1
+                : (lst?.suiToLstExchangeRate ?? 1),
           ),
         },
 
@@ -3860,11 +3858,9 @@ export default function LstStrategyDialog({
                               tvlAmount.times(
                                 depositReserves.base !== undefined
                                   ? 1
-                                  : depositReserves.lst !== undefined
-                                    ? isSui(currencyReserve.coinType)
-                                      ? 1
-                                      : (lst?.suiToLstExchangeRate ?? 1)
-                                    : 1,
+                                  : isSui(currencyReserve.coinType)
+                                    ? 1
+                                    : (lst?.suiToLstExchangeRate ?? 1),
                               ),
                               { dp: currencyReserve.token.decimals },
                             )} ${currencyReserve.token.symbol}`
@@ -3876,11 +3872,9 @@ export default function LstStrategyDialog({
                           tvlAmount.times(
                             depositReserves.base !== undefined
                               ? 1
-                              : depositReserves.lst !== undefined
-                                ? isSui(currencyReserve.coinType)
-                                  ? 1
-                                  : (lst?.suiToLstExchangeRate ?? 1)
-                                : 1,
+                              : isSui(currencyReserve.coinType)
+                                ? 1
+                                : (lst?.suiToLstExchangeRate ?? 1),
                           ),
                           { exact: false },
                         )}{" "}
@@ -4130,11 +4124,9 @@ export default function LstStrategyDialog({
                       depositFeesAmount.times(
                         depositReserves.base !== undefined
                           ? 1
-                          : depositReserves.lst !== undefined
-                            ? isSui(currencyReserve.coinType)
-                              ? 1
-                              : (lst?.suiToLstExchangeRate ?? 1)
-                            : 1,
+                          : isSui(currencyReserve.coinType)
+                            ? 1
+                            : (lst?.suiToLstExchangeRate ?? 1),
                       ),
                       {
                         dp: currencyReserve.token.decimals,
@@ -4150,11 +4142,9 @@ export default function LstStrategyDialog({
                       withdrawFeesAmount.times(
                         depositReserves.base !== undefined
                           ? 1
-                          : depositReserves.lst !== undefined
-                            ? isSui(currencyReserve.coinType)
-                              ? 1
-                              : (lst?.suiToLstExchangeRate ?? 1)
-                            : 1,
+                          : isSui(currencyReserve.coinType)
+                            ? 1
+                            : (lst?.suiToLstExchangeRate ?? 1),
                       ),
                       {
                         dp: currencyReserve.token.decimals,
