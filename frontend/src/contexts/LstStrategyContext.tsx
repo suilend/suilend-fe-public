@@ -431,7 +431,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   );
 
   // SUI
-  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const suiReserve = useMemo(
+    () => appData.reserveMap[NORMALIZED_SUI_COINTYPE],
+    [appData.reserveMap],
+  );
 
   // LST
   const [lstMap, setLstMap] = useState<
@@ -741,10 +744,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           .minus(borrowedAmount.times(borrowReserve.price)),
         weightedBorrowsUsd: new BigNumber(
           borrowedAmount.times(borrowReserve.price),
-        ).times(borrowReserve.config.borrowFeeBps / 10000),
+        ).times(suiReserve.config.borrowWeightBps.div(10000)),
         maxPriceWeightedBorrowsUsd: new BigNumber(
           borrowedAmount.times(borrowReserve.maxPrice),
-        ).times(borrowReserve.config.borrowFeeBps / 10000),
+        ).times(suiReserve.config.borrowWeightBps.div(10000)),
         minPriceBorrowLimitUsd: BigNumber.min(
           deposits.reduce((acc, deposit) => {
             const depositReserve = appData.reserveMap[deposit.coinType];
@@ -775,6 +778,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       appData.reserveMap,
+      suiReserve.config.borrowWeightBps,
     ],
   );
 
@@ -845,8 +849,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       for (const borrow of obligation.borrows) {
         if (isSui(borrow.coinType)) {
           resultSui = resultSui.plus(borrow.borrowedAmount);
-        }
-        if (isLst(borrow.coinType)) {
+        } else if (isLst(borrow.coinType)) {
           // Can't borrow LSTs
           continue;
         } else {
