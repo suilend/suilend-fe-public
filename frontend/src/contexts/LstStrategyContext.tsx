@@ -2004,7 +2004,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         if (exposure === undefined) return new BigNumber(0); // Not shown in UI
 
         _obligation = simulateDepositAndLoopToExposure(
-          StrategyType.USDC_sSUI_SUI_LOOPING,
+          strategyType,
           [],
           new BigNumber(0),
           {
