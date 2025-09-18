@@ -298,29 +298,30 @@ export default function LstStrategyDialog({
       ? getExposure(strategyType, obligation)
       : new BigNumber(1),
   ).eq(100);
-  const depositAdjustWithdrawAdditionalBaseDepositedAmount = useMemo(() => {
+  const depositAdjustWithdrawAdditionalDepositedAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
-    if (depositReserves.base === undefined) return new BigNumber(0);
     if (canAdjust) return new BigNumber(0);
 
-    const baseDepositedAmount = obligation.deposits.find(
-      (d) => d.coinType === depositReserves.base!.coinType,
+    const depositReserve = depositReserves.base ?? depositReserves.lst;
+
+    const depositedAmount = obligation.deposits.find(
+      (d) => d.coinType === depositReserve.coinType,
     )!.depositedAmount;
 
-    const targetBaseDepositedAmount = bisectionMethod(
-      baseDepositedAmount, // left boundary: original deposit
-      baseDepositedAmount.times(2), // right boundary: 2x original deposit
-      (newBaseDepositedAmount: BigNumber) => {
-        const additionalBaseDepositedAmount =
-          newBaseDepositedAmount.minus(baseDepositedAmount);
+    const targetDepositedAmount = bisectionMethod(
+      depositedAmount, // left boundary: original deposit
+      depositedAmount.times(2), // right boundary: 2x original deposit
+      (newDepositedAmount: BigNumber) => {
+        const additionalDepositedAmount =
+          newDepositedAmount.minus(depositedAmount);
 
         const newHealthPercent = getHealthPercent(
           strategyType,
           getSimulatedObligation(
             strategyType,
             addOrInsertDeposit(obligation.deposits, {
-              coinType: depositReserves.base!.coinType,
-              depositedAmount: additionalBaseDepositedAmount,
+              coinType: depositReserve.coinType,
+              depositedAmount: additionalDepositedAmount,
             }),
             obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
           ),
@@ -331,22 +332,23 @@ export default function LstStrategyDialog({
       },
     );
 
-    const additionalBaseDepositedAmount =
-      targetBaseDepositedAmount.minus(baseDepositedAmount);
+    const additionalDepositedAmount =
+      targetDepositedAmount.minus(depositedAmount);
     console.log(
-      "XXXX baseDepositedAmount:",
-      baseDepositedAmount.toFixed(20),
-      "targetBaseDepositedAmount:",
-      targetBaseDepositedAmount.toFixed(20),
-      "additionalBaseDepositedAmount:",
-      additionalBaseDepositedAmount.toFixed(20),
+      "XXXX depositedAmount:",
+      depositedAmount.toFixed(20),
+      "targetDepositedAmount:",
+      targetDepositedAmount.toFixed(20),
+      "additionalDepositedAmount:",
+      additionalDepositedAmount.toFixed(20),
     );
 
-    return additionalBaseDepositedAmount;
+    return additionalDepositedAmount;
   }, [
     obligation,
     hasPosition,
     depositReserves.base,
+    depositReserves.lst,
     canAdjust,
     getHealthPercent,
     strategyType,
@@ -1042,10 +1044,7 @@ export default function LstStrategyDialog({
     };
 
     // From withdrawTx:
-    const depositReserve =
-      depositReserves.base !== undefined
-        ? depositReserves.base
-        : depositReserves.lst;
+    const depositReserve = depositReserves.base ?? depositReserves.lst;
 
     const depositWithdrawnAmount = (
       depositReserves.base !== undefined
@@ -1117,8 +1116,8 @@ export default function LstStrategyDialog({
     defaultCurrencyReserve.token.decimals,
   ]);
 
-  const repayFeesAmount = useMemo(() => {
-    return new BigNumber(0);
+  const depositAdjustWithdrawFeesAmount = useMemo(() => {
+    return new BigNumber(0); // No fees (ignoring LST redeem fees)
   }, []);
 
   const adjustFeesAmount = useMemo(() => {
@@ -1152,8 +1151,10 @@ export default function LstStrategyDialog({
         SUI_DECIMALS,
         BigNumber.ROUND_DOWN,
       );
+
+      // Ignoring LST mint fees
     } else {
-      resultSui = new BigNumber(0); // No fees
+      resultSui = new BigNumber(0); // No fees (ignoring LST redeem fees)
     }
 
     const resultUsd = resultSui.times(suiReserve.price);
@@ -1301,14 +1302,16 @@ export default function LstStrategyDialog({
       if (new BigNumber(value).eq(0))
         return { isDisabled: true, title: "Enter a non-zero amount" };
     } else if (selectedTab === Tab.ADJUST && !canAdjust) {
+      const depositReserve = depositReserves.base ?? depositReserves.lst;
+
       if (
-        getBalance(defaultCurrencyReserve.coinType).lt(
-          depositAdjustWithdrawAdditionalBaseDepositedAmount,
+        getBalance(depositReserve.coinType).lt(
+          depositAdjustWithdrawAdditionalDepositedAmount,
         )
       ) {
         return {
           isDisabled: true,
-          title: `Insufficient ${defaultCurrencyReserve.token.symbol}`,
+          title: `Insufficient ${depositReserve.token.symbol}`,
         };
       }
     } else if (selectedTab === Tab.ADJUST && canAdjust) {
@@ -2663,10 +2666,7 @@ export default function LstStrategyDialog({
     let deposits = cloneDeep(_deposits);
     let suiBorrowedAmount = _suiBorrowedAmount;
 
-    const depositReserve =
-      depositReserves.base !== undefined
-        ? depositReserves.base
-        : depositReserves.lst;
+    const depositReserve = depositReserves.base ?? depositReserves.lst;
 
     const depositWithdrawnAmount = (
       depositReserves.base !== undefined
@@ -2874,10 +2874,7 @@ export default function LstStrategyDialog({
     let deposits = cloneDeep(_deposits);
     let suiBorrowedAmount = _suiBorrowedAmount;
 
-    const depositReserve =
-      depositReserves.base !== undefined
-        ? depositReserves.base
-        : depositReserves.lst;
+    const depositReserve = depositReserves.base ?? depositReserves.lst;
 
     // 1) Unloop to 1x (base+LST: no LST and no borrows, LST: no borrows)
     if (suiBorrowedAmount.gt(0)) {
@@ -2994,16 +2991,13 @@ export default function LstStrategyDialog({
     obligationId: string,
     _deposits: Deposit[],
     _suiBorrowedAmount: BigNumber,
-    additionalBaseDepositedAmount: BigNumber,
+    additionalDepositedAmount: BigNumber,
     transaction: Transaction,
   ): Promise<{
     deposits: Deposit[];
     suiBorrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
-    if (depositReserves.base === undefined)
-      throw Error("Base deposit reserve not found");
-
     console.log(
       `[depositAdjustWithdraw] args |`,
       JSON.stringify(
@@ -3016,8 +3010,7 @@ export default function LstStrategyDialog({
             depositedAmount: d.depositedAmount.toFixed(20),
           })),
           _suiBorrowedAmount: _suiBorrowedAmount.toFixed(20),
-          additionalBaseDepositedAmount:
-            additionalBaseDepositedAmount.toFixed(20),
+          additionalDepositedAmount: additionalDepositedAmount.toFixed(20),
         },
         null,
         2,
@@ -3029,44 +3022,44 @@ export default function LstStrategyDialog({
     let deposits = cloneDeep(_deposits);
     let suiBorrowedAmount = _suiBorrowedAmount;
 
-    // 1) Deposit additional base (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
+    const depositReserve = depositReserves.base ?? depositReserves.lst;
+
+    // 1) Deposit additional (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
     // 1.1) Split coins
-    const allCoinsBase = await getAllCoins(
+    const allCoins = await getAllCoins(
       suiClient,
       _address,
-      depositReserves.base.coinType,
+      depositReserve.coinType,
     );
-    const mergeCoinBase = mergeAllCoins(
-      depositReserves.base.coinType,
+    const mergeCoin = mergeAllCoins(
+      depositReserve.coinType,
       transaction,
-      allCoinsBase,
+      allCoins,
     );
 
-    const baseCoin = transaction.splitCoins(
-      transaction.object(mergeCoinBase.coinObjectId),
+    const coin = transaction.splitCoins(
+      transaction.object(mergeCoin.coinObjectId),
       [
-        additionalBaseDepositedAmount
-          .times(10 ** depositReserves.base.token.decimals)
+        additionalDepositedAmount
+          .times(10 ** depositReserve.token.decimals)
           .integerValue(BigNumber.ROUND_DOWN)
           .toString(),
       ],
     );
 
-    // 1.2) Deposit additional base
+    // 1.2) Deposit additional
     strategyDeposit(
-      baseCoin,
-      depositReserves.base.coinType,
+      coin,
+      depositReserve.coinType,
       strategyOwnerCapId,
-      appData.suilendClient.findReserveArrayIndex(
-        depositReserves.base.coinType,
-      ),
+      appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
       transaction,
     );
 
     // 1.3) Update state
     deposits = addOrInsertDeposit(deposits, {
-      coinType: depositReserves.base.coinType,
-      depositedAmount: additionalBaseDepositedAmount,
+      coinType: depositReserve.coinType,
+      depositedAmount: additionalDepositedAmount,
     });
 
     // 2) Unloop to max exposure
@@ -3091,7 +3084,7 @@ export default function LstStrategyDialog({
     suiBorrowedAmount = newSuiBorrowedAmount;
     transaction = newTransaction;
 
-    // 3) Withdraw additional base
+    // 3) Withdraw additional
     const {
       deposits: newDeposits2,
       suiBorrowedAmount: newSuiBorrowedAmount2,
@@ -3103,8 +3096,8 @@ export default function LstStrategyDialog({
       deposits,
       suiBorrowedAmount,
       {
-        coinType: depositReserves.base.coinType,
-        withdrawnAmount: additionalBaseDepositedAmount,
+        coinType: depositReserve.coinType,
+        withdrawnAmount: additionalDepositedAmount,
       },
       transaction,
     );
@@ -3495,9 +3488,6 @@ export default function LstStrategyDialog({
 
         // 3) Deposit-adjust-withdraw or adjust
         if (!canAdjust) {
-          if (depositReserves.base === undefined)
-            throw Error("Base deposit reserve not found"); // Should not happen
-
           // Deposit-adjust-withdraw
           const { transaction: depositAdjustWithdrawTransaction } =
             await depositAdjustWithdrawTx(
@@ -3506,7 +3496,7 @@ export default function LstStrategyDialog({
               obligation.id,
               obligation.deposits,
               obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow (SUI)
-              depositAdjustWithdrawAdditionalBaseDepositedAmount,
+              depositAdjustWithdrawAdditionalDepositedAmount,
               transaction,
             );
           transaction = depositAdjustWithdrawTransaction;
@@ -4083,11 +4073,14 @@ export default function LstStrategyDialog({
                   />
                 ) : selectedTab === Tab.ADJUST && !canAdjust ? (
                   <LabelWithValue
-                    label="Repay fee"
-                    value={`${formatToken(repayFeesAmount, {
-                      dp: defaultCurrencyReserve.token.decimals,
+                    label="Adjust fee"
+                    value={`${formatToken(depositAdjustWithdrawFeesAmount, {
+                      dp: (depositReserves.base ?? depositReserves.lst).token
+                        .decimals,
                       trimTrailingZeros: true,
-                    })} ${defaultCurrencyReserve.token.symbol}`} // Shown as defaultCurrencyReserve symbol (SUI, USDC, etc.)
+                    })} ${
+                      (depositReserves.base ?? depositReserves.lst).token.symbol
+                    }`} // Shown as base or LST symbol (sSUI, USDC, AUSD, etc.)
                     horizontal
                   />
                 ) : selectedTab === Tab.ADJUST && canAdjust ? (
@@ -4148,14 +4141,20 @@ export default function LstStrategyDialog({
                   <TLabelSans className="text-warning">
                     Note: A balance of{" "}
                     {formatToken(
-                      depositAdjustWithdrawAdditionalBaseDepositedAmount,
-                      { dp: defaultCurrencyReserve.token.decimals },
+                      depositAdjustWithdrawAdditionalDepositedAmount,
+                      {
+                        dp: (depositReserves.base ?? depositReserves.lst).token
+                          .decimals,
+                      },
                     )}{" "}
-                    {defaultCurrencyReserve.token.symbol} is required to
-                    decrease your leverage to{" "}
+                    {(depositReserves.base ?? depositReserves.lst).token.symbol}{" "}
+                    is required to decrease your leverage to{" "}
                     {depositAdjustWithdrawExposure.toFixed(1)}
-                    x. Your {defaultCurrencyReserve.token.symbol} will be
-                    returned to you in the same transaction.
+                    x. Your{" "}
+                    {
+                      (depositReserves.base ?? depositReserves.lst).token.symbol
+                    }{" "}
+                    will be returned to you in the same transaction.
                   </TLabelSans>
                 )}
               </div>

@@ -1785,13 +1785,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       obligation?: ParsedObligation,
       exposure?: BigNumber,
     ): BigNumber => {
+      const depositReserves = getDepositReserves(strategyType);
+      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
+
+      //
+
       let _obligation;
       if (!!obligation && hasPosition(obligation)) {
         _obligation = obligation;
       } else {
         if (exposure === undefined) return new BigNumber(0); // Not shown in UI
-
-        const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
         _obligation = simulateDepositAndLoopToExposure(
           strategyType,
@@ -1806,7 +1809,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       }
 
       const weightedBorrowsUsd = getWeightedBorrowsUsd(_obligation);
-      const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(0.985); // 2% buffer
+      const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(
+        depositReserves.base !== undefined
+          ? 0.985 // 1.5% buffer
+          : 0.995, // 0.5% buffer
+      );
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
       if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
@@ -1816,7 +1823,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           .times(100),
       );
     },
-    [hasPosition, getDefaultCurrencyReserve, simulateDepositAndLoopToExposure],
+    [
+      hasPosition,
+      getDepositReserves,
+      getDefaultCurrencyReserve,
+      simulateDepositAndLoopToExposure,
+    ],
   );
 
   // Stats - Liquidation price
