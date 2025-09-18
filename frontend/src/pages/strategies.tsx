@@ -76,7 +76,6 @@ function Page() {
     hasPosition,
 
     suiReserve,
-    suiBorrowFeePercent,
 
     lstMap,
     getLstMintFee,
@@ -85,6 +84,7 @@ function Page() {
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -92,7 +92,7 @@ function Page() {
     getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxSuiBorrowedAmount,
+    getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
     simulateLoopToExposure,
@@ -190,12 +190,16 @@ function Page() {
         )
           continue;
 
+        const depositReserves = getDepositReserves(
+          strategyType as StrategyType,
+        );
+
         await strategyClaimRewardsAndSwapForCoinType(
           address,
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          getDepositReserves(strategyType as StrategyType).lst,
+          (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
           transaction,
@@ -414,10 +418,10 @@ function Page() {
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {Object.values(StrategyType)
                 .filter((strategyType) =>
-                  strategyType === StrategyType.AUSD_sSUI_SUI_LOOPING
+                  strategyType === StrategyType.xBTC_wBTC_LOOPING
                     ? process.env.NODE_ENV === "development" ||
-                      router.query.ausd === "true" ||
-                      Date.now() >= 1757941200000 // 2025/09/15 13:00:00 UTC
+                      router.query.xbtcwbtc === "true" ||
+                      Date.now() >= 1757941200000 * 1000 // 2025/09/XX 13:00:00 UTC
                     : true,
                 )
                 .map((strategyType) => {

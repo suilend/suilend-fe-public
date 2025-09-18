@@ -18,7 +18,6 @@ const useHistoricalTvlAmountMap = (
     hasPosition,
 
     suiReserve,
-    suiBorrowFeePercent,
 
     lstMap,
     getLstMintFee,
@@ -27,6 +26,7 @@ const useHistoricalTvlAmountMap = (
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -34,7 +34,7 @@ const useHistoricalTvlAmountMap = (
     getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxSuiBorrowedAmount,
+    getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
     simulateLoopToExposure,

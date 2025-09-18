@@ -28,7 +28,6 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     hasPosition,
 
     suiReserve,
-    suiBorrowFeePercent,
 
     lstMap,
     getLstMintFee,
@@ -37,6 +36,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     exposureMap,
 
     getDepositReserves,
+    getBorrowReserve,
     getDefaultCurrencyReserve,
 
     getSimulatedObligation,
@@ -44,7 +44,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxSuiBorrowedAmount,
+    getStepMaxBorrowedAmount,
     getStepMaxWithdrawnAmount,
 
     simulateLoopToExposure,
@@ -83,6 +83,10 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
   const depositReserves = useMemo(
     () => getDepositReserves(strategyType),
     [getDepositReserves, strategyType],
+  );
+  const borrowReserve = useMemo(
+    () => getBorrowReserve(strategyType),
+    [getBorrowReserve, strategyType],
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 

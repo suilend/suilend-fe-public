@@ -6,10 +6,8 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   MS_PER_YEAR,
   NORMALIZED_ETH_COINTYPES,
-  NORMALIZED_IKA_COINTYPE,
   NORMALIZED_STABLECOIN_COINTYPES,
   formatList,
-  formatPercent,
   isEth,
   isStablecoin,
   isSui,
@@ -86,7 +84,7 @@ const getMaxCalculations = (
 
     return result;
   } else if (action === Action.BORROW) {
-    const borrowFee = reserve.config.borrowFeeBps / 10000;
+    const borrowFeePercent = reserve.config.borrowFeeBps / 100;
 
     const result = [
       {
@@ -94,14 +92,14 @@ const getMaxCalculations = (
         isDisabled: true,
         value: reserve.availableAmount
           .minus(MIN_AVAILABLE_AMOUNT)
-          .div(1 + borrowFee),
+          .div(1 + borrowFeePercent / 100),
       },
       {
         reason: "Exceeds reserve borrow limit",
         isDisabled: true,
         value: reserve.config.borrowLimit
           .minus(reserve.borrowedAmount)
-          .div(1 + borrowFee),
+          .div(1 + borrowFeePercent / 100),
       },
       {
         reason: "Exceeds reserve USD borrow limit",
@@ -109,7 +107,7 @@ const getMaxCalculations = (
         value: reserve.config.borrowLimitUsd
           .minus(reserve.borrowedAmount.times(reserve.price))
           .div(reserve.price)
-          .div(1 + borrowFee),
+          .div(1 + borrowFeePercent / 100),
       },
       {
         reason: "Borrows cannot exceed borrow limit",
@@ -127,7 +125,7 @@ const getMaxCalculations = (
                     reserve.config.borrowWeightBps.div(10000),
                   ),
                 )
-                .div(1 + borrowFee),
+                .div(1 + borrowFeePercent / 100),
       },
       {
         reason: "Outflow rate limit surpassed",
@@ -135,7 +133,7 @@ const getMaxCalculations = (
         value: appData.lendingMarket.rateLimiter.remainingOutflow
           .div(reserve.maxPrice)
           .div(reserve.config.borrowWeightBps.div(10000))
-          .div(1 + borrowFee),
+          .div(1 + borrowFeePercent / 100),
       },
     ];
     // if (reserve.coinType === NORMALIZED_IKA_COINTYPE) {
