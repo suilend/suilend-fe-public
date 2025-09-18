@@ -1030,6 +1030,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowReserve = getBorrowReserve(strategyType);
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
+      const loopingDepositReserve = (depositReserves.lst ??
+        depositReserves.base)!; // Must have base if no LST
+
       //
 
       let deposits = cloneDeep(_deposits);
@@ -1056,7 +1059,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
         if (pendingBorrowedAmount.lte(E)) break;
 
-        if (depositReserves.lst !== undefined) {
+        if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
           const suiToLstExchangeRate =
             lstMap?.[depositReserves.lst.coinType]?.suiToLstExchangeRate ??
             new BigNumber(1);
@@ -1069,11 +1072,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             borrowedAmount,
           )
             .times(0.9) // 10% buffer
-            .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+            .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
           const stepMaxDepositedAmount = new BigNumber(
             stepMaxBorrowedAmount.minus(
               getLstMintFee(
-                depositReserves.lst.coinType,
+                loopingDepositReserve.coinType,
                 stepMaxBorrowedAmount,
               ),
             ),
@@ -1085,7 +1088,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           const stepBorrowedAmount = BigNumber.min(
             pendingBorrowedAmount,
             stepMaxBorrowedAmount,
-          ).decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_DOWN);
+          ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
           const isMaxBorrow = stepBorrowedAmount.eq(stepMaxBorrowedAmount);
 
           // 1.3) Update state
@@ -1097,7 +1100,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           // 2.2) Deposit
           const stepDepositedAmount = new BigNumber(
             stepBorrowedAmount.minus(
-              getLstMintFee(depositReserves.lst.coinType, stepBorrowedAmount),
+              getLstMintFee(loopingDepositReserve.coinType, stepBorrowedAmount),
             ),
           )
             .times(suiToLstExchangeRate)
@@ -1106,13 +1109,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
           // 2.3) Update state
           deposits = addOrInsertDeposit(deposits, {
-            coinType: depositReserves.lst.coinType,
+            coinType: loopingDepositReserve.coinType,
             depositedAmount: stepDepositedAmount,
           });
-        } else if (depositReserves.base !== undefined) {
+        } else if (
+          loopingDepositReserve.coinType === depositReserves.base?.coinType
+        ) {
           const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
 
-          // 1) Borrow BORROW
+          // 1) Borrow
           // 1.1) Max
           const stepMaxBorrowedAmount = getStepMaxBorrowedAmount(
             strategyType,
@@ -1124,7 +1129,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           const stepMaxDepositedAmount = stepMaxBorrowedAmount
             .times(borrowToBaseExchangeRate)
             .decimalPlaces(
-              depositReserves.base.token.decimals,
+              loopingDepositReserve.token.decimals,
               BigNumber.ROUND_DOWN,
             );
 
@@ -1138,25 +1143,25 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           // 1.3) Update state
           borrowedAmount = borrowedAmount.plus(stepBorrowedAmount);
 
-          // 2) Deposit BASE
-          // 2.1) Swap BORROW for BASE
+          // 2) Deposit base
+          // 2.1) Swap borrows for base
 
           // 2.2) Deposit
           const stepDepositedAmount = stepBorrowedAmount
             .times(borrowToBaseExchangeRate)
             .decimalPlaces(
-              depositReserves.base.token.decimals,
+              loopingDepositReserve.token.decimals,
               BigNumber.ROUND_DOWN,
             );
           const isMaxDeposit = stepDepositedAmount.eq(stepMaxDepositedAmount);
 
           // 2.3) Update state
           deposits = addOrInsertDeposit(deposits, {
-            coinType: depositReserves.base.coinType,
+            coinType: loopingDepositReserve.coinType,
             depositedAmount: stepDepositedAmount,
           });
         } else {
-          throw new Error("No LST or base reserve found");
+          throw new Error("No LST or base reserve found"); // Should not happen
         }
       }
 
@@ -1197,6 +1202,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const depositReserves = getDepositReserves(strategyType);
       const borrowReserve = getBorrowReserve(strategyType);
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
+
+      const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
       //
 

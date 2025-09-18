@@ -232,11 +232,12 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                   <TBody>{borrowReserve.token.symbol}</TBody>
                 </div>
 
-                {depositReserves.base !== undefined && (
-                  <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-popover pt-0.5">
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                )}
+                {depositReserves.base !== undefined &&
+                  depositReserves.lst !== undefined && (
+                    <div className="absolute left-1/2 top-4 -translate-x-1/2 bg-popover pt-0.5">
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  )}
               </div>
 
               {/* Swap or Stake (left-center) */}
