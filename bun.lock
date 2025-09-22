@@ -49,6 +49,7 @@
         "@radix-ui/react-tooltip": "^1.1.4",
         "@sentry/nextjs": "^8.38.0",
         "@suilend/springsui-sdk": "^1.0.25",
+        "@suilend/steamm-sdk": "^1.1.5",
         "@suilend/sui-fe": "^0.3.29",
         "@suilend/sui-fe-next": "^0.1.62",
         "@tanstack/react-table": "^8.20.5",
@@ -62,6 +63,7 @@
         "clsx": "^2.1.1",
         "colorjs.io": "^0.5.2",
         "date-fns": "^4.1.0",
+        "decimal.js": "^10.6.0",
         "elkjs": "^0.9.3",
         "embla-carousel-react": "^8.3.1",
         "geist": "^1.3.1",
@@ -107,7 +109,7 @@
     },
     "sdk": {
       "name": "@suilend/sdk-local",
-      "version": "1.1.80",
+      "version": "1.1.81",
       "dependencies": {
         "@7kprotocol/sdk-ts": "^3.4.0",
         "@cetusprotocol/aggregator-sdk": "^1.2.0",
@@ -1342,9 +1344,13 @@
 
     "@suchipi/femver": ["@suchipi/femver@1.0.0", "", {}, "sha512-bprE8+K5V+DPX7q2e2K57ImqNBdfGHDIWaGI5xHxZoxbKOuQZn4wzPiUxOAHnsUr3w3xHrWXwN7gnG/iIuEMIg=="],
 
+    "@suilend/sdk": ["@suilend/sdk@1.1.81", "", { "dependencies": { "@7kprotocol/sdk-ts": "^3.4.0", "@cetusprotocol/aggregator-sdk": "^1.2.0", "@flowx-finance/sdk": "^1.11.3", "@pythnetwork/pyth-sui-js": "^2.2.0", "aftermath-ts-sdk": "^1.3.14", "bignumber.js": "^9.1.2", "bn.js": "^5.2.2", "crypto-js": "^4.2.0", "lodash": "^4.17.21", "p-limit": "3.1.0", "uuid": "^11.0.3" }, "peerDependencies": { "@mysten/bcs": "1.6.0", "@mysten/sui": "1.28.2", "@suilend/sui-fe": "^0.3.29" } }, "sha512-i9AJoZAQIUKyRHRGgMXrbsDX8k/9EP9K4EaPYsZFXUYhWEtcXSlr+FnKKgDFKb635Oo3A+a++48dhalqGLke0A=="],
+
     "@suilend/sdk-local": ["@suilend/sdk-local@workspace:sdk"],
 
     "@suilend/springsui-sdk": ["@suilend/springsui-sdk@1.0.26", "", { "dependencies": { "bignumber.js": "^9.1.2" }, "peerDependencies": { "@mysten/bcs": "1.6.0", "@mysten/sui": "1.28.2" } }, "sha512-vcxipfGwhqtXgJGZJdpJCsHn7UMOTR9lVIinYquSoFgsJlvIxzd94REyjaovnHetcurummrgg6LBCgUF2h9wQA=="],
+
+    "@suilend/steamm-sdk": ["@suilend/steamm-sdk@1.1.5", "", { "dependencies": { "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/sdk": "^1.1.77", "@suilend/sui-fe": "^0.3.29", "bignumber.js": "^9.1.2", "dotenv": "^16.4.7" }, "peerDependencies": { "@mysten/sui": "1.28.2" } }, "sha512-5zLZxhnLJBOKNcrkz1/IKK/o1j408VnDXGMHAqqSw0N6qq5ouKi5zqDT/QKVJurp/FGdwIQsdBsIZ5J9Zq6yWw=="],
 
     "@suilend/sui-fe": ["@suilend/sui-fe@0.3.29", "", { "dependencies": { "@mysten/wallet-standard": "0.14.7", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.56.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.28.2", "date-fns": "^4.1.0" } }, "sha512-5ZfwuBfcz+hv0Z3H5BF+dBzhv9i198bC6JtDPKuyKJ+fyaGT59R5XfPrOCQd0V+LRQds0Mkt4Gel5q2+36nV4g=="],
 

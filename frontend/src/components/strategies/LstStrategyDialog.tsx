@@ -11,6 +11,7 @@ import {
 
 import {
   Transaction,
+  TransactionArgument,
   TransactionObjectArgument,
   TransactionObjectInput,
 } from "@mysten/sui/transactions";
@@ -35,9 +36,12 @@ import {
   strategySwapSomeDepositsForCoinType,
   strategyWithdraw,
 } from "@suilend/sdk/lib/strategyOwnerCap";
+import { MAINNET_CONFIG, SteammSDK } from "@suilend/steamm-sdk";
 import {
   MAX_U64,
   MS_PER_YEAR,
+  NORMALIZED_wBTC_COINTYPE,
+  NORMALIZED_xBTC_COINTYPE,
   TX_TOAST_DURATION,
   formatInteger,
   formatList,
@@ -91,6 +95,61 @@ import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.15;
+
+// xBTC/wBTC pool: https://steamm.fi/pool/0xef7aaebc8e300d1ae2110cee7ea5f07ee1a1da8974c9ea4cdf72655647cf8716
+const swapInSteammPool = async (
+  steammClient: SteammSDK,
+  transaction: Transaction,
+  coinA: TransactionObjectInput,
+  coinB: TransactionObjectInput,
+  a2b: boolean | TransactionArgument,
+  amountIn: bigint | TransactionArgument,
+  minAmountOut: bigint | TransactionArgument,
+): Promise<TransactionArgument> =>
+  steammClient.Pool.swap(transaction, {
+    coinA,
+    coinB,
+    a2b,
+    amountIn,
+    minAmountOut,
+    poolInfo: {
+      poolId:
+        "0xef7aaebc8e300d1ae2110cee7ea5f07ee1a1da8974c9ea4cdf72655647cf8716",
+      coinTypeA:
+        "0xa17c86d4a189d6cc4bbbe32d3785406ea5e473e1518a75947c2a8a011b96b558::b_xbtc::B_XBTC",
+      coinTypeB:
+        "0x73cfd0703fa65ce89b5928a1497b5de3db5648659eed7e3feabba58db0fd3ea0::b_btc::B_BTC",
+      lpTokenType:
+        "0x5825d399b842bf2346265a26a08c8aa97f699d256191f56ba947be98c7c39ab2::steamm_lp_bxbtc_bwbtc::STEAMM_LP_BXBTC_BWBTC",
+      quoterType:
+        "0x4fb1cf45dffd6230305f1d269dd1816678cc8e3ba0b747a813a556921219f261::cpmm::CpQuoter",
+      swapFeeBps: 1,
+    },
+    bankInfoA: {
+      coinType:
+        "0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC",
+      btokenType:
+        "0xa17c86d4a189d6cc4bbbe32d3785406ea5e473e1518a75947c2a8a011b96b558::b_xbtc::B_XBTC",
+      lendingMarketType:
+        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
+      bankId:
+        "0xfed0dee87820d139f2f74d4e5f6ffe2489d95f1a98dfa2f0460d4762acb77ae3",
+      lendingMarketId:
+        "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
+    },
+    bankInfoB: {
+      coinType:
+        "0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC",
+      btokenType:
+        "0x73cfd0703fa65ce89b5928a1497b5de3db5648659eed7e3feabba58db0fd3ea0::b_btc::B_BTC",
+      lendingMarketType:
+        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
+      bankId:
+        "0xe56cbba61bce325119b293efbc1eeffc39a8db9e5557dc5008efd8bd231f9fad",
+      lendingMarketId:
+        "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
+    },
+  });
 
 /**
  * Bisection method to find the optimal value that satisfies a condition
@@ -182,7 +241,7 @@ export default function LstStrategyDialog({
     [router.query],
   );
 
-  const { explorer, suiClient } = useSettingsContext();
+  const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { appData } = useLoadedAppContext();
@@ -229,6 +288,19 @@ export default function LstStrategyDialog({
   const MoreDetailsIcon = isMoreDetailsOpen ? ChevronLeft : ChevronRight;
 
   const { md } = useBreakpoint();
+
+  // STEAMM client
+  const steammClient = useMemo(() => {
+    const sdk = new SteammSDK({
+      ...MAINNET_CONFIG,
+      fullRpcUrl: rpc.url,
+    });
+    sdk.senderAddress =
+      address ??
+      "0x0000000000000000000000000000000000000000000000000000000000000000"; // Address must be set to use the SDK
+
+    return sdk;
+  }, [rpc.url, address]);
 
   // send.ag
   const cetusSdk = useCetusSdk();
@@ -1436,34 +1508,35 @@ export default function LstStrategyDialog({
       }),
     );
 
-    for (let i = 0; i < 30; i++) {
-      const exposure = getExposure(
-        strategyType,
-        getSimulatedObligation(strategyType, deposits, borrowedAmount),
-      );
-      const pendingBorrowedAmount = targetBorrowedAmount.minus(borrowedAmount);
+    // Base+LST or LST only
+    if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
+      for (let i = 0; i < 30; i++) {
+        const exposure = getExposure(
+          strategyType,
+          getSimulatedObligation(strategyType, deposits, borrowedAmount),
+        );
+        const pendingBorrowedAmount =
+          targetBorrowedAmount.minus(borrowedAmount);
 
-      console.log(
-        `[loopToExposure] ${i} start |`,
-        JSON.stringify(
-          {
-            deposits: deposits.map((d) => ({
-              coinType: d.coinType,
-              depositedAmount: d.depositedAmount.toFixed(20),
-            })),
-            borrowedAmount: borrowedAmount.toFixed(20),
-            exposure: exposure.toFixed(20),
-            pendingBorrowedAmount: pendingBorrowedAmount.toFixed(20),
-          },
-          null,
-          2,
-        ),
-      );
+        console.log(
+          `[loopToExposure] ${i} start |`,
+          JSON.stringify(
+            {
+              deposits: deposits.map((d) => ({
+                coinType: d.coinType,
+                depositedAmount: d.depositedAmount.toFixed(20),
+              })),
+              borrowedAmount: borrowedAmount.toFixed(20),
+              exposure: exposure.toFixed(20),
+              pendingBorrowedAmount: pendingBorrowedAmount.toFixed(20),
+            },
+            null,
+            2,
+          ),
+        );
 
-      if (pendingBorrowedAmount.lte(E)) break;
+        if (pendingBorrowedAmount.lte(E)) break;
 
-      // Base+LST or LST only
-      if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
         // 1) Borrow SUI
         // 1.1) Max
         const stepMaxBorrowedAmount = getStepMaxBorrowedAmount(
@@ -1603,12 +1676,40 @@ export default function LstStrategyDialog({
           ),
         );
       }
+    }
 
-      // Base only
-      else if (
-        loopingDepositReserve.coinType === depositReserves.base?.coinType
-      ) {
-        const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+    // Base only
+    else if (
+      loopingDepositReserve.coinType === depositReserves.base?.coinType
+    ) {
+      const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+
+      for (let i = 0; i < 30; i++) {
+        const exposure = getExposure(
+          strategyType,
+          getSimulatedObligation(strategyType, deposits, borrowedAmount),
+        );
+        const pendingBorrowedAmount =
+          targetBorrowedAmount.minus(borrowedAmount);
+
+        console.log(
+          `[loopToExposure] ${i} start |`,
+          JSON.stringify(
+            {
+              deposits: deposits.map((d) => ({
+                coinType: d.coinType,
+                depositedAmount: d.depositedAmount.toFixed(20),
+              })),
+              borrowedAmount: borrowedAmount.toFixed(20),
+              exposure: exposure.toFixed(20),
+              pendingBorrowedAmount: pendingBorrowedAmount.toFixed(20),
+            },
+            null,
+            2,
+          ),
+        );
+
+        if (pendingBorrowedAmount.lte(E)) break;
 
         // 1) Borrow
         // 1.1) Max
@@ -1657,7 +1758,7 @@ export default function LstStrategyDialog({
           ),
         );
 
-        const [borrowedCoin] = strategyBorrow(
+        const [stepBorrowedCoin] = strategyBorrow(
           borrowReserve.coinType,
           strategyOwnerCapId,
           appData.suilendClient.findReserveArrayIndex(borrowReserve.coinType),
@@ -1690,7 +1791,37 @@ export default function LstStrategyDialog({
 
         // 2) Deposit base
         // 2.1) Swap borrows for base
-        const stepBaseCoin = null; // TODO: Swap borrows for base
+        const [coinA, coinB] = [
+          steammClient.fullClient.zeroCoin(
+            transaction,
+            NORMALIZED_xBTC_COINTYPE,
+          ),
+          stepBorrowedCoin,
+        ];
+
+        await swapInSteammPool(
+          steammClient,
+          transaction,
+          coinA,
+          coinB,
+          false,
+          transaction.moveCall({
+            target: "0x2::coin::value",
+            typeArguments: [NORMALIZED_wBTC_COINTYPE],
+            arguments: [stepBorrowedCoin],
+          }),
+          BigInt(
+            // new BigNumber(
+            //   stepBorrowedAmount.times(borrowToBaseExchangeRate).times(0.97),
+            // ) // stepBorrowedAmount is an estimate for amountIn - multiply by borrow2base exchange rate, and apply a 3% buffer
+            //   .times(10 ** depositReserves.base.token.decimals)
+            //   .integerValue(BigNumber.ROUND_DOWN)
+            //   .toString(),
+            "1",
+          ),
+        );
+        transaction.transferObjects([coinB], _address);
+        const stepBaseCoin = coinA;
 
         // 2.2) Deposit
         const stepDepositedAmount = stepBorrowedAmount
@@ -1714,7 +1845,7 @@ export default function LstStrategyDialog({
         );
 
         strategyDeposit(
-          stepBaseCoin as any, // TODO: Fix this
+          stepBaseCoin,
           loopingDepositReserve.coinType,
           strategyOwnerCapId,
           appData.suilendClient.findReserveArrayIndex(
@@ -1743,9 +1874,9 @@ export default function LstStrategyDialog({
             2,
           ),
         );
-      } else {
-        throw new Error("No LST or base reserve found"); // Should not happen
       }
+    } else {
+      throw new Error("No LST or base reserve found"); // Should not happen
     }
 
     return { deposits, borrowedAmount, transaction };
@@ -2489,6 +2620,8 @@ export default function LstStrategyDialog({
       else if (
         loopingDepositReserve.coinType === depositReserves.base?.coinType
       ) {
+        const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+
         // Target: 1x leverage
         if (targetBorrowedAmount.eq(0)) {
           // Borrows almost fully repaid
@@ -2502,7 +2635,177 @@ export default function LstStrategyDialog({
           if (pendingBorrowedAmount.lte(E)) break;
         }
 
-        // TODO
+        // 1) Withdraw base
+        // 1.1) Max
+        const stepMaxWithdrawnAmount = getStepMaxWithdrawnAmount(
+          strategyType,
+          deposits,
+          borrowedAmount,
+          loopingDepositReserve.coinType,
+        )
+          .times(0.9) // 10% buffer
+          .decimalPlaces(
+            loopingDepositReserve.token.decimals,
+            BigNumber.ROUND_DOWN,
+          );
+        const stepMaxRepaidAmount = stepMaxWithdrawnAmount
+          .div(borrowToBaseExchangeRate)
+          .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+
+        console.log(
+          `[unloopToExposure] ${i} withdraw_base.max |`,
+          JSON.stringify(
+            {
+              stepMaxWithdrawnAmount: stepMaxWithdrawnAmount.toFixed(20),
+              stepMaxRepaidAmount: stepMaxRepaidAmount.toFixed(20),
+            },
+            null,
+            2,
+          ),
+        );
+
+        // 1.2) Withdraw
+        const stepWithdrawnAmount = BigNumber.min(
+          pendingBorrowedAmount,
+          stepMaxRepaidAmount,
+        )
+          .times(borrowToBaseExchangeRate)
+          .decimalPlaces(
+            loopingDepositReserve.token.decimals,
+            BigNumber.ROUND_DOWN,
+          );
+        const isMaxWithdraw = stepWithdrawnAmount.eq(stepMaxWithdrawnAmount);
+
+        console.log(
+          `[unloopToExposure] ${i} withdraw_base.withdraw |`,
+          JSON.stringify(
+            {
+              stepWithdrawnAmount: stepWithdrawnAmount.toFixed(20),
+              isMaxWithdraw,
+            },
+            null,
+            2,
+          ),
+        );
+
+        const [stepWithdrawnCoin] = strategyWithdraw(
+          loopingDepositReserve.coinType,
+          strategyOwnerCapId,
+          appData.suilendClient.findReserveArrayIndex(
+            loopingDepositReserve.coinType,
+          ),
+          BigInt(
+            new BigNumber(
+              stepWithdrawnAmount
+                .times(10 ** loopingDepositReserve.token.decimals)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+            )
+              .div(loopingDepositReserve.cTokenExchangeRate)
+              .integerValue(BigNumber.ROUND_UP)
+              .toString(),
+          ),
+          transaction,
+        );
+
+        // 1.3) Update state
+        deposits = addOrInsertDeposit(deposits, {
+          coinType: loopingDepositReserve.coinType,
+          depositedAmount: stepWithdrawnAmount.times(-1),
+        });
+
+        console.log(
+          `[unloopToExposure] ${i} withdraw_base.update_state |`,
+          JSON.stringify(
+            {
+              deposits: deposits.map((d) => ({
+                coinType: d.coinType,
+                depositedAmount: d.depositedAmount.toFixed(20),
+              })),
+              borrowedAmount: borrowedAmount.toFixed(20),
+            },
+            null,
+            2,
+          ),
+        );
+
+        // 2.1) Swap borrows for base
+        const [coinA, coinB] = [
+          stepWithdrawnCoin,
+          steammClient.fullClient.zeroCoin(
+            transaction,
+            NORMALIZED_wBTC_COINTYPE,
+          ),
+        ];
+
+        await swapInSteammPool(
+          steammClient,
+          transaction,
+          coinA,
+          coinB,
+          true,
+          transaction.moveCall({
+            target: "0x2::coin::value",
+            typeArguments: [NORMALIZED_xBTC_COINTYPE],
+            arguments: [stepWithdrawnCoin],
+          }),
+          BigInt(
+            // new BigNumber(
+            //   stepWithdrawnAmount.div(borrowToBaseExchangeRate).times(0.97),
+            // ) // stepWithdrawnAmount is an estimate for amountIn - divide by borrow2base exchange rate, and apply a 3% buffer
+            //   .times(10 ** depositReserves.base.token.decimals)
+            //   .integerValue(BigNumber.ROUND_DOWN)
+            //   .toString(),
+            "1",
+          ),
+        );
+        transaction.transferObjects([coinA], _address);
+        const stepBorrowCoin = coinB;
+
+        // 3) Repay borrows
+        // 3.1) Repay
+        const stepRepaidAmount = stepWithdrawnAmount
+          .div(borrowToBaseExchangeRate)
+          .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+        const isMaxRepay = stepRepaidAmount.eq(stepMaxRepaidAmount);
+
+        console.log(
+          `[unloopToExposure] ${i} repay_borrows.repay |`,
+          JSON.stringify(
+            {
+              stepRepaidAmount: stepRepaidAmount.toFixed(20),
+              isMaxRepay,
+            },
+            null,
+            2,
+          ),
+        );
+
+        appData.suilendClient.repay(
+          obligationId,
+          borrowReserve.coinType,
+          stepBorrowCoin,
+          transaction,
+        );
+        transaction.transferObjects([stepBorrowCoin], _address);
+
+        // 3.2) Update state
+        borrowedAmount = borrowedAmount.minus(stepRepaidAmount);
+
+        console.log(
+          `[unloopToExposure] ${i} repay_borrows.update_state |`,
+          JSON.stringify(
+            {
+              deposits: deposits.map((d) => ({
+                coinType: d.coinType,
+                depositedAmount: d.depositedAmount.toFixed(20),
+              })),
+              borrowedAmount: borrowedAmount.toFixed(20),
+            },
+            null,
+            2,
+          ),
+        );
       } else {
         throw new Error("No LST or base reserve found"); // Should not happen
       }
