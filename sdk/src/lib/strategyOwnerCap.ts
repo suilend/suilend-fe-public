@@ -47,6 +47,7 @@ export enum StrategyType {
   USDC_sSUI_SUI_LOOPING = "3",
   AUSD_sSUI_SUI_LOOPING = "4",
   xBTC_wBTC_LOOPING = "5",
+  xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies
 }
 export const STRATEGY_TYPE_INFO_MAP: Record<
   StrategyType,
@@ -150,6 +151,23 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     borrowCoinType: NORMALIZED_wBTC_COINTYPE,
 
     currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
+  },
+  [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
+    queryParam: "xBTC-sSUI-SUI-looping",
+    header: {
+      coinTypes: [NORMALIZED_xBTC_COINTYPE],
+      title: "xBTC sSUI/SUI",
+      tooltip:
+        "Sets up an xBTC sSUI/SUI Looping strategy by depositing xBTC and looping sSUI/SUI to the desired leverage",
+      type: "Looping",
+    },
+
+    depositBaseCoinType: NORMALIZED_xBTC_COINTYPE,
+    depositLstCoinType: NORMALIZED_sSUI_COINTYPE,
+    borrowCoinType: NORMALIZED_SUI_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
   },
 };

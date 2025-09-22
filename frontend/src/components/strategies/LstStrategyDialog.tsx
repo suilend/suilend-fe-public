@@ -4247,12 +4247,14 @@ export default function LstStrategyDialog({
               ? [
                   StrategyType.USDC_sSUI_SUI_LOOPING,
                   StrategyType.AUSD_sSUI_SUI_LOOPING,
+                  StrategyType.xBTC_sSUI_SUI_LOOPING,
                 ].includes(strategyType)
                 ? "md:min-h-[calc(314px+20px+12px)]"
                 : "md:min-h-[314px]"
               : [
                     StrategyType.USDC_sSUI_SUI_LOOPING,
                     StrategyType.AUSD_sSUI_SUI_LOOPING,
+                    StrategyType.xBTC_sSUI_SUI_LOOPING,
                   ].includes(strategyType)
                 ? "md:min-h-[calc(374px+20px+12px)]"
                 : "md:min-h-[374px]",
@@ -4539,6 +4541,7 @@ export default function LstStrategyDialog({
                 {[
                   StrategyType.USDC_sSUI_SUI_LOOPING,
                   StrategyType.AUSD_sSUI_SUI_LOOPING,
+                  StrategyType.xBTC_sSUI_SUI_LOOPING,
                 ].includes(strategyType) && (
                   <LabelWithValue
                     label="Liquidation price"

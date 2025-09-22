@@ -640,6 +640,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         max: new BigNumber(1.8), // Actual max: 1 / (1 - (xBTC Open LTV %)) = 2x, where xBTC Open LTV % = 50%
         default: new BigNumber(1.8),
       },
+      [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(2), // Actual max: 1 + (xBTC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 2.6666x, where xBTC Open LTV % = 50% and sSUI Open LTV % = 70%
+        default: new BigNumber(2),
+      },
     }),
     [],
   );
@@ -2033,6 +2038,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         ![
           StrategyType.USDC_sSUI_SUI_LOOPING,
           StrategyType.AUSD_sSUI_SUI_LOOPING,
+          StrategyType.xBTC_sSUI_SUI_LOOPING,
         ].includes(strategyType)
       )
         return new BigNumber(0); // Not shown in UI
