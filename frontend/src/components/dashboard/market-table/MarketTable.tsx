@@ -39,6 +39,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   DEPRECATED_ASSETS_TOOLTIP,
@@ -123,12 +124,15 @@ export default function MarketTable() {
     allAppData,
     featuredReserveIds,
     deprecatedReserveIds,
+    filteredReservesMap,
     isEcosystemLst,
   } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
-  const { filteredReserves } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
 
   const { open: openActionsModal } = useActionsModalContext();
+
+  const filteredReserves = filteredReservesMap[appData.lendingMarket.id];
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(

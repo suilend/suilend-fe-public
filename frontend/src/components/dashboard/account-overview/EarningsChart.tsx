@@ -14,7 +14,7 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   ViewBox,
@@ -46,7 +46,7 @@ function TooltipContent({
   viewBox,
   x,
 }: TooltipContentProps) {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
 
   if (viewBox === undefined || x === undefined) return null;
   return (

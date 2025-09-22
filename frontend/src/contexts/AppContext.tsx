@@ -70,9 +70,6 @@ interface AppContext {
   filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
   refreshAllAppData: () => Promise<void>;
 
-  appData: AppData | undefined;
-  filteredReserves: ParsedReserve[] | undefined;
-
   isLst: (coinType: string) => boolean;
   isEcosystemLst: (coinType: string) => boolean;
 
@@ -88,9 +85,6 @@ interface AppContext {
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
   filteredReservesMap: Record<string, ParsedReserve[]>;
-
-  appData: AppData;
-  filteredReserves: ParsedReserve[];
 };
 
 const AppContext = createContext<AppContext>({
@@ -101,9 +95,6 @@ const AppContext = createContext<AppContext>({
   refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
-
-  appData: undefined,
-  filteredReserves: undefined,
 
   isLst: () => {
     throw Error("AppContextProvider not initialized");
@@ -152,16 +143,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     await mutateAllAppData();
   }, [mutateAllAppData]);
 
-  const appData = useMemo(
-    () =>
-      Object.values(allAppData?.allLendingMarketData ?? {}).find(
-        (_appData) =>
-          _appData.lendingMarket.slug ===
-          queryParams[QueryParams.LENDING_MARKET],
-      ) ?? Object.values(allAppData?.allLendingMarketData ?? {})[0],
-    [queryParams, allAppData?.allLendingMarketData],
-  );
-
   // Featured, deprecated reserves
   const flags = useFlags();
   const featuredReserveIds: string[] | undefined = useMemo(
@@ -209,14 +190,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
     return result;
   }, [allAppData, deprecatedReserveIds, address]);
-
-  const filteredReserves = useMemo(
-    () =>
-      appData?.lendingMarket.id
-        ? filteredReservesMap?.[appData.lendingMarket.id]
-        : undefined,
-    [appData?.lendingMarket.id, filteredReservesMap],
-  );
 
   // LST
   const isLst = useCallback(
@@ -304,9 +277,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       filteredReservesMap,
       refreshAllAppData,
 
-      appData,
-      filteredReserves,
-
       isLst,
       isEcosystemLst,
 
@@ -325,8 +295,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       deprecatedReserveIds,
       filteredReservesMap,
       refreshAllAppData,
-      appData,
-      filteredReserves,
       isLst,
       isEcosystemLst,
       walrusEpoch,

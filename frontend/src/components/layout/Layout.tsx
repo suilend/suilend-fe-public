@@ -14,8 +14,7 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { allAppData, filteredReservesMap, appData, filteredReserves } =
-    useAppContext();
+  const { allAppData, filteredReservesMap } = useAppContext();
   const { allUserData, userData } = useUserContext();
 
   // LaunchDarkly banner
@@ -52,12 +51,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
-          {!allAppData ||
-          !filteredReservesMap ||
-          !appData ||
-          !filteredReserves ||
-          !allUserData ||
-          !userData ? (
+          {!allAppData || !filteredReservesMap || !allUserData || !userData ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>

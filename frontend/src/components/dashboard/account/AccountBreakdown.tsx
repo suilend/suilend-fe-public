@@ -22,7 +22,7 @@ import LabelWithTooltip from "@/components/shared/LabelWithTooltip";
 import { TBody } from "@/components/shared/Typography";
 import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   BORROW_LIMIT_PRICE_TOOLTIP,
@@ -143,7 +143,7 @@ function BreakdownTable({
 }
 
 export default function AccountBreakdown() {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
   const userContext = useLoadedUserContext();
   const obligation = userContext.obligation as ParsedObligation;
 

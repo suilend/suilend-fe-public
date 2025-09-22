@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Transaction } from "@mysten/sui/transactions";
 import { toast } from "sonner";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { TX_TOAST_DURATION } from "@suilend/sui-fe";
 import {
   showErrorToast,
@@ -15,8 +16,10 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function RepayObligation() {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const [obligationId, setObligationId] = useState<string>("");
   const [coinType, setCoinType] = useState<string>("");
@@ -28,7 +31,7 @@ export default function RepayObligation() {
 
       const transaction = new Transaction();
 
-      await appData.suilendClient.repayIntoObligation(
+      await appDataMainMarket.suilendClient.repayIntoObligation(
         address,
         obligationId,
         coinType,

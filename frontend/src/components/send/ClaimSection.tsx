@@ -1042,7 +1042,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     selectedMsendCoinType,
   } = useLoadedSendContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   // Redeem
   const minMsendAmount = 10 ** (-1 * mSendCoinMetadata.decimals);
@@ -1145,7 +1145,7 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     userRedeemableAllocations.length > 0 ? Tab.REDEEM : Tab.CLAIM;
 
   // Penalty
-  const suiReserve = appData.reserveMap[NORMALIZED_SUI_COINTYPE];
+  const suiReserve = appDataMainMarket.reserveMap[NORMALIZED_SUI_COINTYPE];
 
   return (
     <div className="flex w-full max-w-[480px] flex-col items-center gap-12 py-16 md:py-20">

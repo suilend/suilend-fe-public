@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { formatPoints } from "@suilend/sui-fe";
 
 import PointsLogo from "@/components/leaderboard/PointsLogo";
@@ -22,10 +23,11 @@ export default function PointsCount({
   season,
   amount,
 }: PointsCountProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
 
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const coinMetadata =
-    appData.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
+    appDataMainMarket.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">

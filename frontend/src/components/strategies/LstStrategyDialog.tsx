@@ -24,7 +24,7 @@ import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { ParsedReserve, getRewardsMap } from "@suilend/sdk";
+import { LENDING_MARKET_ID, ParsedReserve, getRewardsMap } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -297,8 +297,10 @@ export default function LstStrategyDialog({
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { getBalance, userData, refresh } = useLoadedUserContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -516,7 +518,7 @@ export default function LstStrategyDialog({
   const rewardsMap = getRewardsMap(
     obligation,
     userData.rewardMap,
-    appData.coinMetadataMap,
+    appDataMainMarket.coinMetadataMap,
   );
   const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>
     amount.gt(0),
@@ -556,7 +558,7 @@ export default function LstStrategyDialog({
           "Claimed and redeposited",
           formatList(
             Object.keys(rewardsMap).map(
-              (coinType) => appData.coinMetadataMap[coinType].symbol,
+              (coinType) => appDataMainMarket.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
@@ -580,7 +582,7 @@ export default function LstStrategyDialog({
           "Failed to claim and redeposit",
           formatList(
             Object.keys(rewardsMap).map(
-              (coinType) => appData.coinMetadataMap[coinType].symbol,
+              (coinType) => appDataMainMarket.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
@@ -620,13 +622,13 @@ export default function LstStrategyDialog({
     () =>
       strategyInfo.currencyCoinTypes.map((_currencyCoinType) => ({
         id: _currencyCoinType,
-        name: appData.coinMetadataMap[_currencyCoinType].symbol,
+        name: appDataMainMarket.coinMetadataMap[_currencyCoinType].symbol,
       })),
-    [strategyInfo.currencyCoinTypes, appData.coinMetadataMap],
+    [strategyInfo.currencyCoinTypes, appDataMainMarket.coinMetadataMap],
   );
   const currencyReserve = useMemo(
-    () => appData.reserveMap[currencyCoinType],
-    [currencyCoinType, appData.reserveMap],
+    () => appDataMainMarket.reserveMap[currencyCoinType],
+    [currencyCoinType, appDataMainMarket.reserveMap],
   );
 
   const currencyReserveBalance = useMemo(
@@ -659,7 +661,7 @@ export default function LstStrategyDialog({
   // Value - Max
   const getMaxDepositCalculations = useCallback(
     (_currencyCoinType: string) => {
-      const _currencyReserve = appData.reserveMap[_currencyCoinType];
+      const _currencyReserve = appDataMainMarket.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
       const { deposits, borrowedAmount } = simulateDepositAndLoopToExposure(
@@ -814,7 +816,7 @@ export default function LstStrategyDialog({
                 reason: "Outflow rate limit surpassed",
                 isDisabled: true,
                 value: new BigNumber(
-                  appData.lendingMarket.rateLimiter.remainingOutflow
+                  appDataMainMarket.lendingMarket.rateLimiter.remainingOutflow
                     .div(borrowReserve.maxPrice)
                     .div(borrowReserve.config.borrowWeightBps.div(10000))
                     .div(1 + borrowFeePercent / 100),
@@ -832,7 +834,7 @@ export default function LstStrategyDialog({
       return result;
     },
     [
-      appData.reserveMap,
+      appDataMainMarket.reserveMap,
       simulateDepositAndLoopToExposure,
       strategyType,
       exposure,
@@ -848,12 +850,12 @@ export default function LstStrategyDialog({
       borrowReserve.price,
       borrowReserve.maxPrice,
       borrowReserve.config.borrowWeightBps,
-      appData.lendingMarket.rateLimiter.remainingOutflow,
+      appDataMainMarket.lendingMarket.rateLimiter.remainingOutflow,
     ],
   );
   const getMaxWithdrawCalculations = useCallback(
     (_currencyCoinType: string) => {
-      const _currencyReserve = appData.reserveMap[_currencyCoinType];
+      const _currencyReserve = appDataMainMarket.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
       const { deposits } = simulateDepositAndLoopToExposure(
@@ -957,7 +959,7 @@ export default function LstStrategyDialog({
       return result;
     },
     [
-      appData.reserveMap,
+      appDataMainMarket.reserveMap,
       simulateDepositAndLoopToExposure,
       strategyType,
       exposure,
@@ -973,7 +975,7 @@ export default function LstStrategyDialog({
     (_currencyCoinType?: string) => {
       const _currencyReserve =
         _currencyCoinType !== undefined
-          ? appData.reserveMap[_currencyCoinType]
+          ? appDataMainMarket.reserveMap[_currencyCoinType]
           : currencyReserve;
 
       if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
@@ -993,7 +995,7 @@ export default function LstStrategyDialog({
       return new BigNumber(0); // Should not happen
     },
     [
-      appData.reserveMap,
+      appDataMainMarket.reserveMap,
       currencyReserve,
       selectedTab,
       getMaxDepositCalculations,
@@ -1042,7 +1044,8 @@ export default function LstStrategyDialog({
 
   const onCurrencyReserveChange = useCallback(
     (newCurrencyCoinType: string) => {
-      const newCurrencyReserve = appData.reserveMap[newCurrencyCoinType];
+      const newCurrencyReserve =
+        appDataMainMarket.reserveMap[newCurrencyCoinType];
 
       setCurrencyCoinType(newCurrencyCoinType);
 
@@ -1054,7 +1057,13 @@ export default function LstStrategyDialog({
         ).toFixed(newCurrencyReserve.token.decimals, BigNumber.ROUND_DOWN),
       );
     },
-    [appData.reserveMap, formatAndSetValue, useMaxAmount, getMaxAmount, value],
+    [
+      appDataMainMarket.reserveMap,
+      formatAndSetValue,
+      useMaxAmount,
+      getMaxAmount,
+      value,
+    ],
   );
 
   useEffect(() => {
@@ -1651,7 +1660,9 @@ export default function LstStrategyDialog({
         const [borrowedCoin] = strategyBorrow(
           borrowReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(borrowReserve.coinType),
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
+            borrowReserve.coinType,
+          ),
           BigInt(
             stepBorrowedAmount
               .times(10 ** borrowReserve.token.decimals)
@@ -1709,7 +1720,7 @@ export default function LstStrategyDialog({
           stepLstCoin,
           loopingDepositReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             loopingDepositReserve.coinType,
           ),
           transaction,
@@ -1821,7 +1832,9 @@ export default function LstStrategyDialog({
         const [stepBorrowedCoin] = strategyBorrow(
           borrowReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(borrowReserve.coinType),
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
+            borrowReserve.coinType,
+          ),
           BigInt(
             stepBorrowedAmount
               .times(10 ** borrowReserve.token.decimals)
@@ -1908,7 +1921,7 @@ export default function LstStrategyDialog({
           stepBaseCoin,
           loopingDepositReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             loopingDepositReserve.coinType,
           ),
           transaction,
@@ -2045,7 +2058,7 @@ export default function LstStrategyDialog({
       const [withdrawnLstCoin] = strategyWithdraw(
         depositReserves.lst.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(
+        appDataMainMarket.suilendClient.findReserveArrayIndex(
           depositReserves.lst.coinType,
         ),
         BigInt(
@@ -2110,7 +2123,7 @@ export default function LstStrategyDialog({
         ),
       );
 
-      appData.suilendClient.repay(
+      appDataMainMarket.suilendClient.repay(
         obligationId,
         borrowReserve.coinType,
         fullRepaymentCoin,
@@ -2169,7 +2182,7 @@ export default function LstStrategyDialog({
         const [withdrawnRemainingLstCoin] = strategyWithdraw(
           depositReserves.lst.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             depositReserves.lst.coinType,
           ),
           BigInt(MAX_U64.toString()),
@@ -2236,7 +2249,7 @@ export default function LstStrategyDialog({
           baseCoin,
           depositReserves.base.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             depositReserves.base.coinType,
           ),
           transaction,
@@ -2266,7 +2279,7 @@ export default function LstStrategyDialog({
         const [withdrawnMaxLstCoin] = strategyWithdraw(
           depositReserves.lst.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             depositReserves.lst.coinType,
           ),
           BigInt(MAX_U64.toString()),
@@ -2326,7 +2339,7 @@ export default function LstStrategyDialog({
       const [withdrawnBaseCoin] = strategyWithdraw(
         depositReserves.base.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(
+        appDataMainMarket.suilendClient.findReserveArrayIndex(
           depositReserves.base.coinType,
         ),
         BigInt(
@@ -2413,7 +2426,7 @@ export default function LstStrategyDialog({
         ),
       );
 
-      appData.suilendClient.repay(
+      appDataMainMarket.suilendClient.repay(
         obligationId,
         borrowReserve.coinType,
         borrowCoin,
@@ -2582,7 +2595,7 @@ export default function LstStrategyDialog({
         const [stepWithdrawnCoin] = strategyWithdraw(
           loopingDepositReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             loopingDepositReserve.coinType,
           ),
           BigInt(
@@ -2649,7 +2662,7 @@ export default function LstStrategyDialog({
           ),
         );
 
-        appData.suilendClient.repay(
+        appDataMainMarket.suilendClient.repay(
           obligationId,
           borrowReserve.coinType,
           stepSuiCoin,
@@ -2751,7 +2764,7 @@ export default function LstStrategyDialog({
         const [stepWithdrawnCoin] = strategyWithdraw(
           loopingDepositReserve.coinType,
           strategyOwnerCapId,
-          appData.suilendClient.findReserveArrayIndex(
+          appDataMainMarket.suilendClient.findReserveArrayIndex(
             loopingDepositReserve.coinType,
           ),
           BigInt(
@@ -2841,7 +2854,7 @@ export default function LstStrategyDialog({
           ),
         );
 
-        appData.suilendClient.repay(
+        appDataMainMarket.suilendClient.repay(
           obligationId,
           borrowReserve.coinType,
           stepBorrowCoin,
@@ -2945,7 +2958,7 @@ export default function LstStrategyDialog({
         lstCoin,
         depositReserves.lst.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(
+        appDataMainMarket.suilendClient.findReserveArrayIndex(
           depositReserves.lst.coinType,
         ),
         transaction,
@@ -2989,7 +3002,7 @@ export default function LstStrategyDialog({
         lstCoin,
         depositReserves.lst.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(
+        appDataMainMarket.suilendClient.findReserveArrayIndex(
           depositReserves.lst.coinType,
         ),
         transaction,
@@ -3000,7 +3013,7 @@ export default function LstStrategyDialog({
 
       // 1.3) Other
     } else {
-      const otherReserve = appData.reserveMap[deposit.coinType];
+      const otherReserve = appDataMainMarket.reserveMap[deposit.coinType];
 
       // 1.3.1) Split coins
       const allCoinsOther = await getAllCoins(
@@ -3031,7 +3044,9 @@ export default function LstStrategyDialog({
         otherCoin,
         otherReserve.coinType,
         strategyOwnerCapId,
-        appData.suilendClient.findReserveArrayIndex(otherReserve.coinType),
+        appDataMainMarket.suilendClient.findReserveArrayIndex(
+          otherReserve.coinType,
+        ),
         transaction,
       );
 
@@ -3289,7 +3304,9 @@ export default function LstStrategyDialog({
     const [withdrawnCoin] = strategyWithdraw(
       depositReserve.coinType,
       strategyOwnerCapId,
-      appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
+      appDataMainMarket.suilendClient.findReserveArrayIndex(
+        depositReserve.coinType,
+      ),
       BigInt(
         new BigNumber(
           withdrawnAmount
@@ -3450,7 +3467,9 @@ export default function LstStrategyDialog({
     const [withdrawnCoin] = strategyWithdraw(
       depositReserve.coinType,
       strategyOwnerCapId,
-      appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
+      appDataMainMarket.suilendClient.findReserveArrayIndex(
+        depositReserve.coinType,
+      ),
       BigInt(MAX_U64.toString()),
       transaction,
     );
@@ -3499,7 +3518,7 @@ export default function LstStrategyDialog({
           cetusSdk,
           CETUS_PARTNER_ID,
           rewardsMap,
-          appData.reserveMap[withdrawCoinType],
+          appDataMainMarket.reserveMap[withdrawCoinType],
           strategyOwnerCapId,
           false, // isDepositing (false = transfer to user)
           txCopy,
@@ -3609,7 +3628,9 @@ export default function LstStrategyDialog({
       flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB,
       depositReserve.coinType,
       strategyOwnerCapId,
-      appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
+      appDataMainMarket.suilendClient.findReserveArrayIndex(
+        depositReserve.coinType,
+      ),
       transaction,
     );
 
@@ -3782,7 +3803,7 @@ export default function LstStrategyDialog({
       let transaction = new Transaction();
 
       // 1) Refresh pyth oracles (base, LST, SUI, and any other deposits/borrows) - required when borrowing or withdrawing
-      await appData.suilendClient.refreshAll(
+      await appDataMainMarket.suilendClient.refreshAll(
         transaction,
         undefined,
         Array.from(
@@ -4315,7 +4336,8 @@ export default function LstStrategyDialog({
                     Object.entries(rewardsMap).reduce(
                       (acc, [coinType, { amount }]) => {
                         const price =
-                          appData.rewardPriceMap[coinType] ?? new BigNumber(0);
+                          appDataMainMarket.rewardPriceMap[coinType] ??
+                          new BigNumber(0);
 
                         return acc.plus(amount.times(price));
                       },
@@ -4335,15 +4357,19 @@ export default function LstStrategyDialog({
                             <TokenLogo
                               token={getToken(
                                 coinType,
-                                appData.coinMetadataMap[coinType],
+                                appDataMainMarket.coinMetadataMap[coinType],
                               )}
                               size={16}
                             />
                             <TLabelSans className="text-foreground">
                               {formatToken(amount, {
-                                dp: appData.coinMetadataMap[coinType].decimals,
+                                dp: appDataMainMarket.coinMetadataMap[coinType]
+                                  .decimals,
                               })}{" "}
-                              {appData.coinMetadataMap[coinType].symbol}
+                              {
+                                appDataMainMarket.coinMetadataMap[coinType]
+                                  .symbol
+                              }
                             </TLabelSans>
                           </div>
                         ),
@@ -4354,7 +4380,10 @@ export default function LstStrategyDialog({
                   <div className="w-max">
                     <TokenLogos
                       tokens={Object.keys(rewardsMap).map((coinType) =>
-                        getToken(coinType, appData.coinMetadataMap[coinType]),
+                        getToken(
+                          coinType,
+                          appDataMainMarket.coinMetadataMap[coinType],
+                        ),
                       )}
                       size={16}
                     />

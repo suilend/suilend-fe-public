@@ -20,7 +20,7 @@ import {
 import * as Sentry from "@sentry/nextjs";
 import BN from "bn.js";
 
-import { ClaimRewardsReward, RewardsMap } from "@suilend/sdk";
+import { ClaimRewardsReward, RewardsMap, SuilendClient } from "@suilend/sdk";
 import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -38,6 +38,7 @@ interface DashboardContext {
   dismissAutoclaimNotification: () => void;
 
   claimRewards: (
+    suilendClient: SuilendClient,
     rewardsMap: RewardsMap,
     args: {
       isSwapping: boolean;
@@ -69,7 +70,7 @@ export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData, openLedgerHashDialog } = useLoadedAppContext();
+  const { openLedgerHashDialog } = useLoadedAppContext();
   const {
     obligation,
     obligationOwnerCap,
@@ -122,6 +123,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   // Actions
   const claimRewards = useCallback(
     async (
+      suilendClient: SuilendClient,
       rewardsMap: RewardsMap,
       args: {
         isSwapping: boolean;
@@ -149,7 +151,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         if (args.isSwapping) {
           // Claim
           const { transaction: _transaction1, mergedCoinsMap } =
-            appData.suilendClient.claimRewards(
+            suilendClient.claimRewards(
               address,
               obligationOwnerCap.id,
               rewards,
@@ -238,7 +240,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
           if (!resultCoin) throw new Error("No coin to deposit or transfer");
           if (args.isDepositing) {
-            appData.suilendClient.deposit(
+            suilendClient.deposit(
               resultCoin,
               args.swappingToCoinType,
               obligationOwnerCap.id,
@@ -252,14 +254,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           }
         } else {
           if (args.isDepositing) {
-            appData.suilendClient.claimRewardsAndDeposit(
+            suilendClient.claimRewardsAndDeposit(
               address,
               obligationOwnerCap.id,
               rewards,
               transaction,
             );
           } else {
-            appData.suilendClient.claimRewardsAndSendToUser(
+            suilendClient.claimRewardsAndSendToUser(
               address,
               obligationOwnerCap.id,
               rewards,
@@ -296,7 +298,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       address,
       obligationOwnerCap,
       obligation,
-      appData.suilendClient,
       cetusSdk,
       autoclaimRewards,
       openLedgerHashDialog,

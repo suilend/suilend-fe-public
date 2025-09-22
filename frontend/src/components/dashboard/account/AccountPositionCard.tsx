@@ -31,6 +31,7 @@ import UtilizationBar, {
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
@@ -41,7 +42,8 @@ import {
 import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
-  const { allAppData, appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
   const { userData, ...restUserContext } = useLoadedUserContext();
   const obligation = restUserContext.obligation as ParsedObligation;
 

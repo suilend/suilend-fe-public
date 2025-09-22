@@ -11,13 +11,13 @@ interface SendTokenLogoProps {
 export default function SendTokenLogo({ size }: SendTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
 
-  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (
     <TokenLogo
       token={getToken(
         NORMALIZED_SEND_COINTYPE,
-        appData.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
+        appDataMainMarket.coinMetadataMap[NORMALIZED_SEND_COINTYPE],
       )}
       size={size}
     />

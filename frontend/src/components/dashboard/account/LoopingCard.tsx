@@ -14,7 +14,7 @@ import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   IS_LOOPING_MESSAGE,
@@ -27,7 +27,7 @@ import {
 
 export default function LoopingCard() {
   const { address } = useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
   const { refresh, obligation, obligationOwnerCap } = useLoadedUserContext();
 
   const { withdraw, borrow } = useActionsModalContext();

@@ -31,7 +31,7 @@ const LENDING_MARKET_METADATA_MAP: Record<
   [STEAMM_LM_LENDING_MARKET_ID]: {
     name: "STEAMM LM",
     slug: "steamm-lm",
-    isHidden: true,
+    isHidden: false,
   },
 };
 

@@ -13,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_STRAT_COINTYPE,
@@ -219,8 +220,12 @@ export default function TokenSelectionDialog({
   onSelectToken,
   disabledCoinTypes,
 }: TokenSelectionDialogProps) {
-  const { filteredReservesMap, filteredReserves } = useLoadedAppContext();
+  const { allAppData, filteredReservesMap } = useLoadedAppContext();
   const { getBalance, obligation } = useLoadedUserContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const filteredReserves =
+    filteredReservesMap[appDataMainMarket.lendingMarket.id];
 
   const { swapInAccount, fetchTokensMetadata, verifiedCoinTypes } =
     useSwapContext();

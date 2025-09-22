@@ -24,6 +24,7 @@ import TextLink from "@/components/shared/TextLink";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   MAX_DEPOSITS_PER_OBLIGATION,
@@ -39,7 +40,8 @@ export default function ClaimRewardsDropdownMenu({
   rewardsMap,
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { allAppData, appData, closeLedgerHashDialog } = useLoadedAppContext();
+  const { allAppData, closeLedgerHashDialog } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
   const { refresh, obligation } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
@@ -147,11 +149,15 @@ export default function ClaimRewardsDropdownMenu({
     })();
 
     try {
-      const res = await claimRewards(filteredRewardsMap, {
-        isSwapping,
-        swappingToCoinType,
-        isDepositing,
-      });
+      const res = await claimRewards(
+        appData.suilendClient,
+        filteredRewardsMap,
+        {
+          isSwapping,
+          swappingToCoinType,
+          isDepositing,
+        },
+      );
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(

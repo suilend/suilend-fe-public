@@ -16,6 +16,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -106,9 +107,13 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const { appData, filteredReserves } = useLoadedAppContext();
+  const { allAppData, filteredReservesMap } = useLoadedAppContext();
   const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
     useLoadedUserContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const filteredReserves =
+    filteredReservesMap[appDataMainMarket.lendingMarket.id];
 
   // send.ag
   const { sdkMap, partnerIdMap } = useAggSdks();
@@ -234,7 +239,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
           (coinType) =>
             !Object.keys({
-              ...appData.coinMetadataMap,
+              ...appDataMainMarket.coinMetadataMap,
               ...(balancesCoinMetadataMap ?? {}),
             }).includes(coinType),
         );
@@ -243,7 +248,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         );
 
         const mergedCoinMetadataMap = {
-          ...appData.coinMetadataMap,
+          ...appDataMainMarket.coinMetadataMap,
           ...(balancesCoinMetadataMap ?? {}),
           ...coinMetadataMap,
         };
@@ -264,7 +269,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap],
+    [tokens, appDataMainMarket.coinMetadataMap, balancesCoinMetadataMap],
   );
 
   // Tokens - Verified coinTypes
@@ -297,9 +302,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Tokens - Reserves
   useEffect(() => {
     fetchTokensMetadata(
-      appData.lendingMarket.reserves.map((reserve) => reserve.coinType),
+      appDataMainMarket.lendingMarket.reserves.map(
+        (reserve) => reserve.coinType,
+      ),
     );
-  }, [fetchTokensMetadata, appData.lendingMarket.reserves]);
+  }, [fetchTokensMetadata, appDataMainMarket.lendingMarket.reserves]);
 
   // Tokens - Balances
   useEffect(() => {
@@ -444,20 +451,20 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!tokenIn) return;
     setDefaultTokenIn({
-      hasReserve: !!appData.reserveMap[tokenIn.coinType],
+      hasReserve: !!appDataMainMarket.reserveMap[tokenIn.coinType],
       symbol: tokenIn.symbol,
       coinType: tokenIn.coinType,
     });
-  }, [tokenIn, setDefaultTokenIn, appData.reserveMap]);
+  }, [tokenIn, setDefaultTokenIn, appDataMainMarket.reserveMap]);
 
   useEffect(() => {
     if (!tokenOut) return;
     setDefaultTokenOut({
-      hasReserve: !!appData.reserveMap[tokenOut.coinType],
+      hasReserve: !!appDataMainMarket.reserveMap[tokenOut.coinType],
       symbol: tokenOut.symbol,
       coinType: tokenOut.coinType,
     });
-  }, [tokenOut, setDefaultTokenOut, appData.reserveMap]);
+  }, [tokenOut, setDefaultTokenOut, appDataMainMarket.reserveMap]);
 
   // Context
   const contextValue: SwapContext = useMemo(

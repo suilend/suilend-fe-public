@@ -12,6 +12,7 @@ import { formatDate } from "date-fns";
 import { capitalize } from "lodash";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -54,8 +55,6 @@ interface TabContentProps {
 }
 
 function DetailsTabContent({ strategyType }: TabContentProps) {
-  const { appData } = useLoadedAppContext();
-
   const {
     isMoreDetailsOpen,
     setIsMoreDetailsOpen,
@@ -310,7 +309,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
 
 function HistoryTabContent({ strategyType }: TabContentProps) {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
   const {
     isMoreDetailsOpen,
@@ -349,6 +348,8 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
     getHealthPercent,
     getLiquidationPrice,
   } = useLoadedLstStrategyContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   // Obligation
   const strategyOwnerCap = userData.strategyOwnerCaps.find(
@@ -465,7 +466,7 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                               | ForgiveEvent
                               | ClaimRewardEvent
                           ).coinType,
-                          appData.coinMetadataMap[
+                          appDataMainMarket.coinMetadataMap[
                             (
                               event as
                                 | DepositEvent
@@ -483,7 +484,7 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                         amount={event.lossAmount}
                         token={getToken(
                           event.coinType,
-                          appData.coinMetadataMap[event.coinType],
+                          appDataMainMarket.coinMetadataMap[event.coinType],
                         )}
                       />
                     ) : event.type === EventType.LIQUIDATE ? (
@@ -491,7 +492,9 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                         amount={event.withdrawAmount}
                         token={getToken(
                           event.withdrawCoinType,
-                          appData.coinMetadataMap[event.withdrawCoinType],
+                          appDataMainMarket.coinMetadataMap[
+                            event.withdrawCoinType
+                          ],
                         )}
                       />
                     ) : null}

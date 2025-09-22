@@ -1,8 +1,7 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
-import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
+import { useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
@@ -14,12 +13,9 @@ import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCar
 import RewardsCard from "@/components/dashboard/RewardsCard";
 import WalletAssetsCard from "@/components/dashboard/WalletBalancesCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
-import Tabs from "@/components/shared/Tabs";
-import {
-  QueryParams as AppContextQueryParams,
-  useLoadedAppContext,
-} from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
+import { MarketCardContextProvider } from "@/contexts/MarketCardContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 
 function Cards() {
@@ -36,31 +32,16 @@ function Cards() {
 }
 
 function Page() {
-  const router = useRouter();
-
   const { lg } = useBreakpoint();
 
   const { address } = useWalletContext();
-  const { allAppData, appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
 
-  // Tabs
-  const tabs = Object.values(allAppData.allLendingMarketData)
-    .filter(
-      (lendingMarket) =>
-        !(lendingMarket.lendingMarket.isHidden && address !== ADMIN_ADDRESS),
-    )
-    .map((_appData) => ({
-      id: _appData.lendingMarket.slug,
-      title: _appData.lendingMarket.name,
-    }));
-
-  const selectedTab = appData.lendingMarket.slug;
-  const onSelectedTabChange = (tab: string) => {
-    shallowPushQuery(router, {
-      ...router.query,
-      [AppContextQueryParams.LENDING_MARKET]: tab,
-    });
-  };
+  // App data list
+  const appDataList = Object.values(allAppData.allLendingMarketData).filter(
+    (lendingMarket) =>
+      !(lendingMarket.lendingMarket.isHidden && address !== ADMIN_ADDRESS),
+  );
 
   return (
     <>
@@ -74,43 +55,65 @@ function Page() {
         {!lg ? (
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
-            <div className="flex w-full flex-col gap-2">
-              <Cards />
+            {/* Cards */}
+            <div className="flex w-full flex-col gap-6">
+              {appDataList.map((appData) => (
+                <MarketCardContextProvider
+                  key={appData.lendingMarket.slug}
+                  appData={appData}
+                >
+                  <div className="flex w-full flex-col gap-2">
+                    <Cards />
+                  </div>
+                </MarketCardContextProvider>
+              ))}
             </div>
 
-            <div className="flex w-full flex-col gap-4">
-              {tabs.length > 1 && (
-                <Tabs
-                  tabs={tabs}
-                  selectedTab={selectedTab}
-                  onTabChange={(tab) => onSelectedTabChange(tab)}
-                />
-              )}
-              <MarketCard />
+            {/* Markets */}
+            <div className="flex w-full flex-col gap-6">
+              {appDataList.map((appData) => (
+                <MarketCardContextProvider
+                  key={appData.lendingMarket.slug}
+                  appData={appData}
+                >
+                  <MarketCard />
+                </MarketCardContextProvider>
+              ))}
             </div>
           </div>
         ) : (
           // Horizontal layout
           <div className="relative w-full flex-1">
             <div
-              className="flex w-full min-w-0 flex-col gap-4"
+              className="w-full min-w-0"
               style={{ paddingRight: 360 + 8 * 4 }}
             >
-              {tabs.length > 1 && (
-                <Tabs
-                  listClassName="w-max"
-                  triggerClassName={() => "px-4"}
-                  tabs={tabs}
-                  selectedTab={selectedTab}
-                  onTabChange={(tab) => onSelectedTabChange(tab)}
-                />
-              )}
-              <MarketCard />
+              {/* Markets */}
+              <div className="flex w-full flex-col gap-6">
+                {appDataList.map((appData) => (
+                  <MarketCardContextProvider
+                    key={appData.lendingMarket.slug}
+                    appData={appData}
+                  >
+                    <MarketCard />
+                  </MarketCardContextProvider>
+                ))}
+              </div>
             </div>
 
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
-              <div className="flex w-full shrink-0 flex-col gap-4">
-                <Cards />
+              {/* Cards */}
+              <div className="flex w-full flex-col gap-6">
+                {appDataList.map((appData) => (
+                  <MarketCardContextProvider
+                    key={appData.lendingMarket.slug}
+                    appData={appData}
+                  >
+                    <div className="flex w-full shrink-0 flex-col gap-4">
+                      <Cards />
+                    </div>
+                  </MarketCardContextProvider>
+                ))}
               </div>
             </div>
           </div>

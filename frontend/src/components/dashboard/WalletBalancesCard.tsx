@@ -13,11 +13,13 @@ import AccountAssetTable, {
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const { allAppData, appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
   const { balancesCoinMetadataMap, getBalance, ownedStakedWalObjects } =
     useLoadedUserContext();
 
@@ -88,17 +90,18 @@ export default function WalletBalancesCard() {
                 };
               }),
             ...(ownedStakedWalObjects ?? []).map((obj) => {
-              const appData =
+              const appDataMainMarket =
                 allAppData.allLendingMarketData[LENDING_MARKET_ID]; // Override appData from useLoadedAppContext
 
-              const price = appData.reserveMap[NORMALIZED_WAL_COINTYPE].price;
+              const price =
+                appDataMainMarket.reserveMap[NORMALIZED_WAL_COINTYPE].price;
 
               return {
                 reserve: undefined,
                 token: {
                   ...getToken(
                     NORMALIZED_WAL_COINTYPE,
-                    appData.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
+                    appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
                   ),
                   symbol: "Staked WAL".toUpperCase(),
                 },

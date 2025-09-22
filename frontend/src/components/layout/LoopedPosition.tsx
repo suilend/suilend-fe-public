@@ -2,14 +2,14 @@ import { getToken } from "@suilend/sui-fe";
 
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useMarketCardContext } from "@/contexts/MarketCardContext";
 
 interface LoopedPositionProps {
   coinTypes: string[];
 }
 
 export default function LoopedPosition({ coinTypes }: LoopedPositionProps) {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useMarketCardContext();
 
   return (
     <div className="flex flex-row flex-wrap items-center gap-x-1.5 gap-y-1">

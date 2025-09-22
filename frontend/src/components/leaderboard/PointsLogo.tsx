@@ -1,3 +1,4 @@
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { getToken } from "@suilend/sui-fe";
 
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -10,13 +11,15 @@ interface PointsLogoProps {
 }
 
 export default function PointsLogo({ season, size }: PointsLogoProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (
     <TokenLogo
       token={getToken(
         POINTS_SEASON_MAP[season].coinType,
-        appData.coinMetadataMap[POINTS_SEASON_MAP[season].coinType],
+        appDataMainMarket.coinMetadataMap[POINTS_SEASON_MAP[season].coinType],
       )}
       size={size}
     />
