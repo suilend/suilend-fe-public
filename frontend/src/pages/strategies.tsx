@@ -520,13 +520,6 @@ function Page() {
                 as sSUI.
                 <br />• Oracle Risk: depending on strategy ({`doesn't`} apply to
                 SpringSui LST/SUI Looping strategies)
-                <br />
-                <br />
-                Note: If your health is {"<100%"}, you will need{" "}
-                <b>additional capital</b> (returned in the same transaction) to
-                decrease your leverage and bring your health back up to 100%.
-                You {"won't"} be able to deposit or withdraw while your health
-                is {"<100%"}.
               </TLabelSans>
             </div>
 
@@ -577,8 +570,7 @@ function Page() {
               <TLabelSans>
                 Suilend Strategies is designed to be low-maintenance and
                 requires minimal management. You can adjust your leverage,
-                deposit, or withdraw at any time (provided your health is 100%,
-                see {`"What are the risks?"`} for more details).
+                deposit, or withdraw at any time.
                 <br />
                 <br />
                 Rewards that are listed on Suilend will be autoclaimed and
