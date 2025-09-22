@@ -1279,7 +1279,7 @@ export default function LstStrategyDialog({
       ![
         StrategyType.USDC_sSUI_SUI_LOOPING,
         StrategyType.AUSD_sSUI_SUI_LOOPING,
-        StrategyType.xBTC_wBTC_LOOPING,
+        StrategyType.xBTC_sSUI_SUI_LOOPING,
       ].includes(strategyType)
     )
       return new BigNumber(0);
