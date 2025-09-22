@@ -40,6 +40,9 @@ import { MAINNET_CONFIG, SteammSDK } from "@suilend/steamm-sdk";
 import {
   MAX_U64,
   MS_PER_YEAR,
+  NORMALIZED_AUSD_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
+  NORMALIZED_suiUSDT_COINTYPE,
   NORMALIZED_wBTC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
   TX_TOAST_DURATION,
@@ -89,12 +92,62 @@ import {
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import {
+  CETUS_CONTRACT_PACKAGE_ID,
+  CETUS_GLOBAL_CONFIG_OBJECT_ID,
+  CETUS_PARTNER_ID,
+} from "@/lib/cetus";
+import { MMT_CONTRACT_PACKAGE_ID } from "@/lib/mmt";
 import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.15;
+
+enum FlashLoanProvider {
+  CETUS = "cetus",
+  MMT = "mmt",
+}
+
+const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
+  string,
+  {
+    provider: FlashLoanProvider;
+    poolId: string;
+    coinTypeA: string;
+    coinTypeB: string;
+    borrowA: boolean;
+    feePercent: number;
+  }
+> = {
+  [StrategyType.USDC_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.CETUS,
+    poolId:
+      "0xb8a67c149fd1bc7f9aca1541c61e51ba13bdded64c273c278e50850ae3bff073", // suiUSDT-USDC 0.001% https://app.cetus.zone/liquidity?poolAddress=0xb8a67c149fd1bc7f9aca1541c61e51ba13bdded64c273c278e50850ae3bff073
+    coinTypeA: NORMALIZED_suiUSDT_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: false,
+    feePercent: 0.001,
+  },
+  [StrategyType.AUSD_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.CETUS,
+    poolId:
+      "0x0fea99ed9c65068638963a81587c3b8cafb71dc38c545319f008f7e9feb2b5f8", // AUSD-USDC 0.01% https://app.cetus.zone/liquidity?poolAddress=0x0fea99ed9c65068638963a81587c3b8cafb71dc38c545319f008f7e9feb2b5f8
+    coinTypeA: NORMALIZED_AUSD_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.01,
+  },
+  [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
+    poolId:
+      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-wBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
+    coinTypeA: NORMALIZED_xBTC_COINTYPE,
+    coinTypeB: NORMALIZED_wBTC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.01,
+  },
+};
 
 // xBTC/wBTC pool: https://steamm.fi/pool/0xef7aaebc8e300d1ae2110cee7ea5f07ee1a1da8974c9ea4cdf72655647cf8716
 const swapInSteammPool = async (
@@ -1222,8 +1275,26 @@ export default function LstStrategyDialog({
   ]);
 
   const depositAdjustWithdrawFeesAmount = useMemo(() => {
-    return new BigNumber(0); // No fees (ignoring LST redeem fees)
-  }, []);
+    if (
+      ![
+        StrategyType.USDC_sSUI_SUI_LOOPING,
+        StrategyType.AUSD_sSUI_SUI_LOOPING,
+        StrategyType.xBTC_wBTC_LOOPING,
+      ].includes(strategyType)
+    )
+      return new BigNumber(0);
+
+    const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
+
+    // Ignoring LST redeem fees
+    return depositAdjustWithdrawAdditionalDepositedAmount
+      .times(flashLoanObj.feePercent / 100)
+      .decimalPlaces(depositReserves.base!.token.decimals, BigNumber.ROUND_UP);
+  }, [
+    strategyType,
+    depositAdjustWithdrawAdditionalDepositedAmount,
+    depositReserves.base,
+  ]);
 
   const adjustFeesAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
@@ -1407,18 +1478,7 @@ export default function LstStrategyDialog({
       if (new BigNumber(value).eq(0))
         return { isDisabled: true, title: "Enter a non-zero amount" };
     } else if (selectedTab === Tab.ADJUST && !canAdjust) {
-      const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
-
-      if (
-        getBalance(depositReserve.coinType).lt(
-          depositAdjustWithdrawAdditionalDepositedAmount,
-        )
-      ) {
-        return {
-          isDisabled: true,
-          title: `Insufficient ${depositReserve.token.symbol}`,
-        };
-      }
+      // N/A
     } else if (selectedTab === Tab.ADJUST && canAdjust) {
       // N/A
     }
@@ -3095,10 +3155,12 @@ export default function LstStrategyDialog({
     _borrowedAmount: BigNumber,
     withdraw: Withdraw,
     transaction: Transaction,
+    returnWithdrawnCoin?: boolean,
   ): Promise<{
     deposits: Deposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
+    withdrawnCoin?: TransactionArgument;
   }> => {
     console.log(
       `[withdraw] args |`,
@@ -3116,6 +3178,7 @@ export default function LstStrategyDialog({
             coinType: withdraw.coinType,
             withdrawnAmount: withdraw.withdrawnAmount.toFixed(20),
           },
+          returnWithdrawnCoin,
         },
         null,
         2,
@@ -3278,20 +3341,27 @@ export default function LstStrategyDialog({
       ),
     );
 
-    // 3) Transfer coin to user
-    if (depositReserve.coinType === depositReserves.base?.coinType) {
-      // 3.1) Transfer base to user
-      transaction.transferObjects([withdrawnCoin], _address);
-    } else {
-      if (isSui(withdraw.coinType)) {
-        // 3.1) Unstake LST for SUI
-        const suiWithdrawnCoin = lst!.client.redeem(transaction, withdrawnCoin);
-
-        // 3.2) Transfer SUI to user
-        transaction.transferObjects([suiWithdrawnCoin], _address);
-      } else {
-        // 3.1) Transfer LST to user
+    // 3) Transfer coin to user, or return coin
+    if (returnWithdrawnCoin)
+      return { deposits, borrowedAmount, transaction, withdrawnCoin };
+    else {
+      if (depositReserve.coinType === depositReserves.base?.coinType) {
+        // 3.1) Transfer base to user
         transaction.transferObjects([withdrawnCoin], _address);
+      } else {
+        if (isSui(withdraw.coinType)) {
+          // 3.1) Unstake LST for SUI
+          const suiWithdrawnCoin = lst!.client.redeem(
+            transaction,
+            withdrawnCoin,
+          );
+
+          // 3.2) Transfer SUI to user
+          transaction.transferObjects([suiWithdrawnCoin], _address);
+        } else {
+          // 3.1) Transfer LST to user
+          transaction.transferObjects([withdrawnCoin], _address);
+        }
       }
     }
 
@@ -3485,46 +3555,72 @@ export default function LstStrategyDialog({
     let deposits = cloneDeep(_deposits);
     let borrowedAmount = _borrowedAmount;
 
-    // 1) Deposit additional (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
-    // 1.1) Split coins
-    const allCoins = await getAllCoins(
-      suiClient,
-      _address,
-      depositReserve.coinType,
-    );
-    const mergeCoin = mergeAllCoins(
-      depositReserve.coinType,
-      transaction,
-      allCoins,
-    );
+    // 1) Flash loan borrow
+    const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
 
-    const coin = transaction.splitCoins(
-      transaction.object(mergeCoin.coinObjectId),
-      [
-        additionalDepositedAmount
-          .times(10 ** depositReserve.token.decimals)
-          .integerValue(BigNumber.ROUND_DOWN)
-          .toString(),
-      ],
-    );
+    let borrowedBalanceA, borrowedBalanceB, receipt;
+    if (flashLoanObj.provider === FlashLoanProvider.CETUS) {
+      [borrowedBalanceA, borrowedBalanceB, receipt] = transaction.moveCall({
+        target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::flash_loan`,
+        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+        arguments: [
+          transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
+          transaction.object(flashLoanObj.poolId),
+          transaction.pure.bool(flashLoanObj.borrowA),
+          transaction.pure.u64(
+            additionalDepositedAmount
+              .times(10 ** depositReserve.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ),
+        ],
+      });
+    } else if (flashLoanObj.provider === FlashLoanProvider.MMT) {
+      [borrowedBalanceA, borrowedBalanceB, receipt] = transaction.moveCall({
+        target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_loan`,
+        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+        arguments: [
+          transaction.object(flashLoanObj.poolId),
+          transaction.pure.u64(
+            flashLoanObj.borrowA
+              ? additionalDepositedAmount
+                  .times(10 ** depositReserve.token.decimals)
+                  .integerValue(BigNumber.ROUND_DOWN)
+                  .toString()
+              : 0,
+          ),
+          transaction.pure.u64(
+            !flashLoanObj.borrowA
+              ? 0
+              : additionalDepositedAmount
+                  .times(10 ** depositReserve.token.decimals)
+                  .integerValue(BigNumber.ROUND_DOWN)
+                  .toString(),
+          ),
+        ],
+      });
+    } else {
+      throw new Error("Invalid flash loan provider");
+    }
 
-    // 1.2) Deposit additional
+    // 2) Deposit additional (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
+    // 2.1) Deposit
     strategyDeposit(
-      coin,
+      flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB,
       depositReserve.coinType,
       strategyOwnerCapId,
       appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
       transaction,
     );
 
-    // 1.3) Update state
+    // 2.2) Update state
     deposits = addOrInsertDeposit(deposits, {
       coinType: depositReserve.coinType,
       depositedAmount: additionalDepositedAmount,
     });
 
-    // 2) Unloop to max exposure
-    // 2.1) Unloop
+    // 3) Unloop to max exposure
+    // 3.1) Unloop
     const {
       deposits: newDeposits,
       borrowedAmount: newBorrowedAmount,
@@ -3540,16 +3636,18 @@ export default function LstStrategyDialog({
       transaction,
     );
 
-    // 2.2) Update state
+    // 3.2) Update state
     deposits = newDeposits;
     borrowedAmount = newBorrowedAmount;
     transaction = newTransaction;
 
-    // 3) Withdraw additional
+    // 4) Repay flash loan + fee
+    // 4.1) Withdraw additional + fee
     const {
       deposits: newDeposits2,
       borrowedAmount: newBorrowedAmount2,
       transaction: newTransaction2,
+      withdrawnCoin: withdrawnAdditionalPlusFeeCoin,
     } = await withdrawTx(
       _address,
       strategyOwnerCapId,
@@ -3558,12 +3656,52 @@ export default function LstStrategyDialog({
       borrowedAmount,
       {
         coinType: depositReserve.coinType,
-        withdrawnAmount: additionalDepositedAmount,
+        withdrawnAmount: additionalDepositedAmount
+          .times(1 + flashLoanObj.feePercent / 100)
+          .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP),
       },
       transaction,
+      true,
     );
+    if (!withdrawnAdditionalPlusFeeCoin)
+      throw new Error("Withdrawn additional coin not found");
 
-    // 3.2) Update state
+    // 4.2) Repay flash loan
+    const emptyBalance = transaction.moveCall({
+      target: `0x2::balance::zero`,
+      typeArguments: [
+        flashLoanObj.borrowA ? flashLoanObj.coinTypeB : flashLoanObj.coinTypeA,
+      ],
+      arguments: [],
+    });
+    if (flashLoanObj.provider === FlashLoanProvider.CETUS) {
+      transaction.moveCall({
+        target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::repay_flash_loan`,
+        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+        arguments: [
+          transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
+          transaction.object(flashLoanObj.poolId),
+          flashLoanObj.borrowA ? withdrawnAdditionalPlusFeeCoin : emptyBalance,
+          flashLoanObj.borrowA ? emptyBalance : withdrawnAdditionalPlusFeeCoin,
+          receipt,
+        ],
+      });
+    } else if (flashLoanObj.provider === FlashLoanProvider.MMT) {
+      transaction.moveCall({
+        target: `${MMT_CONTRACT_PACKAGE_ID}::trade::repay_flash_loan`,
+        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+        arguments: [
+          transaction.object(flashLoanObj.poolId),
+          receipt,
+          flashLoanObj.borrowA ? withdrawnAdditionalPlusFeeCoin : emptyBalance,
+          flashLoanObj.borrowA ? emptyBalance : withdrawnAdditionalPlusFeeCoin,
+        ],
+      });
+    } else {
+      throw new Error("Invalid flash loan provider");
+    }
+
+    // 4.3) Update state
     deposits = newDeposits2;
     borrowedAmount = newBorrowedAmount2;
     transaction = newTransaction2;
@@ -4691,31 +4829,6 @@ export default function LstStrategyDialog({
                     </span>
                   )}
                 </Button>
-
-                {selectedTab === Tab.ADJUST && !canAdjust && (
-                  <TLabelSans className="text-warning">
-                    Note: A balance of{" "}
-                    {formatToken(
-                      depositAdjustWithdrawAdditionalDepositedAmount,
-                      {
-                        dp: (depositReserves.base ?? depositReserves.lst)!.token
-                          .decimals,
-                      },
-                    )}{" "}
-                    {
-                      (depositReserves.base ?? depositReserves.lst)!.token
-                        .symbol
-                    }{" "}
-                    is required to decrease your leverage to{" "}
-                    {depositAdjustWithdrawExposure.toFixed(1)}
-                    x. Your{" "}
-                    {
-                      (depositReserves.base ?? depositReserves.lst)!.token
-                        .symbol
-                    }{" "}
-                    will be returned to you in the same transaction.
-                  </TLabelSans>
-                )}
               </div>
             </div>
 

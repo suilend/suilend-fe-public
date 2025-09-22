@@ -2028,7 +2028,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(
         depositReserves.base !== undefined
           ? 0.985 // 1.5% buffer
-          : 0.995, // 0.5% buffer
+          : 0.999, // 0.1% buffer
       );
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
