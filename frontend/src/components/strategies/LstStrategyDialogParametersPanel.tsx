@@ -478,6 +478,14 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
                           ],
                         )}
                       />
+                    ) : event.type === EventType.SOCIALIZE_LOSS ? (
+                      <TokenAmount
+                        amount={event.lossAmount}
+                        token={getToken(
+                          event.coinType,
+                          appData.coinMetadataMap[event.coinType],
+                        )}
+                      />
                     ) : event.type === EventType.LIQUIDATE ? (
                       <TokenAmount
                         amount={event.withdrawAmount}

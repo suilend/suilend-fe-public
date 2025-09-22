@@ -100,6 +100,14 @@ export type ForgiveEvent = {
   liquidityAmount: BigNumber;
   digest: string;
 };
+export type SocializeLossEvent = {
+  type: EventType.SOCIALIZE_LOSS;
+  timestampS: number;
+  eventIndex: number;
+  coinType: string;
+  lossAmount: BigNumber;
+  digest: string;
+};
 export type ClaimRewardEvent = {
   type: EventType.CLAIM_REWARD;
   timestampS: number;
@@ -122,6 +130,7 @@ export type HistoryEvent =
   | RepayEvent
   | LiquidateEvent
   | ForgiveEvent
+  | SocializeLossEvent
   | ClaimRewardEvent
   | ObligationDataEvent;
 
@@ -1536,6 +1545,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         liquidityAmount: string;
         digest: string;
       };
+      type SocializeLossResult = {
+        timestamp: number;
+        coinType: string;
+        lossAmount: string;
+        relatedForgiveDigest: string;
+      };
       type ClaimRewardEventResult = {
         timestamp: number;
         eventIndex: number;
@@ -1556,6 +1571,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         repays: RepayResult[];
         liquidateEvents: LiquidateResult[];
         forgiveEvents: ForgiveResult[];
+        socializeLossSyntheticEvents: SocializeLossResult[];
         claimRewardEvents: ClaimRewardEventResult[];
         obligationDataEvents: ObligationDataEventResult[];
       };
@@ -1653,6 +1669,17 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             coinType: normalizeStructTag(forgiveEvent.coinType),
             liquidityAmount: new BigNumber(forgiveEvent.liquidityAmount),
             digest: forgiveEvent.digest,
+          });
+        }
+        for (const socializeLossEvent of page.results
+          .socializeLossSyntheticEvents) {
+          events.push({
+            type: EventType.SOCIALIZE_LOSS,
+            timestampS: socializeLossEvent.timestamp,
+            eventIndex: 0,
+            coinType: normalizeStructTag(socializeLossEvent.coinType),
+            lossAmount: new BigNumber(socializeLossEvent.lossAmount),
+            digest: socializeLossEvent.relatedForgiveDigest,
           });
         }
         for (const claimRewardEvent of page.results.claimRewardEvents) {
