@@ -175,6 +175,19 @@ export type ApiForgiveEvent = {
   sender: string;
 };
 
+export type ApiSocializeLossEvent = {
+  id: number;
+  lendingMarketId: string;
+  reserveId: string;
+  obligationId: string;
+  coinType: string;
+  lossAmount: string;
+  socializationRate: string;
+  relatedForgiveDigest: string;
+  timestamp: number;
+  sender: string;
+};
+
 export type ApiClaimRewardEvent = {
   id: number;
   lendingMarketId: string;

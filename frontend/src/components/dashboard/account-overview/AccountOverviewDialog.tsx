@@ -16,6 +16,7 @@ import {
   ApiObligationDataEvent,
   ApiRepayEvent,
   ApiReserveAssetDataEvent,
+  ApiSocializeLossEvent,
   ApiWithdrawEvent,
 } from "@suilend/sdk/lib/types";
 import {
@@ -63,8 +64,12 @@ export type EventsData = {
   withdraw: ApiWithdrawEvent[];
   repay: ApiRepayEvent[];
   liquidate: ApiLiquidateEvent[];
+
   forgive: ApiForgiveEvent[];
+  socializeLoss: ApiSocializeLossEvent[];
+
   claimReward: ApiClaimRewardEvent[];
+
   obligationData: ApiObligationDataEvent[];
 };
 
@@ -159,10 +164,11 @@ export default function AccountOverviewDialog() {
       try {
         const [
           json1,
+          json2,
           { claimReward, autoclaimDigests: _autoclaimDigests },
           json3,
         ] = await Promise.all([
-          // Deposit, borrow, withdraw, repay, liquidate, and forgive events joined with reserve asset data
+          // Deposit, borrow, withdraw, repay, and liquidate events joined with reserve asset data
           (async () => {
             const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: [
@@ -171,7 +177,6 @@ export default function AccountOverviewDialog() {
                 EventType.WITHDRAW,
                 EventType.REPAY,
                 EventType.LIQUIDATE,
-                EventType.FORGIVE,
               ].join(","),
               joinEventTypes: EventType.RESERVE_ASSET_DATA,
               obligationId,
@@ -189,10 +194,27 @@ export default function AccountOverviewDialog() {
             return json;
           })(),
 
-          // Claim reward events
+          // Forgive and SocializeLoss events
+          (async () => {
+            const url = `${API_URL}/events?${new URLSearchParams({
+              eventTypes: [EventType.FORGIVE, EventType.SOCIALIZE_LOSS].join(
+                ",",
+              ),
+              obligationId,
+            })}`;
+            const res = await fetch(url);
+            const json: {
+              forgive: ApiForgiveEvent[];
+              socializeLoss: ApiSocializeLossEvent[];
+            } = await res.json();
+
+            return json;
+          })(),
+
+          // ClaimReward events
           fetchClaimRewardEvents(suiClient, address, obligationId),
 
-          // Obligation data events
+          // ObligationData events
           (async () => {
             const url = `${API_URL}/events?${new URLSearchParams({
               eventTypes: EventType.OBLIGATION_DATA,
@@ -208,14 +230,22 @@ export default function AccountOverviewDialog() {
         ]);
 
         // Parse
-        const data = { ...json1, ...{ claimReward }, ...json3 } as EventsData;
+        const data = {
+          ...json1,
+          ...json2,
+          ...{ claimReward },
+          ...json3,
+        } as EventsData;
         for (const event of [
           ...(data.reserveAssetData ?? []),
           ...(data.deposit ?? []),
           ...(data.borrow ?? []),
           ...(data.withdraw ?? []),
           ...(data.repay ?? []),
+
           ...(data.forgive ?? []),
+          ...(data.socializeLoss ?? []),
+
           ...(data.claimReward ?? []),
         ]) {
           event.coinType = normalizeStructTag(event.coinType);
@@ -230,8 +260,12 @@ export default function AccountOverviewDialog() {
           withdraw: (data.withdraw ?? []).slice().sort(eventSortAsc),
           repay: (data.repay ?? []).slice().sort(eventSortAsc),
           liquidate: (data.liquidate ?? []).slice().sort(eventSortAsc),
+
           forgive: (data.forgive ?? []).slice().sort(eventSortAsc),
+          socializeLoss: (data.socializeLoss ?? []).slice().sort(eventSortAsc),
+
           claimReward: (data.claimReward ?? []).slice().sort(eventSortAsc),
+
           obligationData: (data.obligationData ?? [])
             .slice()
             .sort(eventSortAsc),

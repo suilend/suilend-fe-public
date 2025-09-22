@@ -22,6 +22,7 @@ export enum EventType {
   REPAY = "repay",
   LIQUIDATE = "liquidate",
   FORGIVE = "forgive",
+  SOCIALIZE_LOSS = "socializeLoss",
   CLAIM_REWARD = "claimReward",
   CLAIM_AND_DEPOSIT_REWARDS = "claimAndDepositRewards",
   CLAIM_AND_REPAY_REWARDS = "claimAndRepayRewards",
@@ -43,6 +44,7 @@ export const EventTypeNameMap: Record<EventType, string> = {
   [EventType.REPAY]: "Repay",
   [EventType.LIQUIDATE]: "Liquidation",
   [EventType.FORGIVE]: "Forgive",
+  [EventType.SOCIALIZE_LOSS]: "Socialize loss",
   [EventType.CLAIM_REWARD]: "Claim rewards",
   [EventType.CLAIM_AND_DEPOSIT_REWARDS]: "Claim and deposit",
   [EventType.CLAIM_AND_REPAY_REWARDS]: "Claim and repay",
@@ -55,7 +57,7 @@ export const EventTypeNameMap: Record<EventType, string> = {
 
 type EventRow = {
   timestamp: number;
-  eventIndex: number;
+  eventIndex?: number;
 };
 
 export const apiEventSortDesc = (a: EventRow, b: EventRow) => {
@@ -63,7 +65,7 @@ export const apiEventSortDesc = (a: EventRow, b: EventRow) => {
   const bDate = new Date(b.timestamp * 1000).getTime();
   if (aDate !== bDate) return bDate - aDate;
 
-  return b.eventIndex - a.eventIndex;
+  return (b.eventIndex ?? 0) - (a.eventIndex ?? 0);
 };
 
 export const eventSortAsc = (a: EventRow, b: EventRow) =>

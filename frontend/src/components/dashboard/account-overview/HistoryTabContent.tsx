@@ -14,6 +14,7 @@ import {
   ApiForgiveEvent,
   ApiLiquidateEvent,
   ApiRepayEvent,
+  ApiSocializeLossEvent,
   ApiWithdrawEvent,
 } from "@suilend/sdk/lib/types";
 import { reserveSort } from "@suilend/sdk/utils";
@@ -52,6 +53,7 @@ interface RowData {
     | ApiRepayEvent
     | ApiLiquidateEvent
     | ApiForgiveEvent
+    | ApiSocializeLossEvent
     | ApiClaimRewardEvent;
   subRows?: RowData[];
 }
@@ -91,7 +93,11 @@ export default function HistoryTabContent({
 
           if (
             isGroupRow &&
-            [EventType.LIQUIDATE, EventType.FORGIVE].includes(eventType)
+            [
+              EventType.LIQUIDATE,
+              EventType.FORGIVE,
+              EventType.SOCIALIZE_LOSS,
+            ].includes(eventType)
           )
             return (
               <TBodySans className="w-max text-muted-foreground">
@@ -122,9 +128,11 @@ export default function HistoryTabContent({
               <TBodySans className="w-max">
                 {EventTypeNameMap[eventType]}
                 {isGroupRow &&
-                  [EventType.LIQUIDATE, EventType.FORGIVE].includes(
-                    eventType,
-                  ) && (
+                  [
+                    EventType.LIQUIDATE,
+                    EventType.FORGIVE,
+                    EventType.SOCIALIZE_LOSS,
+                  ].includes(eventType) && (
                     <span className="ml-1.5 text-muted-foreground">
                       ({row.subRows.length})
                     </span>
@@ -133,7 +141,7 @@ export default function HistoryTabContent({
               {(eventType === EventType.CLAIM_REWARD ||
                 eventType === EventType.CLAIM_AND_DEPOSIT_REWARDS ||
                 eventType === EventType.CLAIM_AND_REPAY_REWARDS) &&
-                autoclaimDigests?.includes(event.digest) && (
+                autoclaimDigests?.includes((event as any).digest) && (
                   <div className="flex flex-row items-center gap-[5px]">
                     <div className="h-max w-max opacity-55">
                       <SuilendLogo size={10} />
@@ -158,6 +166,7 @@ export default function HistoryTabContent({
               EventType.WITHDRAW,
               EventType.REPAY,
               EventType.FORGIVE,
+              EventType.SOCIALIZE_LOSS,
             ].includes(eventType)
           ) {
             return value.includes(
@@ -167,6 +176,7 @@ export default function HistoryTabContent({
                   | ApiWithdrawEvent
                   | ApiRepayEvent
                   | ApiForgiveEvent
+                  | ApiSocializeLossEvent
               ).coinType,
             );
           } else if (eventType === EventType.DEPOSIT) {
@@ -474,14 +484,6 @@ export default function HistoryTabContent({
               const subRowForgiveEvent = subRow.original
                 .event as ApiForgiveEvent;
 
-              const reserveAssetDataEvent = eventsData?.reserveAssetData.find(
-                (e) =>
-                  e.digest === subRowForgiveEvent.digest &&
-                  e.coinType === subRowForgiveEvent.coinType,
-              );
-              if (!reserveAssetDataEvent)
-                return <TLabelSans className="w-max">N/A</TLabelSans>;
-
               amount = amount.plus(
                 new BigNumber(subRowForgiveEvent.liquidityAmount).div(
                   10 ** coinMetadata.decimals,
@@ -493,6 +495,31 @@ export default function HistoryTabContent({
               <TokenAmount
                 amount={amount}
                 token={getToken(forgiveEvent.coinType, coinMetadata)}
+              />
+            );
+          } else if (eventType === EventType.SOCIALIZE_LOSS) {
+            const socializeLossEvent = event as ApiSocializeLossEvent;
+            const coinMetadata =
+              appData.coinMetadataMap[socializeLossEvent.coinType];
+
+            let amount = new BigNumber(0);
+
+            const subRows = isGroupRow ? row.subRows : [row];
+            for (const subRow of subRows) {
+              const subRowSocializeLossEvent = subRow.original
+                .event as ApiSocializeLossEvent;
+
+              amount = amount.plus(
+                new BigNumber(subRowSocializeLossEvent.lossAmount).div(
+                  10 ** coinMetadata.decimals,
+                ),
+              );
+            }
+
+            return (
+              <TokenAmount
+                amount={amount}
+                token={getToken(socializeLossEvent.coinType, coinMetadata)}
               />
             );
           } else if (eventType === EventType.CLAIM_REWARD) {
@@ -757,7 +784,11 @@ export default function HistoryTabContent({
             );
           } else {
             return (
-              <OpenOnExplorerButton url={explorer.buildTxUrl(event.digest)} />
+              <OpenOnExplorerButton
+                url={explorer.buildTxUrl(
+                  (event as any).digest ?? (event as any).relatedForgiveDigest,
+                )}
+              />
             );
           }
         },
@@ -791,7 +822,7 @@ export default function HistoryTabContent({
             (event) =>
               ({
                 timestamp: event.timestamp,
-                eventIndex: event.eventIndex,
+                eventIndex: (event as any).eventIndex ?? 0,
                 eventType: key as EventType,
                 event: cloneDeep(event),
               }) as RowData,
@@ -919,6 +950,29 @@ export default function HistoryTabContent({
           break;
         }
 
+        // Group SOCIALIZE_LOSS events by reserveId
+        case EventType.SOCIALIZE_LOSS: {
+          const socializeLossEvent = row.event as ApiSocializeLossEvent;
+
+          const lastRow = finalRows[finalRows.length - 1];
+          if (!lastRow || lastRow.eventType !== EventType.SOCIALIZE_LOSS)
+            finalRows.push({ ...row, subRows: [row] });
+          else {
+            const lastSocializeLossEvent =
+              lastRow.event as ApiSocializeLossEvent;
+
+            if (
+              lastSocializeLossEvent.reserveId !== socializeLossEvent.reserveId
+            )
+              finalRows.push({ ...row, subRows: [row] });
+            else {
+              (lastRow.subRows as RowData[]).push(row);
+            }
+          }
+
+          break;
+        }
+
         // Group CLAIM_REWARD events by digest
         case EventType.CLAIM_REWARD: {
           const claimRewardEvent = row.event as ApiClaimRewardEvent;
@@ -1025,6 +1079,11 @@ export default function HistoryTabContent({
     if (rows.filter((row) => row.eventType === EventType.FORGIVE).length > 0)
       result.push(EventType.FORGIVE);
     if (
+      rows.filter((row) => row.eventType === EventType.SOCIALIZE_LOSS).length >
+      0
+    )
+      result.push(EventType.SOCIALIZE_LOSS);
+    if (
       rows.filter((row) => row.eventType === EventType.CLAIM_REWARD).length > 0
     )
       result.push(EventType.CLAIM_REWARD);
@@ -1058,6 +1117,9 @@ export default function HistoryTabContent({
                 ...rows.filter((row) => row.eventType === EventType.REPAY),
                 ...rows.filter((row) => row.eventType === EventType.FORGIVE),
                 ...rows.filter(
+                  (row) => row.eventType === EventType.SOCIALIZE_LOSS,
+                ),
+                ...rows.filter(
                   (row) => row.eventType === EventType.CLAIM_REWARD,
                 ),
                 ...rows.filter(
@@ -1073,6 +1135,7 @@ export default function HistoryTabContent({
                       | ApiWithdrawEvent
                       | ApiRepayEvent
                       | ApiForgiveEvent
+                      | ApiSocializeLossEvent
                       | ApiClaimRewardEvent
                   ).coinType,
               ),
@@ -1212,9 +1275,11 @@ export default function HistoryTabContent({
 
               return cn(
                 isGroupRow &&
-                  [EventType.FORGIVE, EventType.LIQUIDATE].includes(
-                    row.original.eventType,
-                  ) &&
+                  [
+                    EventType.LIQUIDATE,
+                    EventType.FORGIVE,
+                    EventType.SOCIALIZE_LOSS,
+                  ].includes(row.original.eventType) &&
                   row.getIsExpanded() &&
                   "!bg-muted/15",
                 isNested && "!bg-muted/10",
@@ -1229,6 +1294,7 @@ export default function HistoryTabContent({
                     EventType.BORROW,
                     EventType.LIQUIDATE,
                     EventType.FORGIVE,
+                    EventType.SOCIALIZE_LOSS,
                     EventType.CLAIM_REWARD,
                     EventType.CLAIM_AND_DEPOSIT_REWARDS,
                     EventType.CLAIM_AND_REPAY_REWARDS,
@@ -1241,9 +1307,11 @@ export default function HistoryTabContent({
               const isGroupRow = row.getCanExpand() && row.subRows.length > 1;
               if (
                 isGroupRow &&
-                [EventType.FORGIVE, EventType.LIQUIDATE].includes(
-                  row.original.eventType,
-                )
+                [
+                  EventType.LIQUIDATE,
+                  EventType.FORGIVE,
+                  EventType.SOCIALIZE_LOSS,
+                ].includes(row.original.eventType)
               )
                 return row.getToggleExpandedHandler();
             }}
