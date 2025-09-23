@@ -12,7 +12,6 @@ import {
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
-  NORMALIZED_USDC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
   Token,
   formatToken,
@@ -308,25 +307,12 @@ export default function MarketTable() {
           return (
             <div className="flex flex-col items-end gap-2">
               <BorrowAprCell {...(row.original as ReservesRowData)} />
-
-              {(row.original as ReservesRowData).token.coinType ===
-                NORMALIZED_USDC_COINTYPE && (
-                <OkxAprBadge
-                  side={Side.BORROW}
-                  aprPercent={allAppData.okxAprPercentMap.usdcBorrowAprPercent}
-                  href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
-                />
-              )}
             </div>
           );
         },
       },
     ],
-    [
-      featuredReserveIds,
-      allAppData.okxAprPercentMap.xBtcDepositAprPercent,
-      allAppData.okxAprPercentMap.usdcBorrowAprPercent,
-    ],
+    [featuredReserveIds, allAppData.okxAprPercentMap.xBtcDepositAprPercent],
   );
 
   // Rows

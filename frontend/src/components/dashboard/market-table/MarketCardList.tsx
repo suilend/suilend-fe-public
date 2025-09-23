@@ -3,10 +3,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { Side } from "@suilend/sdk";
-import {
-  NORMALIZED_USDC_COINTYPE,
-  NORMALIZED_xBTC_COINTYPE,
-} from "@suilend/sui-fe";
+import { NORMALIZED_xBTC_COINTYPE } from "@suilend/sui-fe";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
@@ -89,16 +86,6 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
 
               <div className="flex flex-col items-end gap-2">
                 <BorrowAprCell {...rowData} />
-
-                {rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
-                  <OkxAprBadge
-                    side={Side.BORROW}
-                    aprPercent={
-                      allAppData.okxAprPercentMap.usdcBorrowAprPercent
-                    }
-                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
-                  />
-                )}
               </div>
             </div>
           </div>
