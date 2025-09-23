@@ -162,7 +162,7 @@ const generateTokenBytecode = async (params: {
 
     // Use custom icon URL if provided, otherwise use default
     const iconUrl =
-      params.iconUrl || "https://steamm-assets.s3.amazonaws.com/token-icon.png";
+      params.iconUrl || "https://d29k09wtkr1a3e.cloudfront.net/SEND/mSEND.svg";
     updated = update_constants(
       updated,
       bcs.string().serialize(iconUrl).toBytes(),
@@ -428,7 +428,7 @@ function Page() {
                     <div className="relative h-16 w-16 overflow-hidden rounded-md border border-input">
                       <img
                         id="iconPreview"
-                        src="https://steamm-assets.s3.amazonaws.com/token-icon.png"
+                        src="https://d29k09wtkr1a3e.cloudfront.net/SEND/mSEND.svg"
                         alt="Token icon preview"
                         className="h-full w-full object-cover"
                       />
