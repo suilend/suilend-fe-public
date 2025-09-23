@@ -97,7 +97,7 @@ import {
   CETUS_GLOBAL_CONFIG_OBJECT_ID,
   CETUS_PARTNER_ID,
 } from "@/lib/cetus";
-import { MMT_CONTRACT_PACKAGE_ID } from "@/lib/mmt";
+import { MMT_CONTRACT_PACKAGE_ID, MMT_VERSION_OBJECT_ID } from "@/lib/mmt";
 import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -139,6 +139,15 @@ const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
     feePercent: 0.01,
   },
   [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
+    poolId:
+      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-wBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
+    coinTypeA: NORMALIZED_xBTC_COINTYPE,
+    coinTypeB: NORMALIZED_wBTC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.01,
+  },
+  [StrategyType.xBTC_wBTC_LOOPING]: {
     provider: FlashLoanProvider.MMT,
     poolId:
       "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-wBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
@@ -474,7 +483,10 @@ export default function LstStrategyDialog({
       additionalDepositedAmount.toFixed(20),
     );
 
-    return additionalDepositedAmount;
+    return additionalDepositedAmount.decimalPlaces(
+      depositReserves.base!.token.decimals,
+      BigNumber.ROUND_UP,
+    );
   }, [
     obligation,
     hasPosition,
@@ -1280,6 +1292,7 @@ export default function LstStrategyDialog({
         StrategyType.USDC_sSUI_SUI_LOOPING,
         StrategyType.AUSD_sSUI_SUI_LOOPING,
         StrategyType.xBTC_sSUI_SUI_LOOPING,
+        StrategyType.xBTC_wBTC_LOOPING,
       ].includes(strategyType)
     )
       return new BigNumber(0);
@@ -1742,7 +1755,29 @@ export default function LstStrategyDialog({
     else if (
       loopingDepositReserve.coinType === depositReserves.base?.coinType
     ) {
-      const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+      const exchangeRateRouters = await cetusSdk.findRouters({
+        from: borrowReserve.coinType,
+        target: loopingDepositReserve.coinType,
+        amount: new BN(
+          new BigNumber(0.1)
+            .times(10 ** borrowReserve.token.decimals)
+            .integerValue(BigNumber.ROUND_DOWN)
+            .toString(), // e.g. 0.1 wBTC
+        ),
+        byAmountIn: true,
+        splitCount: 0, // Use direct swap to avoid split algo
+      });
+      if (!exchangeRateRouters) throw new Error("No swap quote found");
+
+      const borrowToBaseExchangeRate = new BigNumber(
+        new BigNumber(exchangeRateRouters.amountOut.toString()).div(
+          10 ** loopingDepositReserve.token.decimals,
+        ),
+      ).div(
+        new BigNumber(exchangeRateRouters.amountIn.toString()).div(
+          10 ** borrowReserve.token.decimals,
+        ),
+      );
 
       for (let i = 0; i < 30; i++) {
         const exposure = getExposure(
@@ -1780,12 +1815,12 @@ export default function LstStrategyDialog({
         )
           .times(0.9) // 10% buffer
           .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
-        const stepMaxDepositedAmount = stepMaxBorrowedAmount
-          .times(borrowToBaseExchangeRate)
-          .decimalPlaces(
-            loopingDepositReserve.token.decimals,
-            BigNumber.ROUND_DOWN,
-          );
+        const stepMaxDepositedAmount = new BigNumber(
+          stepMaxBorrowedAmount.times(borrowToBaseExchangeRate),
+        ).decimalPlaces(
+          loopingDepositReserve.token.decimals,
+          BigNumber.ROUND_DOWN,
+        );
 
         console.log(
           `[loopToExposure] ${i} borrow.max |`,
@@ -1851,45 +1886,63 @@ export default function LstStrategyDialog({
 
         // 2) Deposit base
         // 2.1) Swap borrows for base
-        const [coinA, coinB] = [
-          steammClient.fullClient.zeroCoin(
-            transaction,
-            NORMALIZED_xBTC_COINTYPE,
-          ),
-          stepBorrowedCoin,
-        ];
+        const routers = await cetusSdk.findRouters({
+          from: borrowReserve.coinType,
+          target: loopingDepositReserve.coinType,
+          amount: new BN(
+            stepBorrowedAmount
+              .times(10 ** borrowReserve.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ), // Estimate for loop 2 onwards (don't know exact out amount, we are not accounting for swap fees, etc)
+          byAmountIn: true,
+          splitCount: 0, // Use direct swap to avoid split algo
+        });
+        if (!routers) throw new Error("No swap quote found");
 
-        await swapInSteammPool(
-          steammClient,
-          transaction,
-          coinA,
-          coinB,
-          false,
-          transaction.moveCall({
-            target: "0x2::coin::value",
-            typeArguments: [NORMALIZED_wBTC_COINTYPE],
-            arguments: [stepBorrowedCoin],
-          }),
-          BigInt(
-            // new BigNumber(
-            //   stepBorrowedAmount.times(borrowToBaseExchangeRate).times(0.97),
-            // ) // stepBorrowedAmount is an estimate for amountIn - multiply by borrow2base exchange rate, and apply a 3% buffer
-            //   .times(10 ** depositReserves.base.token.decimals)
-            //   .integerValue(BigNumber.ROUND_DOWN)
-            //   .toString(),
-            "1",
+        const slippagePercent = 0.1;
+        let stepBaseCoin;
+        try {
+          stepBaseCoin = await cetusSdk.fixableRouterSwapV3({
+            router: routers,
+            inputCoin: stepBorrowedCoin,
+            slippage: slippagePercent / 100,
+            txb: transaction,
+            partner: CETUS_PARTNER_ID,
+          });
+        } catch (err) {
+          throw new Error("No swap quote found");
+        }
+        console.log(
+          `[loopToExposure] ${i} swap_borrows_for_base.swap |`,
+          JSON.stringify(
+            {
+              inCoinType: borrowReserve.coinType,
+              outCoinType: loopingDepositReserve.coinType,
+              amountIn: stepBorrowedAmount.toFixed(20),
+              amountOut: new BigNumber(routers.amountOut.toString())
+                .div(10 ** loopingDepositReserve.token.decimals)
+                .decimalPlaces(
+                  loopingDepositReserve.token.decimals,
+                  BigNumber.ROUND_DOWN,
+                )
+                .toFixed(20),
+            },
+            null,
+            2,
           ),
+          routers,
         );
-        transaction.transferObjects([coinB], _address);
-        const stepBaseCoin = coinA;
 
         // 2.2) Deposit
-        const stepDepositedAmount = stepBorrowedAmount
-          .times(borrowToBaseExchangeRate)
-          .decimalPlaces(
-            loopingDepositReserve.token.decimals,
-            BigNumber.ROUND_DOWN,
-          );
+        const stepDepositedAmount = new BigNumber(
+          new BigNumber(routers.amountOut.toString()).div(
+            10 ** loopingDepositReserve.token.decimals,
+          ),
+        ).decimalPlaces(
+          loopingDepositReserve.token.decimals,
+          BigNumber.ROUND_DOWN,
+        );
         const isMaxDeposit = stepDepositedAmount.eq(stepMaxDepositedAmount);
 
         console.log(
@@ -2249,7 +2302,7 @@ export default function LstStrategyDialog({
         throw new Error("Base reserve not found");
 
       const fullRepaymentAmount = new BigNumber(
-        new BigNumber(0.01).div(borrowReserve.price), // $0.01 in borrow coinType (still well over E borrows, e.g. E SUI)
+        new BigNumber(0.1).div(borrowReserve.price), // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
       ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
       console.log(
@@ -2473,6 +2526,8 @@ export default function LstStrategyDialog({
       if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
         // Target: 1x leverage
         if (targetBorrowedAmount.eq(0)) {
+          if (pendingBorrowedAmount.lt(0)) break; // Fully repaid already
+
           if (depositReserve.coinType === depositReserves.base?.coinType) {
             const lstDeposit = deposits.find(
               (d) => d.coinType === depositReserves.lst!.coinType,
@@ -2620,7 +2675,7 @@ export default function LstStrategyDialog({
           ),
         );
 
-        // 2.1) Unstake LST for SUI
+        // 2) Unstake LST for SUI
         const stepSuiCoin = lst!.client.redeem(transaction, stepWithdrawnCoin);
 
         // 3) Repay SUI
@@ -2680,10 +2735,34 @@ export default function LstStrategyDialog({
       else if (
         loopingDepositReserve.coinType === depositReserves.base?.coinType
       ) {
-        const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+        const exchangeRateRouters = await cetusSdk.findRouters({
+          from: loopingDepositReserve.coinType,
+          target: borrowReserve.coinType,
+          amount: new BN(
+            new BigNumber(0.1)
+              .times(10 ** loopingDepositReserve.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(), // e.g. 0.1 xBTC
+          ),
+          byAmountIn: true,
+          splitCount: 0, // Use direct swap to avoid split algo
+        });
+        if (!exchangeRateRouters) throw new Error("No swap quote found");
+
+        const baseToBorrowExchangeRate = new BigNumber(
+          new BigNumber(exchangeRateRouters.amountOut.toString()).div(
+            10 ** borrowReserve.token.decimals,
+          ),
+        ).div(
+          new BigNumber(exchangeRateRouters.amountIn.toString()).div(
+            10 ** loopingDepositReserve.token.decimals,
+          ),
+        );
 
         // Target: 1x leverage
         if (targetBorrowedAmount.eq(0)) {
+          if (pendingBorrowedAmount.lt(0)) break; // Fully repaid already
+
           // Borrows almost fully repaid
           if (pendingBorrowedAmount.lte(E)) {
             // 1. Withdraws base to cover borrows
@@ -2708,9 +2787,9 @@ export default function LstStrategyDialog({
             loopingDepositReserve.token.decimals,
             BigNumber.ROUND_DOWN,
           );
-        const stepMaxRepaidAmount = stepMaxWithdrawnAmount
-          .div(borrowToBaseExchangeRate)
-          .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+        const stepMaxRepaidAmount = new BigNumber(
+          stepMaxWithdrawnAmount.times(baseToBorrowExchangeRate),
+        ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
         console.log(
           `[unloopToExposure] ${i} withdraw_base.max |`,
@@ -2729,7 +2808,7 @@ export default function LstStrategyDialog({
           pendingBorrowedAmount,
           stepMaxRepaidAmount,
         )
-          .times(borrowToBaseExchangeRate)
+          .div(baseToBorrowExchangeRate)
           .decimalPlaces(
             loopingDepositReserve.token.decimals,
             BigNumber.ROUND_DOWN,
@@ -2789,44 +2868,62 @@ export default function LstStrategyDialog({
           ),
         );
 
-        // 2.1) Swap borrows for base
-        const [coinA, coinB] = [
-          stepWithdrawnCoin,
-          steammClient.fullClient.zeroCoin(
-            transaction,
-            NORMALIZED_wBTC_COINTYPE,
-          ),
-        ];
+        // 2) Swap base for borrows
+        const routers = await cetusSdk.findRouters({
+          from: loopingDepositReserve.coinType,
+          target: borrowReserve.coinType,
+          amount: new BN(
+            stepWithdrawnAmount
+              .times(10 ** loopingDepositReserve.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN)
+              .toString(),
+          ), // Estimate for loop 2 onwards (don't know exact out amount, we are not accounting for swap fees, etc)
+          byAmountIn: true,
+          splitCount: 0, // Use direct swap to avoid split algo
+        });
+        if (!routers) throw new Error("No swap quote found");
 
-        await swapInSteammPool(
-          steammClient,
-          transaction,
-          coinA,
-          coinB,
-          true,
-          transaction.moveCall({
-            target: "0x2::coin::value",
-            typeArguments: [NORMALIZED_xBTC_COINTYPE],
-            arguments: [stepWithdrawnCoin],
-          }),
-          BigInt(
-            // new BigNumber(
-            //   stepWithdrawnAmount.div(borrowToBaseExchangeRate).times(0.97),
-            // ) // stepWithdrawnAmount is an estimate for amountIn - divide by borrow2base exchange rate, and apply a 3% buffer
-            //   .times(10 ** depositReserves.base.token.decimals)
-            //   .integerValue(BigNumber.ROUND_DOWN)
-            //   .toString(),
-            "1",
+        const slippagePercent = 0.1;
+        let stepBorrowCoin;
+        try {
+          stepBorrowCoin = await cetusSdk.fixableRouterSwapV3({
+            router: routers,
+            inputCoin: stepWithdrawnCoin,
+            slippage: slippagePercent / 100,
+            txb: transaction,
+            partner: CETUS_PARTNER_ID,
+          });
+        } catch (err) {
+          throw new Error("No swap quote found");
+        }
+        console.log(
+          `[unloopToExposure] ${i} swap_base_for_borrows |`,
+          JSON.stringify(
+            {
+              inCoinType: loopingDepositReserve.coinType,
+              outCoinType: borrowReserve.coinType,
+              amountIn: stepWithdrawnAmount.toFixed(20),
+              amountOut: new BigNumber(routers.amountOut.toString())
+                .div(10 ** borrowReserve.token.decimals)
+                .decimalPlaces(
+                  borrowReserve.token.decimals,
+                  BigNumber.ROUND_DOWN,
+                )
+                .toFixed(20),
+            },
+            null,
+            2,
           ),
+          routers,
         );
-        transaction.transferObjects([coinA], _address);
-        const stepBorrowCoin = coinB;
 
         // 3) Repay borrows
         // 3.1) Repay
-        const stepRepaidAmount = stepWithdrawnAmount
-          .div(borrowToBaseExchangeRate)
-          .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+        const stepRepaidAmount = new BigNumber(
+          new BigNumber(routers.amountOut.toString()).div(
+            10 ** borrowReserve.token.decimals,
+          ),
+        ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
         const isMaxRepay = stepRepaidAmount.eq(stepMaxRepaidAmount);
 
         console.log(
@@ -3590,13 +3687,14 @@ export default function LstStrategyDialog({
               : 0,
           ),
           transaction.pure.u64(
-            !flashLoanObj.borrowA
+            flashLoanObj.borrowA
               ? 0
               : additionalDepositedAmount
                   .times(10 ** depositReserve.token.decimals)
                   .integerValue(BigNumber.ROUND_DOWN)
                   .toString(),
           ),
+          transaction.object(MMT_VERSION_OBJECT_ID),
         ],
       });
     } else {
@@ -3605,8 +3703,16 @@ export default function LstStrategyDialog({
 
     // 2) Deposit additional (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
     // 2.1) Deposit
+    const borrowedCoin = transaction.moveCall({
+      target: "0x2::coin::from_balance",
+      typeArguments: [
+        flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
+      ],
+      arguments: [flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB],
+    });
+
     strategyDeposit(
-      flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB,
+      borrowedCoin,
       depositReserve.coinType,
       strategyOwnerCapId,
       appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
@@ -3643,6 +3749,10 @@ export default function LstStrategyDialog({
 
     // 4) Repay flash loan + fee
     // 4.1) Withdraw additional + fee
+    const withdrawAdditionalPlusFeeAmount = additionalDepositedAmount
+      .times(1 + flashLoanObj.feePercent / 100)
+      .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
+
     const {
       deposits: newDeposits2,
       borrowedAmount: newBorrowedAmount2,
@@ -3656,9 +3766,7 @@ export default function LstStrategyDialog({
       borrowedAmount,
       {
         coinType: depositReserve.coinType,
-        withdrawnAmount: additionalDepositedAmount
-          .times(1 + flashLoanObj.feePercent / 100)
-          .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP),
+        withdrawnAmount: withdrawAdditionalPlusFeeAmount,
       },
       transaction,
       true,
@@ -3667,12 +3775,12 @@ export default function LstStrategyDialog({
       throw new Error("Withdrawn additional coin not found");
 
     // 4.2) Repay flash loan
-    const emptyBalance = transaction.moveCall({
-      target: `0x2::balance::zero`,
+    const repayBalance = transaction.moveCall({
+      target: "0x2::coin::into_balance",
       typeArguments: [
-        flashLoanObj.borrowA ? flashLoanObj.coinTypeB : flashLoanObj.coinTypeA,
+        flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
       ],
-      arguments: [],
+      arguments: [withdrawnAdditionalPlusFeeCoin],
     });
     if (flashLoanObj.provider === FlashLoanProvider.CETUS) {
       transaction.moveCall({
@@ -3681,8 +3789,8 @@ export default function LstStrategyDialog({
         arguments: [
           transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
           transaction.object(flashLoanObj.poolId),
-          flashLoanObj.borrowA ? withdrawnAdditionalPlusFeeCoin : emptyBalance,
-          flashLoanObj.borrowA ? emptyBalance : withdrawnAdditionalPlusFeeCoin,
+          flashLoanObj.borrowA ? repayBalance : borrowedBalanceA,
+          flashLoanObj.borrowA ? borrowedBalanceB : repayBalance,
           receipt,
         ],
       });
@@ -3693,8 +3801,9 @@ export default function LstStrategyDialog({
         arguments: [
           transaction.object(flashLoanObj.poolId),
           receipt,
-          flashLoanObj.borrowA ? withdrawnAdditionalPlusFeeCoin : emptyBalance,
-          flashLoanObj.borrowA ? emptyBalance : withdrawnAdditionalPlusFeeCoin,
+          flashLoanObj.borrowA ? repayBalance : borrowedBalanceA,
+          flashLoanObj.borrowA ? borrowedBalanceB : repayBalance,
+          transaction.object(MMT_VERSION_OBJECT_ID),
         ],
       });
     } else {

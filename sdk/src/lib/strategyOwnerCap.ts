@@ -46,8 +46,8 @@ export enum StrategyType {
   stratSUI_SUI_LOOPING = "2",
   USDC_sSUI_SUI_LOOPING = "3",
   AUSD_sSUI_SUI_LOOPING = "4",
-  xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies
-  xBTC_wBTC_LOOPING = "5",
+  xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies #0
+  xBTC_wBTC_LOOPING = "101", // Used to be for Slush Strategies #1
 }
 export const STRATEGY_TYPE_INFO_MAP: Record<
   StrategyType,

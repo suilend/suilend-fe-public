@@ -1,2 +1,5 @@
 export const MMT_CONTRACT_PACKAGE_ID =
   "0xcf60a40f45d46fc1e828871a647c1e25a0915dec860d2662eb10fdb382c3c1d1";
+
+export const MMT_VERSION_OBJECT_ID =
+  "0x2375a0b1ec12010aaea3b2545acfa2ad34cfbba03ce4b59f4c39e1e25eed1b2a";
