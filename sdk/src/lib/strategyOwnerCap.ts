@@ -46,8 +46,8 @@ export enum StrategyType {
   stratSUI_SUI_LOOPING = "2",
   USDC_sSUI_SUI_LOOPING = "3",
   AUSD_sSUI_SUI_LOOPING = "4",
-  xBTC_wBTC_LOOPING = "5",
   xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies
+  xBTC_wBTC_LOOPING = "5",
 }
 export const STRATEGY_TYPE_INFO_MAP: Record<
   StrategyType,
@@ -136,23 +136,6 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     currencyCoinTypes: [NORMALIZED_AUSD_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_AUSD_COINTYPE,
   },
-  [StrategyType.xBTC_wBTC_LOOPING]: {
-    queryParam: "xBTC-wBTC-looping",
-    header: {
-      coinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
-      title: "xBTC/wBTC",
-      tooltip:
-        "Sets up an xBTC/wBTC Looping strategy by depositing xBTC and borrowing wBTC to the desired leverage",
-      type: "Looping",
-    },
-
-    depositBaseCoinType: NORMALIZED_xBTC_COINTYPE,
-    depositLstCoinType: undefined,
-    borrowCoinType: NORMALIZED_wBTC_COINTYPE,
-
-    currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
-    defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
-  },
   [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
     queryParam: "xBTC-sSUI-SUI-looping",
     header: {
@@ -168,6 +151,23 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     borrowCoinType: NORMALIZED_SUI_COINTYPE,
 
     currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
+  },
+  [StrategyType.xBTC_wBTC_LOOPING]: {
+    queryParam: "xBTC-wBTC-looping",
+    header: {
+      coinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
+      title: "xBTC/wBTC",
+      tooltip:
+        "Sets up an xBTC/wBTC Looping strategy by depositing xBTC and borrowing wBTC to the desired leverage",
+      type: "Looping",
+    },
+
+    depositBaseCoinType: NORMALIZED_xBTC_COINTYPE,
+    depositLstCoinType: undefined,
+    borrowCoinType: NORMALIZED_wBTC_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
   },
 };

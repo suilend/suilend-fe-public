@@ -422,11 +422,7 @@ function Page() {
                     ? process.env.NODE_ENV === "development" ||
                       router.query.xbtcwbtc === "true" ||
                       Date.now() >= 1757941200000 * 1000 // 2025/09/XX 13:00:00 UTC
-                    : strategyType === StrategyType.xBTC_sSUI_SUI_LOOPING
-                      ? process.env.NODE_ENV === "development" ||
-                        router.query.xbtc === "true" ||
-                        Date.now() >= 1758546000000 // 2025/09/22 13:00:00 UTC
-                      : true,
+                    : true,
                 )
                 .map((strategyType) => {
                   const obligation =
