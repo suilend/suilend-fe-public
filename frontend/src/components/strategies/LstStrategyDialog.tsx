@@ -484,7 +484,7 @@ export default function LstStrategyDialog({
     );
 
     return additionalDepositedAmount.decimalPlaces(
-      depositReserves.base!.token.decimals,
+      depositReserve.token.decimals,
       BigNumber.ROUND_UP,
     );
   }, [
