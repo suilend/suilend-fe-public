@@ -2203,12 +2203,10 @@ export default function LstStrategyDialog({
         const remainingLstWithdrawnAmount = (
           deposits.find((d) => d.coinType === depositReserves.lst!.coinType)
             ?.depositedAmount ?? new BigNumber(0)
-        )
-          .minus(lstWithdrawnAmount)
-          .decimalPlaces(
-            depositReserves.lst.token.decimals,
-            BigNumber.ROUND_DOWN,
-          );
+        ).decimalPlaces(
+          depositReserves.lst.token.decimals,
+          BigNumber.ROUND_DOWN,
+        );
 
         console.log(
           `[unloopToExposure.fullyRepayBorrowsUsingLst] max_withdraw_lst |`,
@@ -2267,7 +2265,23 @@ export default function LstStrategyDialog({
 
         console.log(
           `[unloopToExposure.fullyRepayBorrowsUsingLst] swap_lst_for_base.get_routers`,
-          { routers },
+          {
+            routers,
+            amountIn: new BigNumber(routers.amountIn.toString())
+              .div(10 ** depositReserves.lst.token.decimals)
+              .decimalPlaces(
+                depositReserves.lst.token.decimals,
+                BigNumber.ROUND_DOWN,
+              )
+              .toFixed(20),
+            amountOut: new BigNumber(routers.amountOut.toString())
+              .div(10 ** depositReserves.base.token.decimals)
+              .decimalPlaces(
+                depositReserves.base.token.decimals,
+                BigNumber.ROUND_DOWN,
+              )
+              .toFixed(20),
+          },
         );
 
         // 2.2) Swap
@@ -2276,7 +2290,7 @@ export default function LstStrategyDialog({
           baseCoin = await cetusSdk.fixableRouterSwapV3({
             router: routers,
             inputCoin: withdrawnRemainingLstCoin,
-            slippage: 3 / 100,
+            slippage: 100 / 100,
             txb: transaction,
             partner: CETUS_PARTNER_ID,
           });
@@ -2434,7 +2448,20 @@ export default function LstStrategyDialog({
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingBase] swap_base_for_borrows.get_routers`,
-        { routers },
+        {
+          routers,
+          amountIn: new BigNumber(routers.amountIn.toString())
+            .div(10 ** depositReserves.base.token.decimals)
+            .decimalPlaces(
+              depositReserves.base.token.decimals,
+              BigNumber.ROUND_DOWN,
+            )
+            .toFixed(20),
+          amountOut: new BigNumber(routers.amountOut.toString())
+            .div(10 ** borrowReserve.token.decimals)
+            .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN)
+            .toFixed(20),
+        },
       );
 
       // 3.2) Swap
