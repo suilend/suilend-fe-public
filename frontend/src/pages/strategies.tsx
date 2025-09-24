@@ -68,9 +68,10 @@ function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { allUserData, refresh } = useLoadedUserContext();
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -121,11 +122,11 @@ function Page() {
   > = Object.values(StrategyType).reduce(
     (acc, strategyType) => {
       const strategyOwnerCap: StrategyOwnerCap | undefined =
-        userData.strategyOwnerCaps.find(
+        userDataMainMarket.strategyOwnerCaps.find(
           (soc) => soc.strategyType === strategyType,
         );
       const obligation: ParsedObligation | undefined =
-        userData.strategyObligations.find(
+        userDataMainMarket.strategyObligations.find(
           (so) => so.id === strategyOwnerCap?.obligationId,
         );
       if (!strategyOwnerCap || !obligation) return acc;
@@ -147,7 +148,7 @@ function Page() {
       ...acc,
       [strategyType]: getRewardsMap(
         obligation,
-        userData.rewardMap,
+        userDataMainMarket.rewardMap,
         appDataMainMarket.coinMetadataMap,
       ),
     }),

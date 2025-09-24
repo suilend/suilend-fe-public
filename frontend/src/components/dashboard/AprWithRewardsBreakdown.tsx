@@ -33,7 +33,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { ASSETS_URL } from "@/lib/constants";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
@@ -131,7 +131,7 @@ export default function AprWithRewardsBreakdown({
   changeAmount,
 }: AprWithRewardsBreakdownProps) {
   const { allAppData } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
+  const { userData } = useLendingMarketContext();
 
   const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
   const filteredRewards = getFilteredRewards(rewards);

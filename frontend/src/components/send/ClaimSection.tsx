@@ -544,7 +544,7 @@ function ClaimTabContent() {
   const { rpc, explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { allUserData, getBalance, obligationOwnerCap } =
+  const { allUserData, getBalance, obligationOwnerCapMap } =
     useLoadedUserContext();
 
   const {
@@ -557,6 +557,8 @@ function ClaimTabContent() {
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
+  const obligationOwnerCap =
+    obligationOwnerCapMap[appDataMainMarket.lendingMarket.id];
 
   // Reserves
   const suiReserve = appDataMainMarket.reserveMap[NORMALIZED_SUI_COINTYPE];

@@ -2,7 +2,6 @@ import { CSSProperties, PropsWithChildren, useRef, useState } from "react";
 
 import { useResizeObserver } from "usehooks-ts";
 
-import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import AppHeader from "@/components/layout/AppHeader";
 import Footer from "@/components/layout/Footer";
 import LaunchDarklyBanner from "@/components/layout/LaunchDarklyBanner";
@@ -15,7 +14,8 @@ import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
   const { allAppData, filteredReservesMap } = useAppContext();
-  const { allUserData, userData } = useUserContext();
+  const { allUserData, obligationMap, obligationOwnerCapMap } =
+    useUserContext();
 
   // LaunchDarkly banner
   const launchDarklyBannerRef = useRef<HTMLDivElement>(null);
@@ -51,12 +51,15 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* Content */}
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
-          {!allAppData || !filteredReservesMap || !allUserData || !userData ? (
+          {!allAppData ||
+          !filteredReservesMap ||
+          !allUserData ||
+          !obligationMap ||
+          !obligationOwnerCapMap ? (
             <FullPageSpinner />
           ) : (
             <ReserveAssetDataEventsContextProvider>
               {children}
-              <AccountOverviewDialog />
             </ReserveAssetDataEventsContextProvider>
           )}
         </Container>

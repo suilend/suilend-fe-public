@@ -31,8 +31,7 @@ import UtilizationBar, {
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
   BORROWS_TOOLTIP,
@@ -43,9 +42,9 @@ import { cn } from "@/lib/utils";
 
 function AccountPositionCardContent() {
   const { allAppData } = useLoadedAppContext();
-  const { appData } = useMarketCardContext();
-  const { userData, ...restUserContext } = useLoadedUserContext();
-  const obligation = restUserContext.obligation as ParsedObligation;
+  const { appData, userData, ...restLendingMarketContext } =
+    useLendingMarketContext();
+  const obligation = restLendingMarketContext.obligation as ParsedObligation;
 
   const isLooping = getIsLooping(appData, obligation);
   const wasLooping = getWasLooping(appData, obligation);
@@ -162,7 +161,7 @@ function AccountPositionCardContent() {
             </div>
           </div>
 
-          <UtilizationBar />
+          <UtilizationBar obligation={obligation} />
           <AccountBreakdown />
         </>
       )}
@@ -175,7 +174,7 @@ export default function AccountPositionCard() {
 
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
-  const { obligation } = useLoadedUserContext();
+  const { obligation } = useLendingMarketContext();
 
   const openAccountOverviewTab = (tab: AccountOverviewTab) => {
     shallowPushQuery(router, {

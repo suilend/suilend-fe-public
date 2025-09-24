@@ -425,10 +425,11 @@ export const useLoadedLstStrategyContext = () =>
 
 export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
-  const { userData } = useLoadedUserContext();
+  const { allUserData } = useLoadedUserContext();
   const { allAppData, isLst } = useLoadedAppContext();
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   // More details
   const [isMoreDetailsOpen, setIsMoreDetailsOpen] = useLocalStorage<boolean>(
@@ -1465,7 +1466,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       const rewardsMap = getRewardsMap(
         obligation,
-        userData.rewardMap,
+        userDataMainMarket.rewardMap,
         appDataMainMarket.coinMetadataMap,
       );
 
@@ -1504,7 +1505,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getBorrowReserve,
       getDefaultCurrencyReserve,
       hasPosition,
-      userData.rewardMap,
+      userDataMainMarket.rewardMap,
       appDataMainMarket.coinMetadataMap,
       isLst,
       lstMap,
@@ -2036,7 +2037,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       return getNetAprPercent(
         _obligation,
-        userData.rewardMap,
+        userDataMainMarket.rewardMap,
         allAppData.lstAprPercentMap,
         !obligation ||
           !hasPosition(obligation) ||
@@ -2049,7 +2050,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getDefaultCurrencyReserve,
       hasPosition,
       simulateDepositAndLoopToExposure,
-      userData.rewardMap,
+      userDataMainMarket.rewardMap,
       allAppData.lstAprPercentMap,
     ],
   );

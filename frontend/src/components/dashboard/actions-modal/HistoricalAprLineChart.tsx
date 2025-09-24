@@ -25,8 +25,8 @@ import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ViewBox, getTooltipStyle } from "@/lib/chart";
 import {
   DAYS,
@@ -60,7 +60,7 @@ interface TooltipContentProps {
 }
 
 function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
@@ -143,8 +143,8 @@ export default function HistoricalAprLineChart({
   side,
   noInitialFetch,
 }: HistoricalAprLineChartProps) {
-  const { allAppData, appData, isLst } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
+  const { isLst } = useLoadedAppContext();
+  const { appData, userData } = useLendingMarketContext();
 
   const {
     reserveAssetDataEventsMap,

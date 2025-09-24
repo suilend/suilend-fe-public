@@ -36,8 +36,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { DAY_S, EventType, eventSortAsc } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
@@ -61,9 +60,9 @@ export default function EarningsTabContent({
   eventsData,
   nowS,
 }: EarningsTabContentProps) {
-  const { appData } = useMarketCardContext();
-  const { userData, ...restUserContext } = useLoadedUserContext();
-  const obligation = restUserContext.obligation as ParsedObligation;
+  const { appData, userData, ...restMarketCardContext } =
+    useLendingMarketContext();
+  const obligation = restMarketCardContext.obligation as ParsedObligation;
 
   type CumInterestEarnedMap = {
     [coinType: string]: {

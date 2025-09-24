@@ -1,10 +1,12 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 
-import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { ADMIN_ADDRESS, LENDING_MARKET_ID } from "@suilend/sdk";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountPositionCard from "@/components/dashboard/account/AccountPositionCard";
 import LoopingCard from "@/components/dashboard/account/LoopingCard";
+import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
@@ -15,8 +17,13 @@ import WalletAssetsCard from "@/components/dashboard/WalletBalancesCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
-import { MarketCardContextProvider } from "@/contexts/MarketCardContext";
+import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
+
+enum QueryParams {
+  LENDING_MARKET_ID = "lendingMarketId",
+}
 
 function Cards() {
   return (
@@ -36,6 +43,8 @@ function Page() {
 
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
+  const { allUserData, obligationMap, obligationOwnerCapMap } =
+    useLoadedUserContext();
 
   // App data list
   const appDataList = Object.values(allAppData.allLendingMarketData).filter(
@@ -58,26 +67,36 @@ function Page() {
             {/* Cards */}
             <div className="flex w-full flex-col gap-6">
               {appDataList.map((appData) => (
-                <MarketCardContextProvider
+                <LendingMarketContextProvider
                   key={appData.lendingMarket.slug}
                   appData={appData}
+                  userData={allUserData[appData.lendingMarket.id]}
+                  obligation={obligationMap[appData.lendingMarket.id]}
+                  obligationOwnerCap={
+                    obligationOwnerCapMap[appData.lendingMarket.id]
+                  }
                 >
                   <div className="flex w-full flex-col gap-2">
                     <Cards />
                   </div>
-                </MarketCardContextProvider>
+                </LendingMarketContextProvider>
               ))}
             </div>
 
             {/* Markets */}
             <div className="flex w-full flex-col gap-6">
               {appDataList.map((appData) => (
-                <MarketCardContextProvider
+                <LendingMarketContextProvider
                   key={appData.lendingMarket.slug}
                   appData={appData}
+                  userData={allUserData[appData.lendingMarket.id]}
+                  obligation={obligationMap[appData.lendingMarket.id]}
+                  obligationOwnerCap={
+                    obligationOwnerCapMap[appData.lendingMarket.id]
+                  }
                 >
                   <MarketCard />
-                </MarketCardContextProvider>
+                </LendingMarketContextProvider>
               ))}
             </div>
           </div>
@@ -91,12 +110,17 @@ function Page() {
               {/* Markets */}
               <div className="flex w-full flex-col gap-6">
                 {appDataList.map((appData) => (
-                  <MarketCardContextProvider
+                  <LendingMarketContextProvider
                     key={appData.lendingMarket.slug}
                     appData={appData}
+                    userData={allUserData[appData.lendingMarket.id]}
+                    obligation={obligationMap[appData.lendingMarket.id]}
+                    obligationOwnerCap={
+                      obligationOwnerCapMap[appData.lendingMarket.id]
+                    }
                   >
                     <MarketCard />
-                  </MarketCardContextProvider>
+                  </LendingMarketContextProvider>
                 ))}
               </div>
             </div>
@@ -105,14 +129,19 @@ function Page() {
               {/* Cards */}
               <div className="flex w-full flex-col gap-6">
                 {appDataList.map((appData) => (
-                  <MarketCardContextProvider
+                  <LendingMarketContextProvider
                     key={appData.lendingMarket.slug}
                     appData={appData}
+                    userData={allUserData[appData.lendingMarket.id]}
+                    obligation={obligationMap[appData.lendingMarket.id]}
+                    obligationOwnerCap={
+                      obligationOwnerCapMap[appData.lendingMarket.id]
+                    }
                   >
                     <div className="flex w-full shrink-0 flex-col gap-4">
                       <Cards />
                     </div>
-                  </MarketCardContextProvider>
+                  </LendingMarketContextProvider>
                 ))}
               </div>
             </div>
@@ -124,12 +153,40 @@ function Page() {
 }
 
 export default function Dashboard() {
-  return (
-    <DashboardContextProvider>
-      <Page />
+  const router = useRouter();
+  const queryParams = {
+    [QueryParams.LENDING_MARKET_ID]: router.query[
+      QueryParams.LENDING_MARKET_ID
+    ] as string | undefined,
+  };
 
-      <ActionsModal />
-      <FirstDepositDialog />
-    </DashboardContextProvider>
+  const { allAppData } = useLoadedAppContext();
+  const { allUserData, obligationMap, obligationOwnerCapMap } =
+    useLoadedUserContext();
+
+  const appData =
+    allAppData.allLendingMarketData[
+      queryParams[QueryParams.LENDING_MARKET_ID] ?? LENDING_MARKET_ID
+    ];
+
+  const userData = allUserData[appData.lendingMarket.id];
+  const obligation = obligationMap[appData.lendingMarket.id];
+  const obligationOwnerCap = obligationOwnerCapMap[appData.lendingMarket.id];
+
+  return (
+    <LendingMarketContextProvider
+      appData={appData}
+      userData={userData}
+      obligation={obligation}
+      obligationOwnerCap={obligationOwnerCap}
+    >
+      <DashboardContextProvider>
+        <Page />
+
+        <ActionsModal />
+        <FirstDepositDialog />
+        <AccountOverviewDialog />
+      </DashboardContextProvider>
+    </LendingMarketContextProvider>
   );
 }

@@ -48,6 +48,7 @@ import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
@@ -96,7 +97,8 @@ export default function ActionsModalTabContent({
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
   const { closeLedgerHashDialog } = useLoadedAppContext();
-  const { getBalance, refresh, obligation } = useLoadedUserContext();
+  const { obligation } = useLendingMarketContext();
+  const { getBalance, refresh } = useLoadedUserContext();
 
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =

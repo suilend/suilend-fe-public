@@ -5,10 +5,10 @@ import AccountAssetTable, {
 } from "@/components/dashboard/AccountAssetTable";
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 
 export default function ObligationDepositsCard() {
-  const { obligation } = useLoadedUserContext();
+  const { obligation } = useLendingMarketContext();
 
   if (!obligation) return null;
   return (

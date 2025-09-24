@@ -307,9 +307,10 @@ export default function LstStrategyDialog({
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { getBalance, userData, refresh } = useLoadedUserContext();
+  const { getBalance, allUserData, refresh } = useLoadedUserContext();
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -425,10 +426,10 @@ export default function LstStrategyDialog({
   //
 
   // Obligation
-  const strategyOwnerCap = userData.strategyOwnerCaps.find(
+  const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(
     (soc) => soc.strategyType === strategyType,
   );
-  const obligation = userData.strategyObligations.find(
+  const obligation = userDataMainMarket.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 
@@ -529,7 +530,7 @@ export default function LstStrategyDialog({
   // Rewards
   const rewardsMap = getRewardsMap(
     obligation,
-    userData.rewardMap,
+    userDataMainMarket.rewardMap,
     appDataMainMarket.coinMetadataMap,
   );
   const hasClaimableRewards = Object.values(rewardsMap).some(({ amount }) =>

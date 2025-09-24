@@ -40,6 +40,7 @@ import Tabs from "@/components/shared/Tabs";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { EventType, eventSortAsc, fetchClaimRewardEvents } from "@/lib/events";
 
@@ -116,7 +117,8 @@ export default function AccountOverviewDialog() {
 
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
-  const { refresh, obligation } = useLoadedUserContext();
+  const { obligation } = useLendingMarketContext();
+  const { refresh } = useLoadedUserContext();
 
   // Open
   const isOpen = queryParams[QueryParams.TAB] !== undefined;

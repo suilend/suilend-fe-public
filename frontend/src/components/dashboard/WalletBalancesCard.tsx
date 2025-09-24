@@ -13,13 +13,13 @@ import AccountAssetTable, {
 import Card from "@/components/dashboard/Card";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { appData } = useMarketCardContext();
+  const { appData } = useLendingMarketContext();
   const { balancesCoinMetadataMap, getBalance, ownedStakedWalObjects } =
     useLoadedUserContext();
 

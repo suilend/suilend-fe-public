@@ -45,7 +45,7 @@ export default function ConnectedWalletDropdownMenu({
   } = useWalletContext();
   const address = restWalletContext.address as string;
   const { allAppData } = useLoadedAppContext();
-  const { allUserData, obligation, setObligationId } = useUserContext();
+  const { allUserData, setObligationId } = useUserContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -222,7 +222,7 @@ export default function ConnectedWalletDropdownMenu({
                         <DropdownMenuItem
                           key={o.id}
                           className="flex flex-col items-start gap-1"
-                          isSelected={o.id === obligation?.id}
+                          // isSelected={o.id === obligation?.id}
                           onClick={() =>
                             setObligationId(
                               allAppData?.allLendingMarketData[_lendingMarketId]

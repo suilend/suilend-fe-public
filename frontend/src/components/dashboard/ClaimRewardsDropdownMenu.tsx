@@ -24,7 +24,7 @@ import TextLink from "@/components/shared/TextLink";
 import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import {
   MAX_DEPOSITS_PER_OBLIGATION,
@@ -41,8 +41,8 @@ export default function ClaimRewardsDropdownMenu({
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
   const { allAppData, closeLedgerHashDialog } = useLoadedAppContext();
-  const { appData } = useMarketCardContext();
-  const { refresh, obligation } = useLoadedUserContext();
+  const { appData, obligation } = useLendingMarketContext();
+  const { refresh } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
 
@@ -150,7 +150,7 @@ export default function ClaimRewardsDropdownMenu({
 
     try {
       const res = await claimRewards(
-        appData.suilendClient,
+        appData.lendingMarket.id,
         filteredRewardsMap,
         {
           isSwapping,

@@ -5,10 +5,10 @@ import MarketTable from "@/components/dashboard/market-table/MarketTable";
 import MarketDetailsPopover from "@/components/dashboard/MarketDetailsPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 
 export default function MarketCard() {
-  const { appData } = useMarketCardContext();
+  const { appData } = useLendingMarketContext();
 
   return (
     <Card

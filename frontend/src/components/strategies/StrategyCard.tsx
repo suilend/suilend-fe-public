@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef } from "react";
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -32,7 +33,9 @@ interface StrategyCardProps {
 export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const router = useRouter();
 
-  const { userData } = useLoadedUserContext();
+  const { allUserData } = useLoadedUserContext();
+
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -116,10 +119,10 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   //
 
   // Obligation
-  const strategyOwnerCap = userData.strategyOwnerCaps.find(
+  const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(
     (soc) => soc.strategyType === strategyType,
   );
-  const obligation = userData.strategyObligations.find(
+  const obligation = userDataMainMarket.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 

@@ -310,7 +310,7 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
 function HistoryTabContent({ strategyType }: TabContentProps) {
   const { explorer } = useSettingsContext();
   const { allAppData } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
+  const { allUserData } = useLoadedUserContext();
   const {
     isMoreDetailsOpen,
     setIsMoreDetailsOpen,
@@ -350,12 +350,13 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
   } = useLoadedLstStrategyContext();
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   // Obligation
-  const strategyOwnerCap = userData.strategyOwnerCaps.find(
+  const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(
     (soc) => soc.strategyType === strategyType,
   );
-  const obligation = userData.strategyObligations.find(
+  const obligation = userDataMainMarket.strategyObligations.find(
     (so) => so.id === strategyOwnerCap?.obligationId,
   );
 

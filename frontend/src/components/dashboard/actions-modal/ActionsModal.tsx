@@ -14,7 +14,7 @@ import ActionsModalTabContent from "@/components/dashboard/actions-modal/Actions
 import ParametersPanel from "@/components/dashboard/actions-modal/ParametersPanel";
 import Button from "@/components/shared/Button";
 import Tabs from "@/components/shared/Tabs";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
@@ -26,8 +26,8 @@ import {
 } from "@/lib/actions";
 
 export default function ActionsModal() {
-  const { appData } = useMarketCardContext();
-  const { getBalance, obligation } = useLoadedUserContext();
+  const { appData, obligation } = useLendingMarketContext();
+  const { getBalance } = useLoadedUserContext();
 
   const {
     reserveSymbol,

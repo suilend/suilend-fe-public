@@ -38,8 +38,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import {
   DEPRECATED_ASSETS_TOOLTIP,
   ISOLATED_ASSETS_TOOLTIP,
@@ -126,8 +125,7 @@ export default function MarketTable() {
     filteredReservesMap,
     isEcosystemLst,
   } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
-  const { appData } = useMarketCardContext();
+  const { appData, userData } = useLendingMarketContext();
 
   const { open: openActionsModal } = useActionsModalContext();
 

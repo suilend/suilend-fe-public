@@ -12,8 +12,7 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 interface ClaimableRewardProps {
@@ -22,7 +21,7 @@ interface ClaimableRewardProps {
 }
 
 function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
-  const { appData } = useMarketCardContext();
+  const { appData } = useLendingMarketContext();
 
   return (
     <div className="flex flex-row items-center gap-1.5">
@@ -46,8 +45,7 @@ function ClaimableReward({ coinType, amount }: ClaimableRewardProps) {
 
 export default function RewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
-  const { appData } = useMarketCardContext();
-  const { userData, obligation } = useLoadedUserContext();
+  const { appData, userData, obligation } = useLendingMarketContext();
 
   // Rewards
   const rewardsMap = getRewardsMap(

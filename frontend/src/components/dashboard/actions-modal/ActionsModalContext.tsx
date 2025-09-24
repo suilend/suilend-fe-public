@@ -25,6 +25,7 @@ import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
@@ -126,9 +127,9 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData, openLedgerHashDialog } = useLoadedAppContext();
-  const { obligation, obligationOwnerCap, autoclaimRewards } =
-    useLoadedUserContext();
+  const { openLedgerHashDialog } = useLoadedAppContext();
+  const { appData, obligation, obligationOwnerCap } = useLendingMarketContext();
+  const { autoclaimRewards } = useLoadedUserContext();
 
   // Open
   const [isOpen, setIsOpen] = useState<boolean>(

@@ -20,7 +20,7 @@ import {
 import * as Sentry from "@sentry/nextjs";
 import BN from "bn.js";
 
-import { ClaimRewardsReward, RewardsMap, SuilendClient } from "@suilend/sdk";
+import { ClaimRewardsReward, RewardsMap } from "@suilend/sdk";
 import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -38,7 +38,7 @@ interface DashboardContext {
   dismissAutoclaimNotification: () => void;
 
   claimRewards: (
-    suilendClient: SuilendClient,
+    lendingMarketId: string,
     rewardsMap: RewardsMap,
     args: {
       isSwapping: boolean;
@@ -70,10 +70,10 @@ export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { openLedgerHashDialog } = useLoadedAppContext();
+  const { allAppData, openLedgerHashDialog } = useLoadedAppContext();
   const {
-    obligation,
-    obligationOwnerCap,
+    obligationMap,
+    obligationOwnerCapMap,
     autoclaimRewards,
     latestAutoclaimDigestMap,
     lastSeenAutoclaimDigestMap,
@@ -98,23 +98,25 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
   const didShowAutoclaimNotificationMap = useRef<Record<string, boolean>>({});
   useEffect(() => {
-    if (!obligation?.id) return;
+    for (const obligation of Object.values(obligationMap)) {
+      if (!obligation?.id) continue;
 
-    const lastSeenAutoclaimDigest = lastSeenAutoclaimDigestMap[obligation.id];
-    const latestAutoclaimDigest = latestAutoclaimDigestMap[obligation.id];
-    if (
-      latestAutoclaimDigest === undefined ||
-      lastSeenAutoclaimDigest === latestAutoclaimDigest
-    )
-      return;
+      const lastSeenAutoclaimDigest = lastSeenAutoclaimDigestMap[obligation.id];
+      const latestAutoclaimDigest = latestAutoclaimDigestMap[obligation.id];
+      if (
+        latestAutoclaimDigest === undefined ||
+        lastSeenAutoclaimDigest === latestAutoclaimDigest
+      )
+        continue;
 
-    if (didShowAutoclaimNotificationMap.current[obligation.id]) return;
-    didShowAutoclaimNotificationMap.current[obligation.id] = true;
+      if (didShowAutoclaimNotificationMap.current[obligation.id]) continue;
+      didShowAutoclaimNotificationMap.current[obligation.id] = true;
 
-    setIsShowingAutoclaimNotification(true);
-    setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
+      setIsShowingAutoclaimNotification(true);
+      setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
+    }
   }, [
-    obligation?.id,
+    obligationMap,
     lastSeenAutoclaimDigestMap,
     latestAutoclaimDigestMap,
     setLastSeenAutoclaimDigest,
@@ -123,7 +125,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
   // Actions
   const claimRewards = useCallback(
     async (
-      suilendClient: SuilendClient,
+      lendingMarketId: string,
       rewardsMap: RewardsMap,
       args: {
         isSwapping: boolean;
@@ -131,6 +133,11 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         isDepositing: boolean;
       },
     ) => {
+      const appData = allAppData.allLendingMarketData[lendingMarketId];
+      const obligation = obligationMap[appData.lendingMarket.id];
+      const obligationOwnerCap =
+        obligationOwnerCapMap[appData.lendingMarket.id];
+
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
@@ -151,7 +158,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         if (args.isSwapping) {
           // Claim
           const { transaction: _transaction1, mergedCoinsMap } =
-            suilendClient.claimRewards(
+            appData.suilendClient.claimRewards(
               address,
               obligationOwnerCap.id,
               rewards,
@@ -240,7 +247,7 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
 
           if (!resultCoin) throw new Error("No coin to deposit or transfer");
           if (args.isDepositing) {
-            suilendClient.deposit(
+            appData.suilendClient.deposit(
               resultCoin,
               args.swappingToCoinType,
               obligationOwnerCap.id,
@@ -254,14 +261,14 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           }
         } else {
           if (args.isDepositing) {
-            suilendClient.claimRewardsAndDeposit(
+            appData.suilendClient.claimRewardsAndDeposit(
               address,
               obligationOwnerCap.id,
               rewards,
               transaction,
             );
           } else {
-            suilendClient.claimRewardsAndSendToUser(
+            appData.suilendClient.claimRewardsAndSendToUser(
               address,
               obligationOwnerCap.id,
               rewards,
@@ -296,8 +303,9 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
     },
     [
       address,
-      obligationOwnerCap,
-      obligation,
+      allAppData.allLendingMarketData,
+      obligationOwnerCapMap,
+      obligationMap,
       cetusSdk,
       autoclaimRewards,
       openLedgerHashDialog,

@@ -97,8 +97,8 @@ interface UserContext {
 type LoadedUserContext = UserContext & {
   allUserData: Record<string, UserData>;
 
-  obligationMap: Record<string, ParsedObligation>;
-  obligationOwnerCapMap: Record<string, ObligationOwnerCap<string>>;
+  obligationMap: Record<string, ParsedObligation | undefined>;
+  obligationOwnerCapMap: Record<string, ObligationOwnerCap<string> | undefined>;
 };
 
 const UserContext = createContext<UserContext>({
@@ -298,7 +298,9 @@ export function UserContextProvider({ children }: PropsWithChildren) {
           ),
     [allAppData, userDataMap, obligationIdMap],
   );
-  const obligationOwnerCapMap = useMemo(
+  const obligationOwnerCapMap:
+    | Record<string, ObligationOwnerCap<string> | undefined>
+    | undefined = useMemo(
     () =>
       allAppData === undefined ||
       userDataMap === undefined ||

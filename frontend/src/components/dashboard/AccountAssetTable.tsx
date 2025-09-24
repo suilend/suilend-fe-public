@@ -16,7 +16,7 @@ import DataTable, {
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
-import { useMarketCardContext } from "@/contexts/MarketCardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { cn } from "@/lib/utils";
 
 export enum AccountAssetTableType {
@@ -45,7 +45,7 @@ export default function AccountAssetTable({
   assets,
   noAssetsMessage,
 }: AccountAssetTableProps) {
-  const { appData } = useMarketCardContext();
+  const { appData } = useLendingMarketContext();
 
   const { open: openActionsModal } = useActionsModalContext();
 
