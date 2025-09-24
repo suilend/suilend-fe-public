@@ -59,7 +59,6 @@ export interface AllAppData {
   lstAprPercentMap: Record<string, BigNumber>;
   okxAprPercentMap: {
     xBtcDepositAprPercent: BigNumber;
-    usdcBorrowAprPercent: BigNumber;
   };
 }
 

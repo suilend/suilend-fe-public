@@ -135,7 +135,7 @@ export type HistoryEvent =
   | ClaimRewardEvent
   | ObligationDataEvent;
 
-export const E = 10 ** -6;
+export const E = 10 ** -8;
 export const LST_DECIMALS = 9;
 
 export type Deposit = { coinType: string; depositedAmount: BigNumber };
@@ -647,15 +647,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         max: new BigNumber(3), // Actual max: 1 + (AUSD Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where AUSD Open LTV % = 77% and sSUI Open LTV % = 70%
         default: new BigNumber(3),
       },
-      [StrategyType.xBTC_wBTC_LOOPING]: {
-        min: new BigNumber(1),
-        max: new BigNumber(1.8), // Actual max: 1 / (1 - (xBTC Open LTV %)) = 2x, where xBTC Open LTV % = 50%
-        default: new BigNumber(1.8),
-      },
       [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
         min: new BigNumber(1),
-        max: new BigNumber(2), // Actual max: 1 + (xBTC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 2.6666x, where xBTC Open LTV % = 50% and sSUI Open LTV % = 70%
-        default: new BigNumber(2),
+        max: new BigNumber(2.5), // Actual max: 1 + (xBTC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3x, where xBTC Open LTV % = 60% and sSUI Open LTV % = 70%
+        default: new BigNumber(2.5),
+      },
+      [StrategyType.xBTC_wBTC_LOOPING]: {
+        min: new BigNumber(1),
+        max: new BigNumber(2.2), // Actual max: 1 / (1 - (xBTC Open LTV %)) = 2.5x, where xBTC Open LTV % = 60%
+        default: new BigNumber(2.2),
       },
     }),
     [],
@@ -1069,20 +1069,17 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           .div(borrowReserve.price)
           .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
-      for (let i = 0; i < 30; i++) {
-        const exposure = getExposure(
-          strategyType,
-          getSimulatedObligation(strategyType, deposits, borrowedAmount),
-        );
-        const pendingBorrowedAmount =
-          targetBorrowedAmount.minus(borrowedAmount);
+      // Base+LST or LST only
+      if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
+        for (let i = 0; i < 30; i++) {
+          const exposure = getExposure(
+            strategyType,
+            getSimulatedObligation(strategyType, deposits, borrowedAmount),
+          );
+          const pendingBorrowedAmount =
+            targetBorrowedAmount.minus(borrowedAmount);
 
-        if (pendingBorrowedAmount.lte(E)) break;
-
-        if (loopingDepositReserve.coinType === depositReserves.lst?.coinType) {
-          const suiToLstExchangeRate =
-            lstMap?.[depositReserves.lst.coinType]?.suiToLstExchangeRate ??
-            new BigNumber(1);
+          if (pendingBorrowedAmount.lte(E)) break;
 
           // 1) Borrow SUI
           // 1.1) Max
@@ -1101,7 +1098,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               ),
             ),
           )
-            .times(suiToLstExchangeRate)
+            .times(
+              lstMap?.[depositReserves.lst.coinType]?.suiToLstExchangeRate ??
+                new BigNumber(1),
+            )
             .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
 
           // 1.2) Borrow
@@ -1123,7 +1123,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               getLstMintFee(loopingDepositReserve.coinType, stepBorrowedAmount),
             ),
           )
-            .times(suiToLstExchangeRate)
+            .times(
+              lstMap?.[depositReserves.lst.coinType]?.suiToLstExchangeRate ??
+                new BigNumber(1),
+            )
             .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
           const isMaxDeposit = stepDepositedAmount.eq(stepMaxDepositedAmount);
 
@@ -1132,10 +1135,24 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             coinType: loopingDepositReserve.coinType,
             depositedAmount: stepDepositedAmount,
           });
-        } else if (
-          loopingDepositReserve.coinType === depositReserves.base?.coinType
-        ) {
-          const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+        }
+      }
+
+      // Base only
+      else if (
+        loopingDepositReserve.coinType === depositReserves.base?.coinType
+      ) {
+        const borrowToBaseExchangeRate = new BigNumber(1); // Assume 1:1 exchange rate
+
+        for (let i = 0; i < 30; i++) {
+          const exposure = getExposure(
+            strategyType,
+            getSimulatedObligation(strategyType, deposits, borrowedAmount),
+          );
+          const pendingBorrowedAmount =
+            targetBorrowedAmount.minus(borrowedAmount);
+
+          if (pendingBorrowedAmount.lte(E)) break;
 
           // 1) Borrow
           // 1.1) Max
@@ -1180,9 +1197,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
             coinType: loopingDepositReserve.coinType,
             depositedAmount: stepDepositedAmount,
           });
-        } else {
-          throw new Error("No LST or base reserve found"); // Should not happen
         }
+      } else {
+        throw new Error("No LST or base reserve found"); // Should not happen
       }
 
       return {
@@ -1732,6 +1749,9 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowReserve = getBorrowReserve(strategyType);
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
+      const loopingDepositReserve = (depositReserves.lst ??
+        depositReserves.base)!; // Must have base if no LST
+
       //
 
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
@@ -1794,6 +1814,10 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         const currentPositionFilteredSortedEvents =
           currentPositionSortedEvents.filter((event) => {
             if (depositReserves.base === undefined) return true; // No filtering if depositReserves.base is undefined (include LST/SUI looping events)
+            if (
+              loopingDepositReserve.coinType === depositReserves.base?.coinType
+            )
+              return true; // No filtering if loopingDepositReserve is base
             return (
               event.type === EventType.OBLIGATION_DATA ||
               (event as ActionEvent | ClaimRewardEvent).coinType ===
@@ -1887,6 +1911,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               depositedAmount = depositedAmount.plus(
                 event.liquidityAmount.times(lstToSuiExchangeRate),
               );
+            } else if (
+              loopingDepositReserve.coinType === depositReserves.base?.coinType
+            ) {
+              if (!previousEvent)
+                depositedAmount = depositedAmount.plus(event.liquidityAmount); // Only count actual deposits, not looping deposits
             } else {
               depositedAmount = depositedAmount.plus(event.liquidityAmount);
             }
@@ -1906,6 +1935,18 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
               depositedAmount = depositedAmount.minus(
                 event.liquidityAmount.times(lstToSuiExchangeRate),
               );
+            } else if (
+              loopingDepositReserve.coinType === depositReserves.base?.coinType
+            ) {
+              const nextRepayEventInTxn =
+                currentPositionFilteredSortedEvents.find(
+                  (e) =>
+                    e.digest === event.digest &&
+                    e.eventIndex > event.eventIndex &&
+                    e.type === EventType.REPAY,
+                );
+              if (!nextRepayEventInTxn)
+                depositedAmount = depositedAmount.minus(event.liquidityAmount); // Only count actual withdraws, not looping withdraws
             } else {
               depositedAmount = depositedAmount.minus(event.liquidityAmount);
             }
@@ -1916,22 +1957,35 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
           // Borrow/repay
           else if (event.type === EventType.BORROW) {
-            borrowedAmount = borrowedAmount.plus(event.liquidityAmount);
+            if (
+              loopingDepositReserve.coinType === depositReserves.base?.coinType
+            ) {
+              // Do nothing
+            } else {
+              borrowedAmount = borrowedAmount.plus(event.liquidityAmount);
+            }
             // console.log(
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
           } else if (event.type === EventType.REPAY) {
-            borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
+            if (
+              loopingDepositReserve.coinType === depositReserves.base?.coinType
+            ) {
+              // Do nothing
+            } else {
+              borrowedAmount = borrowedAmount.minus(event.liquidityAmount);
+            }
             // console.log(
             //   `XXX borrowedAmount: ${+borrowedAmount} (after ${event.type}ing ${(event as ActionEvent).liquidityAmount})`,
             // );
           }
         }
-        console.log(`XXX depositedAmount (final): ${depositedAmount}`);
-        console.log(`XXX borrowedAmount (final): ${borrowedAmount}`);
-
         const tvlAmount = depositedAmount.minus(borrowedAmount);
-        console.log(`XXX tvlAmount (final): ${tvlAmount}`);
+        if (strategyType === StrategyType.xBTC_wBTC_LOOPING) {
+          console.log(`XXX depositedAmount (final): ${depositedAmount}`);
+          console.log(`XXX borrowedAmount (final): ${borrowedAmount}`);
+          console.log(`XXX tvlAmount (final): ${tvlAmount}`);
+        }
 
         return tvlAmount;
       } catch (err) {

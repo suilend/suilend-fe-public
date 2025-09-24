@@ -188,6 +188,14 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
       className="group relative w-full cursor-pointer rounded-[4px] bg-gradient-to-tr from-border via-border to-[#457AE4] p-[1px]"
       onClick={openLstStrategyDialog}
     >
+      {strategyType === StrategyType.xBTC_sSUI_SUI_LOOPING && (
+        <div className="absolute -left-0.5 -top-0.5 z-[4] rounded-[4px] bg-secondary px-1">
+          <TLabelSans className="text-[10px] leading-4 text-secondary-foreground">
+            New
+          </TLabelSans>
+        </div>
+      )}
+
       <div className="relative z-[3] flex flex-col gap-4 rounded-[3px] p-4">
         <div className="flex w-full flex-row justify-between">
           {/* Left */}

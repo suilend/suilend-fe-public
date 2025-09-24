@@ -255,16 +255,13 @@ export default function useFetchAppData() {
             const json: {
               data: {
                 xbtc: { apy: number; baseApy: number; bonusApy: number };
-                usdc: { apy: number; baseApy: number; bonusApy: number };
+                // usdc: { apy: number; baseApy: number; bonusApy: number };
               };
             } = await res.json();
 
             return {
               xBtcDepositAprPercent: new BigNumber(
                 Math.log(1 + json.data.xbtc.bonusApy),
-              ).times(100),
-              usdcBorrowAprPercent: new BigNumber(
-                Math.log(1 + json.data.usdc.bonusApy),
               ).times(100),
             };
           } catch (err) {
