@@ -499,6 +499,7 @@ export default function LstStrategyDialog({
         cetusSdk,
         CETUS_PARTNER_ID,
         rewardsMap,
+        appData.rewardPriceMap,
         (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
         strategyOwnerCap.id,
         !!obligation && hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
@@ -3561,6 +3562,7 @@ export default function LstStrategyDialog({
           cetusSdk,
           CETUS_PARTNER_ID,
           rewardsMap,
+          appData.rewardPriceMap,
           appData.reserveMap[withdrawCoinType],
           strategyOwnerCapId,
           false, // isDepositing (false = transfer to user)

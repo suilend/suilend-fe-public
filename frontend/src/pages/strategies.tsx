@@ -199,6 +199,7 @@ function Page() {
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
+          appData.rewardPriceMap,
           (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
