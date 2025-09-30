@@ -36,11 +36,11 @@ import {
   strategySwapSomeDepositsForCoinType,
   strategyWithdraw,
 } from "@suilend/sdk/lib/strategyOwnerCap";
-import { MAINNET_CONFIG, SteammSDK } from "@suilend/steamm-sdk";
 import {
   MAX_U64,
   MS_PER_YEAR,
   NORMALIZED_AUSD_COINTYPE,
+  NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
   NORMALIZED_wBTC_COINTYPE,
@@ -92,11 +92,7 @@ import {
 } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import {
-  CETUS_CONTRACT_PACKAGE_ID,
-  CETUS_GLOBAL_CONFIG_OBJECT_ID,
-  CETUS_PARTNER_ID,
-} from "@/lib/cetus";
+import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { MMT_CONTRACT_PACKAGE_ID, MMT_VERSION_OBJECT_ID } from "@/lib/mmt";
 import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
@@ -105,7 +101,6 @@ import { cn } from "@/lib/utils";
 const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.15;
 
 enum FlashLoanProvider {
-  CETUS = "cetus",
   MMT = "mmt",
 }
 
@@ -120,19 +115,39 @@ const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
     feePercent: number;
   }
 > = {
-  [StrategyType.USDC_sSUI_SUI_LOOPING]: {
-    provider: FlashLoanProvider.CETUS,
+  [StrategyType.sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
     poolId:
-      "0xb8a67c149fd1bc7f9aca1541c61e51ba13bdded64c273c278e50850ae3bff073", // suiUSDT-USDC 0.001% https://app.cetus.zone/liquidity?poolAddress=0xb8a67c149fd1bc7f9aca1541c61e51ba13bdded64c273c278e50850ae3bff073
+      "0x9c92c5b8e9d83e485fb4c86804ac8b920bb0beaace5e61a5b0239218f627f8e9", // xSUI-SUI 0.01% https://app.mmt.finance/liquidity/0x9c92c5b8e9d83e485fb4c86804ac8b920bb0beaace5e61a5b0239218f627f8e9
+    coinTypeA:
+      "0x2b6602099970374cf58a2a1b9d96f005fccceb81e92eb059873baf420eb6c717::x_sui::X_SUI",
+    coinTypeB: NORMALIZED_SUI_COINTYPE,
+    borrowA: false,
+    feePercent: 0.01,
+  },
+  [StrategyType.stratSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
+    poolId:
+      "0x9c92c5b8e9d83e485fb4c86804ac8b920bb0beaace5e61a5b0239218f627f8e9", // xSUI-SUI 0.01% https://app.mmt.finance/liquidity/0x9c92c5b8e9d83e485fb4c86804ac8b920bb0beaace5e61a5b0239218f627f8e9
+    coinTypeA:
+      "0x2b6602099970374cf58a2a1b9d96f005fccceb81e92eb059873baf420eb6c717::x_sui::X_SUI",
+    coinTypeB: NORMALIZED_SUI_COINTYPE,
+    borrowA: false,
+    feePercent: 0.01,
+  },
+  [StrategyType.USDC_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
+    poolId:
+      "0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9", // suiUSDT-USDC 0.001% https://app.mmt.finance/liquidity/0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9
     coinTypeA: NORMALIZED_suiUSDT_COINTYPE,
     coinTypeB: NORMALIZED_USDC_COINTYPE,
     borrowA: false,
     feePercent: 0.001,
   },
   [StrategyType.AUSD_sSUI_SUI_LOOPING]: {
-    provider: FlashLoanProvider.CETUS,
+    provider: FlashLoanProvider.MMT,
     poolId:
-      "0x0fea99ed9c65068638963a81587c3b8cafb71dc38c545319f008f7e9feb2b5f8", // AUSD-USDC 0.01% https://app.cetus.zone/liquidity?poolAddress=0x0fea99ed9c65068638963a81587c3b8cafb71dc38c545319f008f7e9feb2b5f8
+      "0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b", // AUSD-USDC 0.01% https://app.mmt.finance/liquidity/0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b
     coinTypeA: NORMALIZED_AUSD_COINTYPE,
     coinTypeB: NORMALIZED_USDC_COINTYPE,
     borrowA: true,
@@ -157,61 +172,6 @@ const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
     feePercent: 0.01,
   },
 };
-
-// xBTC/wBTC pool: https://steamm.fi/pool/0xef7aaebc8e300d1ae2110cee7ea5f07ee1a1da8974c9ea4cdf72655647cf8716
-const swapInSteammPool = async (
-  steammClient: SteammSDK,
-  transaction: Transaction,
-  coinA: TransactionObjectInput,
-  coinB: TransactionObjectInput,
-  a2b: boolean | TransactionArgument,
-  amountIn: bigint | TransactionArgument,
-  minAmountOut: bigint | TransactionArgument,
-): Promise<TransactionArgument> =>
-  steammClient.Pool.swap(transaction, {
-    coinA,
-    coinB,
-    a2b,
-    amountIn,
-    minAmountOut,
-    poolInfo: {
-      poolId:
-        "0xef7aaebc8e300d1ae2110cee7ea5f07ee1a1da8974c9ea4cdf72655647cf8716",
-      coinTypeA:
-        "0xa17c86d4a189d6cc4bbbe32d3785406ea5e473e1518a75947c2a8a011b96b558::b_xbtc::B_XBTC",
-      coinTypeB:
-        "0x73cfd0703fa65ce89b5928a1497b5de3db5648659eed7e3feabba58db0fd3ea0::b_btc::B_BTC",
-      lpTokenType:
-        "0x5825d399b842bf2346265a26a08c8aa97f699d256191f56ba947be98c7c39ab2::steamm_lp_bxbtc_bwbtc::STEAMM_LP_BXBTC_BWBTC",
-      quoterType:
-        "0x4fb1cf45dffd6230305f1d269dd1816678cc8e3ba0b747a813a556921219f261::cpmm::CpQuoter",
-      swapFeeBps: 1,
-    },
-    bankInfoA: {
-      coinType:
-        "0x876a4b7bce8aeaef60464c11f4026903e9afacab79b9b142686158aa86560b50::xbtc::XBTC",
-      btokenType:
-        "0xa17c86d4a189d6cc4bbbe32d3785406ea5e473e1518a75947c2a8a011b96b558::b_xbtc::B_XBTC",
-      lendingMarketType:
-        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
-      bankId:
-        "0xfed0dee87820d139f2f74d4e5f6ffe2489d95f1a98dfa2f0460d4762acb77ae3",
-      lendingMarketId:
-        "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
-    },
-    bankInfoB: {
-      coinType:
-        "0xaafb102dd0902f5055cadecd687fb5b71ca82ef0e0285d90afde828ec58ca96b::btc::BTC",
-      btokenType:
-        "0x73cfd0703fa65ce89b5928a1497b5de3db5648659eed7e3feabba58db0fd3ea0::b_btc::B_BTC",
-      lendingMarketType:
-        "0xf95b06141ed4a174f239417323bde3f209b972f5930d8521ea38a52aff3a6ddf::suilend::MAIN_POOL",
-      bankId:
-        "0xe56cbba61bce325119b293efbc1eeffc39a8db9e5557dc5008efd8bd231f9fad",
-      lendingMarketId:
-        "0x84030d26d85eaa7035084a057f2f11f701b7e2e4eda87551becbc7c97505ece1",
-    },
-  });
 
 /**
  * Bisection method to find the optimal value that satisfies a condition
@@ -351,19 +311,6 @@ export default function LstStrategyDialog({
 
   const { md } = useBreakpoint();
 
-  // STEAMM client
-  const steammClient = useMemo(() => {
-    const sdk = new SteammSDK({
-      ...MAINNET_CONFIG,
-      fullRpcUrl: rpc.url,
-    });
-    sdk.senderAddress =
-      address ??
-      "0x0000000000000000000000000000000000000000000000000000000000000000"; // Address must be set to use the SDK
-
-    return sdk;
-  }, [rpc.url, address]);
-
   // send.ag
   const cetusSdk = useCetusSdk();
 
@@ -472,8 +419,9 @@ export default function LstStrategyDialog({
       },
     );
 
-    const additionalDepositedAmount =
-      targetDepositedAmount.minus(depositedAmount);
+    const additionalDepositedAmount = targetDepositedAmount
+      .minus(depositedAmount)
+      .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
     console.log(
       "XXXX depositedAmount:",
       depositedAmount.toFixed(20),
@@ -483,16 +431,13 @@ export default function LstStrategyDialog({
       additionalDepositedAmount.toFixed(20),
     );
 
-    return additionalDepositedAmount.decimalPlaces(
-      depositReserve.token.decimals,
-      BigNumber.ROUND_UP,
-    );
+    return additionalDepositedAmount;
   }, [
     obligation,
     hasPosition,
+    canAdjust,
     depositReserves.base,
     depositReserves.lst,
-    canAdjust,
     getHealthPercent,
     strategyType,
     getSimulatedObligation,
@@ -1287,26 +1232,19 @@ export default function LstStrategyDialog({
   ]);
 
   const depositAdjustWithdrawFeesAmount = useMemo(() => {
-    if (
-      ![
-        StrategyType.USDC_sSUI_SUI_LOOPING,
-        StrategyType.AUSD_sSUI_SUI_LOOPING,
-        StrategyType.xBTC_sSUI_SUI_LOOPING,
-        StrategyType.xBTC_wBTC_LOOPING,
-      ].includes(strategyType)
-    )
-      return new BigNumber(0);
+    const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
     const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
 
-    // Ignoring LST redeem fees
+    // Ignoring LST mint or redeem fees
     return depositAdjustWithdrawAdditionalDepositedAmount
       .times(flashLoanObj.feePercent / 100)
-      .decimalPlaces(depositReserves.base!.token.decimals, BigNumber.ROUND_UP);
+      .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
   }, [
+    depositReserves.base,
+    depositReserves.lst,
     strategyType,
     depositAdjustWithdrawAdditionalDepositedAmount,
-    depositReserves.base,
   ]);
 
   const adjustFeesAmount = useMemo(() => {
@@ -3646,7 +3584,7 @@ export default function LstStrategyDialog({
     obligationId: string,
     _deposits: Deposit[],
     _borrowedAmount: BigNumber,
-    additionalDepositedAmount: BigNumber,
+    flashLoanBorrowedAmount: BigNumber,
     transaction: Transaction,
   ): Promise<{
     deposits: Deposit[];
@@ -3665,7 +3603,7 @@ export default function LstStrategyDialog({
             depositedAmount: d.depositedAmount.toFixed(20),
           })),
           _borrowedAmount: _borrowedAmount.toFixed(20),
-          additionalDepositedAmount: additionalDepositedAmount.toFixed(20),
+          flashLoanBorrowedAmount: flashLoanBorrowedAmount.toFixed(20),
         },
         null,
         2,
@@ -3682,24 +3620,15 @@ export default function LstStrategyDialog({
     // 1) Flash loan borrow
     const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
 
+    if (depositReserve.coinType === depositReserves.lst?.coinType) {
+      // TODO: Account for LST mint fees
+      flashLoanBorrowedAmount = flashLoanBorrowedAmount
+        .times(lst?.lstToSuiExchangeRate ?? 1)
+        .decimalPlaces(SUI_DECIMALS, BigNumber.ROUND_UP);
+    }
+
     let borrowedBalanceA, borrowedBalanceB, receipt;
-    if (flashLoanObj.provider === FlashLoanProvider.CETUS) {
-      [borrowedBalanceA, borrowedBalanceB, receipt] = transaction.moveCall({
-        target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::flash_loan`,
-        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
-        arguments: [
-          transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
-          transaction.object(flashLoanObj.poolId),
-          transaction.pure.bool(flashLoanObj.borrowA),
-          transaction.pure.u64(
-            additionalDepositedAmount
-              .times(10 ** depositReserve.token.decimals)
-              .integerValue(BigNumber.ROUND_DOWN)
-              .toString(),
-          ),
-        ],
-      });
-    } else if (flashLoanObj.provider === FlashLoanProvider.MMT) {
+    if (flashLoanObj.provider === FlashLoanProvider.MMT) {
       [borrowedBalanceA, borrowedBalanceB, receipt] = transaction.moveCall({
         target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_loan`,
         typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
@@ -3707,8 +3636,13 @@ export default function LstStrategyDialog({
           transaction.object(flashLoanObj.poolId),
           transaction.pure.u64(
             flashLoanObj.borrowA
-              ? additionalDepositedAmount
-                  .times(10 ** depositReserve.token.decimals)
+              ? flashLoanBorrowedAmount
+                  .times(
+                    10 **
+                      (depositReserve.coinType === depositReserves.lst?.coinType
+                        ? SUI_DECIMALS
+                        : depositReserve.token.decimals),
+                  )
                   .integerValue(BigNumber.ROUND_DOWN)
                   .toString()
               : 0,
@@ -3716,8 +3650,13 @@ export default function LstStrategyDialog({
           transaction.pure.u64(
             flashLoanObj.borrowA
               ? 0
-              : additionalDepositedAmount
-                  .times(10 ** depositReserve.token.decimals)
+              : flashLoanBorrowedAmount
+                  .times(
+                    10 **
+                      (depositReserve.coinType === depositReserves.lst?.coinType
+                        ? SUI_DECIMALS
+                        : depositReserve.token.decimals),
+                  )
                   .integerValue(BigNumber.ROUND_DOWN)
                   .toString(),
           ),
@@ -3730,16 +3669,31 @@ export default function LstStrategyDialog({
 
     // 2) Deposit additional (to get back up to 100% health, so the user can then unloop back down to the max leverage shown in the UI)
     // 2.1) Deposit
-    const borrowedCoin = transaction.moveCall({
+    let depositedAmount = flashLoanBorrowedAmount;
+    if (depositReserve.coinType === depositReserves.lst?.coinType)
+      depositedAmount = new BigNumber(
+        depositedAmount.minus(
+          getLstMintFee(depositReserve.coinType, depositedAmount),
+        ),
+      )
+        .times(lst?.suiToLstExchangeRate ?? 1)
+        .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_DOWN);
+
+    let flashLoanBorrowedCoin: any = transaction.moveCall({
       target: "0x2::coin::from_balance",
       typeArguments: [
         flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
       ],
       arguments: [flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB],
     });
+    if (depositReserve.coinType === depositReserves.lst?.coinType)
+      flashLoanBorrowedCoin = lst!.client.mint(
+        transaction,
+        flashLoanBorrowedCoin,
+      );
 
     strategyDeposit(
-      borrowedCoin,
+      flashLoanBorrowedCoin,
       depositReserve.coinType,
       strategyOwnerCapId,
       appData.suilendClient.findReserveArrayIndex(depositReserve.coinType),
@@ -3749,7 +3703,7 @@ export default function LstStrategyDialog({
     // 2.2) Update state
     deposits = addOrInsertDeposit(deposits, {
       coinType: depositReserve.coinType,
-      depositedAmount: additionalDepositedAmount,
+      depositedAmount,
     });
 
     // 3) Unloop to max exposure
@@ -3776,15 +3730,19 @@ export default function LstStrategyDialog({
 
     // 4) Repay flash loan + fee
     // 4.1) Withdraw additional + fee
-    const withdrawAdditionalPlusFeeAmount = additionalDepositedAmount
+    let withdrawnAmount = depositedAmount
       .times(1 + flashLoanObj.feePercent / 100)
       .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
+    if (depositReserve.coinType === depositReserves.lst?.coinType)
+      withdrawnAmount = withdrawnAmount
+        .div(1 - +(lst?.redeemFeePercent ?? 0) / 100) // Potential rounding issue (max 1 MIST)
+        .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
 
     const {
       deposits: newDeposits2,
       borrowedAmount: newBorrowedAmount2,
       transaction: newTransaction2,
-      withdrawnCoin: withdrawnAdditionalPlusFeeCoin,
+      withdrawnCoin,
     } = await withdrawTx(
       _address,
       strategyOwnerCapId,
@@ -3793,43 +3751,34 @@ export default function LstStrategyDialog({
       borrowedAmount,
       {
         coinType: depositReserve.coinType,
-        withdrawnAmount: withdrawAdditionalPlusFeeAmount,
+        withdrawnAmount,
       },
       transaction,
       true,
     );
-    if (!withdrawnAdditionalPlusFeeCoin)
-      throw new Error("Withdrawn additional coin not found");
+    if (!withdrawnCoin) throw new Error("Withdrawn coin not found");
+
+    let flashLoanRepayCoin = withdrawnCoin;
+    if (depositReserve.coinType === depositReserves.lst?.coinType)
+      flashLoanRepayCoin = lst!.client.redeem(transaction, flashLoanRepayCoin);
 
     // 4.2) Repay flash loan
-    const repayBalance = transaction.moveCall({
+    const flashLoanRepayBalance = transaction.moveCall({
       target: "0x2::coin::into_balance",
       typeArguments: [
         flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
       ],
-      arguments: [withdrawnAdditionalPlusFeeCoin],
+      arguments: [flashLoanRepayCoin],
     });
-    if (flashLoanObj.provider === FlashLoanProvider.CETUS) {
-      transaction.moveCall({
-        target: `${CETUS_CONTRACT_PACKAGE_ID}::pool::repay_flash_loan`,
-        typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
-        arguments: [
-          transaction.object(CETUS_GLOBAL_CONFIG_OBJECT_ID),
-          transaction.object(flashLoanObj.poolId),
-          flashLoanObj.borrowA ? repayBalance : borrowedBalanceA,
-          flashLoanObj.borrowA ? borrowedBalanceB : repayBalance,
-          receipt,
-        ],
-      });
-    } else if (flashLoanObj.provider === FlashLoanProvider.MMT) {
+    if (flashLoanObj.provider === FlashLoanProvider.MMT) {
       transaction.moveCall({
         target: `${MMT_CONTRACT_PACKAGE_ID}::trade::repay_flash_loan`,
         typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
         arguments: [
           transaction.object(flashLoanObj.poolId),
           receipt,
-          flashLoanObj.borrowA ? repayBalance : borrowedBalanceA,
-          flashLoanObj.borrowA ? borrowedBalanceB : repayBalance,
+          flashLoanObj.borrowA ? flashLoanRepayBalance : borrowedBalanceA,
+          flashLoanObj.borrowA ? borrowedBalanceB : flashLoanRepayBalance,
           transaction.object(MMT_VERSION_OBJECT_ID),
         ],
       });

@@ -2081,7 +2081,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const weightedBorrowsUsd = getWeightedBorrowsUsd(_obligation);
       const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(
         depositReserves.base !== undefined
-          ? 0.985 // 1.5% buffer
+          ? 0.99 // 1% buffer
           : 0.999, // 0.1% buffer
       );
       const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
