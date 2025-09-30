@@ -463,13 +463,11 @@ export default function AssetCell({
         </div>
 
         <TLabel>
-          {reserve
-            ? !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType)
-              ? formatPrice(reserve.price)
-              : "--"
-            : price !== undefined
-              ? formatPrice(price)
-              : "--"}
+          {price !== undefined &&
+          (!reserve ||
+            !TEMPORARY_PYTH_PRICE_FEED_COINTYPES.includes(reserve.coinType))
+            ? formatPrice(price)
+            : "--"}
         </TLabel>
       </div>
     </div>

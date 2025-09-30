@@ -2030,7 +2030,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       return getNetAprPercent(
         _obligation,
         userData.rewardMap,
-        allAppData.lstAprPercentMap,
+        allAppData.lstMap,
         !obligation ||
           !hasPosition(obligation) ||
           obligation.deposits.some((d) => !d.userRewardManager), // Simulated obligations don't have userRewardManager
@@ -2043,7 +2043,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       hasPosition,
       simulateDepositAndLoopToExposure,
       userData.rewardMap,
-      allAppData.lstAprPercentMap,
+      allAppData.lstMap,
     ],
   );
 

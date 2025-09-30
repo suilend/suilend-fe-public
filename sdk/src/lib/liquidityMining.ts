@@ -1,7 +1,6 @@
 import { CoinMetadata } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
-import { v4 as uuidv4 } from "uuid";
 
 import {
   MS_PER_YEAR,
@@ -301,8 +300,8 @@ export const getRewardsAprPercent = (
 export const getStakingYieldAprPercent = (
   side: Side,
   coinType: string,
-  lstAprPercentMap: Record<string, BigNumber>,
-) => (side === Side.DEPOSIT ? lstAprPercentMap[coinType] : undefined);
+  lstMap: Record<string, { aprPercent: BigNumber }>,
+) => (side === Side.DEPOSIT ? lstMap[coinType]?.aprPercent : undefined);
 
 export const getTotalAprPercent = (
   side: Side,
@@ -317,7 +316,7 @@ export const getTotalAprPercent = (
 export const getNetAprPercent = (
   obligation: ParsedObligation,
   rewardMap: RewardMap,
-  lstAprPercentMap: Record<string, BigNumber>,
+  lstMap: Record<string, { aprPercent: BigNumber }>,
   noShares?: boolean,
 ) => {
   const weightedDepositedAmountUsd_aprPercent = obligation.deposits.reduce(
@@ -328,7 +327,7 @@ export const getNetAprPercent = (
         getStakingYieldAprPercent(
           Side.DEPOSIT,
           deposit.reserve.coinType,
-          lstAprPercentMap,
+          lstMap,
         ) ?? 0,
       ).times(deposit.depositedAmountUsd);
 

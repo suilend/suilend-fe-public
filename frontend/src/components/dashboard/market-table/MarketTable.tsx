@@ -325,7 +325,7 @@ export default function MarketTable() {
         getStakingYieldAprPercent(
           Side.DEPOSIT,
           reserve.coinType,
-          allAppData.lstAprPercentMap,
+          allAppData.lstMap,
         ),
       );
       const totalBorrowAprPercent = getTotalAprPercent(
@@ -608,7 +608,7 @@ export default function MarketTable() {
   }, [
     filteredReserves,
     userData.rewardMap,
-    allAppData.lstAprPercentMap,
+    allAppData.lstMap,
     deprecatedReserveIds,
     featuredReserveIds,
     isEcosystemLst,

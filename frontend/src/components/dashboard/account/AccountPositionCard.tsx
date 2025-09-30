@@ -52,7 +52,7 @@ function AccountPositionCardContent() {
   const netAprPercent = getNetAprPercent(
     obligation,
     userData.rewardMap,
-    allAppData.lstAprPercentMap,
+    allAppData.lstMap,
   );
 
   return (

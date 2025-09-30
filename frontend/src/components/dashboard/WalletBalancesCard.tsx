@@ -17,7 +17,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function WalletBalancesCard() {
   const { address } = useWalletContext();
-  const { allAppData, appData } = useLoadedAppContext();
+  const { allAppData, appData, isLst } = useLoadedAppContext();
   const { balancesCoinMetadataMap, getBalance, ownedStakedWalObjects } =
     useLoadedUserContext();
 
@@ -50,10 +50,13 @@ export default function WalletBalancesCard() {
               {formatUsd(
                 coinTypes.reduce((acc, coinType) => {
                   const reserve = appData.reserveMap[coinType];
-                  const price =
-                    reserve?.price ?? appData.rewardPriceMap[coinType];
-
+                  const price = isLst(coinType)
+                    ? reserve.price.times(
+                        allAppData.lstMap[coinType].lstToSuiExchangeRate, // Take into account the LST to SUI exchange rate
+                      )
+                    : (reserve?.price ?? appData.rewardPriceMap[coinType]);
                   if (price === undefined) return acc;
+
                   return acc.plus(getBalance(coinType).times(price));
                 }, new BigNumber(0)),
               )}
@@ -71,9 +74,11 @@ export default function WalletBalancesCard() {
               .filter(([coinType]) => coinTypes.includes(coinType))
               .map(([coinType, coinMetadata]) => {
                 const reserve = appData.reserveMap[coinType];
-
-                let price: BigNumber | undefined =
-                  reserve?.price ?? appData.rewardPriceMap[coinType];
+                let price: BigNumber | undefined = isLst(coinType)
+                  ? reserve.price.times(
+                      allAppData.lstMap[coinType].lstToSuiExchangeRate, // Take into account the LST to SUI exchange rate
+                    )
+                  : (reserve?.price ?? appData.rewardPriceMap[coinType]);
                 if (price !== undefined && price.isNaN()) price = undefined;
 
                 return {
