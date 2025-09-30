@@ -75,10 +75,12 @@ export default function HistoricalLineChart({
       ? data
           .filter((d) => {
             if (days === 1)
-              return d.timestampS % ((sm ? 4 : 8) * 60 * 60) === 0;
-            if (days === 7) return d.timestampS % ((sm ? 1 : 2) * DAY_S) === 0;
-            if (days === 30)
-              return d.timestampS % ((sm ? 5 : 10) * DAY_S) === 0;
+              return d.timestampS % ((sm ? 4 : 5) * (1 * 60 * 60)) === 0; // 6, 5
+            if (days === 7)
+              return d.timestampS % ((sm ? 1 : 1.5) * DAY_S) === 0; // 7, 5
+            if (days === 30) return d.timestampS % ((sm ? 5 : 6) * DAY_S) === 0; // 6, 5
+            if (days === 90)
+              return d.timestampS % ((sm ? 5 : 6) * (3 * DAY_S)) === 0; // 6, 5
             return false;
           })
           .map((d) => {
