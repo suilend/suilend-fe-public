@@ -134,7 +134,7 @@ export type HistoryEvent =
   | ClaimRewardEvent
   | ObligationDataEvent;
 
-export const E = 10 ** -8;
+export const E = 10 ** -7;
 export const LST_DECIMALS = 9;
 
 export type Deposit = { coinType: string; depositedAmount: BigNumber };
