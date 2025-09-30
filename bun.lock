@@ -21,10 +21,10 @@
       "name": "frontend",
       "version": "0.1.0",
       "dependencies": {
-        "@7kprotocol/sdk-ts": "^3.4.0",
-        "@cetusprotocol/aggregator-sdk": "^1.2.0",
+        "@7kprotocol/sdk-ts": "^3.4.1",
+        "@cetusprotocol/aggregator-sdk": "^1.2.1",
         "@cetusprotocol/cetus-sui-clmm-sdk": "^5.4.0",
-        "@flowx-finance/sdk": "^1.11.3",
+        "@flowx-finance/sdk": "^1.13.4",
         "@launchdarkly/node-server-sdk": "^9.7.2",
         "@msafe/sui-wallet": "^0.0.83",
         "@mysten/bcs": "1.6.0",
@@ -56,7 +56,7 @@
         "@vercel/analytics": "^1.4.0",
         "@vercel/speed-insights": "^1.1.0",
         "@wormhole-foundation/wormhole-connect": "1.2.0",
-        "aftermath-ts-sdk": "^1.3.14",
+        "aftermath-ts-sdk": "^1.3.22",
         "bignumber.js": "^9.1.2",
         "bn.js": "^5.2.2",
         "class-variance-authority": "^0.7.0",
@@ -111,11 +111,11 @@
       "name": "@suilend/sdk-local",
       "version": "1.1.81",
       "dependencies": {
-        "@7kprotocol/sdk-ts": "^3.4.0",
-        "@cetusprotocol/aggregator-sdk": "^1.2.0",
-        "@flowx-finance/sdk": "^1.11.3",
+        "@7kprotocol/sdk-ts": "^3.4.1",
+        "@cetusprotocol/aggregator-sdk": "^1.2.1",
+        "@flowx-finance/sdk": "^1.13.4",
         "@pythnetwork/pyth-sui-js": "^2.2.0",
-        "aftermath-ts-sdk": "^1.3.14",
+        "aftermath-ts-sdk": "^1.3.22",
         "bignumber.js": "^9.1.2",
         "bn.js": "^5.2.2",
         "crypto-js": "^4.2.0",
@@ -312,7 +312,7 @@
 
     "@bluefin-exchange/bluefin7k-aggregator-sdk": ["@bluefin-exchange/bluefin7k-aggregator-sdk@4.3.2", "", { "peerDependencies": { "@mysten/sui": "^1.33.0", "@pythnetwork/pyth-sui-js": "^2.1.0" } }, "sha512-i17f++6v+9ju2vvdmqe6nVhbKadiHcLmU7Fqzsjijh0NKZ39xNrsKjCA33RIP7KTeXpTOxdNytgiqR2TQKUdDQ=="],
 
-    "@cetusprotocol/aggregator-sdk": ["@cetusprotocol/aggregator-sdk@1.2.0", "", { "dependencies": { "@mysten/sui": "^1.0.5", "@pythnetwork/pyth-sui-js": "^2.1.0", "bip39": "^3.1.0", "dotenv": "^16.4.5", "json-bigint": "^1.0.0", "node-fetch": "^3.3.2" }, "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-Z1fy9rgXYgaO6jShUSivIjkDjcJSx7UVBEhJsZSTBSQ96hLhbXNwo/Tglq3FOArO4NrES/zTbwnCnQyxWNu8ig=="],
+    "@cetusprotocol/aggregator-sdk": ["@cetusprotocol/aggregator-sdk@1.2.1", "", { "dependencies": { "@mysten/sui": "^1.0.5", "@pythnetwork/pyth-sui-js": "^2.1.0", "bip39": "^3.1.0", "dotenv": "^16.4.5", "json-bigint": "^1.0.0", "node-fetch": "^3.3.2" }, "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-jfFNO2kF5Y9gDP4QT75GJ5qTOMIVkOMzm/XA5kPRGXr83FyQLDzehgFt8M7TjRD6Y1/50kGpG9dMibA+XBJwuw=="],
 
     "@cetusprotocol/cetus-sui-clmm-sdk": ["@cetusprotocol/cetus-sui-clmm-sdk@5.4.0", "", { "dependencies": { "@suchipi/femver": "^1.0.0", "@syntsugar/cc-graph": "^0.1.1", "@types/bn.js": "^5.1.1", "axios": "^1.4.0", "bn.js": "^5.2.1", "cors": "^2.8.5", "decimal.js": "^10.4.1", "dotenv": "^16.4.7", "isomorphic-fetch": "^3.0.0", "js-base64": "^3.7.4", "js-sha3": "^0.8.0", "superstruct": "^1.0.3", "tiny-invariant": "^1.1.0", "tweetnacl": "^1.0.3", "uuid": "^9.0.0" }, "peerDependencies": { "@mysten/bcs": ">=0.8.1", "@mysten/sui": ">=1.1.2" } }, "sha512-k3SFPEPMFLV48/xIReh8C3nbKbCsRUd8N0Nio+zEHw3eZBFSHtTFxYTiDVnn3e/f5UBB7A6MEglYIDTFMwDfYQ=="],
 
@@ -424,7 +424,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
 
-    "@flowx-finance/sdk": ["@flowx-finance/sdk@1.13.2", "", { "dependencies": { "@bluefin-exchange/bluefin7k-aggregator-sdk": "^4.3.1", "@cetusprotocol/aggregator-sdk": "^1.0.3", "@mysten/sui": "^1.14.2", "@mysten/sui.js": "^0.54.1", "aftermath-ts-sdk": "^1.3.19", "bignumber.js": "^9.0.1", "bn.js": "^5.2.1", "crypto-js": "^4.2.0", "d3": "^7.9.0", "graphql-request": "^6.1.0", "json-bigint": "^1.0.0", "lodash": "^4.17.20", "node-cache": "^5.1.2", "object-hash": "^3.0.0", "p-limit": "3.1.0", "tiny-invariant": "^1.3.3" } }, "sha512-i/wvj5lpTSZ/1xdIE9DIRU0+uyy7gB8JV8hWyt71jw4idvh9ov0Fz3weFW6ss+TzLAg5XqL/w4xGAgzqxKrGzw=="],
+    "@flowx-finance/sdk": ["@flowx-finance/sdk@1.13.4", "", { "dependencies": { "@bluefin-exchange/bluefin7k-aggregator-sdk": "^4.3.1", "@cetusprotocol/aggregator-sdk": "^1.0.3", "@mysten/sui": "^1.14.2", "@mysten/sui.js": "^0.54.1", "aftermath-ts-sdk": "^1.3.19", "bignumber.js": "^9.0.1", "bn.js": "^5.2.1", "crypto-js": "^4.2.0", "d3": "^7.9.0", "graphql-request": "^6.1.0", "json-bigint": "^1.0.0", "lodash": "^4.17.20", "node-cache": "^5.1.2", "object-hash": "^3.0.0", "p-limit": "3.1.0", "tiny-invariant": "^1.3.3" } }, "sha512-Sx4+pY2G6fasRxoOyWTcM9K9/j/x9a4mYmr/KEE5LFJQ3sIlerjBC22gppRN9nHVy3l+Wtgo7tdpeQoouF1y8w=="],
 
     "@fractalwagmi/popup-connection": ["@fractalwagmi/popup-connection@1.1.1", "", { "peerDependencies": { "react": "^17.0.2 || ^18", "react-dom": "^17.0.2 || ^18" } }, "sha512-hYL+45iYwNbwjvP2DxP3YzVsrAGtj/RV9LOgMpJyCxsfNoyyOoi2+YrnywKkiANingiG2kJ1nKsizbu1Bd4zZw=="],
 
@@ -1894,7 +1894,7 @@
 
     "aes-js": ["aes-js@4.0.0-beta.5", "", {}, "sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q=="],
 
-    "aftermath-ts-sdk": ["aftermath-ts-sdk@1.3.21", "", { "dependencies": { "bn.js": "^5.2.2", "dayjs": "^1.11.7", "node-fetch": "^3.3.1", "priority-queue-typescript": "^1.0.1" }, "peerDependencies": { "@mysten/sui": "1.34.0" } }, "sha512-rTAx4O/iB0GHSKGLsXENdMP1nfw8JqPShGG25PIGPSIf7KtFBlvzf/8e/bQGT4vhpYOeEtSbBKWfLO/q+53wRQ=="],
+    "aftermath-ts-sdk": ["aftermath-ts-sdk@1.3.22", "", { "dependencies": { "bn.js": "^5.2.2", "dayjs": "^1.11.7", "node-fetch": "^3.3.1", "priority-queue-typescript": "^1.0.1" }, "peerDependencies": { "@mysten/sui": "1.38.0" } }, "sha512-Plle529LS7AzvZ9SCxMWqxC0IJiou8L5fAHjXa25d1q9mli2f8uxb0X11Ly+n4qOPBI9vpKPwxpgZPq4Oy+clw=="],
 
     "agent-base": ["agent-base@7.1.4", "", {}, "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="],
 
@@ -4061,6 +4061,12 @@
     "@solflare-wallet/sdk/eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
     "@solflare-wallet/sdk/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
+
+    "@suilend/sdk/@cetusprotocol/aggregator-sdk": ["@cetusprotocol/aggregator-sdk@1.2.0", "", { "dependencies": { "@mysten/sui": "^1.0.5", "@pythnetwork/pyth-sui-js": "^2.1.0", "bip39": "^3.1.0", "dotenv": "^16.4.5", "json-bigint": "^1.0.0", "node-fetch": "^3.3.2" }, "peerDependencies": { "typescript": "^5.0.0" } }, "sha512-Z1fy9rgXYgaO6jShUSivIjkDjcJSx7UVBEhJsZSTBSQ96hLhbXNwo/Tglq3FOArO4NrES/zTbwnCnQyxWNu8ig=="],
+
+    "@suilend/sdk/@flowx-finance/sdk": ["@flowx-finance/sdk@1.13.2", "", { "dependencies": { "@bluefin-exchange/bluefin7k-aggregator-sdk": "^4.3.1", "@cetusprotocol/aggregator-sdk": "^1.0.3", "@mysten/sui": "^1.14.2", "@mysten/sui.js": "^0.54.1", "aftermath-ts-sdk": "^1.3.19", "bignumber.js": "^9.0.1", "bn.js": "^5.2.1", "crypto-js": "^4.2.0", "d3": "^7.9.0", "graphql-request": "^6.1.0", "json-bigint": "^1.0.0", "lodash": "^4.17.20", "node-cache": "^5.1.2", "object-hash": "^3.0.0", "p-limit": "3.1.0", "tiny-invariant": "^1.3.3" } }, "sha512-i/wvj5lpTSZ/1xdIE9DIRU0+uyy7gB8JV8hWyt71jw4idvh9ov0Fz3weFW6ss+TzLAg5XqL/w4xGAgzqxKrGzw=="],
+
+    "@suilend/sdk/aftermath-ts-sdk": ["aftermath-ts-sdk@1.3.21", "", { "dependencies": { "bn.js": "^5.2.2", "dayjs": "^1.11.7", "node-fetch": "^3.3.1", "priority-queue-typescript": "^1.0.1" }, "peerDependencies": { "@mysten/sui": "1.34.0" } }, "sha512-rTAx4O/iB0GHSKGLsXENdMP1nfw8JqPShGG25PIGPSIf7KtFBlvzf/8e/bQGT4vhpYOeEtSbBKWfLO/q+53wRQ=="],
 
     "@toruslabs/openlogin-jrpc/readable-stream": ["readable-stream@4.7.0", "", { "dependencies": { "abort-controller": "^3.0.0", "buffer": "^6.0.3", "events": "^3.3.0", "process": "^0.11.10", "string_decoder": "^1.3.0" } }, "sha512-oIGGmcpTLwPga8Bn6/Z75SVaH1z5dUut2ibSyAMVhmUggWpmDn2dapB0n7f8nwaSiRtepAsfJyfXIO5DCVAODg=="],
 
