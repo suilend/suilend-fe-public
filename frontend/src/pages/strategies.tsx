@@ -422,7 +422,7 @@ function Page() {
                   strategyType === StrategyType.xBTC_wBTC_LOOPING
                     ? process.env.NODE_ENV === "development" ||
                       router.query.xbtcwbtc === "true" ||
-                      Date.now() >= 1757941200000 * 1000 // 2025/09/XX 13:00:00 UTC
+                      Date.now() >= 1759237200000 // 2025/09/30 13:00:00 UTC
                     : true,
                 )
                 .map((strategyType) => {
