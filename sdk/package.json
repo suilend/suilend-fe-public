@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.83",
+  "version": "1.1.84",
   "private": false,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -29,6 +29,7 @@
     "@cetusprotocol/aggregator-sdk": "^1.2.1",
     "@flowx-finance/sdk": "^1.13.4",
     "@pythnetwork/pyth-sui-js": "^2.2.0",
+    "@suilend/springsui-sdk": "^1.0.26",
     "aftermath-ts-sdk": "^1.3.22",
     "bignumber.js": "^9.1.2",
     "bn.js": "^5.2.2",
