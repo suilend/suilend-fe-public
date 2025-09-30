@@ -24,7 +24,15 @@ import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { ParsedReserve, getRewardsMap } from "@suilend/sdk";
+import {
+  STRATEGY_E as E,
+  LST_DECIMALS,
+  ParsedReserve,
+  StrategyDeposit,
+  StrategyWithdraw,
+  addOrInsertStrategyDeposit as addOrInsertDeposit,
+  getRewardsMap,
+} from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -82,14 +90,7 @@ import StrategyHeader from "@/components/strategies/StrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  Deposit,
-  E,
-  LST_DECIMALS,
-  Withdraw,
-  addOrInsertDeposit,
-  useLoadedLstStrategyContext,
-} from "@/contexts/LstStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
@@ -1144,7 +1145,7 @@ export default function LstStrategyDialog({
 
     let result = new BigNumber(0);
 
-    const withdraw: Withdraw = {
+    const withdraw: StrategyWithdraw = {
       coinType: currencyReserve.coinType,
       withdrawnAmount: new BigNumber(value),
     };
@@ -1463,13 +1464,13 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
     _targetBorrowedAmount: BigNumber | undefined,
     _targetExposure: BigNumber | undefined, // Must be defined if _targetBorrowedAmount is undefined
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -1938,13 +1939,13 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
     _targetBorrowedAmount: BigNumber | undefined,
     _targetExposure: BigNumber | undefined, // Must be defined if _targetBorrowedAmount is undefined
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -2941,12 +2942,12 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
-    deposit: Deposit,
+    deposit: StrategyDeposit,
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -3124,13 +3125,13 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string | undefined,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
-    deposit: Deposit,
+    deposit: StrategyDeposit,
     targetExposure: BigNumber,
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -3214,13 +3215,13 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
-    withdraw: Withdraw,
+    withdraw: StrategyWithdraw,
     transaction: Transaction,
     returnWithdrawnCoin?: boolean,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
     withdrawnCoin?: TransactionArgument;
@@ -3435,12 +3436,12 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
     withdrawCoinType: string,
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -3584,12 +3585,12 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
     flashLoanBorrowedAmount: BigNumber,
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {
@@ -3800,12 +3801,12 @@ export default function LstStrategyDialog({
     _address: string,
     strategyOwnerCapId: TransactionObjectInput,
     obligationId: string,
-    _deposits: Deposit[],
+    _deposits: StrategyDeposit[],
     _borrowedAmount: BigNumber,
     targetExposure: BigNumber,
     transaction: Transaction,
   ): Promise<{
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     transaction: Transaction;
   }> => {

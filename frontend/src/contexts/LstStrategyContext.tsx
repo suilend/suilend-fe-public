@@ -17,9 +17,12 @@ import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
+  STRATEGY_E as E,
+  LST_DECIMALS,
   ParsedObligation,
   ParsedReserve,
   STRATEGY_TYPE_EXPOSURE_MAP,
+  StrategyDeposit,
   StrategyLstMap,
   WAD,
   fetchStrategyGlobalTvlAmountUsdMap as _fetchGlobalTvlAmountUsdMap,
@@ -36,6 +39,7 @@ import {
   getStrategyTvlAmount as _getTvlAmount,
   getStrategyUnclaimedRewardsAmount as _getUnclaimedRewardsAmount,
   hasStrategyPosition as _hasStrategyPosition,
+  addOrInsertStrategyDeposit as addOrInsertDeposit,
   fetchStrategyLstMap,
   getNetAprPercent,
 } from "@suilend/sdk";
@@ -135,28 +139,6 @@ export type HistoryEvent =
   | ClaimRewardEvent
   | ObligationDataEvent;
 
-export const E = 10 ** -7;
-export const LST_DECIMALS = 9;
-
-export type Deposit = { coinType: string; depositedAmount: BigNumber };
-export type Withdraw = { coinType: string; withdrawnAmount: BigNumber };
-
-export const addOrInsertDeposit = (
-  _deposits: Deposit[],
-  deposit: Deposit,
-): Deposit[] => {
-  const deposits = cloneDeep(_deposits);
-
-  const existingDeposit = deposits.find((d) => d.coinType === deposit.coinType);
-  if (existingDeposit)
-    existingDeposit.depositedAmount = existingDeposit.depositedAmount.plus(
-      deposit.depositedAmount,
-    );
-  else deposits.push(deposit);
-
-  return deposits;
-};
-
 interface LstStrategyContext {
   // More details
   isMoreDetailsOpen: boolean;
@@ -204,7 +186,7 @@ interface LstStrategyContext {
   // Calculations
   getSimulatedObligation: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
   ) => ParsedObligation;
   getDepositedAmount: (
@@ -225,12 +207,12 @@ interface LstStrategyContext {
   ) => BigNumber;
   getStepMaxBorrowedAmount: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
   ) => BigNumber;
   getStepMaxWithdrawnAmount: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
     withdrawCoinType: string,
   ) => BigNumber;
@@ -238,33 +220,33 @@ interface LstStrategyContext {
   // Simulate
   simulateLoopToExposure: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
     targetBorrowedAmount: BigNumber | undefined,
     targetExposure: BigNumber | undefined, // Must be defined if targetBorrowedAmount is undefined
   ) => {
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
   simulateDeposit: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
-    deposit: Deposit,
+    deposit: StrategyDeposit,
   ) => {
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
   simulateDepositAndLoopToExposure: (
     strategyType: StrategyType,
-    deposits: Deposit[],
+    deposits: StrategyDeposit[],
     borrowedAmount: BigNumber,
-    deposit: Deposit,
+    deposit: StrategyDeposit,
     targetExposure: BigNumber,
   ) => {
-    deposits: Deposit[];
+    deposits: StrategyDeposit[];
     borrowedAmount: BigNumber;
     obligation: ParsedObligation;
   };
@@ -520,7 +502,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const getSimulatedObligation = useCallback(
     (
       strategyType: StrategyType,
-      deposits: Deposit[],
+      deposits: StrategyDeposit[],
       _borrowedAmount: BigNumber,
     ): ParsedObligation =>
       _getSimulatedObligation(
@@ -569,7 +551,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const getStepMaxBorrowedAmount = useCallback(
     (
       strategyType: StrategyType,
-      deposits: Deposit[],
+      deposits: StrategyDeposit[],
       borrowedAmount: BigNumber,
     ): BigNumber => {
       const depositReserves = getDepositReserves(strategyType);
@@ -611,7 +593,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const getStepMaxWithdrawnAmount = useCallback(
     (
       strategyType: StrategyType,
-      deposits: Deposit[],
+      deposits: StrategyDeposit[],
       borrowedAmount: BigNumber,
       withdrawCoinType: string,
     ): BigNumber => {
@@ -660,12 +642,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const simulateLoopToExposure = useCallback(
     (
       strategyType: StrategyType,
-      _deposits: Deposit[],
+      _deposits: StrategyDeposit[],
       _borrowedAmount: BigNumber,
       _targetBorrowedAmount: BigNumber | undefined,
       _targetExposure: BigNumber | undefined, // Must be defined if _targetBorrowedAmount is undefined
     ): {
-      deposits: Deposit[];
+      deposits: StrategyDeposit[];
       borrowedAmount: BigNumber;
       obligation: ParsedObligation;
     } => {
@@ -851,11 +833,11 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const simulateDeposit = useCallback(
     (
       strategyType: StrategyType,
-      _deposits: Deposit[],
+      _deposits: StrategyDeposit[],
       _borrowedAmount: BigNumber,
-      deposit: Deposit,
+      deposit: StrategyDeposit,
     ): {
-      deposits: Deposit[];
+      deposits: StrategyDeposit[];
       borrowedAmount: BigNumber;
       obligation: ParsedObligation;
     } => {
@@ -943,12 +925,12 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const simulateDepositAndLoopToExposure = useCallback(
     (
       strategyType: StrategyType,
-      _deposits: Deposit[],
+      _deposits: StrategyDeposit[],
       _borrowedAmount: BigNumber,
-      deposit: Deposit,
+      deposit: StrategyDeposit,
       targetExposure: BigNumber,
     ): {
-      deposits: Deposit[];
+      deposits: StrategyDeposit[];
       borrowedAmount: BigNumber;
       obligation: ParsedObligation;
     } => {

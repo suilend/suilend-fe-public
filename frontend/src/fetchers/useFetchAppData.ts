@@ -3,6 +3,7 @@ import BigNumber from "bignumber.js";
 import useSWR, { useSWRConfig } from "swr";
 
 import {
+  LST_DECIMALS,
   LendingMarketMetadata,
   ParsedReserve,
   initializeSuilend,
@@ -22,7 +23,6 @@ import { API_URL, issSui } from "@suilend/sui-fe";
 import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
-import { LST_DECIMALS } from "@/contexts/LstStrategyContext";
 
 const LENDING_MARKET_METADATA_MAP: Record<
   string,

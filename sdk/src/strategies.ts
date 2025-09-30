@@ -1,6 +1,7 @@
 import { CoinMetadata, SuiClient } from "@mysten/sui/client";
 import { SUI_DECIMALS } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
+import { cloneDeep } from "lodash";
 
 import {
   LiquidStakingObjectInfo,
@@ -21,11 +22,27 @@ import { RewardMap, getRewardsMap } from "./lib/liquidityMining";
 import { STRATEGY_TYPE_INFO_MAP, StrategyType } from "./lib/strategyOwnerCap";
 import { ParsedObligation, ParsedReserve } from "./parsers";
 
-export const E = 10 ** -7;
+export const STRATEGY_E = 10 ** -7;
 export const LST_DECIMALS = 9;
 
-export type Deposit = { coinType: string; depositedAmount: BigNumber };
-export type Withdraw = { coinType: string; withdrawnAmount: BigNumber };
+export type StrategyDeposit = { coinType: string; depositedAmount: BigNumber };
+export type StrategyWithdraw = { coinType: string; withdrawnAmount: BigNumber };
+
+export const addOrInsertStrategyDeposit = (
+  _deposits: StrategyDeposit[],
+  deposit: StrategyDeposit,
+): StrategyDeposit[] => {
+  const deposits = cloneDeep(_deposits);
+
+  const existingDeposit = deposits.find((d) => d.coinType === deposit.coinType);
+  if (existingDeposit)
+    existingDeposit.depositedAmount = existingDeposit.depositedAmount.plus(
+      deposit.depositedAmount,
+    );
+  else deposits.push(deposit);
+
+  return deposits;
+};
 
 // Obligations
 export const hasStrategyPosition = (obligation: ParsedObligation) =>
@@ -275,7 +292,7 @@ export const getStrategySimulatedObligation = (
   // Strategy
   lstMap: StrategyLstMap,
   strategyType: StrategyType,
-  deposits: Deposit[],
+  deposits: StrategyDeposit[],
   _borrowedAmount: BigNumber,
 ): ParsedObligation => {
   const depositReserves = getStrategyDepositReserves(reserveMap, strategyType);
