@@ -2006,9 +2006,17 @@ export default function LstStrategyDialog({
       if (depositReserves.lst === undefined)
         throw new Error("LST reserve not found");
 
-      const fullRepaymentAmount = new BigNumber(
-        new BigNumber(0.01).div(borrowReserve.price), // $0.01 in borrow coinType (still well over E borrows, e.g. E SUI)
-      ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+      const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
+      const fullRepaymentAmount = (
+        borrowedAmountUsd.lt(0.1)
+          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+          : borrowedAmountUsd.lt(1)
+            ? borrowedAmount.times(1.1) // 10% buffer
+            : borrowedAmountUsd.lt(10)
+              ? borrowedAmount.times(1.01) // 1% buffer
+              : borrowedAmount.times(1.001)
+      ) // 0.1% buffer
+        .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingLst] |`,
@@ -2255,9 +2263,17 @@ export default function LstStrategyDialog({
       if (depositReserves.base === undefined)
         throw new Error("Base reserve not found");
 
-      const fullRepaymentAmount = new BigNumber(
-        new BigNumber(0.1).div(borrowReserve.price), // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-      ).decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+      const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
+      const fullRepaymentAmount = (
+        borrowedAmountUsd.lt(0.1)
+          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+          : borrowedAmountUsd.lt(1)
+            ? borrowedAmount.times(1.1) // 10% buffer
+            : borrowedAmountUsd.lt(10)
+              ? borrowedAmount.times(1.01) // 1% buffer
+              : borrowedAmount.times(1.001)
+      ) // 0.1% buffer
+        .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingBase] |`,
@@ -3939,14 +3955,15 @@ export default function LstStrategyDialog({
                   const borrowedAmountUsd = borrowedAmount.times(
                     borrowReserve.price,
                   );
-                  const fullRepaymentAmount = borrowedAmount
-                    .times(
-                      borrowedAmountUsd.lt(1)
-                        ? 1.1 // 10% buffer
+                  const fullRepaymentAmount = (
+                    borrowedAmountUsd.lt(0.1)
+                      ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+                      : borrowedAmountUsd.lt(1)
+                        ? borrowedAmount.times(1.1) // 10% buffer
                         : borrowedAmountUsd.lt(10)
-                          ? 1.01 // 1% buffer
-                          : 1.001, // 0.1% buffer
-                    )
+                          ? borrowedAmount.times(1.01) // 1% buffer
+                          : borrowedAmount.times(1.001)
+                  ) // 0.1% buffer
                     .decimalPlaces(
                       borrowReserve.token.decimals,
                       BigNumber.ROUND_DOWN,
