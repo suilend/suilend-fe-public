@@ -1,6 +1,6 @@
-import BigNumber from "bignumber.js";
 import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import BigNumber from "bignumber.js";
 
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
 
@@ -22,7 +22,9 @@ export type ParsedVault = {
   object: SuiObjectResponse;
 };
 
-export const extractVaultBaseCoinType = (typeStr?: string): string | undefined => {
+export const extractVaultBaseCoinType = (
+  typeStr?: string,
+): string | undefined => {
   if (!typeStr) return undefined;
   const anchor = `${VAULTS_PACKAGE_ID}::vault::Vault<`;
   const start = typeStr.indexOf(anchor);
@@ -55,7 +57,10 @@ export const parseVault = async (
   suiClient: SuiClient,
   vaultId: string,
 ): Promise<ParsedVault> => {
-  const res = await suiClient.getObject({ id: vaultId, options: { showContent: true } });
+  const res = await suiClient.getObject({
+    id: vaultId,
+    options: { showContent: true },
+  });
   const content = res.data?.content as any;
   const fields = content?.fields ?? {};
   const id = fields.id?.id ?? vaultId;
@@ -125,8 +130,13 @@ export const parseVault = async (
     } catch {}
 
     // Helper to detect lending market module path from object type
-    const detectLmModule = async (lmId: string): Promise<string | undefined> => {
-      const lm = await suiClient.getObject({ id: lmId, options: { showContent: true } });
+    const detectLmModule = async (
+      lmId: string,
+    ): Promise<string | undefined> => {
+      const lm = await suiClient.getObject({
+        id: lmId,
+        options: { showContent: true },
+      });
       const typeStr = (lm.data?.content as any)?.type as string | undefined;
       if (!typeStr) return undefined;
       const lmBase = "::lending_market::LendingMarket";
@@ -165,7 +175,9 @@ export const parseVault = async (
         if (valueBytes) {
           // BCS u64 is LE; JS SDK returns decoded as number in some versions; we fallback to parse BigInt from bytes
           // Simplify: Many SDKs also provide parsed value in di.effects or di.results[...].returnValues[0][1]
-          const parsed = BigInt(Buffer.from(valueBytes).readBigUInt64LE?.() ?? 0n);
+          const parsed = BigInt(
+            Buffer.from(valueBytes).readBigUInt64LE?.() ?? 0n,
+          );
           const human = new BigNumber(parsed.toString()).div(10 ** decimals);
           o.deployedAmount = human;
         }
@@ -191,5 +203,3 @@ export const parseVault = async (
     object: res,
   };
 };
-
-

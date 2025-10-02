@@ -1,41 +1,40 @@
 import Head from "next/head";
-import {
-  StrategyType,
-} from "@suilend/sdk/lib/strategyOwnerCap";
-import {
-  TBody,
-  TBodySans,
-  TLabelSans,
-} from "@/components/shared/Typography";
-import StrategyCard from "@/components/strategies/StrategyCard";
-import { useVaultContext, VaultContextProvider } from "@/contexts/VaultContext";
-import VaultCard from "@/components/vaults/VaultCard";
 import Link from "next/link";
+
+import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
+
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import StrategyCard from "@/components/strategies/StrategyCard";
 import { Button } from "@/components/ui/button";
+import VaultCard from "@/components/vaults/VaultCard";
+import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
 
 function Page() {
   const { vaults } = useVaultContext();
-  
+
   return (
     <>
       <Head>
         <title>Suilend | Vaults</title>
       </Head>
 
-      
       <div className="flex w-full flex-col gap-6">
-        
-          <div className="flex w-full flex-col gap-4">
-            <div className="flex gap-4 items-center"><TBody className="uppercase">All vaults</TBody><Link className="uppercase underline" href="/vaults/admin"><Button variant="outline">Admin</Button></Link></div>
-
-            {/* Min card width: 400px */}
-            <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {vaults.map((vault) => (
-                <VaultCard key={vault.id} vault={vault as any} />
-              ))}
-            </div>
+        <div className="flex w-full flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <TBody className="uppercase">All vaults</TBody>
+            <Link className="uppercase underline" href="/vaults/admin">
+              <Button variant="outline">Admin</Button>
+            </Link>
           </div>
-        
+
+          {/* Min card width: 400px */}
+          <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
+            {vaults.map((vault) => (
+              <VaultCard key={vault.id} vault={vault as any} />
+            ))}
+          </div>
+        </div>
+
         {/* Learn more */}
         <div className="flex w-full flex-col gap-4">
           <TBody className="uppercase">Learn more</TBody>
@@ -164,10 +163,10 @@ function Page() {
             <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
               <TBodySans>Do I need to manage my position?</TBodySans>
               <TLabelSans>
-                Suilend Vaults is designed to be low-maintenance and
-                requires minimal management. You can adjust your leverage,
-                deposit, or withdraw at any time (provided your health is 100%,
-                see {`"What are the risks?"`} for more details).
+                Suilend Vaults is designed to be low-maintenance and requires
+                minimal management. You can adjust your leverage, deposit, or
+                withdraw at any time (provided your health is 100%, see{" "}
+                {`"What are the risks?"`} for more details).
                 <br />
                 <br />
                 Rewards that are listed on Suilend will be autoclaimed and

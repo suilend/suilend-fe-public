@@ -19,5 +19,3 @@ export default function useFetchVault(vaultId?: string) {
 
   return { data, isLoading, isValidating, error, mutate };
 }
-
-

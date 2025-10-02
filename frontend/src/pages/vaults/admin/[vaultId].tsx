@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+
+import { SuiObjectResponse } from "@mysten/sui/client";
+import { toast } from "sonner";
 
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import Value from "@/components/shared/Value";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { SuiObjectResponse } from "@mysten/sui/client";
-import Value from "@/components/shared/Value";
-import { useVaultContext, VaultContextProvider } from "@/contexts/VaultContext";
-import { toast } from "sonner";
+import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
 
 interface VaultFields {
   id: { id: string };
@@ -94,57 +94,79 @@ function Page() {
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Vault ID</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Vault ID
+                  </TBodySans>
                   <Value value={fields.id.id} isId />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Base coin type</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Base coin type
+                  </TBodySans>
                   <Value value={baseCoinType ?? "-"} isType />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Fee receiver</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Fee receiver
+                  </TBodySans>
                   <Value value={fields.fee_receiver} isId />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Total shares</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Total shares
+                  </TBodySans>
                   <Value value={fields.total_shares} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Management fee (bps)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Management fee (bps)
+                  </TBodySans>
                   <Value value={fields.management_fee_bps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Performance fee (bps)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Performance fee (bps)
+                  </TBodySans>
                   <Value value={fields.performance_fee_bps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Deposit fee (bps)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Deposit fee (bps)
+                  </TBodySans>
                   <Value value={fields.deposit_fee_bps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Withdrawal fee (bps)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Withdrawal fee (bps)
+                  </TBodySans>
                   <Value value={fields.withdrawal_fee_bps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Utilization (bps)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Utilization (bps)
+                  </TBodySans>
                   <Value value={fields.utilization_rate_bps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Last NAV per share</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Last NAV per share
+                  </TBodySans>
                   <Value value={fields.last_nav_per_share} />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Fee last update (s)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Fee last update (s)
+                  </TBodySans>
                   <Value
                     value={fields.fee_last_update_timestamp_s}
                     valueTooltip={new Date(
@@ -155,11 +177,17 @@ function Page() {
 
                 {/* Deployment metrics */}
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Undeployed (base)</TBodySans>
-                  <Value value={vaultData?.undeployedAmount?.toString() ?? "0"} />
+                  <TBodySans className="text-muted-foreground">
+                    Undeployed (base)
+                  </TBodySans>
+                  <Value
+                    value={vaultData?.undeployedAmount?.toString() ?? "0"}
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">Deployed (base)</TBodySans>
+                  <TBodySans className="text-muted-foreground">
+                    Deployed (base)
+                  </TBodySans>
                   <Value value={vaultData?.deployedAmount?.toString() ?? "0"} />
                 </div>
               </div>
@@ -182,25 +210,46 @@ function Page() {
                 {obligations.map((o, idx) => (
                   <Card key={`${o.obligationId}-${idx}`}>
                     <CardHeader>
-                      <CardTitle className="text-base">Obligation #{o.index}</CardTitle>
+                      <CardTitle className="text-base">
+                        Obligation #{o.index}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="flex flex-col gap-1">
-                          <TBodySans className="text-muted-foreground">Obligation ID</TBodySans>
+                          <TBodySans className="text-muted-foreground">
+                            Obligation ID
+                          </TBodySans>
                           <Value value={o.obligationId} isId />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <TBodySans className="text-muted-foreground">Market type (L)</TBodySans>
+                          <TBodySans className="text-muted-foreground">
+                            Market type (L)
+                          </TBodySans>
                           <Value value={o.marketType || "-"} isType />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <TBodySans className="text-muted-foreground">Lending market ID</TBodySans>
-                          <Value value={o.lendingMarketId ?? "Unresolved"} isId />
+                          <TBodySans className="text-muted-foreground">
+                            Lending market ID
+                          </TBodySans>
+                          <Value
+                            value={o.lendingMarketId ?? "Unresolved"}
+                            isId
+                          />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <TBodySans className="text-muted-foreground">Deployed (base)</TBodySans>
-                          <Value value={(vaultData?.obligations as any)?.find((x: any) => x.obligationId === o.obligationId)?.deployedAmount?.toString?.() ?? "0"} />
+                          <TBodySans className="text-muted-foreground">
+                            Deployed (base)
+                          </TBodySans>
+                          <Value
+                            value={
+                              (vaultData?.obligations as any)
+                                ?.find(
+                                  (x: any) => x.obligationId === o.obligationId,
+                                )
+                                ?.deployedAmount?.toString?.() ?? "0"
+                            }
+                          />
                         </div>
                       </div>
 
@@ -211,14 +260,24 @@ function Page() {
                           onSubmit={async (e) => {
                             e.preventDefault();
                             const form = e.currentTarget as HTMLFormElement;
-                            const amount = (form.elements.namedItem("amount") as HTMLInputElement).value;
+                            const amount = (
+                              form.elements.namedItem(
+                                "amount",
+                              ) as HTMLInputElement
+                            ).value;
                             try {
-                              if (!fields?.id.id || !baseCoinType) throw new Error("Vault not loaded");
-                              if (!o.lendingMarketId) throw new Error("Unknown lending market for this obligation");
+                              if (!fields?.id.id || !baseCoinType)
+                                throw new Error("Vault not loaded");
+                              if (!o.lendingMarketId)
+                                throw new Error(
+                                  "Unknown lending market for this obligation",
+                                );
                               const aggregatorMarkets = Array.from(
                                 new Map(
                                   obligations
-                                    .filter((x) => x.marketType && x.lendingMarketId)
+                                    .filter(
+                                      (x) => x.marketType && x.lendingMarketId,
+                                    )
                                     .map((x) => [
                                       x.marketType,
                                       {
@@ -227,7 +286,10 @@ function Page() {
                                       },
                                     ]),
                                 ).values(),
-                              ) as { lendingMarketId: string; lendingMarketType: string }[];
+                              ) as {
+                                lendingMarketId: string;
+                                lendingMarketType: string;
+                              }[];
                               await deployFunds({
                                 vaultId: fields.id.id,
                                 lendingMarketId: o.lendingMarketId,
@@ -236,7 +298,11 @@ function Page() {
                                 baseCoinType,
                                 aggregatorMarkets,
                               });
-                              (form.elements.namedItem("amount") as HTMLInputElement).value = "";
+                              (
+                                form.elements.namedItem(
+                                  "amount",
+                                ) as HTMLInputElement
+                              ).value = "";
                             } catch (err: any) {
                               toast.error(err?.message || "Failed to deploy");
                             }
@@ -244,7 +310,11 @@ function Page() {
                         >
                           <TBodySans>Deploy funds</TBodySans>
                           <div className="flex flex-row gap-2">
-                            <Input name="amount" placeholder="Amount (u64)" inputMode="numeric" />
+                            <Input
+                              name="amount"
+                              placeholder="Amount (u64)"
+                              inputMode="numeric"
+                            />
                             <Button type="submit">Deploy</Button>
                           </div>
                         </form>
@@ -255,14 +325,24 @@ function Page() {
                           onSubmit={async (e) => {
                             e.preventDefault();
                             const form = e.currentTarget as HTMLFormElement;
-                            const ctokenAmount = (form.elements.namedItem("ctokenAmount") as HTMLInputElement).value;
+                            const ctokenAmount = (
+                              form.elements.namedItem(
+                                "ctokenAmount",
+                              ) as HTMLInputElement
+                            ).value;
                             try {
-                              if (!fields?.id.id || !baseCoinType) throw new Error("Vault not loaded");
-                              if (!o.lendingMarketId) throw new Error("Unknown lending market for this obligation");
+                              if (!fields?.id.id || !baseCoinType)
+                                throw new Error("Vault not loaded");
+                              if (!o.lendingMarketId)
+                                throw new Error(
+                                  "Unknown lending market for this obligation",
+                                );
                               const aggregatorMarkets = Array.from(
                                 new Map(
                                   obligations
-                                    .filter((x) => x.marketType && x.lendingMarketId)
+                                    .filter(
+                                      (x) => x.marketType && x.lendingMarketId,
+                                    )
                                     .map((x) => [
                                       x.marketType,
                                       {
@@ -271,7 +351,10 @@ function Page() {
                                       },
                                     ]),
                                 ).values(),
-                              ) as { lendingMarketId: string; lendingMarketType: string }[];
+                              ) as {
+                                lendingMarketId: string;
+                                lendingMarketType: string;
+                              }[];
                               await withdrawDeployedFunds({
                                 vaultId: fields.id.id,
                                 lendingMarketId: o.lendingMarketId,
@@ -280,7 +363,11 @@ function Page() {
                                 baseCoinType,
                                 aggregatorMarkets,
                               });
-                              (form.elements.namedItem("ctokenAmount") as HTMLInputElement).value = "";
+                              (
+                                form.elements.namedItem(
+                                  "ctokenAmount",
+                                ) as HTMLInputElement
+                              ).value = "";
                             } catch (err: any) {
                               toast.error(err?.message || "Failed to withdraw");
                             }
@@ -288,7 +375,11 @@ function Page() {
                         >
                           <TBodySans>Withdraw funds</TBodySans>
                           <div className="flex flex-row gap-2">
-                            <Input name="ctokenAmount" placeholder="cToken amount (u64)" inputMode="numeric" />
+                            <Input
+                              name="ctokenAmount"
+                              placeholder="cToken amount (u64)"
+                              inputMode="numeric"
+                            />
                             <Button type="submit">Withdraw</Button>
                           </div>
                         </form>
@@ -453,11 +544,19 @@ function CreateObligationForm({
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market ID (L)</TBodySans>
-        <Input placeholder="0x..." value={lendingMarketId} onChange={(e) => setLendingMarketId(e.target.value)} />
+        <Input
+          placeholder="0x..."
+          value={lendingMarketId}
+          onChange={(e) => setLendingMarketId(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market type (L)</TBodySans>
-        <Input placeholder="0x...::module::Type" value={lendingMarketType} onChange={(e) => setLendingMarketType(e.target.value)} />
+        <Input
+          placeholder="0x...::module::Type"
+          value={lendingMarketType}
+          onChange={(e) => setLendingMarketType(e.target.value)}
+        />
       </div>
       <div className="col-span-full flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
@@ -534,19 +633,39 @@ function DeployFundsForm({
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market ID (target)</TBodySans>
-        <Input placeholder="0x..." value={lendingMarketId} onChange={(e) => setLendingMarketId(e.target.value)} />
+        <Input
+          placeholder="0x..."
+          value={lendingMarketId}
+          onChange={(e) => setLendingMarketId(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market type (target)</TBodySans>
-        <Input placeholder="0x...::module::Type" value={lendingMarketType} onChange={(e) => setLendingMarketType(e.target.value)} />
+        <Input
+          placeholder="0x...::module::Type"
+          value={lendingMarketType}
+          onChange={(e) => setLendingMarketType(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Obligation index</TBodySans>
-        <Input inputMode="numeric" pattern="[0-9]*" value={obligationIndex} onChange={(e) => setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))} />
+        <Input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={obligationIndex}
+          onChange={(e) =>
+            setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))
+          }
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Amount (u64 units of base asset)</TBodySans>
-        <Input inputMode="numeric" pattern="[0-9]*" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))} />
+        <Input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+        />
       </div>
       <div className="col-span-full flex flex-col gap-1">
         <TBodySans>Aggregator markets (one per line: id,type)</TBodySans>
@@ -631,19 +750,41 @@ function WithdrawFundsForm({
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market ID (target)</TBodySans>
-        <Input placeholder="0x..." value={lendingMarketId} onChange={(e) => setLendingMarketId(e.target.value)} />
+        <Input
+          placeholder="0x..."
+          value={lendingMarketId}
+          onChange={(e) => setLendingMarketId(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market type (target)</TBodySans>
-        <Input placeholder="0x...::module::Type" value={lendingMarketType} onChange={(e) => setLendingMarketType(e.target.value)} />
+        <Input
+          placeholder="0x...::module::Type"
+          value={lendingMarketType}
+          onChange={(e) => setLendingMarketType(e.target.value)}
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Obligation index</TBodySans>
-        <Input inputMode="numeric" pattern="[0-9]*" value={obligationIndex} onChange={(e) => setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))} />
+        <Input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={obligationIndex}
+          onChange={(e) =>
+            setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))
+          }
+        />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>cToken amount (u64)</TBodySans>
-        <Input inputMode="numeric" pattern="[0-9]*" value={ctokenAmount} onChange={(e) => setCtokenAmount(e.target.value.replace(/[^0-9]/g, ""))} />
+        <Input
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={ctokenAmount}
+          onChange={(e) =>
+            setCtokenAmount(e.target.value.replace(/[^0-9]/g, ""))
+          }
+        />
       </div>
       <div className="col-span-full flex flex-col gap-1">
         <TBodySans>Aggregator markets (one per line: id,type)</TBodySans>

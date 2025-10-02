@@ -1,13 +1,12 @@
-import { useState } from "react";
-
 import Head from "next/head";
 import Link from "next/link";
+import { useState } from "react";
 
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useVaultContext, VaultContextProvider } from "@/contexts/VaultContext";
+import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
 
 function Page() {
   const { createVault, vaults } = useVaultContext();
@@ -65,7 +64,7 @@ function Page() {
                   {vaults.map((v) => (
                     <Card key={v.id}>
                       <CardHeader>
-                        <CardTitle className="text-base break-all">
+                        <CardTitle className="break-all text-base">
                           Vault {v.id}
                         </CardTitle>
                       </CardHeader>
@@ -74,7 +73,10 @@ function Page() {
                           Base coin: {v.baseCoinType ?? "-"}
                         </TLabelSans>
                         <div>
-                          <Link className="underline" href={`/vaults/admin/${v.id}`}>
+                          <Link
+                            className="underline"
+                            href={`/vaults/admin/${v.id}`}
+                          >
                             Manage
                           </Link>
                         </div>
@@ -92,7 +94,10 @@ function Page() {
             <CardTitle>Create vault</CardTitle>
           </CardHeader>
           <CardContent>
-            <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
+            <form
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+              onSubmit={onSubmit}
+            >
               <div className="flex flex-col gap-1">
                 <TBodySans>Base coin type</TBodySans>
                 <Input
@@ -117,7 +122,9 @@ function Page() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={managementFeeBps}
-                  onChange={(e) => setManagementFeeBps(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setManagementFeeBps(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                 />
               </div>
 
@@ -127,7 +134,9 @@ function Page() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={performanceFeeBps}
-                  onChange={(e) => setPerformanceFeeBps(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setPerformanceFeeBps(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                 />
               </div>
 
@@ -137,7 +146,9 @@ function Page() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={depositFeeBps}
-                  onChange={(e) => setDepositFeeBps(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setDepositFeeBps(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                 />
               </div>
 
@@ -147,7 +158,9 @@ function Page() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={withdrawalFeeBps}
-                  onChange={(e) => setWithdrawalFeeBps(e.target.value.replace(/[^0-9]/g, ""))}
+                  onChange={(e) =>
+                    setWithdrawalFeeBps(e.target.value.replace(/[^0-9]/g, ""))
+                  }
                 />
               </div>
 
@@ -171,7 +184,3 @@ export default function AdminVaults() {
     </VaultContextProvider>
   );
 }
-
-
-
-

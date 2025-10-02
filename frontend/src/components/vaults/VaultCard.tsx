@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { TBody, TBodySans } from "@/components/shared/Typography";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,9 @@ export default function VaultCard({ vault }: VaultCardProps) {
             <Input
               inputMode="numeric"
               value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={(e) =>
+                setDepositAmount(e.target.value.replace(/[^0-9]/g, ""))
+              }
             />
             <Button
               disabled={isDepositing || !depositAmount || !firstObligationLmId}
@@ -58,10 +61,14 @@ export default function VaultCard({ vault }: VaultCardProps) {
             <Input
               inputMode="numeric"
               value={withdrawShares}
-              onChange={(e) => setWithdrawShares(e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={(e) =>
+                setWithdrawShares(e.target.value.replace(/[^0-9]/g, ""))
+              }
             />
             <Button
-              disabled={isWithdrawing || !withdrawShares || !firstObligationLmId}
+              disabled={
+                isWithdrawing || !withdrawShares || !firstObligationLmId
+              }
               onClick={async () => {
                 setIsWithdrawing(true);
                 try {

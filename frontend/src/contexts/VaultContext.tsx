@@ -6,19 +6,20 @@ import {
   useState,
 } from "react";
 
+import { SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { TX_TOAST_DURATION, VAULTS_PACKAGE_ID } from "@/lib/constants";
-import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import { getAllOwnedObjects } from "@suilend/sui-fe";
-import { SuiObjectResponse } from "@mysten/sui/client";
-import BigNumber from "bignumber.js";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+
+import TextLink from "@/components/shared/TextLink";
+import { ParsedVault } from "@/fetchers/parseVault";
 import useFetchVault from "@/fetchers/useFetchVault";
 import useFetchVaults from "@/fetchers/useFetchVaults";
-import { ParsedVault } from "@/fetchers/parseVault";
-import TextLink from "@/components/shared/TextLink";
+import { TX_TOAST_DURATION, VAULTS_PACKAGE_ID } from "@/lib/constants";
 
 export type VaultObligationEntry = {
   marketType: string;
@@ -53,7 +54,10 @@ interface VaultContext {
     obligationIndex: number;
     amount: string;
     baseCoinType: string;
-    aggregatorMarkets: { lendingMarketId: string; lendingMarketType?: string }[]; // types auto-detected
+    aggregatorMarkets: {
+      lendingMarketId: string;
+      lendingMarketType?: string;
+    }[]; // types auto-detected
   }) => Promise<void>;
 
   withdrawDeployedFunds: (args: {
@@ -63,7 +67,10 @@ interface VaultContext {
     obligationIndex: number;
     ctokenAmount: string;
     baseCoinType: string;
-    aggregatorMarkets: { lendingMarketId: string; lendingMarketType?: string }[];
+    aggregatorMarkets: {
+      lendingMarketId: string;
+      lendingMarketType?: string;
+    }[];
   }) => Promise<void>;
 
   compoundPerformanceFees: (args: {
@@ -82,7 +89,11 @@ interface VaultContext {
     baseCoinType?: string;
     undeployedAmount: BigNumber;
     deployedAmount: BigNumber;
-    obligations: { obligationId: string; lendingMarketId?: string; marketType: string }[];
+    obligations: {
+      obligationId: string;
+      lendingMarketId?: string;
+      marketType: string;
+    }[];
     pricingLendingMarketId?: string;
     object: SuiObjectResponse;
   };
@@ -122,15 +133,11 @@ const defaultContextValue: VaultContext = {
   withdrawFromVault: async () => {},
 };
 
-const VaultContext =
-  createContext<VaultContext>(defaultContextValue);
+const VaultContext = createContext<VaultContext>(defaultContextValue);
 
-export const useVaultContext = () =>
-  useContext(VaultContext);
+export const useVaultContext = () => useContext(VaultContext);
 
-export function VaultContextProvider({
-  children,
-}: PropsWithChildren) {
+export function VaultContextProvider({ children }: PropsWithChildren) {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
 
@@ -155,10 +162,10 @@ export function VaultContextProvider({
     let curr = "";
     for (; i < fullType.length; i++) {
       const ch = fullType[i];
-      if (ch === '<') depth++;
-      if (ch === '>') {
+      if (ch === "<") depth++;
+      if (ch === ">") {
         if (depth === 0) {
-          curr += '';
+          curr += "";
           break;
         }
         depth--;
@@ -171,9 +178,9 @@ export function VaultContextProvider({
     let part = "";
     let d = 0;
     for (const ch of curr) {
-      if (ch === '<') d++;
-      if (ch === '>') d--;
-      if (ch === ',' && d === 0) {
+      if (ch === "<") d++;
+      if (ch === ">") d--;
+      if (ch === "," && d === 0) {
         parts.push(part.trim());
         part = "";
       } else {
@@ -184,8 +191,13 @@ export function VaultContextProvider({
     return parts[0];
   };
 
-  const detectLendingMarketType = async (lendingMarketId: string): Promise<string> => {
-    const obj = await suiClient.getObject({ id: lendingMarketId, options: { showContent: true } });
+  const detectLendingMarketType = async (
+    lendingMarketId: string,
+  ): Promise<string> => {
+    const obj = await suiClient.getObject({
+      id: lendingMarketId,
+      options: { showContent: true },
+    });
     const typeStr = (obj.data?.content as any)?.type as string | undefined;
     if (!typeStr) throw new Error("Invalid lending market object");
     const lmBase = "::lending_market::LendingMarket";
@@ -198,10 +210,14 @@ export function VaultContextProvider({
     return inner;
   };
 
-  const getLendingMarketTypeToId = async (): Promise<Record<string, string>> => {
+  const getLendingMarketTypeToId = async (): Promise<
+    Record<string, string>
+  > => {
     const REGISTRY_PARENT_ID =
       "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e";
-    const df = await suiClient.getDynamicFields({ parentId: REGISTRY_PARENT_ID });
+    const df = await suiClient.getDynamicFields({
+      parentId: REGISTRY_PARENT_ID,
+    });
     const entries = await Promise.all(
       df.data.map(async ({ objectId }) =>
         suiClient.getObject({ id: objectId, options: { showContent: true } }),
@@ -221,7 +237,7 @@ export function VaultContextProvider({
   // Context
   const contextValue: VaultContext = useMemo(
     () => ({
-      vaults: (fetchedVaults as ParsedVault[]),
+      vaults: fetchedVaults as ParsedVault[],
       // Vault page state
       vaultPageVaultId,
       setVaultPageVaultId,
@@ -236,12 +252,21 @@ export function VaultContextProvider({
         withdrawalFeeBps,
         feeReceiver,
       }) => {
-        console.log("createVault", baseCoinType, managementFeeBps, performanceFeeBps, depositFeeBps, withdrawalFeeBps, feeReceiver);
+        console.log(
+          "createVault",
+          baseCoinType,
+          managementFeeBps,
+          performanceFeeBps,
+          depositFeeBps,
+          withdrawalFeeBps,
+          feeReceiver,
+        );
         debugger;
         if (!address) throw new Error("Wallet not connected");
         if (!baseCoinType) throw new Error("Enter a base coin type");
 
-        const receiver = feeReceiver && feeReceiver !== "" ? feeReceiver : address;
+        const receiver =
+          feeReceiver && feeReceiver !== "" ? feeReceiver : address;
 
         const transaction = new Transaction();
 
@@ -281,20 +306,23 @@ export function VaultContextProvider({
         const objs = await getAllOwnedObjects(suiClient, address, {
           StructType: managerCapStructType,
         });
-        const match = objs.find((o) => (o.data?.content as any)?.fields?.vault_id === vaultId);
+        const match = objs.find(
+          (o) => (o.data?.content as any)?.fields?.vault_id === vaultId,
+        );
         return match?.data?.objectId as string | undefined;
       },
 
-      createObligation: async ({
-        vaultId,
-        lendingMarketId,
-        baseCoinType,
-      }) => {
+      createObligation: async ({ vaultId, lendingMarketId, baseCoinType }) => {
         if (!address) throw new Error("Wallet not connected");
-        const managerCapId = await contextValue.findManagerCapIdForVault(vaultId);
-        if (!managerCapId) throw new Error("Manager cap for this vault not found in your wallet");
+        const managerCapId =
+          await contextValue.findManagerCapIdForVault(vaultId);
+        if (!managerCapId)
+          throw new Error(
+            "Manager cap for this vault not found in your wallet",
+          );
 
-        const lendingMarketType = await detectLendingMarketType(lendingMarketId);
+        const lendingMarketType =
+          await detectLendingMarketType(lendingMarketId);
 
         const transaction = new Transaction();
         transaction.moveCall({
@@ -336,13 +364,17 @@ export function VaultContextProvider({
         if (!aggregatorMarkets.length)
           throw new Error("Add at least one lending market for aggregation");
 
-        const managerCapId = await contextValue.findManagerCapIdForVault(vaultId);
-        if (!managerCapId) throw new Error("Manager cap for this vault not found in your wallet");
+        const managerCapId =
+          await contextValue.findManagerCapIdForVault(vaultId);
+        if (!managerCapId)
+          throw new Error(
+            "Manager cap for this vault not found in your wallet",
+          );
 
         const transaction = new Transaction();
 
         // Aggregation (auto-detect types for each market)
-        let acc = transaction.moveCall({
+        const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
           typeArguments: [
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
@@ -352,7 +384,9 @@ export function VaultContextProvider({
         });
         const resolvedAgg = [] as { id: string; type: string }[];
         for (const m of aggregatorMarkets) {
-          const type = m.lendingMarketType ?? (await detectLendingMarketType(m.lendingMarketId));
+          const type =
+            m.lendingMarketType ??
+            (await detectLendingMarketType(m.lendingMarketId));
           resolvedAgg.push({ id: m.lendingMarketId, type });
           transaction.moveCall({
             target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
@@ -360,7 +394,8 @@ export function VaultContextProvider({
             arguments: [acc, transaction.object(m.lendingMarketId)],
           });
         }
-        const targetLendingMarketType = lendingMarketType ?? (await detectLendingMarketType(lendingMarketId));
+        const targetLendingMarketType =
+          lendingMarketType ?? (await detectLendingMarketType(lendingMarketId));
         const pricingMarket = resolvedAgg[0];
         const agg = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_aggregate`,
@@ -369,7 +404,11 @@ export function VaultContextProvider({
             pricingMarket.type,
             baseCoinType,
           ],
-          arguments: [acc, transaction.object(vaultId), transaction.object(pricingMarket.id)],
+          arguments: [
+            acc,
+            transaction.object(vaultId),
+            transaction.object(pricingMarket.id),
+          ],
         });
 
         // Deploy funds
@@ -416,13 +455,17 @@ export function VaultContextProvider({
         if (!aggregatorMarkets.length)
           throw new Error("Add at least one lending market for aggregation");
 
-        const managerCapId = await contextValue.findManagerCapIdForVault(vaultId);
-        if (!managerCapId) throw new Error("Manager cap for this vault not found in your wallet");
+        const managerCapId =
+          await contextValue.findManagerCapIdForVault(vaultId);
+        if (!managerCapId)
+          throw new Error(
+            "Manager cap for this vault not found in your wallet",
+          );
 
         const transaction = new Transaction();
 
         // Aggregation (auto-detect types)
-        let acc = transaction.moveCall({
+        const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
           typeArguments: [
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
@@ -432,7 +475,9 @@ export function VaultContextProvider({
         });
         const resolvedAgg = [] as { id: string; type: string }[];
         for (const m of aggregatorMarkets) {
-          const type = m.lendingMarketType ?? (await detectLendingMarketType(m.lendingMarketId));
+          const type =
+            m.lendingMarketType ??
+            (await detectLendingMarketType(m.lendingMarketId));
           resolvedAgg.push({ id: m.lendingMarketId, type });
           transaction.moveCall({
             target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
@@ -440,7 +485,8 @@ export function VaultContextProvider({
             arguments: [acc, transaction.object(m.lendingMarketId)],
           });
         }
-        const targetLendingMarketType = lendingMarketType ?? (await detectLendingMarketType(lendingMarketId));
+        const targetLendingMarketType =
+          lendingMarketType ?? (await detectLendingMarketType(lendingMarketId));
         const pricingMarket = resolvedAgg[0];
         const agg = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_aggregate`,
@@ -449,7 +495,11 @@ export function VaultContextProvider({
             pricingMarket.type,
             baseCoinType,
           ],
-          arguments: [acc, transaction.object(vaultId), transaction.object(pricingMarket.id)],
+          arguments: [
+            acc,
+            transaction.object(vaultId),
+            transaction.object(pricingMarket.id),
+          ],
         });
 
         // Withdraw
@@ -495,7 +545,7 @@ export function VaultContextProvider({
         const transaction = new Transaction();
 
         // Aggregation
-        let acc = transaction.moveCall({
+        const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
           typeArguments: [
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
@@ -518,7 +568,11 @@ export function VaultContextProvider({
             pricingMarket.lendingMarketType,
             baseCoinType,
           ],
-          arguments: [acc, transaction.object(vaultId), transaction.object(pricingMarket.lendingMarketId)],
+          arguments: [
+            acc,
+            transaction.object(vaultId),
+            transaction.object(pricingMarket.lendingMarketId),
+          ],
         });
 
         transaction.moveCall({
@@ -527,7 +581,11 @@ export function VaultContextProvider({
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
             baseCoinType,
           ],
-          arguments: [transaction.object(vaultId), agg, transaction.object(SUI_CLOCK_OBJECT_ID)],
+          arguments: [
+            transaction.object(vaultId),
+            agg,
+            transaction.object(SUI_CLOCK_OBJECT_ID),
+          ],
         });
 
         const res = await signExecuteAndWaitForTransaction(transaction);
@@ -548,21 +606,32 @@ export function VaultContextProvider({
         const objs = await getAllOwnedObjects(suiClient, address, {
           StructType: managerCapStructType,
         });
-        const match = objs.find((o) => (o.data?.content as any)?.fields?.vault_id === vaultId);
+        const match = objs.find(
+          (o) => (o.data?.content as any)?.fields?.vault_id === vaultId,
+        );
         if (!match) return [];
 
         const obligations: VaultObligationEntry[] = [];
         const managerCapId = (match.data as any).objectId;
-        const managerCap = await suiClient.getObject({ id: managerCapId, options: { showContent: true } });
+        const managerCap = await suiClient.getObject({
+          id: managerCapId,
+          options: { showContent: true },
+        });
         const managerCapContent = managerCap.data?.content as any;
 
-        const obligationsParentId = managerCapContent.fields.obligations_parent_id;
+        const obligationsParentId =
+          managerCapContent.fields.obligations_parent_id;
         if (!obligationsParentId) return [];
 
-        const df = await suiClient.getDynamicFields({ parentId: obligationsParentId });
+        const df = await suiClient.getDynamicFields({
+          parentId: obligationsParentId,
+        });
         const entries = await Promise.all(
           df.data.map(async ({ objectId }) =>
-            suiClient.getObject({ id: objectId, options: { showContent: true } }),
+            suiClient.getObject({
+              id: objectId,
+              options: { showContent: true },
+            }),
           ),
         );
 
@@ -605,27 +674,40 @@ export function VaultContextProvider({
           .toString();
         // On-chain min deposit is 1_000_000 base units
         if (new BigNumber(amountMinor).lt(1_000_000)) {
-          throw new Error("Minimum deposit is 1,000,000 base units (check decimals)");
+          throw new Error(
+            "Minimum deposit is 1,000,000 base units (check decimals)",
+          );
         }
 
         // Prepare Coin<T> of baseCoinType from user's coins
-        const coinsRes = await suiClient.getCoins({ owner: address, coinType: baseCoinType, limit: 200 });
+        const coinsRes = await suiClient.getCoins({
+          owner: address,
+          coinType: baseCoinType,
+          limit: 200,
+        });
         const coins = coinsRes.data || [];
         const amountU64 = BigInt(amountMinor);
         let total: bigint = 0n;
         for (const c of coins) total += BigInt(c.balance);
-        if (total < amountU64) throw new Error("Insufficient balance of base coin");
+        if (total < amountU64)
+          throw new Error("Insufficient balance of base coin");
         const primary = coins[0];
         const primaryObj = transaction.object(primary.coinObjectId);
-        const others = coins.slice(1).map((c) => transaction.object(c.coinObjectId));
+        const others = coins
+          .slice(1)
+          .map((c) => transaction.object(c.coinObjectId));
         if (others.length > 0) transaction.mergeCoins(primaryObj, others);
-        const [inputCoin] = transaction.splitCoins(primaryObj, [transaction.pure.u64(amountMinor)]);
+        const [inputCoin] = transaction.splitCoins(primaryObj, [
+          transaction.pure.u64(amountMinor),
+        ]);
 
         // Resolve market type once
-        const marketType = await detectLendingMarketType(pricingLendingMarketId);
+        const marketType = await detectLendingMarketType(
+          pricingLendingMarketId,
+        );
 
         // Build an empty aggregate for pricing (single market ok)
-        let acc = transaction.moveCall({
+        const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
           typeArguments: [
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
@@ -645,7 +727,11 @@ export function VaultContextProvider({
             marketType,
             baseCoinType,
           ],
-          arguments: [acc, transaction.object(vaultId), transaction.object(pricingLendingMarketId)],
+          arguments: [
+            acc,
+            transaction.object(vaultId),
+            transaction.object(pricingLendingMarketId),
+          ],
         });
 
         // Call deposit<P,L,T> -> returns Coin<P> (shares)
@@ -666,7 +752,10 @@ export function VaultContextProvider({
         });
 
         // Transfer minted shares to user
-        transaction.transferObjects([mintedShares], transaction.pure.address(address));
+        transaction.transferObjects(
+          [mintedShares],
+          transaction.pure.address(address),
+        );
 
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
@@ -692,26 +781,38 @@ export function VaultContextProvider({
 
         // Prepare Coin<VaultShare> from user's share coins
         const shareType = `${VAULTS_PACKAGE_ID}::vault::VaultShare`;
-        const sharesRes = await suiClient.getCoins({ owner: address, coinType: shareType, limit: 200 });
+        const sharesRes = await suiClient.getCoins({
+          owner: address,
+          coinType: shareType,
+          limit: 200,
+        });
         const shareCoins = sharesRes.data || [];
         const sharesNeeded = BigInt(sharesAmount);
         let sharesTotal: bigint = 0n;
         for (const c of shareCoins) sharesTotal += BigInt(c.balance);
-        if (sharesTotal < sharesNeeded) throw new Error("Insufficient vault shares");
+        if (sharesTotal < sharesNeeded)
+          throw new Error("Insufficient vault shares");
         const primaryShare = shareCoins[0];
         const primaryShareObj = transaction.object(primaryShare.coinObjectId);
-        const otherShares = shareCoins.slice(1).map((c) => transaction.object(c.coinObjectId));
-        if (otherShares.length > 0) transaction.mergeCoins(primaryShareObj, otherShares);
-        const [sharesCoin] = transaction.splitCoins(primaryShareObj, [transaction.pure.u64(sharesAmount)]);
+        const otherShares = shareCoins
+          .slice(1)
+          .map((c) => transaction.object(c.coinObjectId));
+        if (otherShares.length > 0)
+          transaction.mergeCoins(primaryShareObj, otherShares);
+        const [sharesCoin] = transaction.splitCoins(primaryShareObj, [
+          transaction.pure.u64(sharesAmount),
+        ]);
 
         if (!pricingLendingMarketId)
           throw new Error("Pricing lending market ID is required");
 
         // Resolve market type once
-        const marketType = await detectLendingMarketType(pricingLendingMarketId);
+        const marketType = await detectLendingMarketType(
+          pricingLendingMarketId,
+        );
 
         // Aggregation
-        let acc = transaction.moveCall({
+        const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
           typeArguments: [
             `${VAULTS_PACKAGE_ID}::vault::VaultShare`,
@@ -731,7 +832,11 @@ export function VaultContextProvider({
             marketType,
             baseCoinType,
           ],
-          arguments: [acc, transaction.object(vaultId), transaction.object(pricingLendingMarketId)],
+          arguments: [
+            acc,
+            transaction.object(vaultId),
+            transaction.object(pricingLendingMarketId),
+          ],
         });
 
         // Call withdraw<P,L,T> -> returns Coin<T> (base coin)
@@ -752,7 +857,10 @@ export function VaultContextProvider({
         });
 
         // Transfer withdrawn base coin to user
-        transaction.transferObjects([baseCoinOut], transaction.pure.address(address));
+        transaction.transferObjects(
+          [baseCoinOut],
+          transaction.pure.address(address),
+        );
 
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
