@@ -22,6 +22,7 @@ import {
   STEAMM_URL,
   STRATEGIES_URL,
   SWAP_URL,
+  VAULT_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ function More() {
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={CLAIM_URL}>Claim</Link>
       <Link href={ABOUT_URL}>About</Link>
-
+      <Link href={VAULT_URL}>Vault</Link>
       {/* External */}
       <Link
         href={
@@ -80,6 +81,7 @@ export default function NavigationLinks() {
         SEND
       </Link>
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
+      <Link href={VAULT_URL}>Vault</Link>
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (
         <Link href={ADMIN_URL}>Admin</Link>
       )}
