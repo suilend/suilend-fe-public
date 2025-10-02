@@ -155,10 +155,10 @@ export default function EarningsTabContent({
     ].sort(eventSortAsc);
 
     events.forEach((event) => {
-      const obligationDataEvent = eventsData.obligationData.find(
+      const obligationDataEvents = eventsData.obligationData.filter(
         (e) => e.digest === event.digest,
       );
-      if (!obligationDataEvent) return;
+      if (obligationDataEvents.length === 0) return;
 
       let coinType;
       if (event.eventType === EventType.DEPOSIT) {
@@ -183,6 +183,14 @@ export default function EarningsTabContent({
         (e) => e.digest === event.digest && e.coinType === coinType,
       );
       if (!reserveAssetDataEvent) return;
+
+      const obligationDataEvent = obligationDataEvents.find(
+        (obligationDataEvent) =>
+          JSON.parse(obligationDataEvent.depositsJson).find(
+            (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
+          ),
+      );
+      if (!obligationDataEvent) return;
 
       const timestampS = reserveAssetDataEvent.timestamp;
       const ctokenExchangeRate = getCtokenExchangeRate(reserveAssetDataEvent);
@@ -412,10 +420,10 @@ export default function EarningsTabContent({
     ].sort(eventSortAsc);
 
     events.forEach((event) => {
-      const obligationDataEvent = eventsData.obligationData.find(
+      const obligationDataEvents = eventsData.obligationData.filter(
         (e) => e.digest === event.digest,
       );
-      if (!obligationDataEvent) return;
+      if (obligationDataEvents.length === 0) return;
 
       let coinType;
       if (event.eventType === EventType.BORROW) {
@@ -440,6 +448,14 @@ export default function EarningsTabContent({
         (e) => e.digest === event.digest && e.coinType === coinType,
       );
       if (!reserveAssetDataEvent) return;
+
+      const obligationDataEvent = obligationDataEvents.find(
+        (obligationDataEvent) =>
+          JSON.parse(obligationDataEvent.borrowsJson).find(
+            (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
+          ),
+      );
+      if (!obligationDataEvent) return;
 
       const timestampS = reserveAssetDataEvent.timestamp;
       const cumulativeBorrowRate = new BigNumber(
