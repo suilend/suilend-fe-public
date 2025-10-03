@@ -3920,113 +3920,145 @@ export default function LstStrategyDialog({
               const lstDeposit = obligation.deposits.find(
                 (d) => d.coinType === depositReserves.lst!.coinType,
               );
-              const nonBaseNonLstDeposits = obligation.deposits.filter(
-                (d) =>
-                  d.coinType !== depositReserves.base!.coinType &&
-                  d.coinType !== depositReserves.lst!.coinType,
-              );
 
-              // Base+LST: Non-base/non-LST deposit(s)
-              if (nonBaseNonLstDeposits.some((d) => d.depositedAmount.gt(0))) {
-                // Swap non-base/non-LST deposits (e.g. autoclaimed+deposited non-base/non-LST rewards) for LST
-                await strategySwapSomeDepositsForCoinType(
-                  strategyType,
-                  cetusSdk,
-                  CETUS_PARTNER_ID,
-                  obligation,
-                  [depositReserves.lst.coinType],
-                  new BigNumber(100),
-                  depositReserves.lst,
-                  strategyOwnerCap.id,
-                  txCopy,
-                );
-              }
-
-              // Base+LST: Base and LST deposits only
-              else if (
+              // Base+LST: Base, LST, and 0+ non-base-LST deposits
+              if (
                 baseDeposit?.depositedAmount.gt(0) &&
                 lstDeposit?.depositedAmount.gt(0)
               ) {
-                const borrowedAmount =
-                  obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
+                const nonBaseNonLstDeposits = obligation.deposits.filter(
+                  (d) =>
+                    d.coinType !== depositReserves.base!.coinType &&
+                    d.coinType !== depositReserves.lst!.coinType,
+                );
 
-                // Base+LST: Base and LST deposits only, and SUI borrows
-                if (borrowedAmount.gt(0)) {
-                  const borrowedAmountUsd = borrowedAmount.times(
-                    borrowReserve.price,
+                // Base+LST: Base, LST, and 1+ non-base-LST deposits
+                if (
+                  nonBaseNonLstDeposits.some((d) => d.depositedAmount.gt(0))
+                ) {
+                  // Swap non-base-LST deposits for LST
+                  await strategySwapSomeDepositsForCoinType(
+                    strategyType,
+                    cetusSdk,
+                    CETUS_PARTNER_ID,
+                    obligation,
+                    [
+                      depositReserves.base.coinType,
+                      depositReserves.lst.coinType,
+                    ],
+                    new BigNumber(100),
+                    depositReserves.lst,
+                    strategyOwnerCap.id,
+                    txCopy,
                   );
-                  const fullRepaymentAmount = (
-                    borrowedAmountUsd.lt(0.1)
-                      ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-                      : borrowedAmountUsd.lt(1)
-                        ? borrowedAmount.times(1.1) // 10% buffer
-                        : borrowedAmountUsd.lt(10)
-                          ? borrowedAmount.times(1.01) // 1% buffer
-                          : borrowedAmount.times(1.001)
-                  ) // 0.1% buffer
-                    .decimalPlaces(
-                      borrowReserve.token.decimals,
-                      BigNumber.ROUND_DOWN,
+                }
+
+                // Base+LST: Base, LST, and 0 non-base-LST deposits
+                else {
+                  const borrowedAmount =
+                    obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0); // Assume up to 1 borrow
+
+                  // Base+LST: Base, LST, and 0 non-base-LST deposits, and SUI borrows
+                  if (borrowedAmount.gt(0)) {
+                    const borrowedAmountUsd = borrowedAmount.times(
+                      borrowReserve.price,
+                    );
+                    const fullRepaymentAmount = (
+                      borrowedAmountUsd.lt(0.1)
+                        ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+                        : borrowedAmountUsd.lt(1)
+                          ? borrowedAmount.times(1.1) // 10% buffer
+                          : borrowedAmountUsd.lt(10)
+                            ? borrowedAmount.times(1.01) // 1% buffer
+                            : borrowedAmount.times(1.001)
+                    ) // 0.1% buffer
+                      .decimalPlaces(
+                        borrowReserve.token.decimals,
+                        BigNumber.ROUND_DOWN,
+                      );
+
+                    const lstWithdrawnAmount = fullRepaymentAmount
+                      .div(1 - +(lst?.redeemFeePercent ?? 0) / 100) // Potential rounding issue (max 1 MIST)
+                      .div(lst?.lstToSuiExchangeRate ?? 1)
+                      .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+
+                    const swapPercent = BigNumber.min(
+                      new BigNumber(
+                        lstDeposit.depositedAmount.minus(lstWithdrawnAmount),
+                      )
+                        .div(lstDeposit.depositedAmount)
+                        .times(100),
+                      3, // Max 3% of LST deposits swapped for base at a time
                     );
 
-                  const lstWithdrawnAmount = fullRepaymentAmount
-                    .div(1 - +(lst?.redeemFeePercent ?? 0) / 100) // Potential rounding issue (max 1 MIST)
-                    .div(lst?.lstToSuiExchangeRate ?? 1)
-                    .decimalPlaces(LST_DECIMALS, BigNumber.ROUND_DOWN);
+                    // console.log("XXXXXX", {
+                    //   borrowedAmount: borrowedAmount.toFixed(20),
+                    //   fullRepaymentAmount: fullRepaymentAmount.toFixed(20),
+                    //   lstDepositedAmount: lstDeposit.depositedAmount.toFixed(20),
+                    //   lstWithdrawnAmount: lstWithdrawnAmount.toFixed(20),
+                    //   swapPercent: swapPercent.toFixed(20),
+                    // });
 
-                  const swapPercent = BigNumber.min(
-                    new BigNumber(
-                      lstDeposit.depositedAmount.minus(lstWithdrawnAmount),
-                    )
-                      .div(lstDeposit.depositedAmount)
-                      .times(100),
-                    3, // Max 3% of LST deposits swapped for base at a time
-                  );
+                    // Swap percent is at least 0.5%
+                    if (swapPercent.gte(0.5)) {
+                      // Swap excess LST deposits for base
+                      await strategySwapSomeDepositsForCoinType(
+                        strategyType,
+                        cetusSdk,
+                        CETUS_PARTNER_ID,
+                        obligation,
+                        [depositReserves.base.coinType],
+                        swapPercent,
+                        depositReserves.base,
+                        strategyOwnerCap.id,
+                        txCopy,
+                      );
+                    }
 
-                  // console.log("XXXXXX", {
-                  //   borrowedAmount: borrowedAmount.toFixed(20),
-                  //   fullRepaymentAmount: fullRepaymentAmount.toFixed(20),
-                  //   lstDepositedAmount: lstDeposit.depositedAmount.toFixed(20),
-                  //   lstWithdrawnAmount: lstWithdrawnAmount.toFixed(20),
-                  //   swapPercent: swapPercent.toFixed(20),
-                  // });
-
-                  // Swap percent is at least 0.5%
-                  if (swapPercent.gte(0.5)) {
-                    // Swap excess LST deposits for base
-                    await strategySwapSomeDepositsForCoinType(
-                      strategyType,
-                      cetusSdk,
-                      CETUS_PARTNER_ID,
-                      obligation,
-                      [depositReserves.base.coinType],
-                      swapPercent,
-                      depositReserves.base,
-                      strategyOwnerCap.id,
-                      txCopy,
-                    );
+                    // Swap percent is less than 0.5%
+                    else {
+                      // DO NOTHING
+                    }
                   }
 
-                  // Swap percent is less than 0.5%
+                  // Base+LST: Base, LST, and 0 non-base-LST deposits, and no SUI borrows
                   else {
                     // DO NOTHING
                   }
                 }
+              }
 
-                // Base+LST: Base and LST deposits only, and no SUI borrows
+              // Base+LST: Base, and 0+ non-base-LST deposits
+              else if (baseDeposit?.depositedAmount.gt(0)) {
+                const nonBaseDeposits = obligation.deposits.filter(
+                  (d) => d.coinType !== depositReserves.base!.coinType,
+                );
+
+                // Base+LST: Base, and 1+ non-base-LST deposits
+                if (nonBaseDeposits.some((d) => d.depositedAmount.gt(0))) {
+                  // Swap non-base deposits for base
+                  await strategySwapSomeDepositsForCoinType(
+                    strategyType,
+                    cetusSdk,
+                    CETUS_PARTNER_ID,
+                    obligation,
+                    [depositReserves.base.coinType],
+                    new BigNumber(100),
+                    depositReserves.base,
+                    strategyOwnerCap.id,
+                    txCopy,
+                  );
+                }
+
+                // Base+LST: Base, and 0 non-base-LST deposits
                 else {
                   // DO NOTHING
                 }
               }
 
-              // Base+LST: Base deposit only (1x leverage)
-              else if (baseDeposit?.depositedAmount.gt(0)) {
-                // DO NOTHING
-              }
-
-              // Base+LST: LST deposit only
+              // Base+LST: LST, and 0+ non-base-LST deposits
               else if (lstDeposit?.depositedAmount.gt(0)) {
-                // Swap LST deposits (e.g. autoclaimed+deposited LST rewards) for base
+                // Swap non-base deposits for base
                 await strategySwapSomeDepositsForCoinType(
                   strategyType,
                   cetusSdk,
@@ -4040,9 +4072,20 @@ export default function LstStrategyDialog({
                 );
               }
 
-              // Base+LST: No deposits
+              // Base+LST: 0+ non-base-LST deposits
               else {
-                // DO NOTHING
+                // Swap non-base deposits for base
+                await strategySwapSomeDepositsForCoinType(
+                  strategyType,
+                  cetusSdk,
+                  CETUS_PARTNER_ID,
+                  obligation,
+                  [depositReserves.base.coinType],
+                  new BigNumber(100),
+                  depositReserves.base,
+                  strategyOwnerCap.id,
+                  txCopy,
+                );
               }
             }
 
@@ -4052,9 +4095,9 @@ export default function LstStrategyDialog({
                 (d) => d.coinType !== depositReserves.base!.coinType,
               );
 
-              // Base only: Non-base deposit(s)
+              // Base only: 1+ non-base deposit(s)
               if (nonBaseDeposits.some((d) => d.depositedAmount.gt(0))) {
-                // Swap non-base deposits (e.g. autoclaimed+deposited non-base rewards) for base
+                // Swap non-base deposits for base
                 await strategySwapSomeDepositsForCoinType(
                   strategyType,
                   cetusSdk,
@@ -4068,7 +4111,7 @@ export default function LstStrategyDialog({
                 );
               }
 
-              // Base only: Base deposit only
+              // Base only: Base, 0 non-base deposits
               else if (baseDeposit?.depositedAmount.gt(0)) {
                 // DO NOTHING
               }
@@ -4089,9 +4132,9 @@ export default function LstStrategyDialog({
               (d) => d.coinType !== depositReserves.lst!.coinType,
             );
 
-            // LST only: Non-LST deposit(s)
+            // LST only: 1+ non-LST deposit(s)
             if (nonLstDeposits.some((d) => d.depositedAmount.gt(0))) {
-              // Swap non-LST deposits (e.g. autoclaimed+deposited non-LST rewards) for LST
+              // Swap non-LST deposits for LST
               await strategySwapSomeDepositsForCoinType(
                 strategyType,
                 cetusSdk,
@@ -4105,7 +4148,7 @@ export default function LstStrategyDialog({
               );
             }
 
-            // LST only: LST deposit only
+            // LST only: LST, 0 non-LST deposits
             else if (lstDeposit?.depositedAmount.gt(0)) {
               // DO NOTHING
             }
