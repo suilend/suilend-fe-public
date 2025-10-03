@@ -1,45 +1,140 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
+import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { TX_TOAST_DURATION } from "@suilend/sui-fe";
+import { ParsedObligation, SuilendClient, parseObligation } from "@suilend/sdk";
+import * as simulate from "@suilend/sdk/utils/simulate";
+import {
+  MS_PER_YEAR,
+  TX_TOAST_DURATION,
+  formatToken,
+  isSui,
+} from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/sui-fe-next";
 
+import StandardSelect from "@/components/shared/StandardSelect";
 import TextLink from "@/components/shared/TextLink";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
+import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 export default function RepayObligation() {
-  const { explorer } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const { appData } = useLoadedAppContext();
+  const { getBalance } = useLoadedUserContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
 
   const [obligationId, setObligationId] = useState<string>("");
+  const [obligation, setObligation] = useState<ParsedObligation | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (!obligationId) return;
+
+    (async () => {
+      try {
+        const rawObligation = await SuilendClient.getObligation(
+          obligationId,
+          appData.suilendClient.lendingMarket.$typeArgs,
+          suiClient,
+        );
+        const refreshedObligation = simulate.refreshObligation(
+          rawObligation,
+          appData.refreshedRawReserves,
+        );
+        const obligation = parseObligation(
+          refreshedObligation,
+          appData.reserveMap,
+        );
+
+        setObligation(obligation);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, [
+    obligationId,
+    appData.suilendClient.lendingMarket.$typeArgs,
+    suiClient,
+    appData.refreshedRawReserves,
+    appData.reserveMap,
+  ]);
+
   const [coinType, setCoinType] = useState<string>("");
-  const [amount, setAmount] = useState<string>("");
+  const [value, setValue] = useState<string>("");
+  const [isMax, setIsMax] = useState<boolean>(false);
 
   const repay = async () => {
+    const balance = getBalance(coinType);
+    const borrowedAmount = obligation?.borrows.find(
+      (borrow) => borrow.coinType === coinType,
+    )?.borrowedAmount;
+    if (!borrowedAmount) return;
+
+    if (!coinType) return;
+    if (!isMax) {
+      if (!value) return;
+      if (new BigNumber(value).gt(balance)) {
+        showErrorToast(
+          "Failed to repay",
+          new Error("Insufficient SUI"),
+          undefined,
+          true,
+        );
+        return;
+      }
+    }
+
     try {
       if (!address) throw new Error("Wallet not connected");
 
       const transaction = new Transaction();
 
+      const reserve = appData.reserveMap[coinType];
+      const threeMinsBorrowAprPercent = reserve.borrowAprPercent
+        .div(MS_PER_YEAR)
+        .times(3 * 60 * 1000);
+
+      const submitAmount = isMax
+        ? BigNumber.min(
+            BigNumber.max(
+              0,
+              balance.minus(
+                isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
+              ),
+            ),
+            new BigNumber(borrowedAmount).times(
+              new BigNumber(1).plus(threeMinsBorrowAprPercent.div(100)),
+            ),
+          )
+            .times(10 ** reserve.token.decimals)
+            .integerValue(BigNumber.ROUND_UP)
+            .toString()
+        : new BigNumber(value)
+            .times(10 ** reserve.token.decimals)
+            .integerValue(BigNumber.ROUND_DOWN)
+            .toString();
+      console.log("XXXX", +balance, +submitAmount);
+
       await appData.suilendClient.repayIntoObligation(
         address,
         obligationId,
         coinType,
-        amount,
+        submitAmount,
         transaction,
       );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
       const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Successfully repaid", {
+      toast.success(`Successfully repaid ${reserve.token.symbol}`, {
         action: (
           <TextLink className="block" href={txUrl}>
             View tx on {explorer.name}
@@ -56,25 +151,49 @@ export default function RepayObligation() {
   return (
     <div className="flex w-full max-w-2xl flex-col gap-2">
       <p className="text-lg font-bold">Repay obligation borrows</p>
-
       <input
         className="border bg-background text-foreground"
         placeholder="Obligation ID"
         value={obligationId}
         onChange={(e) => setObligationId(e.target.value)}
       />
-      <input
-        className="border bg-background text-foreground"
-        placeholder="coinType"
+
+      <StandardSelect
+        items={(obligation?.borrows ?? []).map((borrow) => ({
+          id: borrow.coinType,
+          name: `${formatToken(borrow.borrowedAmount, {
+            dp: appData.coinMetadataMap[borrow.coinType].decimals,
+            trimTrailingZeros: true,
+          })} ${appData.coinMetadataMap[borrow.coinType].symbol}`,
+        }))}
         value={coinType}
-        onChange={(e) => setCoinType(e.target.value)}
+        onChange={setCoinType}
       />
-      <input
-        className="border bg-background text-foreground"
-        placeholder="Amount (in MIST)"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+
+      <div className="flex flex-row items-stretch gap-2">
+        <input
+          className="flex-1 rounded-sm border bg-background text-foreground"
+          placeholder="Amount"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setIsMax(false);
+          }}
+        />
+        <button
+          className={cn(
+            "h-10 rounded-sm border px-2",
+            isMax && "border-secondary bg-secondary/5",
+          )}
+          onClick={() => {
+            setValue("");
+            setIsMax((is) => !is);
+          }}
+        >
+          MAX
+        </button>
+      </div>
+
       <button onClick={() => repay()}>Repay</button>
     </div>
   );
