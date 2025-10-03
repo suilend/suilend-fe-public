@@ -155,10 +155,16 @@ export default function EarningsTabContent({
     ].sort(eventSortAsc);
 
     events.forEach((event) => {
-      const obligationDataEvents = eventsData.obligationData.filter(
-        (e) => e.digest === event.digest,
+      const obligationDataEvent = eventsData.obligationData.find(
+        (e) =>
+          e.digest === event.digest &&
+          (event.eventType === EventType.DEPOSIT
+            ? e.eventIndex === event.eventIndex + 1
+            : event.eventType === EventType.WITHDRAW
+              ? e.eventIndex === event.eventIndex - 1
+              : e.eventIndex === event.eventIndex - 3), // Liquidate
       );
-      if (obligationDataEvents.length === 0) return;
+      if (!obligationDataEvent) return;
 
       let coinType;
       if (event.eventType === EventType.DEPOSIT) {
@@ -183,14 +189,6 @@ export default function EarningsTabContent({
         (e) => e.digest === event.digest && e.coinType === coinType,
       );
       if (!reserveAssetDataEvent) return;
-
-      const obligationDataEvent = obligationDataEvents.find(
-        (obligationDataEvent) =>
-          JSON.parse(obligationDataEvent.depositsJson).find(
-            (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
-          ),
-      );
-      if (!obligationDataEvent) return;
 
       const timestampS = reserveAssetDataEvent.timestamp;
       const ctokenExchangeRate = getCtokenExchangeRate(reserveAssetDataEvent);
@@ -420,10 +418,16 @@ export default function EarningsTabContent({
     ].sort(eventSortAsc);
 
     events.forEach((event) => {
-      const obligationDataEvents = eventsData.obligationData.filter(
-        (e) => e.digest === event.digest,
+      const obligationDataEvent = eventsData.obligationData.find(
+        (e) =>
+          e.digest === event.digest &&
+          (event.eventType === EventType.BORROW
+            ? e.eventIndex === event.eventIndex - 1
+            : event.eventType === EventType.REPAY
+              ? e.eventIndex === event.eventIndex - 2
+              : e.eventIndex === event.eventIndex - 3), // Liquidate
       );
-      if (obligationDataEvents.length === 0) return;
+      if (!obligationDataEvent) return;
 
       let coinType;
       if (event.eventType === EventType.BORROW) {
@@ -448,14 +452,6 @@ export default function EarningsTabContent({
         (e) => e.digest === event.digest && e.coinType === coinType,
       );
       if (!reserveAssetDataEvent) return;
-
-      const obligationDataEvent = obligationDataEvents.find(
-        (obligationDataEvent) =>
-          JSON.parse(obligationDataEvent.borrowsJson).find(
-            (p: any) => normalizeStructTag(p.coin_type.name) === coinType,
-          ),
-      );
-      if (!obligationDataEvent) return;
 
       const timestampS = reserveAssetDataEvent.timestamp;
       const cumulativeBorrowRate = new BigNumber(
