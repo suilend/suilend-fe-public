@@ -97,7 +97,7 @@ export default function CetusCard() {
     if (!feesMap) return;
 
     try {
-      // Create keypair
+      // 1) Create keypair
       const createKeypairResult = await createKeypair(
         account,
         signPersonalMessage,
