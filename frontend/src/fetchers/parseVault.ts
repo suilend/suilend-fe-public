@@ -2,11 +2,13 @@ import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 
+import { getAllOwnedObjects } from "@suilend/sui-fe";
+
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
 
 export type ParsedObligation = {
   obligationId: string;
-  lendingMarketId?: string;
+  lendingMarketId: string;
   marketType: string;
   deployedAmount: BigNumber; // base units (currently 0 as placeholder)
   index: number;
@@ -19,7 +21,9 @@ export type ParsedVault = {
   deployedAmount: BigNumber;
   obligations: ParsedObligation[];
   pricingLendingMarketId?: string;
+  pricingLendingMarketType?: string;
   object: SuiObjectResponse;
+  managerCapId?: string;
 };
 
 export const extractVaultBaseCoinType = (
@@ -53,9 +57,26 @@ export const extractVaultBaseCoinType = (
   return args[1];
 };
 
+async function findManagerCapIdForVault(
+  vaultId: string,
+  suiClient: SuiClient,
+  address: string,
+) {
+  if (!address) throw new Error("Wallet not connected");
+  const managerCapStructType = `${VAULTS_PACKAGE_ID}::vault::VaultManagerCap<${VAULTS_PACKAGE_ID}::vault::VaultShare>`;
+  const objs = await getAllOwnedObjects(suiClient, address, {
+    StructType: managerCapStructType,
+  });
+  const match = objs.find(
+    (o) => (o.data?.content as any)?.fields?.vault_id === vaultId,
+  );
+  return match?.data?.objectId as string | undefined;
+}
+
 export const parseVault = async (
   suiClient: SuiClient,
   vaultId: string,
+  address?: string,
 ): Promise<ParsedVault> => {
   const res = await suiClient.getObject({
     id: vaultId,
@@ -104,15 +125,17 @@ export const parseVault = async (
   const obligations: ParsedObligation[] = [];
   for (const entry of vmContents) {
     const keyName = entry.fields?.key?.fields?.name as string | undefined;
-    const marketType = keyName ? `0x${keyName}` : "";
+    if (!keyName) throw new Error("Invalid obligation entry");
+    const marketType = `0x${keyName}`;
     const valueArr: any[] = entry.fields?.value ?? [];
+
     for (let i = 0; i < valueArr.length; i++) {
       const od = valueArr[i];
       const obligationId: string | undefined = od.fields?.obligation_id;
       if (!obligationId) continue;
       obligations.push({
         obligationId,
-        lendingMarketId: marketType ? typeToLmId[marketType] : undefined,
+        lendingMarketId: typeToLmId[marketType],
         marketType,
         deployedAmount: new BigNumber(0),
         index: i,
@@ -158,7 +181,7 @@ export const parseVault = async (
           typeArguments: [o.marketType],
           arguments: [lmObj, tx.pure.id(o.obligationId)],
         });
-        const [netBase] = tx.moveCall({
+        const [_netBase] = tx.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::calculate_obligation_net_value`,
           typeArguments: [o.marketType, baseCoinType],
           arguments: [obRef, lmObj],
@@ -176,7 +199,7 @@ export const parseVault = async (
           // BCS u64 is LE; JS SDK returns decoded as number in some versions; we fallback to parse BigInt from bytes
           // Simplify: Many SDKs also provide parsed value in di.effects or di.results[...].returnValues[0][1]
           const parsed = BigInt(
-            Buffer.from(valueBytes).readBigUInt64LE?.() ?? 0n,
+            Buffer.from(valueBytes).readBigUInt64LE?.() ?? BigInt(0),
           );
           const human = new BigNumber(parsed.toString()).div(10 ** decimals);
           o.deployedAmount = human;
@@ -200,6 +223,11 @@ export const parseVault = async (
     obligations,
     pricingLendingMarketId: obligations.find((o) => !!o.lendingMarketId)
       ?.lendingMarketId,
+    pricingLendingMarketType: obligations.find((o) => !!o.lendingMarketId)
+      ?.marketType,
     object: res,
+    managerCapId: address
+      ? await findManagerCapIdForVault(vaultId, suiClient, address)
+      : undefined,
   };
 };

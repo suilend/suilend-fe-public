@@ -12,11 +12,11 @@ interface VaultCardProps {
 
 export default function VaultCard({ vault }: VaultCardProps) {
   const { depositIntoVault, withdrawFromVault } = useVaultContext();
-  const firstObligationLmId = vault.obligations[0]?.lendingMarketId;
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawShares, setWithdrawShares] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const vaultHasObligations = vault.obligations.length > 0;
 
   return (
     <div className="flex w-full flex-col gap-3 rounded-sm border p-4">
@@ -24,7 +24,7 @@ export default function VaultCard({ vault }: VaultCardProps) {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <TBodySans>Deposit amount (base)</TBodySans>
+          <TBodySans>Deposit amount</TBodySans>
           <div className="flex flex-row gap-2">
             <Input
               inputMode="numeric"
@@ -34,15 +34,22 @@ export default function VaultCard({ vault }: VaultCardProps) {
               }
             />
             <Button
-              disabled={isDepositing || !depositAmount || !firstObligationLmId}
+              disabled={isDepositing || !depositAmount || !vaultHasObligations}
               onClick={async () => {
                 setIsDepositing(true);
                 try {
+                  if (
+                    !vault.pricingLendingMarketId ||
+                    !vault.pricingLendingMarketType
+                  )
+                    throw new Error("Vault doesn't have any obligations");
+
                   await depositIntoVault({
                     vaultId: vault.id,
                     baseCoinType: vault.baseCoinType || "",
                     amount: depositAmount,
                     pricingLendingMarketId: vault.pricingLendingMarketId,
+                    lendingMarketType: vault.pricingLendingMarketType,
                   });
                   setDepositAmount("");
                 } finally {
@@ -56,7 +63,7 @@ export default function VaultCard({ vault }: VaultCardProps) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <TBodySans>Withdraw shares (u64)</TBodySans>
+          <TBodySans>Withdraw shares</TBodySans>
           <div className="flex flex-row gap-2">
             <Input
               inputMode="numeric"
@@ -67,16 +74,23 @@ export default function VaultCard({ vault }: VaultCardProps) {
             />
             <Button
               disabled={
-                isWithdrawing || !withdrawShares || !firstObligationLmId
+                isWithdrawing || !withdrawShares || !vaultHasObligations
               }
               onClick={async () => {
                 setIsWithdrawing(true);
                 try {
+                  if (
+                    !vault.pricingLendingMarketId ||
+                    !vault.pricingLendingMarketType
+                  )
+                    throw new Error("Vault doesn't have any obligations");
+
                   await withdrawFromVault({
                     vaultId: vault.id,
                     baseCoinType: vault.baseCoinType || "",
                     sharesAmount: withdrawShares,
                     pricingLendingMarketId: vault.pricingLendingMarketId,
+                    lendingMarketType: vault.pricingLendingMarketType,
                   });
                   setWithdrawShares("");
                 } finally {

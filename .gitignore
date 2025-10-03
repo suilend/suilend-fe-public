@@ -36,7 +36,7 @@ yarn-error.log*
 next-env.d.ts
 
 ####
-
+frontend/vaults.move
 dist
 node_modules
 .next

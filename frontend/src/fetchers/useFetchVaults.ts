@@ -16,7 +16,6 @@ export default function useFetchVaults() {
       filter: { StructType: type },
     });
 
-    console.log("res", res);
     const items: ParsedVault[] = [];
     for (const o of res.data) {
       const fields = (o.data?.content as any)?.fields;

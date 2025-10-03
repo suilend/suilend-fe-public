@@ -43,7 +43,6 @@ function Page() {
     createObligation,
     deployFunds,
     withdrawDeployedFunds,
-    compoundPerformanceFees,
     // Context-managed vault page data
     vaultPageVaultId,
     setVaultPageVaultId,
@@ -282,7 +281,7 @@ function Page() {
                                       x.marketType,
                                       {
                                         lendingMarketType: x.marketType,
-                                        lendingMarketId: x.lendingMarketId!,
+                                        lendingMarketId: x.lendingMarketId,
                                       },
                                     ]),
                                 ).values(),
@@ -293,10 +292,10 @@ function Page() {
                               await deployFunds({
                                 vaultId: fields.id.id,
                                 lendingMarketId: o.lendingMarketId,
+                                lendingMarketType: o.marketType,
                                 obligationIndex: o.index,
                                 amount,
                                 baseCoinType,
-                                aggregatorMarkets,
                               });
                               (
                                 form.elements.namedItem(
@@ -337,31 +336,12 @@ function Page() {
                                 throw new Error(
                                   "Unknown lending market for this obligation",
                                 );
-                              const aggregatorMarkets = Array.from(
-                                new Map(
-                                  obligations
-                                    .filter(
-                                      (x) => x.marketType && x.lendingMarketId,
-                                    )
-                                    .map((x) => [
-                                      x.marketType,
-                                      {
-                                        lendingMarketType: x.marketType,
-                                        lendingMarketId: x.lendingMarketId!,
-                                      },
-                                    ]),
-                                ).values(),
-                              ) as {
-                                lendingMarketId: string;
-                                lendingMarketType: string;
-                              }[];
                               await withdrawDeployedFunds({
-                                vaultId: fields.id.id,
+                                vaultId: fieldsvaul.id.id,
                                 lendingMarketId: o.lendingMarketId,
                                 obligationIndex: o.index,
                                 ctokenAmount,
                                 baseCoinType,
-                                aggregatorMarkets,
                               });
                               (
                                 form.elements.namedItem(
@@ -401,92 +381,16 @@ function Page() {
             <CreateObligationForm
               vaultId={fields?.id.id}
               baseCoinType={baseCoinType}
+              managerCapId={vaultData?.managerCapId}
               onSubmit={async (args) => {
                 try {
                   if (!args.vaultId || !args.baseCoinType)
                     throw new Error("Missing vault or base coin type");
-                  if (!args.lendingMarketId || !args.lendingMarketType)
+                  if (!args.lendingMarketId)
                     throw new Error("Enter lending market ID and type");
                   await createObligation(args);
                 } catch (err: any) {
                   toast.error(err?.message || "Failed to create obligation");
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Deploy funds to obligation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DeployFundsForm
-              vaultId={fields?.id.id}
-              baseCoinType={baseCoinType}
-              onSubmit={async (args) => {
-                try {
-                  if (!args.vaultId || !args.baseCoinType)
-                    throw new Error("Missing vault or base coin type");
-                  if (!args.lendingMarketId || !args.lendingMarketType)
-                    throw new Error("Enter lending market ID and type");
-                  if (!args.amount || !args.obligationIndex.toString())
-                    throw new Error("Enter amount and obligation index");
-                  if (!args.aggregatorMarkets.length)
-                    throw new Error("Add at least one aggregator market");
-                  await deployFunds(args);
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to deploy funds");
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Withdraw deployed funds</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WithdrawFundsForm
-              vaultId={fields?.id.id}
-              baseCoinType={baseCoinType}
-              onSubmit={async (args) => {
-                try {
-                  if (!args.vaultId || !args.baseCoinType)
-                    throw new Error("Missing vault or base coin type");
-                  if (!args.lendingMarketId || !args.lendingMarketType)
-                    throw new Error("Enter lending market ID and type");
-                  if (!args.ctokenAmount || !args.obligationIndex.toString())
-                    throw new Error("Enter cToken amount and obligation index");
-                  if (!args.aggregatorMarkets.length)
-                    throw new Error("Add at least one aggregator market");
-                  await withdrawDeployedFunds(args);
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to withdraw funds");
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Compound performance fees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CompoundFeesForm
-              vaultId={fields?.id.id}
-              baseCoinType={baseCoinType}
-              onSubmit={async (args) => {
-                try {
-                  if (!args.vaultId || !args.baseCoinType)
-                    throw new Error("Missing vault or base coin type");
-                  if (!args.aggregatorMarkets.length)
-                    throw new Error("Add at least one aggregator market");
-                  await compoundPerformanceFees(args);
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to compound fees");
                 }
               }}
             />
@@ -508,7 +412,6 @@ function CreateObligationForm({
   onSubmit: (args: {
     vaultId: string;
     lendingMarketId: string;
-    lendingMarketType: string;
     baseCoinType: string;
   }) => Promise<void>;
 }) {
@@ -526,8 +429,8 @@ function CreateObligationForm({
           await onSubmit({
             vaultId: vaultId!,
             lendingMarketId,
-            lendingMarketType,
             baseCoinType: baseCoinType!,
+            managerCapId: managerCapId!,
           });
         } finally {
           setIsSubmitting(false);
@@ -550,14 +453,7 @@ function CreateObligationForm({
           onChange={(e) => setLendingMarketId(e.target.value)}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Lending market type (L)</TBodySans>
-        <Input
-          placeholder="0x...::module::Type"
-          value={lendingMarketType}
-          onChange={(e) => setLendingMarketType(e.target.value)}
-        />
-      </div>
+      {/* Market type auto-detected in backend */}
       <div className="col-span-full flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create obligation"}
@@ -577,29 +473,15 @@ function DeployFundsForm({
   onSubmit: (args: {
     vaultId: string;
     lendingMarketId: string;
-    lendingMarketType: string;
     obligationIndex: number;
     amount: string;
     baseCoinType: string;
-    aggregatorMarkets: { lendingMarketId: string; lendingMarketType: string }[];
   }) => Promise<void>;
 }) {
   const [lendingMarketId, setLendingMarketId] = useState("");
-  const [lendingMarketType, setLendingMarketType] = useState("");
   const [obligationIndex, setObligationIndex] = useState("0");
   const [amount, setAmount] = useState("");
-  const [aggregatorMarketsInput, setAggregatorMarketsInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const parseAggregator = () =>
-    aggregatorMarketsInput
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => {
-        const [id, type] = l.split(",").map((s) => s.trim());
-        return { lendingMarketId: id, lendingMarketType: type };
-      });
 
   return (
     <form
@@ -612,11 +494,9 @@ function DeployFundsForm({
           await onSubmit({
             vaultId: vaultId!,
             lendingMarketId,
-            lendingMarketType,
             obligationIndex: Number(obligationIndex || 0),
             amount,
             baseCoinType: baseCoinType!,
-            aggregatorMarkets: parseAggregator(),
           });
         } finally {
           setIsSubmitting(false);
@@ -639,14 +519,7 @@ function DeployFundsForm({
           onChange={(e) => setLendingMarketId(e.target.value)}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Lending market type (target)</TBodySans>
-        <Input
-          placeholder="0x...::module::Type"
-          value={lendingMarketType}
-          onChange={(e) => setLendingMarketType(e.target.value)}
-        />
-      </div>
+      {/* Market type auto-detected in backend */}
       <div className="flex flex-col gap-1">
         <TBodySans>Obligation index</TBodySans>
         <Input
@@ -667,14 +540,7 @@ function DeployFundsForm({
           onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
         />
       </div>
-      <div className="col-span-full flex flex-col gap-1">
-        <TBodySans>Aggregator markets (one per line: id,type)</TBodySans>
-        <textarea
-          className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          value={aggregatorMarketsInput}
-          onChange={(e) => setAggregatorMarketsInput(e.target.value)}
-        />
-      </div>
+      {/* Aggregator markets derived from obligations */}
       <div className="col-span-full flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Deploying..." : "Deploy funds"}
@@ -694,29 +560,15 @@ function WithdrawFundsForm({
   onSubmit: (args: {
     vaultId: string;
     lendingMarketId: string;
-    lendingMarketType: string;
     obligationIndex: number;
     ctokenAmount: string;
     baseCoinType: string;
-    aggregatorMarkets: { lendingMarketId: string; lendingMarketType: string }[];
   }) => Promise<void>;
 }) {
   const [lendingMarketId, setLendingMarketId] = useState("");
-  const [lendingMarketType, setLendingMarketType] = useState("");
   const [obligationIndex, setObligationIndex] = useState("0");
   const [ctokenAmount, setCtokenAmount] = useState("");
-  const [aggregatorMarketsInput, setAggregatorMarketsInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const parseAggregator = () =>
-    aggregatorMarketsInput
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => {
-        const [id, type] = l.split(",").map((s) => s.trim());
-        return { lendingMarketId: id, lendingMarketType: type };
-      });
 
   return (
     <form
@@ -729,11 +581,9 @@ function WithdrawFundsForm({
           await onSubmit({
             vaultId: vaultId!,
             lendingMarketId,
-            lendingMarketType,
             obligationIndex: Number(obligationIndex || 0),
             ctokenAmount,
             baseCoinType: baseCoinType!,
-            aggregatorMarkets: parseAggregator(),
           });
         } finally {
           setIsSubmitting(false);
@@ -756,14 +606,7 @@ function WithdrawFundsForm({
           onChange={(e) => setLendingMarketId(e.target.value)}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Lending market type (target)</TBodySans>
-        <Input
-          placeholder="0x...::module::Type"
-          value={lendingMarketType}
-          onChange={(e) => setLendingMarketType(e.target.value)}
-        />
-      </div>
+      {/* Market type auto-detected in backend */}
       <div className="flex flex-col gap-1">
         <TBodySans>Obligation index</TBodySans>
         <Input
@@ -786,14 +629,7 @@ function WithdrawFundsForm({
           }
         />
       </div>
-      <div className="col-span-full flex flex-col gap-1">
-        <TBodySans>Aggregator markets (one per line: id,type)</TBodySans>
-        <textarea
-          className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          value={aggregatorMarketsInput}
-          onChange={(e) => setAggregatorMarketsInput(e.target.value)}
-        />
-      </div>
+      {/* Aggregator markets derived from obligations */}
       <div className="col-span-full flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Withdrawing..." : "Withdraw funds"}
