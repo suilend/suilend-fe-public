@@ -10,7 +10,11 @@ import Value from "@/components/shared/Value";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
+import {
+  VaultContext,
+  VaultContextProvider,
+  useVaultContext,
+} from "@/contexts/VaultContext";
 
 interface VaultFields {
   id: { id: string };
@@ -27,13 +31,6 @@ interface VaultFields {
   utilization_rate_bps: string;
   last_nav_per_share: string;
   fee_last_update_timestamp_s: string;
-}
-
-interface ObligationEntry {
-  marketType: string;
-  lendingMarketId?: string;
-  index: number;
-  obligationId: string;
 }
 
 function Page() {
@@ -65,9 +62,8 @@ function Page() {
   }, [obj]);
 
   const isLoading = isLoadingVaultData;
-  const error = undefined;
 
-  const obligations: ObligationEntry[] = (vaultData?.obligations as any) ?? [];
+  const obligations = vaultData?.obligations ?? [];
   const isLoadingObligations = isLoadingVaultData;
 
   return (
@@ -86,8 +82,6 @@ function Page() {
           <CardContent>
             {isLoading ? (
               <TLabelSans>Loading…</TLabelSans>
-            ) : error ? (
-              <TLabelSans className="text-red-500">{error}</TLabelSans>
             ) : !fields ? (
               <TLabelSans>Vault not found or invalid type.</TLabelSans>
             ) : (
@@ -265,37 +259,20 @@ function Page() {
                               ) as HTMLInputElement
                             ).value;
                             try {
-                              if (!fields?.id.id || !baseCoinType)
+                              if (!vaultData || !baseCoinType)
                                 throw new Error("Vault not loaded");
-                              if (!o.lendingMarketId)
+                              if (!vaultData.managerCapId)
                                 throw new Error(
-                                  "Unknown lending market for this obligation",
+                                  "Manager cap not found in connected wallet",
                                 );
-                              const aggregatorMarkets = Array.from(
-                                new Map(
-                                  obligations
-                                    .filter(
-                                      (x) => x.marketType && x.lendingMarketId,
-                                    )
-                                    .map((x) => [
-                                      x.marketType,
-                                      {
-                                        lendingMarketType: x.marketType,
-                                        lendingMarketId: x.lendingMarketId,
-                                      },
-                                    ]),
-                                ).values(),
-                              ) as {
-                                lendingMarketId: string;
-                                lendingMarketType: string;
-                              }[];
                               await deployFunds({
-                                vaultId: fields.id.id,
+                                vaultId: vaultData.id,
                                 lendingMarketId: o.lendingMarketId,
                                 lendingMarketType: o.marketType,
                                 obligationIndex: o.index,
                                 amount,
                                 baseCoinType,
+                                managerCapId: vaultData?.managerCapId,
                               });
                               (
                                 form.elements.namedItem(
@@ -330,18 +307,20 @@ function Page() {
                               ) as HTMLInputElement
                             ).value;
                             try {
-                              if (!fields?.id.id || !baseCoinType)
+                              if (!vaultData || !baseCoinType)
                                 throw new Error("Vault not loaded");
-                              if (!o.lendingMarketId)
+                              if (!vaultData.managerCapId)
                                 throw new Error(
-                                  "Unknown lending market for this obligation",
+                                  "Manager cap not found in connected wallet",
                                 );
                               await withdrawDeployedFunds({
-                                vaultId: fieldsvaul.id.id,
+                                vaultId: vaultData.id,
                                 lendingMarketId: o.lendingMarketId,
+                                lendingMarketType: o.marketType,
                                 obligationIndex: o.index,
                                 ctokenAmount,
                                 baseCoinType,
+                                managerCapId: vaultData.managerCapId,
                               });
                               (
                                 form.elements.namedItem(
@@ -406,17 +385,14 @@ function CreateObligationForm({
   vaultId,
   baseCoinType,
   onSubmit,
+  managerCapId,
 }: {
   vaultId?: string;
   baseCoinType?: string;
-  onSubmit: (args: {
-    vaultId: string;
-    lendingMarketId: string;
-    baseCoinType: string;
-  }) => Promise<void>;
+  managerCapId?: string;
+  onSubmit: VaultContext["createObligation"];
 }) {
   const [lendingMarketId, setLendingMarketId] = useState("");
-  const [lendingMarketType, setLendingMarketType] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   return (
     <form
@@ -457,249 +433,6 @@ function CreateObligationForm({
       <div className="col-span-full flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create obligation"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function DeployFundsForm({
-  vaultId,
-  baseCoinType,
-  onSubmit,
-}: {
-  vaultId?: string;
-  baseCoinType?: string;
-  onSubmit: (args: {
-    vaultId: string;
-    lendingMarketId: string;
-    obligationIndex: number;
-    amount: string;
-    baseCoinType: string;
-  }) => Promise<void>;
-}) {
-  const [lendingMarketId, setLendingMarketId] = useState("");
-  const [obligationIndex, setObligationIndex] = useState("0");
-  const [amount, setAmount] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  return (
-    <form
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-        setIsSubmitting(true);
-        try {
-          await onSubmit({
-            vaultId: vaultId!,
-            lendingMarketId,
-            obligationIndex: Number(obligationIndex || 0),
-            amount,
-            baseCoinType: baseCoinType!,
-          });
-        } finally {
-          setIsSubmitting(false);
-        }
-      }}
-    >
-      <div className="flex flex-col gap-1">
-        <TBodySans>Vault</TBodySans>
-        <Value value={vaultId ?? "-"} isId />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Base coin type</TBodySans>
-        <Value value={baseCoinType ?? "-"} isType />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Lending market ID (target)</TBodySans>
-        <Input
-          placeholder="0x..."
-          value={lendingMarketId}
-          onChange={(e) => setLendingMarketId(e.target.value)}
-        />
-      </div>
-      {/* Market type auto-detected in backend */}
-      <div className="flex flex-col gap-1">
-        <TBodySans>Obligation index</TBodySans>
-        <Input
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={obligationIndex}
-          onChange={(e) =>
-            setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))
-          }
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Amount (u64 units of base asset)</TBodySans>
-        <Input
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
-        />
-      </div>
-      {/* Aggregator markets derived from obligations */}
-      <div className="col-span-full flex justify-end">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Deploying..." : "Deploy funds"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function WithdrawFundsForm({
-  vaultId,
-  baseCoinType,
-  onSubmit,
-}: {
-  vaultId?: string;
-  baseCoinType?: string;
-  onSubmit: (args: {
-    vaultId: string;
-    lendingMarketId: string;
-    obligationIndex: number;
-    ctokenAmount: string;
-    baseCoinType: string;
-  }) => Promise<void>;
-}) {
-  const [lendingMarketId, setLendingMarketId] = useState("");
-  const [obligationIndex, setObligationIndex] = useState("0");
-  const [ctokenAmount, setCtokenAmount] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  return (
-    <form
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-        setIsSubmitting(true);
-        try {
-          await onSubmit({
-            vaultId: vaultId!,
-            lendingMarketId,
-            obligationIndex: Number(obligationIndex || 0),
-            ctokenAmount,
-            baseCoinType: baseCoinType!,
-          });
-        } finally {
-          setIsSubmitting(false);
-        }
-      }}
-    >
-      <div className="flex flex-col gap-1">
-        <TBodySans>Vault</TBodySans>
-        <Value value={vaultId ?? "-"} isId />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Base coin type</TBodySans>
-        <Value value={baseCoinType ?? "-"} isType />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Lending market ID (target)</TBodySans>
-        <Input
-          placeholder="0x..."
-          value={lendingMarketId}
-          onChange={(e) => setLendingMarketId(e.target.value)}
-        />
-      </div>
-      {/* Market type auto-detected in backend */}
-      <div className="flex flex-col gap-1">
-        <TBodySans>Obligation index</TBodySans>
-        <Input
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={obligationIndex}
-          onChange={(e) =>
-            setObligationIndex(e.target.value.replace(/[^0-9]/g, ""))
-          }
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>cToken amount (u64)</TBodySans>
-        <Input
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={ctokenAmount}
-          onChange={(e) =>
-            setCtokenAmount(e.target.value.replace(/[^0-9]/g, ""))
-          }
-        />
-      </div>
-      {/* Aggregator markets derived from obligations */}
-      <div className="col-span-full flex justify-end">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Withdrawing..." : "Withdraw funds"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function CompoundFeesForm({
-  vaultId,
-  baseCoinType,
-  onSubmit,
-}: {
-  vaultId?: string;
-  baseCoinType?: string;
-  onSubmit: (args: {
-    vaultId: string;
-    baseCoinType: string;
-    aggregatorMarkets: { lendingMarketId: string; lendingMarketType: string }[];
-  }) => Promise<void>;
-}) {
-  const [aggregatorMarketsInput, setAggregatorMarketsInput] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const parseAggregator = () =>
-    aggregatorMarketsInput
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((l) => {
-        const [id, type] = l.split(",").map((s) => s.trim());
-        return { lendingMarketId: id, lendingMarketType: type };
-      });
-  return (
-    <form
-      className="grid grid-cols-1 gap-4 sm:grid-cols-2"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-        setIsSubmitting(true);
-        try {
-          await onSubmit({
-            vaultId: vaultId!,
-            baseCoinType: baseCoinType!,
-            aggregatorMarkets: parseAggregator(),
-          });
-        } finally {
-          setIsSubmitting(false);
-        }
-      }}
-    >
-      <div className="flex flex-col gap-1">
-        <TBodySans>Vault</TBodySans>
-        <Value value={vaultId ?? "-"} isId />
-      </div>
-      <div className="flex flex-col gap-1">
-        <TBodySans>Base coin type</TBodySans>
-        <Value value={baseCoinType ?? "-"} isType />
-      </div>
-      <div className="col-span-full flex flex-col gap-1">
-        <TBodySans>Aggregator markets (one per line: id,type)</TBodySans>
-        <textarea
-          className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          value={aggregatorMarketsInput}
-          onChange={(e) => setAggregatorMarketsInput(e.target.value)}
-        />
-      </div>
-      <div className="col-span-full flex justify-end">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Compounding..." : "Compound fees"}
         </Button>
       </div>
     </form>

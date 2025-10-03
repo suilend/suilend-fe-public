@@ -28,7 +28,7 @@ export type VaultObligationEntry = {
   obligationId: string;
 };
 
-interface VaultContext {
+export interface VaultContext {
   vaults: ParsedVault[];
   createVault: (args: {
     baseCoinType: string;
@@ -43,6 +43,7 @@ interface VaultContext {
     vaultId: string;
     lendingMarketId: string; // type auto-detected
     baseCoinType: string; // T
+    managerCapId: string;
   }) => Promise<void>;
 
   deployFunds: (args: {
@@ -52,6 +53,7 @@ interface VaultContext {
     obligationIndex: number;
     amount: string;
     baseCoinType: string;
+    managerCapId: string;
   }) => Promise<void>;
 
   withdrawDeployedFunds: (args: {
@@ -61,6 +63,7 @@ interface VaultContext {
     obligationIndex: number;
     ctokenAmount: string;
     baseCoinType: string;
+    managerCapId: string;
   }) => Promise<void>;
 
   listVaultObligations: (vaultId: string) => Promise<VaultObligationEntry[]>;
@@ -68,19 +71,7 @@ interface VaultContext {
   // Vault page data
   vaultPageVaultId?: string;
   setVaultPageVaultId: (vaultId?: string) => void;
-  vaultData?: {
-    id: string;
-    baseCoinType?: string;
-    undeployedAmount: BigNumber;
-    deployedAmount: BigNumber;
-    obligations: {
-      obligationId: string;
-      lendingMarketId?: string;
-      marketType: string;
-    }[];
-    pricingLendingMarketId?: string;
-    object: SuiObjectResponse;
-  };
+  vaultData?: ParsedVault;
   isLoadingVaultData: boolean;
   errorVaultData?: string;
 
@@ -133,7 +124,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
     data: vaultData,
     isLoading: isLoadingVaultData,
     error: errorVaultDataObj,
-  } = useFetchVault(vaultPageVaultId);
+  } = useFetchVault(vaultPageVaultId, address);
 
   const { data: fetchedVaults } = useFetchVaults();
 
@@ -256,10 +247,6 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         managerCapId,
       }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!managerCapId)
-          throw new Error(
-            "Manager cap for this vault not found in your wallet",
-          );
 
         const lendingMarketType =
           await detectLendingMarketType(lendingMarketId);
@@ -298,17 +285,12 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         obligationIndex,
         amount,
         baseCoinType,
+        managerCapId,
       }) => {
         if (!address) throw new Error("Wallet not connected");
         const obligations = vaultData?.obligations || [];
         if (!obligations.length)
           throw new Error("Vault has no obligations to price against");
-
-        const managerCapId = await findManagerCapIdForVault(vaultId);
-        if (!managerCapId)
-          throw new Error(
-            "Manager cap for this vault not found in your wallet",
-          );
 
         const transaction = new Transaction();
 
@@ -384,17 +366,12 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         obligationIndex,
         ctokenAmount,
         baseCoinType,
+        managerCapId,
       }) => {
         if (!address) throw new Error("Wallet not connected");
         const obligations = vaultData?.obligations || [];
         if (!obligations.length)
           throw new Error("Vault has no obligations to price against");
-
-        const managerCapId = await findManagerCapIdForVault(vaultId);
-        if (!managerCapId)
-          throw new Error(
-            "Manager cap for this vault not found in your wallet",
-          );
 
         const transaction = new Transaction();
 

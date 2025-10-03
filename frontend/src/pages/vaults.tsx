@@ -1,10 +1,7 @@
 import Head from "next/head";
 import Link from "next/link";
 
-import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
-
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import StrategyCard from "@/components/strategies/StrategyCard";
 import { Button } from "@/components/ui/button";
 import VaultCard from "@/components/vaults/VaultCard";
 import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
@@ -30,7 +27,7 @@ function Page() {
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
             {vaults.map((vault) => (
-              <VaultCard key={vault.id} vault={vault as any} />
+              <VaultCard key={vault.id} vault={vault} />
             ))}
           </div>
         </div>
