@@ -44,6 +44,8 @@ import {
 import { Action } from "@suilend/sdk/lib/types";
 import {
   MAX_U64,
+  NORMALIZED_SUI_COINTYPE,
+  NORMALIZED_USDC_COINTYPE,
   SUI_COINTYPE,
   Token,
   formatInteger,
@@ -65,9 +67,9 @@ import Spinner from "@/components/shared/Spinner";
 import Switch from "@/components/shared/Switch";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogos from "@/components/shared/TokenLogos";
-import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
+import BulkSwapCard from "@/components/swap/BulkSwapCard";
 import RoutingDialog from "@/components/swap/RoutingDialog";
 import SwapInput from "@/components/swap/SwapInput";
 import SwapSlippagePopover, {
@@ -1946,6 +1948,11 @@ function Page() {
             FlowX
           </TextLink>
         </TLabelSans>
+
+        {(tokenOut.coinType === NORMALIZED_SUI_COINTYPE ||
+          tokenOut.coinType === NORMALIZED_USDC_COINTYPE) && (
+          <BulkSwapCard tokenOut={tokenOut} />
+        )}
       </div>
     </>
   );

@@ -11,7 +11,6 @@ import {
 import CreateLendingMarketDialog from "@/components/admin/CreateLendingMarketDialog";
 import LendingMarketTab from "@/components/admin/lendingMarket/LendingMarketTab";
 import LiquidateTab from "@/components/admin/liquidate/LiquidateTab";
-import MiscTab from "@/components/admin/misc/MiscTab";
 import ObligationsTab from "@/components/admin/obligations/ObligationsTab";
 import ReservesTab from "@/components/admin/reserves/ReservesTab";
 import ThirdPartyFeesTab from "@/components/admin/thirdPartyFees/ThirdPartyFeesTab";
@@ -46,7 +45,6 @@ function Page() {
     THIRD_PARTY_FEES = "thirdPartyFees",
     LIQUIDATE = "liquidate",
     OBLIGATIONS = "obligations",
-    MISC = "misc",
   }
 
   const tabs = [
@@ -58,10 +56,7 @@ function Page() {
       { id: Tab.LIQUIDATE, title: "Liquidate" },
       { id: Tab.OBLIGATIONS, title: "Obligations" },
     ],
-    [
-      { id: Tab.THIRD_PARTY_FEES, title: "3rd party fees" },
-      { id: Tab.MISC, title: "Misc" },
-    ],
+    [{ id: Tab.THIRD_PARTY_FEES, title: "3rd party fees" }],
   ];
 
   // Auto-switch to liquidate tab if obligation_id is provided
@@ -134,7 +129,6 @@ function Page() {
           )}
           {selectedTab === Tab.OBLIGATIONS && <ObligationsTab />}
           {selectedTab === Tab.THIRD_PARTY_FEES && <ThirdPartyFeesTab />}
-          {selectedTab === Tab.MISC && <MiscTab />}
         </div>
       </div>
     </>
