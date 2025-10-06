@@ -213,16 +213,30 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
             suiClient,
           );
 
-          const balanceChangeIn = getBalanceChange(
+          const feeBalanceChangeIn = getBalanceChange(
+            res,
+            FEE_ADDRESS,
+            tokenOut,
+          );
+          const userBalanceChangeIn = getBalanceChange(
             res,
             keypairAddress,
             tokenOut,
           );
-          if (balanceChangeIn !== undefined) {
-            tokenOutAmount = tokenOutAmount.plus(balanceChangeIn);
+          if (
+            feeBalanceChangeIn !== undefined &&
+            userBalanceChangeIn !== undefined
+          ) {
+            tokenOutAmount = tokenOutAmount.plus(userBalanceChangeIn);
+
             track("bulk_swap_success", {
+              assetIn: (balancesCoinMetadataMap ?? {})[coinType].symbol,
               assetOut: tokenOut.symbol,
-              amountOut: tokenOutAmount.toFixed(
+              feeAmountOut: feeBalanceChangeIn.toFixed(
+                tokenOut.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+              userAmountOut: userBalanceChangeIn.toFixed(
                 tokenOut.decimals,
                 BigNumber.ROUND_DOWN,
               ),
