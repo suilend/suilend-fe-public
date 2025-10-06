@@ -621,6 +621,7 @@ export default function LstStrategyDialog({
       const _currencyReserve = appData.reserveMap[_currencyCoinType];
 
       const simValue = new BigNumber(1);
+      const simValueUsd = simValue.times(_currencyReserve.price);
       const { deposits, borrowedAmount } = simulateDepositAndLoopToExposure(
         strategyType,
         [],
@@ -660,18 +661,28 @@ export default function LstStrategyDialog({
       } = {
         base:
           depositReserves.base !== undefined
-            ? (deposits
-                .find((d) => d.coinType === depositReserves.base!.coinType)
-                ?.depositedAmount.div(simValue) ?? new BigNumber(0))
+            ? (
+                deposits.find(
+                  (d) => d.coinType === depositReserves.base!.coinType,
+                )?.depositedAmount ?? new BigNumber(0)
+              )
+                .times(depositReserves.base.price)
+                .div(simValueUsd)
             : undefined,
         lst:
           depositReserves.lst !== undefined
-            ? (deposits
-                .find((d) => d.coinType === depositReserves.lst!.coinType)
-                ?.depositedAmount.div(simValue) ?? new BigNumber(0))
+            ? (
+                deposits.find(
+                  (d) => d.coinType === depositReserves.lst!.coinType,
+                )?.depositedAmount ?? new BigNumber(0)
+              )
+                .times(depositReserves.lst.price)
+                .div(simValueUsd)
             : undefined,
       };
-      const borrowFactor = borrowedAmount.div(simValue);
+      const borrowFactor = borrowedAmount
+        .times(borrowReserve.price)
+        .div(simValueUsd);
 
       const result = [
         // Balance

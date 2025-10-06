@@ -46,7 +46,7 @@
   "peerDependencies": {
     "@mysten/bcs": "1.6.0",
     "@mysten/sui": "1.28.2",
-    "@suilend/sui-fe": "^0.3.29"
+    "@suilend/sui-fe": "^0.3.30"
   },
   "overrides": {
     "chalk": "5.3.0",

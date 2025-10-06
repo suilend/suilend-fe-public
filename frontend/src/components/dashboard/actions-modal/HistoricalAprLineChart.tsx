@@ -1,18 +1,16 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import { capitalize } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { getDedupedAprRewards } from "@suilend/sdk";
+import { getDedupedAprRewards, reserveSort } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
-import { ParsedDownsampledApiReserveAssetDataEvent } from "@suilend/sdk/parsers/apiReserveAssetDataEvent";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   COINTYPE_COLOR_MAP,
   MS_PER_YEAR,
-  NORMALIZED_SUI_COINTYPE,
   formatPercent,
   getToken,
 } from "@suilend/sui-fe";
@@ -38,14 +36,18 @@ import {
 } from "@/lib/events";
 import { cn } from "@/lib/utils";
 
-const isBase = (field: string) => field.endsWith("__base");
-const isStakingYield = (field: string) => field.endsWith("__staking_yield");
+const isBase = (field: string) => field.includes("_base__");
+const isStakingYield = (field: string) => field.includes("_staking_yield__");
 const isReward = (field: string) => !isBase(field);
 
 const getFieldCoinType = (field: string) => field.split("__")[1];
-const getFieldColor = (field: string) => {
-  if (isBase(field)) return "hsl(var(--success))";
-  if (isStakingYield(field)) return COINTYPE_COLOR_MAP[NORMALIZED_SUI_COINTYPE]; // SUI color
+const getFieldColor = (field: string, showReserveDetails?: boolean) => {
+  if (isBase(field))
+    return !showReserveDetails
+      ? "hsl(var(--success))"
+      : (COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))");
+  if (isStakingYield(field))
+    return COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))";
   if (isReward(field))
     return COINTYPE_COLOR_MAP[getFieldCoinType(field)] ?? "hsl(var(--muted))";
   return "";
@@ -53,19 +55,35 @@ const getFieldColor = (field: string) => {
 
 interface TooltipContentProps {
   side: Side;
+  reserves: {
+    reserve: ParsedReserve;
+    side: Side;
+    multiplier: number;
+  }[];
   fields: string[];
   d: ChartData;
   viewBox?: ViewBox;
   x?: number;
 }
 
-function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
+function TooltipContent({
+  side,
+  reserves,
+  fields,
+  d,
+  viewBox,
+  x,
+}: TooltipContentProps) {
   const { appData } = useLoadedAppContext();
 
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
 
-  const definedFields = fields.filter((field) => d[field] !== undefined);
+  const definedFields = fields.filter(
+    (field) =>
+      d[field] !== undefined &&
+      reserves.some((r) => r.reserve.coinType === getFieldCoinType(field)),
+  );
   const totalAprPercent = definedFields.reduce(
     (acc, field) => acc.plus(new BigNumber(d[field] as number)),
     new BigNumber(0),
@@ -89,14 +107,17 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
           </TBody>
         </div>
 
-        {definedFields.map((field, index) => {
+        {definedFields.map((field, index, array) => {
           const coinType = getFieldCoinType(field);
-          const color = getFieldColor(field);
+          const color = getFieldColor(field, reserves.length > 1);
+
+          const reserve = reserves.find((r) => r.reserve.coinType === coinType);
+          if (!reserve) return null; // Should never happen
 
           return (
             <AprRewardsBreakdownRow
               key={field}
-              isLast={index === definedFields.length - 1}
+              isLast={index === array.length - 1}
               value={
                 <span style={{ color }}>
                   {formatPercent(new BigNumber(d[field] as number), {
@@ -106,9 +127,19 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
               }
             >
               {isBase(field) ? (
-                <TLabelSans>Interest</TLabelSans>
+                <TLabelSans>
+                  {reserves.length > 1
+                    ? `${appData.coinMetadataMap[coinType].symbol} ${
+                        reserve.side
+                      } interest`
+                    : "Interest"}
+                </TLabelSans>
               ) : isStakingYield(field) ? (
-                <TLabelSans>Staking yield*</TLabelSans>
+                <TLabelSans>
+                  {reserves.length > 1
+                    ? `${appData.coinMetadataMap[coinType].symbol} staking yield*`
+                    : "Staking yield*"}
+                </TLabelSans>
               ) : (
                 <>
                   <TLabelSans>Rewards in</TLabelSans>
@@ -133,17 +164,19 @@ function TooltipContent({ side, fields, d, viewBox, x }: TooltipContentProps) {
 }
 
 interface HistoricalAprLineChartProps {
-  reserve: ParsedReserve;
   side: Side;
-  noInitialFetch?: boolean;
+  reserves: {
+    reserve: ParsedReserve;
+    side: Side;
+    multiplier: number;
+  }[];
 }
 
 export default function HistoricalAprLineChart({
-  reserve,
   side,
-  noInitialFetch,
+  reserves,
 }: HistoricalAprLineChartProps) {
-  const { allAppData, appData, isLst } = useLoadedAppContext();
+  const { appData, isLst } = useLoadedAppContext();
   const { userData } = useLoadedUserContext();
 
   const {
@@ -156,112 +189,135 @@ export default function HistoricalAprLineChart({
   // Events
   const [days, setDays] = useLocalStorage<Days>("historicalLineChart_days", 7);
 
-  const aprRewardReserves = useMemo(() => {
-    const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
-    const aprRewards = getDedupedAprRewards(rewards);
+  const getAprRewardReserves = useCallback(
+    (reserve: ParsedReserve, side: Side) => {
+      const rewards = userData.rewardMap[reserve.coinType]?.[side] ?? [];
+      const aprRewards = getDedupedAprRewards(rewards);
 
-    return aprRewards
-      .map((aprReward) => appData.reserveMap[aprReward.stats.rewardCoinType])
-      .filter(Boolean);
-  }, [userData.rewardMap, reserve.coinType, side, appData.reserveMap]);
+      return Array.from(
+        new Set(aprRewards.map((aprReward) => aprReward.stats.rewardCoinType)),
+      )
+        .map((rewardCoinType) => appData.reserveMap[rewardCoinType])
+        .filter(Boolean);
+    },
+    [userData.rewardMap, appData.reserveMap],
+  );
 
-  const didFetchInitialReserveAssetDataEventsRef = useRef<boolean>(false);
-  const didFetchInitialLstExchangeRatesRef = useRef<boolean>(false);
-  const didFetchInitialRewardReservesAssetDataEventsRef = useRef<
+  const didFetchInitialReserveAssetDataEventsRef = useRef<
     Record<string, boolean>
   >({});
+  const didFetchInitialLstExchangeRatesRef = useRef<Record<string, boolean>>(
+    {},
+  );
   useEffect(() => {
-    const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
-    if (events === undefined) {
-      if (noInitialFetch || didFetchInitialReserveAssetDataEventsRef.current)
-        return;
-
-      fetchReserveAssetDataEvents(reserve, days);
-      didFetchInitialReserveAssetDataEventsRef.current = true;
-    }
-
-    // LST exchange rates
-    const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
-    if (
-      side === Side.DEPOSIT &&
-      isLst(reserve.coinType) &&
-      lstExchangeRates === undefined
-    ) {
-      if (didFetchInitialLstExchangeRatesRef.current) return;
-
-      fetchLstExchangeRates(reserve.coinType, days);
-      didFetchInitialLstExchangeRatesRef.current = true;
-    }
-
-    // Rewards
-    aprRewardReserves.forEach((rewardReserve) => {
-      if (reserve.id === rewardReserve.id) return;
-      if (reserveAssetDataEventsMap?.[rewardReserve.id]?.[days] === undefined) {
-        if (
-          didFetchInitialRewardReservesAssetDataEventsRef.current[
-            rewardReserve.coinType
-          ]
-        )
-          return;
-
-        fetchReserveAssetDataEvents(rewardReserve, days);
-        didFetchInitialRewardReservesAssetDataEventsRef.current[
-          rewardReserve.coinType
-        ] = true;
+    reserves.forEach(({ reserve, side, multiplier }) => {
+      // Base
+      const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+      if (events === undefined) {
+        if (!didFetchInitialReserveAssetDataEventsRef.current[reserve.id]) {
+          fetchReserveAssetDataEvents(reserve, days);
+          didFetchInitialReserveAssetDataEventsRef.current[reserve.id] = true;
+        }
       }
+
+      // LST exchange rates
+      const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+      if (
+        isLst(reserve.coinType) &&
+        side === Side.DEPOSIT &&
+        lstExchangeRates === undefined
+      ) {
+        if (!didFetchInitialLstExchangeRatesRef.current[reserve.coinType]) {
+          fetchLstExchangeRates(reserve.coinType, days);
+          didFetchInitialLstExchangeRatesRef.current[reserve.coinType] = true;
+        }
+      }
+
+      // Rewards
+      getAprRewardReserves(reserve, side).forEach((rewardReserve) => {
+        const rewardEvents =
+          reserveAssetDataEventsMap?.[rewardReserve.id]?.[days];
+        if (rewardReserve.id !== reserve.id && rewardEvents === undefined) {
+          if (
+            !didFetchInitialReserveAssetDataEventsRef.current[
+              rewardReserve.coinType
+            ]
+          ) {
+            fetchReserveAssetDataEvents(rewardReserve, days);
+            didFetchInitialReserveAssetDataEventsRef.current[
+              rewardReserve.coinType
+            ] = true;
+          }
+        }
+      });
     });
   }, [
+    reserves,
     reserveAssetDataEventsMap,
-    reserve,
     days,
-    noInitialFetch,
     fetchReserveAssetDataEvents,
-    side,
-    isLst,
     lstExchangeRateMap,
+    isLst,
     fetchLstExchangeRates,
-    aprRewardReserves,
+    getAprRewardReserves,
   ]);
 
   const onDaysClick = (value: Days) => {
     setDays(value);
 
-    const events = reserveAssetDataEventsMap?.[reserve.id]?.[value];
-    if (events === undefined) fetchReserveAssetDataEvents(reserve, value);
+    reserves.forEach(({ reserve, side, multiplier }) => {
+      // Base
+      const events = reserveAssetDataEventsMap?.[reserve.id]?.[value];
+      if (events === undefined) {
+        fetchReserveAssetDataEvents(reserve, value);
+      }
 
-    // LST exchange rates
-    const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[value];
-    if (
-      side === Side.DEPOSIT &&
-      isLst(reserve.coinType) &&
-      lstExchangeRates === undefined
-    )
-      fetchLstExchangeRates(reserve.coinType, value);
+      // LST exchange rates
+      const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[value];
+      if (
+        isLst(reserve.coinType) &&
+        side === Side.DEPOSIT &&
+        lstExchangeRates === undefined
+      ) {
+        fetchLstExchangeRates(reserve.coinType, value);
+      }
 
-    // Rewards
-    aprRewardReserves.forEach((rewardReserve) => {
-      if (reserve.id === rewardReserve.id) return;
-      if (reserveAssetDataEventsMap?.[rewardReserve.id]?.[value] === undefined)
-        fetchReserveAssetDataEvents(rewardReserve, value);
+      // Rewards
+      getAprRewardReserves(reserve, side).forEach((rewardReserve) => {
+        const rewardEvents =
+          reserveAssetDataEventsMap?.[rewardReserve.id]?.[value];
+        if (rewardReserve.id !== reserve.id && rewardEvents === undefined) {
+          fetchReserveAssetDataEvents(rewardReserve, value);
+        }
+      });
     });
   };
 
   // Data
   const chartData = useMemo(() => {
-    const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
-    if (events === undefined) return;
-    if (events.length === 0) return [];
     if (
-      side === Side.DEPOSIT &&
-      isLst(reserve.coinType) &&
-      lstExchangeRateMap?.[reserve.coinType]?.[days] === undefined
-    )
-      return;
-    if (
-      aprRewardReserves.some(
-        (rewardReserve) =>
-          reserveAssetDataEventsMap?.[rewardReserve.id]?.[days] === undefined,
-      )
+      reserves.some(({ reserve, side, multiplier }) => {
+        // Base
+        const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+        if (events === undefined) return true;
+
+        // LST exchange rates
+        const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+        if (
+          isLst(reserve.coinType) &&
+          side === Side.DEPOSIT &&
+          lstExchangeRates === undefined
+        )
+          return true;
+
+        // Rewards
+        for (const rewardReserve of getAprRewardReserves(reserve, side)) {
+          const rewardEvents =
+            reserveAssetDataEventsMap?.[rewardReserve.id]?.[days];
+          if (rewardReserve.id !== reserve.id && rewardEvents === undefined)
+            return true;
+        }
+      })
     )
       return;
 
@@ -279,121 +335,156 @@ export default function HistoricalAprLineChart({
 
     const result: (Pick<ChartData, "timestampS"> & Partial<ChartData>)[] = [];
     timestampsS.forEach((timestampS) => {
-      const event = events.findLast((e) => e.sampleTimestampS <= timestampS);
+      const d: ChartData = { timestampS };
 
-      const d = aprRewardReserves.reduce(
-        (acc, rewardReserve) => {
-          if (!event) return acc;
+      // Base
+      reserves.forEach(({ reserve, side, multiplier }) => {
+        const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+        const event = events!.findLast((e) => e.sampleTimestampS <= timestampS);
+        if (!event) return;
 
-          const rewardAprPercent = calculateRewardAprPercent(
-            side,
-            event,
-            reserveAssetDataEventsMap?.[rewardReserve.id]?.[
-              days
-            ] as ParsedDownsampledApiReserveAssetDataEvent[],
-            reserve,
-          );
-          if (rewardAprPercent === 0) return acc;
+        d[`1_interestAprPercent_base__${reserve.coinType}`] = event
+          ? side === Side.DEPOSIT
+            ? +event.depositAprPercent * multiplier
+            : +event.borrowAprPercent *
+              multiplier *
+              (reserves.some(({ side }) => side === Side.DEPOSIT) &&
+              reserves.some(({ side }) => side === Side.BORROW)
+                ? -1 // Normalize borrow APRs if there are both deposits and borrows
+                : 1)
+          : undefined;
+      });
 
-          return {
-            ...acc,
-            [`${side}InterestAprPercent__${rewardReserve.coinType}`]:
-              rewardAprPercent,
-          };
-        },
-        {
-          timestampS,
-          [`${side}InterestAprPercent__base`]: event
-            ? side === Side.DEPOSIT
-              ? +event.depositAprPercent
-              : +event.borrowAprPercent
-            : undefined,
-          [`${side}InterestAprPercent__staking_yield`]:
-            event && side === Side.DEPOSIT && isLst(event.coinType)
-              ? (() => {
-                  const prevLstExchangeRate = lstExchangeRateMap?.[
-                    reserve.coinType
-                  ]?.[days].findLast((e) => e.timestampS < timestampS);
-                  const lstExchangeRate = lstExchangeRateMap?.[
-                    reserve.coinType
-                  ]?.[days].find((e) => e.timestampS >= timestampS);
-                  // console.log("XXXXXXX", [
-                  //   prevLstExchangeRate
-                  //     ? formatDate(
-                  //         new Date(prevLstExchangeRate?.timestampS * 1000),
-                  //         "MM/dd HH:mm",
-                  //       )
-                  //     : undefined,
-                  //   formatDate(new Date(timestampS * 1000), "MM/dd HH:mm"),
-                  //   lstExchangeRate
-                  //     ? formatDate(
-                  //         new Date(lstExchangeRate?.timestampS * 1000),
-                  //         "MM/dd HH:mm",
-                  //       )
-                  //     : undefined,
-                  // ]);
+      // LST
+      reserves.forEach(({ reserve, side, multiplier }) => {
+        const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+        const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+        const event = events!.findLast((e) => e.sampleTimestampS <= timestampS);
+        if (!event) return;
 
-                  if (lstExchangeRate === undefined) {
-                    return result.at(-1)?.[
-                      `${side}InterestAprPercent__staking_yield`
-                    ];
-                  }
-                  if (
-                    prevLstExchangeRate === undefined ||
-                    lstExchangeRate === undefined
+        if (isLst(reserve.coinType) && side === Side.DEPOSIT)
+          d[`2_interestAprPercent_staking_yield__${reserve.coinType}`] =
+            (() => {
+              const prevLstExchangeRate = lstExchangeRates!.findLast(
+                (e) => e.timestampS < timestampS,
+              );
+              const lstExchangeRate = lstExchangeRates!.find(
+                (e) => e.timestampS >= timestampS,
+              );
+              // console.log("XXXXXXX", [
+              //   prevLstExchangeRate
+              //     ? formatDate(
+              //         new Date(prevLstExchangeRate?.timestampS * 1000),
+              //         "MM/dd HH:mm",
+              //       )
+              //     : undefined,
+              //   formatDate(new Date(timestampS * 1000), "MM/dd HH:mm"),
+              //   lstExchangeRate
+              //     ? formatDate(
+              //         new Date(lstExchangeRate?.timestampS * 1000),
+              //         "MM/dd HH:mm",
+              //       )
+              //     : undefined,
+              // ]);
+
+              if (lstExchangeRate === undefined) {
+                return result.at(-1)?.[
+                  `2_interestAprPercent_staking_yield_${reserve.coinType}`
+                ];
+              }
+              if (
+                prevLstExchangeRate === undefined ||
+                lstExchangeRate === undefined
+              )
+                return undefined;
+
+              const proportionOfYear = new BigNumber(
+                lstExchangeRate.timestampS - prevLstExchangeRate.timestampS,
+              ).div(MS_PER_YEAR / 1000);
+
+              const aprPercent = proportionOfYear.eq(0)
+                ? new BigNumber(0)
+                : new BigNumber(
+                    lstExchangeRate.value
+                      .div(prevLstExchangeRate.value)
+                      .minus(1),
                   )
-                    return undefined;
+                    .div(proportionOfYear)
+                    .times(100);
 
-                  const proportionOfYear = new BigNumber(
-                    lstExchangeRate.timestampS - prevLstExchangeRate.timestampS,
-                  ).div(MS_PER_YEAR / 1000);
+              return +aprPercent * multiplier;
+            })();
+      });
 
-                  const aprPercent = proportionOfYear.eq(0)
-                    ? new BigNumber(0)
-                    : new BigNumber(
-                        lstExchangeRate.value
-                          .div(prevLstExchangeRate.value)
-                          .minus(1),
-                      )
-                        .div(proportionOfYear)
-                        .times(100);
+      // Rewards
+      reserves.forEach(({ reserve, side, multiplier }) => {
+        const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+        const event = events!.findLast((e) => e.sampleTimestampS <= timestampS);
+        if (!event) return;
 
-                  return +aprPercent;
-                })()
-              : undefined,
-        },
-      );
+        for (const rewardReserve of getAprRewardReserves(reserve, side)) {
+          const rewardEvents =
+            reserveAssetDataEventsMap?.[rewardReserve.id]?.[days];
+
+          let rewardAprPercent =
+            calculateRewardAprPercent(side, event, rewardEvents!, reserve) *
+            multiplier;
+          if (
+            side === Side.BORROW &&
+            reserves.some(({ side }) => side === Side.DEPOSIT) &&
+            reserves.some(({ side }) => side === Side.BORROW)
+          )
+            rewardAprPercent = rewardAprPercent * -1; // Normalize borrow APRs if there are both deposits and borrows
+          if (rewardAprPercent === 0) continue;
+
+          d[`3_interestAprPercent_reward__${rewardReserve.coinType}`] =
+            (d[`3_interestAprPercent_reward__${rewardReserve.coinType}`] ?? 0) +
+            rewardAprPercent; // There may be multiple rewards for the same reserve
+        }
+      });
+
       result.push(d);
     });
 
-    return result as ChartData[];
+    return result;
   }, [
+    reserves,
     reserveAssetDataEventsMap,
-    reserve,
     days,
-    side,
-    isLst,
     lstExchangeRateMap,
-    aprRewardReserves,
+    isLst,
+    getAprRewardReserves,
   ]);
   const isLoading = chartData === undefined;
 
   // Fields
-  const fields = useMemo(
-    () =>
-      (chartData ?? []).length > 0
-        ? Array.from(
-            new Set(
-              (chartData ?? [])
-                .map((d) =>
-                  Object.keys(d).filter((key) => key !== "timestampS"),
-                )
-                .flat(),
-            ),
-          )
-        : [],
-    [chartData],
-  );
+  const fields = useMemo(() => {
+    if ((chartData ?? []).length === 0) return [];
+
+    const result: string[] = [];
+    for (const d of chartData ?? []) {
+      for (const field of Object.keys(d).filter(
+        (key) => key !== "timestampS",
+      )) {
+        if (!result.includes(field)) result.push(field);
+      }
+    }
+
+    return result.sort((a, b) => {
+      const aIndex = +a[0];
+      const aCoinType = getFieldCoinType(a);
+
+      const bIndex = +b[0];
+      const bCoinType = getFieldCoinType(b);
+
+      if (aIndex !== bIndex) return aIndex - bIndex; // 1, 2, 3, ...
+      return reserveSort(
+        Object.values(appData.reserveMap),
+        aCoinType,
+        bCoinType,
+      );
+    });
+  }, [chartData, appData.reserveMap]);
   const fieldStackIdMap = useMemo(
     () => fields.reduce((acc, field) => ({ ...acc, [field]: "1" }), {}),
     [fields],
@@ -436,12 +527,15 @@ export default function HistoricalAprLineChart({
           }
           fields={fields}
           fieldStackIdMap={fieldStackIdMap}
-          getFieldColor={getFieldColor}
+          getFieldColor={(field: string) =>
+            getFieldColor(field, reserves.length > 1)
+          }
           tooltipContent={({ active, payload, viewBox, coordinate }) => {
             if (!active || !payload?.[0]?.payload) return null;
             return (
               <TooltipContent
                 side={side}
+                reserves={reserves}
                 fields={fields}
                 d={payload[0].payload as ChartData}
                 viewBox={viewBox as any}

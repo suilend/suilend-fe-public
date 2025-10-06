@@ -8,10 +8,12 @@ import {
   useState,
 } from "react";
 
+import BigNumber from "bignumber.js";
 import { formatDate } from "date-fns";
 import { capitalize } from "lodash";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
+import { Side } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -20,6 +22,7 @@ import { getToken } from "@suilend/sui-fe";
 import { shallowPushQuery, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { TokenAmount } from "@/components/dashboard/account-overview/AccountOverviewDialog";
+import HistoricalAprLineChart from "@/components/dashboard/actions-modal/HistoricalAprLineChart";
 import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
@@ -125,8 +128,51 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
+  // Simulate
+  const simValue = useMemo(() => new BigNumber(1), []);
+  const simValueUsd = useMemo(
+    () => simValue.times(defaultCurrencyReserve.price),
+    [simValue, defaultCurrencyReserve.price],
+  );
+  const simulatedObligation = useMemo(
+    () =>
+      simulateDepositAndLoopToExposure(
+        strategyType,
+        [],
+        new BigNumber(0),
+        {
+          coinType: defaultCurrencyReserve.coinType,
+          depositedAmount: simValue, // Any number will do
+        },
+        maxExposure,
+      ).obligation,
+    [
+      simulateDepositAndLoopToExposure,
+      strategyType,
+      defaultCurrencyReserve.coinType,
+      simValue,
+      maxExposure,
+    ],
+  );
+
   return (
     <>
+      <HistoricalAprLineChart
+        side={Side.DEPOSIT}
+        reserves={[
+          ...simulatedObligation.deposits.map((d) => ({
+            reserve: d.reserve,
+            side: Side.DEPOSIT,
+            multiplier: +d.depositedAmountUsd.div(simValueUsd),
+          })),
+          ...simulatedObligation.borrows.map((b) => ({
+            reserve: b.reserve,
+            side: Side.BORROW,
+            multiplier: +b.borrowedAmountUsd.div(simValueUsd),
+          })),
+        ]}
+      />
+
       {/* How does it work? */}
       <div className="flex w-full flex-col gap-2 rounded-sm border p-4">
         <TBodySans>How does it work?</TBodySans>
