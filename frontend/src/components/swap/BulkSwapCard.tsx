@@ -25,6 +25,7 @@ import {
   mergeAllCoins,
   returnAllOwnedObjectsAndSuiToUser,
 } from "@suilend/sui-fe";
+import track from "@suilend/sui-fe/lib/track";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
@@ -217,8 +218,16 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
             keypairAddress,
             tokenOut,
           );
-          if (balanceChangeIn !== undefined)
+          if (balanceChangeIn !== undefined) {
             tokenOutAmount = tokenOutAmount.plus(balanceChangeIn);
+            track("bulk_swap_success", {
+              assetOut: tokenOut.symbol,
+              amountOut: tokenOutAmount.toFixed(
+                tokenOut.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+            });
+          }
 
           coinCount++;
         } catch (err) {
