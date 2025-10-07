@@ -27,11 +27,8 @@ export default function VaultCard({ vault }: VaultCardProps) {
           <TBodySans>Deposit amount</TBodySans>
           <div className="flex flex-row gap-2">
             <Input
-              inputMode="numeric"
               value={depositAmount}
-              onChange={(e) =>
-                setDepositAmount(e.target.value.replace(/[^0-9]/g, ""))
-              }
+              onChange={(e) => setDepositAmount(e.target.value)}
             />
             <Button
               disabled={isDepositing || !depositAmount || !vaultHasObligations}
@@ -66,11 +63,8 @@ export default function VaultCard({ vault }: VaultCardProps) {
           <TBodySans>Withdraw shares</TBodySans>
           <div className="flex flex-row gap-2">
             <Input
-              inputMode="numeric"
               value={withdrawShares}
-              onChange={(e) =>
-                setWithdrawShares(e.target.value.replace(/[^0-9]/g, ""))
-              }
+              onChange={(e) => setWithdrawShares(e.target.value)}
             />
             <Button
               disabled={

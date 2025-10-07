@@ -214,7 +214,6 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault`,
           typeArguments: [baseCoinType],
           arguments: [
-            transaction.pure.address(receiver),
             transaction.pure.u64(managementFeeBps.toString()),
             transaction.pure.u64(performanceFeeBps.toString()),
             transaction.pure.u64(depositFeeBps.toString()),
@@ -309,7 +308,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         for (const m of resolvedAgg) {
           transaction.moveCall({
             target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
-            typeArguments: [m.type, baseCoinType],
+            typeArguments: [m.type],
             arguments: [acc, transaction.object(m.id)],
           });
         }
@@ -390,7 +389,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         for (const m of resolvedAgg) {
           transaction.moveCall({
             target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
-            typeArguments: [m.type, baseCoinType],
+            typeArguments: [m.type],
             arguments: [acc, transaction.object(m.id)],
           });
         }
@@ -507,7 +506,6 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         const transaction = new Transaction();
         // Resolve decimals for base coin and scale human amount -> on-chain units
         const md = await suiClient.getCoinMetadata({ coinType: baseCoinType });
-        console.log(baseCoinType, amount, pricingLendingMarketId, md);
         const decimals = md?.decimals ?? 9;
         const amountMinor = new BigNumber(amount)
           .times(new BigNumber(10).pow(decimals))
@@ -556,7 +554,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
         transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
-          typeArguments: [marketType, baseCoinType],
+          typeArguments: [marketType],
           arguments: [acc, transaction.object(pricingLendingMarketId)],
         });
         const agg = transaction.moveCall({
@@ -660,7 +658,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
         transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
-          typeArguments: [marketType, baseCoinType],
+          typeArguments: [marketType],
           arguments: [acc, transaction.object(pricingLendingMarketId)],
         });
         const agg = transaction.moveCall({

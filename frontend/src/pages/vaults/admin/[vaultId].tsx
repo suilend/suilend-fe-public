@@ -102,13 +102,6 @@ function Page() {
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
-                    Fee receiver
-                  </TBodySans>
-                  <Value value={fields.fee_receiver} isId />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <TBodySans className="text-muted-foreground">
                     Total shares
                   </TBodySans>
                   <Value value={fields.total_shares} />

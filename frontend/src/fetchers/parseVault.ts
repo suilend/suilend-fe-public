@@ -2,6 +2,7 @@ import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 
+import { SuilendClient, WAD } from "@suilend/sdk";
 import { getAllOwnedObjects } from "@suilend/sui-fe";
 
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
@@ -143,69 +144,28 @@ export const parseVault = async (
     }
   }
 
-  // Compute deployed (net base) per obligation via devInspect using helper fns in vault module
-  if (baseCoinType && obligations.length > 0) {
-    // Detect decimals once for base
-    let decimals = 9;
-    try {
-      const md = await suiClient.getCoinMetadata({ coinType: baseCoinType });
-      if (md?.decimals !== undefined) decimals = md.decimals;
-    } catch {}
-
-    // Helper to detect lending market module path from object type
-    const detectLmModule = async (
-      lmId: string,
-    ): Promise<string | undefined> => {
-      const lm = await suiClient.getObject({
-        id: lmId,
-        options: { showContent: true },
-      });
-      const typeStr = (lm.data?.content as any)?.type as string | undefined;
-      if (!typeStr) return undefined;
-      const lmBase = "::lending_market::LendingMarket";
-      const idx = typeStr.indexOf(lmBase);
-      if (idx === -1) return undefined;
-      const pkg = typeStr.substring(0, idx);
-      return `${pkg}::lending_market`;
-    };
-
+  // Compute deployed (net USD) per obligation by reading the obligation
+  if (obligations.length > 0) {
     for (const o of obligations) {
-      if (!o.lendingMarketId || !o.marketType) continue;
-      const lmModule = await detectLmModule(o.lendingMarketId);
-      if (!lmModule) continue;
       try {
-        const tx = new Transaction();
-        const lmObj = tx.object(o.lendingMarketId);
-        const [obRef] = tx.moveCall({
-          target: `${lmModule}::obligation`,
-          typeArguments: [o.marketType],
-          arguments: [lmObj, tx.pure.id(o.obligationId)],
-        });
-        const [_netBase] = tx.moveCall({
-          target: `${VAULTS_PACKAGE_ID}::vault::calculate_obligation_net_value`,
-          typeArguments: [o.marketType, baseCoinType],
-          arguments: [obRef, lmObj],
-        });
+        if (!o.obligationId || !o.marketType) continue;
+        const rawObligation = await SuilendClient.getObligation(
+          o.obligationId,
+          [o.marketType],
+          suiClient,
+        );
 
-        const di = await (suiClient as any).devInspectTransactionBlock({
-          sender: VAULT_OWNER,
-          transactionBlock: tx,
-        });
-        // devInspect returns results with returnValues; get last move call result
-        const results = di?.results as any[] | undefined;
-        const ret = results?.[results.length - 1]?.returnValues?.[0];
-        const valueBytes = ret?.[0] as number[] | undefined;
-        if (valueBytes) {
-          // BCS u64 is LE; JS SDK returns decoded as number in some versions; we fallback to parse BigInt from bytes
-          // Simplify: Many SDKs also provide parsed value in di.effects or di.results[...].returnValues[0][1]
-          const parsed = BigInt(
-            Buffer.from(valueBytes).readBigUInt64LE?.() ?? BigInt(0),
-          );
-          const human = new BigNumber(parsed.toString()).div(10 ** decimals);
-          o.deployedAmount = human;
-        }
-      } catch {
-        // keep default 0 on failure
+        const depositedUsd = new BigNumber(
+          rawObligation.depositedValueUsd.value.toString(),
+        ).div(WAD);
+        const borrowedUsd = new BigNumber(
+          rawObligation.unweightedBorrowedValueUsd.value.toString(),
+        ).div(WAD);
+
+        const netUsd = depositedUsd.minus(borrowedUsd);
+        o.deployedAmount = netUsd;
+      } catch (e) {
+        console.log("error", e);
       }
     }
   }
