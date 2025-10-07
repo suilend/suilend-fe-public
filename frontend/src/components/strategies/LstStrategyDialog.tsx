@@ -4557,7 +4557,7 @@ export default function LstStrategyDialog({
                 : "md:min-h-[374px]",
           )}
           style={{
-            height: `calc(100dvh - ${8 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${hasClaimableRewards ? 16 + 32 : 0 /* Claim rewards */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${8 /* Bottom */}px)`,
+            height: `calc(100dvh - ${0 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${40 /* Header */}px - ${hasClaimableRewards ? 16 + 32 : 0 /* Claim rewards */}px - ${16 /* Header margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${0 /* Bottom */}px)`,
           }}
         >
           <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">

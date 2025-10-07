@@ -83,6 +83,7 @@ export const parseReserveAssetDataEvent = (
     sender: event.sender,
 
     utilizationPercent,
+    original: event,
   };
 };
 

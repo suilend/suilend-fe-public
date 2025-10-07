@@ -1,12 +1,26 @@
-import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { capitalize } from "lodash";
 import { AlertTriangle, Download, Upload, Wallet } from "lucide-react";
 import { toast } from "sonner";
+import { useLocalStorage } from "usehooks-ts";
 
-import { Action, ApiDepositEvent, Side } from "@suilend/sdk/lib/types";
+import { WAD } from "@suilend/sdk";
+import {
+  Action,
+  ApiDepositEvent,
+  ApiReserveAssetDataEvent,
+  Side,
+} from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   API_URL,
@@ -18,6 +32,7 @@ import {
   NORMALIZED_IKA_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
   formatInteger,
+  formatPercent,
   formatPrice,
   formatToken,
   getBalanceChange,
@@ -46,8 +61,10 @@ import { TBody, TLabelSans } from "@/components/shared/Typography";
 import YourBorrowLimitlabel from "@/components/shared/YourBorrowLimitLabel";
 import YourUtilizationLabel from "@/components/shared/YourUtilizationLabel";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
@@ -55,9 +72,14 @@ import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
-import { EventType } from "@/lib/events";
+import { DAYS, DAYS_MAP, DAY_S, Days, EventType } from "@/lib/events";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+export const getCtokenExchangeRate = (event: ApiReserveAssetDataEvent) =>
+  new BigNumber(event.ctokenSupply).eq(0)
+    ? new BigNumber(1)
+    : new BigNumber(event.supplyAmount).div(WAD).div(event.ctokenSupply);
 
 interface ActionsModalTabContentProps {
   side: Side;
@@ -97,6 +119,8 @@ export default function ActionsModalTabContent({
   const { address } = useWalletContext();
   const { closeLedgerHashDialog } = useLoadedAppContext();
   const { getBalance, refresh, obligation } = useLoadedUserContext();
+  const { reserveAssetDataEventsMap, fetchReserveAssetDataEvents } =
+    useReserveAssetDataEventsContext();
 
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
   const { isMoreParametersOpen, setIsMoreParametersOpen } =
@@ -372,6 +396,73 @@ export default function ActionsModalTabContent({
     }
   };
 
+  // Average APR
+  const [averageAprDays, setAverageAprDays] = useLocalStorage<0 | Days>(
+    "averageApr_days",
+    0, // Now
+  );
+
+  const didFetchInitialReserveAssetDataEventsRef = useRef<
+    Record<string, boolean>
+  >({});
+  useEffect(() => {
+    if (averageAprDays === 0) return;
+
+    const events = reserveAssetDataEventsMap?.[reserve.id]?.[averageAprDays];
+    if (events === undefined) {
+      if (!didFetchInitialReserveAssetDataEventsRef.current[reserve.id]) {
+        fetchReserveAssetDataEvents(reserve, averageAprDays);
+        didFetchInitialReserveAssetDataEventsRef.current[reserve.id] = true;
+      }
+    }
+  }, [
+    averageAprDays,
+    reserveAssetDataEventsMap,
+    reserve,
+    fetchReserveAssetDataEvents,
+  ]);
+
+  const onAverageAprDaysClick = (value: 0 | Days) => {
+    setAverageAprDays(value);
+
+    if (value === 0) return;
+
+    const events = reserveAssetDataEventsMap?.[reserve.id]?.[value];
+    if (events === undefined) {
+      fetchReserveAssetDataEvents(reserve, value);
+    }
+  };
+
+  const averageAprPercent: BigNumber | undefined = useMemo(() => {
+    if (averageAprDays === 0) return new BigNumber(0);
+
+    const events = reserveAssetDataEventsMap?.[reserve.id]?.[averageAprDays];
+    if (events === undefined) return undefined;
+
+    // Ctoken exchange rate
+    const event = events![0];
+
+    const ctokenExchangeRate = reserve.cTokenExchangeRate;
+    const prevCtokenExchangeRate = getCtokenExchangeRate(event.original);
+
+    // Timestamps
+    const timestampS = new Date().getTime() / 1000;
+    const prevTimestampS = timestampS - averageAprDays * DAY_S;
+
+    const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
+      MS_PER_YEAR / 1000,
+    );
+    const annualizedInterestRate = proportionOfYear.eq(0)
+      ? new BigNumber(0)
+      : new BigNumber(ctokenExchangeRate)
+          .div(prevCtokenExchangeRate)
+          .minus(1)
+          .div(proportionOfYear);
+    const annualizedInterestRatePercent = annualizedInterestRate.times(100);
+
+    return annualizedInterestRatePercent;
+  }, [averageAprDays, reserveAssetDataEventsMap, reserve]);
+
   return (
     <>
       <div className="relative flex w-full flex-col">
@@ -458,16 +549,73 @@ export default function ActionsModalTabContent({
             horizontal
           />
           <LabelWithValue
+            labelClassName="gap-2"
             label={`${capitalize(side)} APR`}
+            labelEndDecorator={
+              side === Side.DEPOSIT ? (
+                // Deposit
+                <div className="flex h-4 flex-row items-center">
+                  {[0, ...DAYS].map((_days) => (
+                    <Button
+                      key={_days}
+                      className="px-2"
+                      labelClassName={cn(
+                        "text-muted-foreground text-xs",
+                        averageAprDays === _days && "text-primary-foreground",
+                      )}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAverageAprDaysClick(_days as 0 | Days)}
+                    >
+                      {_days === 0
+                        ? "Now".toUpperCase()
+                        : DAYS_MAP[_days as Days]}
+                    </Button>
+                  ))}
+                </div>
+              ) : undefined // Borrow
+            }
             value="0"
             horizontal
             customChild={
-              <AprWithRewardsBreakdown
-                side={side}
-                reserve={reserve}
-                action={action}
-                changeAmount={value === "" ? undefined : new BigNumber(value)}
-              />
+              side === Side.DEPOSIT ? (
+                // Deposit
+                <>
+                  {averageAprDays === 0 ? (
+                    <AprWithRewardsBreakdown
+                      side={side}
+                      reserve={reserve}
+                      action={action}
+                      changeAmount={
+                        value === "" ? undefined : new BigNumber(value)
+                      }
+                    />
+                  ) : (
+                    <>
+                      {averageAprPercent === undefined ? (
+                        <Skeleton className="h-5 w-16" />
+                      ) : (
+                        <div className="flex flex-row items-baseline gap-2">
+                          <TLabelSans>Avg.</TLabelSans>
+                          <TBody>{formatPercent(averageAprPercent)}</TBody>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                // Borrow
+                <>
+                  <AprWithRewardsBreakdown
+                    side={side}
+                    reserve={reserve}
+                    action={action}
+                    changeAmount={
+                      value === "" ? undefined : new BigNumber(value)
+                    }
+                  />
+                </>
+              )
             }
           />
           {[Action.DEPOSIT, Action.WITHDRAW].includes(action) && (
