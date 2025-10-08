@@ -195,6 +195,7 @@ export default function EarningsChart({
             tickLine={axis.tickLine}
             tickFormatter={tickFormatterX}
             domain={domainX}
+            interval={0} // Show all ticks
           />
           <Recharts.YAxis
             type="number"
@@ -205,6 +206,7 @@ export default function EarningsChart({
             tickLine={axis.tickLine}
             tickFormatter={tickFormatterY}
             domain={domainY}
+            interval={0} // Show all ticks
           >
             <Recharts.Label
               value={labelY}

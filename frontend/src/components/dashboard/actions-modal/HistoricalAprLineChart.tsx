@@ -5,8 +5,8 @@ import { format } from "date-fns";
 import { capitalize } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
-import { getDedupedAprRewards, reserveSort } from "@suilend/sdk";
-import { Side } from "@suilend/sdk/lib/types";
+import { WAD, getDedupedAprRewards, reserveSort } from "@suilend/sdk";
+import { ApiReserveAssetDataEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   COINTYPE_COLOR_MAP,
@@ -35,6 +35,11 @@ import {
   calculateRewardAprPercent,
 } from "@/lib/events";
 import { cn } from "@/lib/utils";
+
+const getCtokenExchangeRate = (event: ApiReserveAssetDataEvent) =>
+  new BigNumber(event.ctokenSupply).eq(0)
+    ? new BigNumber(1)
+    : new BigNumber(event.supplyAmount).div(WAD).div(event.ctokenSupply);
 
 const isBase = (field: string) => field.includes("_base__");
 const isStakingYield = (field: string) => field.includes("_staking_yield__");
@@ -450,6 +455,55 @@ export default function HistoricalAprLineChart({
   ]);
   const isLoading = chartData === undefined;
 
+  // Average APR
+  const averageAprPercent = useMemo(() => {
+    if (reserves.length > 1) return undefined;
+    const reserve = reserves[0].reserve;
+
+    const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
+    if (events === undefined) return undefined;
+
+    const event = events![0];
+
+    // Timestamps
+    const timestampS = new Date().getTime() / 1000;
+    const prevTimestampS = event.timestampS;
+
+    const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
+      MS_PER_YEAR / 1000,
+    );
+
+    if (side === Side.DEPOSIT) {
+      // Ctoken exchange rate
+      const ctokenExchangeRate = reserve.cTokenExchangeRate;
+      const prevCtokenExchangeRate = getCtokenExchangeRate(event.original);
+
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : ctokenExchangeRate
+            .div(prevCtokenExchangeRate)
+            .minus(1)
+            .div(proportionOfYear);
+      const annualizedInterestRatePercent = annualizedInterestRate.times(100);
+
+      return annualizedInterestRatePercent;
+    } else {
+      // Cumulative borrow rate
+      const cumulativeBorrowRate = reserve.cumulativeBorrowRate;
+      const prevCumulativeBorrowRate = event.cumulativeBorrowRate;
+
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : cumulativeBorrowRate
+            .div(prevCumulativeBorrowRate)
+            .minus(1)
+            .div(proportionOfYear);
+      const annualizedInterestRatePercent = annualizedInterestRate.times(100);
+
+      return annualizedInterestRatePercent;
+    }
+  }, [reserves, reserveAssetDataEventsMap, days, side]);
+
   // Fields
   const fields = useMemo(() => {
     if ((chartData ?? []).length === 0) return [];
@@ -515,6 +569,9 @@ export default function HistoricalAprLineChart({
       >
         <HistoricalLineChart
           data={chartData ?? []}
+          average={
+            averageAprPercent !== undefined ? +averageAprPercent : undefined
+          }
           tickFormatterY={(value) =>
             formatPercent(new BigNumber(value), { dp: 1 })
           }

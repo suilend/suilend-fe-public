@@ -16,6 +16,7 @@ export type ChartData = {
 
 interface HistoricalLineChartProps {
   data: ChartData[];
+  average?: number;
   tickFormatterY: (value: number) => string;
   fields: string[];
   fieldStackIdMap: Record<string, string>;
@@ -25,6 +26,7 @@ interface HistoricalLineChartProps {
 
 export default function HistoricalLineChart({
   data,
+  average,
   tickFormatterY,
   fields,
   fieldStackIdMap,
@@ -133,6 +135,7 @@ export default function HistoricalLineChart({
           tickLine={axis.tickLine}
           tickFormatter={tickFormatterX}
           domain={domainX}
+          interval={0} // Show all ticks
         />
         <Recharts.YAxis
           type="number"
@@ -143,6 +146,7 @@ export default function HistoricalLineChart({
           tickLine={axis.tickLine}
           tickFormatter={tickFormatterY}
           domain={domainY}
+          interval={0} // Show all ticks
         />
         {fields
           .filter((field) => fieldStackIdMap[field] !== "0")
@@ -172,6 +176,14 @@ export default function HistoricalLineChart({
             trigger={isTouchscreen ? "hover" : "hover"}
             wrapperStyle={tooltip.wrapperStyle}
             content={tooltipContent}
+          />
+        )}
+        {average !== undefined && (
+          <Recharts.ReferenceLine
+            y={average}
+            stroke="hsla(var(--success) / 50%)"
+            strokeWidth={1}
+            strokeDasharray="3 3"
           />
         )}
       </Recharts.AreaChart>
