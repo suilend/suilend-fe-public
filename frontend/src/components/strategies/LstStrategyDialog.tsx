@@ -2343,7 +2343,7 @@ export default function LstStrategyDialog({
         fullRepaymentAmount.times(borrowReserve.price),
       )
         .div(depositReserves.base.price)
-        .times(1.01); // 1% buffer
+        .times(1.03); // 3% buffer
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingBase] withdraw_base |`,
