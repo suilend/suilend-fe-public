@@ -572,6 +572,11 @@ export default function HistoricalAprLineChart({
           average={
             averageAprPercent !== undefined ? +averageAprPercent : undefined
           }
+          averageLabel={
+            averageAprPercent !== undefined
+              ? `Avg. ${formatPercent(averageAprPercent)} APR`
+              : undefined
+          }
           tickFormatterY={(value) =>
             formatPercent(new BigNumber(value), { dp: 1 })
           }
