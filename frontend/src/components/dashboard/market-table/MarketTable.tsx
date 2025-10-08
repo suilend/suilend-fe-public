@@ -16,7 +16,6 @@ import {
   Token,
   formatToken,
   formatUsd,
-  isMemecoin,
   issSui,
 } from "@suilend/sui-fe";
 
@@ -544,41 +543,9 @@ export default function MarketTable() {
         subRows: [],
       };
 
-      const memecoinsRow: CollapsibleRowData = {
-        isCollapsibleRow: true,
-        title: "MEMECOINS",
-
-        depositedAmount: new BigNumber(0),
-        depositedAmountUsd: new BigNumber(0),
-        borrowedAmount: new BigNumber(0),
-        borrowedAmountUsd: new BigNumber(0),
-
-        subRows: [],
-      };
-
       for (const reserveRow of isolatedReserveRows) {
-        if (isMemecoin(reserveRow.token.coinType)) {
-          memecoinsRow.depositedAmount = memecoinsRow.depositedAmount.plus(
-            reserveRow.depositedAmount,
-          );
-          memecoinsRow.depositedAmountUsd =
-            memecoinsRow.depositedAmountUsd.plus(reserveRow.depositedAmountUsd);
-          memecoinsRow.borrowedAmount = memecoinsRow.borrowedAmount.plus(
-            reserveRow.borrowedAmount,
-          );
-          memecoinsRow.borrowedAmountUsd = memecoinsRow.borrowedAmountUsd.plus(
-            reserveRow.borrowedAmountUsd,
-          );
-
-          memecoinsRow.subRows.push(reserveRow);
-        } else isolatedAssetsRow.subRows.push(reserveRow);
+        isolatedAssetsRow.subRows.push(reserveRow);
       }
-
-      if (memecoinsRow.subRows.length > 0)
-        isolatedAssetsRow.subRows = [
-          ...isolatedAssetsRow.subRows,
-          memecoinsRow,
-        ];
 
       isolatedAssetsRow.count = isolatedReserveRows.length;
       result.push(isolatedAssetsRow);
