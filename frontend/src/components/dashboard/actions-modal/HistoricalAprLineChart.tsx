@@ -79,11 +79,7 @@ function TooltipContent({
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
 
-  const definedFields = fields.filter(
-    (field) =>
-      d[field] !== undefined &&
-      reserves.some((r) => r.reserve.coinType === getFieldCoinType(field)),
-  );
+  const definedFields = fields.filter((field) => d[field] !== undefined);
   const totalAprPercent = definedFields.reduce(
     (acc, field) => acc.plus(new BigNumber(d[field] as number)),
     new BigNumber(0),
@@ -112,7 +108,6 @@ function TooltipContent({
           const color = getFieldColor(field, reserves.length > 1);
 
           const reserve = reserves.find((r) => r.reserve.coinType === coinType);
-          if (!reserve) return null; // Should never happen
 
           return (
             <AprRewardsBreakdownRow
@@ -130,7 +125,7 @@ function TooltipContent({
                 <TLabelSans>
                   {reserves.length > 1
                     ? `${appData.coinMetadataMap[coinType].symbol} ${
-                        reserve.side
+                        reserve?.side
                       } interest`
                     : "Interest"}
                 </TLabelSans>
