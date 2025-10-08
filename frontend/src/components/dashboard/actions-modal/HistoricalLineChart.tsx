@@ -17,7 +17,6 @@ export type ChartData = {
 interface HistoricalLineChartProps {
   data: ChartData[];
   average?: number;
-  averageLabel?: string;
   tickFormatterY: (value: number) => string;
   fields: string[];
   fieldStackIdMap: Record<string, string>;
@@ -28,7 +27,6 @@ interface HistoricalLineChartProps {
 export default function HistoricalLineChart({
   data,
   average,
-  averageLabel,
   tickFormatterY,
   fields,
   fieldStackIdMap,
@@ -183,24 +181,22 @@ export default function HistoricalLineChart({
         {average !== undefined && (
           <Recharts.ReferenceLine
             y={average}
-            stroke="hsla(var(--success) / 80%)"
+            stroke="hsl(var(--success))"
             strokeWidth={1}
             strokeDasharray="4 4"
           >
-            {averageLabel && (
-              <Recharts.Label
-                value={averageLabel}
-                offset={5}
-                position="insideBottomLeft"
-                fontSize={axis.tick.fontSize}
-                fontFamily={axis.tick.fontFamily}
-                fill="hsla(var(--success) / 80%)"
-                stroke="hsl(var(--popover))"
-                strokeLinejoin="round"
-                strokeWidth={5}
-                paintOrder="stroke fill"
-              />
-            )}
+            <Recharts.Label
+              value={`Avg. ${tickFormatterY(average)}`}
+              offset={5}
+              position="insideBottomLeft"
+              fontSize={10}
+              fontFamily="var(--font-geist-sans)"
+              fill="hsl(var(--success))"
+              stroke="hsl(var(--popover))"
+              strokeLinejoin="round"
+              strokeWidth={5}
+              paintOrder="stroke fill"
+            />
           </Recharts.ReferenceLine>
         )}
       </Recharts.AreaChart>
