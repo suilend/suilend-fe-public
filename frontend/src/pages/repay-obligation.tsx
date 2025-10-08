@@ -98,9 +98,17 @@ export default function RepayObligation() {
       const transaction = new Transaction();
 
       const reserve = appData.reserveMap[coinType];
-      const threeMinsBorrowAprPercent = reserve.borrowAprPercent
-        .div(MS_PER_YEAR)
-        .times(3 * 60 * 1000);
+      const borrowedAmountUsd = borrowedAmount.times(reserve.price);
+      const fullRepaymentAmount = (
+        borrowedAmountUsd.lt(0.1)
+          ? new BigNumber(0.1).div(reserve.price) // $0.1 in borrow coinType
+          : borrowedAmountUsd.lt(1)
+            ? borrowedAmount.times(1.1) // 10% buffer
+            : borrowedAmountUsd.lt(10)
+              ? borrowedAmount.times(1.01) // 1% buffer
+              : borrowedAmount.times(1.001)
+      ) // 0.1% buffer
+        .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
 
       const submitAmount = isMax
         ? BigNumber.min(
@@ -110,12 +118,10 @@ export default function RepayObligation() {
                 isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
               ),
             ),
-            new BigNumber(borrowedAmount).times(
-              new BigNumber(1).plus(threeMinsBorrowAprPercent.div(100)),
-            ),
+            fullRepaymentAmount,
           )
             .times(10 ** reserve.token.decimals)
-            .integerValue(BigNumber.ROUND_UP)
+            .integerValue(BigNumber.ROUND_DOWN)
             .toString()
         : new BigNumber(value)
             .times(10 ** reserve.token.decimals)
