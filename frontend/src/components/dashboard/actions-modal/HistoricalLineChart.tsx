@@ -190,7 +190,7 @@ export default function HistoricalLineChart({
             {averageLabel && (
               <Recharts.Label
                 value={averageLabel}
-                offset={4}
+                offset={5}
                 position="insideBottomLeft"
                 fontSize={axis.tick.fontSize}
                 fontFamily={axis.tick.fontFamily}
