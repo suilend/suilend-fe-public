@@ -116,7 +116,7 @@ export default function EarningsTabContent({
       );
       const annualizedInterestRate = proportionOfYear.eq(0)
         ? new BigNumber(0)
-        : new BigNumber(ctokenExchangeRate)
+        : ctokenExchangeRate
             .div(prevCtokenExchangeRate)
             .minus(1)
             .div(proportionOfYear);
@@ -381,12 +381,12 @@ export default function EarningsTabContent({
       const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
         MS_PER_YEAR / 1000,
       );
-      const annualizedInterestRate = proportionOfYear.gt(0)
-        ? new BigNumber(cumulativeBorrowRate)
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : cumulativeBorrowRate
             .div(prevCumulativeBorrowRate)
             .minus(1)
-            .div(proportionOfYear)
-        : new BigNumber(0);
+            .div(proportionOfYear);
 
       const interestPaid = prevBorrowedAmount
         .times(annualizedInterestRate)

@@ -72,7 +72,7 @@ import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
-import { DAYS, DAYS_MAP, DAY_S, Days, EventType } from "@/lib/events";
+import { DAYS, DAYS_MAP, Days, EventType } from "@/lib/events";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -439,29 +439,46 @@ export default function ActionsModalTabContent({
     const events = reserveAssetDataEventsMap?.[reserve.id]?.[averageAprDays];
     if (events === undefined) return undefined;
 
-    // Ctoken exchange rate
     const event = events![0];
-
-    const ctokenExchangeRate = reserve.cTokenExchangeRate;
-    const prevCtokenExchangeRate = getCtokenExchangeRate(event.original);
 
     // Timestamps
     const timestampS = new Date().getTime() / 1000;
-    const prevTimestampS = timestampS - averageAprDays * DAY_S;
+    const prevTimestampS = event.timestampS;
 
     const proportionOfYear = new BigNumber(timestampS - prevTimestampS).div(
       MS_PER_YEAR / 1000,
     );
-    const annualizedInterestRate = proportionOfYear.eq(0)
-      ? new BigNumber(0)
-      : new BigNumber(ctokenExchangeRate)
-          .div(prevCtokenExchangeRate)
-          .minus(1)
-          .div(proportionOfYear);
-    const annualizedInterestRatePercent = annualizedInterestRate.times(100);
 
-    return annualizedInterestRatePercent;
-  }, [averageAprDays, reserveAssetDataEventsMap, reserve]);
+    if (side === Side.DEPOSIT) {
+      // Ctoken exchange rate
+      const ctokenExchangeRate = reserve.cTokenExchangeRate;
+      const prevCtokenExchangeRate = getCtokenExchangeRate(event.original);
+
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : ctokenExchangeRate
+            .div(prevCtokenExchangeRate)
+            .minus(1)
+            .div(proportionOfYear);
+      const annualizedInterestRatePercent = annualizedInterestRate.times(100);
+
+      return annualizedInterestRatePercent;
+    } else {
+      // Cumulative borrow rate
+      const cumulativeBorrowRate = reserve.cumulativeBorrowRate;
+      const prevCumulativeBorrowRate = event.cumulativeBorrowRate;
+
+      const annualizedInterestRate = proportionOfYear.eq(0)
+        ? new BigNumber(0)
+        : cumulativeBorrowRate
+            .div(prevCumulativeBorrowRate)
+            .minus(1)
+            .div(proportionOfYear);
+      const annualizedInterestRatePercent = annualizedInterestRate.times(100);
+
+      return annualizedInterestRatePercent;
+    }
+  }, [averageAprDays, reserveAssetDataEventsMap, reserve, side]);
 
   return (
     <>
@@ -552,68 +569,46 @@ export default function ActionsModalTabContent({
             labelClassName="gap-2"
             label={`${capitalize(side)} APR`}
             labelEndDecorator={
-              side === Side.DEPOSIT ? (
-                // Deposit
-                <div className="flex h-4 flex-row items-center">
-                  {[0, ...DAYS].map((_days) => (
-                    <Button
-                      key={_days}
-                      className="px-2"
-                      labelClassName={cn(
-                        "text-muted-foreground text-xs",
-                        averageAprDays === _days && "text-primary-foreground",
-                      )}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onAverageAprDaysClick(_days as 0 | Days)}
-                    >
-                      {_days === 0
-                        ? "Now".toUpperCase()
-                        : DAYS_MAP[_days as Days]}
-                    </Button>
-                  ))}
-                </div>
-              ) : undefined // Borrow
+              <div className="flex h-4 flex-row items-center">
+                {[0, ...DAYS].map((_days) => (
+                  <Button
+                    key={_days}
+                    className="px-2"
+                    labelClassName={cn(
+                      "text-muted-foreground text-xs",
+                      averageAprDays === _days && "text-primary-foreground",
+                    )}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAverageAprDaysClick(_days as 0 | Days)}
+                  >
+                    {_days === 0
+                      ? "Now".toUpperCase()
+                      : DAYS_MAP[_days as Days]}
+                  </Button>
+                ))}
+              </div>
             }
             value="0"
             horizontal
             customChild={
-              side === Side.DEPOSIT ? (
-                // Deposit
-                <>
-                  {averageAprDays === 0 ? (
-                    <AprWithRewardsBreakdown
-                      side={side}
-                      reserve={reserve}
-                      action={action}
-                      changeAmount={
-                        value === "" ? undefined : new BigNumber(value)
-                      }
-                    />
-                  ) : (
-                    <>
-                      {averageAprPercent === undefined ? (
-                        <Skeleton className="h-5 w-16" />
-                      ) : (
-                        <div className="flex flex-row items-baseline gap-2">
-                          <TLabelSans>Avg.</TLabelSans>
-                          <TBody>{formatPercent(averageAprPercent)}</TBody>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </>
+              averageAprDays === 0 ? (
+                <AprWithRewardsBreakdown
+                  side={side}
+                  reserve={reserve}
+                  action={action}
+                  changeAmount={value === "" ? undefined : new BigNumber(value)}
+                />
               ) : (
-                // Borrow
                 <>
-                  <AprWithRewardsBreakdown
-                    side={side}
-                    reserve={reserve}
-                    action={action}
-                    changeAmount={
-                      value === "" ? undefined : new BigNumber(value)
-                    }
-                  />
+                  {averageAprPercent === undefined ? (
+                    <Skeleton className="h-5 w-16" />
+                  ) : (
+                    <div className="flex flex-row items-baseline gap-2">
+                      <TLabelSans>Avg.</TLabelSans>
+                      <TBody>{formatPercent(averageAprPercent)}</TBody>
+                    </div>
+                  )}
                 </>
               )
             }

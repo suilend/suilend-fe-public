@@ -404,11 +404,9 @@ export default function HistoricalAprLineChart({
 
               const aprPercent = proportionOfYear.eq(0)
                 ? new BigNumber(0)
-                : new BigNumber(
-                    lstExchangeRate.value
-                      .div(prevLstExchangeRate.value)
-                      .minus(1),
-                  )
+                : lstExchangeRate.value
+                    .div(prevLstExchangeRate.value)
+                    .minus(1)
                     .div(proportionOfYear)
                     .times(100);
 
