@@ -1232,8 +1232,7 @@ export class SuilendClient {
       const coins = await getAllCoins(this.client, ownerId, ctokenCoinType);
       const mergeCoin = mergeAllCoins(ctokenCoinType, transaction, coins);
 
-      if (mergeCoinMap[ctokenCoinType] === undefined)
-        mergeCoinMap[ctokenCoinType] = mergeCoin;
+      mergeCoinMap[ctokenCoinType] = mergeCoin;
     }
 
     for (const [ctokenCoinType, mergeCoin] of Object.entries(mergeCoinMap)) {
