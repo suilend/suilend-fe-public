@@ -56,7 +56,7 @@ export default function ClaimRewardsDropdownMenu({
 
   const tokensThatCanBeDeposited = (() => {
     const tokensWithReserves = tokens.filter((t) =>
-      Object.keys(appData.reserveMap).includes(t.coinType),
+      appData.lendingMarket.reserves.some((r) => r.coinType === t.coinType),
     );
 
     return !obligation

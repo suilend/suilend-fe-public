@@ -34,7 +34,6 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const router = useRouter();
 
   const { allUserData } = useLoadedUserContext();
-
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {

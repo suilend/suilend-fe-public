@@ -173,7 +173,6 @@ export function SendContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { address } = useWalletContext();
   const { allUserData, getBalance } = useLoadedUserContext();
-
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
   const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 

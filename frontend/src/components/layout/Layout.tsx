@@ -13,7 +13,7 @@ import { useUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { allAppData, filteredReservesMap } = useAppContext();
+  const { allAppData } = useAppContext();
   const { allUserData, obligationMap, obligationOwnerCapMap } =
     useUserContext();
 
@@ -52,7 +52,6 @@ export default function Layout({ children }: PropsWithChildren) {
       <div className="relative z-[1] flex flex-1 flex-col py-4 md:py-6">
         <Container className="flex-1">
           {!allAppData ||
-          !filteredReservesMap ||
           !allUserData ||
           !obligationMap ||
           !obligationOwnerCapMap ? (

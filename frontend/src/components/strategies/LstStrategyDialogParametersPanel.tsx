@@ -358,6 +358,7 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { allUserData } = useLoadedUserContext();
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+
   const {
     isMoreDetailsOpen,
     setIsMoreDetailsOpen,

@@ -4,6 +4,7 @@ import BigNumber from "bignumber.js";
 import { Download, Upload, Wallet } from "lucide-react";
 import { mergeRefs } from "react-merge-refs";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
 
 import TokenSelectionDialog from "@/components/shared/TokenSelectionDialog";
@@ -48,7 +49,8 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     },
     ref,
   ) => {
-    const { getBalance, obligation } = useLoadedUserContext();
+    const { getBalance, obligationMap } = useLoadedUserContext();
+    const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
 
     const { swapInAccount, ...restSwapContext } = useSwapContext();
     const tokens = restSwapContext.tokens as Token[];
@@ -66,13 +68,13 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
     // Amount
     const tokenBalance = getBalance(token.coinType);
 
-    const tokenDepositPosition = obligation?.deposits?.find(
+    const tokenDepositPosition = obligationMainMarket?.deposits?.find(
       (d) => d.coinType === token.coinType,
     );
     const tokenDepositedAmount =
       tokenDepositPosition?.depositedAmount ?? new BigNumber(0);
 
-    const tokenBorrowPosition = obligation?.borrows?.find(
+    const tokenBorrowPosition = obligationMainMarket?.borrows?.find(
       (b) => b.coinType === token.coinType,
     );
     const tokenBorrowedAmount =

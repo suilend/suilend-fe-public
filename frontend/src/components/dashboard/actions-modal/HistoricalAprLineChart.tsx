@@ -525,13 +525,9 @@ export default function HistoricalAprLineChart({
       const bCoinType = getFieldCoinType(b);
 
       if (aIndex !== bIndex) return aIndex - bIndex; // 1, 2, 3, ...
-      return reserveSort(
-        Object.values(appData.reserveMap),
-        aCoinType,
-        bCoinType,
-      );
+      return reserveSort(appData.lendingMarket.reserves, aCoinType, bCoinType);
     });
-  }, [chartData, appData.reserveMap]);
+  }, [chartData, appData.lendingMarket.reserves]);
   const fieldStackIdMap = useMemo(
     () => fields.reduce((acc, field) => ({ ...acc, [field]: "1" }), {}),
     [fields],

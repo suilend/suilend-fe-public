@@ -56,6 +56,7 @@ function TokenRow({
   isDisabled,
 }: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { getBalance, obligationMap } = useLoadedUserContext();
   const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
 
@@ -100,9 +101,8 @@ function TokenRow({
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {Object.values(allAppData.allLendingMarketData).find(
-                  (_appData) =>
-                    Object.keys(_appData.reserveMap).includes(token.coinType),
+                {appDataMainMarket.lendingMarket.reserves.some(
+                  (r) => r.coinType === token.coinType,
                 ) ||
                 verifiedCoinTypes.includes(token.coinType) ||
                 [
@@ -110,11 +110,8 @@ function TokenRow({
                 ].includes(token.coinType) ? (
                   <Tooltip
                     title={
-                      Object.values(allAppData.allLendingMarketData).find(
-                        (_appData) =>
-                          Object.keys(_appData.reserveMap).includes(
-                            token.coinType,
-                          ),
+                      appDataMainMarket.lendingMarket.reserves.some(
+                        (r) => r.coinType === token.coinType,
                       )
                         ? "Available on Suilend"
                         : verifiedCoinTypes.includes(token.coinType)
@@ -222,13 +219,10 @@ export default function TokenSelectionDialog({
   onSelectToken,
   disabledCoinTypes,
 }: TokenSelectionDialogProps) {
-  const { allAppData, filteredReservesMap } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { getBalance, obligationMap } = useLoadedUserContext();
   const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const filteredReserves =
-    filteredReservesMap[appDataMainMarket.lendingMarket.id];
 
   const { swapInAccount, fetchTokensMetadata, verifiedCoinTypes } =
     useSwapContext();
@@ -254,14 +248,14 @@ export default function TokenSelectionDialog({
   const reserveTokens = useMemo(() => {
     const result: Token[] = [];
 
-    for (const r of Object.values(filteredReservesMap).flat()) {
+    for (const r of appDataMainMarket.lendingMarket.reserves) {
       const token = tokens.find((t) => t.symbol === r.token.symbol);
       if (token && !result.find((t) => t.coinType === token.coinType))
         result.push(token);
     }
 
     return result;
-  }, [filteredReservesMap, tokens]);
+  }, [appDataMainMarket.lendingMarket.reserves, tokens]);
 
   const otherTokens = useMemo(
     () =>
@@ -274,22 +268,22 @@ export default function TokenSelectionDialog({
   );
 
   const depositTokens = useMemo(() => {
-    return filteredReserves
+    return appDataMainMarket.lendingMarket.reserves
       .filter((r) =>
         obligationMainMarket?.deposits.find((d) => d.coinType === r.coinType),
       )
       .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
       .filter(Boolean) as Token[];
-  }, [filteredReserves, obligationMainMarket, tokens]);
+  }, [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens]);
 
   const borrowTokens = useMemo(() => {
-    return filteredReserves
+    return appDataMainMarket.lendingMarket.reserves
       .filter((r) =>
         obligationMainMarket?.borrows.find((b) => b.coinType === r.coinType),
       )
       .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
       .filter(Boolean) as Token[];
-  }, [filteredReserves, obligationMainMarket, tokens]);
+  }, [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens]);
 
   // Tokens - top
   const topTokens = useMemo(

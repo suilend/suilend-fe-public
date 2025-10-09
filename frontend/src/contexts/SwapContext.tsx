@@ -107,9 +107,8 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const { allAppData, filteredReservesMap } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const filteredReservesMainMarket = filteredReservesMap[LENDING_MARKET_ID];
   const { rawBalancesMap, balancesCoinMetadataMap, obligationMap } =
     useLoadedUserContext();
   const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
@@ -351,7 +350,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       const isTokenInValid = !!obligationMainMarket.deposits.find(
         (d) => d.coinType === tokenIn.coinType,
       );
-      const isTokenOutValid = !!filteredReservesMainMarket.find(
+      const isTokenOutValid = !!appDataMainMarket.lendingMarket.reserves.find(
         (r) => r.coinType === tokenOut.coinType,
       );
       if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
@@ -402,7 +401,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     swapInAccount,
     obligationMainMarket?.deposits,
     setSwapInAccount,
-    filteredReservesMainMarket,
+    appDataMainMarket.lendingMarket.reserves,
     DEFAULT_TOKEN_IN.coinType,
     DEFAULT_TOKEN_OUT.coinType,
     tokenHistoricalUsdPricesMap,
