@@ -1667,6 +1667,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           StrategyType.USDC_sSUI_SUI_LOOPING,
           StrategyType.AUSD_sSUI_SUI_LOOPING,
           StrategyType.xBTC_sSUI_SUI_LOOPING,
+          StrategyType.suiUSDT_sSUI_SUI_LOOPING,
         ].includes(strategyType)
       )
         return new BigNumber(0); // Not shown in UI
