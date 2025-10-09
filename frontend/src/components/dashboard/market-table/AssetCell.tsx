@@ -67,9 +67,8 @@ export default function AssetCell({
   const { address, signExecuteAndWaitForTransaction, dryRunTransaction } =
     useWalletContext();
   const { allAppData, isLst, walrusEpoch } = useLoadedAppContext();
-  const { getBalance, refresh } = useLoadedUserContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { getBalance, refresh } = useLoadedUserContext();
 
   const isTouchscreen = useIsTouchscreen();
 

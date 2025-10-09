@@ -68,9 +68,8 @@ function Page() {
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { allUserData, refresh } = useLoadedUserContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { allUserData, refresh } = useLoadedUserContext();
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {
@@ -203,7 +202,7 @@ function Page() {
           cetusSdk,
           CETUS_PARTNER_ID,
           allRewardsMap[strategyType as StrategyType],
-          appData.rewardPriceMap,
+          appDataMainMarket.rewardPriceMap,
           (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
           strategyOwnerCap.id,
           hasPosition(obligation) ? true : false, // isDepositing (true = deposit)

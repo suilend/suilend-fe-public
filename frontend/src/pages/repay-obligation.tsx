@@ -28,10 +28,9 @@ import { cn } from "@/lib/utils";
 export default function RepayObligation() {
   const { explorer, suiClient } = useSettingsContext();
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { getBalance } = useLoadedUserContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const [obligationId, setObligationId] = useState<string>("");
   const [obligation, setObligation] = useState<ParsedObligation | undefined>(

@@ -17,9 +17,8 @@ import { DISCORD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export default function WormholeConnectWrapper() {
-  const { allAppData } = useLoadedAppContext();
   const { rpc } = useSettingsContext();
-
+  const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const assetUsdPriceMap: Record<string, BigNumber> = {

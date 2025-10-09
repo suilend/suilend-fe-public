@@ -265,13 +265,12 @@ export default function LstStrategyDialog({
     [router.query],
   );
 
-  const { rpc, explorer, suiClient } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
     useWalletContext();
   const { allAppData } = useLoadedAppContext();
-  const { getBalance, allUserData, refresh } = useLoadedUserContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { getBalance, allUserData, refresh } = useLoadedUserContext();
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {

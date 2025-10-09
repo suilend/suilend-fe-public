@@ -96,7 +96,7 @@ export default function WalletBalancesCard() {
               }),
             ...(ownedStakedWalObjects ?? []).map((obj) => {
               const appDataMainMarket =
-                allAppData.allLendingMarketData[LENDING_MARKET_ID]; // Override appData from useLoadedAppContext
+                allAppData.allLendingMarketData[LENDING_MARKET_ID]; // Override appData from useLendingMarketContext
 
               const price =
                 appDataMainMarket.reserveMap[NORMALIZED_WAL_COINTYPE].price;

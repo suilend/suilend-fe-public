@@ -108,12 +108,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { allAppData, filteredReservesMap } = useLoadedAppContext();
-  const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
-    useLoadedUserContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const filteredReserves =
-    filteredReservesMap[appDataMainMarket.lendingMarket.id];
+  const filteredReservesMainMarket = filteredReservesMap[LENDING_MARKET_ID];
+  const { rawBalancesMap, balancesCoinMetadataMap, obligationMap } =
+    useLoadedUserContext();
+  const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
 
   // send.ag
   const { sdkMap, partnerIdMap } = useAggSdks();
@@ -341,22 +340,27 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     if (!swapInAccount) return [tokenIn, tokenOut];
     else {
       if (!tokenIn || !tokenOut) return [undefined, undefined];
-      if (!obligation?.deposits || obligation.deposits.length === 0) {
+      if (
+        !obligationMainMarket?.deposits ||
+        obligationMainMarket.deposits.length === 0
+      ) {
         setSwapInAccount(false);
         return [tokenIn, tokenOut];
       }
 
-      const isTokenInValid = !!obligation.deposits.find(
+      const isTokenInValid = !!obligationMainMarket.deposits.find(
         (d) => d.coinType === tokenIn.coinType,
       );
-      const isTokenOutValid = !!filteredReserves.find(
+      const isTokenOutValid = !!filteredReservesMainMarket.find(
         (r) => r.coinType === tokenOut.coinType,
       );
       if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
 
       const newTokenIn = isTokenInValid
         ? tokenIn
-        : tokens?.find((t) => t.coinType === obligation.deposits[0].coinType);
+        : tokens?.find(
+            (t) => t.coinType === obligationMainMarket.deposits[0].coinType,
+          );
       let newTokenOut = isTokenOutValid
         ? tokenOut
         : tokens?.find((t) => t.coinType === DEFAULT_TOKEN_OUT.coinType);
@@ -396,9 +400,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     tokenInSymbol,
     tokenOutSymbol,
     swapInAccount,
-    obligation?.deposits,
+    obligationMainMarket?.deposits,
     setSwapInAccount,
-    filteredReserves,
+    filteredReservesMainMarket,
     DEFAULT_TOKEN_IN.coinType,
     DEFAULT_TOKEN_OUT.coinType,
     tokenHistoricalUsdPricesMap,

@@ -8,6 +8,7 @@ import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   FundKeypairResult,
   NORMALIZED_SUI_COINTYPE,
@@ -42,7 +43,8 @@ export default function CetusCard() {
   const { rpc, explorer, suiClient } = useSettingsContext();
   const { account, address, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { refresh } = useLoadedUserContext();
 
   const isEditable = address === CAP_OWNER;
@@ -111,7 +113,7 @@ export default function CetusCard() {
           {
             ...getToken(
               NORMALIZED_SUI_COINTYPE,
-              appData.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
+              appDataMainMarket.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
             ),
             amount: BigNumber.max(0.015, Object.keys(feesMap).length * 0.0016),
           },

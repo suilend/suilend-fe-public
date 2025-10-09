@@ -355,7 +355,9 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
 function HistoryTabContent({ strategyType }: TabContentProps) {
   const { explorer } = useSettingsContext();
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { allUserData } = useLoadedUserContext();
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
   const {
     isMoreDetailsOpen,
     setIsMoreDetailsOpen,
@@ -393,9 +395,6 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
     getHealthPercent,
     getLiquidationPrice,
   } = useLoadedLstStrategyContext();
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   // Obligation
   const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(

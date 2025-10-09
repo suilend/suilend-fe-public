@@ -10,7 +10,6 @@ interface UsdcTokenLogoProps {
 
 export default function UsdcTokenLogo({ size }: UsdcTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (

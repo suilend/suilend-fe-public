@@ -122,7 +122,12 @@ function RedeemTabContent({
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const appDataSteammLmMarket =
+    allAppData.allLendingMarketData[STEAMM_LM_LENDING_MARKET_ID];
   const { getBalance, allUserData } = useLoadedUserContext();
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 
   const {
     mSendCoinMetadata,
@@ -133,13 +138,6 @@ function RedeemTabContent({
   } = useLoadedSendContext();
   const rawUserAllocationsS1 = restLoadedSendContext.rawUserAllocationsS1!;
   const rawUserAllocationsS2 = restLoadedSendContext.rawUserAllocationsS2!;
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const appDataSteammLmMarket =
-    allAppData.allLendingMarketData[STEAMM_LM_LENDING_MARKET_ID];
-
-  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
-  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
 
   // Submit
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -544,8 +542,11 @@ function ClaimTabContent() {
   const { rpc, explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { allUserData, getBalance, obligationOwnerCapMap } =
     useLoadedUserContext();
+  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
+  const obligationOwnerCapMainMarket = obligationOwnerCapMap[LENDING_MARKET_ID];
 
   const {
     mSendObjectMap,
@@ -554,11 +555,6 @@ function ClaimTabContent() {
     mSendCoinTypesWithBalance,
     selectedMsendCoinType,
   } = useLoadedSendContext();
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
-  const obligationOwnerCap =
-    obligationOwnerCapMap[appDataMainMarket.lendingMarket.id];
 
   // Reserves
   const suiReserve = appDataMainMarket.reserveMap[NORMALIZED_SUI_COINTYPE];
@@ -705,7 +701,7 @@ function ClaimTabContent() {
         +flashLoanSlippagePercent,
         isDepositing,
         transaction,
-        obligationOwnerCap,
+        obligationOwnerCapMainMarket,
       );
 
       const res = await signExecuteAndWaitForTransaction(transaction);
@@ -1035,6 +1031,7 @@ interface ClaimSectionProps {
 export default function ClaimSection({ allocations }: ClaimSectionProps) {
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const {
     mSendObjectMap,
@@ -1043,8 +1040,6 @@ export default function ClaimSection({ allocations }: ClaimSectionProps) {
     rawUserAllocationsS2,
     selectedMsendCoinType,
   } = useLoadedSendContext();
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   // Redeem
   const minMsendAmount = 10 ** (-1 * mSendCoinMetadata.decimals);

@@ -21,7 +21,6 @@ interface StrategyHeaderProps {
 
 export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
   const { allAppData } = useLoadedAppContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const {

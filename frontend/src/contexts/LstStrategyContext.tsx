@@ -409,7 +409,7 @@ export const useLoadedLstStrategyContext = () =>
 export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
   const { allUserData } = useLoadedUserContext();
-  const { allAppData, isLst } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
 
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];

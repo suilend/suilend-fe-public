@@ -10,7 +10,6 @@ interface SendTokenLogoProps {
 
 export default function SendTokenLogo({ size }: SendTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
-
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (

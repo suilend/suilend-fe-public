@@ -41,12 +41,11 @@ export default function ClaimRewardsDropdownMenu({
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
   const { allAppData, closeLedgerHashDialog } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { appData, obligation } = useLendingMarketContext();
   const { refresh } = useLoadedUserContext();
 
   const { claimRewards } = useDashboardContext();
-
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const tokens: Token[] = Object.values(rewardsMap).map((r) =>
     getToken(
