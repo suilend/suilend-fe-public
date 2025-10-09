@@ -7,6 +7,7 @@ export const LEADERBOARD_URL = "/leaderboard";
 export const CLAIM_URL = "/claim";
 export const ABOUT_URL = "/about";
 export const ADMIN_URL = "/admin";
+export const VAULT_URL = "/vaults";
 
 export const SUILEND_URL = "https://suilend.fi";
 export const SPRINGSUI_URL = "https://springsui.com";

@@ -74,19 +74,19 @@ export const eventSortAsc = (a: EventRow, b: EventRow) =>
 // DownsampledApiReserveAssetDataEvent
 export const DAY_S = 24 * 60 * 60;
 
-export type Days = 1 | 7 | 30;
-export const DAYS: Days[] = [1, 7, 30];
+export type Days = 1 | 7 | 30 | 90;
+export const DAYS: Days[] = [1, 7, 30, 90];
 export const RESERVE_EVENT_SAMPLE_INTERVAL_S_MAP: Record<Days, number> = {
   1: 15 * 60,
   7: 2 * 60 * 60,
   30: 8 * 60 * 60,
-  // 90: 24 * 60 * 60,
+  90: 24 * 60 * 60,
 };
 export const DAYS_MAP: Record<Days, string> = {
   1: "1D",
   7: "1W",
   30: "1M",
-  // 90: "3M",
+  90: "3M",
 };
 
 export const calculateRewardAprPercent = (

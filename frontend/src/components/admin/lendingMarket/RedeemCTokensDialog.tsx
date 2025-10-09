@@ -4,7 +4,12 @@ import { Transaction } from "@mysten/sui/transactions";
 import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
-import { formatToken, getToken, isCTokenCoinType } from "@suilend/sui-fe";
+import {
+  NORMALIZED_USDC_COINTYPE,
+  formatToken,
+  getToken,
+  isCTokenCoinType,
+} from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -35,14 +40,14 @@ export default function RedeemCTokensDialog() {
 
     const transaction = new Transaction();
 
-    // await suilendClient.depositLiquidityAndGetCTokens(
+    // await appData.suilendClient.depositLiquidityAndGetCTokens(
     //   address,
-    //   NORMALIZED_wUSDC_COINTYPE,
+    //   NORMALIZED_USDC_COINTYPE,
     //   `${0.01 * 10 ** 6}`,
     //   transaction,
     // );
     // await signExecuteAndWaitForTransaction(transaction);
-
+    // return;
     try {
       await appData.suilendClient.redeemCtokensAndWithdrawLiquidity(
         address,

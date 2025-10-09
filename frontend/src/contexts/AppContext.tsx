@@ -56,7 +56,13 @@ export interface AppData {
 }
 export interface AllAppData {
   allLendingMarketData: Record<string, AppData>;
-  lstAprPercentMap: Record<string, BigNumber>;
+  lstMap: Record<
+    string,
+    {
+      lstToSuiExchangeRate: BigNumber;
+      aprPercent: BigNumber;
+    }
+  >;
   okxAprPercentMap: {
     xBtcDepositAprPercent: BigNumber;
   };
@@ -193,9 +199,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // LST
   const isLst = useCallback(
     (coinType: string) =>
-      Object.keys(allAppData?.lstAprPercentMap ?? {}).includes(coinType) ??
-      false,
-    [allAppData?.lstAprPercentMap],
+      Object.keys(allAppData?.lstMap ?? {}).includes(coinType) ?? false,
+    [allAppData?.lstMap],
   );
   const isEcosystemLst = useCallback(
     (coinType: string) =>

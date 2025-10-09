@@ -16,7 +16,11 @@ import {
   SuiPythClient,
 } from "@pythnetwork/pyth-sui-js";
 
-import { extractCTokenCoinType } from "@suilend/sui-fe";
+import {
+  extractCTokenCoinType,
+  getAllCoins,
+  mergeAllCoins,
+} from "@suilend/sui-fe";
 
 import { PriceInfoObject } from "./_generated/_dependencies/source/0x8d97f1cd6ac663735be08d1d2b6d02a159e711586461306ce60a2b7a6a565a9e/price-info/structs";
 import { phantom } from "./_generated/_framework/reified";
@@ -865,20 +869,8 @@ export class SuilendClient {
     transaction: Transaction,
     obligationOwnerCap: TransactionObjectInput,
   ) {
-    const coins = (
-      await this.client.getCoins({
-        owner: ownerId,
-        coinType,
-      })
-    ).data;
-
-    const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui(coinType)) {
-      transaction.mergeCoins(
-        transaction.object(mergeCoin.coinObjectId),
-        coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-      );
-    }
+    const coins = await getAllCoins(this.client, ownerId, coinType);
+    const mergeCoin = mergeAllCoins(coinType, transaction, coins);
 
     const [sendCoin] = transaction.splitCoins(
       isSui(coinType)
@@ -896,20 +888,8 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const coins = (
-      await this.client.getCoins({
-        owner: ownerId,
-        coinType,
-      })
-    ).data;
-
-    const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui(coinType)) {
-      transaction.mergeCoins(
-        transaction.object(mergeCoin.coinObjectId),
-        coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-      );
-    }
+    const coins = await getAllCoins(this.client, ownerId, coinType);
+    const mergeCoin = mergeAllCoins(coinType, transaction, coins);
 
     const [sendCoin] = transaction.splitCoins(
       isSui(coinType)
@@ -1139,20 +1119,8 @@ export class SuilendClient {
     value: string,
     transaction: Transaction,
   ) {
-    const coins = (
-      await this.client.getCoins({
-        owner: ownerId,
-        coinType,
-      })
-    ).data;
-
-    const mergeCoin = coins[0];
-    if (coins.length > 1 && !isSui(coinType)) {
-      transaction.mergeCoins(
-        transaction.object(mergeCoin.coinObjectId),
-        coins.map((c) => transaction.object(c.coinObjectId)).slice(1),
-      );
-    }
+    const coins = await getAllCoins(this.client, ownerId, coinType);
+    const mergeCoin = mergeAllCoins(coinType, transaction, coins);
 
     const [sendCoin] = transaction.splitCoins(
       isSui(coinType)
@@ -1259,30 +1227,15 @@ export class SuilendClient {
     ctokenCoinTypes: string[],
     transaction: Transaction,
   ) {
-    const mergeCoinsMap: Record<string, CoinStruct[]> = {};
+    const mergeCoinMap: Record<string, CoinStruct> = {};
     for (const ctokenCoinType of ctokenCoinTypes) {
-      const coins = (
-        await this.client.getCoins({
-          owner: ownerId,
-          coinType: ctokenCoinType,
-        })
-      ).data;
-      if (coins.length === 0) continue;
+      const coins = await getAllCoins(this.client, ownerId, ctokenCoinType);
+      const mergeCoin = mergeAllCoins(ctokenCoinType, transaction, coins);
 
-      if (mergeCoinsMap[ctokenCoinType] === undefined)
-        mergeCoinsMap[ctokenCoinType] = [];
-      mergeCoinsMap[ctokenCoinType].push(...coins);
+      mergeCoinMap[ctokenCoinType] = mergeCoin;
     }
 
-    for (const [ctokenCoinType, mergeCoins] of Object.entries(mergeCoinsMap)) {
-      const mergeCoin = mergeCoins[0];
-      if (mergeCoins.length > 1) {
-        transaction.mergeCoins(
-          transaction.object(mergeCoin.coinObjectId),
-          mergeCoins.map((mc) => transaction.object(mc.coinObjectId)).slice(1),
-        );
-      }
-
+    for (const [ctokenCoinType, mergeCoin] of Object.entries(mergeCoinMap)) {
       const coinType = extractCTokenCoinType(ctokenCoinType);
       const [exemption] = transaction.moveCall({
         target: `0x1::option::none`,

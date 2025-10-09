@@ -16,6 +16,7 @@ export type ChartData = {
 
 interface HistoricalLineChartProps {
   data: ChartData[];
+  average?: number;
   tickFormatterY: (value: number) => string;
   fields: string[];
   fieldStackIdMap: Record<string, string>;
@@ -25,6 +26,7 @@ interface HistoricalLineChartProps {
 
 export default function HistoricalLineChart({
   data,
+  average,
   tickFormatterY,
   fields,
   fieldStackIdMap,
@@ -75,10 +77,12 @@ export default function HistoricalLineChart({
       ? data
           .filter((d) => {
             if (days === 1)
-              return d.timestampS % ((sm ? 4 : 8) * 60 * 60) === 0;
-            if (days === 7) return d.timestampS % ((sm ? 1 : 2) * DAY_S) === 0;
-            if (days === 30)
-              return d.timestampS % ((sm ? 5 : 10) * DAY_S) === 0;
+              return d.timestampS % ((sm ? 4 : 5) * (1 * 60 * 60)) === 0; // 6, 5
+            if (days === 7)
+              return d.timestampS % ((sm ? 1 : 1.5) * DAY_S) === 0; // 7, 5
+            if (days === 30) return d.timestampS % ((sm ? 5 : 6) * DAY_S) === 0; // 6, 5
+            if (days === 90)
+              return d.timestampS % ((sm ? 5 : 6) * (3 * DAY_S)) === 0; // 6, 5
             return false;
           })
           .map((d) => {
@@ -131,6 +135,7 @@ export default function HistoricalLineChart({
           tickLine={axis.tickLine}
           tickFormatter={tickFormatterX}
           domain={domainX}
+          interval={0} // Show all ticks
         />
         <Recharts.YAxis
           type="number"
@@ -141,6 +146,7 @@ export default function HistoricalLineChart({
           tickLine={axis.tickLine}
           tickFormatter={tickFormatterY}
           domain={domainY}
+          interval={0} // Show all ticks
         />
         {fields
           .filter((field) => fieldStackIdMap[field] !== "0")
@@ -171,6 +177,27 @@ export default function HistoricalLineChart({
             wrapperStyle={tooltip.wrapperStyle}
             content={tooltipContent}
           />
+        )}
+        {average !== undefined && (
+          <Recharts.ReferenceLine
+            y={average}
+            stroke="hsl(var(--success))"
+            strokeWidth={1}
+            strokeDasharray="4 4"
+          >
+            <Recharts.Label
+              value={`Avg. ${tickFormatterY(average)}`}
+              offset={5}
+              position="insideBottomLeft"
+              fontSize={10}
+              fontFamily="var(--font-geist-sans)"
+              fill="hsl(var(--success))"
+              stroke="hsl(var(--popover))"
+              strokeLinejoin="round"
+              strokeWidth={5}
+              paintOrder="stroke fill"
+            />
+          </Recharts.ReferenceLine>
         )}
       </Recharts.AreaChart>
     </Recharts.ResponsiveContainer>

@@ -54,7 +54,7 @@ export default function App({ Component, pageProps }: AppProps) {
     if (!projectToken) return;
 
     mixpanel.init(projectToken, {
-      debug: process.env.NEXT_PUBLIC_DEBUG === "true",
+      debug: process.env.NODE_ENV === "development",
       persistence: "localStorage",
     });
   }, []);

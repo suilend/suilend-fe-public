@@ -161,6 +161,7 @@ export default function AprLineChart({ data, reference }: AprLineChartProps) {
               tickLine={axis.tickLine}
               tickFormatter={tickFormatterX}
               domain={domainX}
+              interval={0} // Show all ticks
             >
               <Recharts.Label
                 value="Utilization"
@@ -177,6 +178,7 @@ export default function AprLineChart({ data, reference }: AprLineChartProps) {
               tickLine={axis.tickLine}
               tickFormatter={tickFormatterY}
               domain={domainY}
+              interval={0} // Show all ticks
             />
             <Recharts.Line
               dataKey="transformedAprPercent"

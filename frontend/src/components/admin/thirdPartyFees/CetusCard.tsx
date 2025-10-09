@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
+import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { CoinMetadata } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -8,10 +9,18 @@ import { Coins } from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  FundKeypairResult,
+  NORMALIZED_SUI_COINTYPE,
+  ReturnAllOwnedObjectsAndSuiToUserResult,
+  TX_TOAST_DURATION,
+  createKeypair,
   formatAddress,
   formatToken,
+  fundKeypair,
   getCoinMetadataMap,
   getToken,
+  keypairSignExecuteAndWaitForTransaction,
+  returnAllOwnedObjectsAndSuiToUser,
 } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
@@ -22,6 +31,7 @@ import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_CAP_ID, CETUS_PARTNER_ID } from "@/lib/cetus";
 
@@ -29,8 +39,10 @@ const CAP_OWNER =
   "0x7d68adb758c18d0f1e6cbbfe07c4c12bce92de37ce61b27b51245a568381b83e";
 
 export default function CetusCard() {
-  const { rpc, explorer } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { rpc, explorer, suiClient } = useSettingsContext();
+  const { account, address, signExecuteAndWaitForTransaction } =
+    useWalletContext();
+  const { appData } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
 
   const isEditable = address === CAP_OWNER;
@@ -75,25 +87,72 @@ export default function CetusCard() {
   }, [cetusSdk]);
 
   // Submit
-  const submit = async () => {
-    if (!address) throw new Error("Wallet not connected");
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+  const onSubmitClick = async () => {
+    if (!account?.publicKey || !address)
+      throw new Error("Wallet not connected");
     if (!isEditable)
       throw new Error("Connected wallet is not the cap owner wallet");
 
     if (!feesMap) return;
 
     try {
+      // 1) Create keypair
+      const createKeypairResult = await createKeypair(
+        account,
+        signPersonalMessage,
+      );
+      const keypair = createKeypairResult.keypair;
+      const keypairAddress = createKeypairResult.address;
+
+      // 2) Fund keypair
+      const fundKeypairResult: FundKeypairResult = await fundKeypair(
+        [
+          {
+            ...getToken(
+              NORMALIZED_SUI_COINTYPE,
+              appData.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
+            ),
+            amount: BigNumber.max(0.015, Object.keys(feesMap).length * 0.0016),
+          },
+        ],
+        address,
+        keypair,
+        suiClient,
+        signExecuteAndWaitForTransaction,
+      );
+
+      // 3) Claim fees
       for (const coinType of Object.keys(feesMap)) {
         const transaction = await cetusSdk.Pool.claimPartnerRefFeePayload(
           CETUS_PARTNER_CAP_ID,
           CETUS_PARTNER_ID,
           coinType,
         );
+        transaction.setSender(keypairAddress);
 
-        await signExecuteAndWaitForTransaction(transaction);
+        await keypairSignExecuteAndWaitForTransaction(
+          transaction,
+          keypair,
+          suiClient,
+        );
       }
 
-      toast.success("Claimed referral fees");
+      // 4) Return all owned objects and SUI to user
+      const returnAllOwnedObjectsAndSuiToUserResult: ReturnAllOwnedObjectsAndSuiToUserResult =
+        await returnAllOwnedObjectsAndSuiToUser(address, keypair, suiClient);
+      const txUrl = explorer.buildTxUrl(
+        returnAllOwnedObjectsAndSuiToUserResult.res.digest,
+      );
+
+      toast.success("Claimed referral fees", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
     } catch (err) {
       toast.error("Failed to claim referral fees", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -154,7 +213,7 @@ export default function CetusCard() {
           labelClassName="uppercase text-xs"
           startIcon={<Coins />}
           variant="secondaryOutline"
-          onClick={submit}
+          onClick={onSubmitClick}
           disabled={!isEditable}
         >
           Claim referral fees

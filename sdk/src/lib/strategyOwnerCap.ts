@@ -309,15 +309,25 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
   cetusSdk: CetusSdk,
   cetusPartnerId: string,
   rewardsMap: RewardsMap,
+  rewardPriceMap: Record<string, BigNumber | undefined>,
   depositReserve: ParsedReserve,
   strategyOwnerCap: TransactionObjectInput,
   isDepositing: boolean,
   transaction: Transaction,
 ) => {
+  const filteredRewardsMap = Object.fromEntries(
+    Object.entries(rewardsMap).filter(
+      ([coinType]) =>
+        (rewardPriceMap[coinType] ?? new BigNumber(0))
+          .times(rewardsMap[coinType].amount)
+          .gte(0.01), // Filter out rewards with value < $0.01 (will most likely fail to get a swap quote)
+    ),
+  );
+
   // 1) Claim rewards and merge coins
   const mergedCoinsMap: Record<string, TransactionObjectArgument> =
     strategyClaimRewardsAndMergeCoins(
-      rewardsMap,
+      filteredRewardsMap,
       strategyOwnerCap,
       transaction,
     );
@@ -355,7 +365,7 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
         .map(([coinType, coin]) =>
           (async () => {
             // Get amount
-            const { rawAmount: amount } = rewardsMap[coinType]; // Use underestimate (rewards keep accruing)
+            const { rawAmount: amount } = filteredRewardsMap[coinType]; // Use underestimate (rewards keep accruing)
 
             // Get routes
             const routers = await cetusSdk.findRouters({

@@ -11,7 +11,6 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   API_URL,
   MAX_U64,
-  MS_PER_YEAR,
   NORMALIZED_DMC_COINTYPE,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
@@ -297,20 +296,30 @@ export default function ActionsModalTabContent({
       }
       case Action.REPAY: {
         if (useMaxAmount) {
-          const threeMinsBorrowAprPercent = reserve.borrowAprPercent
-            .div(MS_PER_YEAR)
-            .times(3 * 60 * 1000);
+          const borrowedAmount = new BigNumber(borrowPosition!.borrowedAmount);
+          const borrowedAmountUsd = borrowedAmount.times(reserve.price);
+          const fullRepaymentAmount = (
+            borrowedAmountUsd.lt(0.1)
+              ? new BigNumber(0.1).div(reserve.price) // $0.1 in borrow coinType
+              : borrowedAmountUsd.lt(1)
+                ? borrowedAmount.times(1.1) // 10% buffer
+                : borrowedAmountUsd.lt(10)
+                  ? borrowedAmount.times(1.01) // 1% buffer
+                  : borrowedAmount.times(1.001)
+          ) // 0.1% buffer
+            .decimalPlaces(reserve.token.decimals, BigNumber.ROUND_DOWN);
 
           submitAmount = BigNumber.min(
-            balance.minus(
-              isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
+            BigNumber.max(
+              0,
+              balance.minus(
+                isSui(reserve.coinType) ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT : 0,
+              ),
             ),
-            new BigNumber(value).times(
-              new BigNumber(1).plus(threeMinsBorrowAprPercent.div(100)),
-            ),
+            fullRepaymentAmount,
           )
-            .times(10 ** reserve.mintDecimals)
-            .integerValue(BigNumber.ROUND_UP)
+            .times(10 ** reserve.token.decimals)
+            .integerValue(BigNumber.ROUND_DOWN)
             .toString();
         }
         break;
@@ -460,6 +469,7 @@ export default function ActionsModalTabContent({
             horizontal
           />
           <LabelWithValue
+            labelClassName="gap-2"
             label={`${capitalize(side)} APR`}
             value="0"
             horizontal

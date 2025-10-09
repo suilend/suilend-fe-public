@@ -16,7 +16,6 @@ import {
 import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
-  NORMALIZED_STRAT_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_WAL_COINTYPE,
@@ -105,7 +104,9 @@ function TokenRow({
                     Object.keys(_appData.reserveMap).includes(token.coinType),
                 ) ||
                 verifiedCoinTypes.includes(token.coinType) ||
-                [NORMALIZED_STRAT_COINTYPE].includes(token.coinType) ? (
+                [
+                  "0x8556539cf20b8640738d919ce3fe9d79b982f7d14a0861b650ff24b3cbd80e73::strat::STRAT",
+                ].includes(token.coinType) ? (
                   <Tooltip
                     title={
                       Object.values(allAppData.allLendingMarketData).find(

@@ -50,7 +50,10 @@ function AdvancedTabContent({ side, reserve }: TabContentProps) {
   return (
     <>
       <div className="mb-1 flex w-full flex-col gap-4">
-        <HistoricalAprLineChart reserve={reserve} side={side} />
+        <HistoricalAprLineChart
+          side={side}
+          reserves={[{ reserve, side, multiplier: 1 }]}
+        />
         <Separator />
         <HistoricalDepositBorrowLineChart
           reserve={reserve}
