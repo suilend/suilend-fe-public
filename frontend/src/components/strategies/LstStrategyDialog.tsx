@@ -2028,8 +2028,8 @@ export default function LstStrategyDialog({
 
       const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.1)
-          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)
@@ -2054,6 +2054,13 @@ export default function LstStrategyDialog({
           depositReserves.lst.token.decimals,
           BigNumber.ROUND_DOWN,
         );
+      if (
+        (
+          deposits.find((d) => d.coinType === depositReserves.lst!.coinType)
+            ?.depositedAmount ?? new BigNumber(0)
+        ).lt(lstWithdrawnAmount)
+      )
+        throw new Error("Not enough LST deposited");
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingLst] withdraw_lst |`,
@@ -2285,8 +2292,8 @@ export default function LstStrategyDialog({
 
       const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.1)
-          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)
@@ -3984,8 +3991,8 @@ export default function LstStrategyDialog({
                       borrowReserve.price,
                     );
                     const fullRepaymentAmount = (
-                      borrowedAmountUsd.lt(0.1)
-                        ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+                      borrowedAmountUsd.lt(0.02)
+                        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
                         : borrowedAmountUsd.lt(1)
                           ? borrowedAmount.times(1.1) // 10% buffer
                           : borrowedAmountUsd.lt(10)
