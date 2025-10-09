@@ -12,6 +12,7 @@ import {
   API_URL,
   MAX_U64,
   NORMALIZED_DMC_COINTYPE,
+  NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
   NORMALIZED_IKA_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
@@ -269,9 +270,10 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for HIPPO, DMC, and IKA
+        // TODO: Remove workaround for FUD, HIPPO, DMC, and IKA
         if (
           useMaxAmount &&
+          reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
           reserve.coinType !== NORMALIZED_HIPPO_COINTYPE &&
           reserve.coinType !== NORMALIZED_DMC_COINTYPE &&
           reserve.coinType !== NORMALIZED_IKA_COINTYPE
