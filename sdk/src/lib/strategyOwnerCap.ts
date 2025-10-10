@@ -375,7 +375,7 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: CetusQuote;
+      routers: CetusQuote | undefined;
     }
   > = Object.fromEntries(
     await Promise.all(
@@ -383,24 +383,29 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
         .filter(([coinType]) => swappedCoinTypes.includes(coinType))
         .map(([coinType, coin]) =>
           (async () => {
-            // Get amount
-            const { rawAmount: amount } = filteredRewardsMap[coinType]; // Use underestimate (rewards keep accruing)
+            try {
+              // Get amount
+              const { rawAmount: amount } = filteredRewardsMap[coinType]; // Use underestimate (rewards keep accruing)
 
-            // Get routes
-            const routers = await cetusSdk.findRouters({
-              from: coinType,
-              target: depositReserve.coinType,
-              amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
-              byAmountIn: true,
-            });
-            if (!routers)
-              throw new Error(`No swap quote found for ${coinType}`);
-            console.log("[strategyClaimRewardsAndSwapForCoinType] routers", {
-              coinType,
-              routers,
-            });
+              // Get routes
+              const routers = await cetusSdk.findRouters({
+                from: coinType,
+                target: depositReserve.coinType,
+                amount: new BN(amount.toString()), // Underestimate (rewards keep accruing)
+                byAmountIn: true,
+              });
+              if (!routers)
+                throw new Error(`No swap quote found for ${coinType}`);
+              console.log("[strategyClaimRewardsAndSwapForCoinType] routers", {
+                coinType,
+                routers,
+              });
 
-            return [coinType, { coin, routers }];
+              return [coinType, { coin, routers }];
+            } catch (err) {
+              console.error(err);
+              return [coinType, { coin, routers: undefined }];
+            }
           })(),
         ),
     ),
@@ -414,6 +419,7 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
+    if (routers === undefined) continue; // Skip coin if no swap quote found
     console.log(
       "[strategyClaimRewardsAndSwapForCoinType] swapping coinType",
       coinType,
