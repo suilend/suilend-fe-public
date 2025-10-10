@@ -65,7 +65,7 @@ function Page() {
           // Vertical layout
           <div className="flex w-full flex-col gap-6">
             {/* Cards */}
-            <div className="flex w-full flex-col gap-6">
+            <div className="flex w-full flex-col gap-4">
               {appDataList.map((appData) => (
                 <LendingMarketContextProvider
                   key={appData.lendingMarket.slug}
@@ -84,7 +84,7 @@ function Page() {
             </div>
 
             {/* Markets */}
-            <div className="flex w-full flex-col gap-6">
+            <div className="flex w-full flex-col gap-4">
               {appDataList.map((appData) => (
                 <LendingMarketContextProvider
                   key={appData.lendingMarket.slug}
@@ -108,7 +108,7 @@ function Page() {
               style={{ paddingRight: 360 + 8 * 4 }}
             >
               {/* Markets */}
-              <div className="flex w-full flex-col gap-6">
+              <div className="flex w-full flex-col gap-4">
                 {appDataList.map((appData) => (
                   <LendingMarketContextProvider
                     key={appData.lendingMarket.slug}
@@ -127,7 +127,7 @@ function Page() {
 
             <div className="absolute bottom-0 right-0 top-0 w-[360px] overflow-y-auto">
               {/* Cards */}
-              <div className="flex w-full flex-col gap-6">
+              <div className="flex w-full flex-col gap-4">
                 {appDataList.map((appData) => (
                   <LendingMarketContextProvider
                     key={appData.lendingMarket.slug}

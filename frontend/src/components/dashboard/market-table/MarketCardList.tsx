@@ -129,7 +129,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
     useState<Record<string, boolean>>({});
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-4">
       {rows.map((row, index) => {
         const { section, title, tooltip, count } = row;
 

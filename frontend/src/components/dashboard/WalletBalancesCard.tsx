@@ -52,13 +52,18 @@ export default function WalletBalancesCard() {
               {formatUsd(
                 coinTypes.reduce((acc, coinType) => {
                   const reserve = appData.reserveMap[coinType];
-                  const price = isLst(coinType)
-                    ? reserve.price.times(
-                        allAppData.lstMap[coinType].lstToSuiExchangeRate, // Take into account the LST to SUI exchange rate
-                      )
-                    : (reserve?.price ?? appData.rewardPriceMap[coinType]);
-                  if (price === undefined) return acc;
+                  let price: BigNumber | undefined = (
+                    reserve?.price ??
+                    appData.rewardPriceMap[coinType] ??
+                    new BigNumber(0)
+                  ).times(
+                    isLst(coinType)
+                      ? allAppData.lstMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
+                      : 1,
+                  );
+                  if (price.eq(0)) price = undefined;
 
+                  if (price === undefined) return acc;
                   return acc.plus(getBalance(coinType).times(price));
                 }, new BigNumber(0)),
               )}
@@ -76,12 +81,16 @@ export default function WalletBalancesCard() {
               .filter(([coinType]) => coinTypes.includes(coinType))
               .map(([coinType, coinMetadata]) => {
                 const reserve = appData.reserveMap[coinType];
-                let price: BigNumber | undefined = isLst(coinType)
-                  ? reserve.price.times(
-                      allAppData.lstMap[coinType].lstToSuiExchangeRate, // Take into account the LST to SUI exchange rate
-                    )
-                  : (reserve?.price ?? appData.rewardPriceMap[coinType]);
-                if (price !== undefined && price.isNaN()) price = undefined;
+                let price: BigNumber | undefined = (
+                  reserve?.price ??
+                  appData.rewardPriceMap[coinType] ??
+                  new BigNumber(0)
+                ).times(
+                  isLst(coinType)
+                    ? allAppData.lstMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
+                    : 1,
+                );
+                if (price.eq(0)) price = undefined;
 
                 return {
                   reserve,
