@@ -101,8 +101,8 @@ export default function RepayObligation() {
       const reserve = appDataMainMarket.reserveMap[coinType];
       const borrowedAmountUsd = borrowedAmount.times(reserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.1)
-          ? new BigNumber(0.1).div(reserve.price) // $0.1 in borrow coinType
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(reserve.price) // $0.02 in borrow coinType
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)

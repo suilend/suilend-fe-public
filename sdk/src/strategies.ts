@@ -234,6 +234,11 @@ export const STRATEGY_TYPE_EXPOSURE_MAP: Record<
     max: new BigNumber(2.2), // Actual max: 1 / (1 - (xBTC Open LTV %)) = 2.5x, where xBTC Open LTV % = 60%
     default: new BigNumber(2.2),
   },
+  [StrategyType.suiUSDT_sSUI_SUI_LOOPING]: {
+    min: new BigNumber(1),
+    max: new BigNumber(3), // Actual max: 1 + (suiUSDT Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where suiUSDT Open LTV % = 77% and sSUI Open LTV % = 70%
+    default: new BigNumber(3),
+  },
 };
 
 // Reserves

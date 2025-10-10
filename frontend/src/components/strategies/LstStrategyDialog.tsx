@@ -173,6 +173,15 @@ const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
     borrowA: true,
     feePercent: 0.01,
   },
+  [StrategyType.suiUSDT_sSUI_SUI_LOOPING]: {
+    provider: FlashLoanProvider.MMT,
+    poolId:
+      "0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9", // suiUSDT-USDC 0.001% https://app.mmt.finance/liquidity/0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9
+    coinTypeA: NORMALIZED_suiUSDT_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.001,
+  },
 };
 
 /**
@@ -2033,8 +2042,8 @@ export default function LstStrategyDialog({
 
       const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.1)
-          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)
@@ -2059,6 +2068,13 @@ export default function LstStrategyDialog({
           depositReserves.lst.token.decimals,
           BigNumber.ROUND_DOWN,
         );
+      if (
+        (
+          deposits.find((d) => d.coinType === depositReserves.lst!.coinType)
+            ?.depositedAmount ?? new BigNumber(0)
+        ).lt(lstWithdrawnAmount)
+      )
+        throw new Error("Not enough LST deposited");
 
       console.log(
         `[unloopToExposure.fullyRepayBorrowsUsingLst] withdraw_lst |`,
@@ -2290,8 +2306,8 @@ export default function LstStrategyDialog({
 
       const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.1)
-          ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)
@@ -3997,8 +4013,8 @@ export default function LstStrategyDialog({
                       borrowReserve.price,
                     );
                     const fullRepaymentAmount = (
-                      borrowedAmountUsd.lt(0.1)
-                        ? new BigNumber(0.1).div(borrowReserve.price) // $0.1 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
+                      borrowedAmountUsd.lt(0.02)
+                        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
                         : borrowedAmountUsd.lt(1)
                           ? borrowedAmount.times(1.1) // 10% buffer
                           : borrowedAmountUsd.lt(10)
@@ -4575,6 +4591,7 @@ export default function LstStrategyDialog({
                   StrategyType.USDC_sSUI_SUI_LOOPING,
                   StrategyType.AUSD_sSUI_SUI_LOOPING,
                   StrategyType.xBTC_sSUI_SUI_LOOPING,
+                  StrategyType.suiUSDT_sSUI_SUI_LOOPING,
                 ].includes(strategyType)
                 ? "md:min-h-[calc(314px+20px+12px)]"
                 : "md:min-h-[314px]"
@@ -4582,6 +4599,7 @@ export default function LstStrategyDialog({
                     StrategyType.USDC_sSUI_SUI_LOOPING,
                     StrategyType.AUSD_sSUI_SUI_LOOPING,
                     StrategyType.xBTC_sSUI_SUI_LOOPING,
+                    StrategyType.suiUSDT_sSUI_SUI_LOOPING,
                   ].includes(strategyType)
                 ? "md:min-h-[calc(374px+20px+12px)]"
                 : "md:min-h-[374px]",
@@ -4869,6 +4887,7 @@ export default function LstStrategyDialog({
                   StrategyType.USDC_sSUI_SUI_LOOPING,
                   StrategyType.AUSD_sSUI_SUI_LOOPING,
                   StrategyType.xBTC_sSUI_SUI_LOOPING,
+                  StrategyType.suiUSDT_sSUI_SUI_LOOPING,
                 ].includes(strategyType) && (
                   <LabelWithValue
                     label="Liquidation price"
