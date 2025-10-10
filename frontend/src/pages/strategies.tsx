@@ -197,17 +197,22 @@ function Page() {
           strategyType as StrategyType,
         );
 
-        await strategyClaimRewardsAndSwapForCoinType(
-          address,
-          cetusSdk,
-          CETUS_PARTNER_ID,
-          allRewardsMap[strategyType as StrategyType],
-          appDataMainMarket.rewardPriceMap,
-          (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
-          strategyOwnerCap.id,
-          hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
-          transaction,
-        );
+        try {
+          await strategyClaimRewardsAndSwapForCoinType(
+            address,
+            cetusSdk,
+            CETUS_PARTNER_ID,
+            allRewardsMap[strategyType as StrategyType],
+            appDataMainMarket.rewardPriceMap,
+            (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
+            strategyOwnerCap.id,
+            hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
+            transaction,
+          );
+        } catch (err) {
+          console.error(err);
+          continue;
+        }
       }
 
       const res = await signExecuteAndWaitForTransaction(transaction);
