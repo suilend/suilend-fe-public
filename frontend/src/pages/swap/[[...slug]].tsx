@@ -136,11 +136,7 @@ function Page() {
 
   // send.ag
   const activeProviders = useMemo(
-    () => [
-      QuoteProvider.CETUS,
-      QuoteProvider._7K,
-      // QuoteProvider.FLOWX,
-    ],
+    () => [QuoteProvider.CETUS, QuoteProvider._7K, QuoteProvider.FLOWX],
     [],
   );
 
