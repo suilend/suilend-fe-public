@@ -38,10 +38,14 @@ import Button from "@/components/shared/Button";
 import Grid from "@/components/shared/Grid";
 import Input from "@/components/shared/Input";
 import LabelWithValue from "@/components/shared/LabelWithValue";
+import TextLink from "@/components/shared/TextLink";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
+import {
+  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+  TX_TOAST_DURATION,
+} from "@/lib/constants";
 
 interface RowData {
   symbol: string;
@@ -59,7 +63,7 @@ export default function LiquidateDialog({
   fixedObligation,
   initialObligationId,
 }: LiquidateDialogProps) {
-  const { suiClient } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { getBalance } = useLoadedUserContext();
 
@@ -231,9 +235,17 @@ export default function LiquidateDialog({
         transaction.pure.address(address),
       );
 
-      await signExecuteAndWaitForTransaction(transaction);
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Liquidated");
+      toast.success("Liquidated", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
       setLiquidateAmount("");
     } catch (err) {
       toast.error("Failed to liquidate", {
@@ -288,12 +300,104 @@ export default function LiquidateDialog({
         },
       );
 
-      await signExecuteAndWaitForTransaction(transaction);
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Forgave debt");
+      toast.success("Forgave debt", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
       setForgiveAmount("");
     } catch (err) {
       toast.error("Failed to forgive debt", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  }
+
+  // Repay
+  const [repayAmount, setRepayAmount] = useState<string>("");
+
+  const onRepayMaxClick = () => {
+    setRepayAmount(MAX_U64.toString());
+  };
+
+  async function repayObligation(
+    obligation: ParsedObligation,
+    repayAssetSymbol: string,
+  ) {
+    if (!address) throw new Error("Wallet not connected");
+    if (!appData.lendingMarket.ownerCapId)
+      throw new Error("Error: lendingMarket.ownerCapId not defined");
+
+    const transaction = new Transaction();
+    transaction.setSender(address);
+
+    try {
+      const borrow = obligation.borrows.find(
+        (b) => b.reserve.token.symbol === repayAssetSymbol,
+      );
+      if (!borrow) return;
+
+      const borrowedAmount = borrow.borrowedAmount;
+      const borrowedAmountUsd = borrowedAmount.times(borrow.reserve.price);
+      const fullRepaymentAmount = (
+        borrowedAmountUsd.lt(0.02)
+          ? new BigNumber(0.02).div(borrow.reserve.price) // $0.02 in borrow coinType
+          : borrowedAmountUsd.lt(1)
+            ? borrowedAmount.times(1.1) // 10% buffer
+            : borrowedAmountUsd.lt(10)
+              ? borrowedAmount.times(1.01) // 1% buffer
+              : borrowedAmount.times(1.001)
+      ) // 0.1% buffer
+        .decimalPlaces(borrow.reserve.token.decimals, BigNumber.ROUND_DOWN);
+
+      const repayCoinBalance = getBalance(borrow.coinType);
+
+      const submitAmount = BigNumber.min(
+        BigNumber.max(
+          0,
+          repayCoinBalance.minus(
+            isSui(borrow.reserve.coinType)
+              ? MAX_BALANCE_SUI_SUBTRACTED_AMOUNT
+              : 0,
+          ),
+        ),
+        repayAmount === MAX_U64.toString()
+          ? fullRepaymentAmount
+          : new BigNumber(repayAmount),
+      )
+        .times(10 ** borrow.reserve.token.decimals)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString();
+
+      await appData.suilendClient.refreshAll(transaction, obligation.original);
+      await appData.suilendClient.repayIntoObligation(
+        address,
+        obligationId,
+        borrow.coinType,
+        submitAmount,
+        transaction,
+      );
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success("Repaid debt", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
+      setRepayAmount("");
+    } catch (err) {
+      toast.error("Failed to repay debt", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     }
@@ -417,6 +521,7 @@ export default function LiquidateDialog({
           </div>
 
           <div className="col-span-2 flex flex-col gap-2">
+            {/* Liquidate */}
             <div className="col-span-2 flex flex-row items-end gap-2">
               <div className="flex flex-row gap-1">
                 <Input
@@ -451,6 +556,7 @@ export default function LiquidateDialog({
               </Button>
             </div>
 
+            {/* Forgive */}
             <div className="col-span-2 flex flex-row items-end gap-2">
               <div className="flex flex-row gap-1">
                 <Input
@@ -476,6 +582,35 @@ export default function LiquidateDialog({
                 disabled={selectedRepayAsset === ""}
               >
                 Forgive
+              </Button>
+            </div>
+
+            {/* Repay */}
+            <div className="col-span-2 flex flex-row items-end gap-2">
+              <div className="flex flex-row gap-1">
+                <Input
+                  id="repayAmount"
+                  value={repayAmount}
+                  onChange={setRepayAmount}
+                />
+                <Button
+                  className="h-10"
+                  variant="secondaryOutline"
+                  onClick={onRepayMaxClick}
+                >
+                  MAX
+                </Button>
+              </div>
+
+              <Button
+                className="h-10"
+                tooltip="Repay debt"
+                onClick={() =>
+                  repayObligation(parsedObligation, selectedRepayAsset)
+                }
+                disabled={selectedRepayAsset === ""}
+              >
+                Repay
               </Button>
             </div>
           </div>
