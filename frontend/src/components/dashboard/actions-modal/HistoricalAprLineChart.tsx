@@ -464,6 +464,7 @@ export default function HistoricalAprLineChart({
     if (events === undefined) return undefined;
 
     const event = events![0];
+    if (event === undefined) return undefined;
 
     // Timestamps
     const timestampS = new Date().getTime() / 1000;
