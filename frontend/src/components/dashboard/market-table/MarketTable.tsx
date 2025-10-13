@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
+  LENDING_MARKET_ID,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
@@ -664,7 +665,12 @@ export default function MarketTable() {
               return row.getToggleExpandedHandler();
 
             return () =>
-              openActionsModal((row.original as ReservesRowData).token.symbol);
+              openActionsModal(
+                appData.lendingMarket.id === LENDING_MARKET_ID
+                  ? undefined
+                  : appData.lendingMarket.id,
+                (row.original as ReservesRowData).token.symbol,
+              );
           }}
         />
       </div>

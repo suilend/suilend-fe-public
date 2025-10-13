@@ -28,7 +28,7 @@ import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
-export enum QueryParams {
+enum QueryParams {
   LENDING_MARKET = "market",
 }
 

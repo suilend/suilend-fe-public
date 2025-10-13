@@ -1,59 +1,34 @@
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-import { toast } from "sonner";
 
-import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_WAL_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
-  TX_TOAST_DURATION,
   Token,
-  formatId,
   formatPrice,
-  formatToken,
-  getBalanceChange,
   getMsafeAppStoreUrl,
-  getToken,
   isInMsafeApp,
 } from "@suilend/sui-fe";
-import {
-  showErrorToast,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/sui-fe-next";
 import useIsTouchscreen from "@suilend/sui-fe-next/hooks/useIsTouchscreen";
 
 import { AccountAssetTableType } from "@/components/dashboard/AccountAssetTable";
 import { MarketCardListType } from "@/components/dashboard/market-table/MarketCardList";
 import { MarketTableType } from "@/components/dashboard/market-table/MarketTable";
-import Button from "@/components/shared/Button";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
-import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { SPRINGSUI_URL } from "@/lib/navigation";
 import { getSwapUrl } from "@/lib/swap";
-import { cn, hoverUnderlineClassName } from "@/lib/utils";
-import {
-  SUILEND_WALRUS_NODE_ID,
-  StakedWalObject,
-  StakedWalState,
-  WALRUS_PACKAGE_ID,
-  WALRUS_STAKING_OBJECT_ID,
-} from "@/lib/walrus";
+import { cn } from "@/lib/utils";
 
 interface AssetCellProps {
   tableType: AccountAssetTableType | MarketTableType | MarketCardListType;
   reserve?: ParsedReserve;
   token: Token;
   price?: BigNumber;
-  extra?: Record<string, any>;
 }
 
 export default function AssetCell({
@@ -61,14 +36,8 @@ export default function AssetCell({
   reserve,
   token,
   price,
-  extra,
 }: AssetCellProps) {
-  const { explorer } = useSettingsContext();
-  const { address, signExecuteAndWaitForTransaction, dryRunTransaction } =
-    useWalletContext();
-  const { allAppData, isLst, walrusEpoch } = useLoadedAppContext();
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const { getBalance, refresh } = useLoadedUserContext();
+  const { isLst } = useLoadedAppContext();
 
   const isTouchscreen = useIsTouchscreen();
 
@@ -79,12 +48,7 @@ export default function AssetCell({
 
       if (
         (tableType === AccountAssetTableType.DEPOSITS ||
-          tableType === AccountAssetTableType.BORROWS ||
-          tableType === AccountAssetTableType.BALANCES) &&
-        !(
-          // Staked WAL
-          (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
-        ) &&
+          tableType === AccountAssetTableType.BORROWS) &&
         !isInMsafeApp()
       ) {
         result.push({
@@ -111,8 +75,7 @@ export default function AssetCell({
         });
       }
       if (
-        (tableType === AccountAssetTableType.BALANCES ||
-          tableType === MarketTableType.MARKET) &&
+        tableType === MarketTableType.MARKET &&
         token.coinType === NORMALIZED_SUI_COINTYPE
       ) {
         result.push({
@@ -122,11 +85,7 @@ export default function AssetCell({
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
-      if (
-        (tableType === AccountAssetTableType.BALANCES ||
-          tableType === MarketTableType.MARKET) &&
-        isLst(token.coinType)
-      ) {
+      if (tableType === MarketTableType.MARKET && isLst(token.coinType)) {
         result.push({
           title: "Stake",
           href: !isInMsafeApp()
@@ -138,268 +97,13 @@ export default function AssetCell({
       return result;
     }, [tableType, token, reserve, isLst]);
 
-  // WAL
-  const stakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (!address) return;
-
-    const transaction = new Transaction();
-    transaction.setSender(address);
-
-    try {
-      const balance = getBalance(NORMALIZED_WAL_COINTYPE);
-      if (balance.lt(1)) throw new Error("Minimum stake is 1 WAL");
-
-      const submitAmount = balance
-        .times(
-          10 **
-            appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE].decimals,
-        )
-        .integerValue(BigNumber.ROUND_DOWN)
-        .toString();
-
-      const coin = coinWithBalance({
-        balance: BigInt(submitAmount),
-        type: NORMALIZED_WAL_COINTYPE,
-        useGasCoin: false,
-      })(transaction);
-
-      const stakedWal = transaction.moveCall({
-        target: `${WALRUS_PACKAGE_ID}::staking::stake_with_pool`,
-        arguments: [
-          transaction.object(WALRUS_STAKING_OBJECT_ID),
-          transaction.object(coin),
-          transaction.pure.id(SUILEND_WALRUS_NODE_ID),
-        ],
-      });
-      transaction.transferObjects(
-        [stakedWal],
-        transaction.pure.address(address),
-      );
-
-      const res = await signExecuteAndWaitForTransaction(transaction);
-      const txUrl = explorer.buildTxUrl(res.digest);
-
-      const balanceChangeOut = getBalanceChange(
-        res,
-        address,
-        getToken(
-          NORMALIZED_WAL_COINTYPE,
-          appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE],
-        ),
-        -1,
-      );
-
-      toast.success(
-        [
-          "Staked",
-          balanceChangeOut !== undefined
-            ? formatToken(balanceChangeOut, {
-                dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
-                  .decimals,
-                trimTrailingZeros: true,
-              })
-            : null,
-          "WAL",
-        ]
-          .filter(Boolean)
-          .join(" "),
-        {
-          action: (
-            <TextLink className="block" href={txUrl}>
-              View tx on {explorer.name}
-            </TextLink>
-          ),
-          duration: TX_TOAST_DURATION,
-        },
-      );
-    } catch (err) {
-      showErrorToast("Failed to stake WAL", err as Error, undefined, true);
-    } finally {
-      refresh();
-    }
-  };
-
-  // Staked WAL
-  const [stakedWalCanBeWithdrawnEarly, setStakedWalCanBeWithdrawnEarly] =
-    useState<boolean>(false);
-
-  const canStakedWalBeWithdrawnEarly = useCallback(async () => {
-    const transaction = new Transaction();
-
-    try {
-      const { id } = extra!.obj as StakedWalObject;
-
-      transaction.moveCall({
-        target: `${WALRUS_PACKAGE_ID}::staking::can_withdraw_staked_wal_early`,
-        arguments: [
-          transaction.object(WALRUS_STAKING_OBJECT_ID),
-          transaction.object(id),
-        ],
-      });
-
-      const inspectResults = await dryRunTransaction(transaction);
-      const result = inspectResults.results?.[0].returnValues?.[0][0][0];
-
-      setStakedWalCanBeWithdrawnEarly(Boolean(result));
-    } catch (err) {
-      console.error(err);
-    }
-  }, [extra, dryRunTransaction]);
-
-  useEffect(() => {
-    if (token.coinType === NORMALIZED_WAL_COINTYPE && reserve === undefined)
-      canStakedWalBeWithdrawnEarly();
-  }, [
-    appDataMainMarket.lendingMarket.id,
-    token.coinType,
-    reserve,
-    canStakedWalBeWithdrawnEarly,
-  ]);
-
-  const withdrawWal = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (!address) return;
-
-    const transaction = new Transaction();
-
-    try {
-      const { id, amount } = extra!.obj as StakedWalObject;
-
-      const wal = transaction.moveCall({
-        target: `${WALRUS_PACKAGE_ID}::staking::withdraw_stake`,
-        arguments: [
-          transaction.object(WALRUS_STAKING_OBJECT_ID),
-          transaction.object(id),
-        ],
-      });
-      transaction.transferObjects([wal], transaction.pure.address(address));
-
-      const res = await signExecuteAndWaitForTransaction(transaction);
-      const txUrl = explorer.buildTxUrl(res.digest);
-
-      toast.success(
-        `Withdrew ${formatToken(amount, {
-          dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
-            .decimals,
-          trimTrailingZeros: true,
-        })} staked WAL`,
-        {
-          action: (
-            <TextLink className="block" href={txUrl}>
-              View tx on {explorer.name}
-            </TextLink>
-          ),
-          duration: TX_TOAST_DURATION,
-        },
-      );
-    } catch (err) {
-      showErrorToast(
-        "Failed to withdraw staked WAL",
-        err as Error,
-        undefined,
-        true,
-      );
-    } finally {
-      refresh();
-    }
-  };
-
-  const unstakeWal = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (!address) return;
-
-    const transaction = new Transaction();
-
-    try {
-      const { id, amount } = extra!.obj as StakedWalObject;
-
-      transaction.moveCall({
-        target: `${WALRUS_PACKAGE_ID}::staking::request_withdraw_stake`,
-        arguments: [
-          transaction.object(WALRUS_STAKING_OBJECT_ID),
-          transaction.object(id),
-        ],
-      });
-
-      const res = await signExecuteAndWaitForTransaction(transaction);
-      const txUrl = explorer.buildTxUrl(res.digest);
-
-      toast.success(
-        `Requested withdrawal of ${formatToken(amount, {
-          dp: appDataMainMarket.coinMetadataMap[NORMALIZED_WAL_COINTYPE]
-            .decimals,
-          trimTrailingZeros: true,
-        })} staked WAL`,
-        {
-          action: (
-            <TextLink className="block" href={txUrl}>
-              View tx on {explorer.name}
-            </TextLink>
-          ),
-          duration: TX_TOAST_DURATION,
-        },
-      );
-    } catch (err) {
-      showErrorToast(
-        "Failed to request withdrawal of staked WAL",
-        err as Error,
-        undefined,
-        true,
-      );
-    } finally {
-      refresh();
-    }
-  };
-
   return (
     <div className="flex flex-row items-center gap-3">
       <TokenLogo token={token} size={28} showBridgedAssetTooltip />
 
       <div className="flex flex-col gap-1">
         <div className="flex flex-row flex-wrap items-baseline gap-x-2 gap-y-1">
-          <TBody>
-            {
-              // Staked WAL
-              token.coinType === NORMALIZED_WAL_COINTYPE &&
-                reserve === undefined && (
-                  <>
-                    <Tooltip title={(extra!.obj as StakedWalObject).nodeId}>
-                      <span
-                        className={cn(
-                          "w-max decoration-foreground/50",
-                          hoverUnderlineClassName,
-                          (extra!.obj as StakedWalObject).nodeId !==
-                            SUILEND_WALRUS_NODE_ID && "uppercase",
-                        )}
-                      >
-                        {(extra!.obj as StakedWalObject).nodeId ===
-                        SUILEND_WALRUS_NODE_ID
-                          ? "Suilend".toUpperCase()
-                          : formatId((extra!.obj as StakedWalObject).nodeId, 2)}
-                      </span>
-                    </Tooltip>{" "}
-                  </>
-                )
-            }
-            {token.symbol}
-          </TBody>
-          {
-            // Staked WAL (Withdrawing, withdrawEpoch > epoch)
-            token.coinType === NORMALIZED_WAL_COINTYPE &&
-              reserve === undefined &&
-              (extra!.obj as StakedWalObject).state ===
-                StakedWalState.WITHDRAWING &&
-              !(
-                (extra!.obj as StakedWalObject).withdrawEpoch! <=
-                (walrusEpoch ?? 0)
-              ) && (
-                <TLabelSans className="animate-pulse">
-                  Withdrawing Epoch{" "}
-                  {(extra!.obj as StakedWalObject).withdrawEpoch!}
-                </TLabelSans>
-              )
-          }
+          <TBody>{token.symbol}</TBody>
 
           {links.map((link) => (
             <TextLink
@@ -415,50 +119,6 @@ export default function AssetCell({
               {link.title}
             </TextLink>
           ))}
-          {(tableType === AccountAssetTableType.BALANCES ||
-            tableType === MarketTableType.MARKET) &&
-            token.coinType === NORMALIZED_WAL_COINTYPE &&
-            address && (
-              <Button
-                className={cn(
-                  "hoverLink h-auto px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground",
-                  isTouchscreen && "!opacity-100",
-                )}
-                labelClassName="uppercase text-xs"
-                variant="ghost"
-                onClick={
-                  // Staked WAL
-                  reserve === undefined
-                    ? (extra!.obj as StakedWalObject).state ===
-                      StakedWalState.WITHDRAWING
-                      ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
-                        (walrusEpoch ?? 0)
-                        ? withdrawWal
-                        : undefined // "Withdrawing in X Epoch" label shown
-                      : stakedWalCanBeWithdrawnEarly
-                        ? withdrawWal
-                        : unstakeWal
-                    : // WAL
-                      stakeWal
-                }
-              >
-                {
-                  // Staked WAL
-                  reserve === undefined
-                    ? (extra!.obj as StakedWalObject).state ===
-                      StakedWalState.WITHDRAWING
-                      ? (extra!.obj as StakedWalObject).withdrawEpoch! <=
-                        (walrusEpoch ?? 0)
-                        ? "Withdraw"
-                        : undefined // "Withdrawing in X Epoch" label shown
-                      : stakedWalCanBeWithdrawnEarly
-                        ? "Withdraw"
-                        : "Unstake"
-                    : // WAL
-                      "Stake"
-                }
-              </Button>
-            )}
         </div>
 
         <TLabel>

@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import {
   Dispatch,
   PropsWithChildren,
@@ -5,9 +6,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -20,22 +19,27 @@ import {
 import * as Sentry from "@sentry/nextjs";
 import BN from "bn.js";
 
-import { ClaimRewardsReward, RewardsMap } from "@suilend/sdk";
+import {
+  ClaimRewardsReward,
+  LENDING_MARKET_ID,
+  RewardsMap,
+} from "@suilend/sdk";
 import track from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
-import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { useCetusSdk } from "@/lib/swap";
 
+export enum QueryParams {
+  LENDING_MARKET_ID = "lendingMarketId",
+}
+
 interface DashboardContext {
   isFirstDepositDialogOpen: boolean;
   setIsFirstDepositDialogOpen: Dispatch<SetStateAction<boolean>>;
-
-  isShowingAutoclaimNotification: boolean;
-  dismissAutoclaimNotification: () => void;
 
   claimRewards: (
     lendingMarketId: string,
@@ -54,11 +58,6 @@ const defaultContextValue: DashboardContext = {
     throw Error("DashboardContextProvider not initialized");
   },
 
-  isShowingAutoclaimNotification: false,
-  dismissAutoclaimNotification: () => {
-    throw Error("DashboardContextProvider not initialized");
-  },
-
   claimRewards: async () => {
     throw Error("DashboardContextProvider not initialized");
   },
@@ -69,58 +68,33 @@ const DashboardContext = createContext<DashboardContext>(defaultContextValue);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 export function DashboardContextProvider({ children }: PropsWithChildren) {
+  const router = useRouter();
+  const queryParams = useMemo(
+    () => ({
+      [QueryParams.LENDING_MARKET_ID]: router.query[
+        QueryParams.LENDING_MARKET_ID
+      ] as string | undefined,
+    }),
+    [router.query],
+  );
+
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData, openLedgerHashDialog } = useLoadedAppContext();
-  const {
-    obligationMap,
-    obligationOwnerCapMap,
-    autoclaimRewards,
-    latestAutoclaimDigestMap,
-    lastSeenAutoclaimDigestMap,
-    setLastSeenAutoclaimDigest,
-  } = useLoadedUserContext();
+  const { obligationMap, obligationOwnerCapMap, autoclaimRewards } =
+    useLoadedUserContext();
 
   // send.ag
   const cetusSdk = useCetusSdk();
 
+  // Lending market
+  const lendingMarketId = useMemo(
+    () => queryParams[QueryParams.LENDING_MARKET_ID] ?? LENDING_MARKET_ID,
+    [queryParams],
+  );
+
   // First deposit
   const [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen] =
     useState<boolean>(defaultContextValue.isFirstDepositDialogOpen);
-
-  // Autoclaim
-  const [isShowingAutoclaimNotification, setIsShowingAutoclaimNotification] =
-    useState<boolean>(defaultContextValue.isShowingAutoclaimNotification);
-
-  const dismissAutoclaimNotification = useCallback(
-    () => setIsShowingAutoclaimNotification(false),
-    [],
-  );
-
-  const didShowAutoclaimNotificationMap = useRef<Record<string, boolean>>({});
-  useEffect(() => {
-    for (const obligation of Object.values(obligationMap)) {
-      if (!obligation?.id) continue;
-
-      const lastSeenAutoclaimDigest = lastSeenAutoclaimDigestMap[obligation.id];
-      const latestAutoclaimDigest = latestAutoclaimDigestMap[obligation.id];
-      if (
-        latestAutoclaimDigest === undefined ||
-        lastSeenAutoclaimDigest === latestAutoclaimDigest
-      )
-        continue;
-
-      if (didShowAutoclaimNotificationMap.current[obligation.id]) continue;
-      didShowAutoclaimNotificationMap.current[obligation.id] = true;
-
-      setIsShowingAutoclaimNotification(true);
-      setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
-    }
-  }, [
-    obligationMap,
-    lastSeenAutoclaimDigestMap,
-    latestAutoclaimDigestMap,
-    setLastSeenAutoclaimDigest,
-  ]);
 
   // Actions
   const claimRewards = useCallback(
@@ -319,23 +293,16 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
       isFirstDepositDialogOpen,
       setIsFirstDepositDialogOpen,
 
-      isShowingAutoclaimNotification,
-      dismissAutoclaimNotification,
-
       claimRewards,
     }),
-    [
-      isFirstDepositDialogOpen,
-      setIsFirstDepositDialogOpen,
-      isShowingAutoclaimNotification,
-      dismissAutoclaimNotification,
-      claimRewards,
-    ],
+    [isFirstDepositDialogOpen, setIsFirstDepositDialogOpen, claimRewards],
   );
 
   return (
     <DashboardContext.Provider value={contextValue}>
-      <ActionsModalContextProvider>{children}</ActionsModalContextProvider>
+      <LendingMarketContextProvider lendingMarketId={lendingMarketId}>
+        {children}
+      </LendingMarketContextProvider>
     </DashboardContext.Provider>
   );
 }

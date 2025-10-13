@@ -298,7 +298,7 @@ export default function DataTable<T>({
                   <TableHead
                     key={header.id}
                     className={cn(
-                      "h-9 px-0 py-0",
+                      "h-8 px-0 py-0",
                       tableHeadClassName && tableHeadClassName(header),
                     )}
                   >

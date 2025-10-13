@@ -4,11 +4,11 @@ import Button from "@/components/shared/Button";
 import TitleWithIcon from "@/components/shared/TitleWithIcon";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Alert } from "@/components/ui/alert";
-import { useDashboardContext } from "@/contexts/DashboardContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 
 export default function AutoclaimNotification() {
   const { isShowingAutoclaimNotification, dismissAutoclaimNotification } =
-    useDashboardContext();
+    useLendingMarketContext();
 
   return (
     isShowingAutoclaimNotification && (

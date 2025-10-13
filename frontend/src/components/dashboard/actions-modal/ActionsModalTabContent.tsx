@@ -96,7 +96,7 @@ export default function ActionsModalTabContent({
   const { explorer } = useSettingsContext();
   const { address } = useWalletContext();
   const { closeLedgerHashDialog } = useLoadedAppContext();
-  const { obligation } = useLendingMarketContext();
+  const { appData, obligation } = useLendingMarketContext();
   const { getBalance, refresh } = useLoadedUserContext();
 
   const { setIsFirstDepositDialogOpen } = useDashboardContext();
@@ -330,7 +330,11 @@ export default function ActionsModalTabContent({
     }
 
     try {
-      const res = await submit(reserve.coinType, submitAmount);
+      const res = await submit(
+        appData.lendingMarket.id,
+        reserve.coinType,
+        submitAmount,
+      );
       const txUrl = explorer.buildTxUrl(res.digest);
 
       const balanceChange = getBalanceChange(

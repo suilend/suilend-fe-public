@@ -30,19 +30,12 @@ import {
   getAllOwnedObjects,
 } from "@suilend/sui-fe";
 import track from "@suilend/sui-fe/lib/track";
-import {
-  shallowPushQuery,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/sui-fe-next";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useFetchBalances from "@suilend/sui-fe-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/sui-fe-next/hooks/useRefreshOnBalancesChange";
 
-import {
-  QueryParams as AppContextQueryParams,
-  useAppContext,
-} from "@/contexts/AppContext";
+import { useAppContext } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
 import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
@@ -526,11 +519,6 @@ export function UserContextProvider({ children }: PropsWithChildren) {
         const lendingMarket = allAppData?.allLendingMarketData[lendingMarketId];
         if (!lendingMarket) return;
 
-        shallowPushQuery(router, {
-          ...router.query,
-          [AppContextQueryParams.LENDING_MARKET]:
-            lendingMarket.lendingMarket.slug,
-        });
         setObligationIdMap((prev) => ({
           ...prev,
           [lendingMarketId]: obligationId,
@@ -554,7 +542,6 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       obligationMap,
       obligationOwnerCapMap,
       allAppData,
-      router,
       setObligationIdMap,
       autoclaimRewards,
       latestAutoclaimDigestMap,

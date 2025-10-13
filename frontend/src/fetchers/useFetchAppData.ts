@@ -43,16 +43,6 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
 
     name: "STEAMM LM",
     slug: "steamm-lm",
-    isHidden: true,
-  },
-  "0xa21397ae499f1e8c44706079a568558850328aa6ec33b4db6cc6579253a846c7": {
-    id: "0xa21397ae499f1e8c44706079a568558850328aa6ec33b4db6cc6579253a846c7",
-    type: "0x77396e7e4946a70054d2f7db3ae4355ccd118e80501eff99777fe15d6db061d1::TEST::test",
-    lendingMarketOwnerCapId:
-      "0xca72d21713cc5ae70892c12549ba7034758d8777414a5f3c990c138e4cc44915",
-
-    name: "Test Market",
-    slug: "test-market",
     isHidden: false,
   },
 };

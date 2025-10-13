@@ -26,11 +26,11 @@ import {
 } from "@/lib/actions";
 
 export default function ActionsModal() {
-  const { appData, obligation } = useLendingMarketContext();
+  const { appData, obligation } = useLendingMarketContext(); // From ActionsModalContextProvider
   const { getBalance } = useLoadedUserContext();
 
   const {
-    reserveSymbol,
+    reserve: _reserve,
     selectedTab,
     onSelectedTabChange,
     isMoreParametersOpen,
@@ -39,14 +39,9 @@ export default function ActionsModal() {
     withdraw,
     repay,
   } = useActionsModalContext();
+  const reserve = _reserve!;
 
   const { md } = useBreakpoint();
-
-  // Reserve
-  const reserve =
-    reserveSymbol !== undefined
-      ? appData.lendingMarket.reserves.find((r) => r.symbol === reserveSymbol)
-      : undefined;
 
   // Tabs
   const tabs = [
@@ -62,8 +57,6 @@ export default function ActionsModal() {
 
   // Tab config
   const tabConfig = useMemo(() => {
-    if (reserve === undefined) return undefined;
-
     const coinBalanceForReserve = getBalance(reserve.coinType);
 
     if (selectedTab === Tab.DEPOSIT) {

@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -18,18 +19,20 @@ import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
+  ParsedReserve,
   createObligationIfNoneExists,
   sendObligationToUser,
 } from "@suilend/sdk";
 import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
+import ActionsModal from "@/components/dashboard/actions-modal/ActionsModal";
 import { ParametersPanelTab } from "@/components/dashboard/actions-modal/ParametersPanel";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { QueryParams as DashboardQueryParams } from "@/contexts/DashboardContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
-  RESERVE_INDEX = "assetIndex", // Being phased out
   RESERVE_SYMBOL = "asset",
   TAB = "action",
   PARAMETERS_PANEL_TAB = "parametersPanelTab",
@@ -43,16 +46,17 @@ export enum Tab {
 }
 
 export type ActionSignature = (
+  lendingMarketId: string,
   coinType: string,
   value: string,
 ) => Promise<SuiTransactionBlockResponse>;
 
 interface ActionsModalContext {
   isOpen: boolean;
-  open: (symbol: string) => void;
+  open: (lendingMarketId: string | undefined, reserveSymbol: string) => void;
   close: () => void;
-  reserveSymbol?: string;
 
+  reserve: ParsedReserve | undefined;
   selectedTab: Tab;
   onSelectedTabChange: (tab: Tab) => void;
   isMoreParametersOpen: boolean;
@@ -74,8 +78,8 @@ const defaultContextValue: ActionsModalContext = {
   close: () => {
     throw Error("ActionsModalContextProvider not initialized");
   },
-  reserveSymbol: undefined,
 
+  reserve: undefined,
   selectedTab: Tab.DEPOSIT,
   onSelectedTabChange: () => {
     throw Error("ActionsModalContextProvider not initialized");
@@ -112,9 +116,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const queryParams = useMemo(
     () => ({
-      [QueryParams.RESERVE_INDEX]: router.query[QueryParams.RESERVE_INDEX] as
-        | string
-        | undefined,
       [QueryParams.RESERVE_SYMBOL]: router.query[QueryParams.RESERVE_SYMBOL] as
         | string
         | undefined,
@@ -127,58 +128,80 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { openLedgerHashDialog } = useLoadedAppContext();
-  const { appData, obligation, obligationOwnerCap } = useLendingMarketContext();
-  const { autoclaimRewards } = useLoadedUserContext();
+  const { allAppData, openLedgerHashDialog } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
+  const { obligationMap, obligationOwnerCapMap, autoclaimRewards } =
+    useLoadedUserContext();
 
   // Open
-  const [isOpen, setIsOpen] = useState<boolean>(
-    queryParams[QueryParams.RESERVE_INDEX] !== undefined ||
-      queryParams[QueryParams.RESERVE_SYMBOL] !== undefined,
-  );
+  const [isInDom, setIsInDom] = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const open = useCallback(
-    (symbol: string) => {
-      setIsOpen(true);
+    (lendingMarketId: string | undefined, reserveSymbol: string) => {
+      const newQueryParams: Record<string, string> = {
+        [QueryParams.RESERVE_SYMBOL]: reserveSymbol,
+      };
+      if (lendingMarketId)
+        newQueryParams[DashboardQueryParams.LENDING_MARKET_ID] =
+          lendingMarketId;
 
       shallowPushQuery(router, {
         ...router.query,
-        [QueryParams.RESERVE_SYMBOL]: symbol,
+        ...newQueryParams,
       });
+
+      // Wait for query to update
+      setTimeout(() => {
+        setIsInDom(true);
+
+        // Wait for state to update
+        setTimeout(() => {
+          setIsOpen(true);
+        }, 50);
+      }, 50);
     },
     [router],
   );
   const close = useCallback(() => {
     setIsOpen(false);
 
+    // Wait for dialog to close
     setTimeout(() => {
-      const restQuery = cloneDeep(router.query);
-      delete restQuery[QueryParams.RESERVE_INDEX];
-      delete restQuery[QueryParams.RESERVE_SYMBOL];
-      shallowPushQuery(router, restQuery);
-    }, 400);
+      setIsInDom(false);
+
+      // Wait for state to update
+      setTimeout(() => {
+        const restQuery = cloneDeep(router.query);
+        delete restQuery[DashboardQueryParams.LENDING_MARKET_ID];
+        delete restQuery[QueryParams.RESERVE_SYMBOL];
+        shallowPushQuery(router, restQuery);
+      }, 50);
+    }, 500);
   }, [router]);
 
-  // Reserve symbol
-  const reserveSymbol = useMemo(() => {
-    if (queryParams[QueryParams.RESERVE_INDEX] !== undefined)
-      return appData.lendingMarket.reserves.find(
-        (r) =>
-          Number(r.arrayIndex) ===
-          +(queryParams[QueryParams.RESERVE_INDEX] as string),
-      )?.symbol;
-
-    return (
-      queryParams[QueryParams.RESERVE_SYMBOL] ??
-      defaultContextValue.reserveSymbol
-    );
-  }, [queryParams, appData.lendingMarket.reserves]);
+  const didInitialOpenRef = useRef<boolean>(false);
   useEffect(() => {
-    if (queryParams[QueryParams.RESERVE_SYMBOL]) setIsOpen(true);
-  }, [queryParams]);
+    if (didInitialOpenRef.current) return;
+    didInitialOpenRef.current = true;
+
+    if (queryParams[QueryParams.RESERVE_SYMBOL] !== undefined)
+      open(appData.lendingMarket.id, queryParams[QueryParams.RESERVE_SYMBOL]);
+  }, [queryParams, open, appData.lendingMarket.id]);
+
+  // Reserve
+  const reserve: ParsedReserve | undefined = useMemo(
+    () =>
+      queryParams[QueryParams.RESERVE_SYMBOL] !== undefined
+        ? appData.lendingMarket.reserves.find(
+            (r) => r.token.symbol === queryParams[QueryParams.RESERVE_SYMBOL],
+          )
+        : undefined,
+    [queryParams, appData.lendingMarket.reserves],
+  );
 
   // Tab
-  const selectedTab = useMemo(
+  const selectedTab: Tab = useMemo(
     () =>
       queryParams[QueryParams.TAB] &&
       Object.values(Tab).includes(queryParams[QueryParams.TAB])
@@ -223,7 +246,12 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
   // Actions
   const deposit = useCallback(
-    async (coinType: string, value: string) => {
+    async (lendingMarketId: string, coinType: string, value: string) => {
+      const appData = allAppData.allLendingMarketData[lendingMarketId];
+      const obligation = obligationMap[appData.lendingMarket.id];
+      const obligationOwnerCap =
+        obligationOwnerCapMap[appData.lendingMarket.id];
+
       if (!address) throw Error("Wallet not connected");
 
       let transaction = new Transaction();
@@ -264,9 +292,10 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       return res;
     },
     [
+      allAppData.allLendingMarketData,
+      obligationMap,
+      obligationOwnerCapMap,
       address,
-      appData.suilendClient,
-      obligationOwnerCap,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
@@ -274,7 +303,12 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const borrow = useCallback(
-    async (coinType: string, value: string) => {
+    async (lendingMarketId: string, coinType: string, value: string) => {
+      const appData = allAppData.allLendingMarketData[lendingMarketId];
+      const obligation = obligationMap[appData.lendingMarket.id];
+      const obligationOwnerCap =
+        obligationOwnerCapMap[appData.lendingMarket.id];
+
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
@@ -310,10 +344,10 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       return res;
     },
     [
+      allAppData.allLendingMarketData,
+      obligationMap,
+      obligationOwnerCapMap,
       address,
-      obligationOwnerCap,
-      obligation,
-      appData.suilendClient,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
@@ -321,7 +355,12 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const withdraw = useCallback(
-    async (coinType: string, value: string) => {
+    async (lendingMarketId: string, coinType: string, value: string) => {
+      const appData = allAppData.allLendingMarketData[lendingMarketId];
+      const obligation = obligationMap[appData.lendingMarket.id];
+      const obligationOwnerCap =
+        obligationOwnerCapMap[appData.lendingMarket.id];
+
       if (!address) throw Error("Wallet not connected");
       if (!obligationOwnerCap || !obligation)
         throw Error("Obligation not found");
@@ -357,10 +396,10 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       return res;
     },
     [
+      allAppData.allLendingMarketData,
+      obligationMap,
+      obligationOwnerCapMap,
       address,
-      obligationOwnerCap,
-      obligation,
-      appData.suilendClient,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
@@ -368,7 +407,12 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   );
 
   const repay = useCallback(
-    async (coinType: string, value: string) => {
+    async (lendingMarketId: string, coinType: string, value: string) => {
+      const appData = allAppData.allLendingMarketData[lendingMarketId];
+      const obligation = obligationMap[appData.lendingMarket.id];
+      const obligationOwnerCap =
+        obligationOwnerCapMap[appData.lendingMarket.id];
+
       if (!address) throw Error("Wallet not connected");
       if (!obligation) throw Error("Obligation not found");
 
@@ -402,9 +446,10 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       return res;
     },
     [
+      allAppData.allLendingMarketData,
+      obligationMap,
+      obligationOwnerCapMap,
       address,
-      obligation,
-      appData.suilendClient,
       autoclaimRewards,
       openLedgerHashDialog,
       signExecuteAndWaitForTransaction,
@@ -414,11 +459,11 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue = useMemo(
     () => ({
-      isOpen: isOpen && reserveSymbol !== undefined,
+      isOpen,
       open,
       close,
-      reserveSymbol,
 
+      reserve,
       selectedTab,
       onSelectedTabChange,
       isMoreParametersOpen,
@@ -433,9 +478,9 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
     }),
     [
       isOpen,
-      reserveSymbol,
       open,
       close,
+      reserve,
       selectedTab,
       onSelectedTabChange,
       isMoreParametersOpen,
@@ -451,6 +496,7 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
 
   return (
     <ActionsModalContext.Provider value={contextValue}>
+      {isInDom && <ActionsModal />}
       {children}
     </ActionsModalContext.Provider>
   );
