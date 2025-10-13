@@ -140,12 +140,7 @@ function Page() {
 
   // send.ag
   const activeProviders = useMemo(
-    () => [
-      // QuoteProvider.AFTERMATH,
-      QuoteProvider.CETUS,
-      QuoteProvider._7K,
-      QuoteProvider.FLOWX,
-    ],
+    () => [QuoteProvider.CETUS, QuoteProvider._7K, QuoteProvider.FLOWX],
     [],
   );
 
@@ -1959,10 +1954,12 @@ function Page() {
           </TextLink>
         </TLabelSans>
 
-        {(tokenOut.coinType === NORMALIZED_SUI_COINTYPE ||
-          tokenOut.coinType === NORMALIZED_USDC_COINTYPE) && (
-          <BulkSwapCard tokenOut={tokenOut} />
-        )}
+        {/* TEMP: hidden */}
+        {false &&
+          (tokenOut.coinType === NORMALIZED_SUI_COINTYPE ||
+            tokenOut.coinType === NORMALIZED_USDC_COINTYPE) && (
+            <BulkSwapCard tokenOut={tokenOut} />
+          )}
       </div>
     </>
   );

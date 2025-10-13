@@ -266,6 +266,7 @@ export default function ClaimRewardsDropdownMenu({
           className="w-[150px]"
           labelClassName="uppercase"
           endIcon={<Icon />}
+          disabled={obligation?.netValueUsd.lt(0)}
         >
           Claim rewards
         </Button>
