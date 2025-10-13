@@ -40,6 +40,7 @@ import Tabs from "@/components/shared/Tabs";
 import TokenLogo from "@/components/shared/TokenLogo";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
+import { QueryParams as DashboardQueryParams } from "@/contexts/DashboardContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { EventType, eventSortAsc, fetchClaimRewardEvents } from "@/lib/events";
@@ -127,6 +128,7 @@ export default function AccountOverviewDialog() {
     if (_isOpen) return;
 
     const restQuery = cloneDeep(router.query);
+    delete restQuery[DashboardQueryParams.LENDING_MARKET_ID];
     delete restQuery[QueryParams.TAB];
     shallowPushQuery(router, restQuery);
   };

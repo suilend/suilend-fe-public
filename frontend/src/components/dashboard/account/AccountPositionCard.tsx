@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { FileClock } from "lucide-react";
 
-import { getNetAprPercent } from "@suilend/sdk";
+import { LENDING_MARKET_ID, getNetAprPercent } from "@suilend/sdk";
 import { formatPercent, formatUsd } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
@@ -32,6 +32,7 @@ import UtilizationBar, {
 } from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { QueryParams as DashboardQueryParams } from "@/contexts/DashboardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getIsLooping, getWasLooping } from "@/lib/looping";
 import {
@@ -49,10 +50,19 @@ export default function AccountPositionCard() {
   const { allAppData } = useLoadedAppContext();
   const { allUserData, obligationMap } = useLoadedUserContext();
 
-  const openAccountOverviewTab = (tab: AccountOverviewTab) => {
+  const openAccountOverviewTab = (
+    lendingMarketId: string | undefined,
+    tab: AccountOverviewTab,
+  ) => {
+    const newQueryParams: Record<string, string> = {
+      [AccountOverviewQueryParams.TAB]: tab,
+    };
+    if (lendingMarketId)
+      newQueryParams[DashboardQueryParams.LENDING_MARKET_ID] = lendingMarketId;
+
     shallowPushQuery(router, {
       ...router.query,
-      [AccountOverviewQueryParams.TAB]: tab,
+      ...newQueryParams,
     });
   };
 
@@ -116,9 +126,15 @@ export default function AccountPositionCard() {
                       icon={<FileClock />}
                       variant="ghost"
                       size="icon"
-                      onClick={() =>
-                        openAccountOverviewTab(AccountOverviewTab.EARNINGS)
-                      }
+                      onClick={(e) => {
+                        openAccountOverviewTab(
+                          appData.lendingMarket.id === LENDING_MARKET_ID
+                            ? undefined
+                            : appData.lendingMarket.id,
+                          AccountOverviewTab.EARNINGS,
+                        );
+                        e.stopPropagation();
+                      }}
                     >
                       Overview
                     </Button>

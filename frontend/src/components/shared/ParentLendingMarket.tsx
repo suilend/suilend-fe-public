@@ -34,7 +34,10 @@ export default function ParentLendingMarket({
 
   return (
     <>
-      <div className="relative w-full">
+      <button
+        className="relative w-full cursor-pointer"
+        onClick={toggleIsCollapsed}
+      >
         <div className="relative z-[2] flex h-8 flex-row items-center justify-between gap-2 px-4">
           <div className="flex flex-row items-center gap-2">
             <TBody
@@ -51,15 +54,13 @@ export default function ParentLendingMarket({
             {startContent}
           </div>
 
-          <Button
-            className="text-muted-foreground"
-            icon={isCollapsed ? <ChevronDown /> : <ChevronUp />}
-            variant="ghost"
-            size="icon"
-            onClick={toggleIsCollapsed}
-          >
-            Toggle
-          </Button>
+          <div className="flex h-8 w-8 flex-row items-center justify-center">
+            {isCollapsed ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
         </div>
 
         <div
@@ -69,7 +70,7 @@ export default function ParentLendingMarket({
               "linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, black 64px)",
           }}
         />
-      </div>
+      </button>
 
       {isCollapsed && count.gt(0) && (
         <LendingMarketContextProvider lendingMarketId={lendingMarketId}>
