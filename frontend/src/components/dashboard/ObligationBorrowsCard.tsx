@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import BigNumber from "bignumber.js";
 import { Upload } from "lucide-react";
 
+import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { formatUsd } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -25,9 +26,12 @@ export default function ObligationBorrowsCard() {
         const obligation = obligationMap[appData.lendingMarket.id];
 
         if (!obligation || obligation.borrowPositionCount === 0) return false;
+        if (appData.lendingMarket.isHidden && address !== ADMIN_ADDRESS)
+          return false;
+
         return true;
       }),
-    [allAppData.allLendingMarketData, obligationMap],
+    [allAppData.allLendingMarketData, obligationMap, address],
   );
 
   if (!address || filteredAppData.length === 0) return null;

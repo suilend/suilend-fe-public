@@ -3,7 +3,11 @@ import { useMemo } from "react";
 
 import { FileClock } from "lucide-react";
 
-import { LENDING_MARKET_ID, getNetAprPercent } from "@suilend/sdk";
+import {
+  ADMIN_ADDRESS,
+  LENDING_MARKET_ID,
+  getNetAprPercent,
+} from "@suilend/sdk";
 import { formatPercent, formatUsd } from "@suilend/sui-fe";
 import {
   shallowPushQuery,
@@ -72,9 +76,12 @@ export default function AccountsCard() {
         const obligation = obligationMap[appData.lendingMarket.id];
 
         if (!obligation) return false;
+        if (appData.lendingMarket.isHidden && address !== ADMIN_ADDRESS)
+          return false;
+
         return true;
       }),
-    [allAppData.allLendingMarketData, obligationMap],
+    [allAppData.allLendingMarketData, obligationMap, address],
   );
 
   if (!address) return null;

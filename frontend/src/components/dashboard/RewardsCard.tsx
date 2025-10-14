@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
 
-import { getRewardsMap } from "@suilend/sdk";
+import { ADMIN_ADDRESS, getRewardsMap } from "@suilend/sdk";
 import { Token, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -60,9 +60,12 @@ export default function RewardsCard() {
         );
 
         if (!obligation || Object.values(rewardsMap).length === 0) return false;
+        if (appData.lendingMarket.isHidden && address !== ADMIN_ADDRESS)
+          return false;
+
         return true;
       }),
-    [allAppData.allLendingMarketData, obligationMap, allUserData],
+    [allAppData.allLendingMarketData, obligationMap, allUserData, address],
   );
 
   if (!address)
