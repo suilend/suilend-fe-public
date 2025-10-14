@@ -5,6 +5,7 @@ import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import {
+  LENDING_MARKET_ID,
   getFilteredRewards,
   getStakingYieldAprPercent,
   getTotalAprPercent,
@@ -37,7 +38,7 @@ import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TTitle } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import {
   DEPRECATED_ASSETS_TOOLTIP,
   ISOLATED_ASSETS_TOOLTIP,
@@ -123,8 +124,7 @@ export default function MarketTable() {
     deprecatedReserveIds,
     isEcosystemLst,
   } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
-  const { filteredReserves } = useLoadedAppContext();
+  const { appData, userData } = useLendingMarketContext();
 
   const { open: openActionsModal } = useActionsModalContext();
 
@@ -316,129 +316,135 @@ export default function MarketTable() {
 
   // Rows
   const rows: HeaderRowData[] = useMemo(() => {
-    const reserveRows: ReservesRowData[] = filteredReserves.map((reserve) => {
-      const totalDepositAprPercent = getTotalAprPercent(
-        Side.DEPOSIT,
-        reserve.depositAprPercent,
-        getFilteredRewards(userData.rewardMap[reserve.coinType]?.deposit ?? []),
-        getStakingYieldAprPercent(
+    const reserveRows: ReservesRowData[] = appData.lendingMarket.reserves.map(
+      (reserve) => {
+        const totalDepositAprPercent = getTotalAprPercent(
           Side.DEPOSIT,
-          reserve.coinType,
-          allAppData.lstMap,
-        ),
-      );
-      const totalBorrowAprPercent = getTotalAprPercent(
-        Side.BORROW,
-        reserve.borrowAprPercent,
-        getFilteredRewards(userData.rewardMap[reserve.coinType]?.borrow ?? []),
-      );
+          reserve.depositAprPercent,
+          getFilteredRewards(
+            userData.rewardMap[reserve.coinType]?.deposit ?? [],
+          ),
+          getStakingYieldAprPercent(
+            Side.DEPOSIT,
+            reserve.coinType,
+            allAppData.lstMap,
+          ),
+        );
+        const totalBorrowAprPercent = getTotalAprPercent(
+          Side.BORROW,
+          reserve.borrowAprPercent,
+          getFilteredRewards(
+            userData.rewardMap[reserve.coinType]?.borrow ?? [],
+          ),
+        );
 
-      const almostExceedsDepositLimit = getAlmostExceedsLimit(
-        reserve.config.depositLimit,
-        reserve.depositedAmount,
-      );
-      const almostExceedsDepositLimitUsd = getAlmostExceedsLimit(
-        reserve.config.depositLimitUsd,
-        reserve.depositedAmountUsd,
-      );
+        const almostExceedsDepositLimit = getAlmostExceedsLimit(
+          reserve.config.depositLimit,
+          reserve.depositedAmount,
+        );
+        const almostExceedsDepositLimitUsd = getAlmostExceedsLimit(
+          reserve.config.depositLimitUsd,
+          reserve.depositedAmountUsd,
+        );
 
-      const exceedsDepositLimit = getExceedsLimit(
-        reserve.config.depositLimit,
-        reserve.depositedAmount,
-      );
-      const exceedsDepositLimitUsd = getExceedsLimit(
-        reserve.config.depositLimitUsd,
-        reserve.depositedAmountUsd,
-      );
+        const exceedsDepositLimit = getExceedsLimit(
+          reserve.config.depositLimit,
+          reserve.depositedAmount,
+        );
+        const exceedsDepositLimitUsd = getExceedsLimit(
+          reserve.config.depositLimitUsd,
+          reserve.depositedAmountUsd,
+        );
 
-      const almostExceedsBorrowLimit = getAlmostExceedsLimit(
-        reserve.config.borrowLimit,
-        reserve.borrowedAmount,
-      );
-      const almostExceedsBorrowLimitUsd = getAlmostExceedsLimit(
-        reserve.config.borrowLimitUsd,
-        reserve.borrowedAmountUsd,
-      );
+        const almostExceedsBorrowLimit = getAlmostExceedsLimit(
+          reserve.config.borrowLimit,
+          reserve.borrowedAmount,
+        );
+        const almostExceedsBorrowLimitUsd = getAlmostExceedsLimit(
+          reserve.config.borrowLimitUsd,
+          reserve.borrowedAmountUsd,
+        );
 
-      const exceedsBorrowLimit = getExceedsLimit(
-        reserve.config.borrowLimit,
-        reserve.borrowedAmount,
-      );
-      const exceedsBorrowLimitUsd = getExceedsLimit(
-        reserve.config.borrowLimitUsd,
-        reserve.borrowedAmountUsd,
-      );
+        const exceedsBorrowLimit = getExceedsLimit(
+          reserve.config.borrowLimit,
+          reserve.borrowedAmount,
+        );
+        const exceedsBorrowLimitUsd = getExceedsLimit(
+          reserve.config.borrowLimitUsd,
+          reserve.borrowedAmountUsd,
+        );
 
-      const depositedAmountTooltip = exceedsDepositLimit
-        ? getExceedsLimitTooltip(Side.DEPOSIT)
-        : exceedsDepositLimitUsd
-          ? getExceedsLimitUsdTooltip(Side.DEPOSIT)
-          : almostExceedsDepositLimit
-            ? getAlmostExceedsLimitTooltip(
-                Side.DEPOSIT,
-                reserve.config.depositLimit.minus(reserve.depositedAmount),
-                reserve.token.symbol,
-                reserve.token.decimals,
-              )
-            : almostExceedsDepositLimitUsd
-              ? getAlmostExceedsLimitUsdTooltip(
+        const depositedAmountTooltip = exceedsDepositLimit
+          ? getExceedsLimitTooltip(Side.DEPOSIT)
+          : exceedsDepositLimitUsd
+            ? getExceedsLimitUsdTooltip(Side.DEPOSIT)
+            : almostExceedsDepositLimit
+              ? getAlmostExceedsLimitTooltip(
                   Side.DEPOSIT,
-                  reserve.config.depositLimitUsd.minus(
-                    reserve.depositedAmountUsd,
-                  ),
+                  reserve.config.depositLimit.minus(reserve.depositedAmount),
+                  reserve.token.symbol,
+                  reserve.token.decimals,
                 )
-              : undefined;
+              : almostExceedsDepositLimitUsd
+                ? getAlmostExceedsLimitUsdTooltip(
+                    Side.DEPOSIT,
+                    reserve.config.depositLimitUsd.minus(
+                      reserve.depositedAmountUsd,
+                    ),
+                  )
+                : undefined;
 
-      const borrowedAmountTooltip = exceedsBorrowLimit
-        ? getExceedsLimitTooltip(Side.BORROW)
-        : exceedsBorrowLimitUsd
-          ? getExceedsLimitUsdTooltip(Side.BORROW)
-          : almostExceedsBorrowLimit
-            ? getAlmostExceedsLimitTooltip(
-                Side.BORROW,
-                reserve.config.borrowLimit.minus(reserve.borrowedAmount),
-                reserve.token.symbol,
-                reserve.token.decimals,
-              )
-            : almostExceedsBorrowLimitUsd
-              ? getAlmostExceedsLimitUsdTooltip(
+        const borrowedAmountTooltip = exceedsBorrowLimit
+          ? getExceedsLimitTooltip(Side.BORROW)
+          : exceedsBorrowLimitUsd
+            ? getExceedsLimitUsdTooltip(Side.BORROW)
+            : almostExceedsBorrowLimit
+              ? getAlmostExceedsLimitTooltip(
                   Side.BORROW,
-                  reserve.config.borrowLimitUsd.minus(
-                    reserve.borrowedAmountUsd,
-                  ),
+                  reserve.config.borrowLimit.minus(reserve.borrowedAmount),
+                  reserve.token.symbol,
+                  reserve.token.decimals,
                 )
-              : undefined;
+              : almostExceedsBorrowLimitUsd
+                ? getAlmostExceedsLimitUsdTooltip(
+                    Side.BORROW,
+                    reserve.config.borrowLimitUsd.minus(
+                      reserve.borrowedAmountUsd,
+                    ),
+                  )
+                : undefined;
 
-      return {
-        section: (deprecatedReserveIds ?? []).includes(reserve.id)
-          ? "deprecated"
-          : (featuredReserveIds ?? []).includes(reserve.id)
-            ? "featured"
-            : reserve.config.isolated
-              ? "isolated"
-              : "main",
+        return {
+          section: (deprecatedReserveIds ?? []).includes(reserve.id)
+            ? "deprecated"
+            : (featuredReserveIds ?? []).includes(reserve.id)
+              ? "featured"
+              : reserve.config.isolated
+                ? "isolated"
+                : "main",
 
-        symbol: reserve.token.symbol,
-        reserve,
-        token: reserve.token,
-        price: reserve.price,
+          symbol: reserve.token.symbol,
+          reserve,
+          token: reserve.token,
+          price: reserve.price,
 
-        openLtvPercent: new BigNumber(reserve.config.openLtvPct),
-        borrowWeightBps: reserve.config.borrowWeightBps,
-        depositLimit: reserve.config.depositLimit,
-        depositedAmount: reserve.depositedAmount,
-        depositedAmountUsd: reserve.depositedAmountUsd,
-        depositedAmountTooltip,
-        borrowLimit: reserve.config.borrowLimit,
-        borrowedAmount: reserve.borrowedAmount,
-        borrowedAmountUsd: reserve.borrowedAmountUsd,
-        borrowedAmountTooltip,
-        depositAprPercent: reserve.depositAprPercent,
-        totalDepositAprPercent,
-        borrowAprPercent: reserve.borrowAprPercent,
-        totalBorrowAprPercent,
-      };
-    });
+          openLtvPercent: new BigNumber(reserve.config.openLtvPct),
+          borrowWeightBps: reserve.config.borrowWeightBps,
+          depositLimit: reserve.config.depositLimit,
+          depositedAmount: reserve.depositedAmount,
+          depositedAmountUsd: reserve.depositedAmountUsd,
+          depositedAmountTooltip,
+          borrowLimit: reserve.config.borrowLimit,
+          borrowedAmount: reserve.borrowedAmount,
+          borrowedAmountUsd: reserve.borrowedAmountUsd,
+          borrowedAmountTooltip,
+          depositAprPercent: reserve.depositAprPercent,
+          totalDepositAprPercent,
+          borrowAprPercent: reserve.borrowAprPercent,
+          totalBorrowAprPercent,
+        };
+      },
+    );
 
     const featuredReserveRows = reserveRows.filter(
       (reserveRow) => reserveRow.section === "featured",
@@ -573,7 +579,7 @@ export default function MarketTable() {
 
     return result;
   }, [
-    filteredReserves,
+    appData.lendingMarket.reserves,
     userData.rewardMap,
     allAppData.lstMap,
     deprecatedReserveIds,
@@ -659,7 +665,12 @@ export default function MarketTable() {
               return row.getToggleExpandedHandler();
 
             return () =>
-              openActionsModal((row.original as ReservesRowData).token.symbol);
+              openActionsModal(
+                appData.lendingMarket.id === LENDING_MARKET_ID
+                  ? undefined
+                  : appData.lendingMarket.id,
+                (row.original as ReservesRowData).token.symbol,
+              );
           }}
         />
       </div>

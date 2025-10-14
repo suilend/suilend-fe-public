@@ -27,7 +27,7 @@ import Button from "@/components/shared/Button";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import {
   BORROW_WEIGHT_TOOLTIP,
   CLOSE_LTV_TOOLTIP,
@@ -282,7 +282,7 @@ function RatesTabContent({ side, reserve }: TabContentProps) {
 
 function ObjectsTabContent({ side, reserve }: TabContentProps) {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   const pythOracleUrl = getPythOracleUrl(reserve.coinType);
 

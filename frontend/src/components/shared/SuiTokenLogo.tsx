@@ -10,14 +10,13 @@ interface SuiTokenLogoProps {
 
 export default function SuiTokenLogo({ size }: SuiTokenLogoProps) {
   const { allAppData } = useLoadedAppContext();
-
-  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   return (
     <TokenLogo
       token={getToken(
         NORMALIZED_SUI_COINTYPE,
-        appData.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
+        appDataMainMarket.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
       )}
       size={size}
     />

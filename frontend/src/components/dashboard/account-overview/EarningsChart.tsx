@@ -14,7 +14,7 @@ import {
   TLabel,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   ViewBox,
@@ -46,7 +46,7 @@ function TooltipContent({
   viewBox,
   x,
 }: TooltipContentProps) {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   if (viewBox === undefined || x === undefined) return null;
   return (

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { reserveSort } from "@suilend/sdk/utils";
 import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
@@ -14,15 +15,16 @@ import DataTable, {
   tableHeader,
 } from "@/components/dashboard/DataTable";
 import AssetCell from "@/components/dashboard/market-table/AssetCell";
+import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 export enum AccountAssetTableType {
   DEPOSITS = "deposits",
   BORROWS = "borrows",
-  BALANCES = "balances",
 }
 
 interface RowData {
@@ -31,30 +33,44 @@ interface RowData {
   price?: BigNumber;
   amount: BigNumber;
   amountUsd?: BigNumber;
-  extra?: Record<string, any>;
 }
 
 interface AccountAssetTableProps {
+  id: string;
+  lendingMarketId: string;
   type: AccountAssetTableType;
   assets: RowData[];
   noAssetsMessage: string;
+  noLendingMarketHeader?: boolean;
 }
 
 export default function AccountAssetTable({
+  id,
+  lendingMarketId,
   type,
   assets,
   noAssetsMessage,
+  noLendingMarketHeader,
 }: AccountAssetTableProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appData = allAppData.allLendingMarketData[lendingMarketId];
+  const { obligationMap } = useLoadedUserContext();
+  const obligation = obligationMap[lendingMarketId];
 
   const { open: openActionsModal } = useActionsModalContext();
+
+  // Count
+  const totalUsd = new BigNumber(
+    type === AccountAssetTableType.DEPOSITS
+      ? (obligation?.depositedAmountUsd ?? 0)
+      : (obligation?.borrowedAmountUsd ?? 0),
+  );
 
   // Columns
   const amountTitleMap: Record<AccountAssetTableType, string> = useMemo(
     () => ({
       [AccountAssetTableType.DEPOSITS]: "Deposits",
       [AccountAssetTableType.BORROWS]: "Borrows",
-      [AccountAssetTableType.BALANCES]: "Balance",
     }),
     [],
   );
@@ -110,25 +126,38 @@ export default function AccountAssetTable({
 
   return (
     <div className="w-full">
-      <DataTable<RowData>
-        columns={columns}
-        data={sortedAssets}
-        noDataMessage={noAssetsMessage}
-        tableRowClassName={(row) =>
-          cn(styles.tableRow, !row?.original.reserve && "cursor-default")
-        }
-        tableCellClassName={(cell) =>
-          cn(
-            cell && cell.column.getIsFirstColumn() && "pr-0",
-            cell && cell.column.getIsLastColumn() && "pl-0",
-          )
-        }
-        onRowClick={(row) =>
-          row.original.reserve
-            ? () => openActionsModal(row.original.token.symbol)
-            : undefined
-        }
-      />
+      <ParentLendingMarket
+        id={id}
+        lendingMarketId={lendingMarketId}
+        count={formatUsd(totalUsd)}
+        noHeader={noLendingMarketHeader}
+      >
+        <DataTable<RowData>
+          columns={columns}
+          data={sortedAssets}
+          noDataMessage={noAssetsMessage}
+          tableRowClassName={(row) =>
+            cn(styles.tableRow, !row?.original.reserve && "cursor-default")
+          }
+          tableCellClassName={(cell) =>
+            cn(
+              cell && cell.column.getIsFirstColumn() && "pr-0",
+              cell && cell.column.getIsLastColumn() && "pl-0",
+            )
+          }
+          onRowClick={(row) =>
+            row.original.reserve
+              ? () =>
+                  openActionsModal(
+                    lendingMarketId === LENDING_MARKET_ID
+                      ? undefined
+                      : lendingMarketId,
+                    row.original.token.symbol,
+                  )
+              : undefined
+          }
+        />
+      </ParentLendingMarket>
     </div>
   );
 }

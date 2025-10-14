@@ -24,16 +24,23 @@ import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
 
-const LENDING_MARKET_METADATA_MAP: Record<
-  string,
-  Pick<LendingMarketMetadata, "name" | "slug" | "isHidden">
-> = {
+const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
   [LENDING_MARKET_ID]: {
+    id: LENDING_MARKET_ID,
+    type: LENDING_MARKET_TYPE,
+    lendingMarketOwnerCapId:
+      "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
+
     name: "Main market",
     slug: "main",
     isHidden: false,
   },
   [STEAMM_LM_LENDING_MARKET_ID]: {
+    id: STEAMM_LM_LENDING_MARKET_ID,
+    type: STEAMM_LM_LENDING_MARKET_TYPE,
+    lendingMarketOwnerCapId:
+      "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
+
     name: "STEAMM LM",
     slug: "steamm-lm",
     isHidden: true,
@@ -130,38 +137,7 @@ export default function useFetchAppData() {
       console.error(err);
 
       // Fallback
-      lendingMarketMetadataMap = {
-        [LENDING_MARKET_ID]: {
-          id: LENDING_MARKET_ID,
-          type: LENDING_MARKET_TYPE,
-          lendingMarketOwnerCapId:
-            "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
-
-          name:
-            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.name ?? undefined,
-          slug:
-            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.slug ?? undefined,
-          isHidden:
-            LENDING_MARKET_METADATA_MAP[LENDING_MARKET_ID]?.isHidden ??
-            undefined,
-        },
-        [STEAMM_LM_LENDING_MARKET_ID]: {
-          id: STEAMM_LM_LENDING_MARKET_ID,
-          type: STEAMM_LM_LENDING_MARKET_TYPE,
-          lendingMarketOwnerCapId:
-            "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
-
-          name:
-            LENDING_MARKET_METADATA_MAP[STEAMM_LM_LENDING_MARKET_ID]?.name ??
-            undefined,
-          slug:
-            LENDING_MARKET_METADATA_MAP[STEAMM_LM_LENDING_MARKET_ID]?.slug ??
-            undefined,
-          isHidden:
-            LENDING_MARKET_METADATA_MAP[STEAMM_LM_LENDING_MARKET_ID]
-              ?.isHidden ?? undefined,
-        },
-      };
+      lendingMarketMetadataMap = LENDING_MARKET_METADATA_MAP;
     }
 
     const [allLendingMarketData, lstMap, okxAprPercentMap] = await Promise.all([

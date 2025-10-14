@@ -1,7 +1,8 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
-import { formatPoints } from "@suilend/sui-fe";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
+import { formatPoints, getToken } from "@suilend/sui-fe";
 
 import PointsLogo from "@/components/leaderboard/PointsLogo";
 import Tooltip from "@/components/shared/Tooltip";
@@ -22,10 +23,13 @@ export default function PointsCount({
   season,
   amount,
 }: PointsCountProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
-  const coinMetadata =
-    appData.coinMetadataMap[POINTS_SEASON_MAP[season].coinType];
+  const token = getToken(
+    POINTS_SEASON_MAP[season].coinType,
+    appDataMainMarket.coinMetadataMap[POINTS_SEASON_MAP[season].coinType],
+  );
 
   return (
     <div className="flex w-max flex-row items-center gap-1.5">
@@ -37,7 +41,7 @@ export default function PointsCount({
         <TBody className={cn(labelClassName)}>N/A</TBody>
       ) : (
         <Tooltip
-          title={`${formatPoints(amount, { dp: coinMetadata.decimals })} ${coinMetadata.symbol}`}
+          title={`${formatPoints(amount, { dp: token.decimals })} ${token.symbol}`}
         >
           <TBody className={cn(labelClassName)}>{formatPoints(amount)}</TBody>
         </Tooltip>

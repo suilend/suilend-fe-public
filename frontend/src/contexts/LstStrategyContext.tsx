@@ -18,6 +18,7 @@ import { useLocalStorage } from "usehooks-ts";
 
 import {
   STRATEGY_E as E,
+  LENDING_MARKET_ID,
   LST_DECIMALS,
   ParsedObligation,
   ParsedReserve,
@@ -407,8 +408,10 @@ export const useLoadedLstStrategyContext = () =>
 
 export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const { suiClient } = useSettingsContext();
-  const { userData } = useLoadedUserContext();
-  const { allAppData, appData, isLst } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { allUserData } = useLoadedUserContext();
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   // More details
   const [isMoreDetailsOpen, setIsMoreDetailsOpen] = useLocalStorage<boolean>(
@@ -424,8 +427,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
   // SUI
   const suiReserve = useMemo(
-    () => _getSuiReserve(appData.reserveMap),
-    [appData.reserveMap],
+    () => _getSuiReserve(appDataMainMarket.reserveMap),
+    [appDataMainMarket.reserveMap],
   );
 
   // LST
@@ -482,20 +485,20 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
     (
       strategyType: StrategyType,
     ): { base?: ParsedReserve; lst?: ParsedReserve } =>
-      _getDepositReserves(appData.reserveMap, strategyType),
-    [appData.reserveMap],
+      _getDepositReserves(appDataMainMarket.reserveMap, strategyType),
+    [appDataMainMarket.reserveMap],
   );
 
   const getBorrowReserve = useCallback(
     (strategyType: StrategyType): ParsedReserve =>
-      _getBorrowReserve(appData.reserveMap, strategyType),
-    [appData.reserveMap],
+      _getBorrowReserve(appDataMainMarket.reserveMap, strategyType),
+    [appDataMainMarket.reserveMap],
   );
 
   const getDefaultCurrencyReserve = useCallback(
     (strategyType: StrategyType) =>
-      _getDefaultCurrencyReserve(appData.reserveMap, strategyType),
-    [appData.reserveMap],
+      _getDefaultCurrencyReserve(appDataMainMarket.reserveMap, strategyType),
+    [appDataMainMarket.reserveMap],
   );
 
   // Calculations
@@ -506,46 +509,56 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       _borrowedAmount: BigNumber,
     ): ParsedObligation =>
       _getSimulatedObligation(
-        appData.reserveMap,
+        appDataMainMarket.reserveMap,
         lstMap ?? {},
         strategyType,
         deposits,
         _borrowedAmount,
       ),
-    [appData.reserveMap, lstMap],
+    [appDataMainMarket.reserveMap, lstMap],
   );
 
   const getDepositedAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation) =>
       _getDepositedAmount(
-        appData.reserveMap,
+        appDataMainMarket.reserveMap,
         lstMap ?? {},
         strategyType,
         obligation,
       ),
-    [appData.reserveMap, lstMap],
+    [appDataMainMarket.reserveMap, lstMap],
   );
   const getBorrowedAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation) =>
       _getBorrowedAmount(
-        appData.reserveMap,
+        appDataMainMarket.reserveMap,
         lstMap ?? {},
         strategyType,
         obligation,
       ),
-    [appData.reserveMap, lstMap],
+    [appDataMainMarket.reserveMap, lstMap],
   );
 
   const getTvlAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation): BigNumber =>
-      _getTvlAmount(appData.reserveMap, lstMap ?? {}, strategyType, obligation),
-    [appData.reserveMap, lstMap],
+      _getTvlAmount(
+        appDataMainMarket.reserveMap,
+        lstMap ?? {},
+        strategyType,
+        obligation,
+      ),
+    [appDataMainMarket.reserveMap, lstMap],
   );
 
   const getExposure = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation): BigNumber =>
-      _getExposure(appData.reserveMap, lstMap ?? {}, strategyType, obligation),
-    [appData.reserveMap, lstMap],
+      _getExposure(
+        appDataMainMarket.reserveMap,
+        lstMap ?? {},
+        strategyType,
+        obligation,
+      ),
+    [appDataMainMarket.reserveMap, lstMap],
   );
 
   const getStepMaxBorrowedAmount = useCallback(
@@ -601,7 +614,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       const borrowReserve = getBorrowReserve(strategyType);
       const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
-      const withdrawReserve = appData.reserveMap[withdrawCoinType];
+      const withdrawReserve = appDataMainMarket.reserveMap[withdrawCoinType];
 
       //
 
@@ -633,7 +646,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getDepositReserves,
       getBorrowReserve,
       getDefaultCurrencyReserve,
-      appData.reserveMap,
+      appDataMainMarket.reserveMap,
       getSimulatedObligation,
     ],
   );
@@ -1036,19 +1049,19 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
   const getUnclaimedRewardsAmount = useCallback(
     (strategyType: StrategyType, obligation?: ParsedObligation): BigNumber =>
       _getUnclaimedRewardsAmount(
-        appData.reserveMap,
-        appData.rewardPriceMap,
-        appData.rewardCoinMetadataMap,
-        userData.rewardMap,
+        appDataMainMarket.reserveMap,
+        appDataMainMarket.rewardPriceMap,
+        appDataMainMarket.rewardCoinMetadataMap,
+        userDataMainMarket.rewardMap,
         lstMap ?? {},
         strategyType,
         obligation,
       ),
     [
-      appData.reserveMap,
-      appData.rewardPriceMap,
-      appData.rewardCoinMetadataMap,
-      userData.rewardMap,
+      appDataMainMarket.reserveMap,
+      appDataMainMarket.rewardPriceMap,
+      appDataMainMarket.rewardCoinMetadataMap,
+      userDataMainMarket.rewardMap,
       lstMap,
     ],
   );
@@ -1576,7 +1589,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
 
       return getNetAprPercent(
         _obligation,
-        userData.rewardMap,
+        userDataMainMarket.rewardMap,
         allAppData.lstMap,
         !obligation ||
           !hasPosition(obligation) ||
@@ -1589,7 +1602,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       getDefaultCurrencyReserve,
       hasPosition,
       simulateDepositAndLoopToExposure,
-      userData.rewardMap,
+      userDataMainMarket.rewardMap,
       allAppData.lstMap,
     ],
   );

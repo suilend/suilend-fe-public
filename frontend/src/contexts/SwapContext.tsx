@@ -16,6 +16,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -106,9 +107,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   const slug = router.query.slug as string[] | undefined;
 
   const { suiClient } = useSettingsContext();
-  const { appData, filteredReserves } = useLoadedAppContext();
-  const { rawBalancesMap, balancesCoinMetadataMap, obligation } =
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { rawBalancesMap, balancesCoinMetadataMap, obligationMap } =
     useLoadedUserContext();
+  const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
 
   // send.ag
   const { sdkMap, partnerIdMap } = useAggSdks();
@@ -234,7 +237,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
           (coinType) =>
             !Object.keys({
-              ...appData.coinMetadataMap,
+              ...appDataMainMarket.coinMetadataMap,
               ...(balancesCoinMetadataMap ?? {}),
             }).includes(coinType),
         );
@@ -243,7 +246,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         );
 
         const mergedCoinMetadataMap = {
-          ...appData.coinMetadataMap,
+          ...appDataMainMarket.coinMetadataMap,
           ...(balancesCoinMetadataMap ?? {}),
           ...coinMetadataMap,
         };
@@ -264,7 +267,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, appData.coinMetadataMap, balancesCoinMetadataMap],
+    [tokens, appDataMainMarket.coinMetadataMap, balancesCoinMetadataMap],
   );
 
   // Tokens - Verified coinTypes
@@ -297,9 +300,11 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   // Tokens - Reserves
   useEffect(() => {
     fetchTokensMetadata(
-      appData.lendingMarket.reserves.map((reserve) => reserve.coinType),
+      appDataMainMarket.lendingMarket.reserves.map(
+        (reserve) => reserve.coinType,
+      ),
     );
-  }, [fetchTokensMetadata, appData.lendingMarket.reserves]);
+  }, [fetchTokensMetadata, appDataMainMarket.lendingMarket.reserves]);
 
   // Tokens - Balances
   useEffect(() => {
@@ -334,22 +339,27 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     if (!swapInAccount) return [tokenIn, tokenOut];
     else {
       if (!tokenIn || !tokenOut) return [undefined, undefined];
-      if (!obligation?.deposits || obligation.deposits.length === 0) {
+      if (
+        !obligationMainMarket?.deposits ||
+        obligationMainMarket.deposits.length === 0
+      ) {
         setSwapInAccount(false);
         return [tokenIn, tokenOut];
       }
 
-      const isTokenInValid = !!obligation.deposits.find(
+      const isTokenInValid = !!obligationMainMarket.deposits.find(
         (d) => d.coinType === tokenIn.coinType,
       );
-      const isTokenOutValid = !!filteredReserves.find(
+      const isTokenOutValid = !!appDataMainMarket.lendingMarket.reserves.find(
         (r) => r.coinType === tokenOut.coinType,
       );
       if (isTokenInValid && isTokenOutValid) return [tokenIn, tokenOut];
 
       const newTokenIn = isTokenInValid
         ? tokenIn
-        : tokens?.find((t) => t.coinType === obligation.deposits[0].coinType);
+        : tokens?.find(
+            (t) => t.coinType === obligationMainMarket.deposits[0].coinType,
+          );
       let newTokenOut = isTokenOutValid
         ? tokenOut
         : tokens?.find((t) => t.coinType === DEFAULT_TOKEN_OUT.coinType);
@@ -389,9 +399,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     tokenInSymbol,
     tokenOutSymbol,
     swapInAccount,
-    obligation?.deposits,
+    obligationMainMarket?.deposits,
     setSwapInAccount,
-    filteredReserves,
+    appDataMainMarket.lendingMarket.reserves,
     DEFAULT_TOKEN_IN.coinType,
     DEFAULT_TOKEN_OUT.coinType,
     tokenHistoricalUsdPricesMap,
@@ -444,20 +454,20 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!tokenIn) return;
     setDefaultTokenIn({
-      hasReserve: !!appData.reserveMap[tokenIn.coinType],
+      hasReserve: !!appDataMainMarket.reserveMap[tokenIn.coinType],
       symbol: tokenIn.symbol,
       coinType: tokenIn.coinType,
     });
-  }, [tokenIn, setDefaultTokenIn, appData.reserveMap]);
+  }, [tokenIn, setDefaultTokenIn, appDataMainMarket.reserveMap]);
 
   useEffect(() => {
     if (!tokenOut) return;
     setDefaultTokenOut({
-      hasReserve: !!appData.reserveMap[tokenOut.coinType],
+      hasReserve: !!appDataMainMarket.reserveMap[tokenOut.coinType],
       symbol: tokenOut.symbol,
       coinType: tokenOut.coinType,
     });
-  }, [tokenOut, setDefaultTokenOut, appData.reserveMap]);
+  }, [tokenOut, setDefaultTokenOut, appDataMainMarket.reserveMap]);
 
   // Context
   const contextValue: SwapContext = useMemo(

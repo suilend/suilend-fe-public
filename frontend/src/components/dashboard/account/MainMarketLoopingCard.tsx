@@ -1,9 +1,12 @@
+// NOTE: Just for Main market
+
 import { useState } from "react";
 
 import BigNumber from "bignumber.js";
 import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { formatList } from "@suilend/sui-fe";
 import { showErrorToast, useWalletContext } from "@suilend/sui-fe-next";
 
@@ -25,10 +28,14 @@ import {
   getZeroSharePositions,
 } from "@/lib/looping";
 
-export default function LoopingCard() {
+export default function MainMarketLoopingCard() {
   const { address } = useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { refresh, obligation, obligationOwnerCap } = useLoadedUserContext();
+  const { allAppData } = useLoadedAppContext();
+  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { refresh, obligationMap, obligationOwnerCapMap } =
+    useLoadedUserContext();
+  const obligation = obligationMap[LENDING_MARKET_ID];
+  const obligationOwnerCap = obligationOwnerCapMap[LENDING_MARKET_ID];
 
   const { withdraw, borrow } = useActionsModalContext();
 
@@ -51,8 +58,10 @@ export default function LoopingCard() {
     setIsRestoringEligibility(true);
 
     try {
-      for (const d of zeroShareDeposits) await withdraw(d.coinType, "1");
-      for (const b of zeroShareBorrows) await borrow(b.coinType, "1");
+      for (const d of zeroShareDeposits)
+        await withdraw(LENDING_MARKET_ID, d.coinType, "1");
+      for (const b of zeroShareBorrows)
+        await borrow(LENDING_MARKET_ID, b.coinType, "1");
 
       toast.success("Restored eligibility");
     } catch (err) {
@@ -122,7 +131,9 @@ export default function LoopingCard() {
                     (d) =>
                       `${new BigNumber(10)
                         .pow(-d.reserve.mintDecimals)
-                        .toFixed(d.reserve.mintDecimals)} ${d.reserve.symbol}`,
+                        .toFixed(
+                          d.reserve.mintDecimals,
+                        )} ${d.reserve.token.symbol}`,
                   ),
                 )}
               </TLabelSans>
@@ -135,7 +146,9 @@ export default function LoopingCard() {
                     (b) =>
                       `${new BigNumber(10)
                         .pow(-b.reserve.mintDecimals)
-                        .toFixed(b.reserve.mintDecimals)} ${b.reserve.symbol}`,
+                        .toFixed(
+                          b.reserve.mintDecimals,
+                        )} ${b.reserve.token.symbol}`,
                   ),
                 )}
               </TLabelSans>
@@ -144,4 +157,5 @@ export default function LoopingCard() {
         </CardContent>
       </Card>
     );
+  return null;
 }

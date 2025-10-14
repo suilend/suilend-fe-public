@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { Info } from "lucide-react";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
@@ -19,7 +20,8 @@ interface StrategyHeaderProps {
 }
 
 export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -98,7 +100,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
     <div className="flex h-10 flex-row items-center gap-3">
       <TokenLogos
         tokens={strategyInfo.header.coinTypes.map((coinType) =>
-          getToken(coinType, appData.coinMetadataMap[coinType]),
+          getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]),
         )}
         size={28}
       />

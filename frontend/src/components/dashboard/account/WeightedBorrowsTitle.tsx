@@ -7,7 +7,7 @@ import { formatUsd } from "@suilend/sui-fe";
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
 import { TLabelSans } from "@/components/shared/Typography";
 import { getWeightedBorrowsColor } from "@/components/shared/UtilizationBar";
-import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { WEIGHTED_BORROWS_TOOLTIP } from "@/lib/tooltips";
 
 interface WeightedBorrowsTitleProps {
@@ -21,8 +21,8 @@ export default function WeightedBorrowsTitle({
   noTooltip,
   amount,
 }: WeightedBorrowsTitleProps) {
-  const userContext = useLoadedUserContext();
-  const obligation = userContext.obligation as ParsedObligation;
+  const lendingMarketContext = useLendingMarketContext();
+  const obligation = lendingMarketContext.obligation as ParsedObligation;
 
   return (
     <SectionTitle

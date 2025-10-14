@@ -12,7 +12,6 @@ import LiquidationThresholdTitle from "@/components/dashboard/account/Liquidatio
 import WeightedBorrowsTitle from "@/components/dashboard/account/WeightedBorrowsTitle";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
 export const getWeightedBorrowsUsd = (obligation: ParsedObligation) => {
@@ -95,9 +94,6 @@ export default function UtilizationBar({
   obligation,
   noTooltip,
 }: UtilizationBarProps) {
-  const userContext = useLoadedUserContext();
-
-  if (!obligation) obligation = userContext.obligation;
   if (!obligation) return null;
 
   const depositedAmountUsd = obligation.depositedAmountUsd;

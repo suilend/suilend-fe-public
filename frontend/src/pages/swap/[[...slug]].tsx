@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 
 import {
+  LENDING_MARKET_ID,
   QUOTE_PROVIDER_NAME_MAP,
   QuoteProvider,
   StandardizedQuote,
@@ -112,10 +113,13 @@ const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData, openLedgerHashDialog, closeLedgerHashDialog } =
+  const { allAppData, openLedgerHashDialog, closeLedgerHashDialog } =
     useLoadedAppContext();
-  const { getBalance, refresh, obligation, obligationOwnerCap } =
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { getBalance, refresh, obligationMap, obligationOwnerCapMap } =
     useLoadedUserContext();
+  const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
+  const obligationOwnerCapMainMarket = obligationOwnerCapMap[LENDING_MARKET_ID];
 
   const {
     sdkMap,
@@ -144,16 +148,16 @@ function Page() {
   const tokenInBalance = getBalance(tokenIn.coinType);
 
   // Reserves
-  const tokenInReserve = appData.lendingMarket.reserves.find(
+  const tokenInReserve = appDataMainMarket.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenIn.coinType,
   );
-  const tokenOutReserve = appData.lendingMarket.reserves.find(
+  const tokenOutReserve = appDataMainMarket.lendingMarket.reserves.find(
     (reserve) => reserve.coinType === tokenOut.coinType,
   );
 
   // Positions
   // In
-  const tokenInDepositPosition = obligation?.deposits?.find(
+  const tokenInDepositPosition = obligationMainMarket?.deposits?.find(
     (d) => d.coinType === tokenIn.coinType,
   );
   const tokenInDepositPositionAmount = useMemo(
@@ -162,11 +166,11 @@ function Page() {
   );
 
   // Out
-  const tokenOutDepositPosition = obligation?.deposits?.find(
+  const tokenOutDepositPosition = obligationMainMarket?.deposits?.find(
     (d) => d.coinType === tokenOut.coinType,
   );
 
-  const tokenOutBorrowPosition = obligation?.borrows?.find(
+  const tokenOutBorrowPosition = obligationMainMarket?.borrows?.find(
     (b) => b.coinType === tokenOut.coinType,
   );
   const tokenOutBorrowPositionAmount = useMemo(
@@ -185,8 +189,8 @@ function Page() {
               Action.WITHDRAW,
               tokenInReserve!,
               tokenInDepositPositionAmount,
-              appData,
-              obligation,
+              appDataMainMarket,
+              obligationMainMarket,
             )()
           : tokenInBalance,
       },
@@ -427,15 +431,15 @@ function Page() {
 
   // Swap in account - utilization
   const newObligation_deposit = useMemo(() => {
-    if (!(obligation && tokenInReserve && tokenOutReserve && quote))
+    if (!(obligationMainMarket && tokenInReserve && tokenOutReserve && quote))
       return undefined;
 
     const withdrawObligation = {
-      ...obligation,
+      ...obligationMainMarket,
       ...(getNewBorrowUtilizationCalculations(
         Action.WITHDRAW,
         tokenInReserve,
-        obligation,
+        obligationMainMarket,
       )(quote.in.amount) ?? {}),
     };
     const depositObligation = {
@@ -448,18 +452,18 @@ function Page() {
     };
 
     return depositObligation;
-  }, [obligation, tokenInReserve, tokenOutReserve, quote]);
+  }, [obligationMainMarket, tokenInReserve, tokenOutReserve, quote]);
 
   const newObligation_repay = useMemo(() => {
-    if (!(obligation && tokenInReserve && tokenOutReserve && quote))
+    if (!(obligationMainMarket && tokenInReserve && tokenOutReserve && quote))
       return undefined;
 
     const withdrawObligation = {
-      ...obligation,
+      ...obligationMainMarket,
       ...(getNewBorrowUtilizationCalculations(
         Action.WITHDRAW,
         tokenInReserve,
-        obligation,
+        obligationMainMarket,
       )(quote.in.amount) ?? {}),
     };
     const repayObligation = {
@@ -473,7 +477,7 @@ function Page() {
 
     return repayObligation;
   }, [
-    obligation,
+    obligationMainMarket,
     tokenInReserve,
     tokenOutReserve,
     quote,
@@ -688,7 +692,7 @@ function Page() {
     else {
       setQuotesMap({});
 
-      const hasReserve = !!appData.reserveMap[coinType];
+      const hasReserve = !!appDataMainMarket.reserveMap[coinType];
       setTokenSymbol(hasReserve ? _token.symbol : _token.coinType, direction);
 
       fetchQuotes(
@@ -753,9 +757,9 @@ function Page() {
 
     const buttonNoValueState = getSubmitButtonNoValueState(
       action_swapAndDeposit,
-      appData.lendingMarket.reserves,
+      appDataMainMarket.lendingMarket.reserves,
       tokenOutReserve,
-      obligation,
+      obligationMainMarket,
     )();
     if (buttonNoValueState !== undefined) return buttonNoValueState;
 
@@ -763,8 +767,8 @@ function Page() {
       action_swapAndDeposit,
       tokenOutReserve,
       MAX_U64,
-      appData,
-      obligation,
+      appDataMainMarket,
+      obligationMainMarket,
     )(
       BigNumber.min(
         quote?.out.amount ?? new BigNumber(0),
@@ -784,9 +788,9 @@ function Page() {
   const warningMessages_swapAndDeposit = tokenOutReserve
     ? getSubmitWarningMessages(
         action_swapAndDeposit,
-        appData.lendingMarket.reserves,
+        appDataMainMarket.lendingMarket.reserves,
         tokenOutReserve,
-        obligation,
+        obligationMainMarket,
       )()
     : undefined;
 
@@ -808,9 +812,9 @@ function Page() {
 
     const buttonNoValueState = getSubmitButtonNoValueState(
       action_swapInAccount,
-      appData.lendingMarket.reserves,
+      appDataMainMarket.lendingMarket.reserves,
       tokenOutReserve,
-      obligation,
+      obligationMainMarket,
     )();
     if (buttonNoValueState !== undefined) return buttonNoValueState;
 
@@ -829,8 +833,8 @@ function Page() {
       action_swapInAccount,
       tokenOutReserve,
       MAX_U64,
-      appData,
-      obligation,
+      appDataMainMarket,
+      obligationMainMarket,
     )(
       BigNumber.min(
         quote?.out.amount ?? new BigNumber(0),
@@ -850,9 +854,9 @@ function Page() {
   const warningMessages_swapInAccount = tokenOutReserve
     ? getSubmitWarningMessages(
         action_swapInAccount,
-        appData.lendingMarket.reserves,
+        appDataMainMarket.lendingMarket.reserves,
         tokenOutReserve,
-        obligation,
+        obligationMainMarket,
       )()
     : undefined;
 
@@ -893,7 +897,7 @@ function Page() {
 
     let coinIn: TransactionObjectArgument | undefined;
     if (swapInAccount) {
-      if (!obligation || !obligationOwnerCap)
+      if (!obligationMainMarket || !obligationOwnerCapMainMarket)
         throw new Error("Obligation or ObligationOwnerCap not found");
       if (!tokenInReserve || !tokenInDepositPosition)
         throw new Error("Cannot withdraw this token");
@@ -906,9 +910,9 @@ function Page() {
       ).toString();
 
       // TODO: Support MAX
-      const [_coinIn] = await appData.suilendClient.withdraw(
-        obligationOwnerCap.id,
-        obligation.id,
+      const [_coinIn] = await appDataMainMarket.suilendClient.withdraw(
+        obligationOwnerCapMainMarket.id,
+        obligationMainMarket.id,
         tokenIn.coinType,
         withdrawAmount,
         transaction,
@@ -933,11 +937,11 @@ function Page() {
 
         const { obligationOwnerCapId, didCreate } =
           createObligationIfNoneExists(
-            appData.suilendClient,
+            appDataMainMarket.suilendClient,
             transaction,
-            obligationOwnerCap,
+            obligationOwnerCapMainMarket,
           );
-        appData.suilendClient.deposit(
+        appDataMainMarket.suilendClient.deposit(
           coinOut!, // Checked above
           tokenOutReserve.coinType,
           obligationOwnerCapId,
@@ -948,10 +952,10 @@ function Page() {
       } else {
         // REPAY out token
         if (!tokenOutReserve) throw new Error("Cannot repay this token");
-        if (!obligation) throw new Error("Obligation not found");
+        if (!obligationMainMarket) throw new Error("Obligation not found");
 
-        appData.suilendClient.repay(
-          obligation.id,
+        appDataMainMarket.suilendClient.repay(
+          obligationMainMarket.id,
           tokenOutReserve.coinType,
           coinOut!, // Checked above
           transaction,
@@ -964,11 +968,13 @@ function Page() {
         const depositedAmount = quote.out.amount.minus(repaidAmount);
 
         if (depositedAmount.gt(0)) {
-          if (obligation.deposits.length < MAX_DEPOSITS_PER_OBLIGATION) {
-            appData.suilendClient.deposit(
+          if (
+            obligationMainMarket.deposits.length < MAX_DEPOSITS_PER_OBLIGATION
+          ) {
+            appDataMainMarket.suilendClient.deposit(
               coinOut!, // Checked above
               tokenOutReserve.coinType,
-              obligationOwnerCap!.id,
+              obligationOwnerCapMainMarket!.id,
               transaction,
             ); // Deposit remainder
           } else {
@@ -992,11 +998,11 @@ function Page() {
 
           const { obligationOwnerCapId, didCreate } =
             createObligationIfNoneExists(
-              appData.suilendClient,
+              appDataMainMarket.suilendClient,
               transaction,
-              obligationOwnerCap,
+              obligationOwnerCapMainMarket,
             );
-          appData.suilendClient.deposit(
+          appDataMainMarket.suilendClient.deposit(
             coinOut!, // Checked above
             tokenOutReserve.coinType,
             obligationOwnerCapId,
@@ -1007,10 +1013,10 @@ function Page() {
         } else {
           // REPAY out token
           if (!tokenOutReserve) throw new Error("Cannot repay this token");
-          if (!obligation) throw new Error("Obligation not found");
+          if (!obligationMainMarket) throw new Error("Obligation not found");
 
-          appData.suilendClient.repay(
-            obligation.id,
+          appDataMainMarket.suilendClient.repay(
+            obligationMainMarket.id,
             tokenOutReserve.coinType,
             coinOut!, // Checked above
             transaction,
@@ -1023,11 +1029,13 @@ function Page() {
           const depositedAmount = quote.out.amount.minus(repaidAmount);
 
           if (depositedAmount.gt(0)) {
-            if (obligation.deposits.length < MAX_DEPOSITS_PER_OBLIGATION) {
-              appData.suilendClient.deposit(
+            if (
+              obligationMainMarket.deposits.length < MAX_DEPOSITS_PER_OBLIGATION
+            ) {
+              appDataMainMarket.suilendClient.deposit(
                 coinOut!, // Checked above
                 tokenOutReserve.coinType,
-                obligationOwnerCap!.id,
+                obligationOwnerCapMainMarket!.id,
                 transaction,
               ); // Deposit remainder
             } else {
@@ -1499,7 +1507,9 @@ function Page() {
                   horizontal
                   isChecked={swapInAccount}
                   onToggle={setSwapInAccount}
-                  isDisabled={(obligation?.deposits ?? []).length === 0}
+                  isDisabled={
+                    (obligationMainMarket?.deposits ?? []).length === 0
+                  }
                 />
 
                 <SwapSlippagePopover
@@ -1761,7 +1771,7 @@ function Page() {
 
                 <div className="flex h-8 w-full flex-row items-center">
                   <YourUtilizationLabel
-                    obligation={obligation}
+                    obligation={obligationMainMarket}
                     newObligation={
                       action_swapInAccount === Action.DEPOSIT
                         ? newObligation_deposit

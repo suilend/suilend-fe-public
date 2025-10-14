@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-import { Side } from "@suilend/sdk";
+import { LENDING_MARKET_ID, Side } from "@suilend/sdk";
 import { NORMALIZED_xBTC_COINTYPE } from "@suilend/sui-fe";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
@@ -31,6 +31,7 @@ import {
 } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { OPEN_LTV_BORROW_WEIGHT_TOOLTIP } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
 
@@ -120,6 +121,7 @@ interface MarketCardListProps {
 
 export default function MarketCardList({ rows }: MarketCardListProps) {
   const { featuredReserveIds } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   const [headerRowIsExpandedMap, setHeaderRowIsExpandedMap] = useState<
@@ -129,7 +131,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
     useState<Record<string, boolean>>({});
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-4">
       {rows.map((row, index) => {
         const { section, title, tooltip, count } = row;
 
@@ -235,7 +237,13 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                                 key={subSubRow.token.coinType}
                                 rowData={subSubRow}
                                 onClick={() =>
-                                  openActionsModal(subSubRow.token.symbol)
+                                  openActionsModal(
+                                    appData.lendingMarket.id ===
+                                      LENDING_MARKET_ID
+                                      ? undefined
+                                      : appData.lendingMarket.id,
+                                    subSubRow.token.symbol,
+                                  )
                                 }
                               />
                             ))}
@@ -252,6 +260,9 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                       rowData={subRow as ReservesRowData}
                       onClick={() =>
                         openActionsModal(
+                          appData.lendingMarket.id === LENDING_MARKET_ID
+                            ? undefined
+                            : appData.lendingMarket.id,
                           (subRow as ReservesRowData).token.symbol,
                         )
                       }

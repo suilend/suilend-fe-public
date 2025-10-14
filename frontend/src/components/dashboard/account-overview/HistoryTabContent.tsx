@@ -33,7 +33,7 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import {
   EventType,
   EventTypeNameMap,
@@ -75,7 +75,7 @@ export default function HistoryTabContent({
   autoclaimDigests,
 }: HistoryTabContentProps) {
   const { explorer } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   // Columns
   const columns: ColumnDef<RowData>[] = useMemo(

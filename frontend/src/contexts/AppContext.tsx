@@ -16,16 +16,10 @@ import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
-import { ADMIN_ADDRESS, SuilendClient } from "@suilend/sdk/client";
+import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import {
-  NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES,
-  NORMALIZED_KOBAN_COINTYPE,
-  NORMALIZED_sSUI_COINTYPE,
-  Token,
-  isInMsafeApp,
-} from "@suilend/sui-fe";
+import { NORMALIZED_sSUI_COINTYPE, Token } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
@@ -34,7 +28,7 @@ import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
-export enum QueryParams {
+enum QueryParams {
   LENDING_MARKET = "market",
 }
 
@@ -72,11 +66,7 @@ interface AppContext {
   allAppData: AllAppData | undefined;
   featuredReserveIds: string[] | undefined;
   deprecatedReserveIds: string[] | undefined;
-  filteredReservesMap: Record<string, ParsedReserve[]> | undefined;
   refreshAllAppData: () => Promise<void>;
-
-  appData: AppData | undefined;
-  filteredReserves: ParsedReserve[] | undefined;
 
   isLst: (coinType: string) => boolean;
   isEcosystemLst: (coinType: string) => boolean;
@@ -92,23 +82,15 @@ interface AppContext {
 }
 type LoadedAppContext = AppContext & {
   allAppData: AllAppData;
-  filteredReservesMap: Record<string, ParsedReserve[]>;
-
-  appData: AppData;
-  filteredReserves: ParsedReserve[];
 };
 
 const AppContext = createContext<AppContext>({
   allAppData: undefined,
   featuredReserveIds: undefined,
   deprecatedReserveIds: undefined,
-  filteredReservesMap: undefined,
   refreshAllAppData: async () => {
     throw Error("AppContextProvider not initialized");
   },
-
-  appData: undefined,
-  filteredReserves: undefined,
 
   isLst: () => {
     throw Error("AppContextProvider not initialized");
@@ -157,16 +139,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     await mutateAllAppData();
   }, [mutateAllAppData]);
 
-  const appData = useMemo(
-    () =>
-      Object.values(allAppData?.allLendingMarketData ?? {}).find(
-        (_appData) =>
-          _appData.lendingMarket.slug ===
-          queryParams[QueryParams.LENDING_MARKET],
-      ) ?? Object.values(allAppData?.allLendingMarketData ?? {})[0],
-    [queryParams, allAppData?.allLendingMarketData],
-  );
-
   // Featured, deprecated reserves
   const flags = useFlags();
   const featuredReserveIds: string[] | undefined = useMemo(
@@ -176,51 +148,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const deprecatedReserveIds: string[] | undefined = useMemo(
     () => flags?.suilendDeprecatedReserveIds,
     [flags?.suilendDeprecatedReserveIds],
-  );
-
-  // Filtered reserves
-  const filteredReservesMap = useMemo(() => {
-    if (!allAppData) return undefined;
-
-    const result: Record<string, ParsedReserve[]> = {};
-    for (const _appData of Object.values(allAppData.allLendingMarketData)) {
-      const filteredReserves = _appData.lendingMarket.reserves
-        .filter((reserve) =>
-          !isInMsafeApp()
-            ? true
-            : !NON_SPONSORED_PYTH_PRICE_FEED_COINTYPES.includes(
-                reserve.coinType,
-              ),
-        )
-        .filter((reserve) =>
-          reserve.coinType === NORMALIZED_KOBAN_COINTYPE
-            ? Date.now() >= 1747234800000 || // 2025-05-14 15:00:00 UTC
-              address === ADMIN_ADDRESS
-            : true,
-        )
-        .filter((reserve) => {
-          return (
-            deprecatedReserveIds?.includes(reserve.id) || // Show deprecated reserves
-            !(
-              reserve.config.depositLimit.eq(0) &&
-              reserve.depositedAmountUsd.lt(1000)
-            ) || // Show reserves with depositLimit > 0 OR depositedAmountUsd >= 1000
-            address === ADMIN_ADDRESS
-          );
-        });
-
-      result[_appData.lendingMarket.id] = filteredReserves;
-    }
-
-    return result;
-  }, [allAppData, deprecatedReserveIds, address]);
-
-  const filteredReserves = useMemo(
-    () =>
-      appData?.lendingMarket.id
-        ? filteredReservesMap?.[appData.lendingMarket.id]
-        : undefined,
-    [appData?.lendingMarket.id, filteredReservesMap],
   );
 
   // LST
@@ -305,11 +232,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       allAppData,
       featuredReserveIds,
       deprecatedReserveIds,
-      filteredReservesMap,
       refreshAllAppData,
-
-      appData,
-      filteredReserves,
 
       isLst,
       isEcosystemLst,
@@ -327,10 +250,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       allAppData,
       featuredReserveIds,
       deprecatedReserveIds,
-      filteredReservesMap,
       refreshAllAppData,
-      appData,
-      filteredReserves,
       isLst,
       isEcosystemLst,
       walrusEpoch,

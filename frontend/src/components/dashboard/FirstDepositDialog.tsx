@@ -1,16 +1,10 @@
 import { PartyPopper } from "lucide-react";
 
-import { ApiDepositEvent } from "@suilend/sdk/lib/types";
-
 import Dialog from "@/components/shared/Dialog";
 import { TBodySans } from "@/components/shared/Typography";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { ASSETS_URL } from "@/lib/constants";
-
-export type EventsData = {
-  deposit: ApiDepositEvent[];
-};
 
 export default function FirstDepositDialog() {
   const { isFirstDepositDialogOpen, setIsFirstDepositDialogOpen } =

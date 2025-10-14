@@ -1,11 +1,16 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
-import { API_URL, formatAddress, formatUsd } from "@suilend/sui-fe";
+import {
+  API_URL,
+  formatAddress,
+  formatInteger,
+  formatUsd,
+} from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
@@ -18,11 +23,12 @@ import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
+import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tooltip from "@/components/shared/Tooltip";
 import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useAppContext } from "@/contexts/AppContext";
 import { useUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +50,8 @@ export default function ConnectedWalletDropdownMenu({
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
-  const { allAppData } = useLoadedAppContext();
-  const { allUserData, obligation, setObligationId } = useUserContext();
+  const { allAppData } = useAppContext();
+  const { allUserData, obligationMap, setObligationId } = useUserContext();
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -110,10 +116,28 @@ export default function ConnectedWalletDropdownMenu({
   const hasVipItem = isEligibleForVipProgram;
   const hasDisconnectItem = !isImpersonating;
 
-  const hasAccounts = Object.values(allUserData ?? {}).some(
-    (_userData) => _userData.obligationOwnerCaps.length > 0,
+  const filteredAppData = useMemo(
+    () =>
+      Object.values(allAppData?.allLendingMarketData ?? {}).filter(
+        (appData) => {
+          const userData = allUserData?.[appData.lendingMarket.id];
+          if (!userData) return false;
+
+          if (
+            userData.obligations.length === 0 ||
+            userData.obligations.length === 1
+          )
+            return false;
+          if (appData.lendingMarket.isHidden && address !== ADMIN_ADDRESS)
+            return false;
+
+          return true;
+        },
+      ),
+    [allAppData, allUserData, address],
   );
-  const hasWallets = !isImpersonating;
+  const hasAccounts = filteredAppData.length > 0;
+  const hasWallets = !isImpersonating && accounts.length > 1;
 
   const noItems =
     !hasVipItem && !hasDisconnectItem && !hasAccounts && !hasWallets;
@@ -196,79 +220,85 @@ export default function ConnectedWalletDropdownMenu({
                 Accounts
               </TLabelSans>
 
-              {!allUserData ? (
+              {!allAppData || !allUserData || !obligationMap ? (
                 <Skeleton className="h-[70px] w-full rounded-sm" />
               ) : (
-                Object.entries(allUserData)
-                  .filter(
-                    ([_lendingMarketId, _userData]) =>
-                      !(
-                        allAppData?.allLendingMarketData[_lendingMarketId]
-                          .lendingMarket.isHidden && address !== ADMIN_ADDRESS
-                      ) && _userData.obligations.length > 0,
-                  )
-                  .map(([_lendingMarketId, _userData], _userDataIndex) => (
-                    <Fragment key={_lendingMarketId}>
-                      <TLabelSans
-                        className={cn(_userDataIndex !== 0 && "mt-2")}
-                      >
-                        {
-                          allAppData?.allLendingMarketData[_lendingMarketId]
-                            .lendingMarket.name
-                        }{" "}
-                      </TLabelSans>
+                <div className="-mx-4 flex flex-col gap-px">
+                  {filteredAppData.map(
+                    (appData, appDataIndex, appDataArray) => {
+                      const userData = allUserData[appData.lendingMarket.id];
+                      const obligation =
+                        obligationMap[appData.lendingMarket.id];
 
-                      {_userData.obligations.map((o, _, obligationsArray) => (
-                        <DropdownMenuItem
-                          key={o.id}
-                          className="flex flex-col items-start gap-1"
-                          isSelected={o.id === obligation?.id}
-                          onClick={() =>
-                            setObligationId(
-                              allAppData?.allLendingMarketData[_lendingMarketId]
-                                .lendingMarket.slug,
-                              o.id,
-                            )
-                          }
-                        >
-                          <div className="flex w-full flex-row justify-between">
-                            <div className="flex flex-row items-center gap-1">
-                              <TLabelSans className="text-foreground">
-                                Account{" "}
-                                {obligationsArray.findIndex(
-                                  (_o) => _o.id === o.id,
-                                ) + 1}
-                              </TLabelSans>
+                      return (
+                        <div key={appData.lendingMarket.id} className="w-full">
+                          <ParentLendingMarket
+                            id={`wallet-${appData.lendingMarket.id}`}
+                            lendingMarketId={appData.lendingMarket.id}
+                            count={formatInteger(userData.obligations.length)}
+                            noHeader={filteredAppData.length === 1}
+                          >
+                            <div
+                              className={cn(
+                                "flex w-full flex-col gap-2 p-4",
+                                filteredAppData.length === 1 && "pt-0",
+                                appDataIndex === appDataArray.length - 1 &&
+                                  "pb-0",
+                              )}
+                            >
+                              {userData.obligations.map((o, oIndex) => (
+                                <DropdownMenuItem
+                                  key={o.id}
+                                  className="flex flex-col items-start gap-1"
+                                  isSelected={o.id === obligation?.id}
+                                  onClick={() =>
+                                    setObligationId(
+                                      appData.lendingMarket.id,
+                                      o.id,
+                                    )
+                                  }
+                                >
+                                  <div className="flex w-full flex-row justify-between">
+                                    <div className="flex flex-row items-center gap-1">
+                                      <TLabelSans className="text-foreground">
+                                        Account {oIndex + 1}
+                                      </TLabelSans>
 
-                              <OpenOnExplorerButton
-                                className="h-4 w-4 hover:bg-transparent"
-                                iconClassName="w-3 h-3"
-                                url={explorer.buildObjectUrl(o.id)}
-                              />
+                                      <OpenOnExplorerButton
+                                        className="h-4 w-4 hover:bg-transparent"
+                                        iconClassName="w-3 h-3"
+                                        url={explorer.buildObjectUrl(o.id)}
+                                      />
+                                    </div>
+
+                                    <TLabelSans>
+                                      {o.positionCount} position
+                                      {o.positionCount !== 1 ? "s" : ""}
+                                    </TLabelSans>
+                                  </div>
+
+                                  <div className="flex w-full flex-row justify-between">
+                                    <TLabelSans>
+                                      {formatUsd(o.depositedAmountUsd)}{" "}
+                                      deposited
+                                    </TLabelSans>
+                                    <TLabelSans>
+                                      {formatUsd(o.borrowedAmountUsd)} borrowed
+                                    </TLabelSans>
+                                  </div>
+
+                                  <div className="mt-2 w-full">
+                                    <UtilizationBar obligation={o} noTooltip />
+                                  </div>
+                                </DropdownMenuItem>
+                              ))}
                             </div>
-
-                            <TLabelSans>
-                              {o.positionCount} position
-                              {o.positionCount !== 1 ? "s" : ""}
-                            </TLabelSans>
-                          </div>
-
-                          <div className="flex w-full flex-row justify-between">
-                            <TLabelSans>
-                              {formatUsd(o.depositedAmountUsd)} deposited
-                            </TLabelSans>
-                            <TLabelSans>
-                              {formatUsd(o.borrowedAmountUsd)} borrowed
-                            </TLabelSans>
-                          </div>
-
-                          <div className="mt-2 w-full">
-                            <UtilizationBar obligation={o} noTooltip />
-                          </div>
-                        </DropdownMenuItem>
-                      ))}
-                    </Fragment>
-                  ))
+                          </ParentLendingMarket>
+                        </div>
+                      );
+                    },
+                  )}
+                </div>
               )}
             </>
           )}

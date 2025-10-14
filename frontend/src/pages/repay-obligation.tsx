@@ -4,14 +4,14 @@ import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { ParsedObligation, SuilendClient, parseObligation } from "@suilend/sdk";
-import * as simulate from "@suilend/sdk/utils/simulate";
 import {
-  MS_PER_YEAR,
-  TX_TOAST_DURATION,
-  formatToken,
-  isSui,
-} from "@suilend/sui-fe";
+  LENDING_MARKET_ID,
+  ParsedObligation,
+  SuilendClient,
+  parseObligation,
+} from "@suilend/sdk";
+import * as simulate from "@suilend/sdk/utils/simulate";
+import { TX_TOAST_DURATION, formatToken, isSui } from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
@@ -27,7 +27,8 @@ import { cn } from "@/lib/utils";
 
 export default function RepayObligation() {
   const { explorer, suiClient } = useSettingsContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { getBalance } = useLoadedUserContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
 
@@ -42,16 +43,16 @@ export default function RepayObligation() {
       try {
         const rawObligation = await SuilendClient.getObligation(
           obligationId,
-          appData.suilendClient.lendingMarket.$typeArgs,
+          appDataMainMarket.suilendClient.lendingMarket.$typeArgs,
           suiClient,
         );
         const refreshedObligation = simulate.refreshObligation(
           rawObligation,
-          appData.refreshedRawReserves,
+          appDataMainMarket.refreshedRawReserves,
         );
         const obligation = parseObligation(
           refreshedObligation,
-          appData.reserveMap,
+          appDataMainMarket.reserveMap,
         );
 
         setObligation(obligation);
@@ -61,10 +62,10 @@ export default function RepayObligation() {
     })();
   }, [
     obligationId,
-    appData.suilendClient.lendingMarket.$typeArgs,
+    appDataMainMarket.suilendClient.lendingMarket.$typeArgs,
     suiClient,
-    appData.refreshedRawReserves,
-    appData.reserveMap,
+    appDataMainMarket.refreshedRawReserves,
+    appDataMainMarket.reserveMap,
   ]);
 
   const [coinType, setCoinType] = useState<string>("");
@@ -97,7 +98,7 @@ export default function RepayObligation() {
 
       const transaction = new Transaction();
 
-      const reserve = appData.reserveMap[coinType];
+      const reserve = appDataMainMarket.reserveMap[coinType];
       const borrowedAmountUsd = borrowedAmount.times(reserve.price);
       const fullRepaymentAmount = (
         borrowedAmountUsd.lt(0.02)
@@ -129,7 +130,7 @@ export default function RepayObligation() {
             .toString();
       console.log("XXXX", +balance, +submitAmount);
 
-      await appData.suilendClient.repayIntoObligation(
+      await appDataMainMarket.suilendClient.repayIntoObligation(
         address,
         obligationId,
         coinType,
@@ -168,9 +169,9 @@ export default function RepayObligation() {
         items={(obligation?.borrows ?? []).map((borrow) => ({
           id: borrow.coinType,
           name: `${formatToken(borrow.borrowedAmount, {
-            dp: appData.coinMetadataMap[borrow.coinType].decimals,
+            dp: appDataMainMarket.coinMetadataMap[borrow.coinType].decimals,
             trimTrailingZeros: true,
-          })} ${appData.coinMetadataMap[borrow.coinType].symbol}`,
+          })} ${appDataMainMarket.coinMetadataMap[borrow.coinType].symbol}`,
         }))}
         value={coinType}
         onChange={setCoinType}

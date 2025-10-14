@@ -30,19 +30,12 @@ import {
   getAllOwnedObjects,
 } from "@suilend/sui-fe";
 import track from "@suilend/sui-fe/lib/track";
-import {
-  shallowPushQuery,
-  useSettingsContext,
-  useWalletContext,
-} from "@suilend/sui-fe-next";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useFetchBalances from "@suilend/sui-fe-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/sui-fe-next/hooks/useRefreshOnBalancesChange";
 
-import {
-  QueryParams as AppContextQueryParams,
-  useAppContext,
-} from "@/contexts/AppContext";
+import { useAppContext } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";
 import { fetchClaimRewardEvents } from "@/lib/events";
 import { STAKED_WAL_TYPE, StakedWalObject, StakedWalState } from "@/lib/walrus";
@@ -77,13 +70,14 @@ interface UserContext {
   ownedStakedWalObjects: StakedWalObject[] | undefined;
 
   allUserData: Record<string, UserData> | undefined; // Depends on allAppData
-  userData: UserData | undefined; // Depends on allUserData
 
   refresh: () => void; // Refreshes allAppData, balances, and allUserData
 
-  obligation: ParsedObligation | undefined; // Depends on userData
-  obligationOwnerCap: ObligationOwnerCap<string> | undefined; // Depends on userData
-  setObligationId: (lendingMarketSlug: string, obligationId: string) => void;
+  obligationMap: Record<string, ParsedObligation | undefined> | undefined; // Depends on userData
+  obligationOwnerCapMap:
+    | Record<string, ObligationOwnerCap<string> | undefined>
+    | undefined; // Depends on userData
+  setObligationId: (lendingMarketId: string, obligationId: string) => void;
 
   autoclaimRewards: (
     transaction: Transaction,
@@ -95,7 +89,9 @@ interface UserContext {
 }
 type LoadedUserContext = UserContext & {
   allUserData: Record<string, UserData>;
-  userData: UserData;
+
+  obligationMap: Record<string, ParsedObligation | undefined>;
+  obligationOwnerCapMap: Record<string, ObligationOwnerCap<string> | undefined>;
 };
 
 const UserContext = createContext<UserContext>({
@@ -107,14 +103,13 @@ const UserContext = createContext<UserContext>({
   ownedStakedWalObjects: undefined,
 
   allUserData: undefined,
-  userData: undefined,
 
   refresh: () => {
     throw Error("UserContextProvider not initialized");
   },
 
-  obligation: undefined,
-  obligationOwnerCap: undefined,
+  obligationMap: undefined,
+  obligationOwnerCapMap: undefined,
   setObligationId: () => {
     throw Error("UserContextProvider not initialized");
   },
@@ -138,7 +133,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const { suiClient } = useSettingsContext();
   const { address, dryRunTransaction, isUsingLedger } = useWalletContext();
-  const { allAppData, appData, refreshAllAppData } = useAppContext();
+  const { allAppData, refreshAllAppData } = useAppContext();
 
   // Balances
   const { data: rawBalancesMap, mutateData: mutateRawBalancesMap } =
@@ -244,12 +239,17 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   const { data: allUserData, mutateData: mutateAllUserData } =
     useFetchUserData();
 
-  const userData = useMemo(
+  const userDataMap: Record<string, UserData | undefined> | undefined = useMemo(
     () =>
-      appData?.lendingMarket.id
-        ? allUserData?.[appData.lendingMarket.id]
-        : undefined,
-    [appData?.lendingMarket.id, allUserData],
+      allAppData === undefined
+        ? undefined
+        : Object.fromEntries(
+            Object.values(allAppData.allLendingMarketData).map((appData) => [
+              appData.lendingMarket.id,
+              allUserData?.[appData.lendingMarket.id],
+            ]),
+          ),
+    [allAppData, allUserData],
   );
 
   // Refresh
@@ -271,23 +271,45 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   useRefreshOnBalancesChange(refresh as () => Promise<void>);
 
   // Obligation
-  const [obligationId, setObligationId] = useLocalStorage<string>(
-    "obligationId",
-    "",
-  );
+  const [obligationIdMap, setObligationIdMap] = useLocalStorage<
+    Record<string, string>
+  >("obligationIdMap", {});
 
-  const obligation = useMemo(
+  const obligationMap:
+    | Record<string, ParsedObligation | undefined>
+    | undefined = useMemo(
     () =>
-      userData?.obligations?.find((o) => o.id === obligationId) ??
-      userData?.obligations?.[0],
-    [userData?.obligations, obligationId],
+      allAppData === undefined || userDataMap === undefined
+        ? undefined
+        : Object.fromEntries(
+            Object.values(allAppData.allLendingMarketData).map((appData) => [
+              appData.lendingMarket.id,
+              userDataMap[appData.lendingMarket.id]?.obligations.find(
+                (o) => o.id === obligationIdMap[appData.lendingMarket.id],
+              ) ?? userDataMap[appData.lendingMarket.id]?.obligations[0],
+            ]),
+          ),
+    [allAppData, userDataMap, obligationIdMap],
   );
-  const obligationOwnerCap = useMemo(
+  const obligationOwnerCapMap:
+    | Record<string, ObligationOwnerCap<string> | undefined>
+    | undefined = useMemo(
     () =>
-      userData?.obligationOwnerCaps?.find(
-        (o) => o.obligationId === obligation?.id,
-      ),
-    [userData?.obligationOwnerCaps, obligation?.id],
+      allAppData === undefined ||
+      userDataMap === undefined ||
+      obligationMap === undefined
+        ? undefined
+        : Object.fromEntries(
+            Object.values(allAppData.allLendingMarketData).map((appData) => [
+              appData.lendingMarket.id,
+              userDataMap[appData.lendingMarket.id]?.obligationOwnerCaps.find(
+                (o) =>
+                  o.obligationId ===
+                  obligationMap[appData.lendingMarket.id]?.id,
+              ),
+            ]),
+          ),
+    [allAppData, userDataMap, obligationMap],
   );
 
   // Obligations with unclaimed rewards
@@ -351,19 +373,25 @@ export function UserContextProvider({ children }: PropsWithChildren) {
   const autoclaimRewards = useCallback(
     async (transaction: Transaction) => {
       if (!allAppData) throw Error("App data not loaded"); // Should never happen as the page is not rendered if the app data is not loaded
+      if (!userDataMap) throw Error("User data not loaded"); // Should never happen as the page is not rendered if the user data is not loaded
       if (!obligationsWithUnclaimedRewards)
         return { transaction, onSuccess: () => {} }; // Can happen if the data is not loaded yet or fails to load
 
       const innerTransaction = Transaction.from(transaction);
 
       // Prepare
-      const suilendClient =
-        allAppData.allLendingMarketData[LENDING_MARKET_ID].suilendClient;
+      const appDataMainMarket =
+        allAppData.allLendingMarketData[LENDING_MARKET_ID];
+      const suilendClientMainMarket = appDataMainMarket.suilendClient;
+      const userDataMainMarket =
+        userDataMap[appDataMainMarket.lendingMarket.id];
 
       const filteredObligationsWithUnclaimedRewards =
         obligationsWithUnclaimedRewards.filter(
           (obligation) =>
-            !userData?.obligations.some((o) => o.id === obligation.id),
+            !userDataMainMarket?.obligations.some(
+              (o) => o.id === obligation.id,
+            ),
         );
       const newAutoclaimedRewards =
         filteredObligationsWithUnclaimedRewards.reduce(
@@ -384,7 +412,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
           if ((autoclaimedRewards[obligation.id] ?? []).includes(i)) continue; // Skip if already autoclaimed in a previous transaction
 
-          suilendClient.claimRewardAndDeposit(
+          suilendClientMainMarket.claimRewardAndDeposit(
             obligation.id,
             reward.rewardReserveArrayIndex,
             reward.rewardIndex,
@@ -420,8 +448,8 @@ export function UserContextProvider({ children }: PropsWithChildren) {
     },
     [
       allAppData,
+      userDataMap,
       obligationsWithUnclaimedRewards,
-      userData?.obligations,
       MAX_REWARDS_PER_TRANSACTION,
       autoclaimedRewards,
       dryRunTransaction,
@@ -447,28 +475,30 @@ export function UserContextProvider({ children }: PropsWithChildren) {
 
   const hasFetchedAutoclaimDigestsMapRef = useRef<Record<string, boolean>>({});
   useEffect(() => {
-    if (!address || !obligation?.id) return;
+    if (!address || !obligationIdMap) return;
 
-    if (hasFetchedAutoclaimDigestsMapRef.current[obligation.id]) return;
-    hasFetchedAutoclaimDigestsMapRef.current[obligation.id] = true;
+    for (const obligationId of Object.values(obligationIdMap)) {
+      if (hasFetchedAutoclaimDigestsMapRef.current[obligationId]) return;
+      hasFetchedAutoclaimDigestsMapRef.current[obligationId] = true;
 
-    (async () => {
-      const { autoclaimDigests, lastClaimRewardDigest } =
-        await fetchClaimRewardEvents(suiClient, address, obligation.id);
-      if (autoclaimDigests.length === 0) return;
+      (async () => {
+        const { autoclaimDigests, lastClaimRewardDigest } =
+          await fetchClaimRewardEvents(suiClient, address, obligationId);
+        if (autoclaimDigests.length === 0) return;
 
-      const latestAutoclaimDigest = autoclaimDigests[0];
-      if (latestAutoclaimDigest !== lastClaimRewardDigest) {
-        setLastSeenAutoclaimDigest(obligation.id, latestAutoclaimDigest);
-        return;
-      }
+        const latestAutoclaimDigest = autoclaimDigests[0];
+        if (latestAutoclaimDigest !== lastClaimRewardDigest) {
+          setLastSeenAutoclaimDigest(obligationId, latestAutoclaimDigest);
+          return;
+        }
 
-      setLatestAutoclaimDigestMap((prev) => ({
-        ...prev,
-        [obligation.id]: latestAutoclaimDigest,
-      }));
-    })();
-  }, [address, obligation?.id, suiClient, setLastSeenAutoclaimDigest]);
+        setLatestAutoclaimDigestMap((prev) => ({
+          ...prev,
+          [obligationId]: latestAutoclaimDigest,
+        }));
+      })();
+    }
+  }, [address, obligationIdMap, suiClient, setLastSeenAutoclaimDigest]);
 
   // Context
   const contextValue = useMemo(
@@ -479,18 +509,20 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       ownedStakedWalObjects,
 
       allUserData,
-      userData,
+      userDataMap,
 
       refresh,
 
-      obligation,
-      obligationOwnerCap,
-      setObligationId: (lendingMarketSlug: string, obligationId: string) => {
-        shallowPushQuery(router, {
-          ...router.query,
-          [AppContextQueryParams.LENDING_MARKET]: lendingMarketSlug,
-        });
-        setObligationId(obligationId);
+      obligationMap,
+      obligationOwnerCapMap,
+      setObligationId: (lendingMarketId: string, obligationId: string) => {
+        const lendingMarket = allAppData?.allLendingMarketData[lendingMarketId];
+        if (!lendingMarket) return;
+
+        setObligationIdMap((prev) => ({
+          ...prev,
+          [lendingMarketId]: obligationId,
+        }));
       },
 
       autoclaimRewards,
@@ -505,12 +537,12 @@ export function UserContextProvider({ children }: PropsWithChildren) {
       getBalance,
       ownedStakedWalObjects,
       allUserData,
-      userData,
+      userDataMap,
       refresh,
-      obligation,
-      obligationOwnerCap,
-      router,
-      setObligationId,
+      obligationMap,
+      obligationOwnerCapMap,
+      allAppData,
+      setObligationIdMap,
       autoclaimRewards,
       latestAutoclaimDigestMap,
       lastSeenAutoclaimDigestMap,

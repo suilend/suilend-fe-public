@@ -7,6 +7,7 @@ import BigNumber from "bignumber.js";
 import { BN } from "bn.js";
 import { toast } from "sonner";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   FundKeypairResult,
   NORMALIZED_SUI_COINTYPE,
@@ -53,7 +54,8 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
   const { explorer, suiClient } = useSettingsContext();
   const { account, address, signExecuteAndWaitForTransaction } =
     useWalletContext();
-  const { appData } = useLoadedAppContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { refresh, balancesCoinMetadataMap, getBalance } =
     useLoadedUserContext();
 
@@ -132,7 +134,7 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
           {
             ...getToken(
               NORMALIZED_SUI_COINTYPE,
-              appData.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
+              appDataMainMarket.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
             ),
             amount: BigNumber.max(0.04, selectedCoinTypes.length * 0.002),
           },

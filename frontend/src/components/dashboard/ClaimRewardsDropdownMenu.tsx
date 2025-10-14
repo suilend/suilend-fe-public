@@ -32,30 +32,37 @@ import {
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {
+  lendingMarketId: string;
   rewardsMap: RewardsMap;
 }
 
 export default function ClaimRewardsDropdownMenu({
+  lendingMarketId,
   rewardsMap,
 }: ClaimRewardsDropdownMenuProps) {
   const { explorer } = useSettingsContext();
-  const { allAppData, appData, closeLedgerHashDialog } = useLoadedAppContext();
-  const { refresh, obligation } = useLoadedUserContext();
+  const { allAppData, closeLedgerHashDialog } = useLoadedAppContext();
+  const appData = allAppData.allLendingMarketData[lendingMarketId];
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { refresh, obligationMap } = useLoadedUserContext();
+  const obligation = obligationMap[lendingMarketId];
 
   const { claimRewards } = useDashboardContext();
 
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-
-  const tokens: Token[] = Object.values(rewardsMap).map((r) =>
-    getToken(
-      r.rewards[0].stats.rewardCoinType,
-      appData.coinMetadataMap[r.rewards[0].stats.rewardCoinType],
-    ),
+  const tokens: Token[] = useMemo(
+    () =>
+      Object.values(rewardsMap).map((r) =>
+        getToken(
+          r.rewards[0].stats.rewardCoinType,
+          appData.coinMetadataMap[r.rewards[0].stats.rewardCoinType],
+        ),
+      ),
+    [rewardsMap, appData.coinMetadataMap],
   );
 
-  const tokensThatCanBeDeposited = (() => {
+  const tokensThatCanBeDeposited = useMemo(() => {
     const tokensWithReserves = tokens.filter((t) =>
-      Object.keys(appData.reserveMap).includes(t.coinType),
+      appData.lendingMarket.reserves.some((r) => r.coinType === t.coinType),
     );
 
     return !obligation
@@ -74,7 +81,7 @@ export default function ClaimRewardsDropdownMenu({
             )
             .slice(0, 5 - obligation.deposits.length),
         ];
-  })();
+  }, [tokens, appData.lendingMarket.reserves, obligation]);
 
   // Swap
   const canSwapMap: Record<string, boolean> = Object.keys(rewardsMap).reduce(
@@ -147,11 +154,15 @@ export default function ClaimRewardsDropdownMenu({
     })();
 
     try {
-      const res = await claimRewards(filteredRewardsMap, {
-        isSwapping,
-        swappingToCoinType,
-        isDepositing,
-      });
+      const res = await claimRewards(
+        appData.lendingMarket.id,
+        filteredRewardsMap,
+        {
+          isSwapping,
+          swappingToCoinType,
+          isDepositing,
+        },
+      );
       const txUrl = explorer.buildTxUrl(res.digest);
 
       toast.success(

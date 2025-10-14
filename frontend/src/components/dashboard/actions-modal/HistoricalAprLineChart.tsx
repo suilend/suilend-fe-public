@@ -23,8 +23,8 @@ import Button from "@/components/shared/Button";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useReserveAssetDataEventsContext } from "@/contexts/ReserveAssetDataEventsContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ViewBox, getTooltipStyle } from "@/lib/chart";
 import {
   DAYS,
@@ -79,7 +79,7 @@ function TooltipContent({
   viewBox,
   x,
 }: TooltipContentProps) {
-  const { appData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
@@ -176,8 +176,8 @@ export default function HistoricalAprLineChart({
   side,
   reserves,
 }: HistoricalAprLineChartProps) {
-  const { appData, isLst } = useLoadedAppContext();
-  const { userData } = useLoadedUserContext();
+  const { isLst } = useLoadedAppContext();
+  const { appData, userData } = useLendingMarketContext();
 
   const {
     reserveAssetDataEventsMap,
@@ -526,13 +526,9 @@ export default function HistoricalAprLineChart({
       const bCoinType = getFieldCoinType(b);
 
       if (aIndex !== bIndex) return aIndex - bIndex; // 1, 2, 3, ...
-      return reserveSort(
-        Object.values(appData.reserveMap),
-        aCoinType,
-        bCoinType,
-      );
+      return reserveSort(appData.lendingMarket.reserves, aCoinType, bCoinType);
     });
-  }, [chartData, appData.reserveMap]);
+  }, [chartData, appData.lendingMarket.reserves]);
   const fieldStackIdMap = useMemo(
     () => fields.reduce((acc, field) => ({ ...acc, [field]: "1" }), {}),
     [fields],

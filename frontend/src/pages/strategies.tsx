@@ -8,6 +8,7 @@ import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
 import {
+  LENDING_MARKET_ID,
   ParsedObligation,
   RewardsMap,
   StrategyOwnerCap,
@@ -66,8 +67,10 @@ function Page() {
 
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { appData } = useLoadedAppContext();
-  const { userData, refresh } = useLoadedUserContext();
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+  const { allUserData, refresh } = useLoadedUserContext();
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
   const {
     isMoreDetailsOpen,
@@ -118,11 +121,11 @@ function Page() {
   > = Object.values(StrategyType).reduce(
     (acc, strategyType) => {
       const strategyOwnerCap: StrategyOwnerCap | undefined =
-        userData.strategyOwnerCaps.find(
+        userDataMainMarket.strategyOwnerCaps.find(
           (soc) => soc.strategyType === strategyType,
         );
       const obligation: ParsedObligation | undefined =
-        userData.strategyObligations.find(
+        userDataMainMarket.strategyObligations.find(
           (so) => so.id === strategyOwnerCap?.obligationId,
         );
       if (!strategyOwnerCap || !obligation) return acc;
@@ -144,8 +147,8 @@ function Page() {
       ...acc,
       [strategyType]: getRewardsMap(
         obligation,
-        userData.rewardMap,
-        appData.coinMetadataMap,
+        userDataMainMarket.rewardMap,
+        appDataMainMarket.coinMetadataMap,
       ),
     }),
     {} as Record<StrategyType, RewardsMap>,
@@ -200,7 +203,7 @@ function Page() {
             cetusSdk,
             CETUS_PARTNER_ID,
             allRewardsMap[strategyType as StrategyType],
-            appData.rewardPriceMap,
+            appDataMainMarket.rewardPriceMap,
             (depositReserves.lst ?? depositReserves.base)!, // Must have base if no LST
             strategyOwnerCap.id,
             hasPosition(obligation) ? true : false, // isDepositing (true = deposit)
@@ -220,7 +223,7 @@ function Page() {
           "Claimed and redeposited",
           formatList(
             allRewardCoinTypes.map(
-              (coinType) => appData.coinMetadataMap[coinType].symbol,
+              (coinType) => appDataMainMarket.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
@@ -244,7 +247,7 @@ function Page() {
           "Failed to claim and redeposit",
           formatList(
             allRewardCoinTypes.map(
-              (coinType) => appData.coinMetadataMap[coinType].symbol,
+              (coinType) => appDataMainMarket.coinMetadataMap[coinType].symbol,
             ),
           ),
           "rewards",
@@ -295,7 +298,8 @@ function Page() {
                   Object.entries(allClaimableRewardsMap).reduce(
                     (acc, [coinType, amount]) => {
                       const price =
-                        appData.rewardPriceMap[coinType] ?? new BigNumber(0);
+                        appDataMainMarket.rewardPriceMap[coinType] ??
+                        new BigNumber(0);
 
                       return acc.plus(amount.times(price));
                     },
@@ -318,15 +322,16 @@ function Page() {
                           <TokenLogo
                             token={getToken(
                               coinType,
-                              appData.coinMetadataMap[coinType],
+                              appDataMainMarket.coinMetadataMap[coinType],
                             )}
                             size={16}
                           />
                           <TLabelSans className="text-foreground">
                             {formatToken(amount, {
-                              dp: appData.coinMetadataMap[coinType].decimals,
+                              dp: appDataMainMarket.coinMetadataMap[coinType]
+                                .decimals,
                             })}{" "}
-                            {appData.coinMetadataMap[coinType].symbol}
+                            {appDataMainMarket.coinMetadataMap[coinType].symbol}
                           </TLabelSans>
                         </div>
                       ),
@@ -338,7 +343,10 @@ function Page() {
                   <TokenLogos
                     tokens={Object.keys(allClaimableRewardsMap).map(
                       (coinType) =>
-                        getToken(coinType, appData.coinMetadataMap[coinType]),
+                        getToken(
+                          coinType,
+                          appDataMainMarket.coinMetadataMap[coinType],
+                        ),
                     )}
                     size={16}
                   />

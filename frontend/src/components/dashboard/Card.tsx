@@ -65,7 +65,7 @@ export default function Card({
             {(headerProps.titleIcon ||
               headerProps.title ||
               headerProps.startContent) && (
-              <div className="flex flex-row items-center gap-1">
+              <div className="flex flex-row items-center gap-2">
                 <div
                   className={cn(isCollapsible && "cursor-pointer")}
                   onClick={isCollapsible ? toggleIsCollapsed : undefined}
@@ -83,7 +83,7 @@ export default function Card({
             )}
 
             {(headerProps.endContent || isCollapsible) && (
-              <div className="flex flex-row items-center justify-end gap-1">
+              <div className="flex flex-row items-center justify-end gap-2">
                 {headerProps.endContent}
 
                 {isCollapsible && (
