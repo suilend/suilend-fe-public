@@ -316,8 +316,18 @@ export default function MarketTable() {
 
   // Rows
   const rows: HeaderRowData[] = useMemo(() => {
-    const reserveRows: ReservesRowData[] = appData.lendingMarket.reserves.map(
-      (reserve) => {
+    const reserveRows: ReservesRowData[] = appData.lendingMarket.reserves
+      .filter(
+        (reserve) =>
+          !(
+            (
+              appData.lendingMarket.id === LENDING_MARKET_ID &&
+              reserve.id ===
+                "0x37a73e7081d542d4580b50d417a7c5b196ff928d204fe6be6adda4d334db354a"
+            ) // Main market, STEAMM LP bSUI-bUSDC
+          ),
+      )
+      .map((reserve) => {
         const totalDepositAprPercent = getTotalAprPercent(
           Side.DEPOSIT,
           reserve.depositAprPercent,
@@ -443,8 +453,7 @@ export default function MarketTable() {
           borrowAprPercent: reserve.borrowAprPercent,
           totalBorrowAprPercent,
         };
-      },
-    );
+      });
 
     const featuredReserveRows = reserveRows.filter(
       (reserveRow) => reserveRow.section === "featured",
