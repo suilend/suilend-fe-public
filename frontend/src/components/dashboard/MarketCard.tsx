@@ -19,7 +19,12 @@ export default function MarketCard() {
         title: appData.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
         endContent: (
-          <div className="flex flex-row gap-6">
+          <div
+            className="flex cursor-auto flex-row gap-6"
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <div className="flex flex-col items-end gap-1 md:flex-row md:items-baseline md:gap-2">
               <TLabelSans className="text-left">Deposits</TLabelSans>
               <TBody>

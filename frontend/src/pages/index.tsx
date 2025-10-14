@@ -7,11 +7,11 @@ import AccountsCard from "@/components/dashboard/account/AccountsCard";
 import MainMarketLoopingCard from "@/components/dashboard/account/MainMarketLoopingCard";
 import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
+import BorrowsCard from "@/components/dashboard/BorrowsCard";
+import DepositsCard from "@/components/dashboard/DepositsCard";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
-import ObligationBorrowsCard from "@/components/dashboard/ObligationBorrowsCard";
-import ObligationDepositsCard from "@/components/dashboard/ObligationDepositsCard";
-import RewardsCard from "@/components/dashboard/RewardsCard";
+import UnclaimedRewardsCard from "@/components/dashboard/UnclaimedRewardsCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
@@ -22,10 +22,10 @@ function Cards() {
   return (
     <>
       <MainMarketLoopingCard />
-      <RewardsCard />
+      <UnclaimedRewardsCard />
       <AccountsCard />
-      <ObligationDepositsCard />
-      <ObligationBorrowsCard />
+      <DepositsCard />
+      <BorrowsCard />
     </>
   );
 }

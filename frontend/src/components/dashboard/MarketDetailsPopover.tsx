@@ -29,6 +29,9 @@ export default function MarketDetailsPopover() {
           variant="ghost"
           size="icon"
           role="combobox"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
         >
           Info
         </Button>

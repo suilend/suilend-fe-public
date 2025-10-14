@@ -15,7 +15,7 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
-export default function ObligationBorrowsCard() {
+export default function BorrowsCard() {
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const { obligationMap } = useLoadedUserContext();

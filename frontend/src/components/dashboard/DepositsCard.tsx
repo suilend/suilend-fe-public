@@ -15,7 +15,7 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
-export default function ObligationDepositsCard() {
+export default function DepositsCard() {
   const { address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const { obligationMap } = useLoadedUserContext();

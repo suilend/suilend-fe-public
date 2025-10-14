@@ -4,7 +4,6 @@ import { ClassValue } from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "usehooks-ts";
 
-import Button from "@/components/shared/Button";
 import TitleWithIcon from "@/components/shared/TitleWithIcon";
 import {
   CardHeader,
@@ -59,24 +58,21 @@ export default function Card({
           <div
             className={cn(
               "flex h-5 flex-row items-center justify-between",
+              isCollapsible && "cursor-pointer",
               headerProps.titleContainerClassName,
             )}
+            onClick={isCollapsible ? toggleIsCollapsed : undefined}
           >
             {(headerProps.titleIcon ||
               headerProps.title ||
               headerProps.startContent) && (
               <div className="flex flex-row items-center gap-2">
-                <div
-                  className={cn(isCollapsible && "cursor-pointer")}
-                  onClick={isCollapsible ? toggleIsCollapsed : undefined}
+                <TitleWithIcon
+                  className={cn("w-full", headerProps.titleClassName)}
+                  icon={headerProps.titleIcon}
                 >
-                  <TitleWithIcon
-                    className={cn("w-full", headerProps.titleClassName)}
-                    icon={headerProps.titleIcon}
-                  >
-                    {headerProps.title}
-                  </TitleWithIcon>
-                </div>
+                  {headerProps.title}
+                </TitleWithIcon>
 
                 {headerProps.startContent}
               </div>
@@ -87,15 +83,13 @@ export default function Card({
                 {headerProps.endContent}
 
                 {isCollapsible && (
-                  <Button
-                    className="text-muted-foreground"
-                    icon={isCollapsed ? <ChevronDown /> : <ChevronUp />}
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleIsCollapsed}
-                  >
-                    Toggle
-                  </Button>
+                  <div className="flex h-8 w-8 flex-row items-center justify-center">
+                    {isCollapsed ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                 )}
               </div>
             )}

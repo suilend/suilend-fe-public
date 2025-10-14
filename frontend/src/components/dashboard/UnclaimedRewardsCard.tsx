@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
+import { DollarSign } from "lucide-react";
 
 import { ADMIN_ADDRESS, getRewardsMap } from "@suilend/sdk";
 import { Token, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
@@ -42,7 +43,7 @@ function ClaimableReward({ token, amount }: ClaimableRewardProps) {
   );
 }
 
-export default function RewardsCard() {
+export default function UnclaimedRewardsCard() {
   const { setIsConnectWalletDropdownOpen, address } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const { allUserData, obligationMap } = useLoadedUserContext();
@@ -98,6 +99,7 @@ export default function RewardsCard() {
       id="rewards"
       headerProps={{
         titleClassName: "text-primary-foreground",
+        titleIcon: <DollarSign />,
         title: (
           <>
             Unclaimed rewards

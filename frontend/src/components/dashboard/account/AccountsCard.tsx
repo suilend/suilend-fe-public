@@ -1,7 +1,7 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
 
-import { FileClock } from "lucide-react";
+import { FileClock, User, UsersRound } from "lucide-react";
 
 import {
   ADMIN_ADDRESS,
@@ -104,10 +104,11 @@ export default function AccountsCard() {
     <Card
       id="accounts"
       headerProps={{
+        titleIcon: filteredAppData.length === 1 ? <User /> : <UsersRound />,
         title: filteredAppData.length === 1 ? "Account" : "Accounts",
         noSeparator: true,
         startContent: filteredAppData.length === 1 && (
-          <div className="flex h-4 flex-row items-center">
+          <div className="flex h-4 cursor-auto flex-row items-center">
             <CopyToClipboardButton
               value={Object.values(obligationMap)[0]!.id}
             />
@@ -155,7 +156,7 @@ export default function AccountsCard() {
                 lendingMarketId={appData.lendingMarket.id}
                 count={formatUsd(obligation.netValueUsd)}
                 startContent={
-                  <div className="flex h-4 flex-row items-center">
+                  <div className="flex h-4 cursor-auto flex-row items-center">
                     <CopyToClipboardButton value={obligation.id} />
                     <OpenOnExplorerButton
                       url={explorer.buildObjectUrl(obligation.id)}
