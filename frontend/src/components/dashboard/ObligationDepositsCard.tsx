@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 
+import BigNumber from "bignumber.js";
 import { Download } from "lucide-react";
 
+import { formatUsd } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountAssetTable, {
@@ -17,15 +19,18 @@ export default function ObligationDepositsCard() {
   const { allAppData } = useLoadedAppContext();
   const { obligationMap } = useLoadedUserContext();
 
-  const obligationCount = useMemo(
+  const filteredAppData = useMemo(
     () =>
-      Object.values(obligationMap).filter(
-        (obligation) => obligation !== undefined,
-      ).length,
-    [obligationMap],
+      Object.values(allAppData.allLendingMarketData).filter((appData) => {
+        const obligation = obligationMap[appData.lendingMarket.id];
+
+        if (!obligation || obligation.depositPositionCount === 0) return false;
+        return true;
+      }),
+    [allAppData.allLendingMarketData, obligationMap],
   );
 
-  if (!address || obligationCount === 0) return null;
+  if (!address || filteredAppData.length === 0) return null;
   return (
     <Card
       id="assets-deposited"
@@ -33,14 +38,17 @@ export default function ObligationDepositsCard() {
         titleIcon: <Download />,
         title: (
           <>
-            Deposited assets
+            Deposits
             <span className="text-xs text-muted-foreground">
-              {Object.values(allAppData.allLendingMarketData).reduce(
-                (acc, appData) =>
-                  acc +
-                  (obligationMap[appData.lendingMarket.id]
-                    ?.depositPositionCount ?? 0),
-                0,
+              {formatUsd(
+                filteredAppData.reduce(
+                  (acc, appData) =>
+                    acc.plus(
+                      obligationMap[appData.lendingMarket.id]
+                        ?.depositedAmountUsd ?? 0,
+                    ),
+                  new BigNumber(0),
+                ),
               )}
             </span>
           </>
@@ -49,10 +57,9 @@ export default function ObligationDepositsCard() {
       }}
     >
       <CardContent className="flex flex-col gap-px p-0">
-        {Object.values(allAppData.allLendingMarketData).map((appData) => {
-          const obligation = obligationMap[appData.lendingMarket.id];
+        {filteredAppData.map((appData) => {
+          const obligation = obligationMap[appData.lendingMarket.id]!; // Checked above
 
-          if (!obligation || obligation.depositPositionCount === 0) return null;
           return (
             <AccountAssetTable
               key={appData.lendingMarket.id}
@@ -67,6 +74,7 @@ export default function ObligationDepositsCard() {
                 amountUsd: d.depositedAmountUsd,
               }))}
               noAssetsMessage="No deposits"
+              noLendingMarketHeader={filteredAppData.length === 1}
             />
           );
         })}

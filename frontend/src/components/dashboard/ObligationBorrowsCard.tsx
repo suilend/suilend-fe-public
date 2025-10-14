@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 
+import BigNumber from "bignumber.js";
 import { Upload } from "lucide-react";
 
+import { formatUsd } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import AccountAssetTable, {
@@ -17,15 +19,18 @@ export default function ObligationBorrowsCard() {
   const { allAppData } = useLoadedAppContext();
   const { obligationMap } = useLoadedUserContext();
 
-  const obligationCount = useMemo(
+  const filteredAppData = useMemo(
     () =>
-      Object.values(obligationMap).filter(
-        (obligation) => obligation !== undefined,
-      ).length,
-    [obligationMap],
+      Object.values(allAppData.allLendingMarketData).filter((appData) => {
+        const obligation = obligationMap[appData.lendingMarket.id];
+
+        if (!obligation || obligation.borrowPositionCount === 0) return false;
+        return true;
+      }),
+    [allAppData.allLendingMarketData, obligationMap],
   );
 
-  if (!address || obligationCount === 0) return null;
+  if (!address || filteredAppData.length === 0) return null;
   return (
     <Card
       id="assets-borrowed"
@@ -33,14 +38,17 @@ export default function ObligationBorrowsCard() {
         titleIcon: <Upload />,
         title: (
           <>
-            Borrowed assets
+            Borrows
             <span className="text-xs text-muted-foreground">
-              {Object.values(allAppData.allLendingMarketData).reduce(
-                (acc, appData) =>
-                  acc +
-                  (obligationMap[appData.lendingMarket.id]
-                    ?.borrowPositionCount ?? 0),
-                0,
+              {formatUsd(
+                filteredAppData.reduce(
+                  (acc, appData) =>
+                    acc.plus(
+                      obligationMap[appData.lendingMarket.id]
+                        ?.borrowedAmountUsd ?? 0,
+                    ),
+                  new BigNumber(0),
+                ),
               )}
             </span>
           </>
@@ -49,10 +57,9 @@ export default function ObligationBorrowsCard() {
       }}
     >
       <CardContent className="flex flex-col gap-px p-0">
-        {Object.values(allAppData.allLendingMarketData).map((appData) => {
-          const obligation = obligationMap[appData.lendingMarket.id];
+        {filteredAppData.map((appData) => {
+          const obligation = obligationMap[appData.lendingMarket.id]!; // Checked above
 
-          if (!obligation || obligation.borrowPositionCount === 0) return null;
           return (
             <AccountAssetTable
               key={appData.lendingMarket.id}
@@ -67,6 +74,7 @@ export default function ObligationBorrowsCard() {
                 amountUsd: b.borrowedAmountUsd,
               }))}
               noAssetsMessage="No borrows"
+              noLendingMarketHeader={filteredAppData.length === 1}
             />
           );
         })}

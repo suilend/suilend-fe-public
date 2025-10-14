@@ -18,6 +18,7 @@ import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ASSETS_URL } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface ClaimableRewardProps {
   token: Token;
@@ -46,12 +47,22 @@ export default function RewardsCard() {
   const { allAppData } = useLoadedAppContext();
   const { allUserData, obligationMap } = useLoadedUserContext();
 
-  const obligationCount = useMemo(
+  const filteredAppData = useMemo(
     () =>
-      Object.values(obligationMap).filter(
-        (obligation) => obligation !== undefined,
-      ).length,
-    [obligationMap],
+      Object.values(allAppData.allLendingMarketData).filter((appData) => {
+        const obligation = obligationMap[appData.lendingMarket.id];
+        const userData = allUserData[appData.lendingMarket.id];
+
+        const rewardsMap = getRewardsMap(
+          obligation,
+          userData.rewardMap,
+          appData.coinMetadataMap,
+        );
+
+        if (!obligation || Object.values(rewardsMap).length === 0) return false;
+        return true;
+      }),
+    [allAppData.allLendingMarketData, obligationMap, allUserData],
   );
 
   if (!address)
@@ -78,7 +89,7 @@ export default function RewardsCard() {
       </Card>
     );
 
-  if (obligationCount === 0) return null;
+  if (filteredAppData.length === 0) return null;
   return (
     <Card
       id="rewards"
@@ -89,32 +100,28 @@ export default function RewardsCard() {
             Unclaimed rewards
             <span className="text-xs text-muted-foreground">
               {formatUsd(
-                Object.values(allAppData.allLendingMarketData).reduce(
-                  (acc, appData) => {
-                    const obligation = obligationMap[appData.lendingMarket.id];
-                    const userData = allUserData[appData.lendingMarket.id];
+                filteredAppData.reduce((acc, appData) => {
+                  const obligation = obligationMap[appData.lendingMarket.id];
+                  const userData = allUserData[appData.lendingMarket.id];
 
-                    const rewardsMap = getRewardsMap(
-                      obligation,
-                      userData.rewardMap,
-                      appData.coinMetadataMap,
-                    );
+                  const rewardsMap = getRewardsMap(
+                    obligation,
+                    userData.rewardMap,
+                    appData.coinMetadataMap,
+                  );
 
-                    return acc.plus(
-                      Object.entries(rewardsMap).reduce(
-                        (acc, [coinType, { amount }]) => {
-                          const price =
-                            appData.rewardPriceMap[coinType] ??
-                            new BigNumber(0);
+                  return acc.plus(
+                    Object.entries(rewardsMap).reduce(
+                      (acc, [coinType, { amount }]) => {
+                        const price =
+                          appData.rewardPriceMap[coinType] ?? new BigNumber(0);
 
-                          return acc.plus(amount.times(price));
-                        },
-                        new BigNumber(0),
-                      ),
-                    );
-                  },
-                  new BigNumber(0),
-                ),
+                        return acc.plus(amount.times(price));
+                      },
+                      new BigNumber(0),
+                    ),
+                  );
+                }, new BigNumber(0)),
               )}
             </span>
           </>
@@ -124,8 +131,8 @@ export default function RewardsCard() {
       }}
     >
       <CardContent className="flex flex-col gap-px p-0">
-        {Object.values(allAppData.allLendingMarketData).map((appData) => {
-          const obligation = obligationMap[appData.lendingMarket.id];
+        {filteredAppData.map((appData) => {
+          const obligation = obligationMap[appData.lendingMarket.id]!; // Checked above
           const userData = allUserData[appData.lendingMarket.id];
 
           const rewardsMap = getRewardsMap(
@@ -134,24 +141,30 @@ export default function RewardsCard() {
             appData.coinMetadataMap,
           );
 
-          if (!obligation) return null;
           return (
             <div key={appData.lendingMarket.id} className="w-full">
               <ParentLendingMarket
                 id={`rewards-${appData.lendingMarket.id}`}
                 lendingMarketId={appData.lendingMarket.id}
-                count={Object.entries(rewardsMap).reduce(
-                  (acc, [coinType, { amount }]) => {
-                    const price =
-                      appData.rewardPriceMap[coinType] ?? new BigNumber(0);
+                count={formatUsd(
+                  Object.entries(rewardsMap).reduce(
+                    (acc, [coinType, { amount }]) => {
+                      const price =
+                        appData.rewardPriceMap[coinType] ?? new BigNumber(0);
 
-                    return acc.plus(amount.times(price));
-                  },
-                  new BigNumber(0),
+                      return acc.plus(amount.times(price));
+                    },
+                    new BigNumber(0),
+                  ),
                 )}
-                countFormatter={formatUsd}
+                noHeader={filteredAppData.length === 1}
               >
-                <div className="flex w-full flex-col gap-4 p-4">
+                <div
+                  className={cn(
+                    "flex w-full flex-col gap-4 p-4",
+                    filteredAppData.length === 1 && "pt-0",
+                  )}
+                >
                   {/* Autoclaim notification */}
                   <AutoclaimNotification />
 

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
-import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
@@ -236,12 +235,13 @@ export default function ConnectedWalletDropdownMenu({
                           <ParentLendingMarket
                             id={`wallet-${appData.lendingMarket.id}`}
                             lendingMarketId={appData.lendingMarket.id}
-                            count={new BigNumber(userData.obligations.length)}
-                            countFormatter={(count) => formatInteger(+count)}
+                            count={formatInteger(userData.obligations.length)}
+                            noHeader={filteredAppData.length === 1}
                           >
                             <div
                               className={cn(
                                 "flex w-full flex-col gap-2 p-4",
+                                filteredAppData.length === 1 && "pt-0",
                                 appDataIndex === appDataArray.length - 1 &&
                                   "pb-0",
                               )}

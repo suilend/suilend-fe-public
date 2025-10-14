@@ -6,7 +6,7 @@ import BigNumber from "bignumber.js";
 import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { reserveSort } from "@suilend/sdk/utils";
-import { Token, formatInteger, formatToken, formatUsd } from "@suilend/sui-fe";
+import { Token, formatToken, formatUsd } from "@suilend/sui-fe";
 
 import styles from "@/components/dashboard/AccountAssetTable.module.scss";
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
@@ -41,6 +41,7 @@ interface AccountAssetTableProps {
   type: AccountAssetTableType;
   assets: RowData[];
   noAssetsMessage: string;
+  noLendingMarketHeader?: boolean;
 }
 
 export default function AccountAssetTable({
@@ -49,6 +50,7 @@ export default function AccountAssetTable({
   type,
   assets,
   noAssetsMessage,
+  noLendingMarketHeader,
 }: AccountAssetTableProps) {
   const { allAppData } = useLoadedAppContext();
   const appData = allAppData.allLendingMarketData[lendingMarketId];
@@ -58,10 +60,10 @@ export default function AccountAssetTable({
   const { open: openActionsModal } = useActionsModalContext();
 
   // Count
-  const count = new BigNumber(
+  const totalUsd = new BigNumber(
     type === AccountAssetTableType.DEPOSITS
-      ? (obligation?.depositPositionCount ?? 0)
-      : (obligation?.borrowPositionCount ?? 0),
+      ? (obligation?.depositedAmountUsd ?? 0)
+      : (obligation?.borrowedAmountUsd ?? 0),
   );
 
   // Columns
@@ -127,8 +129,8 @@ export default function AccountAssetTable({
       <ParentLendingMarket
         id={id}
         lendingMarketId={lendingMarketId}
-        count={count}
-        countFormatter={(count) => formatInteger(+count)}
+        count={formatUsd(totalUsd)}
+        noHeader={noLendingMarketHeader}
       >
         <DataTable<RowData>
           columns={columns}

@@ -42,7 +42,7 @@ import {
 } from "@/lib/tooltips";
 import { cn } from "@/lib/utils";
 
-export default function AccountPositionCard() {
+export default function AccountsCard() {
   const router = useRouter();
 
   const { explorer } = useSettingsContext();
@@ -66,16 +66,19 @@ export default function AccountPositionCard() {
     });
   };
 
-  const obligationCount = useMemo(
+  const filteredAppData = useMemo(
     () =>
-      Object.values(obligationMap).filter(
-        (obligation) => obligation !== undefined,
-      ).length,
-    [obligationMap],
+      Object.values(allAppData.allLendingMarketData).filter((appData) => {
+        const obligation = obligationMap[appData.lendingMarket.id];
+
+        if (!obligation) return false;
+        return true;
+      }),
+    [allAppData.allLendingMarketData, obligationMap],
   );
 
   if (!address) return null;
-  if (obligationCount === 0)
+  if (filteredAppData.length === 0)
     return (
       <Card
         headerProps={{
@@ -99,21 +102,23 @@ export default function AccountPositionCard() {
       }}
     >
       <CardContent className="flex flex-col gap-px p-0">
-        {Object.values(allAppData.allLendingMarketData).map((appData) => {
-          const obligation = obligationMap[appData.lendingMarket.id];
+        {filteredAppData.map((appData) => {
+          const obligation = obligationMap[appData.lendingMarket.id]!;
           const userData = allUserData[appData.lendingMarket.id];
 
-          const isLooping = getIsLooping(appData, obligation);
-          const wasLooping = getWasLooping(appData, obligation);
+          const isLooping =
+            appData.lendingMarket.id === LENDING_MARKET_ID &&
+            getIsLooping(appData, obligation); // Main market only
+          const wasLooping =
+            appData.lendingMarket.id === LENDING_MARKET_ID &&
+            getWasLooping(appData, obligation); // Main market only
 
-          if (!obligation) return null;
           return (
             <div key={appData.lendingMarket.id} className="w-full">
               <ParentLendingMarket
                 id={`accounts-${appData.lendingMarket.id}`}
                 lendingMarketId={appData.lendingMarket.id}
-                count={obligation.netValueUsd}
-                countFormatter={formatUsd}
+                count={formatUsd(obligation.netValueUsd)}
                 startContent={
                   <div className="flex h-4 flex-row items-center">
                     <CopyToClipboardButton value={obligation.id} />
@@ -140,8 +145,14 @@ export default function AccountPositionCard() {
                     </Button>
                   </div>
                 }
+                noHeader={filteredAppData.length === 1}
               >
-                <div className="flex w-full flex-col gap-4 p-4">
+                <div
+                  className={cn(
+                    "flex w-full flex-col gap-4 p-4",
+                    filteredAppData.length === 1 && "pt-0",
+                  )}
+                >
                   {/* Equity */}
                   <div className="relative w-full">
                     <div className="absolute bottom-0 left-0 right-2/3 top-0 z-[1] rounded-l-sm bg-gradient-to-r from-primary/20 to-transparent" />

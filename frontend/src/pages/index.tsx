@@ -3,7 +3,7 @@ import Head from "next/head";
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
-import AccountsCard from "@/components/dashboard/account/AccountPositionCard";
+import AccountsCard from "@/components/dashboard/account/AccountsCard";
 import MainMarketLoopingCard from "@/components/dashboard/account/MainMarketLoopingCard";
 import AccountOverviewDialog from "@/components/dashboard/account-overview/AccountOverviewDialog";
 import { ActionsModalContextProvider } from "@/components/dashboard/actions-modal/ActionsModalContext";
@@ -22,8 +22,8 @@ function Cards() {
   return (
     <>
       <MainMarketLoopingCard />
-      <RewardsCard />
       <AccountsCard />
+      <RewardsCard />
       <ObligationDepositsCard />
       <ObligationBorrowsCard />
     </>
