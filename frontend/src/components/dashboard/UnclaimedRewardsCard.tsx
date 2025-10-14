@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
-import { DollarSign } from "lucide-react";
 
 import { ADMIN_ADDRESS, getRewardsMap } from "@suilend/sdk";
 import { Token, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
@@ -99,7 +98,6 @@ export default function UnclaimedRewardsCard() {
       id="rewards"
       headerProps={{
         titleClassName: "text-primary-foreground",
-        titleIcon: <DollarSign />,
         title: (
           <>
             Unclaimed rewards
