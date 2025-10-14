@@ -43,7 +43,7 @@
     "@sentry/nextjs": "^8.38.0",
     "@suilend/springsui-sdk": "^1.0.25",
     "@suilend/steamm-sdk": "^1.1.5",
-    "@suilend/sui-fe": "^0.3.32",
+    "@suilend/sui-fe": "^0.3.33",
     "@suilend/sui-fe-next": "^0.1.63",
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
