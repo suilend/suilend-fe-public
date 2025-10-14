@@ -589,6 +589,7 @@ export default function MarketTable() {
     return result;
   }, [
     appData.lendingMarket.reserves,
+    appData.lendingMarket.id,
     userData.rewardMap,
     allAppData.lstMap,
     deprecatedReserveIds,
