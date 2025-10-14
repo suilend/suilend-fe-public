@@ -43,7 +43,7 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
 
     name: "STEAMM LM",
     slug: "steamm-lm",
-    isHidden: false,
+    isHidden: true,
   },
 };
 
