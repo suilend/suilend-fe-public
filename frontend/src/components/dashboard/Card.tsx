@@ -83,7 +83,7 @@ export default function Card({
             )}
 
             {(headerProps.endContent || isCollapsible) && (
-              <div className="flex flex-row items-center justify-end gap-1.5">
+              <div className="flex flex-row items-center justify-end gap-2">
                 {headerProps.endContent}
 
                 {isCollapsible && (

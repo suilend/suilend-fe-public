@@ -22,8 +22,8 @@ function Cards() {
   return (
     <>
       <MainMarketLoopingCard />
-      <AccountsCard />
       <RewardsCard />
+      <AccountsCard />
       <ObligationDepositsCard />
       <ObligationBorrowsCard />
     </>

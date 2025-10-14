@@ -82,7 +82,7 @@ export default function AccountsCard() {
     return (
       <Card
         headerProps={{
-          title: "Accounts",
+          title: "Account",
           noSeparator: true,
         }}
       >
@@ -97,8 +97,36 @@ export default function AccountsCard() {
     <Card
       id="accounts"
       headerProps={{
-        title: "Accounts",
+        title: filteredAppData.length === 1 ? "Account" : "Accounts",
         noSeparator: true,
+        startContent: filteredAppData.length === 1 && (
+          <div className="flex h-4 flex-row items-center">
+            <CopyToClipboardButton
+              value={Object.values(obligationMap)[0]!.id}
+            />
+            <OpenOnExplorerButton
+              url={explorer.buildObjectUrl(Object.values(obligationMap)[0]!.id)}
+            />
+            <Button
+              className="text-muted-foreground"
+              tooltip="Overview"
+              icon={<FileClock />}
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                openAccountOverviewTab(
+                  filteredAppData[0].lendingMarket.id === LENDING_MARKET_ID
+                    ? undefined
+                    : filteredAppData[0].lendingMarket.id,
+                  AccountOverviewTab.EARNINGS,
+                );
+                e.stopPropagation();
+              }}
+            >
+              Overview
+            </Button>
+          </div>
+        ),
       }}
     >
       <CardContent className="flex flex-col gap-px p-0">

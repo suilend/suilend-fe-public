@@ -39,12 +39,7 @@ export default function ParentLendingMarket({
         >
           <div className="relative z-[2] flex h-8 flex-row items-center justify-between gap-2 px-4">
             <div className="flex flex-row items-center gap-2">
-              <TBody
-                className="cursor-pointer uppercase"
-                onClick={toggleIsCollapsed}
-              >
-                {appData.lendingMarket.name}
-              </TBody>
+              <TBody className="uppercase">{appData.lendingMarket.name}</TBody>
 
               {count && (
                 <TLabel className="text-xs text-muted-foreground">
