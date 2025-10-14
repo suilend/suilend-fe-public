@@ -212,7 +212,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
                             }))
                           }
                         >
-                          <div className="flex h-7 w-7 flex-row items-center justify-center rounded-md bg-muted/15">
+                          <div className="flex h-6 w-6 flex-row items-center justify-center rounded-md bg-muted/15">
                             <CollapsibleRowIcon className="h-5 w-5 text-foreground" />
                           </div>
 

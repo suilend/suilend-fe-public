@@ -46,6 +46,7 @@ import {
 import LstStrategyDialog from "@/components/strategies/LstStrategyDialog";
 import StrategyCard from "@/components/strategies/StrategyCard";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";
 import {
   LstStrategyContextProvider,
   useLoadedLstStrategyContext,
@@ -611,7 +612,9 @@ function Page() {
 export default function Strategies() {
   return (
     <LstStrategyContextProvider>
-      <Page />
+      <LendingMarketContextProvider lendingMarketId={LENDING_MARKET_ID}>
+        <Page />
+      </LendingMarketContextProvider>
     </LstStrategyContextProvider>
   );
 }

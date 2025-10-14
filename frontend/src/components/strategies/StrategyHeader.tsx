@@ -102,7 +102,7 @@ export default function StrategyHeader({ strategyType }: StrategyHeaderProps) {
         tokens={strategyInfo.header.coinTypes.map((coinType) =>
           getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]),
         )}
-        size={28}
+        size={24}
       />
 
       <div className="flex flex-col gap-1">

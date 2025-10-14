@@ -89,7 +89,7 @@ function TokenRow({
       onClick={isDisabled ? undefined : onClick}
     >
       <div className="flex w-full flex-row items-center gap-3">
-        <TokenLogo token={token} size={28} showBridgedAssetTooltip />
+        <TokenLogo token={token} size={24} showBridgedAssetTooltip />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {/* Top */}
