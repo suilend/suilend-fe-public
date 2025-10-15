@@ -1735,7 +1735,7 @@ function Page() {
                     >
                       <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
                       {formatPercent(BigNumber.max(0, priceDifferencePercent))}{" "}
-                      Price difference (Noodles/Birdeye)
+                      Price difference (Noodles)
                     </TLabelSans>
                   </div>
                 ) : (
@@ -1908,7 +1908,7 @@ function Page() {
             <Link
               className="block flex min-w-32 max-w-56 flex-1 cursor-pointer"
               target="_blank"
-              href={`https://birdeye.so/token/${isSui(tokenIn.coinType) ? SUI_COINTYPE : tokenIn.coinType}?chain=sui`}
+              href={`https://noodles.fi/coins/${tokenOut.coinType}`}
             >
               <div className="pointer-events-none h-6 w-full pl-6">
                 {historicalTokenRatios !== undefined && (
