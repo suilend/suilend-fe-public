@@ -1,11 +1,11 @@
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { ADMIN_ADDRESS, Side } from "@suilend/sdk";
+import { ADMIN_ADDRESS, ParsedReserve, Side } from "@suilend/sdk";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -19,7 +19,12 @@ import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import TextLink from "@/components/shared/TextLink";
-import { TLabelSans, TTitle } from "@/components/shared/Typography";
+import {
+  TBody,
+  TLabel,
+  TLabelSans,
+  TTitle,
+} from "@/components/shared/Typography";
 import Value from "@/components/shared/Value";
 import {
   Card,
@@ -27,6 +32,7 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getPoolInfo } from "@/lib/admin";
 import { TX_TOAST_DURATION } from "@/lib/constants";
@@ -47,6 +53,7 @@ export default function ReservesTab() {
 
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
+  const { featuredReserveIds, deprecatedReserveIds } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
 
   const { appData, steammPoolInfos } = useAdminContext();
@@ -158,59 +165,109 @@ export default function ReservesTab() {
     }
   };
 
+  // Reserves
+  const reserveSectionMap = useMemo(() => {
+    const result: Record<
+      "featured" | "main" | "isolated" | "deprecated",
+      ParsedReserve[]
+    > = {
+      featured: [],
+      main: [],
+      isolated: [],
+      deprecated: [],
+    };
+
+    for (const reserve of appData.lendingMarket.reserves) {
+      if ((deprecatedReserveIds ?? []).includes(reserve.id)) {
+        result.deprecated.push(reserve);
+      } else if ((featuredReserveIds ?? []).includes(reserve.id)) {
+        result.featured.push(reserve);
+      } else if (reserve.config.isolated) {
+        result.isolated.push(reserve);
+      } else {
+        result.main.push(reserve);
+      }
+    }
+
+    return result;
+  }, [
+    appData.lendingMarket.reserves,
+    deprecatedReserveIds,
+    featuredReserveIds,
+  ]);
+
   return (
     <div className="flex w-full flex-col gap-2">
-      {appData.lendingMarket.reserves.map((reserve) => {
-        const poolInfo = getPoolInfo(steammPoolInfos, reserve.token.coinType);
-
+      {Object.entries(reserveSectionMap).map(([section, reserves], index) => {
         return (
-          <Card
-            key={reserve.id}
-            id={`reserve-${reserve.token.coinType}`}
-            className={cn(
-              queryParams[QueryParams.COIN_TYPE] === reserve.token.coinType &&
-                "border-secondary",
-            )}
-          >
-            <CardHeader>
-              <div className="flex flex-row items-center justify-between">
-                <TTitle>
-                  {reserve.token.symbol}
-                  {poolInfo && (
-                    <>
-                      {" "}
-                      <SteammPoolBadges poolInfo={poolInfo} />
-                    </>
+          <Fragment key={section}>
+            <div
+              className={cn(
+                "mb-2 flex flex-row items-center gap-2",
+                index !== 0 && "mt-2",
+              )}
+            >
+              <TBody className="uppercase">{section}</TBody>
+              <TLabel>{reserves.length}</TLabel>
+            </div>
+
+            {reserves.map((reserve) => {
+              const poolInfo = getPoolInfo(
+                steammPoolInfos,
+                reserve.token.coinType,
+              );
+
+              return (
+                <Card
+                  key={reserve.id}
+                  id={`reserve-${reserve.token.coinType}`}
+                  className={cn(
+                    queryParams[QueryParams.COIN_TYPE] ===
+                      reserve.token.coinType && "border-secondary",
                   )}
-                </TTitle>
+                >
+                  <CardHeader>
+                    <div className="flex flex-row items-center justify-between">
+                      <TTitle>
+                        {reserve.token.symbol}
+                        {poolInfo && (
+                          <>
+                            {" "}
+                            <SteammPoolBadges poolInfo={poolInfo} />
+                          </>
+                        )}
+                      </TTitle>
 
-                {poolInfo && (
-                  <div className="-m-1.5 flex flex-row items-center">
-                    <OpenURLButton
-                      url={`https://steamm.fi/pool/${poolInfo.poolId}`}
-                    >
-                      View pool on STEAMM
-                    </OpenURLButton>
-                  </div>
-                )}
-              </div>
-              <CardDescription>
-                <Value
-                  value={reserve.id}
-                  isId
-                  url={explorer.buildObjectUrl(reserve.id)}
-                  isExplorerUrl
-                />
-              </CardDescription>
-            </CardHeader>
+                      {poolInfo && (
+                        <div className="-m-1.5 flex flex-row items-center">
+                          <OpenURLButton
+                            url={`https://steamm.fi/pool/${poolInfo.poolId}`}
+                          >
+                            View pool on STEAMM
+                          </OpenURLButton>
+                        </div>
+                      )}
+                    </div>
+                    <CardDescription>
+                      <Value
+                        value={reserve.id}
+                        isId
+                        url={explorer.buildObjectUrl(reserve.id)}
+                        isExplorerUrl
+                      />
+                    </CardDescription>
+                  </CardHeader>
 
-            <CardContent className="flex flex-row flex-wrap gap-2">
-              <ReserveConfigDialog reserve={reserve} />
-              <ReservePropertiesDialog reserve={reserve} />
-              <ReserveRewardsDialog reserve={reserve} />
-              <ClaimFeesDialog reserve={reserve} />
-            </CardContent>
-          </Card>
+                  <CardContent className="flex flex-row flex-wrap gap-2">
+                    <ReserveConfigDialog reserve={reserve} />
+                    <ReservePropertiesDialog reserve={reserve} />
+                    <ReserveRewardsDialog reserve={reserve} />
+                    <ClaimFeesDialog reserve={reserve} />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Fragment>
         );
       })}
 
