@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import init, { update_identifiers } from "@mysten/move-bytecode-template";
 import { Transaction } from "@mysten/sui/transactions";
@@ -40,10 +40,10 @@ export default function CreateLendingMarketDialog() {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
   const [module, setModule] = useState<string>("");
-  const [type, setType] = useState<string>("");
+  const type = useMemo(() => module.toUpperCase(), [module]);
 
   const reset = () => {
-    setType("");
+    setModule("");
   };
 
   // Submit
@@ -52,10 +52,6 @@ export default function CreateLendingMarketDialog() {
 
     if (module === "") {
       toast.error("Enter a module");
-      return;
-    }
-    if (type === "") {
-      toast.error("Enter a type");
       return;
     }
 
@@ -200,7 +196,8 @@ export default function CreateLendingMarketDialog() {
           label="type"
           id="type"
           value={type}
-          onChange={setType}
+          onChange={() => {}}
+          inputProps={{ disabled: true }}
         />
       </div>
     </Dialog>

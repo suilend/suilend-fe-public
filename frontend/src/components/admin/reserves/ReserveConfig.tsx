@@ -232,22 +232,6 @@ export default function ReserveConfig({
         endDecorator={symbol}
       />
       <Input
-        label="liquidationBonusBps"
-        id="liquidationBonusBps"
-        type="number"
-        value={configState.liquidationBonusBps}
-        onChange={setConfigStateKeyValue("liquidationBonusBps")}
-        endDecorator="bps"
-      />
-      <Input
-        label="maxLiquidationBonusBps"
-        id="maxLiquidationBonusBps"
-        type="number"
-        value={configState.maxLiquidationBonusBps}
-        onChange={setConfigStateKeyValue("maxLiquidationBonusBps")}
-        endDecorator="bps"
-      />
-      <Input
         label="depositLimitUsd"
         id="depositLimitUsd"
         type="number"
@@ -264,6 +248,22 @@ export default function ReserveConfig({
         onChange={setConfigStateKeyValue("borrowLimitUsd")}
         inputProps={{ className: "pl-6" }}
         startDecorator="$"
+      />
+      <Input
+        label="liquidationBonusBps"
+        id="liquidationBonusBps"
+        type="number"
+        value={configState.liquidationBonusBps}
+        onChange={setConfigStateKeyValue("liquidationBonusBps")}
+        endDecorator="bps"
+      />
+      <Input
+        label="maxLiquidationBonusBps"
+        id="maxLiquidationBonusBps"
+        type="number"
+        value={configState.maxLiquidationBonusBps}
+        onChange={setConfigStateKeyValue("maxLiquidationBonusBps")}
+        endDecorator="bps"
       />
       <Input
         label="borrowFeeBps"

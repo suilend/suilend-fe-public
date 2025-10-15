@@ -264,6 +264,5 @@ export type LendingMarketMetadata = {
   lendingMarketOwnerCapId: string;
 
   name?: string;
-  slug?: string;
   isHidden?: boolean;
 };

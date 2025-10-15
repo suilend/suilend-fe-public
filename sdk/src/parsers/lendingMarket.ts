@@ -69,9 +69,6 @@ export const parseLendingMarket = (
     ownerCapId: lendingMarketMetadata?.lendingMarketOwnerCapId ?? undefined,
 
     name: lendingMarketMetadata?.name ?? type.split("::").slice(1).join(" "),
-    slug:
-      lendingMarketMetadata?.slug ??
-      type.split("::").slice(1).join("-").toLowerCase(),
     isHidden: lendingMarketMetadata?.isHidden ?? true,
 
     /**

@@ -32,7 +32,6 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
       "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
 
     name: "Main market",
-    slug: "main",
     isHidden: false,
   },
   [STEAMM_LM_LENDING_MARKET_ID]: {
@@ -42,7 +41,15 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
       "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
 
     name: "STEAMM LM",
-    slug: "steamm-lm",
+    isHidden: true,
+  },
+  "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2": {
+    id: "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2",
+    type: "0x3628b6ea618a6cca71793bab63e88ea69e10d3a99b5c7b3df88ba01f165015d4::elixir::ELIXIR",
+    lendingMarketOwnerCapId:
+      "0xf93304ac799c327471237353d120411c5f55f1d8245db44a6b5f5fabf8f35a42",
+
+    name: "Elixir",
     isHidden: true,
   },
 };
@@ -115,9 +122,6 @@ export default function useFetchAppData() {
 
                 name:
                   LENDING_MARKET_METADATA_MAP[lendingMarketId]?.name ??
-                  undefined,
-                slug:
-                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.slug ??
                   undefined,
                 isHidden:
                   LENDING_MARKET_METADATA_MAP[lendingMarketId]?.isHidden ??
