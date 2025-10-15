@@ -338,7 +338,10 @@ const RevenueChart = ({
     const step = Math.max(1, Math.ceil(n / maxLabels));
     const ticks: number[] = [];
     for (let i = 0; i < n; i += step) ticks.push(i);
-    if (ticks[ticks.length - 1] !== n - 1) ticks.push(n - 1);
+    // Avoid forcing a last tick if it's too close to the previous sampled tick.
+    // This prevents adjacent labels (e.g., 10 and 11) from overlapping visually.
+    const lastSampled = ticks[ticks.length - 1];
+    if (lastSampled !== n - 1 && n - 1 - lastSampled >= step) ticks.push(n - 1);
     return ticks;
   }, [chartData, isSmall]);
 
