@@ -203,6 +203,7 @@ interface TokenSelectionDialogProps {
   direction?: TokenDirection;
   token?: Token;
   tokens: Token[];
+  placeholder?: string;
   onSelectToken: (token: Token) => void;
   disabledCoinTypes?: string[];
 }
@@ -216,6 +217,7 @@ export default function TokenSelectionDialog({
   direction,
   token,
   tokens,
+  placeholder,
   onSelectToken,
   disabledCoinTypes,
 }: TokenSelectionDialogProps) {
@@ -487,11 +489,11 @@ export default function TokenSelectionDialog({
           }
           variant="ghost"
         >
-          {token ? token.symbol.slice(0, 10) : "Select token"}
+          {token ? token.symbol.slice(0, 10) : (placeholder ?? "Select token")}
         </Button>
       }
       headerProps={{
-        title: { children: "Select token" },
+        title: { children: placeholder ?? "Select token" },
       }}
       dialogContentInnerClassName="max-w-lg h-[800px]"
     >

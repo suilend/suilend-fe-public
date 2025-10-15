@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-export const getInputId = (id: string) => `input.${id}`;
+export const getInputId = (id: string) => `input-${id}`;
 
 interface InputProps {
   className?: ClassValue;

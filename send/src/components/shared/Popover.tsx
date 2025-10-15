@@ -16,7 +16,7 @@ import {
 import { fontClassNames } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 
-export const getPopoverId = (id: string) => `popover.${id}`;
+export const getPopoverId = (id: string) => `popover-${id}`;
 
 interface PopoverProps extends PropsWithChildren {
   className?: ClassValue;

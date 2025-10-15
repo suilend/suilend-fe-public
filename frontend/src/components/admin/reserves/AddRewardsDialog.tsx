@@ -2,21 +2,22 @@ import { Fragment, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-import { addDays, formatDate } from "date-fns";
+import { formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
-import { Token } from "@suilend/sui-fe";
-import { useWalletContext } from "@suilend/sui-fe-next";
+import { TX_TOAST_DURATION, Token, getToken } from "@suilend/sui-fe";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
 import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDialog";
 import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
-import Input from "@/components/shared/Input";
+import Input, { getInputId } from "@/components/shared/Input";
+import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -24,8 +25,10 @@ import { getPoolInfo } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
 export default function AddRewardsDialog() {
+  const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedUserContext();
+  const { rawBalancesMap, balancesCoinMetadataMap, refresh } =
+    useLoadedUserContext();
 
   const { appData, steammPoolInfos } = useAdminContext();
 
@@ -39,7 +42,7 @@ export default function AddRewardsDialog() {
   const [endTimeMs, setEndTimeMs] = useState<string>("");
 
   const [rewardsMap, setRewardsMap] = useState<
-    Record<string, Record<string, string>>
+    Record<string, Record<Side, string>>
   >({});
   const setRewardsValue =
     (coinType: string, rewardType: string) => (value: string) =>
@@ -115,9 +118,17 @@ export default function AddRewardsDialog() {
         }
       }
 
-      await signExecuteAndWaitForTransaction(transaction);
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Added rewards");
+      toast.success(`Added ${token.symbol} rewards`, {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
       setIsDialogOpen(false);
       reset();
     } catch (err) {
@@ -189,8 +200,17 @@ export default function AddRewardsDialog() {
         ),
       }}
     >
-      <div className="grid w-full grid-cols-3 gap-x-4 gap-y-6">
-        <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
+      <div className="grid w-full grid-cols-3 gap-4">
+        {/* Row 1 */}
+        <AdminTokenSelectionDialog
+          token={token}
+          tokens={Object.entries(rawBalancesMap ?? {})
+            .filter(([coinType]) => !!balancesCoinMetadataMap?.[coinType])
+            .map(([coinType]) =>
+              getToken(coinType, balancesCoinMetadataMap![coinType]),
+            )}
+          onSelectToken={setToken}
+        />
         <div className="flex flex-col gap-2">
           <Input
             label="startTimeMs"
@@ -230,7 +250,6 @@ export default function AddRewardsDialog() {
             ))}
           </div>
         </div>
-
         <div className="flex flex-col gap-2">
           <Input
             label="endTimeMs"
@@ -271,15 +290,21 @@ export default function AddRewardsDialog() {
           </div>
         </div>
 
-        {appData.lendingMarket.reserves.map((reserve, index) => {
+        {/* Row 2-N-1 */}
+        {Object.entries(rewardsMap).map(([coinType, rewards], index) => {
+          const reserve = appData.lendingMarket.reserves.find(
+            (r) => r.coinType === coinType,
+          );
+          if (!reserve) return null;
+
           const poolInfo = getPoolInfo(steammPoolInfos, reserve.token.coinType);
 
           return (
-            <Fragment key={reserve.coinType}>
+            <Fragment key={coinType}>
               <div
                 className={cn(
                   "flex flex-row items-center gap-2",
-                  index === 0 && "pt-6",
+                  index === 0 && "pt-8",
                 )}
               >
                 <TokenLogo token={reserve.token} size={16} />
@@ -293,26 +318,62 @@ export default function AddRewardsDialog() {
                   )}
                 </TBody>
               </div>
-
               <Input
+                className={cn(index === 0 && "pt-2")}
                 label={index === 0 ? "depositRewards" : undefined}
-                id={`depositRewards-${reserve.coinType}`}
+                id={`depositRewards-${reserve.token.symbol}`}
                 type="number"
-                value={rewardsMap?.[reserve.coinType]?.deposit || ""}
+                value={rewards?.[Side.DEPOSIT] ?? ""}
                 onChange={setRewardsValue(reserve.coinType, Side.DEPOSIT)}
                 endDecorator={token?.symbol}
               />
               <Input
+                className={cn(index === 0 && "pt-2")}
                 label={index === 0 ? "borrowRewards" : undefined}
-                id={`borrowRewards-${reserve.coinType}`}
+                id={`borrowRewards-${reserve.token.symbol}`}
                 type="number"
-                value={rewardsMap?.[reserve.coinType]?.borrow || ""}
+                value={rewards?.[Side.BORROW] ?? ""}
                 onChange={setRewardsValue(reserve.coinType, Side.BORROW)}
                 endDecorator={token?.symbol}
               />
             </Fragment>
           );
         })}
+
+        {/* Row N */}
+        <AdminTokenSelectionDialog
+          noLabel
+          tokens={appData.lendingMarket.reserves.map((r) => r.token)}
+          placeholder="Select reserve"
+          onSelectToken={(token) => {
+            if (Object.keys(rewardsMap).includes(token.coinType)) return;
+
+            setRewardsMap((prev) => ({
+              ...prev,
+              [token.coinType]: {
+                [Side.DEPOSIT]: "",
+                [Side.BORROW]: "",
+              },
+            }));
+
+            setTimeout(() => {
+              const inputElem = document.querySelector(
+                `#${getInputId(`depositRewards-${token.symbol}`)}`,
+              );
+              (inputElem as HTMLInputElement)?.focus();
+            }, 250);
+          }}
+        />
+        <Input
+          id="placeholder-1"
+          onChange={() => {}}
+          inputProps={{ disabled: true }}
+        />
+        <Input
+          id="placeholder-2"
+          onChange={() => {}}
+          inputProps={{ disabled: true }}
+        />
       </div>
     </Dialog>
   );

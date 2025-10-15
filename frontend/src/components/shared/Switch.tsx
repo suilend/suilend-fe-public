@@ -3,7 +3,7 @@ import { ClassValue } from "clsx";
 import { TLabelSans } from "@/components/shared/Typography";
 import { cn } from "@/lib/utils";
 
-export const getSwitchId = (id: string) => `switch.${id}`;
+export const getSwitchId = (id: string) => `switch-${id}`;
 
 interface SwitchProps {
   className?: ClassValue;

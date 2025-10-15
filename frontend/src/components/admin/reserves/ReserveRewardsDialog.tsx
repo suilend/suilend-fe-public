@@ -10,7 +10,6 @@ import { ParsedPoolReward, ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { shallowPushQuery, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
-import AddRewardDialog from "@/components/admin/reserves/AddRewardDialog";
 import PoolRewardsTable from "@/components/admin/reserves/PoolRewardsTable";
 import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
@@ -222,11 +221,6 @@ export default function ReserveRewardsDialog({
                 onCloseReward={onCloseReward}
               />
             </div>
-
-            <AddRewardDialog
-              reserve={reserve}
-              isDepositReward={selectedTab === Tab.DEPOSITS}
-            />
           </div>
         </Grid>
       </Tabs>
