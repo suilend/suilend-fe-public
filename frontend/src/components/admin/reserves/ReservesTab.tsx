@@ -199,6 +199,7 @@ export default function ReservesTab() {
   return (
     <div className="flex w-full flex-col gap-2">
       {Object.entries(reserveSectionMap).map(([section, reserves], index) => {
+        if (reserves.length === 0) return null;
         return (
           <Fragment key={section}>
             <div
