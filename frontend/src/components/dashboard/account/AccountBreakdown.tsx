@@ -166,7 +166,7 @@ export default function AccountBreakdown() {
 
   // State
   const [isOpen, setIsOpen] = useLocalStorage<boolean>(
-    "isPositionBreakdownOpen",
+    `isPositionBreakdownOpen_${appData.lendingMarket.id}`,
     false,
   );
 
