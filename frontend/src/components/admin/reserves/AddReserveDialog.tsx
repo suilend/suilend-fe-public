@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
-import { Token } from "@suilend/sui-fe";
+import { Token, getToken } from "@suilend/sui-fe";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -24,7 +24,8 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function AddReserveDialog() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { refresh } = useLoadedUserContext();
+  const { rawBalancesMap, balancesCoinMetadataMap, refresh } =
+    useLoadedUserContext();
 
   const { appData } = useAdminContext();
 
@@ -205,7 +206,15 @@ export default function AddReserveDialog() {
       }}
     >
       <Grid>
-        <AdminTokenSelectionDialog token={token} onSelectToken={setToken} />
+        <AdminTokenSelectionDialog
+          token={token}
+          tokens={Object.entries(rawBalancesMap ?? {})
+            .filter(([coinType]) => !!balancesCoinMetadataMap?.[coinType])
+            .map(([coinType]) =>
+              getToken(coinType, balancesCoinMetadataMap![coinType]),
+            )}
+          onSelectToken={setToken}
+        />
         <div className="flex w-full flex-row items-end gap-2">
           <Input
             className="flex-1"
