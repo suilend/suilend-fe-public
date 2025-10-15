@@ -335,6 +335,7 @@ export class SuilendClient {
     pythPriceId: string,
     coinType: string,
     createReserveConfigArgs: CreateReserveConfigArgs,
+    coinMetadataId?: string,
   ) {
     const [config] = createReserveConfig(transaction, createReserveConfigArgs);
 
@@ -364,7 +365,9 @@ export class SuilendClient {
         lendingMarket: transaction.object(this.lendingMarket.id),
         priceInfo: transaction.object(priceInfoObjectIds[0]),
         config: transaction.object(config),
-        coinMetadata: transaction.object(coin_metadata.id as string),
+        coinMetadata: transaction.object(
+          coinMetadataId ?? (coin_metadata.id as string),
+        ),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
       },
     );

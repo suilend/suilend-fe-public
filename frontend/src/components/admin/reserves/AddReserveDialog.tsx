@@ -36,6 +36,7 @@ export default function AddReserveDialog() {
 
   const [token, setToken] = useState<Token | undefined>(undefined);
   const [pythPriceId, setPythPriceId] = useState<string>("");
+  const [coinMetadataId, setCoinMetadataId] = useState<string>(""); // To override the id from suiClient.getCoinMetadata
 
   const initialConfigStateRef = useRef<ConfigState>({
     openLtvPct: "",
@@ -71,6 +72,7 @@ export default function AddReserveDialog() {
   const reset = () => {
     setToken(undefined);
     setPythPriceId("");
+    setCoinMetadataId("");
 
     resetConfigState();
   };
@@ -148,6 +150,7 @@ export default function AddReserveDialog() {
         pythPriceId,
         token.coinType,
         newConfig,
+        coinMetadataId,
       );
 
       await signExecuteAndWaitForTransaction(transaction);
@@ -215,6 +218,7 @@ export default function AddReserveDialog() {
             )}
           onSelectToken={setToken}
         />
+
         <div className="flex w-full flex-row items-end gap-2">
           <Input
             className="flex-1"
@@ -236,6 +240,14 @@ export default function AddReserveDialog() {
         </div>
 
         <ReserveConfig symbol={token?.symbol} {...reserveConfigState} />
+
+        <Input
+          className="flex-1"
+          label="coinMetadataId (optional override)"
+          id="coinMetadataId"
+          value={coinMetadataId}
+          onChange={setCoinMetadataId}
+        />
       </Grid>
     </Dialog>
   );
