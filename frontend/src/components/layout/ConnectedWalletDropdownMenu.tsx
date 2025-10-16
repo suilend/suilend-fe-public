@@ -123,11 +123,7 @@ export default function ConnectedWalletDropdownMenu({
           const userData = allUserData?.[appData.lendingMarket.id];
           if (!userData) return false;
 
-          if (
-            userData.obligations.length === 0 ||
-            userData.obligations.length === 1
-          )
-            return false;
+          if (userData.obligations.length === 0) return false;
           if (appData.lendingMarket.isHidden && address !== ADMIN_ADDRESS)
             return false;
 
