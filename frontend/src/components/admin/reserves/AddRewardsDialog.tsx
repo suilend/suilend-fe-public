@@ -6,7 +6,7 @@ import { formatDate } from "date-fns";
 import { Eraser, Sparkle } from "lucide-react";
 import { toast } from "sonner";
 
-import { ADMIN_ADDRESS } from "@suilend/sdk";
+import { ADMIN_ADDRESS, ParsedReserve } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { TX_TOAST_DURATION, Token, getToken } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
@@ -16,7 +16,7 @@ import AdminTokenSelectionDialog from "@/components/admin/AdminTokenSelectionDia
 import SteammPoolBadges from "@/components/admin/reserves/SteammPoolBadges";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
-import Input, { getInputId } from "@/components/shared/Input";
+import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody } from "@/components/shared/Typography";
@@ -30,7 +30,7 @@ export default function AddRewardsDialog() {
   const { rawBalancesMap, balancesCoinMetadataMap, refresh } =
     useLoadedUserContext();
 
-  const { appData, steammPoolInfos } = useAdminContext();
+  const { appData, userData, steammPoolInfos } = useAdminContext();
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -44,12 +44,59 @@ export default function AddRewardsDialog() {
   const [rewardsMap, setRewardsMap] = useState<
     Record<string, Record<Side, string>>
   >({});
-  const setRewardsValue =
-    (coinType: string, rewardType: string) => (value: string) =>
-      setRewardsMap((prev) => ({
-        ...prev,
-        [coinType]: { ...prev[coinType], [rewardType]: value },
-      }));
+  const setRewardsValue = (coinType: string, side: Side) => (value: string) =>
+    setRewardsMap((prev) => ({
+      ...prev,
+      [coinType]: { ...prev[coinType], [side]: value },
+    }));
+
+  const onSelectToken = (token: Token) => {
+    setToken(token);
+
+    const reservesWithExistingRewards = (
+      appData.lendingMarket.reserves.map((reserve) => [
+        reserve,
+        userData.rewardMap[reserve.coinType]?.[Side.DEPOSIT]?.some(
+          (r) => r.stats.rewardCoinType === token.coinType,
+        ) ?? false,
+        userData.rewardMap[reserve.coinType]?.[Side.BORROW]?.some(
+          (r) => r.stats.rewardCoinType === token.coinType,
+        ) ?? false,
+      ]) as [ParsedReserve, boolean, boolean][]
+    ).filter(
+      ([reserve, isDepositReward, isBorrowReward]) =>
+        isDepositReward || isBorrowReward,
+    );
+    const reservesWithNoExistingRewards = appData.lendingMarket.reserves.filter(
+      (reserve) =>
+        !reservesWithExistingRewards.some(
+          ([_reserve]) => _reserve.coinType === reserve.coinType,
+        ),
+    );
+
+    setRewardsMap({
+      ...reservesWithExistingRewards.reduce(
+        (acc, [reserve, isDepositReward, isBorrowReward]) => ({
+          ...acc,
+          [reserve.coinType]: {
+            [Side.DEPOSIT]: isDepositReward ? "0" : "",
+            [Side.BORROW]: isBorrowReward ? "0" : "",
+          },
+        }),
+        {} as Record<string, Record<Side, string>>,
+      ),
+      ...reservesWithNoExistingRewards.reduce(
+        (acc, reserve) => ({
+          ...acc,
+          [reserve.coinType]: {
+            [Side.DEPOSIT]: "",
+            [Side.BORROW]: "",
+          },
+        }),
+        {} as Record<string, Record<Side, string>>,
+      ),
+    });
+  };
 
   const reset = () => {
     setToken(undefined);
@@ -209,7 +256,7 @@ export default function AddRewardsDialog() {
             .map(([coinType]) =>
               getToken(coinType, balancesCoinMetadataMap![coinType]),
             )}
-          onSelectToken={setToken}
+          onSelectToken={onSelectToken}
         />
         <div className="flex flex-col gap-2">
           <Input
@@ -290,7 +337,7 @@ export default function AddRewardsDialog() {
           </div>
         </div>
 
-        {/* Row 2-N-1 */}
+        {/* Row 2-N */}
         {Object.entries(rewardsMap).map(([coinType, rewards], index) => {
           const reserve = appData.lendingMarket.reserves.find(
             (r) => r.coinType === coinType,
@@ -339,41 +386,6 @@ export default function AddRewardsDialog() {
             </Fragment>
           );
         })}
-
-        {/* Row N */}
-        <AdminTokenSelectionDialog
-          noLabel
-          tokens={appData.lendingMarket.reserves.map((r) => r.token)}
-          placeholder="Select reserve"
-          onSelectToken={(token) => {
-            if (Object.keys(rewardsMap).includes(token.coinType)) return;
-
-            setRewardsMap((prev) => ({
-              ...prev,
-              [token.coinType]: {
-                [Side.DEPOSIT]: "",
-                [Side.BORROW]: "",
-              },
-            }));
-
-            setTimeout(() => {
-              const inputElem = document.querySelector(
-                `#${getInputId(`depositRewards-${token.symbol}`)}`,
-              );
-              (inputElem as HTMLInputElement)?.focus();
-            }, 250);
-          }}
-        />
-        <Input
-          id="placeholder-1"
-          onChange={() => {}}
-          inputProps={{ disabled: true }}
-        />
-        <Input
-          id="placeholder-2"
-          onChange={() => {}}
-          inputProps={{ disabled: true }}
-        />
       </div>
     </Dialog>
   );

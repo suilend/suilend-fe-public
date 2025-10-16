@@ -1,4 +1,3 @@
-import { useRouter } from "next/router";
 import {
   PropsWithChildren,
   createContext,
@@ -20,17 +19,13 @@ import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { NORMALIZED_sSUI_COINTYPE, Token } from "@suilend/sui-fe";
-import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import { useSettingsContext } from "@suilend/sui-fe-next";
 import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
 import LedgerHashDialog from "@/components/shared/LedgerHashDialog";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
 import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
-
-enum QueryParams {
-  LENDING_MARKET = "market",
-}
 
 export interface AppData {
   suilendClient: SuilendClient;
@@ -119,18 +114,7 @@ export const useAppContext = () => useContext(AppContext);
 export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  const router = useRouter();
-  const queryParams = useCallback(
-    () => ({
-      [QueryParams.LENDING_MARKET]: router.query[QueryParams.LENDING_MARKET] as
-        | string
-        | undefined,
-    }),
-    [router.query],
-  )();
-
   const { suiClient } = useSettingsContext();
-  const { address } = useWalletContext();
 
   // All app data
   const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();

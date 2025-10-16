@@ -13,6 +13,7 @@ import { API_URL } from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import { AppData, useLoadedAppContext } from "@/contexts/AppContext";
+import { UserData, useLoadedUserContext } from "@/contexts/UserContext";
 
 enum QueryParams {
   LENDING_MARKET_ID = "lendingMarketId",
@@ -20,6 +21,7 @@ enum QueryParams {
 
 interface AdminContext {
   appData: AppData;
+  userData: UserData;
   setSelectedLendingMarketId: (lendingMarketId: string) => void;
 
   steammPoolInfos: any[] | undefined;
@@ -27,6 +29,7 @@ interface AdminContext {
 
 const defaultContextValue: AdminContext = {
   appData: {} as AppData,
+  userData: {} as UserData,
   setSelectedLendingMarketId: () => {
     throw Error("AdminContextProvider not initialized");
   },
@@ -50,6 +53,7 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
   );
 
   const { allAppData } = useLoadedAppContext();
+  const { allUserData } = useLoadedUserContext();
 
   // Lending market
   const [selectedLendingMarketId, setSelectedLendingMarketId] =
@@ -72,6 +76,12 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
       allAppData.allLendingMarketData[selectedLendingMarketId] ??
       Object.values(allAppData.allLendingMarketData)[0],
     [allAppData.allLendingMarketData, selectedLendingMarketId],
+  );
+  const userData = useMemo(
+    () =>
+      allUserData[selectedLendingMarketId] ??
+      allUserData[Object.keys(allUserData)[0]],
+    [allUserData, selectedLendingMarketId],
   );
 
   // STEAMM pools
@@ -99,11 +109,12 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
   const contextValue: AdminContext = useMemo(
     () => ({
       appData,
+      userData,
       setSelectedLendingMarketId: onSelectedLendingMarketIdChange,
 
       steammPoolInfos,
     }),
-    [appData, onSelectedLendingMarketIdChange, steammPoolInfos],
+    [appData, userData, onSelectedLendingMarketIdChange, steammPoolInfos],
   );
 
   return (
