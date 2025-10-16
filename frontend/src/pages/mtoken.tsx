@@ -1,14 +1,22 @@
 import Head from "next/head";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { bcs } from "@mysten/bcs";
 import init, * as template from "@mysten/move-bytecode-template";
 import { Transaction } from "@mysten/sui/transactions";
-import { normalizeSuiAddress } from "@mysten/sui/utils";
+import { normalizeStructTag, normalizeSuiAddress } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
+import { formatToken, getAllOwnedObjects, getToken } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 
+import StandardSelect from "@/components/shared/StandardSelect";
+import TextLink from "@/components/shared/TextLink";
+import TokenLogo from "@/components/shared/TokenLogo";
+import { TBody } from "@/components/shared/Typography";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SendContextProvider } from "@/contexts/SendContext";
 import { mTOKEN_CONTRACT_PACKAGE_ID } from "@/lib/send";
 
@@ -192,13 +200,159 @@ const generateTokenBytecode = async (params: {
 };
 
 function Page() {
-  const { explorer } = useSettingsContext();
-  const { address } = useWalletContext();
-  const { signExecuteAndWaitForTransaction } = useWalletContext();
+  const { explorer, suiClient } = useSettingsContext();
+  const { address, dryRunTransaction, signExecuteAndWaitForTransaction } =
+    useWalletContext();
+
+  // mSEND manager objects
+  const [mSendManagerObjects, setMSendManagerObjects] = useState<
+    {
+      adminCapObjectId: string;
+      vestingManagerObjectId: string;
+      mTokenCoinType: string;
+      vestingCoinType: string;
+      penaltyCoinType: string;
+    }[]
+  >([]);
+
+  useEffect(() => {
+    if (!address) return;
+
+    (async () => {
+      const objs = await getAllOwnedObjects(suiClient, address);
+      const adminCapObjs = objs.filter((obj) =>
+        (obj.data?.content as any).type?.includes("::mtoken::AdminCap<"),
+      );
+
+      setMSendManagerObjects(
+        adminCapObjs
+          .map((adminCapObj) => {
+            const type = (adminCapObj.data?.content as any).type as string;
+            const innerArgs = type
+              .split("<")[1]
+              .split(">")[0]
+              .split(",")
+              .map((arg: string) => arg.trim());
+            const mTokenCoinType = normalizeStructTag(innerArgs[0]);
+            const vestingCoinType = normalizeStructTag(innerArgs[1]);
+            const penaltyCoinType = normalizeStructTag(innerArgs[2]);
+
+            return {
+              adminCapObjectId: adminCapObj.data?.objectId as string,
+              vestingManagerObjectId: (adminCapObj.data?.content as any).fields
+                .manager as string,
+              mTokenCoinType,
+              vestingCoinType,
+              penaltyCoinType,
+            };
+          })
+          .sort((a, b) =>
+            a.mTokenCoinType
+              .split("::")[2]
+              .localeCompare(b.mTokenCoinType.split("::")[2]),
+          ),
+      );
+    })();
+  }, [address, suiClient]);
+
+  // Selected mSEND admin cap
+  const [selectedAdminCapObjectId, setSelectedAdminCapObjectId] = useState<
+    string | undefined
+  >(undefined);
+  useEffect(() => {
+    if (
+      selectedAdminCapObjectId === undefined &&
+      mSendManagerObjects.length > 0
+    )
+      setSelectedAdminCapObjectId(mSendManagerObjects[0].adminCapObjectId);
+  }, [selectedAdminCapObjectId, mSendManagerObjects]);
+
+  const selectedMSendManagerObject = useMemo(() => {
+    return mSendManagerObjects.find(
+      ({ adminCapObjectId }) => adminCapObjectId === selectedAdminCapObjectId,
+    );
+  }, [selectedAdminCapObjectId, mSendManagerObjects]);
+
+  // Penalty coin types
+  const penaltyCoinTypes = useMemo(
+    () =>
+      Array.from(
+        new Set(mSendManagerObjects.map((obj) => obj.penaltyCoinType)),
+      ),
+    [mSendManagerObjects],
+  );
+  const penaltyCoinMetadataMap = useCoinMetadataMap(penaltyCoinTypes);
+
+  // Claim penalties
+  const getClaimPenaltiesTransaction = useCallback(() => {
+    if (!address) return;
+    if (!selectedAdminCapObjectId) return;
+
+    const obj = mSendManagerObjects.find(
+      ({ adminCapObjectId }) => adminCapObjectId === selectedAdminCapObjectId,
+    );
+    if (!obj) return;
+
+    const transaction = new Transaction();
+
+    const [penalties] = transaction.moveCall({
+      target: `${mTOKEN_CONTRACT_PACKAGE_ID}::mtoken::collect_penalties`,
+      typeArguments: [
+        obj.mTokenCoinType,
+        obj.vestingCoinType,
+        obj.penaltyCoinType,
+      ],
+      arguments: [
+        transaction.object(obj.vestingManagerObjectId),
+        transaction.object(selectedAdminCapObjectId),
+      ],
+    });
+    transaction.transferObjects([penalties], transaction.pure.address(address));
+
+    return transaction;
+  }, [address, selectedAdminCapObjectId, mSendManagerObjects]);
+
+  const [claimedPenaltyAmountMap, setClaimedPenaltyAmountMap] = useState<
+    Record<string, BigNumber>
+  >({});
+  useEffect(() => {
+    const transaction = getClaimPenaltiesTransaction();
+    if (!transaction) return;
+
+    (async () => {
+      const res = await dryRunTransaction(transaction);
+
+      const event = res.events.filter((event) =>
+        event.type.includes("::mtoken::PenaltyCollectedEvent"),
+      )[0];
+      if (!event) return;
+
+      const penaltyCoinType = normalizeStructTag(
+        (event.parsedJson as any).penalty_type.name,
+      );
+      const penaltyCoinMetadata = (penaltyCoinMetadataMap ?? {})[
+        penaltyCoinType
+      ];
+      if (!penaltyCoinMetadata) return;
+
+      const amountCollected = new BigNumber(
+        (event.parsedJson as any).amount_collected,
+      )
+        .div(10 ** penaltyCoinMetadata.decimals)
+        .decimalPlaces(penaltyCoinMetadata.decimals, BigNumber.ROUND_DOWN)
+        .toString();
+
+      setClaimedPenaltyAmountMap((prev) => ({
+        ...prev,
+        [penaltyCoinType]: new BigNumber(amountCollected),
+      }));
+    })();
+  }, [getClaimPenaltiesTransaction, dryRunTransaction, penaltyCoinMetadataMap]);
+
   return (
     <>
       <Head>
-        <title>Suilend | SEND</title>
+        <title>Suilend | mSEND</title>
       </Head>
 
       <div className="relative flex w-full flex-col items-center">
@@ -917,6 +1071,106 @@ function Page() {
                 className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
               >
                 Mint mTokens
+              </button>
+            </form>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-background p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <h2 className="mb-4 text-2xl font-bold">3. Claim penalties</h2>
+
+            <form
+              className="space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+
+                if (!address) return;
+                if (!selectedAdminCapObjectId) return;
+
+                const obj = mSendManagerObjects.find(
+                  ({ adminCapObjectId }) =>
+                    adminCapObjectId === selectedAdminCapObjectId,
+                );
+                if (!obj) return;
+
+                try {
+                  const transaction = getClaimPenaltiesTransaction();
+                  if (!transaction)
+                    throw new Error("Failed to get transaction");
+
+                  const res =
+                    await signExecuteAndWaitForTransaction(transaction);
+                  const txUrl = explorer.buildTxUrl(res.digest);
+
+                  toast.success("Claimed penalties", {
+                    action: (
+                      <TextLink className="block" href={txUrl}>
+                        View tx on {explorer.name}
+                      </TextLink>
+                    ),
+                  });
+                } catch (err) {
+                  toast.error("Failed to claim penalties", {
+                    description:
+                      (err as Error)?.message || "An unknown error occurred",
+                  });
+                }
+              }}
+            >
+              <div className="flex w-full flex-row gap-4">
+                <StandardSelect
+                  className="w-auto flex-1"
+                  items={mSendManagerObjects.map(
+                    ({ adminCapObjectId, mTokenCoinType }) => ({
+                      id: adminCapObjectId,
+                      name: mTokenCoinType.split("::")[2],
+                    }),
+                  )}
+                  value={selectedAdminCapObjectId}
+                  onChange={setSelectedAdminCapObjectId}
+                />
+
+                {selectedMSendManagerObject &&
+                  penaltyCoinMetadataMap &&
+                  penaltyCoinMetadataMap[
+                    selectedMSendManagerObject.penaltyCoinType
+                  ] && (
+                    <div className="flex flex-row items-center gap-2">
+                      <TokenLogo
+                        token={getToken(
+                          selectedMSendManagerObject.penaltyCoinType,
+                          penaltyCoinMetadataMap[
+                            selectedMSendManagerObject.penaltyCoinType
+                          ],
+                        )}
+                        size={16}
+                      />
+
+                      {claimedPenaltyAmountMap[
+                        selectedMSendManagerObject.penaltyCoinType
+                      ] === undefined ? (
+                        <Skeleton className="h-5 w-20" />
+                      ) : (
+                        <TBody>
+                          {formatToken(
+                            claimedPenaltyAmountMap[
+                              selectedMSendManagerObject.penaltyCoinType
+                            ],
+                            {
+                              dp: penaltyCoinMetadataMap[
+                                selectedMSendManagerObject.penaltyCoinType
+                              ].decimals,
+                            },
+                          )}
+                        </TBody>
+                      )}
+                    </div>
+                  )}
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              >
+                Claim penalties
               </button>
             </form>
           </div>
