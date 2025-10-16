@@ -3,7 +3,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -19,13 +18,11 @@ import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import { NORMALIZED_sSUI_COINTYPE, Token } from "@suilend/sui-fe";
-import { useSettingsContext } from "@suilend/sui-fe-next";
 import useLedgerHashDialog from "@suilend/sui-fe-next/hooks/useLedgerHashDialog";
 
 import LedgerHashDialog from "@/components/shared/LedgerHashDialog";
 import useFetchAppData from "@/fetchers/useFetchAppData";
 import { isInvalidIconUrl } from "@/lib/tokens";
-import { WALRUS_INNER_STAKING_OBJECT_ID } from "@/lib/walrus";
 
 export interface AppData {
   suilendClient: SuilendClient;
@@ -66,9 +63,6 @@ interface AppContext {
   isLst: (coinType: string) => boolean;
   isEcosystemLst: (coinType: string) => boolean;
 
-  walrusEpoch: number | undefined;
-  walrusEpochProgressPercent: number | undefined;
-
   tokenIconImageLoadErrorMap: Record<string, boolean>;
   loadTokenIconImage: (token: Token) => void;
 
@@ -94,9 +88,6 @@ const AppContext = createContext<AppContext>({
     throw Error("AppContextProvider not initialized");
   },
 
-  walrusEpoch: undefined,
-  walrusEpochProgressPercent: undefined,
-
   tokenIconImageLoadErrorMap: {},
   loadTokenIconImage: () => {
     throw Error("AppContextProvider not initialized");
@@ -114,8 +105,6 @@ export const useAppContext = () => useContext(AppContext);
 export const useLoadedAppContext = () => useAppContext() as LoadedAppContext;
 
 export function AppContextProvider({ children }: PropsWithChildren) {
-  const { suiClient } = useSettingsContext();
-
   // All app data
   const { data: allAppData, mutateData: mutateAllAppData } = useFetchAppData();
 
@@ -145,37 +134,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isLst(coinType) && coinType !== NORMALIZED_sSUI_COINTYPE,
     [isLst],
   );
-
-  // Walrus
-  const [walrusEpoch, setWalrusEpoch] = useState<number | undefined>(undefined);
-  const [walrusEpochProgressPercent, setWalrusEpochProgressPercent] = useState<
-    number | undefined
-  >(undefined);
-  useEffect(() => {
-    (async () => {
-      try {
-        const obj = await suiClient.getObject({
-          id: WALRUS_INNER_STAKING_OBJECT_ID,
-          options: {
-            showContent: true,
-          },
-        });
-
-        const { epoch, epoch_duration, first_epoch_start } = (
-          obj.data?.content as any
-        ).fields.value.fields;
-
-        setWalrusEpoch(epoch);
-        setWalrusEpochProgressPercent(
-          ((Date.now() - (+first_epoch_start + (epoch - 1) * +epoch_duration)) /
-            +epoch_duration) *
-            100,
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, [suiClient]);
 
   // Token images
   const [tokenIconImageLoadErrorMap, setTokenIconImageLoadErrorMap] = useState<
@@ -221,9 +179,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       isLst,
       isEcosystemLst,
 
-      walrusEpoch,
-      walrusEpochProgressPercent,
-
       tokenIconImageLoadErrorMap,
       loadTokenIconImage,
 
@@ -237,8 +192,6 @@ export function AppContextProvider({ children }: PropsWithChildren) {
       refreshAllAppData,
       isLst,
       isEcosystemLst,
-      walrusEpoch,
-      walrusEpochProgressPercent,
       tokenIconImageLoadErrorMap,
       loadTokenIconImage,
       openLedgerHashDialog,

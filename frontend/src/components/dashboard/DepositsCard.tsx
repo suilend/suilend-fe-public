@@ -37,7 +37,7 @@ export default function DepositsCard() {
   if (!address || filteredAppData.length === 0) return null;
   return (
     <Card
-      id="assets-deposited"
+      id="deposits"
       headerProps={{
         titleIcon: <Download />,
         title: (

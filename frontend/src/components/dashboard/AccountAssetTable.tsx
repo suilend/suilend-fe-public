@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 export enum AccountAssetTableType {
   DEPOSITS = "deposits",
   BORROWS = "borrows",
+  WALLET = "wallet",
 }
 
 interface RowData {
@@ -63,7 +64,9 @@ export default function AccountAssetTable({
   const totalUsd = new BigNumber(
     type === AccountAssetTableType.DEPOSITS
       ? (obligation?.depositedAmountUsd ?? 0)
-      : (obligation?.borrowedAmountUsd ?? 0),
+      : type === AccountAssetTableType.BORROWS
+        ? (obligation?.borrowedAmountUsd ?? 0)
+        : 0, // Wallet
   );
 
   // Columns
@@ -71,6 +74,7 @@ export default function AccountAssetTable({
     () => ({
       [AccountAssetTableType.DEPOSITS]: "Deposits",
       [AccountAssetTableType.BORROWS]: "Borrows",
+      [AccountAssetTableType.WALLET]: "Balance",
     }),
     [],
   );

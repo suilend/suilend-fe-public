@@ -48,7 +48,8 @@ export default function AssetCell({
 
       if (
         (tableType === AccountAssetTableType.DEPOSITS ||
-          tableType === AccountAssetTableType.BORROWS) &&
+          tableType === AccountAssetTableType.BORROWS ||
+          tableType === AccountAssetTableType.WALLET) &&
         !isInMsafeApp()
       ) {
         result.push({
@@ -75,7 +76,8 @@ export default function AssetCell({
         });
       }
       if (
-        tableType === MarketTableType.MARKET &&
+        (tableType === AccountAssetTableType.WALLET ||
+          tableType === MarketTableType.MARKET) &&
         token.coinType === NORMALIZED_SUI_COINTYPE
       ) {
         result.push({
@@ -85,7 +87,11 @@ export default function AssetCell({
             : getMsafeAppStoreUrl("SpringSui"),
         });
       }
-      if (tableType === MarketTableType.MARKET && isLst(token.coinType)) {
+      if (
+        (tableType === AccountAssetTableType.WALLET ||
+          tableType === MarketTableType.MARKET) &&
+        isLst(token.coinType)
+      ) {
         result.push({
           title: "Stake",
           href: !isInMsafeApp()

@@ -12,6 +12,7 @@ import DepositsCard from "@/components/dashboard/DepositsCard";
 import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
 import UnclaimedRewardsCard from "@/components/dashboard/UnclaimedRewardsCard";
+import WalletCard from "@/components/dashboard/WalletCard";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
@@ -26,6 +27,7 @@ function Cards() {
       <AccountsCard />
       <DepositsCard />
       <BorrowsCard />
+      <WalletCard />
     </>
   );
 }

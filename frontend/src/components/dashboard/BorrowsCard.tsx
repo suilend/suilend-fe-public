@@ -37,7 +37,7 @@ export default function BorrowsCard() {
   if (!address || filteredAppData.length === 0) return null;
   return (
     <Card
-      id="assets-borrowed"
+      id="borrows"
       headerProps={{
         titleIcon: <Upload />,
         title: (
