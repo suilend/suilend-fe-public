@@ -50,7 +50,7 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
       "0xf93304ac799c327471237353d120411c5f55f1d8245db44a6b5f5fabf8f35a42",
 
     name: "Elixir Market",
-    isHidden: true,
+    isHidden: false,
   },
 };
 
