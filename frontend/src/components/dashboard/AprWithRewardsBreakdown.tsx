@@ -19,6 +19,7 @@ import {
   NORMALIZED_LBTC_COINTYPE,
   NORMALIZED_flSUI_COINTYPE,
   NORMALIZED_jugSUI_COINTYPE,
+  NORMALIZED_sdeUSD_COINTYPE,
   formatPercent,
   formatPoints,
   formatPrice,
@@ -172,6 +173,22 @@ export default function AprWithRewardsBreakdown({
         },
         obligationClaims: {},
       });
+    if (reserve.coinType === NORMALIZED_sdeUSD_COINTYPE)
+      filteredRewards.push({
+        stats: {
+          id: uuidv4(),
+          isActive: true,
+          rewardIndex: -1, // Not used
+          reserve,
+          rewardCoinType: "ELIXIR_POTION",
+          mintDecimals: 0, // Not used
+          symbol: "3x Elixir Potions",
+          iconUrl: `${ASSETS_URL}/partners/Elixir Potion.png`,
+          perDay: new BigNumber(0), // Not used, but must be defined
+          side: Side.DEPOSIT,
+        },
+        obligationClaims: {},
+      });
   }
 
   const stakingYieldAprPercent = getStakingYieldAprPercent(
@@ -315,9 +332,11 @@ export default function AprWithRewardsBreakdown({
                       key={index}
                       isLast={index === perDayRewards.length - 1}
                       value={
-                        reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
-                        reward.stats.rewardCoinType ===
-                          "LOMBARD" ? undefined : (
+                        (reserve.coinType === NORMALIZED_LBTC_COINTYPE &&
+                          reward.stats.rewardCoinType === "LOMBARD") ||
+                        (reserve.coinType === NORMALIZED_sdeUSD_COINTYPE &&
+                          reward.stats.rewardCoinType ===
+                            "ELIXIR_POTION") ? undefined : (
                           <>
                             {formatPerDay(
                               reward.stats.rewardCoinType,

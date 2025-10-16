@@ -13,6 +13,7 @@ import {
 import ActionsModalTabContent from "@/components/dashboard/actions-modal/ActionsModalTabContent";
 import ParametersPanel from "@/components/dashboard/actions-modal/ParametersPanel";
 import Button from "@/components/shared/Button";
+import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tabs from "@/components/shared/Tabs";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
@@ -202,12 +203,11 @@ export default function ActionsModal() {
 
   return (
     <ActionsModalContainer>
-      <Tabs
-        className="-mr-2 mb-4"
-        tabs={tabs}
-        selectedTab={selectedTab}
-        onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
-        topEndDecorator={
+      <ParentLendingMarket
+        className="-mx-4 -mb-2 -mt-4 w-auto"
+        contentClassName="pr-2"
+        lendingMarketId={appData.lendingMarket.id}
+        endContent={
           <DialogPrimitive.Close asChild>
             <Button
               className="shrink-0 text-muted-foreground"
@@ -220,34 +220,41 @@ export default function ActionsModal() {
           </DialogPrimitive.Close>
         }
       >
-        <div
-          className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
-          style={{
-            height: `calc(100dvh - ${0 /* Top */}px - ${1 /* Border-top */}px - ${16 /* Padding-top */}px - ${42 /* Tabs */}px - ${16 /* Tabs margin-bottom */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${0 /* Bottom */}px)`,
-          }}
+        <Tabs
+          className="mb-4"
+          tabs={tabs}
+          selectedTab={selectedTab}
+          onTabChange={(tab) => onSelectedTabChange(tab as Tab)}
         >
-          {reserve && tabConfig && (
-            <>
-              <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
-                <ActionsModalTabContent
-                  side={side}
-                  reserve={reserve}
-                  {...tabConfig}
-                />
+          <div
+            className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
+            style={{
+              height: `calc(100dvh - ${0 /* Top */}px - ${1 /* Border-top */}px - ${32 /* Lending market header */}px - ${8 /* Gap */}px - ${42 /* Tabs */}px - ${16 /* Gap */}px - ${16 /* Padding-bottom */}px - ${1 /* Border-bottom */}px - ${0 /* Bottom */}px)`,
+            }}
+          >
+            {reserve && tabConfig && (
+              <>
+                <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
+                  <ActionsModalTabContent
+                    side={side}
+                    reserve={reserve}
+                    {...tabConfig}
+                  />
 
-                {/* Required to get the desired modal width on <md */}
-                <div className="-mt-4 h-0 w-[28rem] max-w-full" />
-              </div>
-
-              {md && isMoreParametersOpen && (
-                <div className="flex h-[480px] w-[28rem] flex-col gap-4 rounded-md border p-4">
-                  <ParametersPanel side={side} reserve={reserve} />
+                  {/* Required to get the desired modal width on <md */}
+                  <div className="-mt-4 h-0 w-[28rem] max-w-full" />
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </Tabs>
+
+                {md && isMoreParametersOpen && (
+                  <div className="flex h-[480px] w-[28rem] flex-col gap-4 rounded-md border p-4">
+                    <ParametersPanel side={side} reserve={reserve} />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </Tabs>
+      </ParentLendingMarket>
     </ActionsModalContainer>
   );
 }

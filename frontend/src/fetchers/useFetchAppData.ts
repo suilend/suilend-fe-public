@@ -31,7 +31,7 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
     lendingMarketOwnerCapId:
       "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
 
-    name: "Main market",
+    name: "Main Market",
     isHidden: false,
   },
   [STEAMM_LM_LENDING_MARKET_ID]: {
@@ -49,7 +49,7 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
     lendingMarketOwnerCapId:
       "0xf93304ac799c327471237353d120411c5f55f1d8245db44a6b5f5fabf8f35a42",
 
-    name: "Elixir",
+    name: "Elixir Market",
     isHidden: true,
   },
 };

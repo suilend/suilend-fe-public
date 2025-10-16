@@ -35,6 +35,7 @@ import {
   NORMALIZED_mUSD_COINTYPE,
   NORMALIZED_oshiSUI_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  NORMALIZED_sdeUSD_COINTYPE,
   NORMALIZED_stratSUI_COINTYPE,
   NORMALIZED_suiETH_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
@@ -65,55 +66,61 @@ import {
 } from "./strategyOwnerCap";
 import { LendingMarketMetadata, StrategyOwnerCap } from "./types";
 
-export const RESERVES_CUSTOM_ORDER = [
-  // MAIN ASSETS
-  NORMALIZED_sSUI_COINTYPE,
+export const RESERVES_CUSTOM_ORDER: Record<string, string[]> = {
+  [LENDING_MARKET_ID]: [
+    // MAIN ASSETS
+    NORMALIZED_sSUI_COINTYPE,
 
-  // MAIN ASSETS - Ecosystem LSTs
-  NORMALIZED_mSUI_COINTYPE,
-  NORMALIZED_fudSUI_COINTYPE,
-  NORMALIZED_kSUI_COINTYPE,
-  NORMALIZED_trevinSUI_COINTYPE,
-  NORMALIZED_upSUI_COINTYPE,
-  NORMALIZED_yapSUI_COINTYPE,
-  NORMALIZED_iSUI_COINTYPE,
-  NORMALIZED_flSUI_COINTYPE,
-  NORMALIZED_oshiSUI_COINTYPE,
-  NORMALIZED_jugSUI_COINTYPE,
-  NORMALIZED_stratSUI_COINTYPE,
+    // MAIN ASSETS - Ecosystem LSTs
+    NORMALIZED_mSUI_COINTYPE,
+    NORMALIZED_fudSUI_COINTYPE,
+    NORMALIZED_kSUI_COINTYPE,
+    NORMALIZED_trevinSUI_COINTYPE,
+    NORMALIZED_upSUI_COINTYPE,
+    NORMALIZED_yapSUI_COINTYPE,
+    NORMALIZED_iSUI_COINTYPE,
+    NORMALIZED_flSUI_COINTYPE,
+    NORMALIZED_oshiSUI_COINTYPE,
+    NORMALIZED_jugSUI_COINTYPE,
+    NORMALIZED_stratSUI_COINTYPE,
 
-  NORMALIZED_SUI_COINTYPE,
-  NORMALIZED_USDC_COINTYPE,
-  NORMALIZED_wUSDC_COINTYPE,
-  NORMALIZED_suiUSDT_COINTYPE,
-  NORMALIZED_wUSDT_COINTYPE,
-  NORMALIZED_AUSD_COINTYPE,
-  NORMALIZED_LBTC_COINTYPE,
-  NORMALIZED_wBTC_COINTYPE,
-  NORMALIZED_xBTC_COINTYPE,
-  NORMALIZED_suiETH_COINTYPE,
-  NORMALIZED_WETH_COINTYPE,
-  NORMALIZED_SOL_COINTYPE,
-  NORMALIZED_DEEP_COINTYPE,
-  NORMALIZED_WAL_COINTYPE,
+    NORMALIZED_SUI_COINTYPE,
+    NORMALIZED_USDC_COINTYPE,
+    NORMALIZED_wUSDC_COINTYPE,
+    NORMALIZED_suiUSDT_COINTYPE,
+    NORMALIZED_wUSDT_COINTYPE,
+    NORMALIZED_AUSD_COINTYPE,
+    NORMALIZED_LBTC_COINTYPE,
+    NORMALIZED_wBTC_COINTYPE,
+    NORMALIZED_xBTC_COINTYPE,
+    NORMALIZED_suiETH_COINTYPE,
+    NORMALIZED_WETH_COINTYPE,
+    NORMALIZED_SOL_COINTYPE,
+    NORMALIZED_DEEP_COINTYPE,
+    NORMALIZED_WAL_COINTYPE,
 
-  // ISOLATED ASSETS
-  NORMALIZED_SEND_COINTYPE,
-  NORMALIZED_IKA_COINTYPE,
-  NORMALIZED_HAEDAL_COINTYPE,
-  NORMALIZED_BLUE_COINTYPE,
-  NORMALIZED_NS_COINTYPE,
-  NORMALIZED_UP_COINTYPE,
-  NORMALIZED_DMC_COINTYPE,
-  NORMALIZED_ALKIMI_COINTYPE,
-  NORMALIZED_KOBAN_COINTYPE,
+    // ISOLATED ASSETS
+    NORMALIZED_SEND_COINTYPE,
+    NORMALIZED_IKA_COINTYPE,
+    NORMALIZED_HAEDAL_COINTYPE,
+    NORMALIZED_BLUE_COINTYPE,
+    NORMALIZED_NS_COINTYPE,
+    NORMALIZED_UP_COINTYPE,
+    NORMALIZED_DMC_COINTYPE,
+    NORMALIZED_ALKIMI_COINTYPE,
+    NORMALIZED_KOBAN_COINTYPE,
 
-  NORMALIZED_mUSD_COINTYPE,
-  NORMALIZED_BUCK_COINTYPE,
+    NORMALIZED_mUSD_COINTYPE,
+    NORMALIZED_BUCK_COINTYPE,
 
-  NORMALIZED_HIPPO_COINTYPE,
-  NORMALIZED_FUD_COINTYPE,
-];
+    NORMALIZED_HIPPO_COINTYPE,
+    NORMALIZED_FUD_COINTYPE,
+  ],
+  "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2": [
+    NORMALIZED_sdeUSD_COINTYPE,
+    NORMALIZED_USDC_COINTYPE,
+  ],
+};
 
 const MAYA_COINTYPE =
   "0x3bf0aeb7b9698b18ec7937290a5701088fcd5d43ad11a2564b074d022a6d71ec::maya::MAYA";
@@ -255,15 +262,21 @@ export const initializeSuilend = async (
     nowS,
     lendingMarketMetadata,
   );
-  lendingMarket.reserves = lendingMarket.reserves.slice().sort((a, b) => {
-    const aCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(a.coinType);
-    const bCustomOrderIndex = RESERVES_CUSTOM_ORDER.indexOf(b.coinType);
+  if (!!RESERVES_CUSTOM_ORDER[lendingMarket.id]) {
+    lendingMarket.reserves = lendingMarket.reserves.slice().sort((a, b) => {
+      const aCustomOrderIndex = RESERVES_CUSTOM_ORDER[lendingMarket.id].indexOf(
+        a.coinType,
+      );
+      const bCustomOrderIndex = RESERVES_CUSTOM_ORDER[lendingMarket.id].indexOf(
+        b.coinType,
+      );
 
-    if (aCustomOrderIndex > -1 && bCustomOrderIndex > -1)
-      return aCustomOrderIndex - bCustomOrderIndex;
-    else if (aCustomOrderIndex === -1 && bCustomOrderIndex === -1) return 0;
-    else return aCustomOrderIndex > -1 ? -1 : 1;
-  });
+      if (aCustomOrderIndex > -1 && bCustomOrderIndex > -1)
+        return aCustomOrderIndex - bCustomOrderIndex;
+      else if (aCustomOrderIndex === -1 && bCustomOrderIndex === -1) return 0;
+      else return aCustomOrderIndex > -1 ? -1 : 1;
+    });
+  }
 
   const reserveMap = lendingMarket.reserves.reduce(
     (acc, reserve) => ({ ...acc, [reserve.coinType]: reserve }),
