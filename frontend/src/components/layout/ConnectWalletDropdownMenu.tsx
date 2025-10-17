@@ -1,12 +1,7 @@
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { isInMsafeApp } from "@suilend/sui-fe";
-import {
-  WALLET_CONNECT_WALLET,
-  Wallet,
-  WalletType,
-  useWalletContext,
-} from "@suilend/sui-fe-next";
+import { Wallet, WalletType, useWalletContext } from "@suilend/sui-fe-next";
 import useIsAndroid from "@suilend/sui-fe-next/hooks/useIsAndroid";
 import useIsiOS from "@suilend/sui-fe-next/hooks/useIsiOS";
 
@@ -76,6 +71,7 @@ export default function ConnectWalletDropdownMenu() {
     wallets,
   } = useWalletContext();
 
+  // State
   const Icon = isConnectWalletDropdownOpen ? ChevronUp : ChevronDown;
 
   return (

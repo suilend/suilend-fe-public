@@ -1,6 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { KioskItem } from "@mysten/kiosk";
 import { Transaction } from "@mysten/sui/transactions";
@@ -9,12 +8,11 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { formatDate, intervalToDuration } from "date-fns";
 import { capitalize } from "lodash";
-import { ArrowUpRight, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { LENDING_MARKET_ID, STEAMM_LM_LENDING_MARKET_ID } from "@suilend/sdk";
 import {
-  API_URL,
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
@@ -68,7 +66,6 @@ import {
   redeemRootletsMsend,
   redeemSuilendCapsulesMsend,
 } from "@/lib/mSend";
-import { STEAMM_URL } from "@/lib/navigation";
 import {
   S1_mSEND_REDEMPTION_END_TIMESTAMP_MS,
   S2_mSEND_REDEMPTION_END_TIMESTAMP_MS,
@@ -543,9 +540,7 @@ function ClaimTabContent() {
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-  const { allUserData, getBalance, obligationOwnerCapMap } =
-    useLoadedUserContext();
-  const userDataSteammLmMarket = allUserData[STEAMM_LM_LENDING_MARKET_ID];
+  const { getBalance, obligationOwnerCapMap } = useLoadedUserContext();
   const obligationOwnerCapMainMarket = obligationOwnerCapMap[LENDING_MARKET_ID];
 
   const {
@@ -563,40 +558,6 @@ function ClaimTabContent() {
   // Balances
   const suiBalance = getBalance(NORMALIZED_SUI_COINTYPE);
   const mSendBalance = mSendBalanceMap[selectedMsendCoinType];
-
-  // STEAMM deposit
-  const [steammPoolLpTokenCoinTypes, setSteammPoolLpTokenCoinTypes] = useState<
-    string[] | undefined
-  >(undefined);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const poolsUrl = `${API_URL}/steamm/pools/all`;
-        const poolsRes = await fetch(poolsUrl);
-        const poolsJson: any[] = await poolsRes.json();
-        if ((poolsJson as any)?.statusCode === 500)
-          throw new Error("Failed to fetch pools");
-
-        setSteammPoolLpTokenCoinTypes(
-          poolsJson.map((poolObj) => poolObj.poolInfo.lpTokenType),
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, []);
-
-  const steammLpTokenBalances = useMemo(
-    () => steammPoolLpTokenCoinTypes?.map(getBalance),
-    [steammPoolLpTokenCoinTypes, getBalance],
-  );
-
-  const satisfiesSteammDepositTask =
-    steammLpTokenBalances?.some((balance) => balance.gt(0)) ||
-    (userDataSteammLmMarket.obligations ?? []).some((obligation) =>
-      obligation.deposits.some((d) => d.depositedAmount.gt(0)),
-    );
 
   // Amount
   const [claimAmount, setClaimAmount] = useState<string>("");
@@ -746,281 +707,237 @@ function ClaimTabContent() {
   };
 
   return (
-    <>
-      {/* STEAMM deposit */}
-      <div
-        className={cn(
-          "flex w-full flex-row items-center gap-4",
-          satisfiesSteammDepositTask && "pointer-events-none opacity-50",
-        )}
-      >
-        <div className="flex flex-1 flex-col gap-1">
-          <div className="flex flex-row items-center gap-3">
-            <div className="flex h-5 w-5 flex-row items-center justify-center rounded-sm bg-border">
-              <TLabelSans className="text-foreground">1</TLabelSans>
+    <div className="flex w-full flex-col gap-6">
+      <div className="flex w-full flex-col gap-4">
+        <TBody className="text-[16px] uppercase">Claim SEND</TBody>
+
+        {/* Select mSEND */}
+        {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
+
+        {/* Input */}
+        <div className="relative flex w-full flex-col">
+          <div className="relative z-[2] w-full">
+            <div className="absolute left-4 top-1/2 z-[2] -translate-y-2/4">
+              <Button
+                className={cn(
+                  useMaxAmount &&
+                    "border-secondary bg-secondary/5 disabled:opacity-100",
+                )}
+                labelClassName={cn(
+                  "uppercase",
+                  useMaxAmount && "text-primary-foreground",
+                )}
+                variant="secondaryOutline"
+                onClick={() =>
+                  setClaimAmount(
+                    mSendBalance.toFixed(
+                      mSendCoinMetadata.decimals,
+                      BigNumber.ROUND_DOWN,
+                    ),
+                  )
+                }
+                disabled={useMaxAmount}
+                style={{
+                  width: `${MAX_BUTTON_WIDTH}px`,
+                  height: `${MAX_BUTTON_HEIGHT}px`,
+                }}
+              >
+                Max
+              </Button>
             </div>
-            <TBody className="text-[16px] uppercase">LP on STEAMM</TBody>
+
+            <Input
+              className="relative z-[1] border-primary bg-card px-0 py-0 text-right text-2xl"
+              type="number"
+              value={claimAmount}
+              onChange={(e) => setClaimAmount(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
+              style={{
+                height: `${INPUT_HEIGHT}px`,
+                paddingLeft: `${4 * 4 + MAX_BUTTON_WIDTH + 4 * 4}px`,
+                paddingRight: `${4 * 4 + "SEND".length * 14.4 + 4 * 4}px`,
+              }}
+              step="any"
+            />
+
+            <div
+              className="absolute right-4 top-0 z-[2] flex flex-col items-end justify-center"
+              style={{ height: `${INPUT_HEIGHT}px` }}
+            >
+              <TBody className="text-right text-2xl">SEND</TBody>
+            </div>
           </div>
-          <TBodySans className="text-muted-foreground">
-            Deposit any amount into any STEAMM pool
-          </TBodySans>
+
+          <div className="relative z-[1] -mt-2 flex flex-row items-center justify-between rounded-b-md bg-primary/25 px-4 pb-2 pt-4">
+            <TBodySans className="text-muted-foreground">Claimable</TBodySans>
+
+            <div className="flex flex-row items-center gap-2">
+              <SendTokenLogo size={16} />
+              <TBody>
+                {formatToken(mSendBalance, {
+                  dp: sendReserve.token.decimals,
+                })}
+              </TBody>
+            </div>
+          </div>
         </div>
 
-        <Link href={STEAMM_URL} target="_blank">
-          <Button labelClassName="uppercase" endIcon={<ArrowUpRight />}>
-            LP
-          </Button>
-        </Link>
-      </div>
+        {/* Penalty */}
+        {mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) && (
+          <div className="flex w-full flex-row justify-between gap-4">
+            <TBodySans className="text-muted-foreground">Penalty</TBodySans>
 
-      <Separator />
-
-      <div
-        className={cn(
-          "flex w-full flex-col gap-6",
-          !satisfiesSteammDepositTask && "pointer-events-none opacity-50",
-        )}
-      >
-        <div className="flex w-full flex-col gap-4">
-          <div className="flex flex-row items-center gap-3">
-            <div className="flex h-5 w-5 flex-row items-center justify-center rounded-sm bg-border">
-              <TLabelSans className="text-foreground">2</TLabelSans>
-            </div>
-            <TBody className="text-[16px] uppercase">Claim SEND</TBody>
-          </div>
-
-          {/* Select mSEND */}
-          {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
-
-          {/* Input */}
-          <div className="relative flex w-full flex-col">
-            <div className="relative z-[2] w-full">
-              <div className="absolute left-4 top-1/2 z-[2] -translate-y-2/4">
-                <Button
-                  className={cn(
-                    useMaxAmount &&
-                      "border-secondary bg-secondary/5 disabled:opacity-100",
-                  )}
-                  labelClassName={cn(
-                    "uppercase",
-                    useMaxAmount && "text-primary-foreground",
-                  )}
-                  variant="secondaryOutline"
-                  onClick={() =>
-                    setClaimAmount(
-                      mSendBalance.toFixed(
-                        mSendCoinMetadata.decimals,
-                        BigNumber.ROUND_DOWN,
-                      ),
-                    )
-                  }
-                  disabled={useMaxAmount}
-                  style={{
-                    width: `${MAX_BUTTON_WIDTH}px`,
-                    height: `${MAX_BUTTON_HEIGHT}px`,
-                  }}
-                >
-                  Max
-                </Button>
-              </div>
-
-              <Input
-                className="relative z-[1] border-primary bg-card px-0 py-0 text-right text-2xl"
-                type="number"
-                value={claimAmount}
-                onChange={(e) => setClaimAmount(e.target.value)}
-                onWheel={(e) => e.currentTarget.blur()}
-                style={{
-                  height: `${INPUT_HEIGHT}px`,
-                  paddingLeft: `${4 * 4 + MAX_BUTTON_WIDTH + 4 * 4}px`,
-                  paddingRight: `${4 * 4 + "SEND".length * 14.4 + 4 * 4}px`,
-                }}
-                step="any"
-              />
-
-              <div
-                className="absolute right-4 top-0 z-[2] flex flex-col items-end justify-center"
-                style={{ height: `${INPUT_HEIGHT}px` }}
-              >
-                <TBody className="text-right text-2xl">SEND</TBody>
-              </div>
-            </div>
-
-            <div className="relative z-[1] -mt-2 flex flex-row items-center justify-between rounded-b-md bg-primary/25 px-4 pb-2 pt-4">
-              <TBodySans className="text-muted-foreground">Claimable</TBodySans>
-
+            <div className="flex flex-col items-end gap-1">
               <div className="flex flex-row items-center gap-2">
-                <SendTokenLogo size={16} />
-                <TBody>
-                  {formatToken(mSendBalance, {
-                    dp: sendReserve.token.decimals,
-                  })}
-                </TBody>
+                <SuiTokenLogo size={16} />
+                <Tooltip
+                  title={`${formatToken(claimPenaltyAmountSui, {
+                    dp: SUI_DECIMALS,
+                  })} SUI`}
+                >
+                  <TBody
+                    className={cn(
+                      "decoration-foreground/50",
+                      hoverUnderlineClassName,
+                    )}
+                  >
+                    {formatToken(claimPenaltyAmountSui, { exact: false })}
+                    {" SUI"}
+                  </TBody>
+                </Tooltip>
               </div>
+              <TLabel>
+                {formatUsd(claimPenaltyAmountSui.times(suiReserve.price))}
+              </TLabel>
             </div>
           </div>
+        )}
 
-          {/* Penalty */}
-          {mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) && (
-            <div className="flex w-full flex-row justify-between gap-4">
-              <TBodySans className="text-muted-foreground">Penalty</TBodySans>
-
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex flex-row items-center gap-2">
-                  <SuiTokenLogo size={16} />
-                  <Tooltip
-                    title={`${formatToken(claimPenaltyAmountSui, {
-                      dp: SUI_DECIMALS,
-                    })} SUI`}
+        {/* Flash loan */}
+        {false &&
+          mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) &&
+          new BigNumber(sendReserve.price.div(suiReserve.price)).gt(
+            mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
+          ) && (
+            <>
+              <div className="flex w-full flex-row justify-between gap-4">
+                <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
+                  <TBodySans
+                    className={cn(
+                      "text-muted-foreground decoration-muted-foreground/50",
+                      hoverUnderlineClassName,
+                    )}
                   >
-                    <TBody
-                      className={cn(
-                        "decoration-foreground/50",
-                        hoverUnderlineClassName,
-                      )}
-                    >
-                      {formatToken(claimPenaltyAmountSui, { exact: false })}
-                      {" SUI"}
-                    </TBody>
-                  </Tooltip>
-                </div>
-                <TLabel>
-                  {formatUsd(claimPenaltyAmountSui.times(suiReserve.price))}
-                </TLabel>
+                    Use flash loan to pay penalty
+                  </TBodySans>
+                </Tooltip>
+
+                <Switch
+                  id="isFlashLoan"
+                  isChecked={isFlashLoan}
+                  onToggle={setIsFlashLoan}
+                />
               </div>
-            </div>
-          )}
-
-          {/* Flash loan */}
-          {false &&
-            mSendObjectMap[selectedMsendCoinType].currentPenaltySui.gt(0) &&
-            new BigNumber(sendReserve.price.div(suiReserve.price)).gt(
-              mSendObjectMap[selectedMsendCoinType].currentPenaltySui,
-            ) && (
-              <>
-                <div className="flex w-full flex-row justify-between gap-4">
-                  <Tooltip title="Enabling this will swap a portion of your claimed SEND to SUI to pay the penalty, with the remaining SEND proceeds sent to your wallet.">
-                    <TBodySans
-                      className={cn(
-                        "text-muted-foreground decoration-muted-foreground/50",
-                        hoverUnderlineClassName,
-                      )}
-                    >
-                      Use flash loan to pay penalty
+              {isFlashLoan && (
+                <div className="flex flex-col gap-3 rounded-md border p-4">
+                  {/* Slippage */}
+                  <div className="flex h-5 flex-row items-center justify-between gap-4">
+                    <TBodySans className="text-muted-foreground">
+                      Slippage
                     </TBodySans>
-                  </Tooltip>
 
-                  <Switch
-                    id="isFlashLoan"
-                    isChecked={isFlashLoan}
-                    onToggle={setIsFlashLoan}
-                  />
-                </div>
-                {isFlashLoan && (
-                  <div className="flex flex-col gap-3 rounded-md border p-4">
-                    {/* Slippage */}
-                    <div className="flex h-5 flex-row items-center justify-between gap-4">
-                      <TBodySans className="text-muted-foreground">
-                        Slippage
-                      </TBodySans>
-
-                      <div className="flex flex-row items-center gap-1">
-                        <Input
-                          className="h-6 w-12 rounded-sm border-border bg-transparent px-2 text-right"
-                          type="number"
-                          placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
-                          min={0}
-                          max={100}
-                          step={0.1}
-                          value={flashLoanSlippagePercent ?? ""}
-                          onChange={(e) =>
-                            setFlashLoanSlippagePercent(e.target.value)
-                          }
-                        />
-                        <TBody>%</TBody>
-                      </div>
-                    </div>
-
-                    {/* Approximate deduction */}
-                    <div className="flex flex-row justify-between gap-4">
-                      <TBodySans className="text-muted-foreground">
-                        Deduction (approx.)
-                      </TBodySans>
-
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo size={16} />
-                          <TBody>
-                            {formatToken(flashLoanDeductionAmountSend, {
-                              exact: false,
-                            })}
-                            {" SEND"}
-                            {flashLoanDeductionPercent.gt(0) &&
-                              ` (${formatPercent(flashLoanDeductionPercent, { dp: 0 })})`}
-                          </TBody>
-                        </div>
-                        <TLabel>
-                          {formatUsd(
-                            flashLoanDeductionAmountSend.times(
-                              sendReserve.price,
-                            ),
-                          )}
-                        </TLabel>
-                      </div>
-                    </div>
-
-                    {/* Approximate proceeds */}
-                    <div className="flex flex-row justify-between gap-4">
-                      <TBodySans className="text-muted-foreground">
-                        Proceeds (approx.)
-                      </TBodySans>
-
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="flex flex-row items-center gap-2">
-                          <SendTokenLogo size={16} />
-                          <TBody>
-                            {formatToken(flashLoanProceedsAmountSend, {
-                              exact: false,
-                            })}
-                            {" SEND"}
-                          </TBody>
-                        </div>
-                        <TLabel>
-                          {formatUsd(
-                            flashLoanProceedsAmountSend.times(
-                              sendReserve.price,
-                            ),
-                          )}
-                        </TLabel>
-                      </div>
+                    <div className="flex flex-row items-center gap-1">
+                      <Input
+                        className="h-6 w-12 rounded-sm border-border bg-transparent px-2 text-right"
+                        type="number"
+                        placeholder={`${DEFAULT_FLASH_LOAN_SLIPPAGE_PERCENT}`}
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={flashLoanSlippagePercent ?? ""}
+                        onChange={(e) =>
+                          setFlashLoanSlippagePercent(e.target.value)
+                        }
+                      />
+                      <TBody>%</TBody>
                     </div>
                   </div>
-                )}
-              </>
-            )}
-        </div>
 
-        {/* Submit */}
-        <div className="flex w-full flex-col gap-px">
-          {/* Claim */}
-          <SubmitButton
-            className="rounded-b-none"
-            state={submitButtonState_claim}
-            submit={() => submit(false)}
-          />
+                  {/* Approximate deduction */}
+                  <div className="flex flex-row justify-between gap-4">
+                    <TBodySans className="text-muted-foreground">
+                      Deduction (approx.)
+                    </TBodySans>
 
-          {/* Claim and deposit */}
-          <SubmitButton
-            className="min-h-8 rounded-t-none"
-            labelClassName="text-xs"
-            variant="secondary"
-            spinnerSize="sm"
-            state={submitButtonState_claimAndDeposit}
-            submit={() => submit(true)}
-          />
-        </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-row items-center gap-2">
+                        <SendTokenLogo size={16} />
+                        <TBody>
+                          {formatToken(flashLoanDeductionAmountSend, {
+                            exact: false,
+                          })}
+                          {" SEND"}
+                          {flashLoanDeductionPercent.gt(0) &&
+                            ` (${formatPercent(flashLoanDeductionPercent, { dp: 0 })})`}
+                        </TBody>
+                      </div>
+                      <TLabel>
+                        {formatUsd(
+                          flashLoanDeductionAmountSend.times(sendReserve.price),
+                        )}
+                      </TLabel>
+                    </div>
+                  </div>
+
+                  {/* Approximate proceeds */}
+                  <div className="flex flex-row justify-between gap-4">
+                    <TBodySans className="text-muted-foreground">
+                      Proceeds (approx.)
+                    </TBodySans>
+
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex flex-row items-center gap-2">
+                        <SendTokenLogo size={16} />
+                        <TBody>
+                          {formatToken(flashLoanProceedsAmountSend, {
+                            exact: false,
+                          })}
+                          {" SEND"}
+                        </TBody>
+                      </div>
+                      <TLabel>
+                        {formatUsd(
+                          flashLoanProceedsAmountSend.times(sendReserve.price),
+                        )}
+                      </TLabel>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
       </div>
-    </>
+
+      {/* Submit */}
+      <div className="flex w-full flex-col gap-px">
+        {/* Claim */}
+        <SubmitButton
+          className="rounded-b-none"
+          state={submitButtonState_claim}
+          submit={() => submit(false)}
+        />
+
+        {/* Claim and deposit */}
+        <SubmitButton
+          className="min-h-8 rounded-t-none"
+          labelClassName="text-xs"
+          variant="secondary"
+          spinnerSize="sm"
+          state={submitButtonState_claimAndDeposit}
+          submit={() => submit(true)}
+        />
+      </div>
+    </div>
   );
 }
 
