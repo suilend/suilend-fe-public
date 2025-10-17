@@ -709,8 +709,6 @@ function ClaimTabContent() {
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="flex w-full flex-col gap-4">
-        <TBody className="text-[16px] uppercase">Claim SEND</TBody>
-
         {/* Select mSEND */}
         {mSendCoinTypesWithBalance.length > 1 && <MsendDropdownMenu />}
 
