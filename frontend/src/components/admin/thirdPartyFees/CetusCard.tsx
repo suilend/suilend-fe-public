@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
 import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
-import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { CoinMetadata } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
@@ -41,7 +39,7 @@ const CAP_OWNER =
 
 export default function CetusCard() {
   const { rpc, explorer, suiClient } = useSettingsContext();
-  const { account, address, signExecuteAndWaitForTransaction } =
+  const { address, signExecuteAndWaitForTransaction, signPersonalMessage } =
     useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
@@ -89,10 +87,8 @@ export default function CetusCard() {
   }, [cetusSdk]);
 
   // Submit
-  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const onSubmitClick = async () => {
-    if (!account?.publicKey || !address)
-      throw new Error("Wallet not connected");
+    if (!address) throw new Error("Wallet not connected");
     if (!isEditable)
       throw new Error("Connected wallet is not the cap owner wallet");
 
@@ -100,10 +96,7 @@ export default function CetusCard() {
 
     try {
       // 1) Create keypair
-      const createKeypairResult = await createKeypair(
-        account,
-        signPersonalMessage,
-      );
+      const createKeypairResult = await createKeypair(signPersonalMessage);
       const keypair = createKeypairResult.keypair;
       const keypairAddress = createKeypairResult.address;
 

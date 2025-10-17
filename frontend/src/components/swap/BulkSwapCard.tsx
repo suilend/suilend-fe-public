@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { CoinMetadata } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
@@ -52,7 +50,7 @@ interface BulkSwapCardProps {
 
 export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
   const { explorer, suiClient } = useSettingsContext();
-  const { account, address, signExecuteAndWaitForTransaction } =
+  const { address, signExecuteAndWaitForTransaction, signPersonalMessage } =
     useWalletContext();
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
@@ -111,20 +109,15 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
     );
   }, [isSubmitting, selectableCoinTypes]);
 
-  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const onSubmitClick = async () => {
-    if (!account?.publicKey || !address)
-      throw new Error("Wallet not connected");
+    if (!address) throw new Error("Wallet not connected");
 
     try {
       setIsSubmitting(true);
       setProgress(`0/${selectedCoinTypes.length}`);
 
       // 1) Create keypair
-      const createKeypairResult = await createKeypair(
-        account,
-        signPersonalMessage,
-      );
+      const createKeypairResult = await createKeypair(signPersonalMessage);
       const keypair = createKeypairResult.keypair;
       const keypairAddress = createKeypairResult.address;
 
