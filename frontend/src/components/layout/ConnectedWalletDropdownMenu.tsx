@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { useSignPersonalMessage } from "@mysten/dapp-kit";
 import { toBase64 } from "@mysten/sui/utils";
 import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
 
@@ -47,6 +46,7 @@ export default function ConnectedWalletDropdownMenu({
     accounts,
     account,
     switchAccount,
+    signPersonalMessage,
     ...restWalletContext
   } = useWalletContext();
   const address = restWalletContext.address as string;
@@ -85,17 +85,13 @@ export default function ConnectedWalletDropdownMenu({
   }, [isEligibleForVipProgramMap, address]);
 
   // VIP - join
-  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
-
   const joinVipGroup = async () => {
     if (!account?.publicKey) return;
     const timestampS = Math.floor(Date.now() / 1000);
 
     try {
       const message = Buffer.from(`suilend-vip-verification-${timestampS}`);
-      const { signature } = await signPersonalMessage({
-        message,
-      });
+      const { signature } = await signPersonalMessage(message);
 
       const url = `${API_URL}/vip/info/?${new URLSearchParams({
         publicKey: toBase64(account.publicKey as Uint8Array),

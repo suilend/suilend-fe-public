@@ -21,7 +21,6 @@
     "@launchdarkly/node-server-sdk": "^9.7.2",
     "@msafe/sui-wallet": "^0.0.83",
     "@mysten/bcs": "1.6.0",
-    "@mysten/dapp-kit": "0.16.0",
     "@mysten/kiosk": "0.12.3",
     "@mysten/move-bytecode-template": "0.1.0",
     "@mysten/sui": "1.28.2",
