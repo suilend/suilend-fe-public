@@ -3828,7 +3828,10 @@ export default function LstStrategyDialog({
 
     let flashLoanRepayCoin = withdrawnCoin;
     if (depositReserve.coinType === depositReserves.lst?.coinType)
-      flashLoanRepayCoin = lst!.client.redeem(transaction, flashLoanRepayCoin);
+      flashLoanRepayCoin = lst!.client.redeem(
+        transaction,
+        flashLoanRepayCoin as TransactionObjectInput,
+      );
 
     // 4.2) Repay flash loan
     const flashLoanRepayBalance = transaction.moveCall({

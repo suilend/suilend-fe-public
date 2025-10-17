@@ -30,7 +30,7 @@ export type GenericArg =
 
 export function splitGenericParameters(
   str: string,
-  genericSeparators: [string, string] = ["<", ">"],
+  genericSeparators: [string, string] = ["<", ">"]
 ) {
   const [left, right] = genericSeparators;
   const tok = [];
@@ -84,14 +84,14 @@ export function parseTypeName(name: string): {
   const typeName = name.slice(0, l_bound);
   const typeArgs = splitGenericParameters(
     name.slice(l_bound + 1, name.length - r_bound - 1),
-    [left, right],
+    [left, right]
   );
 
   return { typeName, typeArgs };
 }
 
 export function isTransactionArgument(
-  arg: GenericArg,
+  arg: GenericArg
 ): arg is TransactionArgument {
   if (!arg || typeof arg !== "object" || Array.isArray(arg)) {
     return false;
@@ -112,10 +112,10 @@ export function obj(tx: Transaction, arg: TransactionObjectInput) {
 export function pure(
   tx: Transaction,
   arg: PureArg,
-  type: string,
+  type: string
 ): TransactionArgument {
   if (isTransactionArgument(arg)) {
-    return obj(tx, arg);
+    return obj(tx, arg as TransactionObjectInput);
   }
 
   function getBcsForType(type: string): BcsType<any> {
@@ -220,7 +220,7 @@ export function pure(
       }
       if (hasPrimitiveValues([arg])) {
         throw new Error(
-          "mixing primitive and TransactionArgument values is not supported",
+          "mixing primitive and TransactionArgument values is not supported"
         );
       }
 
@@ -245,7 +245,7 @@ export function pure(
       }
       if (hasPrimitiveValues(arg)) {
         throw new Error(
-          "mixing primitive and TransactionArgument values is not supported",
+          "mixing primitive and TransactionArgument values is not supported"
         );
       }
 
@@ -267,7 +267,7 @@ export function option(tx: Transaction, type: string, arg: GenericArg | null) {
     return pure(
       tx,
       arg as PureArg | TransactionArgument,
-      `0x1::option::Option<${type}>`,
+      `0x1::option::Option<${type}>`
     );
   }
 
@@ -299,7 +299,7 @@ export function generic(tx: Transaction, type: string, arg: GenericArg) {
       return tx.makeMoveVec({
         type: itemType,
         elements: arg.map((item) =>
-          obj(tx, item as TransactionObjectInput),
+          obj(tx, item as TransactionObjectInput)
         ) as Array<TransactionObjectArgument>,
       });
     } else {
@@ -311,7 +311,7 @@ export function generic(tx: Transaction, type: string, arg: GenericArg) {
 export function vector(
   tx: Transaction,
   itemType: string,
-  items: Array<GenericArg> | TransactionArgument,
+  items: Array<GenericArg> | TransactionArgument
 ) {
   if (typeof items === "function") {
     throw new Error("Transaction plugins are not supported");
@@ -326,7 +326,7 @@ export function vector(
       parseTypeName(itemType);
     if (itemTypeName === "0x1::option::Option") {
       const elements = items.map((item) =>
-        option(tx, itemTypeArgs[0], item),
+        option(tx, itemTypeArgs[0], item)
       ) as Array<TransactionObjectArgument>;
       return tx.makeMoveVec({
         type: itemType,
