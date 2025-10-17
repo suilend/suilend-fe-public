@@ -95,7 +95,6 @@ export default function ConnectedWalletDropdownMenu({
       const message = Buffer.from(`suilend-vip-verification-${timestampS}`);
       const { signature } = await signPersonalMessage({
         message,
-        account,
       });
 
       const url = `${API_URL}/vip/info/?${new URLSearchParams({
