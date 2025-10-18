@@ -38,11 +38,14 @@ export default function ConnectWalletButton() {
       try {
         addressesBeingLookedUpRef.current.push(...addressesToLookUp);
 
+        console.log("addressesToLookUp", addressesToLookUp);
         const result = await Promise.all(
           addressesToLookUp.map((_address) =>
             suiClient.resolveNameServiceNames({ address: _address }),
           ),
         );
+
+        console.log("result", result);
 
         setAddressNameServiceNameMap((o) =>
           result.reduce(

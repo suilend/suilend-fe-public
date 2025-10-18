@@ -133,6 +133,12 @@ export default function ConnectedWalletDropdownMenu({
   const noItems =
     !hasVipItem && !hasDisconnectItem && !hasAccounts && !hasWallets;
 
+  console.log(
+    addressNameServiceNameMap,
+    accounts,
+    accounts.map((a) => a.address),
+  );
+
   return (
     <DropdownMenu
       rootProps={{ open: isOpen, onOpenChange: setIsOpen }}

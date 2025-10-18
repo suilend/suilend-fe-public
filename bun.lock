@@ -50,7 +50,7 @@
         "@suilend/springsui-sdk": "^1.0.26",
         "@suilend/steamm-sdk": "^1.1.5",
         "@suilend/sui-fe": "^0.3.36",
-        "@suilend/sui-fe-next": "^0.1.76",
+        "@suilend/sui-fe-next": "^0.1.77",
         "@tanstack/react-table": "^8.20.5",
         "@vercel/analytics": "^1.4.0",
         "@vercel/speed-insights": "^1.1.0",
@@ -1369,7 +1369,7 @@
 
     "@suilend/sui-fe": ["@suilend/sui-fe@0.3.36", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-WMChV0UMAdqXXlr1ran5I3jGqV2s6ZRftfw1ZyA8L/9ANj3N2ky6ZQQgXCyqlgxMweIy1DMHSTnYU4L1OCW2ow=="],
 
-    "@suilend/sui-fe-next": ["@suilend/sui-fe-next@0.1.76", "", { "dependencies": { "@reown/appkit": "^1.8.10", "@reown/appkit-common": "^1.8.10", "@reown/appkit-universal-connector": "^1.8.10", "@sentry/nextjs": "^8.38.0", "@tanstack/react-query": "^5.60.2", "bignumber.js": "^9.1.2", "launchdarkly-react-client-sdk": "^3.6.0", "lodash": "^4.17.21", "next": "^15.0.3", "react": "18.3.1", "react-dom": "18.3.1", "react-responsive": "^10.0.0", "shio-sdk": "^1.0.8", "sonner": "1.4.41", "swr": "^2.2.5", "tailwind-merge": "^2.5.4", "usehooks-ts": "^3.1.1" }, "peerDependencies": { "@mysten/dapp-kit": "0.19.4", "@mysten/sui": "1.42.0", "@mysten/wallet-standard": "0.19.2", "@suilend/sui-fe": "^0.3.36" } }, "sha512-gjfPxYIWnOWPhZAPENU2ARHMPF0oCMN7a/buF1wMkUzc3cc0D9sgBA5UjPJgt/Vg/QZic0J63EMA3FXm8djBkg=="],
+    "@suilend/sui-fe-next": ["@suilend/sui-fe-next@0.1.77", "", { "dependencies": { "@reown/appkit": "^1.8.10", "@reown/appkit-common": "^1.8.10", "@reown/appkit-universal-connector": "^1.8.10", "@sentry/nextjs": "^8.38.0", "@tanstack/react-query": "^5.60.2", "bignumber.js": "^9.1.2", "launchdarkly-react-client-sdk": "^3.6.0", "lodash": "^4.17.21", "next": "^15.0.3", "react": "18.3.1", "react-dom": "18.3.1", "react-responsive": "^10.0.0", "shio-sdk": "^1.0.8", "sonner": "1.4.41", "swr": "^2.2.5", "tailwind-merge": "^2.5.4", "usehooks-ts": "^3.1.1" }, "peerDependencies": { "@mysten/dapp-kit": "0.19.4", "@mysten/sui": "1.42.0", "@mysten/wallet-standard": "0.19.2", "@suilend/sui-fe": "^0.3.36" } }, "sha512-u2xkci8n2HpwQ0/g1VkNbZMp6AKEs+QITVkz9fOfzsoZZE3YDiFvmjOFloXbohfaLh2QkxodY5D5OVZNZ2MPgg=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 
