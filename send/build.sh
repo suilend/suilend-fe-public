@@ -6,7 +6,13 @@ echo "Checking if send has changed..."
 if git diff --quiet HEAD^ HEAD -- .; then
   echo "No changes in send/. Skipping build."
   exit 0
+
+elif [[ "$VERCEL_ENV" == "beta" || "$VERCEL_ENV" == "production" || "$VERCEL_ENV" == "playground" ]] ; then
+# Proceed with the build
+  echo "✅ - Build can proceed"
+exit 1;
 else
-  echo "Changes detected in send/. Proceeding with build."
-  exit 1
+  # Don't build
+  echo "🛑 - Build cancelled"
+  exit 0;
 fi
