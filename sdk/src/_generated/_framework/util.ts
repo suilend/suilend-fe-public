@@ -105,7 +105,10 @@ export function isTransactionArgument(
   );
 }
 
-export function obj(tx: Transaction, arg: TransactionObjectInput) {
+export function obj(
+  tx: Transaction,
+  arg: TransactionObjectInput
+): TransactionObjectArgument {
   return isTransactionArgument(arg) ? arg : tx.object(arg);
 }
 
@@ -258,7 +261,11 @@ export function pure(
   }
 }
 
-export function option(tx: Transaction, type: string, arg: GenericArg | null) {
+export function option(
+  tx: Transaction,
+  type: string,
+  arg: GenericArg | null
+): TransactionObjectArgument | TransactionArgument {
   if (isTransactionArgument(arg)) {
     return arg;
   }
@@ -286,9 +293,13 @@ export function option(tx: Transaction, type: string, arg: GenericArg | null) {
     typeArguments: [type],
     arguments: [val],
   });
-}
+} 
 
-export function generic(tx: Transaction, type: string, arg: GenericArg) {
+export function generic(
+  tx: Transaction,
+  type: string,
+  arg: GenericArg
+): TransactionObjectArgument | TransactionArgument {
   if (typeArgIsPure(type)) {
     return pure(tx, arg as PureArg | TransactionArgument, type);
   } else {
