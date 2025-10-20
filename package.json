@@ -18,8 +18,5 @@
     "frontend",
     "sdk",
     "send"
-  ],
-  "dependencies": {
-    "@suilend/sui-fe-next": "^0.1.78"
-  }
+  ]
 }
