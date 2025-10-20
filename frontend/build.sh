@@ -1,8 +1,5 @@
 #!/bin/bash
 
-echo "VERCEL_ENV is: $VERCEL_ENV"
-
-
 # Check if frontend/ has changes in the last commit range
 if git diff --quiet HEAD^ HEAD -- . ../sdk/ ../.gitignore ../bun.lock ../eslint.config.js ../package.json ../README.md; then
   # Skip build
