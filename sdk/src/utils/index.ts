@@ -54,3 +54,46 @@ export const linearlyInterpolate = (
   // Should never reach here
   return new BigNumber(0);
 };
+
+/**
+ * Bisection method to find the optimal value that satisfies a condition
+ * @param left - Left boundary of the search range
+ * @param right - Right boundary of the search range
+ * @param condition - Function that takes a value and returns true if the condition is satisfied
+ * @param maxIterations - Maximum number of iterations (default: 50)
+ * @param tolerance - Convergence tolerance (default: 0.000001)
+ * @returns The optimal value that satisfies the condition
+ */
+export const bisectionMethod = (
+  left: BigNumber,
+  right: BigNumber,
+  condition: (value: BigNumber) => boolean,
+  maxIterations: number = 50,
+  tolerance: BigNumber = new BigNumber(0.000001),
+): BigNumber => {
+  let currentLeft = left;
+  let currentRight = right;
+  let bestValue = new BigNumber(0);
+
+  for (let i = 0; i < maxIterations; i++) {
+    const mid = currentLeft.plus(currentRight).div(2);
+
+    if (mid.eq(currentLeft) && mid.eq(currentRight)) {
+      break;
+    }
+
+    if (condition(mid)) {
+      bestValue = mid;
+      currentRight = mid;
+    } else {
+      currentLeft = mid;
+    }
+
+    // Check if we've converged
+    if (currentRight.minus(currentLeft).lte(tolerance)) {
+      break;
+    }
+  }
+
+  return bestValue;
+};

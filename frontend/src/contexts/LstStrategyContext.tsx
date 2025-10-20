@@ -36,6 +36,8 @@ import {
   getStrategyLstMintFee as _getLstMintFee,
   getStrategyLstRedeemFee as _getLstRedeemFee,
   getStrategySimulatedObligation as _getSimulatedObligation,
+  getStrategyStepMaxBorrowedAmount as _getStepMaxBorrowedAmount,
+  getStrategyStepMaxWithdrawnAmount as _getStepMaxWithdrawnAmount,
   getStrategySuiReserve as _getSuiReserve,
   getStrategyTvlAmount as _getTvlAmount,
   getStrategyUnclaimedRewardsAmount as _getUnclaimedRewardsAmount,
@@ -47,7 +49,7 @@ import {
 import { StrategyType } from "@suilend/sdk/lib/strategyOwnerCap";
 import { LstClient } from "@suilend/springsui-sdk";
 import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_staking/liquid-staking/structs";
-import { API_URL, MAX_U64, isSui } from "@suilend/sui-fe";
+import { API_URL, isSui } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import FullPageSpinner from "@/components/shared/FullPageSpinner";
@@ -566,42 +568,15 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       strategyType: StrategyType,
       deposits: StrategyDeposit[],
       borrowedAmount: BigNumber,
-    ): BigNumber => {
-      const depositReserves = getDepositReserves(strategyType);
-      const borrowReserve = getBorrowReserve(strategyType);
-      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
-
-      //
-
-      const obligation = getSimulatedObligation(
+    ): BigNumber =>
+      _getStepMaxBorrowedAmount(
+        appDataMainMarket.reserveMap,
+        lstMap ?? {},
         strategyType,
         deposits,
         borrowedAmount,
-      );
-
-      const borrowFeePercent = borrowReserve.config.borrowFeeBps / 100;
-
-      // "Borrows cannot exceed borrow limit"
-      return !obligation ||
-        obligation.maxPriceWeightedBorrowsUsd.gt(
-          obligation.minPriceBorrowLimitUsd,
-        )
-        ? new BigNumber(0)
-        : obligation.minPriceBorrowLimitUsd
-            .minus(obligation.maxPriceWeightedBorrowsUsd)
-            .div(
-              borrowReserve.maxPrice.times(
-                borrowReserve.config.borrowWeightBps.div(10000),
-              ),
-            )
-            .div(1 + borrowFeePercent / 100);
-    },
-    [
-      getDepositReserves,
-      getBorrowReserve,
-      getDefaultCurrencyReserve,
-      getSimulatedObligation,
-    ],
+      ),
+    [appDataMainMarket.reserveMap, lstMap],
   );
   const getStepMaxWithdrawnAmount = useCallback(
     (
@@ -609,46 +584,16 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       deposits: StrategyDeposit[],
       borrowedAmount: BigNumber,
       withdrawCoinType: string,
-    ): BigNumber => {
-      const depositReserves = getDepositReserves(strategyType);
-      const borrowReserve = getBorrowReserve(strategyType);
-      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
-
-      const withdrawReserve = appDataMainMarket.reserveMap[withdrawCoinType];
-
-      //
-
-      const obligation = getSimulatedObligation(
+    ): BigNumber =>
+      _getStepMaxWithdrawnAmount(
+        appDataMainMarket.reserveMap,
+        lstMap ?? {},
         strategyType,
         deposits,
         borrowedAmount,
-      );
-
-      return BigNumber.min(
-        // "Withdraw is unhealthy"
-        !obligation ||
-          obligation.maxPriceWeightedBorrowsUsd.gt(
-            obligation.minPriceBorrowLimitUsd,
-          )
-          ? new BigNumber(0)
-          : withdrawReserve.config.openLtvPct > 0
-            ? obligation.minPriceBorrowLimitUsd
-                .minus(obligation.maxPriceWeightedBorrowsUsd)
-                .div(withdrawReserve.minPrice)
-                .div(withdrawReserve.config.openLtvPct / 100)
-            : MAX_U64, // Infinity
-        deposits.find(
-          (deposit) => deposit.coinType === withdrawReserve.coinType,
-        )?.depositedAmount ?? new BigNumber(0),
-      ).decimalPlaces(withdrawReserve.token.decimals, BigNumber.ROUND_DOWN);
-    },
-    [
-      getDepositReserves,
-      getBorrowReserve,
-      getDefaultCurrencyReserve,
-      appDataMainMarket.reserveMap,
-      getSimulatedObligation,
-    ],
+        withdrawCoinType,
+      ),
+    [appDataMainMarket.reserveMap, lstMap],
   );
 
   // Simulate
