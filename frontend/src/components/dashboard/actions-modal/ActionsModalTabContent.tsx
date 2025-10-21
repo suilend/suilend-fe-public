@@ -11,6 +11,7 @@ import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
   API_URL,
   MAX_U64,
+  NORMALIZED_ALKIMI_COINTYPE,
   NORMALIZED_DMC_COINTYPE,
   NORMALIZED_FUD_COINTYPE,
   NORMALIZED_HIPPO_COINTYPE,
@@ -272,13 +273,14 @@ export default function ActionsModalTabContent({
       case Action.WITHDRAW: {
         if (!depositPosition) return;
 
-        // TODO: Remove workaround for FUD, HIPPO, DMC, and IKA
+        // TODO: Remove workaround
         if (
           useMaxAmount &&
           reserve.coinType !== NORMALIZED_FUD_COINTYPE &&
           reserve.coinType !== NORMALIZED_HIPPO_COINTYPE &&
           reserve.coinType !== NORMALIZED_DMC_COINTYPE &&
-          reserve.coinType !== NORMALIZED_IKA_COINTYPE
+          reserve.coinType !== NORMALIZED_IKA_COINTYPE &&
+          reserve.coinType !== NORMALIZED_ALKIMI_COINTYPE
         )
           submitAmount = MAX_U64.toString();
         else
