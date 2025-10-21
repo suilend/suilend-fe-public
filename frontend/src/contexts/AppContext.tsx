@@ -42,7 +42,7 @@ export interface AppData {
 }
 export interface AllAppData {
   allLendingMarketData: Record<string, AppData>;
-  lstMap: Record<
+  lstStatsMap: Record<
     string,
     {
       lstToSuiExchangeRate: BigNumber;
@@ -126,8 +126,8 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // LST
   const isLst = useCallback(
     (coinType: string) =>
-      Object.keys(allAppData?.lstMap ?? {}).includes(coinType) ?? false,
-    [allAppData?.lstMap],
+      Object.keys(allAppData?.lstStatsMap ?? {}).includes(coinType) ?? false,
+    [allAppData?.lstStatsMap],
   );
   const isEcosystemLst = useCallback(
     (coinType: string) =>

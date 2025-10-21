@@ -144,50 +144,24 @@ export default function useFetchAppData() {
       lendingMarketMetadataMap = LENDING_MARKET_METADATA_MAP;
     }
 
-    const [allLendingMarketData, lstMap, okxAprPercentMap] = await Promise.all([
-      // Lending markets
-      (async () => {
-        const allLendingMarketData: AllAppData["allLendingMarketData"] =
-          Object.fromEntries(
-            await Promise.all(
-              Object.entries(lendingMarketMetadataMap).map(
-                ([lendingMarketId, lendingMarketMetadata]) =>
-                  (async () => {
-                    const suilendClient = await SuilendClient.initialize(
-                      lendingMarketId,
-                      lendingMarketMetadata.type,
-                      suiClient,
-                      true,
-                    );
+    const [allLendingMarketData, lstStatsMap, okxAprPercentMap] =
+      await Promise.all([
+        // Lending markets
+        (async () => {
+          const allLendingMarketData: AllAppData["allLendingMarketData"] =
+            Object.fromEntries(
+              await Promise.all(
+                Object.entries(lendingMarketMetadataMap).map(
+                  ([lendingMarketId, lendingMarketMetadata]) =>
+                    (async () => {
+                      const suilendClient = await SuilendClient.initialize(
+                        lendingMarketId,
+                        lendingMarketMetadata.type,
+                        suiClient,
+                        true,
+                      );
 
-                    const {
-                      lendingMarket,
-                      coinMetadataMap,
-
-                      refreshedRawReserves,
-                      reserveMap,
-                      reserveCoinTypes,
-                      reserveCoinMetadataMap,
-
-                      rewardCoinTypes,
-                      activeRewardCoinTypes,
-                      rewardCoinMetadataMap,
-                    } = await initializeSuilend(
-                      suiClient,
-                      suilendClient,
-                      lendingMarketMetadata,
-                    );
-
-                    const { rewardPriceMap } = await initializeSuilendRewards(
-                      reserveMap,
-                      activeRewardCoinTypes,
-                    );
-
-                    return [
-                      lendingMarketId,
-                      {
-                        suilendClient,
-
+                      const {
                         lendingMarket,
                         coinMetadataMap,
 
@@ -196,97 +170,124 @@ export default function useFetchAppData() {
                         reserveCoinTypes,
                         reserveCoinMetadataMap,
 
-                        rewardPriceMap,
                         rewardCoinTypes,
                         activeRewardCoinTypes,
                         rewardCoinMetadataMap,
-                      },
-                    ];
-                  })(),
+                      } = await initializeSuilend(
+                        suiClient,
+                        suilendClient,
+                        lendingMarketMetadata,
+                      );
+
+                      const { rewardPriceMap } = await initializeSuilendRewards(
+                        reserveMap,
+                        activeRewardCoinTypes,
+                      );
+
+                      return [
+                        lendingMarketId,
+                        {
+                          suilendClient,
+
+                          lendingMarket,
+                          coinMetadataMap,
+
+                          refreshedRawReserves,
+                          reserveMap,
+                          reserveCoinTypes,
+                          reserveCoinMetadataMap,
+
+                          rewardPriceMap,
+                          rewardCoinTypes,
+                          activeRewardCoinTypes,
+                          rewardCoinMetadataMap,
+                        },
+                      ];
+                    })(),
+                ),
               ),
-            ),
-          );
+            );
 
-        return allLendingMarketData;
-      })(),
+          return allLendingMarketData;
+        })(),
 
-      // LSTs (won't throw on error)
-      (async () => {
-        try {
-          const url = `${API_URL}/springsui/lst-info`;
-          const res = await fetch(url);
-          const json: Record<
-            string,
-            {
-              LIQUID_STAKING_INFO: LiquidStakingObjectInfo;
-              liquidStakingInfo: LiquidStakingInfo<string>;
-              weightHook: WeightHook<string>;
-              apy: string;
-            }
-          > = await res.json();
-          if ((res as any)?.statusCode === 500)
-            throw new Error("Failed to fetch SpringSui LSTs");
+        // LSTs (won't throw on error)
+        (async () => {
+          try {
+            const url = `${API_URL}/springsui/lst-info`;
+            const res = await fetch(url);
+            const json: Record<
+              string,
+              {
+                LIQUID_STAKING_INFO: LiquidStakingObjectInfo;
+                liquidStakingInfo: LiquidStakingInfo<string>;
+                weightHook: WeightHook<string>;
+                apy: string;
+              }
+            > = await res.json();
+            if ((res as any)?.statusCode === 500)
+              throw new Error("Failed to fetch SpringSui LSTs");
 
-          return Object.fromEntries(
-            Object.entries(json).map(
-              ([
-                coinType,
-                { LIQUID_STAKING_INFO, liquidStakingInfo, weightHook, apy },
-              ]) => {
-                // Staking info
-                const totalSuiSupply = new BigNumber(
-                  liquidStakingInfo.storage.totalSuiSupply.toString(),
-                ).div(10 ** SUI_DECIMALS);
-                const totalLstSupply = new BigNumber(
-                  liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
-                ).div(10 ** LST_DECIMALS);
-
-                const lstToSuiExchangeRate = !totalLstSupply.eq(0)
-                  ? totalSuiSupply.div(totalLstSupply)
-                  : new BigNumber(1);
-
-                return [
+            return Object.fromEntries(
+              Object.entries(json).map(
+                ([
                   coinType,
-                  {
-                    lstToSuiExchangeRate,
-                    aprPercent: new BigNumber(apy),
-                  },
-                ];
-              },
-            ),
-          );
-        } catch (err) {
-          console.error(err);
-          return {} as AllAppData["lstMap"];
-        }
-      })(),
+                  { LIQUID_STAKING_INFO, liquidStakingInfo, weightHook, apy },
+                ]) => {
+                  // Staking info
+                  const totalSuiSupply = new BigNumber(
+                    liquidStakingInfo.storage.totalSuiSupply.toString(),
+                  ).div(10 ** SUI_DECIMALS);
+                  const totalLstSupply = new BigNumber(
+                    liquidStakingInfo.lstTreasuryCap.totalSupply.value.toString(),
+                  ).div(10 ** LST_DECIMALS);
 
-      // OKX APR (won't throw on error)
-      (async () => {
-        try {
-          const url = `${API_URL}/okx/apy?${new URLSearchParams({ raw: "true" })}`;
-          const res = await fetch(url);
-          const json: {
-            data: {
-              xbtc: { apy: number; baseApy: number; bonusApy: number };
-              // usdc: { apy: number; baseApy: number; bonusApy: number };
+                  const lstToSuiExchangeRate = !totalLstSupply.eq(0)
+                    ? totalSuiSupply.div(totalLstSupply)
+                    : new BigNumber(1);
+
+                  return [
+                    coinType,
+                    {
+                      lstToSuiExchangeRate,
+                      aprPercent: new BigNumber(apy),
+                    },
+                  ];
+                },
+              ),
+            );
+          } catch (err) {
+            console.error(err);
+            return {} as AllAppData["lstStatsMap"];
+          }
+        })(),
+
+        // OKX APR (won't throw on error)
+        (async () => {
+          try {
+            const url = `${API_URL}/okx/apy?${new URLSearchParams({ raw: "true" })}`;
+            const res = await fetch(url);
+            const json: {
+              data: {
+                xbtc: { apy: number; baseApy: number; bonusApy: number };
+                // usdc: { apy: number; baseApy: number; bonusApy: number };
+              };
+            } = await res.json();
+
+            return {
+              xBtcDepositAprPercent: new BigNumber(
+                Math.log(1 + json.data.xbtc.bonusApy),
+              ).times(100),
             };
-          } = await res.json();
-
-          return {
-            xBtcDepositAprPercent: new BigNumber(
-              Math.log(1 + json.data.xbtc.bonusApy),
-            ).times(100),
-          };
-        } catch (err) {
-          console.error(err);
-          return {} as AllAppData["okxAprPercentMap"];
-        }
-      })(),
-    ]);
+          } catch (err) {
+            console.error(err);
+            return {} as AllAppData["okxAprPercentMap"];
+          }
+        })(),
+      ]);
 
     const isEcosystemLst = (coinType: string) =>
-      Object.keys(lstMap).includes(coinType) && !issSui(coinType);
+      Object.keys(lstStatsMap).includes(coinType) && !issSui(coinType);
 
     // Sort ecosystem LSTs by TVL (descending)
     for (const lendingMarket of Object.values(allLendingMarketData)) {
@@ -321,7 +322,7 @@ export default function useFetchAppData() {
 
     return {
       allLendingMarketData,
-      lstMap,
+      lstStatsMap,
       okxAprPercentMap,
     };
   };

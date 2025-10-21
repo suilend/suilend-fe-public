@@ -10,6 +10,7 @@ import pLimit from "p-limit";
 import { phantom } from "../_generated/_framework/reified";
 import { PACKAGE_ID } from "../_generated/suilend";
 import { Obligation } from "../_generated/suilend/obligation/structs";
+import { ParsedObligation } from "../parsers";
 
 import * as parsed from "./events";
 
@@ -322,3 +323,14 @@ function formatEventsToHistory(
   }
   return formattedEvents;
 }
+
+export const getWeightedBorrowsUsd = (obligation: ParsedObligation) => {
+  return obligation.maxPriceWeightedBorrowsUsd.gt(
+    obligation.minPriceBorrowLimitUsd,
+  )
+    ? BigNumber.max(
+        obligation.weightedBorrowsUsd,
+        obligation.minPriceBorrowLimitUsd,
+      )
+    : obligation.maxPriceWeightedBorrowsUsd;
+};

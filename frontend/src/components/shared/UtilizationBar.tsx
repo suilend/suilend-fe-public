@@ -4,6 +4,7 @@ import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 import { AlertTriangle } from "lucide-react";
 
+import { getWeightedBorrowsUsd } from "@suilend/sdk";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { formatPercent } from "@suilend/sui-fe";
 
@@ -13,17 +14,6 @@ import WeightedBorrowsTitle from "@/components/dashboard/account/WeightedBorrows
 import Tooltip from "@/components/shared/Tooltip";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { cn } from "@/lib/utils";
-
-export const getWeightedBorrowsUsd = (obligation: ParsedObligation) => {
-  return obligation.maxPriceWeightedBorrowsUsd.gt(
-    obligation.minPriceBorrowLimitUsd,
-  )
-    ? BigNumber.max(
-        obligation.weightedBorrowsUsd,
-        obligation.minPriceBorrowLimitUsd,
-      )
-    : obligation.maxPriceWeightedBorrowsUsd;
-};
 
 const getPassedBorrowLimit = (obligation: ParsedObligation) => {
   const weightedBorrowsUsd = getWeightedBorrowsUsd(obligation);

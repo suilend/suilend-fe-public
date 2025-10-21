@@ -300,8 +300,8 @@ export const getRewardsAprPercent = (
 export const getStakingYieldAprPercent = (
   side: Side,
   coinType: string,
-  lstMap: Record<string, { aprPercent: BigNumber }>,
-) => (side === Side.DEPOSIT ? lstMap[coinType]?.aprPercent : undefined);
+  lstStatsMap: Record<string, { aprPercent: BigNumber }>,
+) => (side === Side.DEPOSIT ? lstStatsMap[coinType]?.aprPercent : undefined);
 
 export const getTotalAprPercent = (
   side: Side,
@@ -316,7 +316,7 @@ export const getTotalAprPercent = (
 export const getNetAprPercent = (
   obligation: ParsedObligation,
   rewardMap: RewardMap,
-  lstMap: Record<string, { aprPercent: BigNumber }>,
+  lstStatsMap: Record<string, { aprPercent: BigNumber }>,
   noShares?: boolean,
 ) => {
   const weightedDepositedAmountUsd_aprPercent = obligation.deposits.reduce(
@@ -327,7 +327,7 @@ export const getNetAprPercent = (
         getStakingYieldAprPercent(
           Side.DEPOSIT,
           deposit.reserve.coinType,
-          lstMap,
+          lstStatsMap,
         ) ?? 0,
       ).times(deposit.depositedAmountUsd);
 

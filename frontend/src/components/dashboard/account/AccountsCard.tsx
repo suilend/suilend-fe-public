@@ -7,6 +7,7 @@ import {
   ADMIN_ADDRESS,
   LENDING_MARKET_ID,
   getNetAprPercent,
+  getWeightedBorrowsUsd,
 } from "@suilend/sdk";
 import { formatPercent, formatUsd } from "@suilend/sui-fe";
 import {
@@ -31,9 +32,7 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import UtilizationBar, {
-  getWeightedBorrowsUsd,
-} from "@/components/shared/UtilizationBar";
+import UtilizationBar from "@/components/shared/UtilizationBar";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { QueryParams as DashboardQueryParams } from "@/contexts/DashboardContext";
@@ -266,7 +265,7 @@ export default function AccountsCard() {
                         getNetAprPercent(
                           obligation,
                           userData.rewardMap,
-                          allAppData.lstMap,
+                          allAppData.lstStatsMap,
                         ),
                       )}
                     </TBody>
@@ -281,9 +280,7 @@ export default function AccountsCard() {
                           <Tooltip
                             title={formatUsd(
                               getWeightedBorrowsUsd(obligation),
-                              {
-                                exact: true,
-                              },
+                              { exact: true },
                             )}
                           >
                             <TBody className="w-max">

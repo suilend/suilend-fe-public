@@ -57,7 +57,7 @@ export default function WalletCard() {
                     new BigNumber(0)
                   ).times(
                     isLst(coinType)
-                      ? allAppData.lstMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
+                      ? allAppData.lstStatsMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
                       : 1,
                   );
                   if (price !== undefined && price.isNaN()) price = undefined;
@@ -90,7 +90,7 @@ export default function WalletCard() {
                   new BigNumber(0)
                 ).times(
                   isLst(coinType)
-                    ? allAppData.lstMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
+                    ? allAppData.lstStatsMap[coinType].lstToSuiExchangeRate // Take into account the LST to SUI exchange rate
                     : 1,
                 );
                 if (price !== undefined && price.isNaN()) price = undefined;
