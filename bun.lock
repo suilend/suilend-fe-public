@@ -48,8 +48,8 @@
         "@radix-ui/react-tooltip": "^1.1.4",
         "@sentry/nextjs": "^8.38.0",
         "@suilend/springsui-sdk": "^1.0.27",
-        "@suilend/steamm-sdk": "^1.1.5",
-        "@suilend/sui-fe": "^0.3.36",
+        "@suilend/steamm-sdk": "^1.1.6",
+        "@suilend/sui-fe": "^0.3.37",
         "@suilend/sui-fe-next": "^0.1.78",
         "@tanstack/react-table": "^8.20.5",
         "@vercel/analytics": "^1.4.0",
@@ -107,7 +107,7 @@
     },
     "sdk": {
       "name": "@suilend/sdk-local",
-      "version": "1.1.85",
+      "version": "1.1.86",
       "dependencies": {
         "@7kprotocol/sdk-ts": "^3.4.1",
         "@cetusprotocol/aggregator-sdk": "^1.2.1",
@@ -130,7 +130,7 @@
       "peerDependencies": {
         "@mysten/bcs": "1.8.1",
         "@mysten/sui": "1.42.0",
-        "@suilend/sui-fe": "^0.3.36",
+        "@suilend/sui-fe": "^0.3.37",
       },
     },
     "send": {
@@ -1359,15 +1359,15 @@
 
     "@suchipi/femver": ["@suchipi/femver@1.0.0", "", {}, "sha512-bprE8+K5V+DPX7q2e2K57ImqNBdfGHDIWaGI5xHxZoxbKOuQZn4wzPiUxOAHnsUr3w3xHrWXwN7gnG/iIuEMIg=="],
 
-    "@suilend/sdk": ["@suilend/sdk@1.1.85", "", { "dependencies": { "@7kprotocol/sdk-ts": "^3.4.1", "@cetusprotocol/aggregator-sdk": "^1.2.1", "@flowx-finance/sdk": "^1.13.5", "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/springsui-sdk": "^1.0.26", "aftermath-ts-sdk": "^1.3.22", "bignumber.js": "^9.1.2", "bn.js": "^5.2.2", "crypto-js": "^4.2.0", "lodash": "^4.17.21", "p-limit": "3.1.0", "uuid": "^11.0.3" }, "peerDependencies": { "@mysten/bcs": "1.6.0", "@mysten/sui": "1.28.2", "@suilend/sui-fe": "^0.3.32" } }, "sha512-QVcQbmnNBixtnErFJhl70xV6x0q0y6xmSa9TxPFdeX9oBgRMyhckM8O9FWxrkkQjnVsAA9EorKShWM1FwaXJzw=="],
+    "@suilend/sdk": ["@suilend/sdk@1.1.86", "", { "dependencies": { "@7kprotocol/sdk-ts": "^3.4.1", "@cetusprotocol/aggregator-sdk": "^1.2.1", "@flowx-finance/sdk": "^1.13.5", "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/springsui-sdk": "^1.0.27", "aftermath-ts-sdk": "^1.3.22", "bignumber.js": "^9.1.2", "bn.js": "^5.2.2", "crypto-js": "^4.2.0", "lodash": "^4.17.21", "p-limit": "3.1.0", "uuid": "^11.0.3" }, "peerDependencies": { "@mysten/bcs": "1.8.1", "@mysten/sui": "1.42.0", "@suilend/sui-fe": "^0.3.36" } }, "sha512-mTq6AxJO6u/RwMXBHs74SvS2tjJMdt4NYJYOJulENao6AXumD7D+gty/Rwd3OE2rsib3zl0FZOyCrh/blTQ2sQ=="],
 
     "@suilend/sdk-local": ["@suilend/sdk-local@workspace:sdk"],
 
     "@suilend/springsui-sdk": ["@suilend/springsui-sdk@1.0.27", "", { "dependencies": { "bignumber.js": "^9.1.2" }, "peerDependencies": { "@mysten/bcs": "1.8.1", "@mysten/sui": "1.42.0" } }, "sha512-4/BwbpqKrUYLrtSAEGBSCaUJnvl6Yhm+gSUS732J6O1QJFd0JDs9hl9xxpo9Y0Z36vJGPnxqXX+qwyqbBAr4LA=="],
 
-    "@suilend/steamm-sdk": ["@suilend/steamm-sdk@1.1.5", "", { "dependencies": { "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/sdk": "^1.1.77", "@suilend/sui-fe": "^0.3.29", "bignumber.js": "^9.1.2", "dotenv": "^16.4.7" }, "peerDependencies": { "@mysten/sui": "1.28.2" } }, "sha512-5zLZxhnLJBOKNcrkz1/IKK/o1j408VnDXGMHAqqSw0N6qq5ouKi5zqDT/QKVJurp/FGdwIQsdBsIZ5J9Zq6yWw=="],
+    "@suilend/steamm-sdk": ["@suilend/steamm-sdk@1.1.6", "", { "dependencies": { "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/sdk": "^1.1.86", "@suilend/sui-fe": "^0.3.36", "bignumber.js": "^9.1.2", "dotenv": "^16.4.7" }, "peerDependencies": { "@mysten/sui": "1.42.0" } }, "sha512-SwQV8PDmriQWKUG9WHHH3KPEaEYsfMSpz2p0ViEY66UzaUQGKUmqVeqreEAb8mEfA3KCFuwFZdimqZESK3sYBw=="],
 
-    "@suilend/sui-fe": ["@suilend/sui-fe@0.3.36", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-WMChV0UMAdqXXlr1ran5I3jGqV2s6ZRftfw1ZyA8L/9ANj3N2ky6ZQQgXCyqlgxMweIy1DMHSTnYU4L1OCW2ow=="],
+    "@suilend/sui-fe": ["@suilend/sui-fe@0.3.37", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-W0K5Xmk18cir1KTcG47DpnwDeYNCZTG/D1TnMZhvAcxSexC+vZF8wBBFTXHIZb04oIo7Y+Cmh9FtY5+fEHLZ0Q=="],
 
     "@suilend/sui-fe-next": ["@suilend/sui-fe-next@0.1.78", "", { "dependencies": { "@reown/appkit": "^1.8.10", "@reown/appkit-common": "^1.8.10", "@reown/appkit-universal-connector": "^1.8.10", "@sentry/nextjs": "^8.38.0", "@tanstack/react-query": "^5.60.2", "bignumber.js": "^9.1.2", "launchdarkly-react-client-sdk": "^3.6.0", "lodash": "^4.17.21", "next": "^15.0.3", "react": "18.3.1", "react-dom": "18.3.1", "react-responsive": "^10.0.0", "shio-sdk": "^1.0.8", "sonner": "1.4.41", "swr": "^2.2.5", "tailwind-merge": "^2.5.4", "usehooks-ts": "^3.1.1" }, "peerDependencies": { "@mysten/dapp-kit": "0.19.4", "@mysten/sui": "1.42.0", "@mysten/wallet-standard": "0.19.2", "@suilend/sui-fe": "^0.3.36" } }, "sha512-Ss71NHF6nG8SeS+bYT17CwuwFc8Auqfoog1tEHueNpzT4Q8wUyGUAy4LGqPxyi1qEpjsb27R+aIKUCQYLtWvsw=="],
 
@@ -4034,8 +4034,6 @@
     "@solflare-wallet/sdk/eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
     "@solflare-wallet/sdk/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
-
-    "@suilend/sdk/@suilend/springsui-sdk": ["@suilend/springsui-sdk@1.0.26", "", { "dependencies": { "bignumber.js": "^9.1.2" }, "peerDependencies": { "@mysten/bcs": "1.6.0", "@mysten/sui": "1.28.2" } }, "sha512-vcxipfGwhqtXgJGZJdpJCsHn7UMOTR9lVIinYquSoFgsJlvIxzd94REyjaovnHetcurummrgg6LBCgUF2h9wQA=="],
 
     "@toruslabs/openlogin-jrpc/readable-stream": ["readable-stream@4.7.0", "", { "dependencies": { "abort-controller": "^3.0.0", "buffer": "^6.0.3", "events": "^3.3.0", "process": "^0.11.10", "string_decoder": "^1.3.0" } }, "sha512-oIGGmcpTLwPga8Bn6/Z75SVaH1z5dUut2ibSyAMVhmUggWpmDn2dapB0n7f8nwaSiRtepAsfJyfXIO5DCVAODg=="],
 
