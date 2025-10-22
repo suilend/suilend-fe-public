@@ -335,7 +335,7 @@ export class SuilendClient {
     pythPriceId: string,
     coinType: string,
     createReserveConfigArgs: CreateReserveConfigArgs,
-    coinMetadataId?: string,
+    coinMetadataIdOverride?: string,
   ) {
     const [config] = createReserveConfig(transaction, createReserveConfigArgs);
 
@@ -350,11 +350,17 @@ export class SuilendClient {
       [pythPriceId],
     );
 
-    const coin_metadata = await this.client.getCoinMetadata({
-      coinType: coinType,
-    });
-    if (coin_metadata === null) {
-      throw new Error("Error: coin metadata not found");
+    let coinMetadataId;
+    if (coinMetadataIdOverride !== undefined)
+      coinMetadataId = coinMetadataIdOverride;
+    else {
+      const coinMetadata = await this.client.getCoinMetadata({
+        coinType: coinType,
+      });
+      if (!coinMetadata) throw new Error("Error: CoinMetadata not found");
+      if (!coinMetadata.id) throw new Error("Error: CoinMetadata.id not found");
+
+      coinMetadataId = coinMetadata.id;
     }
 
     return addReserve(
@@ -365,9 +371,7 @@ export class SuilendClient {
         lendingMarket: transaction.object(this.lendingMarket.id),
         priceInfo: transaction.object(priceInfoObjectIds[0]),
         config: transaction.object(config),
-        coinMetadata: transaction.object(
-          coinMetadataId ?? (coin_metadata.id as string),
-        ),
+        coinMetadata: transaction.object(coinMetadataId),
         clock: transaction.object(SUI_CLOCK_OBJECT_ID),
       },
     );
