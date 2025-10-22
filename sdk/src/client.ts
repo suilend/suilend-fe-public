@@ -357,6 +357,7 @@ export class SuilendClient {
       const coinMetadata = await this.client.getCoinMetadata({
         coinType: coinType,
       });
+      console.log("[createReserve] coinMetadata", coinMetadata);
       if (!coinMetadata) throw new Error("Error: CoinMetadata not found");
       if (!coinMetadata.id) throw new Error("Error: CoinMetadata.id not found");
 

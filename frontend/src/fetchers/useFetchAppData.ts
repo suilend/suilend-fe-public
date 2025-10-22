@@ -52,6 +52,15 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
     name: "Elixir Market",
     isHidden: false,
   },
+  "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82": {
+    id: "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82",
+    type: "0xd382f7d6e7596585b3063d5f4607de30a7a81adeb521d6b862b4c57defca746e::Matrixdock_gold::MATRIXDOCK_GOLD",
+    lendingMarketOwnerCapId:
+      "0xb4940c255a6498eb3db91db94881397004d30659b836568356f279a69f2eca3c",
+
+    name: "Matrixdock Gold Market",
+    isHidden: true, // TODO
+  },
 };
 
 export default function useFetchAppData() {
@@ -62,87 +71,87 @@ export default function useFetchAppData() {
   // Data
   const dataFetcher = async () => {
     // Get lending markets from registry
-    let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
-    try {
-      const lendingMarketsTableObj = await suiClient.getDynamicFields({
-        parentId:
-          "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
-      });
+    // let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
+    // try {
+    //   const lendingMarketsTableObj = await suiClient.getDynamicFields({
+    //     parentId:
+    //       "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
+    //   });
 
-      lendingMarketMetadataMap = Object.fromEntries(
-        (
-          await Promise.all(
-            lendingMarketsTableObj.data.map(async ({ objectId }) => {
-              const obj = await suiClient.getObject({
-                id: objectId,
-                options: { showContent: true },
-              });
+    //   lendingMarketMetadataMap = Object.fromEntries(
+    //     (
+    //       await Promise.all(
+    //         lendingMarketsTableObj.data.map(async ({ objectId }) => {
+    //           const obj = await suiClient.getObject({
+    //             id: objectId,
+    //             options: { showContent: true },
+    //           });
 
-              // Lending market
-              const lendingMarketId: string = (obj.data?.content as any).fields
-                .value;
-              if (
-                [
-                  "0x6d9478307d1cb8417470bec42e38000422b448e9638d6b43b821301179ac8caf", // STEAMM LM (old)
-                  "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test 1
-                  "0x8843ed2e29bd36683c7c99bf7e529fcee124a175388ad4b9886b48f1009e6285", // Test 2
-                  "0x02b4b27b3aa136405c2aaa8e2e08191670f3971d495bfcd2dda17184895c20ad", // Test 3
-                ].includes(lendingMarketId)
-              )
-                return undefined;
+    //           // Lending market
+    //           const lendingMarketId: string = (obj.data?.content as any).fields
+    //             .value;
+    //           if (
+    //             [
+    //               "0x6d9478307d1cb8417470bec42e38000422b448e9638d6b43b821301179ac8caf", // STEAMM LM (old)
+    //               "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test 1
+    //               "0x8843ed2e29bd36683c7c99bf7e529fcee124a175388ad4b9886b48f1009e6285", // Test 2
+    //               "0x02b4b27b3aa136405c2aaa8e2e08191670f3971d495bfcd2dda17184895c20ad", // Test 3
+    //             ].includes(lendingMarketId)
+    //           )
+    //             return undefined;
 
-              const lendingMarketType: string = `0x${
-                ((obj.data?.content as any).fields.name.fields as any).name
-              }`;
+    //           const lendingMarketType: string = `0x${
+    //             ((obj.data?.content as any).fields.name.fields as any).name
+    //           }`;
 
-              // LendingMarketOwnerCap id
-              const firstTx = await suiClient.queryTransactionBlocks({
-                filter: { ChangedObject: lendingMarketId },
-                options: {
-                  showObjectChanges: true,
-                },
-                limit: 1,
-                order: "ascending",
-              });
+    //           // LendingMarketOwnerCap id
+    //           const firstTx = await suiClient.queryTransactionBlocks({
+    //             filter: { ChangedObject: lendingMarketId },
+    //             options: {
+    //               showObjectChanges: true,
+    //             },
+    //             limit: 1,
+    //             order: "ascending",
+    //           });
 
-              const lendingMarketOwnerCapId: string = (
-                firstTx.data[0].objectChanges?.find(
-                  (o) =>
-                    o.type === "created" &&
-                    o.objectType.includes(
-                      `::lending_market::LendingMarketOwnerCap<${lendingMarketType}>`,
-                    ),
-                ) as any
-              ).objectId;
+    //           const lendingMarketOwnerCapId: string = (
+    //             firstTx.data[0].objectChanges?.find(
+    //               (o) =>
+    //                 o.type === "created" &&
+    //                 o.objectType.includes(
+    //                   `::lending_market::LendingMarketOwnerCap<${lendingMarketType}>`,
+    //                 ),
+    //             ) as any
+    //           ).objectId;
 
-              return {
-                id: lendingMarketId,
-                type: lendingMarketType,
-                lendingMarketOwnerCapId,
+    //           return {
+    //             id: lendingMarketId,
+    //             type: lendingMarketType,
+    //             lendingMarketOwnerCapId,
 
-                name:
-                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.name ??
-                  undefined,
-                isHidden:
-                  LENDING_MARKET_METADATA_MAP[lendingMarketId]?.isHidden ??
-                  undefined,
-              };
-            }),
-          )
-        )
-          .filter((x) => x !== undefined)
-          .map((x) => [x.id, x]),
-      );
-      console.log(
-        "[useFetchAppData] lendingMarketMetadataMap:",
-        lendingMarketMetadataMap,
-      );
-    } catch (err) {
-      console.error(err);
+    //             name:
+    //               LENDING_MARKET_METADATA_MAP[lendingMarketId]?.name ??
+    //               undefined,
+    //             isHidden:
+    //               LENDING_MARKET_METADATA_MAP[lendingMarketId]?.isHidden ??
+    //               undefined,
+    //           };
+    //         }),
+    //       )
+    //     )
+    //       .filter((x) => x !== undefined)
+    //       .map((x) => [x.id, x]),
+    //   );
+    //   console.log(
+    //     "[useFetchAppData] lendingMarketMetadataMap:",
+    //     lendingMarketMetadataMap,
+    //   );
+    // } catch (err) {
+    //   console.error(err);
 
-      // Fallback
-      lendingMarketMetadataMap = LENDING_MARKET_METADATA_MAP;
-    }
+    //   // Fallback
+    //   lendingMarketMetadataMap = LENDING_MARKET_METADATA_MAP;
+    // }
 
     const [allLendingMarketData, lstStatsMap, okxAprPercentMap] =
       await Promise.all([
@@ -151,7 +160,7 @@ export default function useFetchAppData() {
           const allLendingMarketData: AllAppData["allLendingMarketData"] =
             Object.fromEntries(
               await Promise.all(
-                Object.entries(lendingMarketMetadataMap).map(
+                Object.entries(LENDING_MARKET_METADATA_MAP).map(
                   ([lendingMarketId, lendingMarketMetadata]) =>
                     (async () => {
                       const suilendClient = await SuilendClient.initialize(
