@@ -1996,6 +1996,10 @@ export const strategyUnloopToExposureTx = async (
   _targetBorrowedAmount: BigNumber | undefined,
   _targetExposure: BigNumber | undefined, // Must be defined if _targetBorrowedAmount is undefined
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
 ) => {
   const strategyInfo = STRATEGY_TYPE_INFO_MAP[strategyType];
   const lst =
@@ -2182,13 +2186,25 @@ export const strategyUnloopToExposureTx = async (
       ),
     );
 
-    suilendClient.repay(
-      obligationId,
-      borrowReserve.coinType,
-      fullRepaymentCoin,
-      transaction,
-    );
-    transaction.transferObjects([fullRepaymentCoin], _address); // Transfer remaining SUI to user
+    try {
+      const txCopy = Transaction.from(transaction);
+
+      suilendClient.repay(
+        obligationId,
+        borrowReserve.coinType,
+        fullRepaymentCoin,
+        txCopy,
+      );
+      txCopy.transferObjects([fullRepaymentCoin], _address); // Transfer remaining SUI to user
+
+      await dryRunTransaction(txCopy); // Throws error if fails
+      transaction = txCopy;
+    } catch (err) {
+      // Don't block user if fails
+      console.error(err);
+
+      transaction.transferObjects([fullRepaymentCoin], _address); // Transfer SUI to user
+    }
 
     // 2.3) Update state
     borrowedAmount = BigNumber.max(
@@ -2508,13 +2524,25 @@ export const strategyUnloopToExposureTx = async (
       ),
     );
 
-    suilendClient.repay(
-      obligationId,
-      borrowReserve.coinType,
-      borrowCoin,
-      transaction,
-    );
-    transaction.transferObjects([borrowCoin], _address); // Transfer remaining borrow to user
+    try {
+      const txCopy = Transaction.from(transaction);
+
+      suilendClient.repay(
+        obligationId,
+        borrowReserve.coinType,
+        borrowCoin,
+        txCopy,
+      );
+      txCopy.transferObjects([borrowCoin], _address); // Transfer remaining borrow to user
+
+      await dryRunTransaction(txCopy); // Throws error if fails
+      transaction = txCopy;
+    } catch (err) {
+      // Don't block user if fails
+      console.error(err);
+
+      transaction.transferObjects([borrowCoin], _address); // Transfer borrow to user
+    }
 
     // 4.2) Update state
     borrowedAmount = BigNumber.max(
@@ -3040,6 +3068,10 @@ export const strategyDepositTx = async (
   _borrowedAmount: BigNumber,
   deposit: StrategyDeposit,
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
 ): Promise<{
   deposits: StrategyDeposit[];
   borrowedAmount: BigNumber;
@@ -3251,6 +3283,10 @@ export const strategyDepositAndLoopToExposureTx = async (
   deposit: StrategyDeposit,
   targetExposure: BigNumber,
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
 ): Promise<{
   deposits: StrategyDeposit[];
   borrowedAmount: BigNumber;
@@ -3320,6 +3356,7 @@ export const strategyDepositAndLoopToExposureTx = async (
     borrowedAmount,
     deposit,
     transaction,
+    dryRunTransaction,
   );
 
   // 1.2) Update state
@@ -3383,6 +3420,10 @@ export const strategyWithdrawTx = async (
   _borrowedAmount: BigNumber,
   withdraw: StrategyWithdraw,
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
   returnWithdrawnCoin?: boolean,
 ): Promise<{
   deposits: StrategyDeposit[];
@@ -3525,6 +3566,7 @@ export const strategyWithdrawTx = async (
       targetBorrowedAmount, // Pass targetBorrowedAmount
       undefined, // Don't pass targetExposure
       transaction,
+      dryRunTransaction,
     );
 
     // 1.2) Update state
@@ -3746,6 +3788,7 @@ export const strategyMaxWithdrawTx = async (
       undefined, // Don't pass targetBorrowedAmount
       new BigNumber(1), // Pass targetExposure
       transaction,
+      dryRunTransaction,
     );
 
     // 1.2) Update state
@@ -3817,6 +3860,7 @@ export const strategyMaxWithdrawTx = async (
   if (hasClaimableRewards) {
     try {
       const txCopy = Transaction.from(transaction);
+
       await strategyClaimRewardsAndSwapForCoinType(
         _address,
         cetusSdk,
@@ -3828,8 +3872,8 @@ export const strategyMaxWithdrawTx = async (
         false, // isDepositing (false = transfer to user)
         txCopy,
       );
-      await dryRunTransaction(txCopy); // Throws error if fails
 
+      await dryRunTransaction(txCopy); // Throws error if fails
       transaction = txCopy;
     } catch (err) {
       // Don't block user if fails
@@ -3860,6 +3904,10 @@ export const strategyDepositAdjustWithdrawTx = async (
   _borrowedAmount: BigNumber,
   flashLoanBorrowedAmount: BigNumber,
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
 ): Promise<{
   deposits: StrategyDeposit[];
   borrowedAmount: BigNumber;
@@ -4020,6 +4068,7 @@ export const strategyDepositAdjustWithdrawTx = async (
     undefined, // Don't pass targetBorrowedAmount
     depositAdjustWithdrawExposure, // Pass targetExposure
     transaction,
+    dryRunTransaction,
   );
 
   // 3.2) Update state
@@ -4062,7 +4111,8 @@ export const strategyDepositAdjustWithdrawTx = async (
       withdrawnAmount,
     },
     transaction,
-    true,
+    dryRunTransaction,
+    true, // returnWithdrawnCoin
   );
   if (!withdrawnCoin) throw new Error("Withdrawn coin not found");
 
@@ -4125,6 +4175,10 @@ export const strategyAdjustTx = async (
   _borrowedAmount: BigNumber,
   targetExposure: BigNumber,
   transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
 ): Promise<{
   deposits: StrategyDeposit[];
   borrowedAmount: BigNumber;
@@ -4214,6 +4268,7 @@ export const strategyAdjustTx = async (
       undefined, // Don't pass targetBorrowedAmount
       targetExposure, // Pass targetExposure
       transaction,
+      dryRunTransaction,
     );
   else return { deposits, borrowedAmount, transaction };
 };

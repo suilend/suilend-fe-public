@@ -1370,6 +1370,7 @@ export default function LstStrategyDialog({
       deposit,
       targetExposure,
       transaction,
+      dryRunTransaction,
     );
 
   const withdrawTx = async (
@@ -1404,6 +1405,7 @@ export default function LstStrategyDialog({
       _borrowedAmount,
       withdraw,
       transaction,
+      dryRunTransaction,
       returnWithdrawnCoin,
     );
 
@@ -1472,6 +1474,7 @@ export default function LstStrategyDialog({
       _borrowedAmount,
       flashLoanBorrowedAmount,
       transaction,
+      dryRunTransaction,
     );
 
   const adjustTx = async (
@@ -1504,6 +1507,7 @@ export default function LstStrategyDialog({
       _borrowedAmount,
       targetExposure,
       transaction,
+      dryRunTransaction,
     );
 
   const onSubmitClick = async () => {
