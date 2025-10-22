@@ -5,6 +5,7 @@ import {
   SuiTransactionBlockResponse,
 } from "@mysten/sui/client";
 import { fromBase64 } from "@mysten/sui/utils";
+import { BigNumber } from "bignumber.js";
 import pLimit from "p-limit";
 
 import { phantom } from "../_generated/_framework/reified";
