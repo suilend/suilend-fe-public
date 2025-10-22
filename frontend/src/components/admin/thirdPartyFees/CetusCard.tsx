@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { initMainnetSDK } from "@cetusprotocol/cetus-sui-clmm-sdk";
+import {
+  ClmmPartnerModule,
+  getPackagerConfigs,
+  initMainnetSDK,
+} from "@cetusprotocol/cetus-sui-clmm-sdk";
 import { CoinMetadata } from "@mysten/sui/client";
+import { Transaction } from "@mysten/sui/transactions";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { Coins } from "lucide-react";
@@ -88,30 +93,33 @@ export default function CetusCard() {
     if (!feesMap) return;
 
     try {
-      // Claim fees
-      for (const [coinType, { amount, coinMetadata }] of Object.entries(
-        feesMap,
-      )) {
-        const transaction = await cetusSdk.Pool.claimPartnerRefFeePayload(
-          CETUS_PARTNER_CAP_ID,
-          CETUS_PARTNER_ID,
-          coinType,
-        );
+      const transaction = new Transaction();
 
-        const res = await signExecuteAndWaitForTransaction(transaction);
-        const txUrl = explorer.buildTxUrl(res.digest);
-
-        toast.success(
-          `Claimed ${formatToken(amount, { dp: coinMetadata.decimals })} ${coinMetadata.symbol}`,
-          {
-            action: (
-              <TextLink className="block" href={txUrl}>
-                View tx on {explorer.name}
-              </TextLink>
+      for (const coinType of Object.keys(feesMap)) {
+        transaction.moveCall({
+          target: `${cetusSdk.sdkOptions.clmm_pool.published_at}::${ClmmPartnerModule}::claim_ref_fee`,
+          arguments: [
+            transaction.object(
+              getPackagerConfigs(cetusSdk.sdkOptions.clmm_pool)
+                .global_config_id,
             ),
-          },
-        );
+            transaction.object(CETUS_PARTNER_CAP_ID),
+            transaction.object(CETUS_PARTNER_ID),
+          ],
+          typeArguments: [coinType],
+        });
       }
+
+      const res = await signExecuteAndWaitForTransaction(transaction);
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success("Claimed referral fees", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+      });
     } catch (err) {
       toast.error("Failed to claim referral fees", {
         description: (err as Error)?.message || "An unknown error occurred",
