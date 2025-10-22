@@ -15,13 +15,13 @@ export default function ThirdPartyFeesTab() {
     <div className="flex w-full flex-col gap-2">
       <SuilendCapsulesCard />
       <RootletsCard />
+      <CetusCard />
       <BulkSwapCard
         tokenOut={getToken(
           NORMALIZED_SUI_COINTYPE,
           appDataMainMarket.coinMetadataMap[NORMALIZED_SUI_COINTYPE],
         )}
       />
-      <CetusCard />
     </div>
   );
 }

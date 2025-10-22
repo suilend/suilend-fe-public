@@ -7,7 +7,7 @@ import { useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Tooltip from "@/components/shared/Tooltip";
-import { TLabel, TTitle } from "@/components/shared/Typography";
+import { TLabel, TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
@@ -69,11 +69,14 @@ export default function SuilendCapsulesCard() {
     <Card>
       <CardHeader>
         <TTitle className="uppercase">Suilend Capsules</TTitle>
-        <Tooltip title={CAPSULES_WALLET}>
-          <TLabel className="w-max uppercase">
-            {formatAddress(CAPSULES_WALLET)}
-          </TLabel>
-        </Tooltip>
+        <div className="flex flex-row items-center gap-2">
+          <TLabelSans>Claimable by:</TLabelSans>
+          <Tooltip title={CAPSULES_WALLET}>
+            <TLabel className="w-max uppercase">
+              {formatAddress(CAPSULES_WALLET)}
+            </TLabel>
+          </Tooltip>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         <Button
