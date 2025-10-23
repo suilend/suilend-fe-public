@@ -14,7 +14,6 @@ import {
 
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
-import * as Sentry from "@sentry/nextjs";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -273,7 +272,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         if (didCreate)
           sendObligationToUser(obligationOwnerCapId, address, transaction);
       } catch (err) {
-        Sentry.captureException(err);
         console.error(err);
         throw err;
       }
@@ -325,7 +323,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
           transaction,
         );
       } catch (err) {
-        Sentry.captureException(err);
         console.error(err);
         throw err;
       }
@@ -377,7 +374,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
           transaction,
         );
       } catch (err) {
-        Sentry.captureException(err);
         console.error(err);
         throw err;
       }
@@ -427,7 +423,6 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
           transaction,
         );
       } catch (err) {
-        Sentry.captureException(err);
         console.error(err);
         throw err;
       }

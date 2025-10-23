@@ -16,7 +16,6 @@ import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
-import * as Sentry from "@sentry/nextjs";
 import BN from "bn.js";
 
 import {
@@ -251,7 +250,6 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
           }
         }
       } catch (err) {
-        Sentry.captureException(err);
         console.error(err);
         throw err;
       }

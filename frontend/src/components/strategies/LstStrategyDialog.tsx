@@ -15,7 +15,6 @@ import {
   TransactionObjectInput,
 } from "@mysten/sui/transactions";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
@@ -392,7 +391,6 @@ export default function LstStrategyDialog({
         },
       );
     } catch (err) {
-      Sentry.captureException(err);
       console.error(err);
       showErrorToast(
         [
