@@ -2784,13 +2784,25 @@ export const strategyUnloopToExposureTx = async (
         ),
       );
 
-      suilendClient.repay(
-        obligationId,
-        borrowReserve.coinType,
-        stepSuiCoin,
-        transaction,
-      );
-      transaction.transferObjects([stepSuiCoin], _address);
+      try {
+        const txCopy = Transaction.from(transaction);
+
+        suilendClient.repay(
+          obligationId,
+          borrowReserve.coinType,
+          stepSuiCoin,
+          txCopy,
+        );
+        txCopy.transferObjects([stepSuiCoin], _address);
+
+        await dryRunTransaction(txCopy); // Throws error if fails
+        transaction = txCopy;
+      } catch (err) {
+        // Don't block user if fails
+        console.error(err);
+
+        transaction.transferObjects([stepSuiCoin], _address);
+      }
 
       // 3.2) Update state
       borrowedAmount = borrowedAmount.minus(stepRepaidAmount);
@@ -3015,13 +3027,25 @@ export const strategyUnloopToExposureTx = async (
         ),
       );
 
-      suilendClient.repay(
-        obligationId,
-        borrowReserve.coinType,
-        stepBorrowCoin,
-        transaction,
-      );
-      transaction.transferObjects([stepBorrowCoin], _address);
+      try {
+        const txCopy = Transaction.from(transaction);
+
+        suilendClient.repay(
+          obligationId,
+          borrowReserve.coinType,
+          stepBorrowCoin,
+          txCopy,
+        );
+        txCopy.transferObjects([stepBorrowCoin], _address);
+
+        await dryRunTransaction(txCopy); // Throws error if fails
+        transaction = txCopy;
+      } catch (err) {
+        // Don't block user if fails
+        console.error(err);
+
+        transaction.transferObjects([stepBorrowCoin], _address);
+      }
 
       // 3.2) Update state
       borrowedAmount = borrowedAmount.minus(stepRepaidAmount);
