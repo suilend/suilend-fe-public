@@ -59,7 +59,7 @@ const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
       "0xb4940c255a6498eb3db91db94881397004d30659b836568356f279a69f2eca3c",
 
     name: "Matrixdock Gold Market",
-    isHidden: true, // TODO
+    isHidden: Date.now() < 1761289200000, // Friday, 24 October 2025 07:00:00 (GMT)
   },
 };
 
