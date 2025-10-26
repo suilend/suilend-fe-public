@@ -134,11 +134,11 @@ const MetricsSection = () => {
                 {isLoading || !totalBuybacksInputs ? (
                   <Skeleton className="h-4 w-24" />
                 ) : showUsdValue ? (
-                  toCompactCurrency(totalBuybacksInputs)
+                  toCompactCurrency(totalBuybacksInputs, 2, 1)
                 ) : (
                   <>
                     <SuilendLogo size={20} />
-                    {toCompactNumber(totalBuybacksOutputs ?? 0)}
+                    {toCompactNumber(totalBuybacksOutputs ?? 0, 2, 1)}
                   </>
                 )}
               </div>
