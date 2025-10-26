@@ -31,7 +31,7 @@ export default function ActionsModal() {
   const { getBalance } = useLoadedUserContext();
 
   const {
-    reserve: _reserve,
+    reserve,
     selectedTab,
     onSelectedTabChange,
     isMoreParametersOpen,
@@ -40,7 +40,6 @@ export default function ActionsModal() {
     withdraw,
     repay,
   } = useActionsModalContext();
-  const reserve = _reserve!;
 
   const { md } = useBreakpoint();
 
@@ -58,6 +57,8 @@ export default function ActionsModal() {
 
   // Tab config
   const tabConfig = useMemo(() => {
+    if (!reserve) return undefined;
+
     const coinBalanceForReserve = getBalance(reserve.coinType);
 
     if (selectedTab === Tab.DEPOSIT) {
