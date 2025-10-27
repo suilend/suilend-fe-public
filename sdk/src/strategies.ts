@@ -484,18 +484,15 @@ export const getStrategySimulatedObligation = (
     maxPriceWeightedBorrowsUsd: new BigNumber(
       borrowedAmount.times(borrowReserve.maxPrice),
     ).times(borrowReserve.config.borrowWeightBps.div(10000)),
-    minPriceBorrowLimitUsd: BigNumber.min(
-      deposits.reduce((acc, deposit) => {
-        const depositReserve = reserveMap[deposit.coinType];
+    minPriceBorrowLimitUsd: deposits.reduce((acc, deposit) => {
+      const depositReserve = reserveMap[deposit.coinType];
 
-        return acc.plus(
-          deposit.depositedAmount
-            .times(depositReserve.minPrice)
-            .times(depositReserve.config.openLtvPct / 100),
-        );
-      }, new BigNumber(0)),
-      90 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $90m (account borrow limit)
-    ),
+      return acc.plus(
+        deposit.depositedAmount
+          .times(depositReserve.minPrice)
+          .times(depositReserve.config.openLtvPct / 100),
+      );
+    }, new BigNumber(0)), // Not capped to $30m
     unhealthyBorrowValueUsd: deposits.reduce((acc, deposit) => {
       const depositReserve = reserveMap[deposit.coinType];
 

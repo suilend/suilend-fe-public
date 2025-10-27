@@ -14,6 +14,7 @@ export type ParsedPosition =
 export const parseObligation = (
   obligation: Obligation<string>,
   parsedReserveMap: { [coinType: string]: ParsedReserve },
+  isStrategy?: boolean,
 ) => {
   let totalDepositedAmountUsd = new BigNumber(0);
   let totalBorrowedAmountUsd = new BigNumber(0);
@@ -135,8 +136,12 @@ export const parseObligation = (
 
   const netValueUsd = totalDepositedAmountUsd.minus(totalBorrowedAmountUsd);
 
-  // Cap `minPriceBorrowLimitUsd` at $90m (account borrow limit)
-  minPriceBorrowLimitUsd = BigNumber.min(minPriceBorrowLimitUsd, 90 * 10 ** 6);
+  // Cap `minPriceBorrowLimitUsd` at $30m (account borrow limit) -- NON-STRATEGY OBLIGATIONS ONLY
+  if (!isStrategy)
+    minPriceBorrowLimitUsd = BigNumber.min(
+      minPriceBorrowLimitUsd,
+      30 * 10 ** 6,
+    );
 
   const weightedConservativeBorrowUtilizationPercent =
     minPriceBorrowLimitUsd.eq(0)
