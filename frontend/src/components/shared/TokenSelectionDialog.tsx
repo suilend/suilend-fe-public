@@ -13,7 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { LENDING_MARKET_ID } from "@suilend/sdk";
+import { LENDING_MARKET_ID, ParsedReserve } from "@suilend/sdk";
 import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
@@ -56,11 +56,11 @@ function TokenRow({
   isDisabled,
 }: TokenRowProps) {
   const { allAppData } = useLoadedAppContext();
-  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { getBalance, obligationMap } = useLoadedUserContext();
   const obligationMainMarket = obligationMap[LENDING_MARKET_ID];
 
-  const { swapInAccount, verifiedCoinTypes } = useSwapContext();
+  const { swapInAccount, verifiedCoinTypes, cetusVerifiedCoinTypes } =
+    useSwapContext();
 
   // Amount
   const tokenBalance = getBalance(token.coinType);
@@ -101,20 +101,29 @@ function TokenRow({
               </TBody>
 
               <div className="flex shrink-0 flex-row items-center gap-1">
-                {appDataMainMarket.lendingMarket.reserves.some(
-                  (r) => r.coinType === token.coinType,
-                ) ||
-                verifiedCoinTypes.includes(token.coinType) ||
-                [
-                  "0x8556539cf20b8640738d919ce3fe9d79b982f7d14a0861b650ff24b3cbd80e73::strat::STRAT",
-                ].includes(token.coinType) ? (
+                {Object.values(allAppData.allLendingMarketData)
+                  .reduce(
+                    (acc, appData) => [
+                      ...acc,
+                      ...appData.lendingMarket.reserves,
+                    ],
+                    [] as ParsedReserve[],
+                  )
+                  .some((r) => r.coinType === token.coinType) ||
+                verifiedCoinTypes.includes(token.coinType) ? (
                   <Tooltip
                     title={
-                      appDataMainMarket.lendingMarket.reserves.some(
-                        (r) => r.coinType === token.coinType,
-                      )
+                      Object.values(allAppData.allLendingMarketData)
+                        .reduce(
+                          (acc, appData) => [
+                            ...acc,
+                            ...appData.lendingMarket.reserves,
+                          ],
+                          [] as ParsedReserve[],
+                        )
+                        .some((r) => r.coinType === token.coinType)
                         ? "Available on Suilend"
-                        : verifiedCoinTypes.includes(token.coinType)
+                        : cetusVerifiedCoinTypes.includes(token.coinType)
                           ? "Appears on the list of Cetus verified coins"
                           : "Verified"
                     }
@@ -250,14 +259,16 @@ export default function TokenSelectionDialog({
   const reserveTokens = useMemo(() => {
     const result: Token[] = [];
 
-    for (const r of appDataMainMarket.lendingMarket.reserves) {
-      const token = tokens.find((t) => t.symbol === r.token.symbol);
-      if (token && !result.find((t) => t.coinType === token.coinType))
-        result.push(token);
+    for (const appData of Object.values(allAppData.allLendingMarketData)) {
+      for (const r of appData.lendingMarket.reserves) {
+        const token = tokens.find((t) => t.symbol === r.token.symbol);
+        if (token && !result.find((t) => t.coinType === token.coinType))
+          result.push(token);
+      }
     }
 
     return result;
-  }, [appDataMainMarket.lendingMarket.reserves, tokens]);
+  }, [allAppData.allLendingMarketData, tokens]);
 
   const otherTokens = useMemo(
     () =>
@@ -269,23 +280,27 @@ export default function TokenSelectionDialog({
     [tokens, balanceTokens, reserveTokens],
   );
 
-  const depositTokens = useMemo(() => {
-    return appDataMainMarket.lendingMarket.reserves
-      .filter((r) =>
-        obligationMainMarket?.deposits.find((d) => d.coinType === r.coinType),
-      )
-      .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
-      .filter(Boolean) as Token[];
-  }, [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens]);
+  const depositTokens = useMemo(
+    () =>
+      appDataMainMarket.lendingMarket.reserves
+        .filter((r) =>
+          obligationMainMarket?.deposits.find((d) => d.coinType === r.coinType),
+        )
+        .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
+        .filter(Boolean) as Token[],
+    [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens],
+  );
 
-  const borrowTokens = useMemo(() => {
-    return appDataMainMarket.lendingMarket.reserves
-      .filter((r) =>
-        obligationMainMarket?.borrows.find((b) => b.coinType === r.coinType),
-      )
-      .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
-      .filter(Boolean) as Token[];
-  }, [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens]);
+  const borrowTokens = useMemo(
+    () =>
+      appDataMainMarket.lendingMarket.reserves
+        .filter((r) =>
+          obligationMainMarket?.borrows.find((b) => b.coinType === r.coinType),
+        )
+        .map((r) => tokens.find((t) => t.symbol === r.token.symbol))
+        .filter(Boolean) as Token[],
+    [appDataMainMarket.lendingMarket.reserves, obligationMainMarket, tokens],
+  );
 
   // Tokens - top
   const topTokens = useMemo(
