@@ -49,6 +49,7 @@ interface MarketCardProps {
 
 function MarketCard({ rowData, onClick }: MarketCardProps) {
   const { allAppData } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   return (
     <Card
@@ -74,15 +75,16 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
               <div className="flex flex-col items-end gap-2">
                 <DepositAprCell {...rowData} />
 
-                {rowData.token.coinType === NORMALIZED_xBTC_COINTYPE && (
-                  <OkxAprBadge
-                    side={Side.DEPOSIT}
-                    aprPercent={
-                      allAppData.okxAprPercentMap.xBtcDepositAprPercent
-                    }
-                    href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
-                  />
-                )}
+                {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                  rowData.token.coinType === NORMALIZED_xBTC_COINTYPE && (
+                    <OkxAprBadge
+                      side={Side.DEPOSIT}
+                      aprPercent={
+                        allAppData.okxAprPercentMap.xBtcDepositAprPercent
+                      }
+                      href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
+                    />
+                  )}
               </div>
             </div>
             <div className="flex w-fit flex-col items-end gap-1">
@@ -91,15 +93,16 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
               <div className="flex flex-col items-end gap-2">
                 <BorrowAprCell {...rowData} />
 
-                {rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
-                  <OkxAprBadge
-                    side={Side.BORROW}
-                    aprPercent={
-                      allAppData.okxAprPercentMap.usdcBorrowAprPercent
-                    }
-                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
-                  />
-                )}
+                {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                  rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
+                    <OkxAprBadge
+                      side={Side.BORROW}
+                      aprPercent={
+                        allAppData.okxAprPercentMap.usdcBorrowAprPercent
+                      }
+                      href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
+                    />
+                  )}
               </div>
             </div>
           </div>
