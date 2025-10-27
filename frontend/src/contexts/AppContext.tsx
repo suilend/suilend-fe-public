@@ -51,6 +51,7 @@ export interface AllAppData {
   >;
   okxAprPercentMap: {
     xBtcDepositAprPercent: BigNumber;
+    usdcBorrowAprPercent: BigNumber;
   };
 }
 
