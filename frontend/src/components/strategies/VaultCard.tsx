@@ -1,12 +1,6 @@
-import { useRouter } from "next/router";
-import { useCallback, useMemo, useRef } from "react";
+import router from "next/router";
+import { useCallback } from "react";  
 import BigNumber from "bignumber.js";
-import Color from "colorjs.io";
-import { LENDING_MARKET_ID } from "@suilend/sdk";
-import {
-  STRATEGY_TYPE_INFO_MAP,
-  StrategyType,
-} from "@suilend/sdk/lib/strategyOwnerCap";
 import { formatPercent, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 import LabelWithValue from "@/components/shared/LabelWithValue";
@@ -17,133 +11,37 @@ import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import EarnHeader from "@/components/strategies/EarnHeader";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
-import { useLoadedUserContext } from "@/contexts/UserContext";
-import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
 import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { ParsedVault } from "@/fetchers/parseVault";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 
-interface StrategyCardProps {
-  strategyType: StrategyType;
+interface VaultCardProps {
+  vault: ParsedVault;
 }
 
-export default function StrategyCard({ strategyType }: StrategyCardProps) {
-  const router = useRouter();
-  const { allUserData } = useLoadedUserContext();
-  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+export default function VaultCard({ vault }: VaultCardProps) {
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
-  const {
-    hasPosition,
-    exposureMap,
-    getDefaultCurrencyReserve,
-    getTvlAmount,
-    getExposure,
-    getGlobalTvlAmountUsd,
-    getUnclaimedRewardsAmount,
-    getAprPercent,
-    getHealthPercent,
-  } = useLoadedLstStrategyContext();
-
-  // Strategy
-  const strategyInfo = useMemo(
-    () => STRATEGY_TYPE_INFO_MAP[strategyType],
-    [strategyType],
-  );
-  const maxExposure = useMemo(
-    () => exposureMap[strategyType].max,
-    [strategyType, exposureMap],
-  );
-  const defaultExposure = useMemo(
-    () => exposureMap[strategyType].default,
-    [strategyType, exposureMap],
-  );
-  const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
-
   // Open
-  const openLstStrategyDialog = useCallback(() => {
+  const openVaultDialog = useCallback(() => {
     shallowPushQuery(router, {
       ...router.query,
-      [LstStrategyDialogQueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
+      [LstStrategyDialogQueryParams.VAULT_NAME]: vault.metadata.queryParam,
     });
-  }, [router, strategyInfo.queryParam]);
+  }, [router, vault.metadata.queryParam]);
 
-  // Obligation
-  const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(
-    (soc) => soc.strategyType === strategyType,
-  );
-  const obligation = userDataMainMarket.strategyObligations.find(
-    (so) => so.id === strategyOwnerCap?.obligationId,
-  );
-
-  // Stats
-  // Stats - Global TVL
-  const globalTvlAmountUsd = getGlobalTvlAmountUsd(strategyType);
-
-  // Stats - TVL
-  const tvlAmount = getTvlAmount(strategyType, obligation);
-  const tvlAmountSnapshotRef = useRef<BigNumber>(tvlAmount);
-
-  // Stats - APR
-  const aprPercent = getAprPercent(strategyType, obligation, maxExposure);
-
-  // Stats - Unclaimed rewards
-  const unclaimedRewardsAmountSnapshotRef = useRef<BigNumber>(
-    getUnclaimedRewardsAmount(strategyType, obligation),
-  );
-
-  // Stats - Realized PnL
-  const { historicalTvlAmountMap } = useHistoricalTvlAmountMap(
-    strategyType,
-    obligation,
-  );
-  const historicalTvlAmount = useMemo(
-    () =>
-      !obligation || !hasPosition(obligation)
-        ? undefined
-        : historicalTvlAmountMap[obligation.id],
-    [obligation, hasPosition, historicalTvlAmountMap],
-  );
-
-  const realizedPnlAmount = useMemo(() => {
-    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
-
-    return historicalTvlAmount === undefined
-      ? undefined
-      : tvlAmountSnapshotRef.current.minus(historicalTvlAmount);
-  }, [obligation, hasPosition, historicalTvlAmount]);
-
-  // Stats - Total PnL
-  const totalPnlAmount = useMemo(
-    () =>
-      realizedPnlAmount === undefined
-        ? undefined
-        : realizedPnlAmount.plus(unclaimedRewardsAmountSnapshotRef.current),
-    [realizedPnlAmount],
-  );
-
-  // Stats - Exposure
-  const exposure = useMemo(
-    () => getExposure(strategyType, obligation),
-    [getExposure, strategyType, obligation],
-  );
-
-  // Stats - Health
-  const healthPercent = getHealthPercent(
-    strategyType,
-    obligation,
-    defaultExposure,
-  );
-  const healthColorRange = new Color("#ef4444").range("#22c55e"); // red-500 -> green-500
+  const globalTvlAmountUsd = vault.deployedAmount.plus(vault.undeployedAmount).times(appDataMainMarket.reserveMap[vault.baseCoinType].price);
+  const hasPosition = vault.
 
   return (
     <div
       className="group relative w-full cursor-pointer rounded-[4px] bg-gradient-to-tr from-border via-border to-[#457AE4] p-[1px]"
-      onClick={openLstStrategyDialog}
+      onClick={openVaultDialog}
     >
-      {strategyType === StrategyType.suiUSDT_sSUI_SUI_LOOPING && (
+      {vault.new && (
         <div className="absolute -left-0.5 -top-0.5 z-[4] rounded-[4px] bg-secondary px-1">
           <TLabelSans className="text-[10px] leading-4 text-secondary-foreground">
             New
@@ -155,10 +53,10 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
         <div className="flex w-full flex-row justify-between">
           {/* Left */}
           <EarnHeader
-            title={strategyInfo.header.title}
-            tooltip={strategyInfo.header.tooltip}
-            type={strategyInfo.header.type}
-            tokens={strategyInfo.header.coinTypes.map((coinType) =>getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]))}
+            title={vault.metadata.name}
+            tooltip={vault.metadata.description}
+            type={vault.baseCoinType}
+            tokens={[getToken(vault.baseCoinType, appDataMainMarket.coinMetadataMap[vault.baseCoinType])]}
           />
 
           {/* Right */}
@@ -188,9 +86,9 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
             {/* APR/Max APR */}
             <div className="flex w-fit flex-col items-end gap-1">
               <TLabelSans>
-                {!!obligation && hasPosition(obligation) ? "APR" : "Max APR"}
+                APR
               </TLabelSans>
-              <TBody className="text-right">{formatPercent(aprPercent)}</TBody>
+              <TBody className="text-right">{formatPercent(vault.apr)}</TBody>
             </div>
           </div>
         </div>

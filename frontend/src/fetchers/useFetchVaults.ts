@@ -4,9 +4,11 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import { ParsedVault, parseVault } from "@/fetchers/parseVault";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function useFetchVaults() {
   const { suiClient } = useSettingsContext();
+  const { allAppData } = useLoadedAppContext();
 
   const fetcher = async (): Promise<ParsedVault[]> => {
     const type = `${VAULTS_PACKAGE_ID}::vault::VaultManagerCap<${VAULTS_PACKAGE_ID}::vault::VaultShare>`;
@@ -20,7 +22,7 @@ export default function useFetchVaults() {
     for (const o of res.data) {
       const fields = (o.data?.content as any)?.fields;
       if (fields?.vault_id)
-        items.push(await parseVault(suiClient, fields.vault_id));
+        items.push(await parseVault(suiClient, fields.vault_id, allAppData));
     }
     console.log("items", items);
     return items;

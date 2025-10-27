@@ -94,6 +94,7 @@ const STRATEGY_MAX_BALANCE_SUI_SUBTRACTED_AMOUNT = 0.15;
 
 export enum QueryParams {
   STRATEGY_NAME = "strategy",
+  VAULT_NAME = "vault",
   TAB = "action",
 }
 

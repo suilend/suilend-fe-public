@@ -1,11 +1,10 @@
 import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
-
-import { SuilendClient, WAD } from "@suilend/sdk";
+import { LENDING_MARKET_ID, SuilendClient, WAD } from "@suilend/sdk";
 import { getAllOwnedObjects } from "@suilend/sui-fe";
-
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
+import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
+import { AllAppData } from "@/contexts/AppContext";
 
 export type ParsedObligation = {
   obligationId: string;
@@ -17,23 +16,24 @@ export type ParsedObligation = {
 
 export type ParsedVault = {
   id: string;
-  baseCoinType?: string;
+  baseCoinType: string;
   undeployedAmount: BigNumber;
   deployedAmount: BigNumber;
+  apr: BigNumber;
   obligations: ParsedObligation[];
   pricingLendingMarketId?: string;
   pricingLendingMarketType?: string;
   object: SuiObjectResponse;
+  metadata: VaultMetadata;
   managerCapId?: string;
+  new?: boolean;
 };
 
 export const extractVaultBaseCoinType = (
-  typeStr?: string,
-): string | undefined => {
-  if (!typeStr) return undefined;
+  typeStr: string,
+): string => {
   const anchor = `${VAULTS_PACKAGE_ID}::vault::Vault<`;
   const start = typeStr.indexOf(anchor);
-  if (start === -1) return undefined;
   let i = start + anchor.length;
   let depth = 0;
   const args: string[] = [];
@@ -77,6 +77,7 @@ async function findManagerCapIdForVault(
 export const parseVault = async (
   suiClient: SuiClient,
   vaultId: string,
+  allAppData: AllAppData,
   address?: string,
 ): Promise<ParsedVault> => {
   const res = await suiClient.getObject({
@@ -88,6 +89,7 @@ export const parseVault = async (
   const id = fields.id?.id ?? vaultId;
 
   const typeStr: string | undefined = content?.type;
+  if (!typeStr) throw new Error("Invalid vault");
   const baseCoinType = extractVaultBaseCoinType(typeStr);
 
   // Undeployed amount (Balance<T>)
@@ -144,6 +146,8 @@ export const parseVault = async (
     }
   }
 
+  let interestSum: BigNumber = new BigNumber(0);
+
   // Compute deployed (net USD) per obligation by reading the obligation
   if (obligations.length > 0) {
     for (const o of obligations) {
@@ -154,6 +158,12 @@ export const parseVault = async (
           [o.marketType],
           suiClient,
         );
+
+        const market = allAppData.allLendingMarketData[o.lendingMarketId];
+
+        rawObligation.deposits.forEach(d => {
+          interestSum = interestSum.plus(new BigNumber(d.marketValue.value.toString()).div(WAD).times(market.reserveMap[d.coinType.name].depositAprPercent));
+        });
 
         const depositedUsd = new BigNumber(
           rawObligation.depositedValueUsd.value.toString(),
@@ -175,17 +185,21 @@ export const parseVault = async (
     new BigNumber(0),
   );
 
+  const baseAssetPrice = allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType].price;
+
   return {
     id,
     baseCoinType,
     undeployedAmount,
     deployedAmount,
+    apr: interestSum.div(deployedAmount.plus(undeployedAmount).times(baseAssetPrice)),
     obligations,
     pricingLendingMarketId: obligations.find((o) => !!o.lendingMarketId)
       ?.lendingMarketId,
     pricingLendingMarketType: obligations.find((o) => !!o.lendingMarketId)
       ?.marketType,
     object: res,
+    metadata: VAULT_METADATA[vaultId],
     managerCapId: address
       ? await findManagerCapIdForVault(vaultId, suiClient, address)
       : undefined,

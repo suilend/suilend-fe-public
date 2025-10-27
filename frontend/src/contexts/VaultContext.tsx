@@ -5,21 +5,35 @@ import {
   useMemo,
   useState,
 } from "react";
-
-import { SuiObjectResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
-import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
-
+import { Transaction } from "@mysten/sui/transactions";
+import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import { getAllOwnedObjects } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
-
 import TextLink from "@/components/shared/TextLink";
 import { ParsedVault } from "@/fetchers/parseVault";
 import useFetchVault from "@/fetchers/useFetchVault";
 import useFetchVaults from "@/fetchers/useFetchVaults";
 import { TX_TOAST_DURATION, VAULTS_PACKAGE_ID } from "@/lib/constants";
+
+export type VaultMetadata = {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  queryParam: string;
+}
+
+export const VAULT_METADATA: Record<string, VaultMetadata> = {
+  ["0xfa486ca6939daa8174c46717a5fe66b826871d08d651b4f51073d3f584dd0d53"]: {
+    id: "0xfa486ca6939daa8174c46717a5fe66b826871d08d651b4f51073d3f584dd0d53",
+    name: "USDC Vault",
+    description: "A vault for USDC",
+    image: "/assets/tokens/USDC.png",
+    queryParam: "usdc-vault",
+  },
+}
 
 export type VaultObligationEntry = {
   marketType: string;

@@ -111,7 +111,7 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
       title: "USDC sSUI/SUI",
       tooltip:
         "Sets up a USDC sSUI/SUI Looping strategy by depositing USDC and looping sSUI/SUI to the desired leverage",
-      type: "Looping",
+      type: "Vault",
     },
 
     depositBaseCoinType: NORMALIZED_USDC_COINTYPE,
