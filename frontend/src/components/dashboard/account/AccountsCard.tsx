@@ -109,10 +109,12 @@ export default function AccountsCard() {
         startContent: filteredAppData.length === 1 && (
           <div className="flex h-4 cursor-auto flex-row items-center">
             <CopyToClipboardButton
-              value={Object.values(obligationMap)[0]!.id}
+              value={Object.values(obligationMap).filter(Boolean)[0]!.id}
             />
             <OpenOnExplorerButton
-              url={explorer.buildObjectUrl(Object.values(obligationMap)[0]!.id)}
+              url={explorer.buildObjectUrl(
+                Object.values(obligationMap).filter(Boolean)[0]!.id,
+              )}
             />
             <Button
               className="text-muted-foreground"
