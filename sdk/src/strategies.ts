@@ -494,7 +494,7 @@ export const getStrategySimulatedObligation = (
             .times(depositReserve.config.openLtvPct / 100),
         );
       }, new BigNumber(0)),
-      30 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $30m (account borrow limit)
+      90 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $90m (account borrow limit)
     ),
     unhealthyBorrowValueUsd: deposits.reduce((acc, deposit) => {
       const depositReserve = reserveMap[deposit.coinType];

@@ -256,7 +256,7 @@ export default function LstStrategyDialog({
     )!.depositedAmount;
 
     const targetDepositedAmount = bisectionMethod(
-      depositedAmount, // left boundary: original deposit
+      depositedAmount.times(1), // left boundary: 1x original deposit
       depositedAmount.times(2), // right boundary: 2x original deposit
       (newDepositedAmount: BigNumber) => {
         const additionalDepositedAmount =
