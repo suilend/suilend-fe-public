@@ -141,12 +141,8 @@ export default function AccountsCard() {
           const obligation = obligationMap[appData.lendingMarket.id]!;
           const userData = allUserData[appData.lendingMarket.id];
 
-          const isLooping =
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-            getIsLooping(appData, obligation); // Main market only
-          const wasLooping =
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-            getWasLooping(appData, obligation); // Main market only
+          const isLooping = getIsLooping(appData, obligation);
+          const wasLooping = getWasLooping(appData, obligation);
 
           return (
             <div key={appData.lendingMarket.id} className="w-full">

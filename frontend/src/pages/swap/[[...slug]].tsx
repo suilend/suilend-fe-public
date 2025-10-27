@@ -790,6 +790,7 @@ function Page() {
         action_swapAndDeposit,
         appDataMainMarket.lendingMarket.reserves,
         tokenOutReserve,
+        appDataMainMarket,
         obligationMainMarket,
       )()
     : undefined;
@@ -856,6 +857,7 @@ function Page() {
         action_swapInAccount,
         appDataMainMarket.lendingMarket.reserves,
         tokenOutReserve,
+        appDataMainMarket,
         obligationMainMarket,
       )()
     : undefined;

@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { Action } from "@suilend/sdk/lib/types";
 import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
@@ -518,9 +519,12 @@ export const getSubmitWarningMessages =
     action: Action,
     reserves: ParsedReserve[],
     reserve: ParsedReserve,
+    appData: AppData,
     obligation?: ParsedObligation,
   ) =>
   () => {
+    if (appData.lendingMarket.id !== LENDING_MARKET_ID) return [];
+
     const result = [];
 
     if (action === Action.DEPOSIT) {
