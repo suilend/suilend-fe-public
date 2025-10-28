@@ -1,4 +1,5 @@
 import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
+import { bcs } from "@mysten/bcs";
 import { CoinMetadata, DevInspectResults, SuiClient } from "@mysten/sui/client";
 import {
   Transaction,
@@ -4098,10 +4099,28 @@ export const strategyDepositAdjustWithdrawTx = async (
   transaction = newTransaction;
 
   // 4) Repay flash loan + fee
-  // 4.1) Withdraw additional + fee
-  let withdrawnAmount = depositedAmount
-    .times(1 + flashLoanObj.feePercent / 100)
+  const receiptDebts = transaction.moveCall({
+    target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_receipt_debts`,
+    typeArguments: [],
+    arguments: [receipt],
+  });
+  const dryRunResults = await dryRunTransaction(transaction);
+  const flashLoanRepayAmount = new BigNumber(
+    bcs
+      .u64()
+      .parse(
+        new Uint8Array(
+          dryRunResults.results?.find(
+            (r, index) => index === receiptDebts.Result,
+          )?.returnValues?.[flashLoanObj.borrowA ? 0 : 1][0] ?? [0],
+        ),
+      ),
+  )
+    .div(10 ** depositReserve.token.decimals)
     .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
+
+  // 4.1) Withdraw additional + fee
+  let withdrawnAmount = flashLoanRepayAmount;
   if (depositReserve.coinType === depositReserves.lst?.coinType)
     withdrawnAmount = withdrawnAmount
       .div(1 - +(lst?.redeemFeePercent ?? 0) / 100) // Potential rounding issue (max 1 MIST)
