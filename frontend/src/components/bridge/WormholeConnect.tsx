@@ -8,7 +8,7 @@ import {
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
 } from "@suilend/sui-fe";
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import styles from "@/components/bridge/WormholeConnect.module.scss";
@@ -52,9 +52,9 @@ export default function WormholeConnectWrapper() {
           ],
           eventHandler: (event) => {
             if (event.type === "transfer.start") {
-              track("bridge_submit");
+              mixpanelTrack("bridge_submit");
             } else if (event.type === "transfer.redeem.initiate") {
-              track("bridge_claim");
+              mixpanelTrack("bridge_claim");
             } else if (event.type === "transfer.success") {
               const { details } = event;
 
@@ -67,7 +67,7 @@ export default function WormholeConnectWrapper() {
                 assetUsdPriceMap[details.fromToken.symbol] ?? 0,
               );
 
-              track("bridge_complete", {
+              mixpanelTrack("bridge_complete", {
                 fromNetwork: details.fromChain,
                 toNetwork: details.toChain,
                 amount: amount.toFixed(2, BigNumber.ROUND_DOWN),

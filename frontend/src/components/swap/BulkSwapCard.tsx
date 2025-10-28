@@ -25,7 +25,7 @@ import {
   mergeAllCoins,
   returnAllOwnedObjectsAndSuiToUser,
 } from "@suilend/sui-fe";
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
@@ -225,7 +225,7 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
           ) {
             tokenOutAmount = tokenOutAmount.plus(userBalanceChangeIn);
 
-            track("bulk_swap_success", {
+            mixpanelTrack("bulk_swap_success", {
               assetIn: (balancesCoinMetadataMap ?? {})[coinType].symbol,
               assetOut: tokenOut.symbol,
               feeAmountOut: feeBalanceChangeIn.toFixed(

@@ -23,13 +23,14 @@ import {
   LENDING_MARKET_ID,
   RewardsMap,
 } from "@suilend/sdk";
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import safaryTrack from "@/lib/safary";
 import { useCetusSdk } from "@/lib/swap";
 
 export enum QueryParams {
@@ -264,12 +265,16 @@ export function DashboardContextProvider({ children }: PropsWithChildren) {
         (tx: Transaction) => openLedgerHashDialog(tx),
       );
       onAutoclaimSuccess();
-      track(
+
+      mixpanelTrack(
         "claim_rewards",
         Object.fromEntries(
           Object.entries(args ?? {}).map(([k, v]) => [k, String(v)]),
         ),
       );
+      safaryTrack("claim_rewards", "lend_claim_rewards", {
+        walletAddress: address,
+      });
 
       return res;
     },

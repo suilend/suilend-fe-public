@@ -29,7 +29,7 @@ import {
   NORMALIZED_WAL_COINTYPE,
   getAllOwnedObjects,
 } from "@suilend/sui-fe";
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useFetchBalances from "@suilend/sui-fe-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
@@ -442,7 +442,7 @@ export function UserContextProvider({ children }: PropsWithChildren) {
           },
         };
       } catch (err) {
-        track("autoclaim_rewards_dry_run_error");
+        mixpanelTrack("autoclaim_rewards_dry_run_error");
         return { transaction, onSuccess: () => {} };
       }
     },

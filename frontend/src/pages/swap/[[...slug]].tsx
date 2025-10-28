@@ -47,7 +47,6 @@ import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
-  SUI_COINTYPE,
   Token,
   formatInteger,
   formatPercent,
@@ -56,7 +55,7 @@ import {
   getBalanceChange,
   isSui,
 } from "@suilend/sui-fe";
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import {
   showErrorToast,
   useSettingsContext,
@@ -97,6 +96,7 @@ import {
   MAX_DEPOSITS_PER_OBLIGATION,
   TX_TOAST_DURATION,
 } from "@/lib/constants";
+import safaryTrack from "@/lib/safary";
 import { TokenDirection } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -1410,7 +1410,7 @@ function Page() {
       formatAndSetValue("", tokenIn);
       setQuotesMap({});
 
-      const properties: Record<string, string | number> = {
+      const mixpanelProperties: Record<string, string | number> = {
         agg: QUOTE_PROVIDER_NAME_MAP[quote.provider],
         assetIn: tokenIn.symbol,
         assetOut: tokenOut.symbol,
@@ -1429,17 +1429,59 @@ function Page() {
             : "false",
       };
       if (tokenInUsdValue !== undefined)
-        properties.amountInUsd = tokenInUsdValue.toFixed(
+        mixpanelProperties.amountInUsd = tokenInUsdValue.toFixed(
           2,
           BigNumber.ROUND_DOWN,
         );
       if (tokenOutUsdValue !== undefined)
-        properties.amountOutUsd = tokenOutUsdValue.toFixed(
+        mixpanelProperties.amountOutUsd = tokenOutUsdValue.toFixed(
           2,
           BigNumber.ROUND_DOWN,
         );
+      mixpanelTrack("swap_success", mixpanelProperties);
 
-      track("swap_success", properties);
+      const safaryParameters: Record<string, string | number> = {
+        walletAddress: address,
+        fromAmount: +quote.in.amount.decimalPlaces(
+          tokenIn.decimals,
+          BigNumber.ROUND_DOWN,
+        ),
+        fromCurrency: tokenIn.symbol,
+        // fromAmountUsd: 0,
+        toAmount: +quote.out.amount.decimalPlaces(
+          tokenOut.decimals,
+          BigNumber.ROUND_DOWN,
+        ),
+        toCurrency: tokenOut.symbol,
+        // toAmountUsd: 0,
+        customStr1Label: "agg",
+        customStr1Value: QUOTE_PROVIDER_NAME_MAP[quote.provider],
+        customStr2Label: "fromCoinType",
+        customStr2Value: tokenIn.coinType,
+        customStr3Label: "toCoinType",
+        customStr3Value: tokenOut.coinType,
+        customStr4Label: "isDepositing",
+        customStr4Value:
+          (swapInAccount && action_swapInAccount === Action.DEPOSIT) ||
+          (isSwapAndDeposit && action_swapAndDeposit === Action.DEPOSIT)
+            ? "true"
+            : "false",
+      };
+      if (tokenInUsdValue !== undefined)
+        safaryParameters.fromAmountUsd = +tokenInUsdValue.decimalPlaces(
+          2,
+          BigNumber.ROUND_DOWN,
+        );
+      if (tokenOutUsdValue !== undefined)
+        safaryParameters.toAmountUsd = +tokenOutUsdValue.decimalPlaces(
+          2,
+          BigNumber.ROUND_DOWN,
+        );
+      safaryTrack(
+        "swap", // The event type must be "swap" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#swap-event
+        "swap_swap",
+        safaryParameters,
+      );
     } catch (err) {
       if (swapInAccount) {
         showErrorToast(

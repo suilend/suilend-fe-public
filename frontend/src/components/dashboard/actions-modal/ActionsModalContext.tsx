@@ -14,6 +14,7 @@ import {
 
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
+import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -30,6 +31,7 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 import { QueryParams as DashboardQueryParams } from "@/contexts/DashboardContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import safaryTrack from "@/lib/safary";
 
 enum QueryParams {
   RESERVE_SYMBOL = "asset",
@@ -287,6 +289,34 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       );
       onAutoclaimSuccess();
 
+      safaryTrack(
+        "deposit", // The event type must be "deposit" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#deposit-event
+        "lend_deposit",
+        {
+          walletAddress: address,
+          amount: +new BigNumber(value)
+            .div(10 ** appData.coinMetadataMap[coinType].decimals)
+            .decimalPlaces(
+              appData.coinMetadataMap[coinType].decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+          currency: appData.coinMetadataMap[coinType].symbol,
+          amountUsd: +new BigNumber(value)
+            .div(10 ** appData.coinMetadataMap[coinType].decimals)
+            .times(appData.reserveMap[coinType].price)
+            .decimalPlaces(
+              appData.coinMetadataMap[coinType].decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+          customStr1Label: "coinType",
+          customStr1Value: coinType,
+          customStr2Label: "lendingMarketId",
+          customStr2Value: lendingMarketId,
+          customStr3Label: "lendingMarketName",
+          customStr3Value: appData.lendingMarket.name,
+        },
+      );
+
       return res;
     },
     [
@@ -337,6 +367,30 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         (tx: Transaction) => openLedgerHashDialog(tx),
       );
       onAutoclaimSuccess();
+
+      safaryTrack("borrow", "lend_borrow", {
+        walletAddress: address,
+        amount: +new BigNumber(value)
+          .div(10 ** appData.coinMetadataMap[coinType].decimals)
+          .decimalPlaces(
+            appData.coinMetadataMap[coinType].decimals,
+            BigNumber.ROUND_DOWN,
+          ),
+        currency: appData.coinMetadataMap[coinType].symbol,
+        amountUsd: +new BigNumber(value)
+          .div(10 ** appData.coinMetadataMap[coinType].decimals)
+          .times(appData.reserveMap[coinType].price)
+          .decimalPlaces(
+            appData.coinMetadataMap[coinType].decimals,
+            BigNumber.ROUND_DOWN,
+          ),
+        customStr1Label: "coinType",
+        customStr1Value: coinType,
+        customStr2Label: "lendingMarketId",
+        customStr2Value: lendingMarketId,
+        customStr3Label: "lendingMarketName",
+        customStr3Value: appData.lendingMarket.name,
+      });
 
       return res;
     },
@@ -389,6 +443,34 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
       );
       onAutoclaimSuccess();
 
+      safaryTrack(
+        "withdrawal", // The event type must be "withdrawal" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#withdrawal-event
+        "lend_withdraw",
+        {
+          walletAddress: address,
+          amount: +new BigNumber(value)
+            .div(10 ** appData.coinMetadataMap[coinType].decimals)
+            .decimalPlaces(
+              appData.coinMetadataMap[coinType].decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+          currency: appData.coinMetadataMap[coinType].symbol,
+          amountUsd: +new BigNumber(value)
+            .div(10 ** appData.coinMetadataMap[coinType].decimals)
+            .times(appData.reserveMap[coinType].price)
+            .decimalPlaces(
+              appData.coinMetadataMap[coinType].decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+          customStr1Label: "coinType",
+          customStr1Value: coinType,
+          customStr2Label: "lendingMarketId",
+          customStr2Value: lendingMarketId,
+          customStr3Label: "lendingMarketName",
+          customStr3Value: appData.lendingMarket.name,
+        },
+      );
+
       return res;
     },
     [
@@ -437,6 +519,30 @@ export function ActionsModalContextProvider({ children }: PropsWithChildren) {
         (tx: Transaction) => openLedgerHashDialog(tx),
       );
       onAutoclaimSuccess();
+
+      safaryTrack("repay", "lend_repay", {
+        walletAddress: address,
+        amount: +new BigNumber(value)
+          .div(10 ** appData.coinMetadataMap[coinType].decimals)
+          .decimalPlaces(
+            appData.coinMetadataMap[coinType].decimals,
+            BigNumber.ROUND_DOWN,
+          ),
+        currency: appData.coinMetadataMap[coinType].symbol,
+        amountUsd: +new BigNumber(value)
+          .div(10 ** appData.coinMetadataMap[coinType].decimals)
+          .times(appData.reserveMap[coinType].price)
+          .decimalPlaces(
+            appData.coinMetadataMap[coinType].decimals,
+            BigNumber.ROUND_DOWN,
+          ),
+        customStr1Label: "coinType",
+        customStr1Value: coinType,
+        customStr2Label: "lendingMarketId",
+        customStr2Value: lendingMarketId,
+        customStr3Label: "lendingMarketName",
+        customStr3Value: appData.lendingMarket.name,
+      });
 
       return res;
     },

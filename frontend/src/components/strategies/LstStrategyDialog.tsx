@@ -85,6 +85,7 @@ import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import safaryTrack from "@/lib/safary";
 import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -1840,6 +1841,29 @@ export default function LstStrategyDialog({
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
+        safaryTrack(
+          "deposit", // The event type must be "deposit" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#deposit-event
+          "strategies_deposit",
+          {
+            walletAddress: address,
+            amount: +new BigNumber(value).decimalPlaces(
+              currencyReserve.token.decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+            currency: currencyReserve.token.symbol,
+            amountUsd: +new BigNumber(value)
+              .times(currencyReserve.price)
+              .decimalPlaces(
+                currencyReserve.token.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+            customStr1Label: "strategyType",
+            customStr1Value: strategyType,
+            customStr2Label: "coinType",
+            customStr2Value: currencyReserve.coinType,
+          },
+        );
+
         const balanceChangeOut = getBalanceChange(
           res,
           address,
@@ -1914,6 +1938,31 @@ export default function LstStrategyDialog({
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
+        safaryTrack(
+          "withdrawal", // The event type must be "withdrawal" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#withdrawal-event
+          "strategies_withdraw",
+          {
+            walletAddress: address,
+            amount: +new BigNumber(value).decimalPlaces(
+              currencyReserve.token.decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+            currency: currencyReserve.token.symbol,
+            amountUsd: +new BigNumber(value)
+              .times(currencyReserve.price)
+              .decimalPlaces(
+                currencyReserve.token.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+            customStr1Label: "strategyType",
+            customStr1Value: strategyType,
+            customStr2Label: "coinType",
+            customStr2Value: currencyReserve.coinType,
+            customStr3Label: "isMax",
+            customStr3Value: useMaxAmount ? "true" : "false",
+          },
+        );
+
         const balanceChangeIn = getBalanceChange(
           res,
           address,
@@ -1954,6 +2003,11 @@ export default function LstStrategyDialog({
           throw Error("StrategyOwnerCap or Obligation not found");
 
         // 3) Deposit-adjust-withdraw or adjust
+        const prevExposure = exposure;
+        const newExposure = !canAdjust
+          ? depositAdjustWithdrawExposure
+          : adjustExposure;
+
         if (!canAdjust) {
           // Deposit-adjust-withdraw
           const { transaction: depositAdjustWithdrawTransaction } =
@@ -1991,6 +2045,16 @@ export default function LstStrategyDialog({
 
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
+
+        safaryTrack("adjust", "strategies_adjust", {
+          walletAddress: address,
+          customStr1Label: "strategyType",
+          customStr1Value: strategyType,
+          customStr2Label: "prevLeverage",
+          customStr2Value: +prevExposure.decimalPlaces(2, BigNumber.ROUND_DOWN),
+          customStr3Label: "newLeverage",
+          customStr3Value: +newExposure.decimalPlaces(2, BigNumber.ROUND_DOWN),
+        });
 
         toast.success(
           `Adjusted leverage to ${(!canAdjust
