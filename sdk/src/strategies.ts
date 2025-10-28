@@ -4137,6 +4137,12 @@ export const strategyDepositAdjustWithdrawTx = async (
   );
   if (!withdrawnCoin) throw new Error("Withdrawn coin not found");
 
+  // 4.2) Update state
+  deposits = newDeposits2;
+  borrowedAmount = newBorrowedAmount2;
+  transaction = newTransaction2;
+
+  // 4.3) Repay flash loan
   let flashLoanRepayCoin = withdrawnCoin;
   if (depositReserve.coinType === depositReserves.lst?.coinType)
     flashLoanRepayCoin = lst!.client.redeem(
@@ -4144,7 +4150,6 @@ export const strategyDepositAdjustWithdrawTx = async (
       flashLoanRepayCoin as TransactionObjectInput,
     );
 
-  // 4.2) Repay flash loan
   const flashLoanRepayBalance = transaction.moveCall({
     target: "0x2::coin::into_balance",
     typeArguments: [
@@ -4167,11 +4172,6 @@ export const strategyDepositAdjustWithdrawTx = async (
   } else {
     throw new Error("Invalid flash loan provider");
   }
-
-  // 4.3) Update state
-  deposits = newDeposits2;
-  borrowedAmount = newBorrowedAmount2;
-  transaction = newTransaction2;
 
   return { deposits, borrowedAmount, transaction };
 };
