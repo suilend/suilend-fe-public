@@ -1358,7 +1358,7 @@ export const getStrategyHealthPercent = (
   );
   const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
-  if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
+  if (weightedBorrowsUsd.lte(borrowLimitUsd)) return new BigNumber(100);
   return new BigNumber(100).minus(
     new BigNumber(weightedBorrowsUsd.minus(borrowLimitUsd))
       .div(liquidationThresholdUsd.minus(borrowLimitUsd))

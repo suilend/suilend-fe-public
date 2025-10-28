@@ -252,9 +252,10 @@ export default function LstStrategyDialog({
 
     const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
-    const depositedAmount = obligation.deposits.find(
-      (d) => d.coinType === depositReserve.coinType,
-    )!.depositedAmount;
+    const depositedAmount =
+      obligation.deposits.find((d) => d.coinType === depositReserve.coinType)
+        ?.depositedAmount ?? new BigNumber(0);
+    if (depositedAmount.lte(0)) return new BigNumber(0);
 
     const targetDepositedAmount = bisectionMethod(
       depositedAmount.times(1), // left boundary: 1x original deposit
@@ -2602,7 +2603,7 @@ export default function LstStrategyDialog({
                   />
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
-                    label={`Withdraw fee (${useMaxAmount ? "deducted" : "added"})`}
+                    label="Withdraw fee"
                     value={`${formatToken(
                       withdrawFeesAmount.times(
                         depositReserves.base !== undefined
