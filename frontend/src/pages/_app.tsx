@@ -1,6 +1,7 @@
 import "@/lib/abortSignalPolyfill";
 import type { AppProps } from "next/app";
 import Head from "next/head";
+import Script from "next/script";
 import { PropsWithChildren, useEffect, useRef } from "react";
 
 import { MSafeWallet } from "@msafe/sui-wallet";
@@ -61,6 +62,10 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <>
+      <Script id="safary-sdk">
+        {`var script=document.createElement('script');script.src="https://tag.safary.club/stag-0.1.19.js";script.async=true;script.setAttribute('data-name','safary-sdk');script.setAttribute('data-product-id','prd_yHDPBSp3sp');script.integrity="sha256-HIiAIcXc6BMTZX//tyipuAVyCNCB67w86gVFLK52pxY=";script.crossOrigin="anonymous";var target=document.head||document.body;target.appendChild(script);`}
+      </Script>
+
       <SpeedInsights />
       <Analytics />
       <Head>
