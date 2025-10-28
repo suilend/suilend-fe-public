@@ -1879,7 +1879,7 @@ export const strategyLoopToExposureTx = async (
       });
       if (!routers) throw new Error("No swap quote found");
 
-      const slippagePercent = 0.1;
+      const slippagePercent = 1;
       let stepBaseCoin;
       try {
         stepBaseCoin = await cetusSdk.fixableRouterSwapV3({
@@ -2972,7 +2972,7 @@ export const strategyUnloopToExposureTx = async (
       });
       if (!routers) throw new Error("No swap quote found");
 
-      const slippagePercent = 0.1;
+      const slippagePercent = 1;
       let stepBorrowCoin;
       try {
         stepBorrowCoin = await cetusSdk.fixableRouterSwapV3({
