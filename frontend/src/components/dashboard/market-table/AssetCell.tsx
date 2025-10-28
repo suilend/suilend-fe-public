@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedReserve } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_SUI_COINTYPE,
@@ -20,6 +21,7 @@ import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { SPRINGSUI_URL } from "@/lib/navigation";
 import { getSwapUrl } from "@/lib/swap";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,7 @@ export default function AssetCell({
   price,
 }: AssetCellProps) {
   const { isLst } = useLoadedAppContext();
+  const { appData } = useLendingMarketContext();
 
   const isTouchscreen = useIsTouchscreen();
 
@@ -47,6 +50,7 @@ export default function AssetCell({
       const result = [];
 
       if (
+        appData.lendingMarket.id === LENDING_MARKET_ID &&
         (tableType === AccountAssetTableType.DEPOSITS ||
           tableType === AccountAssetTableType.BORROWS ||
           tableType === AccountAssetTableType.WALLET) &&
@@ -101,7 +105,7 @@ export default function AssetCell({
       }
 
       return result;
-    }, [tableType, token, reserve, isLst]);
+    }, [appData.lendingMarket.id, tableType, token, reserve, isLst]);
 
   return (
     <div className="flex flex-row items-center gap-3">
