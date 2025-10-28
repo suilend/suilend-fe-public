@@ -4,6 +4,7 @@ import { ClassValue } from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLocalStorage } from "usehooks-ts";
 
+import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";
@@ -60,8 +61,12 @@ export default function ParentLendingMarket({
               contentClassName,
             )}
           >
-            <div className="flex flex-row items-center gap-2">
-              <TBody className="uppercase">{appData.lendingMarket.name}</TBody>
+            <div className="flex min-w-0 flex-row items-center gap-2">
+              <Tooltip title={appData.lendingMarket.name}>
+                <TBody className="overflow-hidden text-ellipsis text-nowrap uppercase">
+                  {appData.lendingMarket.name}
+                </TBody>
+              </Tooltip>
 
               {count && (
                 <TLabel className="text-xs text-muted-foreground">

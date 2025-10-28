@@ -138,7 +138,7 @@ export default function AccountsCard() {
         ),
       }}
     >
-      <CardContent className="flex flex-col gap-px p-0">
+      <CardContent className="flex flex-col gap-0.5 p-0">
         {filteredAppData.map((appData) => {
           const obligation = obligationMap[appData.lendingMarket.id]!;
           const userData = allUserData[appData.lendingMarket.id];

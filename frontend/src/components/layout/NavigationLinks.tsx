@@ -77,9 +77,7 @@ export default function NavigationLinks() {
         </Link>
       )}
       {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
-      <Link href={SEND_URL} label="New">
-        SEND
-      </Link>
+      <Link href={SEND_URL}>SEND</Link>
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
       {/* <Link href={VAULT_URL}>Vault</Link> */}
       {address === ADMIN_ADDRESS && !isInMsafeApp() && (

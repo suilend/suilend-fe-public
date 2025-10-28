@@ -15,7 +15,7 @@ export default function MarketCard() {
       className="bg-transparent max-md:-mx-4 max-md:w-auto max-md:rounded-none max-md:border-x-0"
       id={appData.lendingMarket.id}
       headerProps={{
-        titleContainerClassName: "max-md:h-10",
+        titleContainerClassName: "max-md:h-max",
         title: appData.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
         endContent: (

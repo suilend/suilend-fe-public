@@ -200,7 +200,7 @@ export default function ConnectedWalletDropdownMenu({
                 </div>
 
                 <DropdownMenuItem
-                  className="border-secondary bg-secondary/5 font-medium text-secondary focus:border-foreground"
+                  className="h-7 border-0 bg-secondary/20 px-3 font-medium !text-secondary focus:bg-secondary/35"
                   onClick={joinVipGroup}
                 >
                   Unlock

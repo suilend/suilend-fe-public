@@ -164,7 +164,13 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
                   <>
                     {/* Deposited */}
                     {tokenDepositedAmount.gt(0) && (
-                      <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                      <div
+                        className={cn(
+                          "flex flex-row items-center gap-1.5 text-muted-foreground",
+                          !!onPercentClick && "cursor-pointer",
+                        )}
+                        onClick={() => onPercentClick?.(100)}
+                      >
                         <Download className="h-3 w-3 text-inherit" />
                         <TLabel className="text-inherit">
                           {formatToken(tokenDepositedAmount, { exact: false })}
@@ -186,7 +192,15 @@ const SwapInput = forwardRef<HTMLInputElement, SwapInputProps>(
 
                 {/* Balance */}
                 {!swapInAccount && (
-                  <div className="flex flex-row items-center gap-1.5 text-muted-foreground">
+                  <div
+                    className={cn(
+                      "flex flex-row items-center gap-1.5 text-muted-foreground",
+                      !tokenBalance.eq(0) &&
+                        !!onPercentClick &&
+                        "cursor-pointer",
+                    )}
+                    onClick={() => onPercentClick?.(100)}
+                  >
                     <Wallet className="h-3 w-3 text-inherit" />
                     <TLabel className="text-inherit">
                       {tokenBalance.eq(0)
