@@ -264,34 +264,33 @@ export default function LstStrategyDialog({
         const additionalDepositedAmount =
           newDepositedAmount.minus(depositedAmount);
 
-        const newHealthPercent = getHealthPercent(
+        const newObligation = getSimulatedObligation(
           strategyType,
-          getSimulatedObligation(
-            strategyType,
-            addOrInsertDeposit(obligation.deposits, {
-              coinType: depositReserve.coinType,
-              depositedAmount: additionalDepositedAmount,
-            }),
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
-          ),
-          undefined,
+          addOrInsertDeposit(obligation.deposits, {
+            coinType: depositReserve.coinType,
+            depositedAmount: additionalDepositedAmount,
+          }),
+          obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
         );
+        const newExposure = getExposure(strategyType, newObligation);
+        // const newHealthPercent = getHealthPercent(
+        //   strategyType,
+        //   newObligation,
+        //   undefined,
+        // );
 
-        return newHealthPercent.eq(100);
+        return newExposure.lte(maxExposure);
       },
     );
 
     const additionalDepositedAmount = targetDepositedAmount
       .minus(depositedAmount)
       .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
-    console.log(
-      "XXXX depositedAmount:",
-      depositedAmount.toFixed(20),
-      "targetDepositedAmount:",
-      targetDepositedAmount.toFixed(20),
-      "additionalDepositedAmount:",
-      additionalDepositedAmount.toFixed(20),
-    );
+    console.log("XXX [depositAdjustWithdrawAdditionalDepositedAmount]", {
+      depositedAmount: depositedAmount.toFixed(20),
+      targetDepositedAmount: targetDepositedAmount.toFixed(20),
+      additionalDepositedAmount: additionalDepositedAmount.toFixed(20),
+    });
 
     return additionalDepositedAmount;
   }, [
@@ -300,9 +299,10 @@ export default function LstStrategyDialog({
     canAdjust,
     depositReserves.base,
     depositReserves.lst,
-    getHealthPercent,
-    strategyType,
     getSimulatedObligation,
+    strategyType,
+    getExposure,
+    maxExposure,
   ]);
 
   const tabs = [

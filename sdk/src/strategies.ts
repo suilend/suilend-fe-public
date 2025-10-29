@@ -2077,16 +2077,8 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.lst === undefined)
       throw new Error("LST reserve not found");
 
-    const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
-    const fullRepaymentAmount = (
-      borrowedAmountUsd.lt(0.02)
-        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-        : borrowedAmountUsd.lt(1)
-          ? borrowedAmount.times(1.1) // 10% buffer
-          : borrowedAmountUsd.lt(10)
-            ? borrowedAmount.times(1.01) // 1% buffer
-            : borrowedAmount.times(1.001)
-    ) // 0.1% buffer
+    const fullRepaymentAmount = new BigNumber(0.05)
+      .div(borrowReserve.price) // $0.05 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
       .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
     console.log(
@@ -2341,17 +2333,7 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.base === undefined)
       throw new Error("Base reserve not found");
 
-    const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
-    const fullRepaymentAmount = (
-      borrowedAmountUsd.lt(0.02)
-        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-        : borrowedAmountUsd.lt(1)
-          ? borrowedAmount.times(1.1) // 10% buffer
-          : borrowedAmountUsd.lt(10)
-            ? borrowedAmount.times(1.01) // 1% buffer
-            : borrowedAmount.times(1.001)
-    ) // 0.1% buffer
-      .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+    const fullRepaymentAmount = new BigNumber(0.05).div(borrowReserve.price); // $0.05 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
 
     console.log(
       `[unloopStrategyToExposure.fullyRepayBorrowsUsingBase] |`,
