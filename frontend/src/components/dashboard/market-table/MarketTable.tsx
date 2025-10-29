@@ -356,6 +356,7 @@ export default function MarketTable() {
             Side.DEPOSIT,
             reserve.coinType,
             allAppData.lstStatsMap,
+            allAppData.elixirSdeUsdAprPercent,
           ),
         );
         const totalBorrowAprPercent = getTotalAprPercent(

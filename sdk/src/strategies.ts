@@ -1305,6 +1305,7 @@ export const getStrategyAprPercent = (
     _obligation,
     rewardMap,
     lstStatsMap,
+    undefined, // elixirSdeUsdAprPercent
     !obligation ||
       !hasStrategyPosition(obligation) ||
       obligation.deposits.some((d) => !d.userRewardManager), // Simulated obligations don't have userRewardManager

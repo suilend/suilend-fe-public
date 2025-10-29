@@ -264,6 +264,7 @@ export default function AccountsCard() {
                           obligation,
                           userData.rewardMap,
                           allAppData.lstStatsMap,
+                          allAppData.elixirSdeUsdAprPercent,
                         ),
                       )}
                     </TBody>

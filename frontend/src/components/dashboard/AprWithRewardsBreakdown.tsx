@@ -195,6 +195,7 @@ export default function AprWithRewardsBreakdown({
     side,
     reserve.coinType,
     allAppData.lstStatsMap,
+    allAppData.elixirSdeUsdAprPercent,
   );
 
   const aprPercent =

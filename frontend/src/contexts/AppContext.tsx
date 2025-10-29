@@ -55,6 +55,7 @@ export interface AllAppData {
         usdcBorrowAprPercent: BigNumber;
       }
     | undefined;
+  elixirSdeUsdAprPercent: BigNumber | undefined;
 }
 
 interface AppContext {
