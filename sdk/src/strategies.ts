@@ -2077,8 +2077,8 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.lst === undefined)
       throw new Error("LST reserve not found");
 
-    const fullRepaymentAmount = new BigNumber(0.05)
-      .div(borrowReserve.price) // $0.05 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
+    const fullRepaymentAmount = new BigNumber(0.25)
+      .div(borrowReserve.price) // $0.25 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
       .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
     console.log(
@@ -2333,7 +2333,7 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.base === undefined)
       throw new Error("Base reserve not found");
 
-    const fullRepaymentAmount = new BigNumber(0.05).div(borrowReserve.price); // $0.05 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
+    const fullRepaymentAmount = new BigNumber(0.25).div(borrowReserve.price); // $0.25 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
 
     console.log(
       `[unloopStrategyToExposure.fullyRepayBorrowsUsingBase] |`,
