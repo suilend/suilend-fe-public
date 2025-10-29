@@ -76,7 +76,8 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
                 <DepositAprCell {...rowData} />
 
                 {appData.lendingMarket.id === LENDING_MARKET_ID &&
-                  rowData.token.coinType === NORMALIZED_xBTC_COINTYPE && (
+                  rowData.token.coinType === NORMALIZED_xBTC_COINTYPE &&
+                  allAppData.okxAprPercentMap !== undefined && (
                     <OkxAprBadge
                       side={Side.DEPOSIT}
                       aprPercent={
@@ -94,7 +95,8 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
                 <BorrowAprCell {...rowData} />
 
                 {appData.lendingMarket.id === LENDING_MARKET_ID &&
-                  rowData.token.coinType === NORMALIZED_USDC_COINTYPE && (
+                  rowData.token.coinType === NORMALIZED_USDC_COINTYPE &&
+                  allAppData.okxAprPercentMap !== undefined && (
                     <OkxAprBadge
                       side={Side.BORROW}
                       aprPercent={

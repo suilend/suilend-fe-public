@@ -267,7 +267,7 @@ export default function useFetchAppData() {
             );
           } catch (err) {
             console.error(err);
-            return {} as AllAppData["lstStatsMap"];
+            return {};
           }
         })(),
 
@@ -293,7 +293,7 @@ export default function useFetchAppData() {
             };
           } catch (err) {
             console.error(err);
-            return {} as AllAppData["okxAprPercentMap"];
+            return undefined;
           }
         })(),
       ]);

@@ -284,7 +284,8 @@ export default function MarketTable() {
 
               {appData.lendingMarket.id === LENDING_MARKET_ID &&
                 (row.original as ReservesRowData).token.coinType ===
-                  NORMALIZED_xBTC_COINTYPE && (
+                  NORMALIZED_xBTC_COINTYPE &&
+                allAppData.okxAprPercentMap !== undefined && (
                   <OkxAprBadge
                     side={Side.DEPOSIT}
                     aprPercent={
@@ -313,7 +314,8 @@ export default function MarketTable() {
 
               {appData.lendingMarket.id === LENDING_MARKET_ID &&
                 (row.original as ReservesRowData).token.coinType ===
-                  NORMALIZED_USDC_COINTYPE && (
+                  NORMALIZED_USDC_COINTYPE &&
+                allAppData.okxAprPercentMap !== undefined && (
                   <OkxAprBadge
                     side={Side.BORROW}
                     aprPercent={
@@ -327,12 +329,7 @@ export default function MarketTable() {
         },
       },
     ],
-    [
-      featuredReserveIds,
-      appData.lendingMarket.id,
-      allAppData.okxAprPercentMap.xBtcDepositAprPercent,
-      allAppData.okxAprPercentMap.usdcBorrowAprPercent,
-    ],
+    [featuredReserveIds, appData.lendingMarket.id, allAppData.okxAprPercentMap],
   );
 
   // Rows

@@ -49,10 +49,12 @@ export interface AllAppData {
       aprPercent: BigNumber;
     }
   >;
-  okxAprPercentMap: {
-    xBtcDepositAprPercent: BigNumber;
-    usdcBorrowAprPercent: BigNumber;
-  };
+  okxAprPercentMap:
+    | {
+        xBtcDepositAprPercent: BigNumber;
+        usdcBorrowAprPercent: BigNumber;
+      }
+    | undefined;
 }
 
 interface AppContext {
