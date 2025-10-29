@@ -17,7 +17,14 @@ import { Period } from "@/fetchers/fetchCharts";
 
 import { Checkbox } from "../ui/checkbox";
 
-import RevenueChart from "./RevenueChart";
+import RevenueChart, {
+  COLOR_BUYBACKS,
+  COLOR_MSEND,
+  COLOR_PRICE_LINE,
+  COLOR_SPRINGSUI,
+  COLOR_STEAMM,
+  COLOR_SUILEND,
+} from "./RevenueChart";
 
 const ChartSection = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useLocalStorage<Period>(
@@ -35,6 +42,7 @@ const ChartSection = () => {
       steammRevenue: false,
       suilendRevenue: false,
       springSuiRevenue: false,
+      mSendRevenue: false,
       buybacks: true,
       price: false,
     },
@@ -48,13 +56,15 @@ const ChartSection = () => {
     const allRevenueEnabled =
       enabledMetrics.suilendRevenue &&
       enabledMetrics.steammRevenue &&
-      enabledMetrics.springSuiRevenue;
+      enabledMetrics.springSuiRevenue &&
+      enabledMetrics.mSendRevenue;
 
     setEnabledMetrics((prev) => ({
       ...prev,
       suilendRevenue: !allRevenueEnabled,
       steammRevenue: !allRevenueEnabled,
       springSuiRevenue: !allRevenueEnabled,
+      mSendRevenue: !allRevenueEnabled,
     }));
   };
 
@@ -66,33 +76,39 @@ const ChartSection = () => {
       pills.push({
         key: "suilendRevenue",
         label: "Suilend",
-        color: "hsl(var(--primary))",
+        color: COLOR_SUILEND,
       });
     }
     if (enabledMetrics.steammRevenue) {
       pills.push({
         key: "steammRevenue",
         label: "STEAMM",
-        color: "hsl(var(--secondary))",
+        color: COLOR_STEAMM,
       });
     }
     if (enabledMetrics.springSuiRevenue) {
       pills.push({
         key: "springSuiRevenue",
         label: "SpringSui",
-        color: "#6DA8FF",
+        color: COLOR_SPRINGSUI,
       });
     }
-
+    if (enabledMetrics.mSendRevenue) {
+      pills.push({
+        key: "mSendRevenue",
+        label: "mSEND",
+        color: COLOR_MSEND,
+      });
+    }
     if (enabledMetrics.buybacks) {
       // Pink to match design
-      pills.push({ key: "buybacks", label: "Buybacks", color: "#F08BD9" });
+      pills.push({ key: "buybacks", label: "Buybacks", color: COLOR_BUYBACKS });
     }
     if (enabledMetrics.price) {
       pills.push({
         key: "price",
         label: "SEND Price",
-        color: "hsl(var(--foreground))",
+        color: COLOR_PRICE_LINE,
       });
     }
     return pills;
@@ -221,11 +237,13 @@ const ChartSection = () => {
                         const all =
                           enabledMetrics.suilendRevenue &&
                           enabledMetrics.steammRevenue &&
-                          enabledMetrics.springSuiRevenue;
+                          enabledMetrics.springSuiRevenue &&
+                          enabledMetrics.mSendRevenue;
                         const any =
                           enabledMetrics.suilendRevenue ||
                           enabledMetrics.steammRevenue ||
-                          enabledMetrics.springSuiRevenue;
+                          enabledMetrics.springSuiRevenue ||
+                          enabledMetrics.mSendRevenue;
                         return (
                           <Checkbox
                             checked={all}
@@ -268,6 +286,16 @@ const ChartSection = () => {
                         />
                         SpringSui
                       </div>
+                      <div
+                        className="flex items-center px-2 py-1.5 font-sans cursor-pointer hover:bg-accent rounded-sm text-muted-foreground text-xs"
+                        onClick={() => toggleMetric("mSendRevenue")}
+                      >
+                        <Checkbox
+                          checked={enabledMetrics.mSendRevenue}
+                          className="mr-2"
+                        />
+                        mSEND
+                      </div>
                     </div>
 
                     <div className="h-px bg-border my-1" />
@@ -289,7 +317,7 @@ const ChartSection = () => {
               <div className="w-px h-[38px] bg-border mx-2 hidden lg:block"></div>
 
               <Controls className="lg:hidden flex" />
-              <div className="hidden lg:flex gap-2 items-center flex-1">
+              <div className="hidden lg:flex gap-2 items-center flex-1 flex-wrap">
                 {/* Active metric pills */}
                 {getActivePills().map((pill) => (
                   <div

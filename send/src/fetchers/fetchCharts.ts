@@ -15,6 +15,7 @@ export type RevenuePoint = {
   suilendRevenue: number;
   steammRevenue: number;
   springSuiRevenue: number;
+  mSendRevenue: number;
 };
 
 // --- Test mode helpers (1y fake data) ---
@@ -37,48 +38,6 @@ function isTestMode1Y(): boolean {
 function startOfUtcDay(ms: number): number {
   const d = new Date(ms);
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-}
-
-function generatePastYearDailyBuybacks(): BuybacksPoint[] {
-  const day = 24 * 60 * 60 * 1000;
-  const today = startOfUtcDay(Date.now());
-  const out: BuybacksPoint[] = [];
-  for (let i = 364; i >= 0; i -= 1) {
-    const ts = today - i * day;
-    // Randomized but reasonable magnitudes
-    const usdValue = Math.max(0, Math.round(Math.random() ** 2 * 200_000));
-    const sendAmount = Math.max(0, Math.round(Math.random() ** 2 * 350_000));
-    const transactionCount = Math.floor(Math.random() * 300);
-    out.push({ timestamp: ts, usdValue, sendAmount, transactionCount });
-  }
-  return out;
-}
-
-function generatePastYearDailyRevenue(): RevenuePoint[] {
-  const day = 24 * 60 * 60 * 1000;
-  const today = startOfUtcDay(Date.now());
-  const out: RevenuePoint[] = [];
-  for (let i = 364; i >= 0; i -= 1) {
-    const ts = today - i * day;
-    const suilendRevenue = Math.max(
-      0,
-      Math.round(Math.random() ** 2 * 800_000),
-    );
-    const steammRevenue = Math.max(0, Math.round(Math.random() ** 2 * 250_000));
-    const springSuiRevenue = Math.max(
-      0,
-      Math.round(Math.random() ** 2 * 150_000),
-    );
-    const value = suilendRevenue + steammRevenue + springSuiRevenue;
-    out.push({
-      timestamp: ts,
-      value,
-      suilendRevenue,
-      steammRevenue,
-      springSuiRevenue,
-    });
-  }
-  return out;
 }
 
 function parseTimestampSecondsToMs(ts: unknown): number | undefined {
@@ -130,9 +89,6 @@ export function getPriceChart(period: Period) {
 export function getBuybacksChart(period: Period) {
   const fetcher = async (): Promise<BuybacksPoint[] | undefined> => {
     try {
-      if (period === "1y" && isTestMode1Y()) {
-        return generatePastYearDailyBuybacks();
-      }
       const url = `https://global.suilend.fi/send/charts/send?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -194,9 +150,6 @@ export function getBuybacksChart(period: Period) {
 export function getRevenueChart(period: Period) {
   const fetcher = async (): Promise<RevenuePoint[] | undefined> => {
     try {
-      if (period === "1y" && isTestMode1Y()) {
-        return generatePastYearDailyRevenue();
-      }
       const url = `https://global.suilend.fi/send/charts/revenue?${new URLSearchParams({ period })}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -206,6 +159,7 @@ export function getRevenueChart(period: Period) {
         suilendRevenue: string | number;
         steammRevenue: string | number;
         springSuiRevenue: string | number;
+        mSendRevenue: string | number;
       }> = await res.json();
       return json
         .map((p) => {
@@ -223,6 +177,10 @@ export function getRevenueChart(period: Period) {
             typeof p.springSuiRevenue === "string"
               ? Number(p.springSuiRevenue)
               : p.springSuiRevenue;
+          const mSendRevenue =
+            typeof p.mSendRevenue === "string"
+              ? Number(p.mSendRevenue)
+              : p.mSendRevenue;
 
           return {
             timestamp,
@@ -230,6 +188,7 @@ export function getRevenueChart(period: Period) {
             suilendRevenue,
             steammRevenue,
             springSuiRevenue,
+            mSendRevenue,
           } as RevenuePoint;
         })
         .filter((x): x is RevenuePoint => Boolean(x));

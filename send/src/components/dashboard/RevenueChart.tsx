@@ -16,6 +16,7 @@ type EnabledMetrics = {
   suilendRevenue: boolean;
   steammRevenue: boolean;
   springSuiRevenue: boolean;
+  mSendRevenue: boolean;
   buybacks: boolean;
   price: boolean;
 };
@@ -32,16 +33,18 @@ type RawPoint = {
   suilendRevenue: number; // USD
   steammRevenue: number; // USD
   springSuiRevenue: number; // USD
+  mSendRevenue: number; // USD
   buybacks: number; // USD
   price?: number; // USD (undefined when no datapoint)
 };
 
 // Colors: protocol-distinct hues. Metric is subtle via opacity.
-const COLOR_SUILEND = "hsl(var(--primary))";
-const COLOR_STEAMM = "hsl(var(--secondary))";
-const COLOR_SPRINGSUI = "#6DA8FF";
-const COLOR_PRICE_LINE = "hsl(var(--foreground))";
-const COLOR_BUYBACKS = "#F08BD9"; // pink shade to match design
+export const COLOR_SUILEND = "hsl(var(--primary))";
+export const COLOR_STEAMM = "hsl(var(--secondary))";
+export const COLOR_SPRINGSUI = "#6DA8FF";
+export const COLOR_PRICE_LINE = "hsl(var(--foreground))";
+export const COLOR_BUYBACKS = "#F08BD9"; // pink shade to match design
+export const COLOR_MSEND = "#F08BA7";
 
 function formatLabel(ts: number) {
   const d = new Date(ts);
@@ -152,6 +155,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         steammRevenue: rev?.steammRevenue ?? 0,
         springSuiRevenue: rev?.springSuiRevenue ?? 0,
         buybacks: buy?.usdValue ?? 0,
+        mSendRevenue: rev?.mSendRevenue ?? 0,
         price,
       };
     });
@@ -168,6 +172,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         r1: number;
         r2: number;
         r3: number;
+        r4: number;
         b: number;
         pSum: number;
         pCount: number;
@@ -183,6 +188,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
           r1: pt.suilendRevenue,
           r2: pt.steammRevenue,
           r3: pt.springSuiRevenue,
+          r4: pt.mSendRevenue,
           b: pt.buybacks,
           pSum: pt.price ?? 0,
           pCount: pt.price != null ? 1 : 0,
@@ -191,6 +197,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         cur.r1 += pt.suilendRevenue;
         cur.r2 += pt.steammRevenue;
         cur.r3 += pt.springSuiRevenue;
+        cur.r4 += pt.mSendRevenue;
         cur.b += pt.buybacks;
         if (pt.price != null) {
           cur.pSum += pt.price;
@@ -205,6 +212,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       suilendRevenue: v.r1,
       steammRevenue: v.r2,
       springSuiRevenue: v.r3,
+      mSendRevenue: v.r4,
       buybacks: v.b,
       price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
     }));
@@ -218,6 +226,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         suilend: { revenue: number; buybacks: number };
         steamm: { revenue: number; buybacks: number };
         springSuiRevenue: number;
+        mSendRevenue: number;
         price: number;
       }>;
 
@@ -228,6 +237,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         suilend: { revenue: pt.suilendRevenue, buybacks: pt.buybacks },
         steamm: { revenue: pt.steammRevenue, buybacks: 0 },
         springSuiRevenue: pt.springSuiRevenue,
+        mSendRevenue: pt.mSendRevenue,
         price: pt.price,
       }));
     }
@@ -236,17 +246,20 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     let cumSteamm = 0;
     let cumBuy = 0;
     let cumSpring = 0;
+    let cumMSend = 0;
     return effectiveRaw.map((pt) => {
       cumSuilend += pt.suilendRevenue;
       cumSteamm += pt.steammRevenue;
       cumBuy += pt.buybacks;
       cumSpring += pt.springSuiRevenue;
+      cumMSend += pt.mSendRevenue;
       return {
         timestamp: pt.timestamp,
         label: pt.label,
         suilend: { revenue: cumSuilend, buybacks: cumBuy },
         steamm: { revenue: cumSteamm, buybacks: 0 },
         springSuiRevenue: cumSpring,
+        mSendRevenue: cumMSend,
         price: pt.price,
       };
     });
@@ -298,6 +311,7 @@ const RevenueChart = ({
       enabledMetrics.suilendRevenue ||
       enabledMetrics.steammRevenue ||
       enabledMetrics.springSuiRevenue ||
+      enabledMetrics.mSendRevenue ||
       enabledMetrics.buybacks;
     if (!barEnabled) return data;
     const firstIdx = data.findIndex(
@@ -305,6 +319,7 @@ const RevenueChart = ({
         (enabledMetrics.suilendRevenue && d.suilend.revenue > 0) ||
         (enabledMetrics.steammRevenue && d.steamm.revenue > 0) ||
         (enabledMetrics.springSuiRevenue && d.springSuiRevenue > 0) ||
+        (enabledMetrics.mSendRevenue && d.mSendRevenue > 0) ||
         (enabledMetrics.buybacks && d.suilend.buybacks > 0),
     );
     return firstIdx > 0 ? data.slice(firstIdx) : data;
@@ -319,6 +334,7 @@ const RevenueChart = ({
         label: d.label,
         suilendRevenue: enabledMetrics.suilendRevenue ? d.suilend.revenue : 0,
         steammRevenue: enabledMetrics.steammRevenue ? d.steamm.revenue : 0,
+        mSendRevenue: enabledMetrics.mSendRevenue ? d.mSendRevenue : 0,
         springSuiRevenue: enabledMetrics.springSuiRevenue
           ? d.springSuiRevenue
           : 0,
@@ -353,6 +369,7 @@ const RevenueChart = ({
       const revenueSum =
         (enabledMetrics.suilendRevenue ? d.suilendRevenue : 0) +
         (enabledMetrics.steammRevenue ? d.steammRevenue : 0) +
+        (enabledMetrics.mSendRevenue ? d.mSendRevenue : 0) +
         (enabledMetrics.springSuiRevenue ? d.springSuiRevenue : 0);
       const buy = enabledMetrics.buybacks ? d.buybacks : 0;
       const m = Math.max(revenueSum, buy);
@@ -378,6 +395,7 @@ const RevenueChart = ({
       payload: {
         suilendRevenue: number;
         steammRevenue: number;
+        mSendRevenue: number;
         springSuiRevenue: number;
         buybacks: number;
         price: number;
@@ -411,6 +429,12 @@ const RevenueChart = ({
         label: "Buybacks",
         value: d.buybacks,
         color: COLOR_BUYBACKS,
+      });
+    if (enabledMetrics.mSendRevenue && d.mSendRevenue > 0)
+      rows.push({
+        label: "mSEND",
+        value: d.mSendRevenue,
+        color: COLOR_MSEND,
       });
     const dateStr = formatTooltipDate(d.timestamp);
     return (
@@ -459,7 +483,9 @@ const RevenueChart = ({
       ? "steammRevenue"
       : enabledMetrics.suilendRevenue
         ? "suilendRevenue"
-        : undefined;
+        : enabledMetrics.mSendRevenue
+          ? "mSendRevenue"
+          : undefined;
   const CenteredRoundedTopRectFraction =
     (widthFraction: number, radius: number = 6) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, react/display-name
@@ -592,6 +618,23 @@ const RevenueChart = ({
                 x2="0"
                 y2="6"
                 stroke={COLOR_BUYBACKS}
+                strokeWidth="2"
+              />
+            </pattern>
+            <pattern
+              id="stripe-mSend"
+              width="6"
+              height="6"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(45)"
+            >
+              <rect width="6" height="6" fill={COLOR_MSEND} opacity="0.4" />
+              <line
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="6"
+                stroke={COLOR_MSEND}
                 strokeWidth="2"
               />
             </pattern>
@@ -752,21 +795,27 @@ const RevenueChart = ({
               ))}
             </Recharts.Bar>
           )}
-          {enabledMetrics.buybacks && (
+          {enabledMetrics.mSendRevenue && (
             <Recharts.Bar
               yAxisId="left"
-              dataKey="buybacks"
-              fill={COLOR_BUYBACKS}
+              dataKey="mSendRevenue"
+              stackId="revenue"
+              fill={COLOR_MSEND}
               isAnimationActive={false}
-              radius={[topRadius, topRadius, 0, 0]}
-              shape={CenteredRoundedTopRectFraction(1, topRadius)}
+              radius={
+                topRevenueKey === "mSendRevenue"
+                  ? [topRadius, topRadius, 0, 0]
+                  : 0
+              }
+              shape={CenteredRoundedTopRectFraction(
+                1,
+                topRevenueKey === "mSendRevenue" ? topRadius : 0,
+              )}
             >
               {chartData.map((_, i) => (
                 <Recharts.Cell
-                  key={`buy-${i}`}
-                  fill={
-                    i === lastIndex ? "url(#stripe-buybacks)" : COLOR_BUYBACKS
-                  }
+                  key={`mSend-${i}`}
+                  fill={i === lastIndex ? "url(#stripe-mSend)" : COLOR_MSEND}
                 />
               ))}
             </Recharts.Bar>
