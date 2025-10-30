@@ -795,6 +795,25 @@ const RevenueChart = ({
               ))}
             </Recharts.Bar>
           )}
+          {enabledMetrics.buybacks && (
+            <Recharts.Bar
+              yAxisId="left"
+              dataKey="buybacks"
+              fill={COLOR_BUYBACKS}
+              isAnimationActive={false}
+              radius={[topRadius, topRadius, 0, 0]}
+              shape={CenteredRoundedTopRectFraction(1, topRadius)}
+            >
+              {chartData.map((_, i) => (
+                <Recharts.Cell
+                  key={`buy-${i}`}
+                  fill={
+                    i === lastIndex ? "url(#stripe-buybacks)" : COLOR_BUYBACKS
+                  }
+                />
+              ))}
+            </Recharts.Bar>
+          )}
           {enabledMetrics.mSendRevenue && (
             <Recharts.Bar
               yAxisId="left"
