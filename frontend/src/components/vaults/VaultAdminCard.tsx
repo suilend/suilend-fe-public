@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { useVaultContext } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
 
-interface VaultCardProps {
+interface VaultAdminProps {
   vault: ParsedVault;
 }
 
-export default function VaultCard({ vault }: VaultCardProps) {
+export default function VaultAdmin({ vault }: VaultAdminProps) {
   const { depositIntoVault, withdrawFromVault } = useVaultContext();
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawShares, setWithdrawShares] = useState("");

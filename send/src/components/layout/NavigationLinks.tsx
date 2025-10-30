@@ -15,7 +15,7 @@ import {
   SEND_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
-  STRATEGIES_URL,
+  EARN_URL,
   SWAP_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -62,7 +62,7 @@ export default function NavigationLinks() {
       <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
         Swap
       </Link>
-      <Link href={STRATEGIES_URL}>Strategies</Link>
+      <Link href={EARN_URL}>Strategies</Link>
       <Link href={BUYBACK_URL} label="New" isActiveOverride>
         SEND
       </Link>

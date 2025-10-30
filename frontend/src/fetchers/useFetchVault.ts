@@ -1,14 +1,12 @@
 import useSWR from "swr";
-
-import { useSettingsContext } from "@suilend/sui-fe-next";
-
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import { ParsedVault, parseVault } from "@/fetchers/parseVault";
-import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 
-export default function useFetchVault(vaultId?: string, address?: string) {
+export default function useFetchVault(vaultId?: string) {
   const { suiClient } = useSettingsContext();
   const { allAppData } = useLoadedAppContext();
+  const { address } = useWalletContext();
 
   const fetcher = async (): Promise<ParsedVault> => {
     if (!vaultId) throw new Error("Missing vaultId");
@@ -16,7 +14,7 @@ export default function useFetchVault(vaultId?: string, address?: string) {
   };
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<ParsedVault>(
-    vaultId ? ["vault", vaultId, address] : null,
+    vaultId ? ["vault", vaultId, address, allAppData.allLendingMarketData.length] : null,
     fetcher,
   );
 

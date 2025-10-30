@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { ParsedVault } from "@/fetchers/parseVault";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { LENDING_MARKET_ID } from "@suilend/sdk";
+import { useVaultContext } from "@/contexts/VaultContext";
 
 interface VaultCardProps {
   vault: ParsedVault;
@@ -24,17 +25,19 @@ interface VaultCardProps {
 export default function VaultCard({ vault }: VaultCardProps) {
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
-
+  const { userPnls } = useVaultContext();
   // Open
   const openVaultDialog = useCallback(() => {
     shallowPushQuery(router, {
       ...router.query,
-      [LstStrategyDialogQueryParams.VAULT_NAME]: vault.metadata.queryParam,
+      [LstStrategyDialogQueryParams.STRATEGY_NAME]: vault?.metadata?.queryParam,
     });
-  }, [router, vault.metadata.queryParam]);
+  }, [router, vault?.metadata?.queryParam]);
 
   const globalTvlAmountUsd = vault.deployedAmount.plus(vault.undeployedAmount).times(appDataMainMarket.reserveMap[vault.baseCoinType].price);
-  const hasPosition = vault.
+  const hasPosition = vault.userSharesBalance.gt(0);
+
+  const totalPnl = userPnls[vault.id];
 
   return (
     <div
@@ -53,9 +56,9 @@ export default function VaultCard({ vault }: VaultCardProps) {
         <div className="flex w-full flex-row justify-between">
           {/* Left */}
           <EarnHeader
-            title={vault.metadata.name}
-            tooltip={vault.metadata.description}
-            type={vault.baseCoinType}
+            title={vault.metadata?.name ?? "NO METADATA"}
+            tooltip={vault.metadata?.description ?? "NO METADATA"}
+            type="Vault"
             tokens={[getToken(vault.baseCoinType, appDataMainMarket.coinMetadataMap[vault.baseCoinType])]}
           />
 
@@ -88,12 +91,12 @@ export default function VaultCard({ vault }: VaultCardProps) {
               <TLabelSans>
                 APR
               </TLabelSans>
-              <TBody className="text-right">{formatPercent(vault.apr)}</TBody>
+              <TBody className="text-right">{vault.apr.isNaN() ? "-" : formatPercent(vault.apr)}</TBody>
             </div>
           </div>
         </div>
 
-        {!!obligation && hasPosition(obligation) && (
+        {hasPosition && (
           <>
             <Separator className="bg-gradient-to-r from-border via-border to-[#457AE4]" />
 
@@ -101,42 +104,31 @@ export default function VaultCard({ vault }: VaultCardProps) {
               {/* Equity */}
               <LabelWithValue
                 label="Equity"
-                labelTooltip={
-                  <>
-                    Equity is calculated as the sum of the net amount deposited,
-                    deposit interest, LST staking yield (if applicable), and
-                    claimed rewards, minus borrow interest.
-                    <br />
-                    <span className="mt-2 block">
-                      Equity does not include unclaimed rewards.
-                    </span>
-                  </>
-                }
                 value="0"
                 horizontal
                 customChild={
                   <div className="flex flex-row items-baseline gap-2">
                     <Tooltip
                       title={`${formatUsd(
-                        tvlAmount.times(defaultCurrencyReserve.price),
+                        vault.tvl,
                         { exact: true },
                       )}`}
                     >
                       <TLabel>
                         {formatUsd(
-                          tvlAmount.times(defaultCurrencyReserve.price),
+                          vault.tvl,
                         )}
                       </TLabel>
                     </Tooltip>
 
                     <Tooltip
-                      title={`${formatToken(tvlAmount, {
-                        dp: defaultCurrencyReserve.token.decimals,
-                      })} ${defaultCurrencyReserve.token.symbol}`}
+                      title={`${formatToken(vault.tvl, {
+                        dp: appDataMainMarket.coinMetadataMap[vault.baseCoinType].decimals,
+                      })} ${appDataMainMarket.coinMetadataMap[vault.baseCoinType].symbol}`}
                     >
                       <TBody>
-                        {formatToken(tvlAmount, { exact: false })}{" "}
-                        {defaultCurrencyReserve.token.symbol}
+                        {formatToken(vault.tvl, { exact: false })}{" "}
+                        {appDataMainMarket.coinMetadataMap[vault.baseCoinType].symbol}
                       </TBody>
                     </Tooltip>
                   </div>
@@ -145,122 +137,24 @@ export default function VaultCard({ vault }: VaultCardProps) {
 
               {/* Total PnL */}
               <PnlLabelWithValue
-                reserve={defaultCurrencyReserve}
+                reserve={appDataMainMarket.reserveMap[vault.baseCoinType]}
                 label="Total PnL"
                 labelTooltip="Total PnL is the difference between the sum of your Equity and unclaimed rewards, and the net amount deposited."
-                pnlAmount={totalPnlAmount}
-                pnlTooltip={
-                  realizedPnlAmount === undefined ||
-                  totalPnlAmount === undefined ? undefined : (
-                    <div className="flex flex-col gap-2">
-                      {/* Realized PnL */}
-                      <div className="flex flex-row items-center justify-between gap-4">
-                        <TLabelSans>Realized PnL</TLabelSans>
-                        <TBody
-                          className={cn(
-                            realizedPnlAmount.gt(0) && "text-success",
-                            realizedPnlAmount.lt(0) && "text-destructive",
-                          )}
-                        >
-                          {new BigNumber(realizedPnlAmount).eq(0)
-                            ? null
-                            : new BigNumber(realizedPnlAmount).gte(0)
-                              ? "+"
-                              : "-"}
-                          {formatToken(realizedPnlAmount.abs(), {
-                            dp: defaultCurrencyReserve.token.decimals,
-                          })}{" "}
-                          {defaultCurrencyReserve.token.symbol}
-                        </TBody>
-                      </div>
-
-                      {/* Unclaimed rewards */}
-                      <div className="flex flex-row items-center justify-between gap-4">
-                        <TLabelSans>Unclaimed rewards</TLabelSans>
-                        <TBody
-                          className={cn(
-                            unclaimedRewardsAmountSnapshotRef.current.gt(0) &&
-                              "text-success",
-                            unclaimedRewardsAmountSnapshotRef.current.lt(0) &&
-                              "text-destructive",
-                          )}
-                        >
-                          {new BigNumber(
-                            unclaimedRewardsAmountSnapshotRef.current,
-                          ).eq(0)
-                            ? null
-                            : new BigNumber(
-                                  unclaimedRewardsAmountSnapshotRef.current,
-                                ).gte(0)
-                              ? "+"
-                              : "-"}
-                          {formatToken(
-                            unclaimedRewardsAmountSnapshotRef.current.abs(),
-                            { dp: defaultCurrencyReserve.token.decimals },
-                          )}{" "}
-                          {defaultCurrencyReserve.token.symbol}
-                        </TBody>
-                      </div>
-
-                      <Separator />
-
-                      {/* Total PnL */}
-                      <div className="flex flex-row items-center justify-between gap-4">
-                        <TLabelSans>Total PnL</TLabelSans>
-                        <TBody
-                          className={cn(
-                            totalPnlAmount.gt(0) && "text-success",
-                            totalPnlAmount.lt(0) && "text-destructive",
-                          )}
-                        >
-                          {new BigNumber(totalPnlAmount).eq(0)
-                            ? null
-                            : new BigNumber(totalPnlAmount).gte(0)
-                              ? "+"
-                              : "-"}
-                          {formatToken(totalPnlAmount.abs(), {
-                            dp: defaultCurrencyReserve.token.decimals,
-                          })}{" "}
-                          {defaultCurrencyReserve.token.symbol}
-                        </TBody>
-                      </div>
-                    </div>
-                  )
-                }
+                pnlAmount={totalPnl}
               />
 
-              {/* Exposure */}
               <LabelWithValue
-                label="Leverage"
-                value={`${exposure.toFixed(1)}x`}
-                valueTooltip={`${exposure.toFixed(6)}x`}
+                label="Utilization"
+                value={`${formatPercent(vault.utilization.times(100), { dp: 1 })}`}
+                valueTooltip={`${formatPercent(vault.utilization.times(100), { dp: 6 })}`}
                 horizontal
               />
 
-              {/* Health */}
-              <div className="flex w-full flex-col gap-2">
-                <LabelWithValue
-                  label="Health"
-                  value={formatPercent(healthPercent, { dp: 0 })}
-                  horizontal
-                />
-
-                <div className="flex w-full flex-row justify-between">
-                  {Array.from({ length: 50 + 1 }).map((_, i, arr) => (
-                    <div
-                      key={i}
-                      className="h-[16px] w-[max(0.5%,2px)] rounded-sm bg-muted/20"
-                      style={{
-                        backgroundColor: healthPercent.gte(
-                          i * (100 / (arr.length - 1)),
-                        )
-                          ? healthColorRange(i / (arr.length - 1)).toString()
-                          : undefined,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+              <LabelWithValue
+                label="mNAV"
+                value={`${formatToken(vault.navPerShare, { dp: 2 })}x`}
+                horizontal
+              />
             </div>
           </>
         )}

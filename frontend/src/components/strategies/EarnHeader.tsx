@@ -1,13 +1,12 @@
 import { Info } from "lucide-react";
-import { getToken, Token } from "@suilend/sui-fe";
+import { Token } from "@suilend/sui-fe";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface EarnHeaderProps {
   title: string;
-  tooltip: string;
+  tooltip: React.ReactNode;
   type: string;
   tokens: Token[];
 }

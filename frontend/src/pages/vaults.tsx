@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Button } from "@/components/ui/button";
-import VaultCard from "@/components/vaults/VaultCard";
+import VaultCard from "@/components/vaults/VaultAdminCard";
 import { VaultContextProvider, useVaultContext } from "@/contexts/VaultContext";
 
 function Page() {

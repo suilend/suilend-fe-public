@@ -1,6 +1,6 @@
 import useSWR from "swr";
 
-import { useSettingsContext } from "@suilend/sui-fe-next";
+import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { ParsedVault, parseVault } from "@/fetchers/parseVault";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
@@ -9,28 +9,40 @@ import { useLoadedAppContext } from "@/contexts/AppContext";
 export default function useFetchVaults() {
   const { suiClient } = useSettingsContext();
   const { allAppData } = useLoadedAppContext();
+  const { address } = useWalletContext();
 
   const fetcher = async (): Promise<ParsedVault[]> => {
-    const type = `${VAULTS_PACKAGE_ID}::vault::VaultManagerCap<${VAULTS_PACKAGE_ID}::vault::VaultShare>`;
     const res = await suiClient.getOwnedObjects({
       owner: VAULT_OWNER,
       options: { showContent: true },
-      filter: { StructType: type },
+      filter: {
+        MoveModule: {
+          package: VAULTS_PACKAGE_ID,
+          module: "vault",
+        },
+      },
     });
 
     const items: ParsedVault[] = [];
     for (const o of res.data) {
       const fields = (o.data?.content as any)?.fields;
       if (fields?.vault_id)
-        items.push(await parseVault(suiClient, fields.vault_id, allAppData));
+        try {
+          const parsedVault = await parseVault(suiClient, fields.vault_id, allAppData, address, o.data?.objectId);
+          items.push(parsedVault);
+        } catch (error) {
+          console.error("Error parsing vault", error);
+          continue;
+        }
     }
-    console.log("items", items);
     return items;
   };
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<
     ParsedVault[]
-  >(["vaultsByOwner", VAULT_OWNER], fetcher);
+  >(["vaultsByOwner", VAULT_OWNER, address], fetcher);
+
+  console.log("error", error);
 
   return { data: data ?? [], isLoading, isValidating, error, mutate };
 }

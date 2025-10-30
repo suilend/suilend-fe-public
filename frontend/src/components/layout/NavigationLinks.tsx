@@ -20,9 +20,8 @@ import {
   SEND_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
-  STRATEGIES_URL,
+  EARN_URL,
   SWAP_URL,
-  // VAULT_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +75,7 @@ export default function NavigationLinks() {
           Swap
         </Link>
       )}
-      {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
+      {!isInMsafeApp() && <Link href={EARN_URL}>Earn</Link>}
       <Link href={SEND_URL} label="New">
         SEND
       </Link>
