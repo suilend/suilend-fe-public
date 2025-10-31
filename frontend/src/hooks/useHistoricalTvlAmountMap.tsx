@@ -11,44 +11,7 @@ const useHistoricalTvlAmountMap = (
   strategyType: StrategyType,
   obligation?: ParsedObligation,
 ) => {
-  const {
-    isMoreDetailsOpen,
-    setIsMoreDetailsOpen,
-
-    hasPosition,
-
-    suiReserve,
-
-    lstMap,
-    getLstMintFee,
-    getLstRedeemFee,
-
-    exposureMap,
-
-    getDepositReserves,
-    getBorrowReserve,
-    getDefaultCurrencyReserve,
-
-    getSimulatedObligation,
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
-    getExposure,
-    getStepMaxBorrowedAmount,
-    getStepMaxWithdrawnAmount,
-
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
-
-    getGlobalTvlAmountUsd,
-    getUnclaimedRewardsAmount,
-    getHistory,
-    getHistoricalTvlAmount,
-    getAprPercent,
-    getHealthPercent,
-    getLiquidationPrice,
-  } = useLoadedLstStrategyContext();
+  const { getHistoricalTvlAmount } = useLoadedLstStrategyContext();
 
   // Stats
   // Stats - Historical TVL

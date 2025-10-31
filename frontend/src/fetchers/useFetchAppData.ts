@@ -24,7 +24,10 @@ import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 
 import { AllAppData } from "@/contexts/AppContext";
 
-const LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata> = {
+export const LENDING_MARKET_METADATA_MAP: Record<
+  string,
+  LendingMarketMetadata
+> = {
   [LENDING_MARKET_ID]: {
     id: LENDING_MARKET_ID,
     type: LENDING_MARKET_TYPE,

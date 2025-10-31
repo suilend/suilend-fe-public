@@ -12,7 +12,6 @@ function Page() {
   const { createVault, vaults } = useVaultContext();
 
   const [baseCoinType, setBaseCoinType] = useState<string>("");
-  const [feeReceiver, setFeeReceiver] = useState<string>("");
   const [managementFeeBps, setManagementFeeBps] = useState<string>("0");
   const [performanceFeeBps, setPerformanceFeeBps] = useState<string>("0");
   const [depositFeeBps, setDepositFeeBps] = useState<string>("0");
@@ -33,7 +32,6 @@ function Page() {
         performanceFeeBps: Number(performanceFeeBps || 0),
         depositFeeBps: Number(depositFeeBps || 0),
         withdrawalFeeBps: Number(withdrawalFeeBps || 0),
-        feeReceiver,
       });
     } catch (err) {
       console.error("onSubmit error", err);
@@ -75,7 +73,7 @@ function Page() {
                         <div>
                           <Link
                             className="underline"
-                            href={`/vaults/admin/${v.id}`}
+                            href={`/earn/admin/${v.id}`}
                           >
                             Manage
                           </Link>
@@ -104,15 +102,6 @@ function Page() {
                   placeholder="0x...::module::Coin"
                   value={baseCoinType}
                   onChange={(e) => setBaseCoinType(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <TBodySans>Fee receiver (optional)</TBodySans>
-                <Input
-                  placeholder="0x... (defaults to your address)"
-                  value={feeReceiver}
-                  onChange={(e) => setFeeReceiver(e.target.value)}
                 />
               </div>
 

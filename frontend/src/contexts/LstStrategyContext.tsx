@@ -955,13 +955,8 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
       obligation?: ParsedObligation,
     ): Promise<BigNumber | undefined> => {
       const depositReserves = getDepositReserves(strategyType);
-      const borrowReserve = getBorrowReserve(strategyType);
-      const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
-
       const loopingDepositReserve = (depositReserves.lst ??
         depositReserves.base)!; // Must have base if no LST
-
-      //
 
       if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
@@ -1202,14 +1197,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         return undefined;
       }
     },
-    [
-      getDepositReserves,
-      getBorrowReserve,
-      getDefaultCurrencyReserve,
-      hasPosition,
-      getHistory,
-      getTvlAmount,
-    ],
+    [getDepositReserves, hasPosition, getHistory, getTvlAmount],
   );
 
   // Stats - APR

@@ -1,4 +1,5 @@
 export const ROOT_URL = "/";
+export const EARN_URL = "/earn";
 export const STRATEGIES_URL = "/strategies";
 export const SWAP_URL = "/swap";
 export const SEND_URL = "https://send.suilend.fi";
@@ -7,7 +8,6 @@ export const LEADERBOARD_URL = "/leaderboard";
 export const CLAIM_URL = "/claim";
 export const ABOUT_URL = "/about";
 export const ADMIN_URL = "/admin";
-export const VAULT_URL = "/vaults";
 
 export const SUILEND_URL = "https://suilend.fi";
 export const SPRINGSUI_URL = "https://springsui.com";

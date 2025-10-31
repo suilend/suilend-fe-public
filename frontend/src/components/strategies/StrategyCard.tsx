@@ -9,17 +9,23 @@ import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
-import { formatPercent, formatToken, formatUsd } from "@suilend/sui-fe";
+import {
+  formatPercent,
+  formatToken,
+  formatUsd,
+  getToken,
+} from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import EarnHeader from "@/components/strategies/EarnHeader";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
-import StrategyHeader from "@/components/strategies/StrategyHeader";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
@@ -32,58 +38,27 @@ interface StrategyCardProps {
 
 export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const router = useRouter();
-
   const { allUserData } = useLoadedUserContext();
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
+  const { allAppData } = useLoadedAppContext();
+  const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
   const {
-    isMoreDetailsOpen,
-    setIsMoreDetailsOpen,
-
     hasPosition,
-
-    suiReserve,
-
-    lstMap,
-    getLstMintFee,
-    getLstRedeemFee,
-
     exposureMap,
-
-    getDepositReserves,
-    getBorrowReserve,
     getDefaultCurrencyReserve,
-
-    getSimulatedObligation,
-    getDepositedAmount,
-    getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxBorrowedAmount,
-    getStepMaxWithdrawnAmount,
-
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
-
     getGlobalTvlAmountUsd,
     getUnclaimedRewardsAmount,
-    getHistory,
-    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
-    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy
   const strategyInfo = useMemo(
     () => STRATEGY_TYPE_INFO_MAP[strategyType],
     [strategyType],
-  );
-
-  const minExposure = useMemo(
-    () => exposureMap[strategyType].min,
-    [strategyType, exposureMap],
   );
   const maxExposure = useMemo(
     () => exposureMap[strategyType].max,
@@ -92,16 +67,6 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
   const defaultExposure = useMemo(
     () => exposureMap[strategyType].default,
     [strategyType, exposureMap],
-  );
-
-  // Reserves
-  const depositReserves = useMemo(
-    () => getDepositReserves(strategyType),
-    [getDepositReserves, strategyType],
-  );
-  const borrowReserve = useMemo(
-    () => getBorrowReserve(strategyType),
-    [getBorrowReserve, strategyType],
   );
   const defaultCurrencyReserve = getDefaultCurrencyReserve(strategyType);
 
@@ -112,10 +77,6 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
       [LstStrategyDialogQueryParams.STRATEGY_NAME]: strategyInfo.queryParam,
     });
   }, [router, strategyInfo.queryParam]);
-
-  //
-  //
-  //
 
   // Obligation
   const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(
@@ -201,7 +162,14 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
       <div className="relative z-[3] flex flex-col gap-4 rounded-[3px] p-4">
         <div className="flex w-full flex-row justify-between">
           {/* Left */}
-          <StrategyHeader strategyType={strategyType} />
+          <EarnHeader
+            title={strategyInfo.header.title}
+            tooltip={strategyInfo.header.tooltip}
+            type={strategyInfo.header.type}
+            tokens={strategyInfo.header.coinTypes.map((coinType) =>
+              getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]),
+            )}
+          />
 
           {/* Right */}
           <div className="flex flex-row justify-end gap-6">

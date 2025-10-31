@@ -1,8 +1,6 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
-import { SuiObjectResponse } from "@mysten/sui/client";
 import { toast } from "sonner";
 
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
@@ -15,51 +13,20 @@ import {
   VaultContextProvider,
   useVaultContext,
 } from "@/contexts/VaultContext";
-
-interface VaultFields {
-  id: { id: string };
-  version: string;
-  obligations: any;
-  share_supply: any;
-  deposit_asset: any;
-  total_shares: string;
-  fee_receiver: string;
-  management_fee_bps: string;
-  performance_fee_bps: string;
-  deposit_fee_bps: string;
-  withdrawal_fee_bps: string;
-  utilization_rate_bps: string;
-  last_nav_per_share: string;
-  fee_last_update_timestamp_s: string;
-}
+import { ParsedVault } from "@/fetchers/parseVault";
 
 function Page() {
-  const router = useRouter();
-  const { vaultId } = router.query as { vaultId?: string };
   const {
     createObligation,
     deployFunds,
     withdrawDeployedFunds,
-    // Context-managed vault page data
-    vaultPageVaultId,
-    setVaultPageVaultId,
+    claimManagerFees,
+    compoundRewards,
     vaultData,
     isLoadingVaultData,
   } = useVaultContext();
 
-  // Sync route param into context state
-  useEffect(() => {
-    if (vaultId && vaultId !== vaultPageVaultId) setVaultPageVaultId(vaultId);
-  }, [vaultId, vaultPageVaultId, setVaultPageVaultId]);
-
-  const obj = vaultData?.object as SuiObjectResponse | undefined;
   const baseCoinType = vaultData?.baseCoinType;
-
-  const fields: VaultFields | undefined = useMemo(() => {
-    const content = obj?.data?.content as any;
-    if (!content || content.dataType !== "moveObject") return undefined;
-    return content.fields as VaultFields;
-  }, [obj]);
 
   const isLoading = isLoadingVaultData;
 
@@ -82,7 +49,7 @@ function Page() {
           <CardContent>
             {isLoading ? (
               <TLabelSans>Loading…</TLabelSans>
-            ) : !fields ? (
+            ) : !vaultData ? (
               <TLabelSans>Vault not found or invalid type.</TLabelSans>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +57,7 @@ function Page() {
                   <TBodySans className="text-muted-foreground">
                     Vault ID
                   </TBodySans>
-                  <Value value={fields.id.id} isId />
+                  <Value value={vaultData.id} isId />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -104,49 +71,49 @@ function Page() {
                   <TBodySans className="text-muted-foreground">
                     Total shares
                   </TBodySans>
-                  <Value value={fields.total_shares} />
+                  <Value value={vaultData.totalShares} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Management fee (bps)
                   </TBodySans>
-                  <Value value={fields.management_fee_bps} />
+                  <Value value={vaultData.managementFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Performance fee (bps)
                   </TBodySans>
-                  <Value value={fields.performance_fee_bps} />
+                  <Value value={vaultData.performanceFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Deposit fee (bps)
                   </TBodySans>
-                  <Value value={fields.deposit_fee_bps} />
+                  <Value value={vaultData.depositFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Withdrawal fee (bps)
                   </TBodySans>
-                  <Value value={fields.withdrawal_fee_bps} />
+                  <Value value={vaultData.withdrawalFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Utilization (bps)
                   </TBodySans>
-                  <Value value={fields.utilization_rate_bps} />
+                  <Value value={vaultData.utilizationRateBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Last NAV per share
                   </TBodySans>
-                  <Value value={fields.last_nav_per_share} />
+                  <Value value={vaultData.lastNavPerShare} />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -154,9 +121,9 @@ function Page() {
                     Fee last update (s)
                   </TBodySans>
                   <Value
-                    value={fields.fee_last_update_timestamp_s}
+                    value={vaultData.feeLastUpdateTimestampS}
                     valueTooltip={new Date(
-                      Number(fields.fee_last_update_timestamp_s) * 1000,
+                      Number(vaultData.feeLastUpdateTimestampS) * 1000,
                     ).toLocaleString()}
                   />
                 </div>
@@ -229,10 +196,8 @@ function Page() {
                           </TBodySans>
                           <Value
                             value={
-                              (vaultData?.obligations as any)
-                                ?.find(
-                                  (x: any) => x.obligationId === o.obligationId,
-                                )
+                              vaultData?.obligations
+                                ?.find((x) => x.obligationId === o.obligationId)
                                 ?.deployedAmount?.toString?.() ?? "0"
                             }
                           />
@@ -259,13 +224,9 @@ function Page() {
                                   "Manager cap not found in connected wallet",
                                 );
                               await deployFunds({
-                                vaultId: vaultData.id,
+                                vault: vaultData,
                                 lendingMarketId: o.lendingMarketId,
-                                lendingMarketType: o.marketType,
-                                obligationIndex: o.index,
-                                amount,
-                                baseCoinType,
-                                managerCapId: vaultData?.managerCapId,
+                                amount: amount.toString(),
                               });
                               (
                                 form.elements.namedItem(
@@ -307,13 +268,9 @@ function Page() {
                                   "Manager cap not found in connected wallet",
                                 );
                               await withdrawDeployedFunds({
-                                vaultId: vaultData.id,
+                                vault: vaultData,
                                 lendingMarketId: o.lendingMarketId,
-                                lendingMarketType: o.marketType,
-                                obligationIndex: o.index,
-                                ctokenAmount,
-                                baseCoinType,
-                                managerCapId: vaultData.managerCapId,
+                                ctokenAmount: ctokenAmount.toString(),
                               });
                               (
                                 form.elements.namedItem(
@@ -336,6 +293,124 @@ function Page() {
                           </div>
                         </form>
                       </div>
+
+                      {/* Compound Rewards */}
+                      <form
+                        className="flex flex-col gap-2"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          const form = e.currentTarget as HTMLFormElement;
+                          const obligationIndex = (
+                            form.elements.namedItem(
+                              "obligationIndex",
+                            ) as HTMLInputElement
+                          ).value;
+                          const rewardReserveIndex = (
+                            form.elements.namedItem(
+                              "rewardReserveIndex",
+                            ) as HTMLInputElement
+                          ).value;
+                          const rewardIndex = (
+                            form.elements.namedItem(
+                              "rewardIndex",
+                            ) as HTMLInputElement
+                          ).value;
+                          const isDepositReward = (
+                            form.elements.namedItem(
+                              "isDepositReward",
+                            ) as HTMLInputElement
+                          ).checked;
+                          const depositReserveIndex = (
+                            form.elements.namedItem(
+                              "depositReserveIndex",
+                            ) as HTMLInputElement
+                          ).value;
+                          try {
+                            if (!vaultData || !baseCoinType)
+                              throw new Error("Vault not loaded");
+                            if (!o.lendingMarketId)
+                              throw new Error("Lending market ID not resolved");
+                            await compoundRewards({
+                              vault: vaultData,
+                              lendingMarketId: o.lendingMarketId,
+                              obligationIndex: obligationIndex.toString(),
+                              rewardReserveIndex: rewardReserveIndex.toString(),
+                              rewardIndex: rewardIndex.toString(),
+                              isDepositReward,
+                              depositReserveIndex:
+                                depositReserveIndex.toString(),
+                            });
+                            (
+                              form.elements.namedItem(
+                                "obligationIndex",
+                              ) as HTMLInputElement
+                            ).value = "";
+                            (
+                              form.elements.namedItem(
+                                "rewardReserveIndex",
+                              ) as HTMLInputElement
+                            ).value = "";
+                            (
+                              form.elements.namedItem(
+                                "rewardIndex",
+                              ) as HTMLInputElement
+                            ).value = "";
+                            (
+                              form.elements.namedItem(
+                                "isDepositReward",
+                              ) as HTMLInputElement
+                            ).checked = false;
+                            (
+                              form.elements.namedItem(
+                                "depositReserveIndex",
+                              ) as HTMLInputElement
+                            ).value = "";
+                          } catch (err: any) {
+                            toast.error(
+                              err?.message || "Failed to compound rewards",
+                            );
+                          }
+                        }}
+                      >
+                        <TBodySans>Compound rewards</TBodySans>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <Input
+                            name="obligationIndex"
+                            placeholder="Obligation index (u64)"
+                            inputMode="numeric"
+                            defaultValue={o.index.toString()}
+                          />
+                          <Input
+                            name="rewardReserveIndex"
+                            placeholder="Reward reserve index (u64)"
+                            inputMode="numeric"
+                          />
+                          <Input
+                            name="rewardIndex"
+                            placeholder="Reward index (u64)"
+                            inputMode="numeric"
+                          />
+                          <div className="flex flex-row items-center gap-2">
+                            <input
+                              type="checkbox"
+                              name="isDepositReward"
+                              id={`isDepositReward-${idx}`}
+                              className="h-4 w-4"
+                            />
+                            <TBodySans>
+                              <label htmlFor={`isDepositReward-${idx}`}>
+                                Is deposit reward
+                              </label>
+                            </TBodySans>
+                          </div>
+                          <Input
+                            name="depositReserveIndex"
+                            placeholder="Deposit reserve index (u64)"
+                            inputMode="numeric"
+                          />
+                        </div>
+                        <Button type="submit">Compound</Button>
+                      </form>
                     </CardContent>
                   </Card>
                 ))}
@@ -345,29 +420,77 @@ function Page() {
         </Card>
 
         {/* Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Create obligation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CreateObligationForm
-              vaultId={fields?.id.id}
-              baseCoinType={baseCoinType}
-              managerCapId={vaultData?.managerCapId}
-              onSubmit={async (args) => {
-                try {
-                  if (!args.vaultId || !args.baseCoinType)
-                    throw new Error("Missing vault or base coin type");
-                  if (!args.lendingMarketId)
-                    throw new Error("Enter lending market ID and type");
-                  await createObligation(args);
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to create obligation");
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
+        {vaultData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create obligation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CreateObligationForm
+                vault={vaultData}
+                onSubmit={async (args) => {
+                  try {
+                    if (!args.vault.id || !args.vault.baseCoinType)
+                      throw new Error("Missing vault or base coin type");
+                    if (!args.lendingMarketId)
+                      throw new Error("Enter lending market ID and type");
+                    await createObligation(args);
+                  } catch (err: any) {
+                    console.error("Create obligation error", err);
+                    toast.error(err?.message || "Failed to create obligation");
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Claim Manager Fees */}
+        {vaultData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Claim Manager Fees</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="flex flex-col gap-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget as HTMLFormElement;
+                  const amount = (
+                    form.elements.namedItem("amount") as HTMLInputElement
+                  ).value;
+                  try {
+                    if (!vaultData) throw new Error("Vault not loaded");
+                    if (!vaultData.managerCapId)
+                      throw new Error(
+                        "Manager cap not found in connected wallet",
+                      );
+                    await claimManagerFees({
+                      vault: vaultData,
+                      amount: amount.toString(),
+                    });
+                    (
+                      form.elements.namedItem("amount") as HTMLInputElement
+                    ).value = "";
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to claim manager fees");
+                  }
+                }}
+              >
+                <TBodySans>Claim manager fees</TBodySans>
+                <div className="flex flex-row gap-2">
+                  <Input
+                    name="amount"
+                    placeholder="Amount (u64)"
+                    inputMode="numeric"
+                  />
+                  <Button type="submit">Claim</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );
@@ -375,14 +498,10 @@ function Page() {
 
 // Forms
 function CreateObligationForm({
-  vaultId,
-  baseCoinType,
+  vault,
   onSubmit,
-  managerCapId,
 }: {
-  vaultId?: string;
-  baseCoinType?: string;
-  managerCapId?: string;
+  vault: ParsedVault;
   onSubmit: VaultContext["createObligation"];
 }) {
   const [lendingMarketId, setLendingMarketId] = useState("");
@@ -396,10 +515,8 @@ function CreateObligationForm({
         setIsSubmitting(true);
         try {
           await onSubmit({
-            vaultId: vaultId!,
+            vault,
             lendingMarketId,
-            baseCoinType: baseCoinType!,
-            managerCapId: managerCapId!,
           });
         } finally {
           setIsSubmitting(false);
@@ -408,11 +525,11 @@ function CreateObligationForm({
     >
       <div className="flex flex-col gap-1">
         <TBodySans>Vault</TBodySans>
-        <Value value={vaultId ?? "-"} isId />
+        <Value value={vault.id} isId />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Base coin type</TBodySans>
-        <Value value={baseCoinType ?? "-"} isType />
+        <Value value={vault.baseCoinType} isType />
       </div>
       <div className="flex flex-col gap-1">
         <TBodySans>Lending market ID (L)</TBodySans>

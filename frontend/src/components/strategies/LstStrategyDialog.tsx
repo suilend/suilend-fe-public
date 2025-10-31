@@ -76,8 +76,8 @@ import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import EarnHeader from "@/components/strategies/EarnHeader";
 import LstStrategyDialogParametersPanel from "@/components/strategies/LstStrategyDialogParametersPanel";
-import StrategyHeader from "@/components/strategies/StrategyHeader";
 import StrategyInput from "@/components/strategies/StrategyInput";
 import { Separator } from "@/components/ui/separator";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -133,37 +133,17 @@ export default function LstStrategyDialog({
   const {
     isMoreDetailsOpen,
     setIsMoreDetailsOpen,
-
     hasPosition,
-
-    suiReserve,
-
     lstMap,
-    getLstMintFee,
-    getLstRedeemFee,
-
     exposureMap,
-
     getDepositReserves,
     getBorrowReserve,
     getDefaultCurrencyReserve,
-
     getSimulatedObligation,
-    getDepositedAmount,
-    getBorrowedAmount,
     getTvlAmount,
     getExposure,
-    getStepMaxBorrowedAmount,
-    getStepMaxWithdrawnAmount,
-
     simulateLoopToExposure,
-    simulateDeposit,
     simulateDepositAndLoopToExposure,
-
-    getGlobalTvlAmountUsd,
-    getUnclaimedRewardsAmount,
-    getHistory,
-    getHistoricalTvlAmount,
     getAprPercent,
     getHealthPercent,
     getLiquidationPrice,
@@ -1796,7 +1776,7 @@ export default function LstStrategyDialog({
           await dryRunTransaction(txCopy); // Throws error is fails
 
           transaction = txCopy;
-        } catch (err) {
+        } catch {
           // Don't block user if fails
         }
       }
@@ -2150,7 +2130,14 @@ export default function LstStrategyDialog({
         }
       >
         <div className="mb-4 flex w-full flex-col gap-4 sm:h-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <StrategyHeader strategyType={strategyType} />
+          <EarnHeader
+            title={strategyInfo.header.title}
+            tooltip={strategyInfo.header.tooltip}
+            type={strategyInfo.header.type}
+            tokens={strategyInfo.header.coinTypes.map((coinType) =>
+              getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]),
+            )}
+          />
 
           {hasClaimableRewards && (
             <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">

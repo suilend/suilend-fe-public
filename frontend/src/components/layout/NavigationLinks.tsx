@@ -15,6 +15,7 @@ import {
   ADMIN_URL,
   BRIDGE_URL,
   CLAIM_URL,
+  EARN_URL,
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
@@ -22,7 +23,6 @@ import {
   STEAMM_URL,
   STRATEGIES_URL,
   SWAP_URL,
-  // VAULT_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +76,12 @@ export default function NavigationLinks() {
           Swap
         </Link>
       )}
-      {!isInMsafeApp() && <Link href={STRATEGIES_URL}>Strategies</Link>}
+      {!isInMsafeApp() &&
+        (process.env.NODE_ENV === "development" ? (
+          <Link href={EARN_URL}>Earn</Link>
+        ) : (
+          <Link href={STRATEGIES_URL}>Strategies</Link>
+        ))}
       <Link href={SEND_URL}>SEND</Link>
       {!isInMsafeApp() && <Link href={BRIDGE_URL}>Bridge</Link>}
       {/* <Link href={VAULT_URL}>Vault</Link> */}

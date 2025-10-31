@@ -1,10 +1,10 @@
-import { SuiClient, SuiObjectResponse } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { CoinMetadata, SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 
-import { SuilendClient, WAD } from "@suilend/sdk";
-import { getAllOwnedObjects } from "@suilend/sui-fe";
+import { LENDING_MARKET_ID, SuilendClient, WAD } from "@suilend/sdk";
 
+import { AllAppData } from "@/contexts/AppContext";
+import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
 
 export type ParsedObligation = {
@@ -12,28 +12,61 @@ export type ParsedObligation = {
   lendingMarketId: string;
   marketType: string;
   deployedAmount: BigNumber; // base units (currently 0 as placeholder)
+  apr: BigNumber;
   index: number;
 };
 
+interface VaultFields {
+  id: { id: string };
+  version: string;
+  obligations: any;
+  share_supply: any;
+  deposit_asset: any;
+  total_shares: string;
+  fee_receiver: string;
+  management_fee_bps: string;
+  performance_fee_bps: string;
+  deposit_fee_bps: string;
+  withdrawal_fee_bps: string;
+  utilization_rate_bps: string;
+  last_nav_per_share: string;
+  fee_last_update_timestamp_s: string;
+}
+
 export type ParsedVault = {
   id: string;
-  baseCoinType?: string;
+  baseCoinType: string;
   undeployedAmount: BigNumber;
   deployedAmount: BigNumber;
+  tvl: BigNumber;
+  totalShares: string;
+  managementFeeBps: string;
+  performanceFeeBps: string;
+  depositFeeBps: string;
+  withdrawalFeeBps: string;
+  utilizationRateBps: string;
+  lastNavPerShare: string;
+  feeLastUpdateTimestampS: string;
+  baseCoinMetadata: CoinMetadata | null;
+  apr: BigNumber;
   obligations: ParsedObligation[];
   pricingLendingMarketId?: string;
   pricingLendingMarketType?: string;
-  object: SuiObjectResponse;
+  shareType: string;
+  metadata: VaultMetadata | undefined;
   managerCapId?: string;
+  userShares: BigNumber;
+  navPerShare: BigNumber;
+  userSharesBalance: BigNumber;
+  utilization: BigNumber;
+  new?: boolean;
 };
 
-export const extractVaultBaseCoinType = (
-  typeStr?: string,
-): string | undefined => {
-  if (!typeStr) return undefined;
+export const extractVaultGenerics = (
+  typeStr: string,
+): { shareType?: string; baseType?: string } | undefined => {
   const anchor = `${VAULTS_PACKAGE_ID}::vault::Vault<`;
   const start = typeStr.indexOf(anchor);
-  if (start === -1) return undefined;
   let i = start + anchor.length;
   let depth = 0;
   const args: string[] = [];
@@ -55,20 +88,26 @@ export const extractVaultBaseCoinType = (
     }
     if (!(ch === ">" && depth === -1)) current += ch;
   }
-  return args[1];
+  return { shareType: args[0], baseType: args[1] };
 };
 
-async function findManagerCapIdForVault(
+export async function findManagerCapIdForVault(
   vaultId: string,
   suiClient: SuiClient,
-  address: string,
+  address?: string,
 ) {
-  if (!address) throw new Error("Wallet not connected");
-  const managerCapStructType = `${VAULTS_PACKAGE_ID}::vault::VaultManagerCap<${VAULTS_PACKAGE_ID}::vault::VaultShare>`;
-  const objs = await getAllOwnedObjects(suiClient, address, {
-    StructType: managerCapStructType,
+  if (!address) return undefined;
+  const res = await suiClient.getOwnedObjects({
+    owner: VAULT_OWNER,
+    options: { showContent: true },
+    filter: {
+      MoveModule: {
+        package: VAULTS_PACKAGE_ID,
+        module: "vault",
+      },
+    },
   });
-  const match = objs.find(
+  const match = res.data.find(
     (o) => (o.data?.content as any)?.fields?.vault_id === vaultId,
   );
   return match?.data?.objectId as string | undefined;
@@ -77,24 +116,35 @@ async function findManagerCapIdForVault(
 export const parseVault = async (
   suiClient: SuiClient,
   vaultId: string,
+  allAppData: AllAppData,
   address?: string,
+  managerCapId?: string,
 ): Promise<ParsedVault> => {
   const res = await suiClient.getObject({
     id: vaultId,
     options: { showContent: true },
   });
   const content = res.data?.content as any;
-  const fields = content?.fields ?? {};
+  const fields = (content?.fields as VaultFields) ?? {};
   const id = fields.id?.id ?? vaultId;
 
   const typeStr: string | undefined = content?.type;
-  const baseCoinType = extractVaultBaseCoinType(typeStr);
+  if (!typeStr) throw new Error("Invalid vault");
 
+  const vaultTypes = extractVaultGenerics(typeStr);
+  const baseCoinType = vaultTypes?.baseType;
+  if (!baseCoinType) {
+    throw new Error("Failed to detect base coin type");
+  }
+  if (!vaultTypes?.shareType) {
+    throw new Error("Failed to detect share type");
+  }
   // Undeployed amount (Balance<T>)
   let decimals = 9;
+  let md: CoinMetadata | null = null;
   if (baseCoinType) {
     try {
-      const md = await suiClient.getCoinMetadata({ coinType: baseCoinType });
+      md = await suiClient.getCoinMetadata({ coinType: baseCoinType });
       if (md?.decimals !== undefined) decimals = md.decimals;
     } catch {}
   }
@@ -140,9 +190,12 @@ export const parseVault = async (
         marketType,
         deployedAmount: new BigNumber(0),
         index: i,
+        apr: new BigNumber(0),
       });
     }
   }
+
+  let interestSum: BigNumber = new BigNumber(0);
 
   // Compute deployed (net USD) per obligation by reading the obligation
   if (obligations.length > 0) {
@@ -155,6 +208,20 @@ export const parseVault = async (
           suiClient,
         );
 
+        const market = allAppData.allLendingMarketData[o.lendingMarketId];
+
+        const obligationInterestSum = rawObligation.deposits.reduce(
+          (acc, d) =>
+            acc.plus(
+              new BigNumber(d.marketValue.value.toString())
+                .div(WAD)
+                .times(
+                  market.reserveMap[`0x${d.coinType.name}`].depositAprPercent,
+                ),
+            ),
+          new BigNumber(0),
+        );
+
         const depositedUsd = new BigNumber(
           rawObligation.depositedValueUsd.value.toString(),
         ).div(WAD);
@@ -164,6 +231,8 @@ export const parseVault = async (
 
         const netUsd = depositedUsd.minus(borrowedUsd);
         o.deployedAmount = netUsd;
+        interestSum = interestSum.plus(obligationInterestSum);
+        o.apr = obligationInterestSum.div(netUsd);
       } catch (e) {
         console.log("error", e);
       }
@@ -175,19 +244,69 @@ export const parseVault = async (
     new BigNumber(0),
   );
 
+  const baseAssetPrice =
+    allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType]
+      .price;
+
+  // User shares (sum of all Coin<shareType> balances)
+  let userShares = new BigNumber(0);
+  if (address) {
+    try {
+      let nextCursor: string | null | undefined = undefined;
+      let hasNextPage = true;
+      while (hasNextPage) {
+        const coinsRes = await suiClient.getCoins({
+          owner: address,
+          coinType: vaultTypes!.shareType as string,
+          cursor: nextCursor ?? undefined,
+          limit: 200,
+        });
+        for (const c of coinsRes.data ?? []) {
+          userShares = userShares.plus(c.balance ?? 0);
+        }
+        hasNextPage = !!coinsRes.hasNextPage;
+        nextCursor = coinsRes.nextCursor;
+      }
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+
+  const totalAmount = deployedAmount.plus(undeployedAmount);
+  const tvl = totalAmount.times(baseAssetPrice);
+  const navPerShare = deployedAmount.plus(undeployedAmount).div(userShares);
+  const utilization = deployedAmount.div(totalAmount);
+
   return {
     id,
     baseCoinType,
+    shareType: vaultTypes.shareType,
     undeployedAmount,
     deployedAmount,
+    tvl,
+    utilization,
+    totalShares: fields.total_shares,
+    managementFeeBps: fields.management_fee_bps,
+    performanceFeeBps: fields.performance_fee_bps,
+    depositFeeBps: fields.deposit_fee_bps,
+    withdrawalFeeBps: fields.withdrawal_fee_bps,
+    utilizationRateBps: fields.utilization_rate_bps,
+    lastNavPerShare: fields.last_nav_per_share,
+    feeLastUpdateTimestampS: fields.fee_last_update_timestamp_s,
+    apr: interestSum.div(tvl),
+    baseCoinMetadata: md,
     obligations,
     pricingLendingMarketId: obligations.find((o) => !!o.lendingMarketId)
       ?.lendingMarketId,
     pricingLendingMarketType: obligations.find((o) => !!o.lendingMarketId)
       ?.marketType,
-    object: res,
-    managerCapId: address
-      ? await findManagerCapIdForVault(vaultId, suiClient, address)
-      : undefined,
+    metadata: VAULT_METADATA[vaultId],
+    managerCapId:
+      managerCapId ??
+      (await findManagerCapIdForVault(vaultId, suiClient, address)) ??
+      undefined,
+    userShares,
+    navPerShare,
+    userSharesBalance: userShares.times(navPerShare),
   };
 };
