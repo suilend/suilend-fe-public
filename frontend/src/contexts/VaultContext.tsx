@@ -32,8 +32,8 @@ export type VaultMetadata = {
 };
 
 export const VAULT_METADATA: Record<string, VaultMetadata> = {
-  ["0x5fb667f4660b9d39e3f4c446c2836fcf2c9252710bfc6552fec132104b402086"]: {
-    id: "0x5fb667f4660b9d39e3f4c446c2836fcf2c9252710bfc6552fec132104b402086",
+  ["0x78097ddd063e84d09d52a6bbc0ae2a067eb7db920f7ec57db4f026e54bbdfd8f"]: {
+    id: "0x78097ddd063e84d09d52a6bbc0ae2a067eb7db920f7ec57db4f026e54bbdfd8f",
     name: "USDC Vault",
     description: (
       <div>

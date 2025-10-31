@@ -23,7 +23,7 @@ function Page() {
   );
 }
 
-export default function Strategies() {
+export default function Earn() {
   return (
     <VaultContextProvider>
       <LstStrategyContextProvider>

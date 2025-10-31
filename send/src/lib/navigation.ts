@@ -1,5 +1,6 @@
 export const ROOT_URL = "https://suilend.fi";
 export const EARN_URL = "https://suilend.fi/earn";
+export const STRATEGIES_URL = "https://suilend.fi/strategies";
 export const SWAP_URL = "https://suilend.fi/swap";
 export const BRIDGE_URL = "https://suilend.fi/bridge";
 export const LEADERBOARD_URL = "https://suilend.fi/leaderboard";

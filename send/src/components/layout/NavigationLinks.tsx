@@ -17,6 +17,7 @@ import {
   STEAMM_URL,
   EARN_URL,
   SWAP_URL,
+  STRATEGIES_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -62,8 +63,8 @@ export default function NavigationLinks() {
       <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
         Swap
       </Link>
-      <Link href={EARN_URL}>Strategies</Link>
-      <Link href={BUYBACK_URL} label="New" isActiveOverride>
+      {process.env.NODE_ENV === "development" ? <Link href={EARN_URL}>Earn</Link> : <Link href={STRATEGIES_URL}>Strategies</Link>}
+      <Link href={BUYBACK_URL} isActiveOverride>
         SEND
       </Link>
       <Link href={BRIDGE_URL}>Bridge</Link>

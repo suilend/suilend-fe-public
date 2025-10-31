@@ -1,5 +1,6 @@
 export const ROOT_URL = "/";
 export const EARN_URL = "/earn";
+export const STRATEGIES_URL = "/strategies";
 export const SWAP_URL = "/swap";
 export const SEND_URL = "https://send.suilend.fi";
 export const BRIDGE_URL = "/bridge";
