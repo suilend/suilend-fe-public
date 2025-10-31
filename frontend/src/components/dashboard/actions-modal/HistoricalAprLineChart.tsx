@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import BigNumber from "bignumber.js";
 import { format } from "date-fns";
@@ -9,8 +9,10 @@ import { WAD, getDedupedAprRewards, reserveSort } from "@suilend/sdk";
 import { ApiReserveAssetDataEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
+  API_URL,
   COINTYPE_COLOR_MAP,
   MS_PER_YEAR,
+  NORMALIZED_sdeUSD_COINTYPE,
   formatPercent,
   getToken,
 } from "@suilend/sui-fe";
@@ -203,12 +205,37 @@ export default function HistoricalAprLineChart({
     [userData.rewardMap, appData.reserveMap],
   );
 
+  const [
+    elixirSdeUsdHistoricalAprPercentSnapshotsMap,
+    setElixirSdeUsdHistoricalAprPercentSnapshotsMap,
+  ] = useState<Record<string, { timestampS: number; value: BigNumber }[]>>({});
+  const fetchElixirSdeUsdHistoricalAprPercentSnapshots = useCallback(
+    async (days: Days) => {
+      const url = `${API_URL}/elixir/apy/historical?period=${days}d`;
+      const res = await fetch(url);
+      const json: { timestamp: number; apy: number }[] = await res.json();
+
+      setElixirSdeUsdHistoricalAprPercentSnapshotsMap((prev) => ({
+        ...prev,
+        [days]: json.map(({ timestamp, apy }) => ({
+          timestampS: timestamp,
+          value: new BigNumber(apy),
+        })),
+      }));
+    },
+    [],
+  );
+
+  //
+
   const didFetchInitialReserveAssetDataEventsRef = useRef<
     Record<string, boolean>
   >({});
   const didFetchInitialLstExchangeRatesRef = useRef<Record<string, boolean>>(
     {},
   );
+  const didFetchInitialElixirSdeUsdHistoricalAprPercentSnapshotsRef =
+    useRef<boolean>(false);
   useEffect(() => {
     reserves.forEach(({ reserve, side, multiplier }) => {
       // Base
@@ -230,6 +257,22 @@ export default function HistoricalAprLineChart({
         if (!didFetchInitialLstExchangeRatesRef.current[reserve.coinType]) {
           fetchLstExchangeRates(reserve.coinType, days);
           didFetchInitialLstExchangeRatesRef.current[reserve.coinType] = true;
+        }
+      }
+
+      // Elixir sdeUSD APR
+      const elixirSdeUsdHistoricalAprPercentSnapshots =
+        elixirSdeUsdHistoricalAprPercentSnapshotsMap[days];
+      if (
+        reserve.coinType === NORMALIZED_sdeUSD_COINTYPE &&
+        side === Side.DEPOSIT &&
+        elixirSdeUsdHistoricalAprPercentSnapshots === undefined
+      ) {
+        if (
+          !didFetchInitialElixirSdeUsdHistoricalAprPercentSnapshotsRef.current
+        ) {
+          fetchElixirSdeUsdHistoricalAprPercentSnapshots(days);
+          didFetchInitialElixirSdeUsdHistoricalAprPercentSnapshotsRef.current = true;
         }
       }
 
@@ -259,6 +302,8 @@ export default function HistoricalAprLineChart({
     lstExchangeRateMap,
     isLst,
     fetchLstExchangeRates,
+    elixirSdeUsdHistoricalAprPercentSnapshotsMap,
+    fetchElixirSdeUsdHistoricalAprPercentSnapshots,
     getAprRewardReserves,
   ]);
 
@@ -280,6 +325,17 @@ export default function HistoricalAprLineChart({
         lstExchangeRates === undefined
       ) {
         fetchLstExchangeRates(reserve.coinType, value);
+      }
+
+      // Elixir sdeUSD APR
+      const elixirSdeUsdHistoricalAprPercentSnapshots =
+        elixirSdeUsdHistoricalAprPercentSnapshotsMap[value];
+      if (
+        reserve.coinType === NORMALIZED_sdeUSD_COINTYPE &&
+        side === Side.DEPOSIT &&
+        elixirSdeUsdHistoricalAprPercentSnapshots === undefined
+      ) {
+        fetchElixirSdeUsdHistoricalAprPercentSnapshots(value);
       }
 
       // Rewards
@@ -307,6 +363,16 @@ export default function HistoricalAprLineChart({
           isLst(reserve.coinType) &&
           side === Side.DEPOSIT &&
           lstExchangeRates === undefined
+        )
+          return true;
+
+        // Elixir sdeUSD APR
+        const elixirSdeUsdHistoricalAprPercentSnapshots =
+          elixirSdeUsdHistoricalAprPercentSnapshotsMap[days];
+        if (
+          reserve.coinType === NORMALIZED_sdeUSD_COINTYPE &&
+          side === Side.DEPOSIT &&
+          elixirSdeUsdHistoricalAprPercentSnapshots === undefined
         )
           return true;
 
@@ -355,14 +421,18 @@ export default function HistoricalAprLineChart({
           : undefined;
       });
 
-      // LST
+      // Staking yield
       reserves.forEach(({ reserve, side, multiplier }) => {
         const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
         const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+        const elixirSdeUsdHistoricalAprPercentSnapshots =
+          elixirSdeUsdHistoricalAprPercentSnapshotsMap[days];
+
         const event = events!.findLast((e) => e.sampleTimestampS <= timestampS);
         if (!event) return;
 
-        if (isLst(reserve.coinType) && side === Side.DEPOSIT)
+        // Staking yield - LST
+        if (isLst(reserve.coinType) && side === Side.DEPOSIT) {
           d[`2_interestAprPercent_staking_yield__${reserve.coinType}`] =
             (() => {
               const prevLstExchangeRate = lstExchangeRates!.findLast(
@@ -412,6 +482,24 @@ export default function HistoricalAprLineChart({
 
               return +aprPercent * multiplier;
             })();
+        }
+
+        // Staking yield - Elixir sdeUSD
+        else if (
+          reserve.coinType === NORMALIZED_sdeUSD_COINTYPE &&
+          side === Side.DEPOSIT
+        ) {
+          d[`2_interestAprPercent_staking_yield__${reserve.coinType}`] =
+            (() => {
+              const snapshot =
+                elixirSdeUsdHistoricalAprPercentSnapshots.findLast(
+                  (s) => s.timestampS <= timestampS,
+                );
+              if (snapshot === undefined) return undefined;
+
+              return +snapshot.value;
+            })();
+        }
       });
 
       // Rewards
@@ -451,6 +539,7 @@ export default function HistoricalAprLineChart({
     days,
     lstExchangeRateMap,
     isLst,
+    elixirSdeUsdHistoricalAprPercentSnapshotsMap,
     getAprRewardReserves,
   ]);
   const isLoading = chartData === undefined;
