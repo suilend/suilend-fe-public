@@ -10,7 +10,6 @@ import {
 } from "@suilend/sui-fe";
 
 import Button from "@/components/shared/Button";
-import StandardSelect from "@/components/shared/StandardSelect";
 import { TBody, TLabel } from "@/components/shared/Typography";
 import { Tab as LstStrategyDialogTab } from "@/components/strategies/LstStrategyDialog";
 import { Input as InputComponent } from "@/components/ui/input";
@@ -33,17 +32,7 @@ interface VaultInputProps {
 }
 
 const VaultInput = forwardRef<HTMLInputElement, VaultInputProps>(
-  (
-    {
-      value,
-      onChange,
-      tab,
-      useMaxAmount,
-      reserve,
-      onMaxClick,
-    },
-    ref,
-  ) => {
+  ({ value, onChange, tab, useMaxAmount, reserve, onMaxClick }, ref) => {
     // Autofocus
     const localRef = useRef<HTMLInputElement>(null);
     useEffect(() => {

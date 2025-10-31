@@ -1,9 +1,11 @@
-import { CoinMetadata, SuiClient, SuiObjectResponse } from "@mysten/sui/client";
+import { CoinMetadata, SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
+
 import { LENDING_MARKET_ID, SuilendClient, WAD } from "@suilend/sdk";
-import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
-import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
+
 import { AllAppData } from "@/contexts/AppContext";
+import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
+import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
 
 export type ParsedObligation = {
   obligationId: string;
@@ -14,19 +16,43 @@ export type ParsedObligation = {
   index: number;
 };
 
+interface VaultFields {
+  id: { id: string };
+  version: string;
+  obligations: any;
+  share_supply: any;
+  deposit_asset: any;
+  total_shares: string;
+  fee_receiver: string;
+  management_fee_bps: string;
+  performance_fee_bps: string;
+  deposit_fee_bps: string;
+  withdrawal_fee_bps: string;
+  utilization_rate_bps: string;
+  last_nav_per_share: string;
+  fee_last_update_timestamp_s: string;
+}
+
 export type ParsedVault = {
   id: string;
   baseCoinType: string;
   undeployedAmount: BigNumber;
   deployedAmount: BigNumber;
   tvl: BigNumber;
+  totalShares: string;
+  managementFeeBps: string;
+  performanceFeeBps: string;
+  depositFeeBps: string;
+  withdrawalFeeBps: string;
+  utilizationRateBps: string;
+  lastNavPerShare: string;
+  feeLastUpdateTimestampS: string;
   baseCoinMetadata: CoinMetadata | null;
   apr: BigNumber;
   obligations: ParsedObligation[];
   pricingLendingMarketId?: string;
   pricingLendingMarketType?: string;
   shareType: string;
-  object: SuiObjectResponse;
   metadata: VaultMetadata | undefined;
   managerCapId?: string;
   userShares: BigNumber;
@@ -38,9 +64,7 @@ export type ParsedVault = {
 
 export const extractVaultGenerics = (
   typeStr: string,
-):
-| { shareType?: string; baseType?: string }
-| undefined  => {
+): { shareType?: string; baseType?: string } | undefined => {
   const anchor = `${VAULTS_PACKAGE_ID}::vault::Vault<`;
   const start = typeStr.indexOf(anchor);
   let i = start + anchor.length;
@@ -58,15 +82,14 @@ export const extractVaultGenerics = (
       depth--;
     }
     if (ch === "," && depth === 0) {
-    args.push(current.trim());
-    current = "";
-    continue;
+      args.push(current.trim());
+      current = "";
+      continue;
+    }
+    if (!(ch === ">" && depth === -1)) current += ch;
   }
-  if (!(ch === ">" && depth === -1)) current += ch;
-}
-return { shareType: args[0], baseType: args[1] };
+  return { shareType: args[0], baseType: args[1] };
 };
-
 
 export async function findManagerCapIdForVault(
   vaultId: string,
@@ -102,7 +125,7 @@ export const parseVault = async (
     options: { showContent: true },
   });
   const content = res.data?.content as any;
-  const fields = content?.fields ?? {};
+  const fields = (content?.fields as VaultFields) ?? {};
   const id = fields.id?.id ?? vaultId;
 
   const typeStr: string | undefined = content?.type;
@@ -187,10 +210,17 @@ export const parseVault = async (
 
         const market = allAppData.allLendingMarketData[o.lendingMarketId];
 
-        const obligationInterestSum = rawObligation.deposits.reduce((acc, d) => {
-          console.log('d', d, market.reserveMap);
-          return acc.plus(new BigNumber(d.marketValue.value.toString()).div(WAD).times(market.reserveMap[`0x${d.coinType.name}`].depositAprPercent));
-        }, new BigNumber(0));
+        const obligationInterestSum = rawObligation.deposits.reduce(
+          (acc, d) =>
+            acc.plus(
+              new BigNumber(d.marketValue.value.toString())
+                .div(WAD)
+                .times(
+                  market.reserveMap[`0x${d.coinType.name}`].depositAprPercent,
+                ),
+            ),
+          new BigNumber(0),
+        );
 
         const depositedUsd = new BigNumber(
           rawObligation.depositedValueUsd.value.toString(),
@@ -198,9 +228,6 @@ export const parseVault = async (
         const borrowedUsd = new BigNumber(
           rawObligation.unweightedBorrowedValueUsd.value.toString(),
         ).div(WAD);
-
-        console.log('depositedUsd', depositedUsd.toString());
-        console.log('borrowedUsd', borrowedUsd.toString());
 
         const netUsd = depositedUsd.minus(borrowedUsd);
         o.deployedAmount = netUsd;
@@ -217,7 +244,9 @@ export const parseVault = async (
     new BigNumber(0),
   );
 
-  const baseAssetPrice = allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType].price;
+  const baseAssetPrice =
+    allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType]
+      .price;
 
   // User shares (sum of all Coin<shareType> balances)
   let userShares = new BigNumber(0);
@@ -239,7 +268,7 @@ export const parseVault = async (
         nextCursor = coinsRes.nextCursor;
       }
     } catch (error) {
-      console.log('error', error);
+      console.log("error", error);
     }
   }
 
@@ -256,6 +285,14 @@ export const parseVault = async (
     deployedAmount,
     tvl,
     utilization,
+    totalShares: fields.total_shares,
+    managementFeeBps: fields.management_fee_bps,
+    performanceFeeBps: fields.performance_fee_bps,
+    depositFeeBps: fields.deposit_fee_bps,
+    withdrawalFeeBps: fields.withdrawal_fee_bps,
+    utilizationRateBps: fields.utilization_rate_bps,
+    lastNavPerShare: fields.last_nav_per_share,
+    feeLastUpdateTimestampS: fields.fee_last_update_timestamp_s,
     apr: interestSum.div(tvl),
     baseCoinMetadata: md,
     obligations,
@@ -263,10 +300,11 @@ export const parseVault = async (
       ?.lendingMarketId,
     pricingLendingMarketType: obligations.find((o) => !!o.lendingMarketId)
       ?.marketType,
-    object: res,
     metadata: VAULT_METADATA[vaultId],
-    managerCapId: managerCapId
-      ?? await findManagerCapIdForVault(vaultId, suiClient, address) ?? undefined,
+    managerCapId:
+      managerCapId ??
+      (await findManagerCapIdForVault(vaultId, suiClient, address)) ??
+      undefined,
     userShares,
     navPerShare,
     userSharesBalance: userShares.times(navPerShare),

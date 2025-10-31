@@ -1,7 +1,9 @@
 import useSWR from "swr";
+
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
-import { ParsedVault, parseVault } from "@/fetchers/parseVault";
+
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { ParsedVault, parseVault } from "@/fetchers/parseVault";
 
 export default function useFetchVault(vaultId?: string) {
   const { suiClient } = useSettingsContext();
@@ -14,7 +16,9 @@ export default function useFetchVault(vaultId?: string) {
   };
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<ParsedVault>(
-    vaultId ? ["vault", vaultId, address, allAppData.allLendingMarketData.length] : null,
+    vaultId
+      ? ["vault", vaultId, address, allAppData.allLendingMarketData.length]
+      : null,
     fetcher,
   );
 

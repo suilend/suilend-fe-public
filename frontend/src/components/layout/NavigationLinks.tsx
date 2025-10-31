@@ -15,12 +15,12 @@ import {
   ADMIN_URL,
   BRIDGE_URL,
   CLAIM_URL,
+  EARN_URL,
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
-  EARN_URL,
   SWAP_URL,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";

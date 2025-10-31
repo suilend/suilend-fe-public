@@ -1,17 +1,10 @@
 import BigNumber from "bignumber.js";
-import {
-  StrategyType,
-} from "@suilend/sdk/lib/strategyOwnerCap";
-import {
-  formatUsd,
-} from "@suilend/sui-fe";
-import {
-  TBody,
-  TLabel,
-  TLabelSans,
-} from "@/components/shared/Typography";
+
+import { formatUsd } from "@suilend/sui-fe";
+
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useVaultContext } from "@/contexts/VaultContext";
-import LstStrategyDialog from "./LstStrategyDialog";
+
 import VaultCard from "./VaultCard";
 import VaultDialog from "./VaultDialog";
 
@@ -31,38 +24,31 @@ export default function VaultPanel() {
 
   return (
     <>
-    {vaults.map((vault) => (
+      {vaults.map((vault) => (
         <VaultDialog key={vault.id} vault={vault} />
       ))}
       <div className="flex w-full flex-col gap-6">
         {/* Open positions */}
         {usedVaults.length > 0 && (
           <div className="flex w-full flex-col gap-4">
-            <div className="flex flex-row items-center gap-2 justify-between">
-            <div className="flex flex-row items-center gap-2">
-              <TBody className="uppercase">Open vaults</TBody>
-              <TLabel>
-                {formatUsd(
-                  usedVaults.reduce(
-                    (acc, vault) => {
-                      return acc.plus(
-                        vault.userSharesBalance,
-                      );
-                    },
-                    new BigNumber(0),
-                  ),
-                )}
-              </TLabel>
-            </div>
+            <div className="flex flex-row items-center justify-between gap-2">
+              <div className="flex flex-row items-center gap-2">
+                <TBody className="uppercase">Open vaults</TBody>
+                <TLabel>
+                  {formatUsd(
+                    usedVaults.reduce((acc, vault) => {
+                      return acc.plus(vault.userSharesBalance);
+                    }, new BigNumber(0)),
+                  )}
+                </TLabel>
+              </div>
             </div>
 
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
-              {usedVaults.map(
-                (vault) => (
-                  <VaultCard key={vault.id} vault={vault} />
-                )
-              )}
+              {usedVaults.map((vault) => (
+                <VaultCard key={vault.id} vault={vault} />
+              ))}
             </div>
           </div>
         )}
@@ -74,9 +60,7 @@ export default function VaultPanel() {
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
             {unusedVaults.map((vault) => {
-              return (
-                <VaultCard key={vault.id} vault={vault} />
-              );
+              return <VaultCard key={vault.id} vault={vault} />;
             })}
 
             <ComingSoonStrategyCard />

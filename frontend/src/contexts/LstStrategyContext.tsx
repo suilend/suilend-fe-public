@@ -1197,14 +1197,7 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
         return undefined;
       }
     },
-    [
-      getDepositReserves,
-      getBorrowReserve,
-      getDefaultCurrencyReserve,
-      hasPosition,
-      getHistory,
-      getTvlAmount,
-    ],
+    [getDepositReserves, hasPosition, getHistory, getTvlAmount],
   );
 
   // Stats - APR

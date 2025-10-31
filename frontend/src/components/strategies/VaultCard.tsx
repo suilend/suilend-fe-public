@@ -1,22 +1,27 @@
 import router from "next/router";
-import { useCallback } from "react";  
-import BigNumber from "bignumber.js";
-import { formatPercent, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
+import { useCallback } from "react";
+
+import { LENDING_MARKET_ID } from "@suilend/sdk";
+import {
+  formatPercent,
+  formatToken,
+  formatUsd,
+  getToken,
+} from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
+
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import EarnHeader from "@/components/strategies/EarnHeader";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
-import EarnHeader from "@/components/strategies/EarnHeader";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ASSETS_URL } from "@/lib/constants";
-import { cn } from "@/lib/utils";
-import { ParsedVault } from "@/fetchers/parseVault";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { useVaultContext } from "@/contexts/VaultContext";
+import { ParsedVault } from "@/fetchers/parseVault";
+import { ASSETS_URL } from "@/lib/constants";
 
 interface VaultCardProps {
   vault: ParsedVault;
@@ -32,9 +37,11 @@ export default function VaultCard({ vault }: VaultCardProps) {
       ...router.query,
       [LstStrategyDialogQueryParams.STRATEGY_NAME]: vault?.metadata?.queryParam,
     });
-  }, [router, vault?.metadata?.queryParam]);
+  }, [vault?.metadata?.queryParam]);
 
-  const globalTvlAmountUsd = vault.deployedAmount.plus(vault.undeployedAmount).times(appDataMainMarket.reserveMap[vault.baseCoinType].price);
+  const globalTvlAmountUsd = vault.deployedAmount
+    .plus(vault.undeployedAmount)
+    .times(appDataMainMarket.reserveMap[vault.baseCoinType].price);
   const hasPosition = vault.userSharesBalance.gt(0);
 
   const totalPnl = userPnls[vault.id];
@@ -59,7 +66,12 @@ export default function VaultCard({ vault }: VaultCardProps) {
             title={vault.metadata?.name ?? "NO METADATA"}
             tooltip={vault.metadata?.description ?? "NO METADATA"}
             type="Vault"
-            tokens={[getToken(vault.baseCoinType, appDataMainMarket.coinMetadataMap[vault.baseCoinType])]}
+            tokens={[
+              getToken(
+                vault.baseCoinType,
+                appDataMainMarket.coinMetadataMap[vault.baseCoinType],
+              ),
+            ]}
           />
 
           {/* Right */}
@@ -88,10 +100,10 @@ export default function VaultCard({ vault }: VaultCardProps) {
 
             {/* APR/Max APR */}
             <div className="flex w-fit flex-col items-end gap-1">
-              <TLabelSans>
-                APR
-              </TLabelSans>
-              <TBody className="text-right">{vault.apr.isNaN() ? "-" : formatPercent(vault.apr)}</TBody>
+              <TLabelSans>APR</TLabelSans>
+              <TBody className="text-right">
+                {vault.apr.isNaN() ? "-" : formatPercent(vault.apr)}
+              </TBody>
             </div>
           </div>
         </div>
@@ -108,27 +120,23 @@ export default function VaultCard({ vault }: VaultCardProps) {
                 horizontal
                 customChild={
                   <div className="flex flex-row items-baseline gap-2">
-                    <Tooltip
-                      title={`${formatUsd(
-                        vault.tvl,
-                        { exact: true },
-                      )}`}
-                    >
-                      <TLabel>
-                        {formatUsd(
-                          vault.tvl,
-                        )}
-                      </TLabel>
+                    <Tooltip title={`${formatUsd(vault.tvl, { exact: true })}`}>
+                      <TLabel>{formatUsd(vault.tvl)}</TLabel>
                     </Tooltip>
 
                     <Tooltip
                       title={`${formatToken(vault.tvl, {
-                        dp: appDataMainMarket.coinMetadataMap[vault.baseCoinType].decimals,
+                        dp: appDataMainMarket.coinMetadataMap[
+                          vault.baseCoinType
+                        ].decimals,
                       })} ${appDataMainMarket.coinMetadataMap[vault.baseCoinType].symbol}`}
                     >
                       <TBody>
                         {formatToken(vault.tvl, { exact: false })}{" "}
-                        {appDataMainMarket.coinMetadataMap[vault.baseCoinType].symbol}
+                        {
+                          appDataMainMarket.coinMetadataMap[vault.baseCoinType]
+                            .symbol
+                        }
                       </TBody>
                     </Tooltip>
                   </div>

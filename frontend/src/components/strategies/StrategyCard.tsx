@@ -1,28 +1,36 @@
 import { useRouter } from "next/router";
 import { useCallback, useMemo, useRef } from "react";
+
 import BigNumber from "bignumber.js";
 import Color from "colorjs.io";
+
 import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   STRATEGY_TYPE_INFO_MAP,
   StrategyType,
 } from "@suilend/sdk/lib/strategyOwnerCap";
-import { formatPercent, formatToken, formatUsd, getToken } from "@suilend/sui-fe";
+import {
+  formatPercent,
+  formatToken,
+  formatUsd,
+  getToken,
+} from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
+
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import EarnHeader from "@/components/strategies/EarnHeader";
 import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
-import EarnHeader from "@/components/strategies/EarnHeader";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useHistoricalTvlAmountMap from "@/hooks/useHistoricalTvlAmountMap";
 import { ASSETS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 interface StrategyCardProps {
   strategyType: StrategyType;
@@ -158,7 +166,9 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
             title={strategyInfo.header.title}
             tooltip={strategyInfo.header.tooltip}
             type={strategyInfo.header.type}
-            tokens={strategyInfo.header.coinTypes.map((coinType) =>getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]))}
+            tokens={strategyInfo.header.coinTypes.map((coinType) =>
+              getToken(coinType, appDataMainMarket.coinMetadataMap[coinType]),
+            )}
           />
 
           {/* Right */}

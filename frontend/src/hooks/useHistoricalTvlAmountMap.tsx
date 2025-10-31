@@ -11,9 +11,7 @@ const useHistoricalTvlAmountMap = (
   strategyType: StrategyType,
   obligation?: ParsedObligation,
 ) => {
-  const {
-    getHistoricalTvlAmount,
-  } = useLoadedLstStrategyContext();
+  const { getHistoricalTvlAmount } = useLoadedLstStrategyContext();
 
   // Stats
   // Stats - Historical TVL

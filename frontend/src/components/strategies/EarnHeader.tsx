@@ -1,5 +1,7 @@
 import { Info } from "lucide-react";
+
 import { Token } from "@suilend/sui-fe";
+
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
@@ -11,13 +13,15 @@ interface EarnHeaderProps {
   tokens: Token[];
 }
 
-export default function EarnHeader({ title, tooltip, type, tokens }: EarnHeaderProps) {
+export default function EarnHeader({
+  title,
+  tooltip,
+  type,
+  tokens,
+}: EarnHeaderProps) {
   return (
     <div className="flex h-10 flex-row items-center gap-3">
-      <TokenLogos
-        tokens={tokens}
-        size={24}
-      />
+      <TokenLogos tokens={tokens} size={24} />
 
       <div className="flex flex-col gap-1">
         <div className="flex flex-row items-center gap-2">

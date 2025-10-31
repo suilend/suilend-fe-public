@@ -1,8 +1,6 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
-import { SuiObjectResponse } from "@mysten/sui/client";
 import { toast } from "sonner";
 
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
@@ -17,26 +15,7 @@ import {
 } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
 
-interface VaultFields {
-  id: { id: string };
-  version: string;
-  obligations: any;
-  share_supply: any;
-  deposit_asset: any;
-  total_shares: string;
-  fee_receiver: string;
-  management_fee_bps: string;
-  performance_fee_bps: string;
-  deposit_fee_bps: string;
-  withdrawal_fee_bps: string;
-  utilization_rate_bps: string;
-  last_nav_per_share: string;
-  fee_last_update_timestamp_s: string;
-}
-
 function Page() {
-  const router = useRouter();
-  const { vaultId } = router.query as { vaultId?: string };
   const {
     createObligation,
     deployFunds,
@@ -47,14 +26,7 @@ function Page() {
     isLoadingVaultData,
   } = useVaultContext();
 
-  const obj = vaultData?.object as SuiObjectResponse | undefined;
   const baseCoinType = vaultData?.baseCoinType;
-
-  const fields: VaultFields | undefined = useMemo(() => {
-    const content = obj?.data?.content as any;
-    if (!content || content.dataType !== "moveObject") return undefined;
-    return content.fields as VaultFields;
-  }, [obj]);
 
   const isLoading = isLoadingVaultData;
 
@@ -77,7 +49,7 @@ function Page() {
           <CardContent>
             {isLoading ? (
               <TLabelSans>Loading…</TLabelSans>
-            ) : (!fields || !vaultData) ? (
+            ) : !vaultData ? (
               <TLabelSans>Vault not found or invalid type.</TLabelSans>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -85,7 +57,7 @@ function Page() {
                   <TBodySans className="text-muted-foreground">
                     Vault ID
                   </TBodySans>
-                  <Value value={fields.id.id} isId />
+                  <Value value={vaultData.id} isId />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -99,49 +71,49 @@ function Page() {
                   <TBodySans className="text-muted-foreground">
                     Total shares
                   </TBodySans>
-                  <Value value={fields.total_shares} />
+                  <Value value={vaultData.totalShares} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Management fee (bps)
                   </TBodySans>
-                  <Value value={fields.management_fee_bps} />
+                  <Value value={vaultData.managementFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Performance fee (bps)
                   </TBodySans>
-                  <Value value={fields.performance_fee_bps} />
+                  <Value value={vaultData.performanceFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Deposit fee (bps)
                   </TBodySans>
-                  <Value value={fields.deposit_fee_bps} />
+                  <Value value={vaultData.depositFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Withdrawal fee (bps)
                   </TBodySans>
-                  <Value value={fields.withdrawal_fee_bps} />
+                  <Value value={vaultData.withdrawalFeeBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Utilization (bps)
                   </TBodySans>
-                  <Value value={fields.utilization_rate_bps} />
+                  <Value value={vaultData.utilizationRateBps} />
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <TBodySans className="text-muted-foreground">
                     Last NAV per share
                   </TBodySans>
-                  <Value value={fields.last_nav_per_share} />
+                  <Value value={vaultData.lastNavPerShare} />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -149,9 +121,9 @@ function Page() {
                     Fee last update (s)
                   </TBodySans>
                   <Value
-                    value={fields.fee_last_update_timestamp_s}
+                    value={vaultData.feeLastUpdateTimestampS}
                     valueTooltip={new Date(
-                      Number(fields.fee_last_update_timestamp_s) * 1000,
+                      Number(vaultData.feeLastUpdateTimestampS) * 1000,
                     ).toLocaleString()}
                   />
                 </div>
@@ -224,10 +196,8 @@ function Page() {
                           </TBodySans>
                           <Value
                             value={
-                              (vaultData?.obligations as any)
-                                ?.find(
-                                  (x: any) => x.obligationId === o.obligationId,
-                                )
+                              vaultData?.obligations
+                                ?.find((x) => x.obligationId === o.obligationId)
                                 ?.deployedAmount?.toString?.() ?? "0"
                             }
                           />
@@ -367,7 +337,8 @@ function Page() {
                               rewardReserveIndex: rewardReserveIndex.toString(),
                               rewardIndex: rewardIndex.toString(),
                               isDepositReward,
-                              depositReserveIndex: depositReserveIndex.toString(),
+                              depositReserveIndex:
+                                depositReserveIndex.toString(),
                             });
                             (
                               form.elements.namedItem(
@@ -395,7 +366,9 @@ function Page() {
                               ) as HTMLInputElement
                             ).value = "";
                           } catch (err: any) {
-                            toast.error(err?.message || "Failed to compound rewards");
+                            toast.error(
+                              err?.message || "Failed to compound rewards",
+                            );
                           }
                         }}
                       >
@@ -447,77 +420,77 @@ function Page() {
         </Card>
 
         {/* Actions */}
-        {vaultData && <Card>
-          <CardHeader>
-            <CardTitle>Create obligation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CreateObligationForm
-              vault={vaultData}
-              onSubmit={async (args) => {
-                try {
-                  if (!args.vault.id || !args.vault.baseCoinType)
-                    throw new Error("Missing vault or base coin type");
-                  if (!args.lendingMarketId)
-                    throw new Error("Enter lending market ID and type");
-                  await createObligation(args);
-                } catch (err: any) {
-                  console.error("Create obligation error", err);
-                  toast.error(err?.message || "Failed to create obligation");
-                }
-              }}
-            />
-          </CardContent>
-        </Card>}
+        {vaultData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Create obligation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CreateObligationForm
+                vault={vaultData}
+                onSubmit={async (args) => {
+                  try {
+                    if (!args.vault.id || !args.vault.baseCoinType)
+                      throw new Error("Missing vault or base coin type");
+                    if (!args.lendingMarketId)
+                      throw new Error("Enter lending market ID and type");
+                    await createObligation(args);
+                  } catch (err: any) {
+                    console.error("Create obligation error", err);
+                    toast.error(err?.message || "Failed to create obligation");
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Claim Manager Fees */}
-        {vaultData && <Card>
-          <CardHeader>
-            <CardTitle>Claim Manager Fees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form
-              className="flex flex-col gap-2"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget as HTMLFormElement;
-                const amount = (
-                  form.elements.namedItem(
-                    "amount",
-                  ) as HTMLInputElement
-                ).value;
-                try {
-                  if (!vaultData) throw new Error("Vault not loaded");
-                  if (!vaultData.managerCapId)
-                    throw new Error(
-                      "Manager cap not found in connected wallet",
-                    );
-                  await claimManagerFees({
-                    vault: vaultData,
-                    amount: amount.toString(),
-                  });
-                  (
-                    form.elements.namedItem(
-                      "amount",
-                    ) as HTMLInputElement
-                  ).value = "";
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to claim manager fees");
-                }
-              }}
-            >
-              <TBodySans>Claim manager fees</TBodySans>
-              <div className="flex flex-row gap-2">
-                <Input
-                  name="amount"
-                  placeholder="Amount (u64)"
-                  inputMode="numeric"
-                />
-                <Button type="submit">Claim</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>}
+        {vaultData && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Claim Manager Fees</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="flex flex-col gap-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget as HTMLFormElement;
+                  const amount = (
+                    form.elements.namedItem("amount") as HTMLInputElement
+                  ).value;
+                  try {
+                    if (!vaultData) throw new Error("Vault not loaded");
+                    if (!vaultData.managerCapId)
+                      throw new Error(
+                        "Manager cap not found in connected wallet",
+                      );
+                    await claimManagerFees({
+                      vault: vaultData,
+                      amount: amount.toString(),
+                    });
+                    (
+                      form.elements.namedItem("amount") as HTMLInputElement
+                    ).value = "";
+                  } catch (err: any) {
+                    toast.error(err?.message || "Failed to claim manager fees");
+                  }
+                }}
+              >
+                <TBodySans>Claim manager fees</TBodySans>
+                <div className="flex flex-row gap-2">
+                  <Input
+                    name="amount"
+                    placeholder="Amount (u64)"
+                    inputMode="numeric"
+                  />
+                  <Button type="submit">Claim</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );

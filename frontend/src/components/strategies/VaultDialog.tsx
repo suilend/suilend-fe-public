@@ -8,37 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
+
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  LENDING_MARKET_ID,
-  LST_DECIMALS,
-  ParsedObligation,
-  STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP,
-  StrategyDeposit,
-  StrategyWithdraw,
-  strategyAdjustTx as _adjustTx,
-  strategyDepositAdjustWithdrawTx as _depositAdjustWithdrawTx,
-  strategyDepositAndLoopToExposureTx as _depositAndLoopToExposureTx,
-  strategyWithdrawTx as _withdrawTx,
-  addOrInsertStrategyDeposit,
-  getReserveSafeDepositLimit,
-} from "@suilend/sdk";
-import {
-  StrategyType,
-} from "@suilend/sdk/lib/strategyOwnerCap";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   formatInteger,
-  formatList,
-  formatNumber,
   formatPercent,
   formatToken,
-  formatUsd,
-  getToken,
   isSui,
 } from "@suilend/sui-fe";
 import {
@@ -50,27 +31,30 @@ import {
 import Button from "@/components/shared/Button";
 import Collapsible from "@/components/shared/Collapsible";
 import Dialog from "@/components/shared/Dialog";
-import FromToArrow from "@/components/shared/FromToArrow";
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Spinner from "@/components/shared/Spinner";
 import Tabs from "@/components/shared/Tabs";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody } from "@/components/shared/Typography";
-import VaultDialogParametersPanel from "./VaultDialogParametersPanel";
-import EarnHeader from "@/components/strategies/EarnHeader";
 import VaultInput from "@/components/strategies/VaultInput";
 import { Separator } from "@/components/ui/separator";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
+import { useVaultContext } from "@/contexts/VaultContext";
+import { ParsedVault } from "@/fetchers/parseVault";
 import useBreakpoint from "@/hooks/useBreakpoint";
+import {
+  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
+  TX_TOAST_DURATION,
+} from "@/lib/constants";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ParsedVault } from "@/fetchers/parseVault";
-import { QueryParams } from "./LstStrategyDialog";
-import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT, TX_TOAST_DURATION } from "@/lib/constants";
-import { useLoadedAppContext } from "@/contexts/AppContext";
-import { useVaultContext } from "@/contexts/VaultContext";
+
 import TextLink from "../shared/TextLink";
+
+import { QueryParams } from "./LstStrategyDialog";
+import VaultDialogParametersPanel from "./VaultDialogParametersPanel";
 
 export enum Tab {
   DEPOSIT = "deposit",
@@ -81,16 +65,16 @@ interface VaultDialogProps extends PropsWithChildren {
   vault: ParsedVault;
 }
 
-export default function VaultDialog({
-  vault,
-  children,
-}: VaultDialogProps) {
+export default function VaultDialog({ vault, children }: VaultDialogProps) {
   const { explorer } = useSettingsContext();
   const router = useRouter();
   const { allAppData } = useLoadedAppContext();
   const { depositIntoVault, withdrawFromVault } = useVaultContext();
   const inputRef = useRef<HTMLInputElement>(null);
-  const appDataMainMarket = allAppData.allLendingMarketData[vault.pricingLendingMarketId ?? LENDING_MARKET_ID];
+  const appDataMainMarket =
+    allAppData.allLendingMarketData[
+      vault.pricingLendingMarketId ?? LENDING_MARKET_ID
+    ];
   const queryParams = useMemo(
     () => ({
       [QueryParams.STRATEGY_NAME]: router.query[QueryParams.STRATEGY_NAME] as
@@ -105,10 +89,8 @@ export default function VaultDialog({
   const { getBalance } = useLoadedUserContext();
   const [value, setValue] = useState<string>("");
 
-  const {
-    isMoreDetailsOpen,
-    setIsMoreDetailsOpen,
-  } = useLoadedLstStrategyContext();
+  const { isMoreDetailsOpen, setIsMoreDetailsOpen } =
+    useLoadedLstStrategyContext();
 
   const MoreDetailsIcon = isMoreDetailsOpen ? ChevronLeft : ChevronRight;
 
@@ -116,7 +98,8 @@ export default function VaultDialog({
 
   // Open
   const isOpen = useMemo(
-    () => (queryParams[QueryParams.STRATEGY_NAME] === vault?.metadata?.queryParam ),
+    () =>
+      queryParams[QueryParams.STRATEGY_NAME] === vault?.metadata?.queryParam,
     [queryParams, vault?.metadata?.queryParam],
   );
 
@@ -149,56 +132,102 @@ export default function VaultDialog({
   );
 
   // Value - Max
-  const getMaxCalculations = useCallback(
-    () => {
-      if (selectedTab === Tab.DEPOSIT) {
+  const getMaxCalculations = useCallback(() => {
+    if (selectedTab === Tab.DEPOSIT) {
+      const result = [
+        {
+          reason: `Insufficient ${vault.baseCoinMetadata?.symbol}`,
+          isDisabled: true,
+          value: coinBalanceForReserve,
+        },
+      ];
+      if (isSui(vault.baseCoinType))
+        result.push({
+          reason: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
+          isDisabled: true,
+          value: coinBalanceForReserve.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
+        });
 
-        const result = [
-          {
-            reason: `Insufficient ${vault.baseCoinMetadata?.symbol}`,
-            isDisabled: true,
-            value: coinBalanceForReserve,
-          }
-        ];
-        if (isSui(vault.baseCoinType))
-          result.push({
-            reason: `${MAX_BALANCE_SUI_SUBTRACTED_AMOUNT} SUI should be saved for gas`,
-            isDisabled: true,
-            value: coinBalanceForReserve.minus(MAX_BALANCE_SUI_SUBTRACTED_AMOUNT),
-          });
-    
-        return result;
-      } else {
-        const result = [
-          {
-            reason: "Withdraws cannot exceed deposits",
-            isDisabled: true,
-            value: vault.userSharesBalance,
-          },
-          {
-            reason: `Insufficient liquidity to withdraw`,
-            isDisabled: true,
-            value: vault.tvl,
-          },
-        ];
-    
-        return result;
+      return result;
+    } else {
+      const result = [
+        {
+          reason: "Withdraws cannot exceed deposits",
+          isDisabled: true,
+          value: vault.userSharesBalance,
+        },
+        {
+          reason: `Insufficient liquidity to withdraw`,
+          isDisabled: true,
+          value: vault.tvl,
+        },
+      ];
+
+      return result;
+    }
+  }, [
+    vault.userSharesBalance,
+    coinBalanceForReserve,
+    selectedTab,
+    vault.tvl,
+    vault.baseCoinType,
+    vault.baseCoinMetadata?.symbol,
+  ]);
+
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const getSubmitButtonState = (): SubmitButtonState | undefined => {
+    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+      const maxCalculations = getMaxCalculations();
+
+      for (const calc of maxCalculations) {
+        if (new BigNumber(value).gt(calc.value))
+          return { isDisabled: calc.isDisabled, title: calc.reason };
       }
-    },
-    [
-      vault.userSharesBalance,
-      vault.undeployedAmount,
-      coinBalanceForReserve,
-      isSui(vault.baseCoinType),
-    ],
-  );
+
+      return undefined;
+    }
+  };
+
+  const submitButtonState: SubmitButtonState = (() => {
+    if (!address) return { isDisabled: true, title: "Connect wallet" };
+    if (isSubmitting) return { isDisabled: true, isLoading: true };
+
+    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
+      if (value === "") return { isDisabled: true, title: "Enter an amount" };
+      if (new BigNumber(value).lt(0))
+        return { isDisabled: true, title: "Enter a +ve amount" };
+      if (new BigNumber(value).eq(0))
+        return { isDisabled: true, title: "Enter a non-zero amount" };
+    }
+
+    if (getSubmitButtonState())
+      return getSubmitButtonState() as SubmitButtonState;
+
+    return {
+      title:
+        selectedTab === Tab.DEPOSIT
+          ? `Deposit ${formatToken(new BigNumber(value), {
+              dp: vault.baseCoinMetadata?.decimals ?? 0,
+              trimTrailingZeros: true,
+            })} ${vault.baseCoinMetadata?.symbol}`
+          : selectedTab === Tab.WITHDRAW
+            ? `Withdraw ${formatToken(new BigNumber(value), {
+                dp: vault.baseCoinMetadata?.decimals ?? 0,
+                trimTrailingZeros: true,
+              })} ${vault.baseCoinMetadata?.symbol}`
+            : "--", // Should not happen
+    };
+  })();
+
+  const [useMaxAmount, setUseMaxAmount] = useState<boolean>(false);
 
   const deposit = useCallback(async () => {
     if (!address) throw new Error("Wallet not connected");
     if (submitButtonState.isDisabled) return;
     setIsSubmitting(true);
     try {
-    const res = await depositIntoVault({
+      const res = await depositIntoVault({
         vault,
         amount: value,
       });
@@ -221,7 +250,14 @@ export default function VaultDialog({
       setIsSubmitting(false);
       inputRef.current?.focus();
     }
-  }, [vault, value, address, explorer]);
+  }, [
+    vault,
+    value,
+    address,
+    explorer,
+    depositIntoVault,
+    submitButtonState.isDisabled,
+  ]);
 
   const withdraw = useCallback(async () => {
     if (!address) throw new Error("Wallet not connected");
@@ -251,9 +287,15 @@ export default function VaultDialog({
       setIsSubmitting(false);
       inputRef.current?.focus();
     }
-  }, [vault, value, address, explorer, withdrawFromVault]);
-
-  const [useMaxAmount, setUseMaxAmount] = useState<boolean>(false);
+  }, [
+    vault,
+    value,
+    address,
+    explorer,
+    withdrawFromVault,
+    submitButtonState.isDisabled,
+    useMaxAmount,
+  ]);
 
   const formatAndSetValue = useCallback(
     (_value: string) => {
@@ -283,17 +325,14 @@ export default function VaultDialog({
     formatAndSetValue(_value);
   };
 
-  const getMaxAmount = useCallback(
-    () => {
-      const maxCalculations = getMaxCalculations();
+  const getMaxAmount = useCallback(() => {
+    const maxCalculations = getMaxCalculations();
 
-        return BigNumber.max(
-          new BigNumber(0),
-          BigNumber.min(...maxCalculations.map((calc) => calc.value)),
-        );
-    },
-    [getMaxCalculations],
-  );
+    return BigNumber.max(
+      new BigNumber(0),
+      BigNumber.min(...maxCalculations.map((calc) => calc.value)),
+    );
+  }, [getMaxCalculations]);
 
   const useMaxValueWrapper = () => {
     setUseMaxAmount(true);
@@ -319,58 +358,11 @@ export default function VaultDialog({
     useMaxAmount,
     formatAndSetValue,
     getMaxAmount,
-    vault.baseCoinMetadata?.decimals ?? 0,
+    vault.baseCoinMetadata?.decimals,
   ]);
 
   // Stats - APR
   const aprPercent = vault.apr;
-
-  const getSubmitButtonState = (): SubmitButtonState | undefined => {
-    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
-        const maxCalculations = getMaxCalculations();
-
-      for (const calc of maxCalculations) {
-        if (new BigNumber(value).gt(calc.value))
-          return { isDisabled: calc.isDisabled, title: calc.reason };
-      }
-
-      return undefined;
-    };
-  }
-
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  const submitButtonState: SubmitButtonState = (() => {
-    if (!address) return { isDisabled: true, title: "Connect wallet" };
-    if (isSubmitting) return { isDisabled: true, isLoading: true };
-
-    if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
-      if (value === "") return { isDisabled: true, title: "Enter an amount" };
-      if (new BigNumber(value).lt(0))
-        return { isDisabled: true, title: "Enter a +ve amount" };
-      if (new BigNumber(value).eq(0))
-        return { isDisabled: true, title: "Enter a non-zero amount" };
-    }
-
-    if (getSubmitButtonState())
-      return getSubmitButtonState() as SubmitButtonState;
-
-    return {
-      title:
-        selectedTab === Tab.DEPOSIT
-          ? `Deposit ${formatToken(new BigNumber(value), {
-              dp: vault.baseCoinMetadata?.decimals ?? 0,
-              trimTrailingZeros: true,
-            })} ${vault.baseCoinMetadata?.symbol}`
-          : selectedTab === Tab.WITHDRAW
-            ? `Withdraw ${formatToken(new BigNumber(value), {
-                dp: vault.baseCoinMetadata?.decimals ?? 0,
-                trimTrailingZeros: true,
-              })} ${vault.baseCoinMetadata?.symbol}`
-              : "--", // Should not happen
-    };
-  })();
-
   return (
     <Dialog
       rootProps={{
@@ -419,9 +411,7 @@ export default function VaultDialog({
           </DialogPrimitive.Close>
         }
       >
-        <div
-          className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch"
-        >
+        <div className="flex flex-col gap-4 md:!h-auto md:flex-row md:items-stretch">
           <div className="flex h-full w-full max-w-[28rem] flex-col gap-4 md:h-auto md:w-[28rem]">
             {/* Amount */}
             {(selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) && (
@@ -481,19 +471,20 @@ export default function VaultDialog({
                     <Download className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        !vault.userSharesBalance.isNaN() && vault.userSharesBalance.gt(0)
-                          ? `${formatToken(
-                              vault.userSharesBalance,
-                              { dp: vault.baseCoinMetadata?.decimals ?? 0 },
-                            )} ${vault.baseCoinMetadata?.symbol}`
+                        !vault.userSharesBalance.isNaN() &&
+                        vault.userSharesBalance.gt(0)
+                          ? `${formatToken(vault.userSharesBalance, {
+                              dp: vault.baseCoinMetadata?.decimals ?? 0,
+                            })} ${vault.baseCoinMetadata?.symbol}`
                           : undefined
                       }
                     >
                       <TBody className="text-xs">
-                        {vault.userSharesBalance.isNaN() ? "-" : formatToken(
-                          vault.userSharesBalance,
-                          { exact: false },
-                        )}{" "}
+                        {vault.userSharesBalance.isNaN()
+                          ? "-"
+                          : formatToken(vault.userSharesBalance, {
+                              exact: false,
+                            })}{" "}
                         {vault.baseCoinMetadata?.symbol}
                       </TBody>
                     </Tooltip>
@@ -507,39 +498,37 @@ export default function VaultDialog({
                 className="flex flex-col gap-3"
                 style={{ "--bg-color": "hsl(var(--popover))" } as CSSProperties}
               >
-              <LabelWithValue
-                label="Vault TVL"
-                value={
-                  <>
-                    {formatToken(vault.tvl)}
-                    {" "}{vault.baseCoinMetadata?.symbol}
-                  </>
-                }
-                horizontal
-              />
+                <LabelWithValue
+                  label="Vault TVL"
+                  value={
+                    <>
+                      {formatToken(vault.tvl)} {vault.baseCoinMetadata?.symbol}
+                    </>
+                  }
+                  horizontal
+                />
                 <LabelWithValue
                   label="APR"
-                  value={
-                    aprPercent.isNaN() ? "-" : formatPercent(aprPercent)
-                  }
+                  value={aprPercent.isNaN() ? "-" : formatPercent(aprPercent)}
                   horizontal
                 />
 
                 <LabelWithValue
                   label="Utilization"
-                  value={vault.utilization.isNaN() ? "-" : formatPercent(vault.utilization.times(100), { dp: 2 })}
+                  value={
+                    vault.utilization.isNaN()
+                      ? "-"
+                      : formatPercent(vault.utilization.times(100), { dp: 2 })
+                  }
                   horizontal
                 />
 
-                
-              {!md && isMoreDetailsOpen && (
-                <>
-                  <Separator />
-                  <VaultDialogParametersPanel
-                    vault={vault}
-                  />
-                </>
-              )}
+                {!md && isMoreDetailsOpen && (
+                  <>
+                    <Separator />
+                    <VaultDialogParametersPanel vault={vault} />
+                  </>
+                )}
               </div>
             </div>
 

@@ -1,10 +1,11 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
+
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
+
 import {
   LENDING_MARKET_ID,
   ParsedObligation,
@@ -28,25 +29,21 @@ import {
   useSettingsContext,
   useWalletContext,
 } from "@suilend/sui-fe-next";
+
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
 import TextLink from "@/components/shared/TextLink";
 import TokenLogo from "@/components/shared/TokenLogo";
 import TokenLogos from "@/components/shared/TokenLogos";
 import Tooltip from "@/components/shared/Tooltip";
-import {
-  TBody,
-  TLabel,
-  TLabelSans,
-} from "@/components/shared/Typography";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import StrategyCard from "@/components/strategies/StrategyCard";
 import { useLoadedAppContext } from "@/contexts/AppContext";
-import {
-  useLoadedLstStrategyContext,
-} from "@/contexts/LstStrategyContext";
+import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
 import { useCetusSdk } from "@/lib/swap";
+
 import LstStrategyDialog from "./LstStrategyDialog";
 
 function ComingSoonStrategyCard() {
@@ -106,7 +103,7 @@ export default function StrategyPanel() {
 
   // Rewards
   const allRewardsMap = Object.entries(strategyOwnerCapObligationMap).reduce(
-    (acc, [strategyType, { strategyOwnerCap, obligation }]) => ({
+    (acc, [strategyType, { obligation }]) => ({
       ...acc,
       [strategyType]: getRewardsMap(
         obligation,
@@ -228,10 +225,8 @@ export default function StrategyPanel() {
   };
 
   const allClaimableRewardsMap: Record<string, BigNumber> = {};
-  for (const [strategyType, rewardsMap] of Object.entries(allRewardsMap)) {
-    for (const [coinType, { amount, rawAmount, rewards }] of Object.entries(
-      rewardsMap,
-    )) {
+  for (const [_strategyType, rewardsMap] of Object.entries(allRewardsMap)) {
+    for (const [coinType, { amount }] of Object.entries(rewardsMap)) {
       allClaimableRewardsMap[coinType] = (
         allClaimableRewardsMap[coinType] ?? new BigNumber(0)
       ).plus(amount);
@@ -240,8 +235,7 @@ export default function StrategyPanel() {
 
   return (
     <>
-    
-    {Object.values(StrategyType).map((strategyType) => (
+      {Object.values(StrategyType).map((strategyType) => (
         <LstStrategyDialog key={strategyType} strategyType={strategyType} />
       ))}
       <div className="flex w-full flex-col gap-6">
@@ -250,107 +244,110 @@ export default function StrategyPanel() {
           hasPosition(obligation),
         ) && (
           <div className="flex w-full flex-col gap-4">
-            <div className="flex flex-row items-center gap-2 justify-between">
-            <div className="flex flex-row items-center gap-2">
-              <TBody className="uppercase">Open strategies</TBody>
-              <TLabel>
-                {formatUsd(
-                  Object.entries(strategyOwnerCapObligationMap).reduce(
-                    (acc, [strategyType, { obligation }]) => {
-                      // Reserves
-                      const depositReserves = getDepositReserves(
-                        strategyType as StrategyType,
-                      );
-                      const defaultCurrencyReserve = getDefaultCurrencyReserve(
-                        strategyType as StrategyType,
-                      );
+            <div className="flex flex-row items-center justify-between gap-2">
+              <div className="flex flex-row items-center gap-2">
+                <TBody className="uppercase">Open strategies</TBody>
+                <TLabel>
+                  {formatUsd(
+                    Object.entries(strategyOwnerCapObligationMap).reduce(
+                      (acc, [strategyType, { obligation }]) => {
+                        const defaultCurrencyReserve =
+                          getDefaultCurrencyReserve(
+                            strategyType as StrategyType,
+                          );
 
-                      // Stats - TVL
-                      const tvlAmount = getTvlAmount(
-                        strategyType as StrategyType,
-                        obligation,
-                      );
+                        // Stats - TVL
+                        const tvlAmount = getTvlAmount(
+                          strategyType as StrategyType,
+                          obligation,
+                        );
 
-                      return acc.plus(
-                        tvlAmount.times(defaultCurrencyReserve.price),
-                      );
-                    },
-                    new BigNumber(0),
-                  ),
-                )}
-              </TLabel>
-            </div>
-            {hasClaimableRewards && (
-          <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">
+                        return acc.plus(
+                          tvlAmount.times(defaultCurrencyReserve.price),
+                        );
+                      },
+                      new BigNumber(0),
+                    ),
+                  )}
+                </TLabel>
+              </div>
+              {hasClaimableRewards && (
+                <div className="flex w-max flex-row-reverse items-center gap-3 sm:flex-row">
+                  <TLabel>
+                    {formatUsd(
+                      Object.entries(allClaimableRewardsMap).reduce(
+                        (acc, [coinType, amount]) => {
+                          const price =
+                            appDataMainMarket.rewardPriceMap[coinType] ??
+                            new BigNumber(0);
 
-<TLabel>
-                {formatUsd(
-                  Object.entries(allClaimableRewardsMap).reduce(
-                    (acc, [coinType, amount]) => {
-                      const price =
-                        appDataMainMarket.rewardPriceMap[coinType] ??
-                        new BigNumber(0);
-
-                      return acc.plus(amount.times(price));
-                    },
-                    new BigNumber(0),
-                  ),
-                )}
-              </TLabel>
-          <Tooltip
-            content={
-              <div className="flex flex-col gap-1">
-                {Object.entries(allClaimableRewardsMap).map(
-                  ([coinType, amount]) => (
-                    <div
-                      key={coinType}
-                      className="flex flex-row items-center gap-2"
-                    >
-                      <TokenLogo
-                        token={getToken(
-                          coinType,
-                          appDataMainMarket.coinMetadataMap[coinType],
+                          return acc.plus(amount.times(price));
+                        },
+                        new BigNumber(0),
+                      ),
+                    )}
+                  </TLabel>
+                  <Tooltip
+                    content={
+                      <div className="flex flex-col gap-1">
+                        {Object.entries(allClaimableRewardsMap).map(
+                          ([coinType, amount]) => (
+                            <div
+                              key={coinType}
+                              className="flex flex-row items-center gap-2"
+                            >
+                              <TokenLogo
+                                token={getToken(
+                                  coinType,
+                                  appDataMainMarket.coinMetadataMap[coinType],
+                                )}
+                                size={16}
+                              />
+                              <TLabelSans className="text-foreground">
+                                {formatToken(amount, {
+                                  dp: appDataMainMarket.coinMetadataMap[
+                                    coinType
+                                  ].decimals,
+                                })}{" "}
+                                {
+                                  appDataMainMarket.coinMetadataMap[coinType]
+                                    .symbol
+                                }
+                              </TLabelSans>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className="w-max">
+                      <TokenLogos
+                        tokens={Object.keys(allClaimableRewardsMap).map(
+                          (coinType) =>
+                            getToken(
+                              coinType,
+                              appDataMainMarket.coinMetadataMap[coinType],
+                            ),
                         )}
                         size={16}
                       />
-                      <TLabelSans className="text-foreground">
-                        {formatToken(amount, {
-                          dp: appDataMainMarket.coinMetadataMap[coinType]
-                            .decimals,
-                        })}{" "}
-                        {appDataMainMarket.coinMetadataMap[coinType].symbol}
-                      </TLabelSans>
                     </div>
-                  ),
-                )}
-              </div>
-            }
-          >
-            <div className="w-max">
-              <TokenLogos
-                tokens={Object.keys(allClaimableRewardsMap).map(
-                  (coinType) =>
-                    getToken(
-                      coinType,
-                      appDataMainMarket.coinMetadataMap[coinType],
-                    ),
-                )}
-                size={16}
-              />
-            </div>
-          </Tooltip>
+                  </Tooltip>
 
-          <Button
-            className="w-[134px]"
-            labelClassName="uppercase"
-            disabled={isCompoundingRewards}
-            onClick={onCompoundRewardsClick}
-          >
-            {isCompoundingRewards ? <Spinner size="sm" /> : "Claim rewards"}
-          </Button>
-        </div>
-        )}
-
+                  <Button
+                    className="w-[134px]"
+                    labelClassName="uppercase"
+                    disabled={isCompoundingRewards}
+                    onClick={onCompoundRewardsClick}
+                  >
+                    {isCompoundingRewards ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      "Claim rewards"
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Min card width: 400px */}

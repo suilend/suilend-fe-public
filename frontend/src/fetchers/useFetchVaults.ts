@@ -2,9 +2,9 @@ import useSWR from "swr";
 
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ParsedVault, parseVault } from "@/fetchers/parseVault";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export default function useFetchVaults() {
   const { suiClient } = useSettingsContext();
@@ -28,7 +28,13 @@ export default function useFetchVaults() {
       const fields = (o.data?.content as any)?.fields;
       if (fields?.vault_id)
         try {
-          const parsedVault = await parseVault(suiClient, fields.vault_id, allAppData, address, o.data?.objectId);
+          const parsedVault = await parseVault(
+            suiClient,
+            fields.vault_id,
+            allAppData,
+            address,
+            o.data?.objectId,
+          );
           items.push(parsedVault);
         } catch (error) {
           console.error("Error parsing vault", error);

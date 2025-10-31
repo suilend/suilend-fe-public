@@ -1,9 +1,8 @@
 import useSWR from "swr";
-import { useLoadedAppContext } from "@/contexts/AppContext";
+
 import { API_URL } from "@suilend/sui-fe/lib/constants";
 
-
-
+import { useLoadedAppContext } from "@/contexts/AppContext";
 
 export type FeeType =
   | "DepositFee"
@@ -86,7 +85,7 @@ export default function useFetchVaultHistory(
     // Group the events by vault_id before returning.
     const groupedByVaultId: Record<string, VaultEvent[]> = {};
     for (const event of json) {
-      const id = (event as any).vault_id;
+      const id = (event as { vault_id: string }).vault_id;
       if (!id) continue;
       if (!groupedByVaultId[id]) {
         groupedByVaultId[id] = [];
@@ -96,7 +95,9 @@ export default function useFetchVaultHistory(
     return groupedByVaultId;
   };
 
-  const { data, isLoading, isValidating, error, mutate } = useSWR<Record<string, VaultEvent[]>>(
+  const { data, isLoading, isValidating, error, mutate } = useSWR<
+    Record<string, VaultEvent[]>
+  >(
     vaultId
       ? [
           "vaultHistory",

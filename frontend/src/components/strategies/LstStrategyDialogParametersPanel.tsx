@@ -58,42 +58,11 @@ interface TabContentProps {
 
 function DetailsTabContent({ strategyType }: TabContentProps) {
   const {
-    isMoreDetailsOpen,
-    setIsMoreDetailsOpen,
-
-    hasPosition,
-
-    suiReserve,
-
-    lstMap,
-    getLstMintFee,
-    getLstRedeemFee,
-
     exposureMap,
-
     getDepositReserves,
     getBorrowReserve,
     getDefaultCurrencyReserve,
-
-    getSimulatedObligation,
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
-    getExposure,
-    getStepMaxBorrowedAmount,
-    getStepMaxWithdrawnAmount,
-
-    simulateLoopToExposure,
-    simulateDeposit,
     simulateDepositAndLoopToExposure,
-
-    getGlobalTvlAmountUsd,
-    getUnclaimedRewardsAmount,
-    getHistory,
-    getHistoricalTvlAmount,
-    getAprPercent,
-    getHealthPercent,
-    getLiquidationPrice,
   } = useLoadedLstStrategyContext();
 
   // Strategy
@@ -101,17 +70,8 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
     () => STRATEGY_TYPE_INFO_MAP[strategyType],
     [strategyType],
   );
-
-  const minExposure = useMemo(
-    () => exposureMap[strategyType].min,
-    [strategyType, exposureMap],
-  );
   const maxExposure = useMemo(
     () => exposureMap[strategyType].max,
-    [strategyType, exposureMap],
-  );
-  const defaultExposure = useMemo(
-    () => exposureMap[strategyType].default,
     [strategyType, exposureMap],
   );
 
@@ -361,43 +321,7 @@ function HistoryTabContent({ strategyType }: TabContentProps) {
   const { allUserData } = useLoadedUserContext();
   const userDataMainMarket = allUserData[LENDING_MARKET_ID];
 
-  const {
-    isMoreDetailsOpen,
-    setIsMoreDetailsOpen,
-
-    hasPosition,
-
-    suiReserve,
-
-    lstMap,
-    getLstMintFee,
-    getLstRedeemFee,
-
-    exposureMap,
-
-    getDepositReserves,
-    getDefaultCurrencyReserve,
-
-    getSimulatedObligation,
-    getDepositedAmount,
-    getBorrowedAmount,
-    getTvlAmount,
-    getExposure,
-    getStepMaxBorrowedAmount,
-    getStepMaxWithdrawnAmount,
-
-    simulateLoopToExposure,
-    simulateDeposit,
-    simulateDepositAndLoopToExposure,
-
-    getGlobalTvlAmountUsd,
-    getUnclaimedRewardsAmount,
-    getHistory,
-    getHistoricalTvlAmount,
-    getAprPercent,
-    getHealthPercent,
-    getLiquidationPrice,
-  } = useLoadedLstStrategyContext();
+  const { getHistory } = useLoadedLstStrategyContext();
 
   // Obligation
   const strategyOwnerCap = userDataMainMarket.strategyOwnerCaps.find(

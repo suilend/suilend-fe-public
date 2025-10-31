@@ -1,27 +1,27 @@
-import {
-  PropsWithChildren,
-  createContext,
-  useContext,
-  useMemo,
-} from "react";
-import BigNumber from "bignumber.js";
+import { useRouter } from "next/router";
+import { PropsWithChildren, createContext, useContext, useMemo } from "react";
+
+import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { toast } from "sonner";
+
+import { formatToken } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+
 import TextLink from "@/components/shared/TextLink";
 import { ParsedVault } from "@/fetchers/parseVault";
 import useFetchVault from "@/fetchers/useFetchVault";
+import useFetchVaultHistory, {
+  VaultEvent,
+} from "@/fetchers/useFetchVaultHistory";
 import useFetchVaults from "@/fetchers/useFetchVaults";
 import {
   TX_TOAST_DURATION,
   VAULTS_PACKAGE_ID,
   VSHARES_BYTECODE_B64,
 } from "@/lib/constants";
-import { useRouter } from "next/router";
-import { SuiTransactionBlockResponse } from "@mysten/sui/client";
-import { formatToken } from "@suilend/sui-fe";
-import useFetchVaultHistory, { VaultEvent } from "@/fetchers/useFetchVaultHistory";
 
 export type VaultMetadata = {
   id: string;
@@ -29,22 +29,29 @@ export type VaultMetadata = {
   description: React.ReactNode;
   image: string;
   queryParam: string;
-}
+};
 
 export const VAULT_METADATA: Record<string, VaultMetadata> = {
   ["0x5fb667f4660b9d39e3f4c446c2836fcf2c9252710bfc6552fec132104b402086"]: {
     id: "0x5fb667f4660b9d39e3f4c446c2836fcf2c9252710bfc6552fec132104b402086",
     name: "USDC Vault",
-    description: <div>
-    USDC Prime is a conservative lending strategy designed to deliver consistent, risk-adjusted yields by allocating funds across highly liquid markets and premium collateral.
-<br />
-<br />
-Managed by Steakhouse Financial, this vault optimizes returns by lending USDC against both core collateral markets (ain/JLP) and select real-world asset (RWA) pools, dynamically adapting to market conditions to ensure robust yield performance and capital preservation.
-</div>,
+    description: (
+      <div>
+        USDC Prime is a conservative lending strategy designed to deliver
+        consistent, risk-adjusted yields by allocating funds across highly
+        liquid markets and premium collateral.
+        <br />
+        <br />
+        Managed by Steakhouse Financial, this vault optimizes returns by lending
+        USDC against both core collateral markets (ain/JLP) and select
+        real-world asset (RWA) pools, dynamically adapting to market conditions
+        to ensure robust yield performance and capital preservation.
+      </div>
+    ),
     image: "/assets/tokens/USDC.png",
     queryParam: "usdc-vault",
   },
-}
+};
 
 export type VaultObligationEntry = {
   marketType: string;
@@ -86,12 +93,11 @@ export interface VaultContext {
   // Vault page data
   vaultData?: ParsedVault;
   isLoadingVaultData: boolean;
-  errorVaultData?: string;
 
   depositIntoVault: (args: {
     vault: ParsedVault;
     amount: string; // human units
-    }) => Promise<SuiTransactionBlockResponse>;
+  }) => Promise<SuiTransactionBlockResponse>;
 
   withdrawFromVault: (args: {
     vault: ParsedVault;
@@ -113,7 +119,7 @@ export interface VaultContext {
     isDepositReward: boolean;
     depositReserveIndex: string; // u64
   }) => Promise<SuiTransactionBlockResponse>;
-};
+}
 
 const defaultContextValue: VaultContext = {
   vaults: [] as ParsedVault[],
@@ -126,7 +132,6 @@ const defaultContextValue: VaultContext = {
   withdrawDeployedFunds: async () => {},
   vaultData: undefined,
   isLoadingVaultData: false,
-  errorVaultData: undefined,
   depositIntoVault: async () => {
     throw new Error("Not implemented");
   },
@@ -153,11 +158,8 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
   const { data: vaultHistory } = useFetchVaultHistory();
   const { data: userVaultHistory } = useFetchVaultHistory(undefined, address);
 
-  const {
-    data: vaultData,
-    isLoading: isLoadingVaultData,
-    error: errorVaultDataObj,
-  } = useFetchVault(vaultId);
+  const { data: vaultData, isLoading: isLoadingVaultData } =
+    useFetchVault(vaultId);
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
 
@@ -219,19 +221,25 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
   };
 
   const userPnls = useMemo(() => {
-    return fetchedVaults.reduce((acc, vault) => {
-      const vaultHistory = userVaultHistory?.[vault.id];
-      const netDepositAmount = vaultHistory?.reduce((acc, event) => {
-        if (event.type === "VaultDepositEvent") {
-          acc.plus(event.deposit_amount);
-        } else if (event.type === "VaultWithdrawEvent") {
-          acc.minus(event.amount);
-        }
+    return fetchedVaults.reduce(
+      (acc, vault) => {
+        const vaultHistory = userVaultHistory?.[vault.id];
+        const netDepositAmount =
+          vaultHistory?.reduce((acc, event) => {
+            if (event.type === "VaultDepositEvent") {
+              acc.plus(event.deposit_amount);
+            } else if (event.type === "VaultWithdrawEvent") {
+              acc.minus(event.amount);
+            }
+            return acc;
+          }, new BigNumber(0)) ?? new BigNumber(0);
+        acc[vault.id] = vaultHistory?.length
+          ? vault.userSharesBalance.minus(netDepositAmount)
+          : undefined;
         return acc;
-      }, new BigNumber(0)) ?? new BigNumber(0);
-      acc[vault.id] = vaultHistory?.length ? vault.userSharesBalance.minus(netDepositAmount) : undefined;
-      return acc;
-    }, {} as Record<string, BigNumber | undefined>);
+      },
+      {} as Record<string, BigNumber | undefined>,
+    );
   }, [fetchedVaults, userVaultHistory]);
 
   // Context
@@ -271,7 +279,9 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
 
         const publishRes = await signExecuteAndWaitForTransaction(publishTx);
         const objectChanges = (publishRes.objectChanges || []) as any[];
-        const publishedChange = objectChanges.find((c) => c.type === "published") as any;
+        const publishedChange = objectChanges.find(
+          (c) => c.type === "published",
+        ) as any;
         const pkgId = publishedChange?.packageId as string | undefined;
         if (!pkgId) throw new Error("Failed to publish VSHARES module");
 
@@ -315,10 +325,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ],
         });
 
-        createTx.transferObjects(
-          [managerCap],
-          createTx.pure.address(address),
-        );
+        createTx.transferObjects([managerCap], createTx.pure.address(address));
 
         const res = await signExecuteAndWaitForTransaction(createTx);
         const txUrl = explorer.buildTxUrl(res.digest);
@@ -333,12 +340,10 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
         mutateVaults();
       },
-      createObligation: async ({
-        vault,
-        lendingMarketId,
-      }) => {
+      createObligation: async ({ vault, lendingMarketId }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!vault.managerCapId) throw new Error("Vault manager cap ID is required");
+        if (!vault.managerCapId)
+          throw new Error("Vault manager cap ID is required");
 
         const { shareType } = vault;
         const lendingMarketType =
@@ -347,11 +352,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         const transaction = new Transaction();
         transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_obligation`,
-          typeArguments: [
-            shareType,
-            lendingMarketType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [shareType, lendingMarketType, vault.baseCoinType],
           arguments: [
             transaction.object(vault.id),
             transaction.object(vault.managerCapId),
@@ -371,27 +372,20 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
       },
 
-      deployFunds: async ({
-        vault,
-        lendingMarketId,
-        amount,
-      }) => {
+      deployFunds: async ({ vault, lendingMarketId, amount }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!vault.managerCapId) throw new Error("Vault manager cap ID is required");
+        if (!vault.managerCapId)
+          throw new Error("Vault manager cap ID is required");
         const obligations = vaultData?.obligations || [];
         if (!obligations.length)
           throw new Error("Vault has no obligations to price against");
-
 
         const transaction = new Transaction();
 
         // Aggregation based on vault obligations
         const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
-          typeArguments: [
-            vault.shareType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, vault.baseCoinType],
           arguments: [transaction.object(vault.id)],
         });
         const resolvedAgg = obligations
@@ -420,8 +414,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
 
         const lendingMarketType = pricingMarket.type;
-        const obligationIndex = obligations.find((o) => o.lendingMarketId === pricingMarket.id)?.index;
-        if (obligationIndex === undefined) throw new Error("Obligation not found");
+        const obligationIndex = obligations.find(
+          (o) => o.lendingMarketId === pricingMarket.id,
+        )?.index;
+        if (obligationIndex === undefined)
+          throw new Error("Obligation not found");
 
         // Deploy funds
         transaction.moveCall({
@@ -460,7 +457,8 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         ctokenAmount,
       }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!vault.managerCapId) throw new Error("Vault manager cap ID is required");
+        if (!vault.managerCapId)
+          throw new Error("Vault manager cap ID is required");
 
         const obligations = vaultData?.obligations || [];
         if (!obligations.length)
@@ -471,10 +469,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         // Aggregation
         const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
-          typeArguments: [
-            vault.shareType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, vault.baseCoinType],
           arguments: [transaction.object(vault.id)],
         });
         const resolvedAgg = obligations
@@ -503,8 +498,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
 
         const lendingMarketType = pricingMarket.type;
-        const obligationIndex = obligations.find((o) => o.lendingMarketId === pricingMarket.id)?.index;
-        if (obligationIndex === undefined) throw new Error("Obligation not found");
+        const obligationIndex = obligations.find(
+          (o) => o.lendingMarketId === pricingMarket.id,
+        )?.index;
+        if (obligationIndex === undefined)
+          throw new Error("Obligation not found");
 
         // Withdraw
         transaction.moveCall({
@@ -537,18 +535,18 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
       },
 
-      depositIntoVault: async ({
-        vault,
-        amount,
-      }) => {
+      depositIntoVault: async ({ vault, amount }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!vault.managerCapId) throw new Error("Vault manager cap ID is required");
+        if (!vault.managerCapId)
+          throw new Error("Vault manager cap ID is required");
         if (!vault.pricingLendingMarketType || !vault.pricingLendingMarketId)
           throw new Error("Vault doesn't have any obligations");
 
         const transaction = new Transaction();
         // Resolve decimals for base coin and scale human amount -> on-chain units
-        const md = await suiClient.getCoinMetadata({ coinType: vault.baseCoinType });
+        const md = await suiClient.getCoinMetadata({
+          coinType: vault.baseCoinType,
+        });
         const decimals = md?.decimals;
         if (!decimals) throw new Error("Failed to get decimals");
         const amountMinor = new BigNumber(amount)
@@ -590,10 +588,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         // Build an empty aggregate for pricing (single market ok)
         const acc = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
-          typeArguments: [
-            vault.shareType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, vault.baseCoinType],
           arguments: [transaction.object(vault.id)],
         });
         transaction.moveCall({
@@ -603,11 +598,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         });
         const agg = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_aggregate`,
-          typeArguments: [
-            vault.shareType,
-            marketType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, marketType, vault.baseCoinType],
           arguments: [
             acc,
             transaction.object(vault.id),
@@ -642,12 +633,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         return res;
       },
 
-      withdrawFromVault: async ({
-        vault,
-        amount,
-        useMaxAmount = false,
-      }) => {
-        const amountRounded = new BigNumber(amount).times(new BigNumber(10).pow(vault.baseCoinMetadata?.decimals ?? 0)).decimalPlaces(0, BigNumber.ROUND_FLOOR).toString();
+      withdrawFromVault: async ({ vault, amount, useMaxAmount = false }) => {
+        const amountRounded = new BigNumber(amount)
+          .times(new BigNumber(10).pow(vault.baseCoinMetadata?.decimals ?? 0))
+          .decimalPlaces(0, BigNumber.ROUND_FLOOR)
+          .toString();
         if (!address) throw new Error("Wallet not connected");
         if (!vault.pricingLendingMarketType || !vault.pricingLendingMarketId)
           throw new Error("Vault doesn't have any obligations");
@@ -707,7 +697,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         const shareCoins = sharesRes.data || [];
         let sharesTotal: bigint = BigInt(0);
         for (const c of shareCoins) sharesTotal += BigInt(c.balance);
-        console.log('sharesToBurnArg', sharesToBurnArg);
+        console.log("sharesToBurnArg", sharesToBurnArg);
         if (useMaxAmount) {
           sharesToBurnArg = transaction.pure.u64(sharesTotal.toString());
         }
@@ -725,10 +715,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         // Aggregation (same as simulation)
         const acc2 = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
-          typeArguments: [
-            vault.shareType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, vault.baseCoinType],
           arguments: [transaction.object(vault.id)],
         });
         // Process all obligations into the accumulator so valuation covers all markets
@@ -781,22 +768,17 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         return res;
       },
 
-      claimManagerFees: async ({
-        vault,
-        amount,
-      }) => {
+      claimManagerFees: async ({ vault, amount }) => {
         if (!address) throw new Error("Wallet not connected");
-        if (!vault.managerCapId) throw new Error("Vault manager cap ID is required");
+        if (!vault.managerCapId)
+          throw new Error("Vault manager cap ID is required");
 
         const transaction = new Transaction();
 
         // Call claim_manager_fees<P, T> -> returns Coin<P> (shares)
         const [feeCoin] = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::claim_manager_fees`,
-          typeArguments: [
-            vault.shareType,
-            vault.baseCoinType,
-          ],
+          typeArguments: [vault.shareType, vault.baseCoinType],
           arguments: [
             transaction.object(vault.id),
             transaction.object(vault.managerCapId),
@@ -834,7 +816,8 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
       }) => {
         if (!address) throw new Error("Wallet not connected");
 
-        const lendingMarketType = await detectLendingMarketType(lendingMarketId);
+        const lendingMarketType =
+          await detectLendingMarketType(lendingMarketId);
 
         const transaction = new Transaction();
 
@@ -879,10 +862,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
       fetchedVaults,
       vaultData,
       isLoadingVaultData,
-      errorVaultDataObj,
       vaultHistory,
       userVaultHistory,
       userPnls,
+      mutateVaults,
+      detectLendingMarketType,
     ],
   );
 

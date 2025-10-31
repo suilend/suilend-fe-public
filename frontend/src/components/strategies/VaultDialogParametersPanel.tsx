@@ -1,18 +1,17 @@
 import { useRouter } from "next/router";
-import {
-  PropsWithChildren,
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
+import { PropsWithChildren, useCallback, useMemo } from "react";
+
 import { capitalize } from "lodash";
+
 import { shallowPushQuery } from "@suilend/sui-fe-next";
+
 import Button from "@/components/shared/Button";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { cn } from "@/lib/utils";
-import { ParsedVault } from "@/fetchers/parseVault";
-import AllocationBar from "./AllocationBar";
 import { useVaultContext } from "@/contexts/VaultContext";
+import { ParsedVault } from "@/fetchers/parseVault";
+import { cn } from "@/lib/utils";
+
+import AllocationBar from "./AllocationBar";
 
 enum QueryParams {
   TAB = "parametersPanelTab",
@@ -33,10 +32,8 @@ function DetailsTabContent({ vault }: TabContentProps) {
     <>
       <div className="flex w-full flex-col gap-4 rounded-sm border p-4">
         <div className="flex flex-col gap-2">
-        <TBodySans>Vault overview</TBodySans>
-        <TLabelSans>
-          {vault.metadata?.description}
-        </TLabelSans>
+          <TBodySans>Vault overview</TBodySans>
+          <TLabelSans>{vault.metadata?.description}</TLabelSans>
         </div>
         <div className="flex flex-col gap-2">
           <TBodySans>Vault allocation</TBodySans>
@@ -44,9 +41,8 @@ function DetailsTabContent({ vault }: TabContentProps) {
         </div>
         <div className="flex flex-col gap-2">
           <TBodySans>Historical data</TBodySans>
-          
         </div>
-        </div>
+      </div>
     </>
   );
 }
@@ -55,8 +51,7 @@ function HistoryTabContent({ vault }: TabContentProps) {
   const { userVaultHistory } = useVaultContext();
 
   const currentHistory = useMemo(
-    () =>
-      userVaultHistory[vault.id] ?? [],
+    () => userVaultHistory[vault.id] ?? [],
     [vault.id, userVaultHistory],
   );
 
@@ -84,8 +79,7 @@ function AllocationTabContent({ vault }: TabContentProps) {
   const { vaultHistory } = useVaultContext();
 
   const currentHistory = useMemo(
-    () =>
-      vaultHistory[vault.id] ?? [],
+    () => vaultHistory[vault.id] ?? [],
     [vault.id, vaultHistory],
   );
 
