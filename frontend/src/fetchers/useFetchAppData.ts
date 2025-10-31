@@ -304,12 +304,15 @@ export default function useFetchAppData() {
       // Elixir sdeUSD APR (won't throw on error)
       (async () => {
         try {
-          const url =
-            "https://api-deusd-prod-public.elixir.xyz/public/deusd_apy"; // TODO: Switch to internal API once available
+          const url = `${API_URL}/elixir/apy`;
           const res = await fetch(url);
-          const json: { deusd_apy: number } = await res.json();
+          const json: {
+            data: {
+              apy: number;
+            };
+          } = await res.json();
 
-          return new BigNumber(json.deusd_apy);
+          return new BigNumber(json.data.apy);
         } catch (err) {
           console.error(err);
           return undefined;
