@@ -10,12 +10,12 @@ import {
   ABOUT_URL,
   BRIDGE_URL,
   BUYBACK_URL,
+  EARN_URL,
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
-  EARN_URL,
   SWAP_URL,
   STRATEGIES_URL,
 } from "@/lib/navigation";
