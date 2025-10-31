@@ -5,17 +5,28 @@ import MarketTable from "@/components/dashboard/market-table/MarketTable";
 import MarketDetailsPopover from "@/components/dashboard/MarketDetailsPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
+import { cn } from "@/lib/utils";
 
 export default function MarketCard() {
+  const { featuredLendingMarketIds } = useLoadedAppContext();
   const { appData } = useLendingMarketContext();
+
+  const isFeatured = (featuredLendingMarketIds ?? []).includes(
+    appData.lendingMarket.id,
+  );
 
   return (
     <Card
-      className="bg-transparent max-md:-mx-4 max-md:w-auto max-md:rounded-none max-md:border-x-0"
+      className={cn(
+        "bg-transparent max-md:-mx-4 max-md:w-auto max-md:rounded-none max-md:border-x-0",
+        isFeatured && "shadow-[inset_0px_0_8px_0px_hsl(var(--secondary))]",
+      )}
       id={appData.lendingMarket.id}
       headerProps={{
         titleContainerClassName: "max-md:h-max",
+        titleClassName: cn(isFeatured && "text-secondary"),
         title: appData.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
         endContent: (

@@ -138,8 +138,7 @@ interface MarketCardListProps {
 }
 
 export default function MarketCardList({ rows }: MarketCardListProps) {
-  const { featuredReserveIds } = useLoadedAppContext();
-  const { appData } = useLendingMarketContext();
+  const { appData, featuredReserveIds } = useLendingMarketContext();
   const { open: openActionsModal } = useActionsModalContext();
 
   const [headerRowIsExpandedMap, setHeaderRowIsExpandedMap] = useState<
@@ -160,9 +159,7 @@ export default function MarketCardList({ rows }: MarketCardListProps) {
         return (
           <div key={index} className="flex w-full flex-col gap-4">
             {/* Title */}
-            {!(
-              (featuredReserveIds ?? []).length === 0 && section === "main"
-            ) && (
+            {!(featuredReserveIds.length === 0 && section === "main") && (
               <button
                 className="group flex flex-row items-center gap-2"
                 onClick={

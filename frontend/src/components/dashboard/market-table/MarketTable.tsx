@@ -119,13 +119,9 @@ export interface ReservesRowData {
 type RowData = HeaderRowData | CollapsibleRowData | ReservesRowData;
 
 export default function MarketTable() {
-  const {
-    allAppData,
-    featuredReserveIds,
-    deprecatedReserveIds,
-    isEcosystemLst,
-  } = useLoadedAppContext();
-  const { appData, userData } = useLendingMarketContext();
+  const { allAppData, isEcosystemLst } = useLoadedAppContext();
+  const { appData, featuredReserveIds, deprecatedReserveIds, userData } =
+    useLendingMarketContext();
 
   const { open: openActionsModal } = useActionsModalContext();
 
@@ -143,7 +139,7 @@ export default function MarketTable() {
 
             const Icon = row.getIsExpanded() ? ChevronUp : ChevronDown;
 
-            if ((featuredReserveIds ?? []).length === 0 && section === "main")
+            if (featuredReserveIds.length === 0 && section === "main")
               return null;
             return (
               <div className="group flex flex-row items-center gap-2">
@@ -444,9 +440,9 @@ export default function MarketTable() {
                 : undefined;
 
         return {
-          section: (deprecatedReserveIds ?? []).includes(reserve.id)
+          section: deprecatedReserveIds.includes(reserve.id)
             ? "deprecated"
-            : (featuredReserveIds ?? []).includes(reserve.id)
+            : featuredReserveIds.includes(reserve.id)
               ? "featured"
               : reserve.config.isolated
                 ? "isolated"
@@ -611,6 +607,7 @@ export default function MarketTable() {
     appData.lendingMarket.id,
     userData.rewardMap,
     allAppData.lstStatsMap,
+    allAppData.elixirSdeUsdAprPercent,
     deprecatedReserveIds,
     featuredReserveIds,
     isEcosystemLst,
@@ -623,10 +620,14 @@ export default function MarketTable() {
           columns={columns}
           data={rows}
           initialExpandedState={
-            (featuredReserveIds ?? []).length > 0
-              ? { "0": true, "1": true, "2": true, "3": false }
-              : { "0": true, "1": true, "2": false }
-          } // Expand featured, main, and isolated assets rows, do not expand deprecated assets row
+            appData.lendingMarket.id === LENDING_MARKET_ID
+              ? featuredReserveIds.length > 0
+                ? { "0": true, "1": true, "2": true, "3": false } // Expand featured, main, and isolated, do not expand deprecated
+                : { "0": true, "1": true, "2": false } // Expand main and isolated, do not expand deprecated
+              : featuredReserveIds.length > 0
+                ? { "0": true, "1": true, "2": false } // Expand featured and main, , do not expand deprecated
+                : { "0": true, "1": false } // Expand main, do not expand deprecated
+          }
           tableRowClassName={(row) => {
             if (!row) return cn(styles.tableRow);
 
@@ -635,7 +636,7 @@ export default function MarketTable() {
 
               return cn(
                 styles.tableRow,
-                (featuredReserveIds ?? []).length === 0 &&
+                featuredReserveIds.length === 0 &&
                   section === "main" &&
                   "border-b-0",
               );
@@ -661,7 +662,7 @@ export default function MarketTable() {
             if ((cell.row.original as HeaderRowData).isHeader) {
               const { section } = cell.row.original as HeaderRowData;
 
-              if ((featuredReserveIds ?? []).length === 0 && section === "main")
+              if (featuredReserveIds.length === 0 && section === "main")
                 return cn("p-0 h-0");
               return cn(
                 cell.column.getIsFirstColumn() ? "h-auto py-2" : "p-0 h-0",

@@ -60,6 +60,7 @@ export interface AllAppData {
 
 interface AppContext {
   allAppData: AllAppData | undefined;
+  featuredLendingMarketIds: string[] | undefined;
   featuredReserveIds: string[] | undefined;
   deprecatedReserveIds: string[] | undefined;
   refreshAllAppData: () => Promise<void>;
@@ -79,6 +80,7 @@ type LoadedAppContext = AppContext & {
 
 const AppContext = createContext<AppContext>({
   allAppData: undefined,
+  featuredLendingMarketIds: undefined,
   featuredReserveIds: undefined,
   deprecatedReserveIds: undefined,
   refreshAllAppData: async () => {
@@ -118,12 +120,16 @@ export function AppContextProvider({ children }: PropsWithChildren) {
 
   // Featured, deprecated reserves
   const flags = useFlags();
+  const featuredLendingMarketIds: string[] | undefined = useMemo(
+    () => (flags?.suilendFeaturedLendingMarketIds ?? []).filter(Boolean), // Filter out ""
+    [flags?.suilendFeaturedLendingMarketIds],
+  );
   const featuredReserveIds: string[] | undefined = useMemo(
     () => (flags?.suilendFeaturedReserveIds ?? []).filter(Boolean), // Filter out ""
     [flags?.suilendFeaturedReserveIds],
   );
   const deprecatedReserveIds: string[] | undefined = useMemo(
-    () => flags?.suilendDeprecatedReserveIds,
+    () => (flags?.suilendDeprecatedReserveIds ?? []).filter(Boolean),
     [flags?.suilendDeprecatedReserveIds],
   );
 
@@ -176,6 +182,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   const contextValue: AppContext = useMemo(
     () => ({
       allAppData,
+      featuredLendingMarketIds,
       featuredReserveIds,
       deprecatedReserveIds,
       refreshAllAppData,
@@ -191,6 +198,7 @@ export function AppContextProvider({ children }: PropsWithChildren) {
     }),
     [
       allAppData,
+      featuredLendingMarketIds,
       featuredReserveIds,
       deprecatedReserveIds,
       refreshAllAppData,

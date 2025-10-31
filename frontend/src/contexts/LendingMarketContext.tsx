@@ -17,6 +17,8 @@ import { UserData, useLoadedUserContext } from "@/contexts/UserContext";
 
 interface LendingMarketContext {
   appData: AppData;
+  featuredReserveIds: string[];
+  deprecatedReserveIds: string[];
 
   userData: UserData;
   obligation: ParsedObligation | undefined;
@@ -28,7 +30,8 @@ interface LendingMarketContext {
 
 const defaultContextValue: LendingMarketContext = {
   appData: {} as AppData,
-
+  featuredReserveIds: [],
+  deprecatedReserveIds: [],
   userData: {} as UserData,
   obligation: undefined,
   obligationOwnerCap: undefined,
@@ -52,7 +55,8 @@ export function LendingMarketContextProvider({
   lendingMarketId,
   children,
 }: LendingMarketContextProviderProps) {
-  const { allAppData } = useLoadedAppContext();
+  const { allAppData, featuredReserveIds, deprecatedReserveIds } =
+    useLoadedAppContext();
   const appData = allAppData.allLendingMarketData[lendingMarketId];
   const {
     allUserData,
@@ -103,6 +107,12 @@ export function LendingMarketContextProvider({
   const contextValue: LendingMarketContext = useMemo(
     () => ({
       appData,
+      featuredReserveIds: (featuredReserveIds ?? []).filter((id) =>
+        appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
+      ),
+      deprecatedReserveIds: (deprecatedReserveIds ?? []).filter((id) =>
+        appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
+      ),
 
       userData,
       obligation,
@@ -113,6 +123,8 @@ export function LendingMarketContextProvider({
     }),
     [
       appData,
+      featuredReserveIds,
+      deprecatedReserveIds,
       userData,
       obligation,
       obligationOwnerCap,

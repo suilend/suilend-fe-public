@@ -32,7 +32,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getPoolInfo } from "@/lib/admin";
 import { TX_TOAST_DURATION } from "@/lib/constants";
@@ -53,10 +52,10 @@ export default function ReservesTab() {
 
   const { explorer } = useSettingsContext();
   const { address, signExecuteAndWaitForTransaction } = useWalletContext();
-  const { featuredReserveIds, deprecatedReserveIds } = useLoadedAppContext();
   const { refresh } = useLoadedUserContext();
 
-  const { appData, steammPoolInfos } = useAdminContext();
+  const { appData, featuredReserveIds, deprecatedReserveIds, steammPoolInfos } =
+    useAdminContext();
 
   const isEditable = address === ADMIN_ADDRESS;
 
@@ -178,9 +177,9 @@ export default function ReservesTab() {
     };
 
     for (const reserve of appData.lendingMarket.reserves) {
-      if ((deprecatedReserveIds ?? []).includes(reserve.id)) {
+      if (deprecatedReserveIds.includes(reserve.id)) {
         result.deprecated.push(reserve);
-      } else if ((featuredReserveIds ?? []).includes(reserve.id)) {
+      } else if (featuredReserveIds.includes(reserve.id)) {
         result.featured.push(reserve);
       } else if (reserve.config.isolated) {
         result.isolated.push(reserve);

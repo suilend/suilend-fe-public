@@ -34,7 +34,7 @@ function Cards() {
 
 function Page() {
   const { address } = useWalletContext();
-  const { allAppData } = useLoadedAppContext();
+  const { allAppData, featuredLendingMarketIds } = useLoadedAppContext();
 
   const { lg } = useBreakpoint();
 
@@ -42,6 +42,13 @@ function Page() {
   const appDataList = Object.values(allAppData.allLendingMarketData).filter(
     (lendingMarket) =>
       !(lendingMarket.lendingMarket.isHidden && address !== ADMIN_ADDRESS),
+  );
+  const featuredAppDataList = appDataList.filter((appData) =>
+    (featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id),
+  );
+  const nonFeaturedAppDataList = appDataList.filter(
+    (appData) =>
+      !(featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id),
   );
 
   return (
@@ -63,14 +70,16 @@ function Page() {
 
             {/* Markets */}
             <div className="flex w-full flex-col gap-4">
-              {appDataList.map((appData) => (
-                <LendingMarketContextProvider
-                  key={appData.lendingMarket.id}
-                  lendingMarketId={appData.lendingMarket.id}
-                >
-                  <MarketCard />
-                </LendingMarketContextProvider>
-              ))}
+              {[...featuredAppDataList, ...nonFeaturedAppDataList].map(
+                (appData) => (
+                  <LendingMarketContextProvider
+                    key={appData.lendingMarket.id}
+                    lendingMarketId={appData.lendingMarket.id}
+                  >
+                    <MarketCard />
+                  </LendingMarketContextProvider>
+                ),
+              )}
             </div>
           </div>
         ) : (
@@ -82,14 +91,16 @@ function Page() {
             >
               {/* Markets */}
               <div className="flex w-full flex-col gap-4">
-                {appDataList.map((appData) => (
-                  <LendingMarketContextProvider
-                    key={appData.lendingMarket.id}
-                    lendingMarketId={appData.lendingMarket.id}
-                  >
-                    <MarketCard />
-                  </LendingMarketContextProvider>
-                ))}
+                {[...featuredAppDataList, ...nonFeaturedAppDataList].map(
+                  (appData) => (
+                    <LendingMarketContextProvider
+                      key={appData.lendingMarket.id}
+                      lendingMarketId={appData.lendingMarket.id}
+                    >
+                      <MarketCard />
+                    </LendingMarketContextProvider>
+                  ),
+                )}
               </div>
             </div>
 

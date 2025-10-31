@@ -21,6 +21,9 @@ enum QueryParams {
 
 interface AdminContext {
   appData: AppData;
+  featuredReserveIds: string[];
+  deprecatedReserveIds: string[];
+
   userData: UserData;
   setSelectedLendingMarketId: (lendingMarketId: string) => void;
 
@@ -29,6 +32,9 @@ interface AdminContext {
 
 const defaultContextValue: AdminContext = {
   appData: {} as AppData,
+  featuredReserveIds: [],
+  deprecatedReserveIds: [],
+
   userData: {} as UserData,
   setSelectedLendingMarketId: () => {
     throw Error("AdminContextProvider not initialized");
@@ -52,7 +58,8 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
     [router.query],
   );
 
-  const { allAppData } = useLoadedAppContext();
+  const { allAppData, featuredReserveIds, deprecatedReserveIds } =
+    useLoadedAppContext();
   const { allUserData } = useLoadedUserContext();
 
   // Lending market
@@ -109,12 +116,26 @@ export function AdminContextProvider({ children }: PropsWithChildren) {
   const contextValue: AdminContext = useMemo(
     () => ({
       appData,
+      featuredReserveIds: (featuredReserveIds ?? []).filter((id) =>
+        appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
+      ),
+      deprecatedReserveIds: (deprecatedReserveIds ?? []).filter((id) =>
+        appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
+      ),
+
       userData,
       setSelectedLendingMarketId: onSelectedLendingMarketIdChange,
 
       steammPoolInfos,
     }),
-    [appData, userData, onSelectedLendingMarketIdChange, steammPoolInfos],
+    [
+      appData,
+      featuredReserveIds,
+      deprecatedReserveIds,
+      userData,
+      onSelectedLendingMarketIdChange,
+      steammPoolInfos,
+    ],
   );
 
   return (
