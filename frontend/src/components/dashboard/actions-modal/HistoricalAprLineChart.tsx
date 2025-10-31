@@ -423,13 +423,9 @@ export default function HistoricalAprLineChart({
 
       // Staking yield
       reserves.forEach(({ reserve, side, multiplier }) => {
-        const events = reserveAssetDataEventsMap?.[reserve.id]?.[days];
         const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
         const elixirSdeUsdHistoricalAprPercentSnapshots =
           elixirSdeUsdHistoricalAprPercentSnapshotsMap[days];
-
-        const event = events!.findLast((e) => e.sampleTimestampS <= timestampS);
-        if (!event) return;
 
         // Staking yield - LST
         if (isLst(reserve.coinType) && side === Side.DEPOSIT) {
