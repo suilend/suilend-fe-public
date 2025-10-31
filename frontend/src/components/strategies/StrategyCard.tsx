@@ -151,7 +151,7 @@ export default function StrategyCard({ strategyType }: StrategyCardProps) {
       className="group relative w-full cursor-pointer rounded-[4px] bg-gradient-to-tr from-border via-border to-[#457AE4] p-[1px]"
       onClick={openLstStrategyDialog}
     >
-      {strategyType === StrategyType.suiUSDT_sSUI_SUI_LOOPING && (
+      {false && (
         <div className="absolute -left-0.5 -top-0.5 z-[4] rounded-[4px] bg-secondary px-1">
           <TLabelSans className="text-[10px] leading-4 text-secondary-foreground">
             New

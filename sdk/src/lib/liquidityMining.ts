@@ -4,8 +4,7 @@ import { cloneDeep } from "lodash";
 
 import {
   MS_PER_YEAR,
-  NORMALIZED_DEEP_COINTYPE,
-  NORMALIZED_LBTC_COINTYPE,
+  NORMALIZED_sdeUSD_COINTYPE,
   isSendPoints,
 } from "@suilend/sui-fe";
 
@@ -301,7 +300,13 @@ export const getStakingYieldAprPercent = (
   side: Side,
   coinType: string,
   lstStatsMap: Record<string, { aprPercent: BigNumber }>,
-) => (side === Side.DEPOSIT ? lstStatsMap[coinType]?.aprPercent : undefined);
+  elixirSdeUsdAprPercent: BigNumber | undefined,
+): BigNumber | undefined =>
+  side === Side.DEPOSIT
+    ? coinType === NORMALIZED_sdeUSD_COINTYPE
+      ? elixirSdeUsdAprPercent
+      : lstStatsMap[coinType]?.aprPercent
+    : undefined;
 
 export const getTotalAprPercent = (
   side: Side,
@@ -317,6 +322,7 @@ export const getNetAprPercent = (
   obligation: ParsedObligation,
   rewardMap: RewardMap,
   lstStatsMap: Record<string, { aprPercent: BigNumber }>,
+  elixirSdeUsdAprPercent: BigNumber | undefined,
   noShares?: boolean,
 ) => {
   const weightedDepositedAmountUsd_aprPercent = obligation.deposits.reduce(
@@ -328,6 +334,7 @@ export const getNetAprPercent = (
           Side.DEPOSIT,
           deposit.reserve.coinType,
           lstStatsMap,
+          elixirSdeUsdAprPercent,
         ) ?? 0,
       ).times(deposit.depositedAmountUsd);
 

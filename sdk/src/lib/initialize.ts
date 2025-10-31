@@ -407,7 +407,13 @@ export const initializeObligations = async (
       simulate.refreshObligation(rawObligation, refreshedRawReserves),
     )
     .map((refreshedObligation) =>
-      parseObligation(refreshedObligation, reserveMap),
+      parseObligation(
+        refreshedObligation,
+        reserveMap,
+        strategyOwnerCaps.some(
+          (soc) => soc.obligationId === refreshedObligation.id,
+        ),
+      ),
     )
     .sort((a, b) => +b.netValueUsd.minus(a.netValueUsd));
 

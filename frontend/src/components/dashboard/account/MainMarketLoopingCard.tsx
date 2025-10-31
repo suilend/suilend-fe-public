@@ -7,14 +7,14 @@ import { Pause, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { LENDING_MARKET_ID } from "@suilend/sdk";
-import { formatList } from "@suilend/sui-fe";
+import { formatList, getToken } from "@suilend/sui-fe";
 import { showErrorToast, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
-import LoopedPosition from "@/components/layout/LoopedPosition";
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";
+import TokenLogo from "@/components/shared/TokenLogo";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
 import { useLoadedAppContext } from "@/contexts/AppContext";
@@ -27,6 +27,42 @@ import {
   getWasLooping,
   getZeroSharePositions,
 } from "@/lib/looping";
+
+interface LoopedPositionProps {
+  coinTypes: string[];
+}
+
+function LoopedPosition({ coinTypes }: LoopedPositionProps) {
+  const { allAppData } = useLoadedAppContext();
+  const appData = allAppData.allLendingMarketData[LENDING_MARKET_ID];
+
+  return (
+    <div className="flex flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
+      <TokenLogo
+        token={getToken(coinTypes[0], appData.coinMetadataMap[coinTypes[0]])}
+        size={16}
+      />
+      <TBodySans className="text-xs text-foreground">
+        {appData.coinMetadataMap[coinTypes[0]].symbol} deposits{" "}
+        {coinTypes[0] === coinTypes[1] ? "and borrows" : "and"}
+      </TBodySans>
+      {coinTypes[0] !== coinTypes[1] && (
+        <>
+          <TokenLogo
+            token={getToken(
+              coinTypes[1],
+              appData.coinMetadataMap[coinTypes[1]],
+            )}
+            size={16}
+          />
+          <TBodySans className="text-xs text-foreground">
+            {appData.coinMetadataMap[coinTypes[1]].symbol} borrows
+          </TBodySans>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function MainMarketLoopingCard() {
   const { address } = useWalletContext();

@@ -12,7 +12,6 @@ import {
   GetRoutesResult as FlowXGetRoutesResult,
 } from "@flowx-finance/sdk";
 import { normalizeStructTag } from "@mysten/sui/utils";
-import * as Sentry from "@sentry/nextjs";
 import {
   RouterCompleteTradeRoute as AftermathQuote,
   Aftermath as AftermathSdk,
@@ -129,7 +128,6 @@ const getAggQuoteWrapper = async (
 
     return standardizedQuote;
   } catch (err) {
-    Sentry.captureException(err, { provider } as any);
     console.error(err);
 
     return null;

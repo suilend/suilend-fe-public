@@ -15,7 +15,6 @@ import {
   Transaction,
   TransactionObjectArgument,
 } from "@mysten/sui/transactions";
-import * as Sentry from "@sentry/nextjs";
 import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 
 import { getAllCoins, isSui, mergeAllCoins } from "@suilend/sui-fe";
@@ -45,7 +44,6 @@ const getSwapTransactionWrapper = async (
 
     return res;
   } catch (err) {
-    Sentry.captureException(err, { provider } as any);
     console.error(err);
 
     throw err;

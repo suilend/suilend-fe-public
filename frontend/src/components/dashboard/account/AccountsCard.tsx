@@ -109,10 +109,12 @@ export default function AccountsCard() {
         startContent: filteredAppData.length === 1 && (
           <div className="flex h-4 cursor-auto flex-row items-center">
             <CopyToClipboardButton
-              value={Object.values(obligationMap)[0]!.id}
+              value={Object.values(obligationMap).filter(Boolean)[0]!.id}
             />
             <OpenOnExplorerButton
-              url={explorer.buildObjectUrl(Object.values(obligationMap)[0]!.id)}
+              url={explorer.buildObjectUrl(
+                Object.values(obligationMap).filter(Boolean)[0]!.id,
+              )}
             />
             <Button
               className="text-muted-foreground"
@@ -136,17 +138,13 @@ export default function AccountsCard() {
         ),
       }}
     >
-      <CardContent className="flex flex-col gap-px p-0">
+      <CardContent className="flex flex-col gap-0.5 p-0">
         {filteredAppData.map((appData) => {
           const obligation = obligationMap[appData.lendingMarket.id]!;
           const userData = allUserData[appData.lendingMarket.id];
 
-          const isLooping =
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-            getIsLooping(appData, obligation); // Main market only
-          const wasLooping =
-            appData.lendingMarket.id === LENDING_MARKET_ID &&
-            getWasLooping(appData, obligation); // Main market only
+          const isLooping = getIsLooping(appData, obligation);
+          const wasLooping = getWasLooping(appData, obligation);
 
           return (
             <div key={appData.lendingMarket.id} className="w-full">
@@ -266,6 +264,7 @@ export default function AccountsCard() {
                           obligation,
                           userData.rewardMap,
                           allAppData.lstStatsMap,
+                          allAppData.elixirSdeUsdAprPercent,
                         ),
                       )}
                     </TBody>

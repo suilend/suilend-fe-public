@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 import { ParsedObligation } from "@suilend/sdk/parsers";
 import {
   NORMALIZED_ETH_COINTYPES,
@@ -36,6 +37,8 @@ export const getLoopedAssetCoinTypes = (
   appData: AppData,
   obligation?: ParsedObligation,
 ) => {
+  if (appData.lendingMarket.id !== LENDING_MARKET_ID) return [];
+
   const result: string[][] = [];
   appData.lendingMarket.reserves.forEach((reserve) => {
     const outCoinTypes = (() => {
@@ -66,6 +69,8 @@ export const getIsLooping = (
   appData: AppData,
   obligation?: ParsedObligation,
 ) => {
+  if (appData.lendingMarket.id !== LENDING_MARKET_ID) return false;
+
   const loopedAssetCoinTypes = getLoopedAssetCoinTypes(appData, obligation);
   return loopedAssetCoinTypes.length > 0;
 };
@@ -86,6 +91,8 @@ export const getWasLooping = (
   appData: AppData,
   obligation?: ParsedObligation,
 ) => {
+  if (appData.lendingMarket.id !== LENDING_MARKET_ID) return false;
+
   const isLooping = getIsLooping(appData, obligation);
   const { deposits: zeroShareDeposits, borrows: zeroShareBorrows } =
     getZeroSharePositions(obligation);

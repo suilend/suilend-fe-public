@@ -13,6 +13,7 @@ import {
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
+  NORMALIZED_USDC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
   Token,
   formatToken,
@@ -281,14 +282,18 @@ export default function MarketTable() {
             <div className="flex flex-col items-end gap-2">
               <DepositAprCell {...(row.original as ReservesRowData)} />
 
-              {(row.original as ReservesRowData).token.coinType ===
-                NORMALIZED_xBTC_COINTYPE && (
-                <OkxAprBadge
-                  side={Side.DEPOSIT}
-                  aprPercent={allAppData.okxAprPercentMap.xBtcDepositAprPercent}
-                  href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
-                />
-              )}
+              {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                (row.original as ReservesRowData).token.coinType ===
+                  NORMALIZED_xBTC_COINTYPE &&
+                allAppData.okxAprPercentMap !== undefined && (
+                  <OkxAprBadge
+                    side={Side.DEPOSIT}
+                    aprPercent={
+                      allAppData.okxAprPercentMap.xBtcDepositAprPercent
+                    }
+                    href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
+                  />
+                )}
             </div>
           );
         },
@@ -306,12 +311,25 @@ export default function MarketTable() {
           return (
             <div className="flex flex-col items-end gap-2">
               <BorrowAprCell {...(row.original as ReservesRowData)} />
+
+              {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                (row.original as ReservesRowData).token.coinType ===
+                  NORMALIZED_USDC_COINTYPE &&
+                allAppData.okxAprPercentMap !== undefined && (
+                  <OkxAprBadge
+                    side={Side.BORROW}
+                    aprPercent={
+                      allAppData.okxAprPercentMap.usdcBorrowAprPercent
+                    }
+                    href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
+                  />
+                )}
             </div>
           );
         },
       },
     ],
-    [featuredReserveIds, allAppData.okxAprPercentMap.xBtcDepositAprPercent],
+    [featuredReserveIds, appData.lendingMarket.id, allAppData.okxAprPercentMap],
   );
 
   // Rows
@@ -338,6 +356,7 @@ export default function MarketTable() {
             Side.DEPOSIT,
             reserve.coinType,
             allAppData.lstStatsMap,
+            allAppData.elixirSdeUsdAprPercent,
           ),
         );
         const totalBorrowAprPercent = getTotalAprPercent(

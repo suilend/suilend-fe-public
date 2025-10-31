@@ -9,13 +9,22 @@ export function toTitleCase(str: string) {
   return str.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function formatNumber(num: number, maximumFractionDigits = 1) {
+function formatNumber(
+  num: number,
+  maximumFractionDigits = 1,
+  minimumFractionDigits = 1,
+) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits,
+    minimumFractionDigits,
   }).format(num);
 }
 
-export function toCompactNumber(num: number) {
+export function toCompactNumber(
+  num: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = 1,
+) {
   const abs = Math.abs(num);
   if (abs < 1_000) {
     // Do not compact small values
@@ -23,41 +32,48 @@ export function toCompactNumber(num: number) {
   }
   if (abs < 1_000_000) {
     const value = num / 1_000;
-    return `${formatNumber(value)}K`;
+    return `${formatNumber(value, maximumFractionDigits, minimumFractionDigits)}K`;
   }
   if (abs < 1_000_000_000) {
     const value = num / 1_000_000;
-    return `${formatNumber(value)}M`;
+    return `${formatNumber(value, maximumFractionDigits, minimumFractionDigits)}M`;
   }
   // Fall back to Intl for very large numbers (B, T, etc.)
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
-    maximumFractionDigits: 1,
+    maximumFractionDigits,
+    minimumFractionDigits,
   }).format(num);
 }
 
-export function toCompactCurrency(num: number) {
+export function toCompactCurrency(
+  num: number,
+  maximumFractionDigits = 2,
+  minimumFractionDigits = 1,
+) {
   const abs = Math.abs(num);
   if (abs < 1_000) {
     // Do not compact small currency values
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 1,
+      maximumFractionDigits,
+      minimumFractionDigits,
     }).format(num);
   }
   if (abs < 1_000_000) {
     const value = num / 1_000;
-    return `$${formatNumber(value)}K`;
+    return `$${formatNumber(value, maximumFractionDigits, minimumFractionDigits)}K`;
   }
   if (abs < 1_000_000_000) {
     const value = num / 1_000_000;
-    return `$${formatNumber(value)}M`;
+    return `$${formatNumber(value, maximumFractionDigits, minimumFractionDigits)}M`;
   }
   // Fall back to Intl for very large numbers
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
-    maximumFractionDigits: 2,
+    maximumFractionDigits,
+    minimumFractionDigits,
     style: "currency",
     currency: "USD",
   }).format(num);

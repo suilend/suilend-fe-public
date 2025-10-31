@@ -1,4 +1,5 @@
 import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
+import { bcs } from "@mysten/bcs";
 import { CoinMetadata, DevInspectResults, SuiClient } from "@mysten/sui/client";
 import {
   Transaction,
@@ -484,18 +485,15 @@ export const getStrategySimulatedObligation = (
     maxPriceWeightedBorrowsUsd: new BigNumber(
       borrowedAmount.times(borrowReserve.maxPrice),
     ).times(borrowReserve.config.borrowWeightBps.div(10000)),
-    minPriceBorrowLimitUsd: BigNumber.min(
-      deposits.reduce((acc, deposit) => {
-        const depositReserve = reserveMap[deposit.coinType];
+    minPriceBorrowLimitUsd: deposits.reduce((acc, deposit) => {
+      const depositReserve = reserveMap[deposit.coinType];
 
-        return acc.plus(
-          deposit.depositedAmount
-            .times(depositReserve.minPrice)
-            .times(depositReserve.config.openLtvPct / 100),
-        );
-      }, new BigNumber(0)),
-      30 * 10 ** 6, // Cap `minPriceBorrowLimitUsd` at $30m (account borrow limit)
-    ),
+      return acc.plus(
+        deposit.depositedAmount
+          .times(depositReserve.minPrice)
+          .times(depositReserve.config.openLtvPct / 100),
+      );
+    }, new BigNumber(0)), // Not capped to $30m
     unhealthyBorrowValueUsd: deposits.reduce((acc, deposit) => {
       const depositReserve = reserveMap[deposit.coinType];
 
@@ -1307,6 +1305,7 @@ export const getStrategyAprPercent = (
     _obligation,
     rewardMap,
     lstStatsMap,
+    undefined, // elixirSdeUsdAprPercent
     !obligation ||
       !hasStrategyPosition(obligation) ||
       obligation.deposits.some((d) => !d.userRewardManager), // Simulated obligations don't have userRewardManager
@@ -1361,7 +1360,7 @@ export const getStrategyHealthPercent = (
   );
   const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
-  if (weightedBorrowsUsd.lt(borrowLimitUsd)) return new BigNumber(100);
+  if (weightedBorrowsUsd.lte(borrowLimitUsd)) return new BigNumber(100);
   return new BigNumber(100).minus(
     new BigNumber(weightedBorrowsUsd.minus(borrowLimitUsd))
       .div(liquidationThresholdUsd.minus(borrowLimitUsd))
@@ -1882,7 +1881,7 @@ export const strategyLoopToExposureTx = async (
       });
       if (!routers) throw new Error("No swap quote found");
 
-      const slippagePercent = 0.1;
+      const slippagePercent = 1;
       let stepBaseCoin;
       try {
         stepBaseCoin = await cetusSdk.fixableRouterSwapV3({
@@ -2078,16 +2077,8 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.lst === undefined)
       throw new Error("LST reserve not found");
 
-    const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
-    const fullRepaymentAmount = (
-      borrowedAmountUsd.lt(0.02)
-        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-        : borrowedAmountUsd.lt(1)
-          ? borrowedAmount.times(1.1) // 10% buffer
-          : borrowedAmountUsd.lt(10)
-            ? borrowedAmount.times(1.01) // 1% buffer
-            : borrowedAmount.times(1.001)
-    ) // 0.1% buffer
+    const fullRepaymentAmount = new BigNumber(0.25)
+      .div(borrowReserve.price) // $0.25 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
       .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
 
     console.log(
@@ -2342,17 +2333,7 @@ export const strategyUnloopToExposureTx = async (
     if (depositReserves.base === undefined)
       throw new Error("Base reserve not found");
 
-    const borrowedAmountUsd = borrowedAmount.times(borrowReserve.price);
-    const fullRepaymentAmount = (
-      borrowedAmountUsd.lt(0.02)
-        ? new BigNumber(0.02).div(borrowReserve.price) // $0.02 in borrow coinType (still well over E borrows, e.g. E SUI, or E wBTC)
-        : borrowedAmountUsd.lt(1)
-          ? borrowedAmount.times(1.1) // 10% buffer
-          : borrowedAmountUsd.lt(10)
-            ? borrowedAmount.times(1.01) // 1% buffer
-            : borrowedAmount.times(1.001)
-    ) // 0.1% buffer
-      .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN);
+    const fullRepaymentAmount = new BigNumber(0.25).div(borrowReserve.price); // $0.25 in borrow coinType (more than E borrows, e.g. E SUI, or E wBTC)
 
     console.log(
       `[unloopStrategyToExposure.fullyRepayBorrowsUsingBase] |`,
@@ -2784,13 +2765,25 @@ export const strategyUnloopToExposureTx = async (
         ),
       );
 
-      suilendClient.repay(
-        obligationId,
-        borrowReserve.coinType,
-        stepSuiCoin,
-        transaction,
-      );
-      transaction.transferObjects([stepSuiCoin], _address);
+      try {
+        const txCopy = Transaction.from(transaction);
+
+        suilendClient.repay(
+          obligationId,
+          borrowReserve.coinType,
+          stepSuiCoin,
+          txCopy,
+        );
+        txCopy.transferObjects([stepSuiCoin], _address);
+
+        await dryRunTransaction(txCopy); // Throws error if fails
+        transaction = txCopy;
+      } catch (err) {
+        // Don't block user if fails
+        console.error(err);
+
+        transaction.transferObjects([stepSuiCoin], _address);
+      }
 
       // 3.2) Update state
       borrowedAmount = borrowedAmount.minus(stepRepaidAmount);
@@ -2963,7 +2956,7 @@ export const strategyUnloopToExposureTx = async (
       });
       if (!routers) throw new Error("No swap quote found");
 
-      const slippagePercent = 0.1;
+      const slippagePercent = 1;
       let stepBorrowCoin;
       try {
         stepBorrowCoin = await cetusSdk.fixableRouterSwapV3({
@@ -3015,13 +3008,25 @@ export const strategyUnloopToExposureTx = async (
         ),
       );
 
-      suilendClient.repay(
-        obligationId,
-        borrowReserve.coinType,
-        stepBorrowCoin,
-        transaction,
-      );
-      transaction.transferObjects([stepBorrowCoin], _address);
+      try {
+        const txCopy = Transaction.from(transaction);
+
+        suilendClient.repay(
+          obligationId,
+          borrowReserve.coinType,
+          stepBorrowCoin,
+          txCopy,
+        );
+        txCopy.transferObjects([stepBorrowCoin], _address);
+
+        await dryRunTransaction(txCopy); // Throws error if fails
+        transaction = txCopy;
+      } catch (err) {
+        // Don't block user if fails
+        console.error(err);
+
+        transaction.transferObjects([stepBorrowCoin], _address);
+      }
 
       // 3.2) Update state
       borrowedAmount = borrowedAmount.minus(stepRepaidAmount);
@@ -4077,10 +4082,28 @@ export const strategyDepositAdjustWithdrawTx = async (
   transaction = newTransaction;
 
   // 4) Repay flash loan + fee
-  // 4.1) Withdraw additional + fee
-  let withdrawnAmount = depositedAmount
-    .times(1 + flashLoanObj.feePercent / 100)
+  const receiptDebts = transaction.moveCall({
+    target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_receipt_debts`,
+    typeArguments: [],
+    arguments: [receipt],
+  });
+  const dryRunResults = await dryRunTransaction(transaction);
+  const flashLoanRepayAmount = new BigNumber(
+    bcs
+      .u64()
+      .parse(
+        new Uint8Array(
+          dryRunResults.results?.find(
+            (r, index) => index === receiptDebts.Result,
+          )?.returnValues?.[flashLoanObj.borrowA ? 0 : 1][0] ?? [0],
+        ),
+      ),
+  )
+    .div(10 ** depositReserve.token.decimals)
     .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
+
+  // 4.1) Withdraw additional + fee
+  let withdrawnAmount = flashLoanRepayAmount;
   if (depositReserve.coinType === depositReserves.lst?.coinType)
     withdrawnAmount = withdrawnAmount
       .div(1 - +(lst?.redeemFeePercent ?? 0) / 100) // Potential rounding issue (max 1 MIST)
@@ -4116,6 +4139,12 @@ export const strategyDepositAdjustWithdrawTx = async (
   );
   if (!withdrawnCoin) throw new Error("Withdrawn coin not found");
 
+  // 4.2) Update state
+  deposits = newDeposits2;
+  borrowedAmount = newBorrowedAmount2;
+  transaction = newTransaction2;
+
+  // 4.3) Repay flash loan
   let flashLoanRepayCoin = withdrawnCoin;
   if (depositReserve.coinType === depositReserves.lst?.coinType)
     flashLoanRepayCoin = lst!.client.redeem(
@@ -4123,7 +4152,6 @@ export const strategyDepositAdjustWithdrawTx = async (
       flashLoanRepayCoin as TransactionObjectInput,
     );
 
-  // 4.2) Repay flash loan
   const flashLoanRepayBalance = transaction.moveCall({
     target: "0x2::coin::into_balance",
     typeArguments: [
@@ -4146,11 +4174,6 @@ export const strategyDepositAdjustWithdrawTx = async (
   } else {
     throw new Error("Invalid flash loan provider");
   }
-
-  // 4.3) Update state
-  deposits = newDeposits2;
-  borrowedAmount = newBorrowedAmount2;
-  transaction = newTransaction2;
 
   return { deposits, borrowedAmount, transaction };
 };

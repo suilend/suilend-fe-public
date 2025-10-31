@@ -15,7 +15,6 @@ import {
   TransactionObjectInput,
 } from "@mysten/sui/transactions";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { cloneDeep } from "lodash";
 import { ChevronLeft, ChevronRight, Download, Wallet, X } from "lucide-react";
@@ -86,6 +85,7 @@ import { useLoadedLstStrategyContext } from "@/contexts/LstStrategyContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import useBreakpoint from "@/hooks/useBreakpoint";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import safaryTrack from "@/lib/safary";
 import { useCetusSdk } from "@/lib/swap";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -232,45 +232,45 @@ export default function LstStrategyDialog({
 
     const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
-    const depositedAmount = obligation.deposits.find(
-      (d) => d.coinType === depositReserve.coinType,
-    )!.depositedAmount;
+    const depositedAmount =
+      obligation.deposits.find((d) => d.coinType === depositReserve.coinType)
+        ?.depositedAmount ?? new BigNumber(0);
+    if (depositedAmount.lte(0)) return new BigNumber(0);
 
     const targetDepositedAmount = bisectionMethod(
-      depositedAmount, // left boundary: original deposit
+      depositedAmount.times(1), // left boundary: 1x original deposit
       depositedAmount.times(2), // right boundary: 2x original deposit
       (newDepositedAmount: BigNumber) => {
         const additionalDepositedAmount =
           newDepositedAmount.minus(depositedAmount);
 
-        const newHealthPercent = getHealthPercent(
+        const newObligation = getSimulatedObligation(
           strategyType,
-          getSimulatedObligation(
-            strategyType,
-            addOrInsertDeposit(obligation.deposits, {
-              coinType: depositReserve.coinType,
-              depositedAmount: additionalDepositedAmount,
-            }),
-            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
-          ),
-          undefined,
+          addOrInsertDeposit(obligation.deposits, {
+            coinType: depositReserve.coinType,
+            depositedAmount: additionalDepositedAmount,
+          }),
+          obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
         );
+        const newExposure = getExposure(strategyType, newObligation);
+        // const newHealthPercent = getHealthPercent(
+        //   strategyType,
+        //   newObligation,
+        //   undefined,
+        // );
 
-        return newHealthPercent.eq(100);
+        return newExposure.lte(maxExposure);
       },
     );
 
     const additionalDepositedAmount = targetDepositedAmount
       .minus(depositedAmount)
       .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
-    console.log(
-      "XXXX depositedAmount:",
-      depositedAmount.toFixed(20),
-      "targetDepositedAmount:",
-      targetDepositedAmount.toFixed(20),
-      "additionalDepositedAmount:",
-      additionalDepositedAmount.toFixed(20),
-    );
+    console.log("XXX [depositAdjustWithdrawAdditionalDepositedAmount]", {
+      depositedAmount: depositedAmount.toFixed(20),
+      targetDepositedAmount: targetDepositedAmount.toFixed(20),
+      additionalDepositedAmount: additionalDepositedAmount.toFixed(20),
+    });
 
     return additionalDepositedAmount;
   }, [
@@ -279,9 +279,10 @@ export default function LstStrategyDialog({
     canAdjust,
     depositReserves.base,
     depositReserves.lst,
-    getHealthPercent,
-    strategyType,
     getSimulatedObligation,
+    strategyType,
+    getExposure,
+    maxExposure,
   ]);
 
   const tabs = [
@@ -372,7 +373,6 @@ export default function LstStrategyDialog({
         },
       );
     } catch (err) {
-      Sentry.captureException(err);
       console.error(err);
       showErrorToast(
         [
@@ -1822,6 +1822,29 @@ export default function LstStrategyDialog({
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
+        safaryTrack(
+          "deposit", // The event type must be "deposit" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#deposit-event
+          "strategies_deposit",
+          {
+            walletAddress: address,
+            amount: +new BigNumber(value).decimalPlaces(
+              currencyReserve.token.decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+            currency: currencyReserve.token.symbol,
+            amountUsd: +new BigNumber(value)
+              .times(currencyReserve.price)
+              .decimalPlaces(
+                currencyReserve.token.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+            customStr1Label: "strategyType",
+            customStr1Value: strategyType,
+            customStr2Label: "coinType",
+            customStr2Value: currencyReserve.coinType,
+          },
+        );
+
         const balanceChangeOut = getBalanceChange(
           res,
           address,
@@ -1896,6 +1919,31 @@ export default function LstStrategyDialog({
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
 
+        safaryTrack(
+          "withdrawal", // The event type must be "withdrawal" per https://safary-1.gitbook.io/safary-doc-2.0/connect-data/setup-events#withdrawal-event
+          "strategies_withdraw",
+          {
+            walletAddress: address,
+            amount: +new BigNumber(value).decimalPlaces(
+              currencyReserve.token.decimals,
+              BigNumber.ROUND_DOWN,
+            ),
+            currency: currencyReserve.token.symbol,
+            amountUsd: +new BigNumber(value)
+              .times(currencyReserve.price)
+              .decimalPlaces(
+                currencyReserve.token.decimals,
+                BigNumber.ROUND_DOWN,
+              ),
+            customStr1Label: "strategyType",
+            customStr1Value: strategyType,
+            customStr2Label: "coinType",
+            customStr2Value: currencyReserve.coinType,
+            customStr3Label: "isMax",
+            customStr3Value: useMaxAmount ? "true" : "false",
+          },
+        );
+
         const balanceChangeIn = getBalanceChange(
           res,
           address,
@@ -1936,6 +1984,11 @@ export default function LstStrategyDialog({
           throw Error("StrategyOwnerCap or Obligation not found");
 
         // 3) Deposit-adjust-withdraw or adjust
+        const prevExposure = exposure;
+        const newExposure = !canAdjust
+          ? depositAdjustWithdrawExposure
+          : adjustExposure;
+
         if (!canAdjust) {
           // Deposit-adjust-withdraw
           const { transaction: depositAdjustWithdrawTransaction } =
@@ -1973,6 +2026,16 @@ export default function LstStrategyDialog({
 
         const res = await signExecuteAndWaitForTransaction(transaction);
         const txUrl = explorer.buildTxUrl(res.digest);
+
+        safaryTrack("adjust", "strategies_adjust", {
+          walletAddress: address,
+          customStr1Label: "strategyType",
+          customStr1Value: strategyType,
+          customStr2Label: "prevLeverage",
+          customStr2Value: +prevExposure.decimalPlaces(2, BigNumber.ROUND_DOWN),
+          customStr3Label: "newLeverage",
+          customStr3Value: +newExposure.decimalPlaces(2, BigNumber.ROUND_DOWN),
+        });
 
         toast.success(
           `Adjusted leverage to ${(!canAdjust
@@ -2527,7 +2590,7 @@ export default function LstStrategyDialog({
                   />
                 ) : selectedTab === Tab.WITHDRAW ? (
                   <LabelWithValue
-                    label={`Withdraw fee (${useMaxAmount ? "deducted" : "added"})`}
+                    label="Withdraw fee"
                     value={`${formatToken(
                       withdrawFeesAmount.times(
                         depositReserves.base !== undefined

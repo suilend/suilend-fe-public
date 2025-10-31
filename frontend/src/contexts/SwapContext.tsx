@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 
+import { CoinMetadata } from "@mysten/sui/client";
 import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { useLocalStorage } from "usehooks-ts";
@@ -59,6 +60,7 @@ interface SwapContext {
   tokens?: Token[];
   fetchTokensMetadata: (coinTypes: string[]) => Promise<void>;
   verifiedCoinTypes: string[];
+  cetusVerifiedCoinTypes: string[];
   tokenIn?: Token;
   tokenOut?: Token;
   setTokenSymbol: (newTokenSymbol: string, direction: TokenDirection) => void;
@@ -88,6 +90,7 @@ const defaultContextValue: SwapContext = {
     throw Error("SwapContextProvider not initialized");
   },
   verifiedCoinTypes: [],
+  cetusVerifiedCoinTypes: [],
   tokenIn: undefined,
   tokenOut: undefined,
   setTokenSymbol: () => {
@@ -234,20 +237,26 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       fetchingTokensMetadataRef.current.push(...filteredCoinTypes);
 
       try {
+        const existingCoinMetadata: Record<string, CoinMetadata> = {
+          ...Object.values(allAppData.allLendingMarketData).reduce(
+            (acc, appData) => ({
+              ...acc,
+              ...appData.coinMetadataMap,
+            }),
+            {} as Record<string, CoinMetadata>,
+          ),
+          ...(balancesCoinMetadataMap ?? {}),
+        };
+
         const coinTypesMissingMetadata = filteredCoinTypes.filter(
-          (coinType) =>
-            !Object.keys({
-              ...appDataMainMarket.coinMetadataMap,
-              ...(balancesCoinMetadataMap ?? {}),
-            }).includes(coinType),
+          (coinType) => !Object.keys(existingCoinMetadata).includes(coinType),
         );
         const coinMetadataMap = await getCoinMetadataMap(
           coinTypesMissingMetadata,
         );
 
         const mergedCoinMetadataMap = {
-          ...appDataMainMarket.coinMetadataMap,
-          ...(balancesCoinMetadataMap ?? {}),
+          ...existingCoinMetadata,
           ...coinMetadataMap,
         };
 
@@ -267,18 +276,21 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         console.error(err);
       }
     },
-    [tokens, appDataMainMarket.coinMetadataMap, balancesCoinMetadataMap],
+    [tokens, allAppData.allLendingMarketData, balancesCoinMetadataMap],
   );
 
   // Tokens - Verified coinTypes
   const [verifiedCoinTypes, setVerifiedCoinTypes] = useState<string[]>([]);
+  const [cetusVerifiedCoinTypes, setCetusVerifiedCoinTypes] = useState<
+    string[]
+  >([]);
 
-  const isFetchingVerifiedCoinTypesRef = useRef<boolean>(false);
+  const isFetchingCetusVerifiedCoinTypesRef = useRef<boolean>(false);
   useEffect(() => {
     (async () => {
-      if (isFetchingVerifiedCoinTypesRef.current) return;
+      if (isFetchingCetusVerifiedCoinTypesRef.current) return;
 
-      isFetchingVerifiedCoinTypesRef.current = true;
+      isFetchingCetusVerifiedCoinTypesRef.current = true;
       try {
         const res = await fetch(
           "https://api-sui.cetus.zone/v3/sui/clmm/verified_coins_info",
@@ -286,25 +298,32 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const json = await res.json();
         console.log(json);
 
-        const coinTypes = json.data.list
+        const _cetusVerifiedCoinTypes = json.data.list
           .map((coin: any) => coin.coinType)
           .map(normalizeStructTag);
+        const _verifiedCoinTypes = [
+          ..._cetusVerifiedCoinTypes,
+          "0x8556539cf20b8640738d919ce3fe9d79b982f7d14a0861b650ff24b3cbd80e73::strat::STRAT",
+        ].map(normalizeStructTag);
 
-        setVerifiedCoinTypes(coinTypes);
+        setVerifiedCoinTypes(_verifiedCoinTypes);
+        setCetusVerifiedCoinTypes(_cetusVerifiedCoinTypes);
 
-        fetchTokensMetadata(coinTypes);
+        fetchTokensMetadata(_verifiedCoinTypes);
       } catch (err) {}
     })();
   }, [fetchTokensMetadata]);
 
   // Tokens - Reserves
   useEffect(() => {
-    fetchTokensMetadata(
-      appDataMainMarket.lendingMarket.reserves.map(
-        (reserve) => reserve.coinType,
-      ),
-    );
-  }, [fetchTokensMetadata, appDataMainMarket.lendingMarket.reserves]);
+    const coinTypes: string[] = [];
+    for (const appData of Object.values(allAppData.allLendingMarketData))
+      coinTypes.push(
+        ...appData.lendingMarket.reserves.map((reserve) => reserve.coinType),
+      );
+
+    fetchTokensMetadata(coinTypes);
+  }, [allAppData.allLendingMarketData, fetchTokensMetadata]);
 
   // Tokens - Balances
   useEffect(() => {
@@ -486,6 +505,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
+      cetusVerifiedCoinTypes,
       tokenIn,
       tokenOut,
       setTokenSymbol,
@@ -503,6 +523,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       tokens,
       fetchTokensMetadata,
       verifiedCoinTypes,
+      cetusVerifiedCoinTypes,
       tokenIn,
       tokenOut,
       setTokenSymbol,

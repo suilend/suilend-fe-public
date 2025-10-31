@@ -3,7 +3,7 @@ import { CSSProperties, PropsWithChildren, forwardRef } from "react";
 
 import { ArrowLeftRight, Info, LucideIcon } from "lucide-react";
 
-import track from "@suilend/sui-fe/lib/track";
+import mixpanelTrack from "@suilend/sui-fe/lib/track";
 
 import Container from "@/components/shared/Container";
 import { TBody, TBodySans } from "@/components/shared/Typography";
@@ -26,7 +26,7 @@ function LinkWrapper({ isLinkRelative, link, children }: LinkWrapperProps) {
       className="block"
       target={isLinkRelative ? undefined : "_blank"}
       href={link}
-      onClick={() => track("banner_click", { link })}
+      onClick={() => mixpanelTrack("banner_click", { link })}
     >
       {children}
     </Link>

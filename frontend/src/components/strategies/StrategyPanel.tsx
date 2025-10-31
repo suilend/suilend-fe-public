@@ -2,7 +2,6 @@ import { useRouter } from "next/router";
 import { useMemo, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
-import * as Sentry from "@sentry/nextjs";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
@@ -200,7 +199,6 @@ export default function StrategyPanel() {
         },
       );
     } catch (err) {
-      Sentry.captureException(err);
       console.error(err);
       showErrorToast(
         [

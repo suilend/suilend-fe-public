@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { toBase64 } from "@mysten/sui/utils";
-import { ChevronDown, ChevronUp, VenetianMask } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, VenetianMask } from "lucide-react";
 
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import {
@@ -24,7 +24,7 @@ import DropdownMenu, {
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tooltip from "@/components/shared/Tooltip";
-import { TLabel, TLabelSans } from "@/components/shared/Typography";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
@@ -190,15 +190,37 @@ export default function ConnectedWalletDropdownMenu({
       items={
         <>
           {hasVipItem && (
-            <DropdownMenuItem
-              className="border-secondary bg-secondary/5 font-medium text-secondary focus:border-foreground"
-              onClick={joinVipGroup}
-            >
-              Join VIP Group on Telegram
-            </DropdownMenuItem>
+            <div className="relative -mx-4 h-8 px-4">
+              <div className="relative z-[2] flex h-full w-full flex-row items-center justify-between gap-2">
+                <div className="flex flex-row items-center gap-2">
+                  <TBody className="uppercase">Suilend VIP</TBody>
+                  <Tooltip title="Suilend VIP offers a dedicated group chat with the Suilend team, offering priority customer support and a direct line to the team.">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Tooltip>
+                </div>
+
+                <DropdownMenuItem
+                  className="h-5 border-0 bg-secondary/20 px-2 font-medium !text-secondary focus:bg-secondary/35"
+                  onClick={joinVipGroup}
+                >
+                  Unlock
+                </DropdownMenuItem>
+              </div>
+
+              <div
+                className="absolute inset-0 z-[1] bg-gradient-to-r from-secondary/20 to-transparent"
+                style={{
+                  maskImage:
+                    "linear-gradient(to right, rgba(0, 0, 0, 0.25) 0%, black 64px)",
+                }}
+              />
+            </div>
           )}
           {hasDisconnectItem && (
-            <DropdownMenuItem onClick={disconnectWallet}>
+            <DropdownMenuItem
+              className={cn(hasVipItem && "mt-2")}
+              onClick={disconnectWallet}
+            >
               Disconnect
             </DropdownMenuItem>
           )}
