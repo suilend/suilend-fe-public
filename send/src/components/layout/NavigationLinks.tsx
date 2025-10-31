@@ -63,7 +63,11 @@ export default function NavigationLinks() {
       <Link href={SWAP_URL} startsWithHref={SWAP_URL}>
         Swap
       </Link>
-      {process.env.NODE_ENV === "development" ? <Link href={EARN_URL}>Earn</Link> : <Link href={STRATEGIES_URL}>Strategies</Link>}
+      {process.env.NODE_ENV === "development" ? (
+        <Link href={EARN_URL}>Earn</Link>
+      ) : (
+        <Link href={STRATEGIES_URL}>Strategies</Link>
+      )}
       <Link href={BUYBACK_URL} isActiveOverride>
         SEND
       </Link>
