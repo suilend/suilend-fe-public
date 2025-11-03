@@ -1872,9 +1872,7 @@ function Page() {
                 >
                   <Checkbox checked={isPriceDifferenceAware} />
                   <TLabelSans className="font-medium text-foreground">
-                    {
-                      "I'm aware of the estimated price difference for this swap"
-                    }
+                    {"I acknowledge and wish to proceed with this rate."}
                   </TLabelSans>
                 </button>
               )}
