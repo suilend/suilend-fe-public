@@ -1,9 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toBase64 } from "@mysten/sui/utils";
+import BigNumber from "bignumber.js";
 import { ChevronDown, ChevronUp, Info, VenetianMask } from "lucide-react";
 
-import { ADMIN_ADDRESS } from "@suilend/sdk";
+import {
+  ADMIN_ADDRESS,
+  LENDING_MARKET_ID,
+  StrategyLstMap,
+  fetchStrategyLstMap,
+  getStrategyTvlAmount,
+  hasStrategyPosition,
+} from "@suilend/sdk";
+import { STRATEGY_TYPE_INFO_MAP } from "@suilend/sdk/lib/strategyOwnerCap";
 import {
   API_URL,
   formatAddress,
@@ -24,12 +33,19 @@ import DropdownMenu, {
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import ParentLendingMarket from "@/components/shared/ParentLendingMarket";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import {
+  TBody,
+  TBodySans,
+  TLabel,
+  TLabelSans,
+} from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppContext } from "@/contexts/AppContext";
 import { useUserContext } from "@/contexts/UserContext";
 import { cn } from "@/lib/utils";
+
+import { Separator } from "../ui/separator";
 
 interface ConnectedWalletDropdownMenuProps {
   addressNameServiceNameMap: Record<string, string | undefined>;
@@ -38,7 +54,7 @@ interface ConnectedWalletDropdownMenuProps {
 export default function ConnectedWalletDropdownMenu({
   addressNameServiceNameMap,
 }: ConnectedWalletDropdownMenuProps) {
-  const { explorer } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
   const {
     isImpersonating,
     wallet,
@@ -51,7 +67,9 @@ export default function ConnectedWalletDropdownMenu({
   } = useWalletContext();
   const address = restWalletContext.address as string;
   const { allAppData } = useAppContext();
+  const appDataMainMarket = allAppData?.allLendingMarketData[LENDING_MARKET_ID];
   const { allUserData, obligationMap, setObligationId } = useUserContext();
+  const userDataMainMarket = allUserData?.[LENDING_MARKET_ID];
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -132,6 +150,27 @@ export default function ConnectedWalletDropdownMenu({
 
   const noItems =
     !hasVipItem && !hasDisconnectItem && !hasAccounts && !hasWallets;
+
+  // Net worth
+  // LST
+  const [lstMap, setLstMap] = useState<StrategyLstMap | undefined>(undefined);
+
+  const fetchLstMap = useCallback(async () => {
+    try {
+      const result = await fetchStrategyLstMap(suiClient);
+      if (result) setLstMap(result);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [suiClient]);
+
+  const didFetchLstMap = useRef<boolean>(false);
+  useEffect(() => {
+    if (didFetchLstMap.current) return;
+    didFetchLstMap.current = true;
+
+    fetchLstMap();
+  }, [fetchLstMap]);
 
   return (
     <DropdownMenu
@@ -216,22 +255,144 @@ export default function ConnectedWalletDropdownMenu({
               />
             </div>
           )}
+
+          <div className="flex w-full flex-col gap-1">
+            <div className="flex flex-row items-center justify-between gap-2">
+              <TBodySans>Net worth</TBodySans>
+              <TBody className="font-bold">
+                {formatUsd(
+                  filteredAppData.reduce((acc, appData) => {
+                    const userData = allUserData?.[appData.lendingMarket.id];
+                    if (!userData) return acc;
+
+                    return acc.plus(
+                      userData.obligations.reduce(
+                        (acc, obligation) => acc.plus(obligation.netValueUsd),
+                        new BigNumber(0),
+                      ),
+                    );
+                  }, new BigNumber(0)),
+                )}
+              </TBody>
+            </div>
+
+            {/* Lend */}
+            {Object.values(filteredAppData).length > 0 && (
+              <div className="relative flex w-full flex-row gap-2">
+                {!!appDataMainMarket &&
+                  (userDataMainMarket?.strategyObligations ?? []).some(
+                    (o) => !!o && hasStrategyPosition(o),
+                  ) && (
+                    <>
+                      <div className="absolute -bottom-2 left-0 top-0 w-2 border-l border-l-muted" />
+                      <div className="h-2 w-2 self-start rounded-bl-sm border-b border-l border-b-muted border-l-muted" />
+                    </>
+                  )}
+
+                <div className="flex flex-1 flex-col gap-2">
+                  <TLabelSans className="font-medium">Lend</TLabelSans>
+
+                  {Object.values(filteredAppData).map((appData, index, arr) => {
+                    const userData = allUserData![appData.lendingMarket.id];
+
+                    return (
+                      <div
+                        key={appData.lendingMarket.id}
+                        className="flex w-full flex-row items-center justify-between gap-2"
+                      >
+                        <div className="relative flex flex-row items-center gap-2">
+                          <div className="h-2 w-2 self-start rounded-bl-sm border-b border-l border-b-muted border-l-muted" />
+                          {index !== arr.length - 1 && (
+                            <div className="absolute -bottom-2 left-0 top-0 w-2 border-l border-l-muted" />
+                          )}
+                          <TLabelSans>{appData.lendingMarket.name}</TLabelSans>
+                        </div>
+
+                        <TLabel className="text-foreground">
+                          {formatUsd(
+                            userData.obligations.reduce(
+                              (acc, obligation) =>
+                                acc.plus(obligation.netValueUsd),
+                              new BigNumber(0),
+                            ),
+                          )}
+                        </TLabel>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Strategies */}
+            {!!appDataMainMarket &&
+              (userDataMainMarket?.strategyObligations ?? []).some(
+                (o) => !!o && hasStrategyPosition(o),
+              ) && (
+                <div className="relative flex w-full flex-row gap-2">
+                  {Object.values(filteredAppData).length > 0 && (
+                    <div className="h-2 w-2 self-start rounded-bl-sm border-b border-l border-b-muted border-l-muted" />
+                  )}
+
+                  <div className="flex flex-1 flex-col gap-2">
+                    <TLabelSans className="font-medium">Strategies</TLabelSans>
+
+                    {userDataMainMarket!.strategyObligations
+                      .filter((o) => !!o && hasStrategyPosition(o))
+                      .map((obligation, index, arr) => {
+                        const strategyOwnerCap =
+                          userDataMainMarket!.strategyOwnerCaps.find(
+                            (soc) => soc.obligationId === obligation.id,
+                          );
+                        if (!strategyOwnerCap) return null; // Should not happen
+
+                        return (
+                          <div
+                            key={strategyOwnerCap.strategyType}
+                            className="flex w-full flex-row items-center justify-between gap-2"
+                          >
+                            <div className="relative flex flex-row items-center gap-2">
+                              <div className="h-2 w-2 self-start rounded-bl-sm border-b border-l border-b-muted border-l-muted" />
+                              {index !== arr.length - 1 && (
+                                <div className="absolute -bottom-2 left-0 top-0 w-2 border-l border-l-muted" />
+                              )}
+                              <TLabelSans>
+                                {
+                                  STRATEGY_TYPE_INFO_MAP[
+                                    strategyOwnerCap.strategyType
+                                  ].header.title
+                                }
+                              </TLabelSans>
+                            </div>
+
+                            <TLabel className="text-foreground">
+                              {formatUsd(
+                                getStrategyTvlAmount(
+                                  appDataMainMarket.reserveMap,
+                                  lstMap ?? {},
+                                  strategyOwnerCap.strategyType,
+                                  obligation,
+                                ),
+                              )}
+                            </TLabel>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+          </div>
+
           {hasDisconnectItem && (
-            <DropdownMenuItem
-              className={cn(hasVipItem && "mt-2")}
-              onClick={disconnectWallet}
-            >
+            <DropdownMenuItem className="mt-2" onClick={disconnectWallet}>
               Disconnect
             </DropdownMenuItem>
           )}
 
           {hasAccounts && (
             <>
-              <TLabelSans
-                className={cn((hasVipItem || hasDisconnectItem) && "mt-2")}
-              >
-                Accounts
-              </TLabelSans>
+              <Separator className="-mx-4 my-2" />
+              <TLabelSans>Accounts</TLabelSans>
 
               {!allAppData || !allUserData || !obligationMap ? (
                 <Skeleton className="h-[70px] w-full rounded-sm" />
@@ -318,13 +479,8 @@ export default function ConnectedWalletDropdownMenu({
 
           {hasWallets && (
             <>
-              <TLabelSans
-                className={cn(
-                  (hasVipItem || hasDisconnectItem || hasAccounts) && "mt-2",
-                )}
-              >
-                Wallets
-              </TLabelSans>
+              <Separator className="-mx-4 my-2" />
+              <TLabelSans>Wallets</TLabelSans>
 
               {accounts.map((a) => (
                 <DropdownMenuItem
