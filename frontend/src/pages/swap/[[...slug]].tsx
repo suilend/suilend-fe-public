@@ -19,6 +19,7 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { Aftermath as AftermathSdk } from "aftermath-ts-sdk";
 import BigNumber from "bignumber.js";
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowRightLeft,
   ArrowUpDown,
@@ -76,6 +77,7 @@ import SwapSlippagePopover, {
   SLIPPAGE_PERCENT_DP,
 } from "@/components/swap/SwapSlippagePopover";
 import TokenRatiosChart from "@/components/swap/TokenRatiosChart";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import {
@@ -109,6 +111,8 @@ const getCtokenExchangeRate = (eventData: any) =>
         .div(eventData.ctoken_supply);
 
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
+const PRICE_DIFFERENCE_PERCENT_CRITICAL_THRESHOLD = 20;
+const PRICE_DIFFERENCE_PERCENT_CHECKBOX_THRESHOLD = 20;
 
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
@@ -658,10 +662,15 @@ function Page() {
     [quoteRatio, currentTokenRatio, isInverted],
   );
   const PriceDifferenceIcon = priceDifferencePercent?.gte(
-    PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+    PRICE_DIFFERENCE_PERCENT_CRITICAL_THRESHOLD,
   )
-    ? AlertTriangle
-    : Info;
+    ? AlertCircle
+    : priceDifferencePercent?.gte(PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD)
+      ? AlertTriangle
+      : Info;
+
+  const [isPriceDifferenceAware, setIsPriceDifferenceAware] =
+    useState<boolean>(false);
 
   // Reverse tokens
   const reverseTokens = () => {
@@ -729,7 +738,14 @@ function Page() {
 
     return {
       title: `Swap ${tokenIn.symbol} for ${tokenOut.symbol}`,
-      isDisabled: !quote || isFetchingQuotes || isSubmitting_swapAndDeposit,
+      isDisabled:
+        !quote ||
+        isFetchingQuotes ||
+        isSubmitting_swapAndDeposit ||
+        (priceDifferencePercent?.gt(
+          PRICE_DIFFERENCE_PERCENT_CHECKBOX_THRESHOLD,
+        ) &&
+          !isPriceDifferenceAware),
     };
   })();
 
@@ -1409,6 +1425,7 @@ function Page() {
 
       formatAndSetValue("", tokenIn);
       setQuotesMap({});
+      setIsPriceDifferenceAware(false);
 
       const mixpanelProperties: Record<string, string | number> = {
         agg: QUOTE_PROVIDER_NAME_MAP[quote.provider],
@@ -1771,10 +1788,18 @@ function Page() {
                   <div className="w-max">
                     <TLabelSans
                       className={cn(
-                        "text-foreground",
+                        priceDifferencePercent.gte(
+                          PRICE_DIFFERENCE_PERCENT_CRITICAL_THRESHOLD,
+                        )
+                          ? "text-destructive"
+                          : priceDifferencePercent.gte(
+                                PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
+                              )
+                            ? "text-warning"
+                            : "text-foreground",
                         priceDifferencePercent.gte(
                           PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD,
-                        ) && "text-warning",
+                        ) && "font-medium",
                       )}
                     >
                       <PriceDifferenceIcon className="mb-0.5 mr-1 inline h-3 w-3" />
@@ -1838,6 +1863,22 @@ function Page() {
             </div>
           ) : (
             <div className="flex w-full flex-col gap-2">
+              {priceDifferencePercent?.gt(
+                PRICE_DIFFERENCE_PERCENT_CHECKBOX_THRESHOLD,
+              ) && (
+                <button
+                  className="mb-1 flex flex-row items-center gap-2"
+                  onClick={() => setIsPriceDifferenceAware((is) => !is)}
+                >
+                  <Checkbox checked={isPriceDifferenceAware} />
+                  <TLabelSans className="font-medium text-foreground">
+                    {
+                      "I'm aware of the estimated price difference for this swap."
+                    }
+                  </TLabelSans>
+                </button>
+              )}
+
               <div className="flex w-full flex-col gap-px">
                 {/* Swap */}
                 <Button
