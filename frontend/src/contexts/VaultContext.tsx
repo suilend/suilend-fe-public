@@ -917,6 +917,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
       userPnls,
       mutateVaults,
       detectLendingMarketType,
+      mutateVault,
     ],
   );
 
