@@ -185,6 +185,59 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
 
+  const appendCrankIfStale = async (
+    transaction: Transaction,
+    vault: ParsedVault,
+    uniqMarkets: { id: string; type: string }[],
+  ) => {
+    if (!uniqMarkets.length) return;
+    if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType) return;
+
+    // Only crank if stale: now - last_cranked_ms > MAX_REWARDS_STALENESS_MS (1h)
+    let shouldCrank = false;
+    try {
+      const obj = await suiClient.getObject({
+        id: vault.id,
+        options: { showContent: true },
+      });
+      const lastCrankedMs = Number(
+        ((obj.data?.content as any)?.fields?.last_cranked_ms as string | number | undefined) ?? 0,
+      );
+      const now = Date.now();
+      const MAX_REWARDS_STALENESS_MS = 3_600_000; // 1 hour
+      shouldCrank = !!lastCrankedMs && now - lastCrankedMs > MAX_REWARDS_STALENESS_MS;
+    } catch {}
+
+    if (!shouldCrank) return;
+
+    const acc = transaction.moveCall({
+      target: `${VAULTS_PACKAGE_ID}::vault::create_vault_crank_accumulator`,
+      typeArguments: [vault.shareType, vault.baseCoinType],
+      arguments: [transaction.object(vault.id)],
+    });
+    for (const m of uniqMarkets) {
+      transaction.moveCall({
+        target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market_for_crank`,
+        typeArguments: [m.type],
+        arguments: [acc, transaction.object(m.id)],
+      });
+    }
+    transaction.moveCall({
+      target: `${VAULTS_PACKAGE_ID}::vault::finalize_vault_crank`,
+      typeArguments: [
+        vault.shareType,
+        vault.pricingLendingMarketType,
+        vault.baseCoinType,
+      ],
+      arguments: [
+        transaction.object(vault.id),
+        acc,
+        transaction.object(vault.pricingLendingMarketId),
+        transaction.object(SUI_CLOCK_OBJECT_ID),
+      ],
+    });
+  };
+
   const getInnerType = (fullType: string, base: string): string | undefined => {
     const anchor = `${base}<`;
     const start = fullType.indexOf(anchor);
@@ -399,11 +452,21 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         if (!address) throw new Error("Wallet not connected");
         if (!vault.managerCapId)
           throw new Error("Vault manager cap ID is required");
-        const obligations = vaultData?.obligations || [];
+        const obligations = vault.obligations || vaultData?.obligations || [];
         if (!obligations.length)
           throw new Error("Vault has no obligations to price against");
 
         const transaction = new Transaction();
+
+        const uniqMarkets = Array.from(
+          new Map(
+            obligations.map((o) => [
+              o.lendingMarketId!,
+              { id: o.lendingMarketId!, type: o.marketType! },
+            ]),
+          ).values(),
+        );
+        await appendCrankIfStale(transaction, vault, uniqMarkets);
 
         // Aggregation based on vault obligations
         const acc = transaction.moveCall({
@@ -489,12 +552,21 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         if (!address) throw new Error("Wallet not connected");
         if (!vault.managerCapId)
           throw new Error("Vault manager cap ID is required");
-
-        const obligations = vaultData?.obligations || [];
+        const obligations = vault.obligations || vaultData?.obligations || [];
         if (!obligations.length)
           throw new Error("Vault has no obligations to price against");
 
         const transaction = new Transaction();
+
+        const uniqMarkets = Array.from(
+          new Map(
+            obligations.map((o) => [
+              o.lendingMarketId!,
+              { id: o.lendingMarketId!, type: o.marketType! },
+            ]),
+          ).values(),
+        );
+        await appendCrankIfStale(transaction, vault, uniqMarkets);
 
         // Aggregation
         const acc = transaction.moveCall({
@@ -579,6 +651,18 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           throw new Error("Vault doesn't have any obligations");
 
         const transaction = new Transaction();
+        const obligations = vault.obligations || vaultData?.obligations || [];
+        const uniqMarkets = Array.from(
+          new Map(
+            obligations
+              .filter((o) => o.lendingMarketId && o.marketType)
+              .map((o) => [
+                o.lendingMarketId!,
+                { id: o.lendingMarketId!, type: o.marketType! },
+              ]),
+          ).values(),
+        );
+        await appendCrankIfStale(transaction, vault, uniqMarkets);
         // Resolve decimals for base coin and scale human amount -> on-chain units
         const md = await suiClient.getCoinMetadata({
           coinType: vault.baseCoinType,
@@ -693,6 +777,19 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           throw new Error("Vault doesn't have any obligations");
         const transaction = new Transaction();
 
+        const obligations = vault.obligations || vaultData?.obligations || [];
+        const uniqMarkets = Array.from(
+          new Map(
+            obligations
+              .filter((o) => o.lendingMarketId && o.marketType)
+              .map((o) => [
+                o.lendingMarketId!,
+                { id: o.lendingMarketId!, type: o.marketType! },
+              ]),
+          ).values(),
+        );
+        await appendCrankIfStale(transaction, vault, uniqMarkets);
+
         // Calculate shares-to-burn inside this transaction
         let sharesToBurnArg: any = null;
         const calcAcc = transaction.moveCall({
@@ -762,35 +859,6 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           sharesToBurnArg,
         ]);
 
-        // Aggregation (same as simulation)
-        const acc2 = transaction.moveCall({
-          target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_accumulator`,
-          typeArguments: [vault.shareType, vault.baseCoinType],
-          arguments: [transaction.object(vault.id)],
-        });
-        // Process all obligations into the accumulator so valuation covers all markets
-        for (const o of vault.obligations || []) {
-          if (!o.lendingMarketId || !o.marketType) continue;
-          transaction.moveCall({
-            target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market`,
-            typeArguments: [o.marketType],
-            arguments: [acc2, transaction.object(o.lendingMarketId)],
-          });
-        }
-        const agg2 = transaction.moveCall({
-          target: `${VAULTS_PACKAGE_ID}::vault::create_vault_value_aggregate`,
-          typeArguments: [
-            vault.shareType,
-            vault.pricingLendingMarketType,
-            vault.baseCoinType,
-          ],
-          arguments: [
-            acc2,
-            transaction.object(vault.id),
-            transaction.object(vault.pricingLendingMarketId),
-          ],
-        });
-
         // Call withdraw<P,L,T> -> returns Coin<T> (base coin)
         const [baseCoinOut] = transaction.moveCall({
           target: `${VAULTS_PACKAGE_ID}::vault::withdraw`,
@@ -804,7 +872,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
             sharesCoin,
             transaction.object(vault.pricingLendingMarketId),
             transaction.object(SUI_CLOCK_OBJECT_ID),
-            agg2,
+            calcAgg,
           ],
         });
 
