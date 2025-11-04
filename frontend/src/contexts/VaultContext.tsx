@@ -7,7 +7,7 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { formatToken, NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
+import { NORMALIZED_SUI_COINTYPE, formatToken } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import TextLink from "@/components/shared/TextLink";
@@ -62,9 +62,9 @@ export const VAULT_METADATA: Record<string, VaultMetadata> = {
         <br />
         <br />
         Managed by Steakhouse Financial, this vault optimizes returns by lending
-        SUI against both core collateral markets (ain/JLP) and select
-        real-world asset (RWA) pools, dynamically adapting to market conditions
-        to ensure robust yield performance and capital preservation.
+        SUI against both core collateral markets (ain/JLP) and select real-world
+        asset (RWA) pools, dynamically adapting to market conditions to ensure
+        robust yield performance and capital preservation.
       </div>
     ),
     image: "/assets/tokens/SUI.png",
@@ -177,8 +177,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
   const { data: vaultHistory } = useFetchVaultHistory();
   const { data: userVaultHistory } = useFetchVaultHistory(undefined, address);
 
-  const { data: vaultData, isLoading: isLoadingVaultData, mutate: mutateVault } =
-    useFetchVault(vaultId);
+  const {
+    data: vaultData,
+    isLoading: isLoadingVaultData,
+    mutate: mutateVault,
+  } = useFetchVault(vaultId);
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
 
@@ -433,9 +436,12 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ],
         });
 
-        const lendingMarketType = resolvedAgg.find((m) => m.id === lendingMarketId)?.type;
+        const lendingMarketType = resolvedAgg.find(
+          (m) => m.id === lendingMarketId,
+        )?.type;
 
-        if (!lendingMarketType) throw new Error("Lending market type not found");
+        if (!lendingMarketType)
+          throw new Error("Lending market type not found");
 
         const obligationIndex = obligations.find(
           (o) => o.lendingMarketId === pricingMarket.id,
@@ -521,9 +527,12 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ],
         });
 
-        const lendingMarketType = resolvedAgg.find((m) => m.id === lendingMarketId)?.type;
+        const lendingMarketType = resolvedAgg.find(
+          (m) => m.id === lendingMarketId,
+        )?.type;
 
-        if (!lendingMarketType) throw new Error("Lending market type not found");
+        if (!lendingMarketType)
+          throw new Error("Lending market type not found");
 
         const obligationIndex = obligations.find(
           (o) => o.lendingMarketId === pricingMarket.id,

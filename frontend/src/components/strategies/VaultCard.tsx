@@ -39,8 +39,7 @@ export default function VaultCard({ vault }: VaultCardProps) {
     });
   }, [vault?.metadata?.queryParam]);
 
-  const globalTvlAmountUsd = vault.deployedAmount
-    .plus(vault.undeployedAmount);
+  const globalTvlAmountUsd = vault.deployedAmount.plus(vault.undeployedAmount);
   const hasPosition = vault.userSharesBalance.gt(0);
 
   const totalPnl = userPnls[vault.id];
@@ -119,7 +118,9 @@ export default function VaultCard({ vault }: VaultCardProps) {
                 horizontal
                 customChild={
                   <div className="flex flex-row items-baseline gap-2">
-                    <Tooltip title={`${formatUsd(vault.userSharesBalance, { exact: true })}`}>
+                    <Tooltip
+                      title={`${formatUsd(vault.userSharesBalance, { exact: true })}`}
+                    >
                       <TLabel>{formatUsd(vault.userSharesBalance)}</TLabel>
                     </Tooltip>
 

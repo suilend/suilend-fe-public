@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+
 import BigNumber from "bignumber.js";
 import { format } from "date-fns";
 import { ChevronDown } from "lucide-react";
+import { useLocalStorage } from "usehooks-ts";
 
 import { formatPercent, formatUsd } from "@suilend/sui-fe";
 
@@ -10,14 +12,15 @@ import HistoricalLineChart, {
 } from "@/components/dashboard/actions-modal/HistoricalLineChart";
 import AprRewardsBreakdownRow from "@/components/dashboard/AprRewardsBreakdownRow";
 import Button from "@/components/shared/Button";
-import DropdownMenu, { DropdownMenuItem } from "@/components/shared/DropdownMenu";
+import DropdownMenu, {
+  DropdownMenuItem,
+} from "@/components/shared/DropdownMenu";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { ViewBox, getTooltipStyle } from "@/lib/chart";
-import { Days, DAYS, DAYS_MAP } from "@/lib/events";
-import { cn } from "@/lib/utils";
-import { useLocalStorage } from "usehooks-ts";
-import useFetchVaultStats from "@/fetchers/useFetchVaultStats";
 import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
+import useFetchVaultStats from "@/fetchers/useFetchVaultStats";
+import { ViewBox, getTooltipStyle } from "@/lib/chart";
+import { DAYS, DAYS_MAP, Days } from "@/lib/events";
+import { cn } from "@/lib/utils";
 
 const ALLOCATION_SEGMENT_COLORS = ["#457AE4", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
@@ -47,7 +50,9 @@ function TooltipContentAprTvl({
       style={getTooltipStyle(200, viewBox, x)}
     >
       <div className="flex w-full flex-col gap-2">
-        <TLabelSans>{format(new Date(d.timestampS * 1000), "MM/dd HH:mm")}</TLabelSans>
+        <TLabelSans>
+          {format(new Date(d.timestampS * 1000), "MM/dd HH:mm")}
+        </TLabelSans>
         <div className="flex w-full flex-row items-center justify-between gap-4">
           <TBodySans>{metricType}</TBodySans>
           <TBody>
@@ -61,7 +66,12 @@ function TooltipContentAprTvl({
   );
 }
 
-function TooltipContentAllocations({ fields, d, viewBox, x }: TooltipContentPropsBase) {
+function TooltipContentAllocations({
+  fields,
+  d,
+  viewBox,
+  x,
+}: TooltipContentPropsBase) {
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
 
@@ -77,7 +87,9 @@ function TooltipContentAllocations({ fields, d, viewBox, x }: TooltipContentProp
       style={getTooltipStyle(260, viewBox, x)}
     >
       <div className="flex w-full flex-col gap-2">
-        <TLabelSans>{format(new Date(d.timestampS * 1000), "MM/dd HH:mm")}</TLabelSans>
+        <TLabelSans>
+          {format(new Date(d.timestampS * 1000), "MM/dd HH:mm")}
+        </TLabelSans>
 
         <div className="flex w-full flex-row items-center justify-between gap-4">
           <TBodySans>Total</TBodySans>
@@ -86,13 +98,18 @@ function TooltipContentAllocations({ fields, d, viewBox, x }: TooltipContentProp
 
         {definedFields.map((field, index, array) => {
           const name = LENDING_MARKET_METADATA_MAP[field]?.name ?? field;
-          const color = ALLOCATION_SEGMENT_COLORS[index % ALLOCATION_SEGMENT_COLORS.length];
+          const color =
+            ALLOCATION_SEGMENT_COLORS[index % ALLOCATION_SEGMENT_COLORS.length];
 
           return (
             <AprRewardsBreakdownRow
               key={field}
               isLast={index === array.length - 1}
-              value={<span style={{ color }}>{formatUsd(new BigNumber(d[field] as number))}</span>}
+              value={
+                <span style={{ color }}>
+                  {formatUsd(new BigNumber(d[field] as number))}
+                </span>
+              }
             >
               <TLabelSans>{name}</TLabelSans>
             </AprRewardsBreakdownRow>
@@ -109,9 +126,7 @@ interface VaultChartProps {
 
 type MetricType = "TVL" | "APR" | "Allocations";
 
-export default function VaultChart({
-  vaultId,
-}: VaultChartProps) {
+export default function VaultChart({ vaultId }: VaultChartProps) {
   const [days, setDays] = useLocalStorage<Days>("vaultChart_days", 7);
   const { data: chartData, isLoading } = useFetchVaultStats(vaultId, days);
   const [metricType, setMetricType] = useState<MetricType>("TVL");
@@ -139,7 +154,11 @@ export default function VaultChart({
   }, [metricType, allocationFields]);
 
   const fieldStackIdMap = useMemo(
-    () => fields.reduce((acc, f) => ({ ...acc, [f]: "1" }), {} as Record<string, string>),
+    () =>
+      fields.reduce(
+        (acc, f) => ({ ...acc, [f]: "1" }),
+        {} as Record<string, string>,
+      ),
     [fields],
   );
 
@@ -158,9 +177,11 @@ export default function VaultChart({
     if (metricType === "APR") return "hsl(var(--success))";
     if (metricType === "TVL") return "hsl(var(--primary))";
     const idx = allocationFields.indexOf(field);
-    return ALLOCATION_SEGMENT_COLORS[(idx >= 0 ? idx : 0) % ALLOCATION_SEGMENT_COLORS.length];
+    return ALLOCATION_SEGMENT_COLORS[
+      (idx >= 0 ? idx : 0) % ALLOCATION_SEGMENT_COLORS.length
+    ];
   };
-  
+
   return (
     <div className="-mx-4 flex flex-col">
       <div className="flex w-full flex-row items-center justify-between px-4">
@@ -261,7 +282,12 @@ export default function VaultChart({
             if (!active || !payload?.[0]?.payload) return null;
             const d = payload[0].payload as ChartData;
             return metricType === "Allocations" ? (
-              <TooltipContentAllocations fields={fields} d={d} viewBox={viewBox as any} x={coordinate?.x} />
+              <TooltipContentAllocations
+                fields={fields}
+                d={d}
+                viewBox={viewBox as any}
+                x={coordinate?.x}
+              />
             ) : (
               <TooltipContentAprTvl
                 fields={fields}

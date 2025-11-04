@@ -1,13 +1,19 @@
 import { CoinMetadata, SuiClient } from "@mysten/sui/client";
+import { normalizeStructTag } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 
-import { getNetAprPercent, LENDING_MARKET_ID, parseObligation, SuilendClient, WAD } from "@suilend/sdk";
+import {
+  LENDING_MARKET_ID,
+  SuilendClient,
+  WAD,
+  getNetAprPercent,
+  parseObligation,
+} from "@suilend/sdk";
 
 import { AllAppData } from "@/contexts/AppContext";
+import { UserData } from "@/contexts/UserContext";
 import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
-import { normalizeStructTag } from "@mysten/sui/utils";
-import { UserData } from "@/contexts/UserContext";
 
 export type ParsedObligation = {
   obligationId: string;
@@ -139,7 +145,9 @@ export const parseVault = async (
   if (!typeStr) throw new Error("Invalid vault");
 
   const vaultTypes = extractVaultGenerics(typeStr);
-  const baseCoinType = vaultTypes?.baseType ? normalizeStructTag(vaultTypes.baseType) : undefined;
+  const baseCoinType = vaultTypes?.baseType
+    ? normalizeStructTag(vaultTypes.baseType)
+    : undefined;
   if (!baseCoinType) {
     throw new Error("Failed to detect base coin type");
   }
@@ -221,9 +229,17 @@ export const parseVault = async (
           suiClient,
         );
 
-        const parsedObligation = parseObligation(rawObligation, allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap);
+        const parsedObligation = parseObligation(
+          rawObligation,
+          allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap,
+        );
 
-        const netAprPercent = getNetAprPercent(parsedObligation, userDataMainMarket.rewardMap, allAppData.lstStatsMap, allAppData.elixirSdeUsdAprPercent);
+        const netAprPercent = getNetAprPercent(
+          parsedObligation,
+          userDataMainMarket.rewardMap,
+          allAppData.lstStatsMap,
+          allAppData.elixirSdeUsdAprPercent,
+        );
 
         const depositedUsd = new BigNumber(
           rawObligation.depositedValueUsd.value.toString(),

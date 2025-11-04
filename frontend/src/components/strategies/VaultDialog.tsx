@@ -501,11 +501,7 @@ export default function VaultDialog({ vault, children }: VaultDialogProps) {
               >
                 <LabelWithValue
                   label="Vault TVL"
-                  value={
-                    <>
-                      {formatUsd(vault.tvl)}
-                    </>
-                  }
+                  value={<>{formatUsd(vault.tvl)}</>}
                   horizontal
                 />
                 <LabelWithValue

@@ -1,9 +1,10 @@
 import useSWR from "swr";
 
-import { DAY_S, Days } from "@/lib/events";
 import { API_URL } from "@suilend/sui-fe";
+
 import { ChartData } from "@/components/strategies/VaultLineChart";
 import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
+import { DAY_S, Days } from "@/lib/events";
 
 // Toggle to enable mock data for development/testing
 const USE_MOCK_VAULT_STATS = true;
@@ -46,10 +47,10 @@ export default function useFetchVault(vaultId?: string, days?: Days) {
         periodDays === 1
           ? 60 * 60 // 1h
           : periodDays === 7
-          ? DAY_S // 1 day
-          : periodDays === 30
-          ? 5 * DAY_S // 5 days
-          : 3 * DAY_S; // 3 days (for 90d)
+            ? DAY_S // 1 day
+            : periodDays === 30
+              ? 5 * DAY_S // 5 days
+              : 3 * DAY_S; // 3 days (for 90d)
 
       const lastTimestampS =
         Math.floor(Date.now() / 1000 / sampleIntervalS) * sampleIntervalS;
@@ -74,23 +75,30 @@ export default function useFetchVault(vaultId?: string, days?: Days) {
       const result: ChartData[] = Array.from({ length: numSamples }).map(
         (_, idx) => {
           const k = idx; // oldest -> newest in construction below
-          const timestampS = lastTimestampS - (numSamples - 1 - k) * sampleIntervalS;
+          const timestampS =
+            lastTimestampS - (numSamples - 1 - k) * sampleIntervalS;
 
           // TVL as a gentle sinusoid around base
           const tvlRaw =
             baseTvl +
-            tvlAmplitude * Math.sin((2 * Math.PI * k) / Math.max(6, numSamples));
+            tvlAmplitude *
+              Math.sin((2 * Math.PI * k) / Math.max(6, numSamples));
           const tvl = Math.max(0, Math.round(tvlRaw));
 
           // APR as a sinusoid around baseApr
-          const apr = +(baseApr + aprAmplitude * Math.sin((2 * Math.PI * k) / 9)).toFixed(2);
+          const apr = +(
+            baseApr +
+            aprAmplitude * Math.sin((2 * Math.PI * k) / 9)
+          ).toFixed(2);
 
           // Allocation weights (stable but varying by index)
-          const weightsRaw = marketIds.map((_, j) =>
-            1 + 0.25 * Math.sin((2 * Math.PI * (k + j)) / 7),
+          const weightsRaw = marketIds.map(
+            (_, j) => 1 + 0.25 * Math.sin((2 * Math.PI * (k + j)) / 7),
           );
           const weightsSum = weightsRaw.reduce((a, b) => a + b, 0);
-          const weights = weightsRaw.map((w) => (w <= 0 ? 0.0001 : w) / weightsSum);
+          const weights = weightsRaw.map(
+            (w) => (w <= 0 ? 0.0001 : w) / weightsSum,
+          );
 
           const allocationEntries = Object.fromEntries(
             marketIds.map((id, j) => [id, +(tvl * weights[j]).toFixed(2)]),
@@ -113,7 +121,7 @@ export default function useFetchVault(vaultId?: string, days?: Days) {
       days: days?.toString() ?? "",
     })}`;
     const res = await fetch(url);
-     if (!res.ok) throw new Error("Failed to fetch vault stats");
+    if (!res.ok) throw new Error("Failed to fetch vault stats");
     const json = (await res.json()) as VaultStatsResponse[];
 
     return json.map((item) => ({
@@ -121,15 +129,16 @@ export default function useFetchVault(vaultId?: string, days?: Days) {
       tvl: Number(item.aum_usd),
       apr: Number(item.apr),
       ...Object.fromEntries(
-        Object.entries(item.lending_market_allocations).map(([key, value]) =>  [key, Number(value.net_value_usd)]),
+        Object.entries(item.lending_market_allocations).map(([key, value]) => [
+          key,
+          Number(value.net_value_usd),
+        ]),
       ),
     }));
   };
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<ChartData[]>(
-    vaultId
-      ? ["vaultStats", vaultId, days?.toString() ?? ""]
-      : null,
+    vaultId ? ["vaultStats", vaultId, days?.toString() ?? ""] : null,
     fetcher,
   );
 

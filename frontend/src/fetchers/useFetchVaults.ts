@@ -3,9 +3,9 @@ import useSWR from "swr";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 import { ParsedVault, parseVault } from "@/fetchers/parseVault";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
-import { useLoadedUserContext } from "@/contexts/UserContext";
 
 export default function useFetchVaults() {
   const { suiClient } = useSettingsContext();
@@ -49,7 +49,16 @@ export default function useFetchVaults() {
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<
     ParsedVault[]
-  >(["vaultsByOwner", VAULT_OWNER, address, allUserData.length, allAppData.allLendingMarketData.length], fetcher);
+  >(
+    [
+      "vaultsByOwner",
+      VAULT_OWNER,
+      address,
+      allUserData.length,
+      allAppData.allLendingMarketData.length,
+    ],
+    fetcher,
+  );
 
   console.log("error", error);
 

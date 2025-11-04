@@ -93,16 +93,7 @@ export default function useFetchVaultHistory(
 
   const { data, isLoading, isValidating, error, mutate } = useSWR<
     Record<string, VaultEvent[]>
-  >(
-    vaultId
-      ? [
-          "vaultHistory",
-          vaultId,
-          address ?? "",
-        ]
-      : null,
-    fetcher,
-  );
+  >(vaultId ? ["vaultHistory", vaultId, address ?? ""] : null, fetcher);
 
   return { data, isLoading, isValidating, error, mutate };
 }
