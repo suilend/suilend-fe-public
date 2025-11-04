@@ -1,17 +1,20 @@
 import { CoinMetadata, SuiClient } from "@mysten/sui/client";
 import BigNumber from "bignumber.js";
 
-import { LENDING_MARKET_ID, SuilendClient, WAD } from "@suilend/sdk";
+import { getNetAprPercent, LENDING_MARKET_ID, parseObligation, SuilendClient, WAD } from "@suilend/sdk";
 
 import { AllAppData } from "@/contexts/AppContext";
 import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
+import { normalizeStructTag } from "@mysten/sui/utils";
+import { UserData } from "@/contexts/UserContext";
 
 export type ParsedObligation = {
   obligationId: string;
   lendingMarketId: string;
   marketType: string;
-  deployedAmount: BigNumber; // base units (currently 0 as placeholder)
+  deployedAmount: BigNumber; // base units
+  deployedAmountToken: BigNumber; // USD
   apr: BigNumber;
   index: number;
 };
@@ -39,6 +42,7 @@ export type ParsedVault = {
   undeployedAmount: BigNumber;
   deployedAmount: BigNumber;
   tvl: BigNumber;
+  tvlToken: BigNumber;
   totalShares: string;
   managementFeeBps: string;
   performanceFeeBps: string;
@@ -58,6 +62,7 @@ export type ParsedVault = {
   userShares: BigNumber;
   navPerShare: BigNumber;
   userSharesBalance: BigNumber;
+  userSharesToken: BigNumber;
   utilization: BigNumber;
   new?: boolean;
 };
@@ -117,9 +122,11 @@ export const parseVault = async (
   suiClient: SuiClient,
   vaultId: string,
   allAppData: AllAppData,
+  allUserData: Record<string, UserData>,
   address?: string,
   managerCapId?: string,
 ): Promise<ParsedVault> => {
+  const userDataMainMarket = allUserData[LENDING_MARKET_ID];
   const res = await suiClient.getObject({
     id: vaultId,
     options: { showContent: true },
@@ -132,7 +139,7 @@ export const parseVault = async (
   if (!typeStr) throw new Error("Invalid vault");
 
   const vaultTypes = extractVaultGenerics(typeStr);
-  const baseCoinType = vaultTypes?.baseType;
+  const baseCoinType = vaultTypes?.baseType ? normalizeStructTag(vaultTypes.baseType) : undefined;
   if (!baseCoinType) {
     throw new Error("Failed to detect base coin type");
   }
@@ -140,7 +147,7 @@ export const parseVault = async (
     throw new Error("Failed to detect share type");
   }
   // Undeployed amount (Balance<T>)
-  let decimals = 9;
+  let decimals = 0;
   let md: CoinMetadata | null = null;
   if (baseCoinType) {
     try {
@@ -149,9 +156,14 @@ export const parseVault = async (
     } catch {}
   }
   const depositAssetRaw = fields?.deposit_asset ?? "0";
-  const undeployedAmount = new BigNumber(String(depositAssetRaw)).div(
+
+  const baseAssetPrice =
+    allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType]
+      .price;
+  const undeployedAmountToken = new BigNumber(String(depositAssetRaw)).div(
     10 ** decimals,
   );
+  const undeployedAmount = undeployedAmountToken.times(baseAssetPrice);
 
   // Obligations via VecMap
   const registryParentId =
@@ -189,6 +201,7 @@ export const parseVault = async (
         lendingMarketId: typeToLmId[marketType],
         marketType,
         deployedAmount: new BigNumber(0),
+        deployedAmountToken: new BigNumber(0),
         index: i,
         apr: new BigNumber(0),
       });
@@ -208,19 +221,9 @@ export const parseVault = async (
           suiClient,
         );
 
-        const market = allAppData.allLendingMarketData[o.lendingMarketId];
+        const parsedObligation = parseObligation(rawObligation, allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap);
 
-        const obligationInterestSum = rawObligation.deposits.reduce(
-          (acc, d) =>
-            acc.plus(
-              new BigNumber(d.marketValue.value.toString())
-                .div(WAD)
-                .times(
-                  market.reserveMap[`0x${d.coinType.name}`].depositAprPercent,
-                ),
-            ),
-          new BigNumber(0),
-        );
+        const netAprPercent = getNetAprPercent(parsedObligation, userDataMainMarket.rewardMap, allAppData.lstStatsMap, allAppData.elixirSdeUsdAprPercent);
 
         const depositedUsd = new BigNumber(
           rawObligation.depositedValueUsd.value.toString(),
@@ -229,10 +232,10 @@ export const parseVault = async (
           rawObligation.unweightedBorrowedValueUsd.value.toString(),
         ).div(WAD);
 
-        const netUsd = depositedUsd.minus(borrowedUsd);
-        o.deployedAmount = netUsd;
-        interestSum = interestSum.plus(obligationInterestSum);
-        o.apr = obligationInterestSum.div(netUsd);
+        o.deployedAmount = depositedUsd.minus(borrowedUsd);
+        o.deployedAmountToken = o.deployedAmount.div(baseAssetPrice);
+        o.apr = netAprPercent;
+        interestSum = interestSum.plus(o.deployedAmount.times(netAprPercent));
       } catch (e) {
         console.log("error", e);
       }
@@ -243,10 +246,6 @@ export const parseVault = async (
     (acc, o) => acc.plus(o.deployedAmount),
     new BigNumber(0),
   );
-
-  const baseAssetPrice =
-    allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap[baseCoinType]
-      .price;
 
   // User shares (sum of all Coin<shareType> balances)
   let userShares = new BigNumber(0);
@@ -273,7 +272,6 @@ export const parseVault = async (
   }
 
   const totalAmount = deployedAmount.plus(undeployedAmount);
-  const tvl = totalAmount.times(baseAssetPrice);
   const navPerShare = deployedAmount.plus(undeployedAmount).div(userShares);
   const utilization = deployedAmount.div(totalAmount);
 
@@ -283,7 +281,8 @@ export const parseVault = async (
     shareType: vaultTypes.shareType,
     undeployedAmount,
     deployedAmount,
-    tvl,
+    tvl: totalAmount,
+    tvlToken: totalAmount.div(baseAssetPrice),
     utilization,
     totalShares: fields.total_shares,
     managementFeeBps: fields.management_fee_bps,
@@ -293,7 +292,7 @@ export const parseVault = async (
     utilizationRateBps: fields.utilization_rate_bps,
     lastNavPerShare: fields.last_nav_per_share,
     feeLastUpdateTimestampS: fields.fee_last_update_timestamp_s,
-    apr: interestSum.div(tvl),
+    apr: interestSum.div(totalAmount),
     baseCoinMetadata: md,
     obligations,
     pricingLendingMarketId: obligations.find((o) => !!o.lendingMarketId)
@@ -308,5 +307,6 @@ export const parseVault = async (
     userShares,
     navPerShare,
     userSharesBalance: userShares.times(navPerShare),
+    userSharesToken: userShares.times(navPerShare).div(baseAssetPrice),
   };
 };

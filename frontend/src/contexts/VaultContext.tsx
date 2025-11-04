@@ -7,7 +7,7 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { formatToken } from "@suilend/sui-fe";
+import { formatToken, NORMALIZED_SUI_COINTYPE } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import TextLink from "@/components/shared/TextLink";
@@ -32,8 +32,8 @@ export type VaultMetadata = {
 };
 
 export const VAULT_METADATA: Record<string, VaultMetadata> = {
-  ["0x78097ddd063e84d09d52a6bbc0ae2a067eb7db920f7ec57db4f026e54bbdfd8f"]: {
-    id: "0x78097ddd063e84d09d52a6bbc0ae2a067eb7db920f7ec57db4f026e54bbdfd8f",
+  ["0xfd25df827080c85777a5c8f51be736ae5f53dcda661e20760250d382f64b53f1"]: {
+    id: "0xfd25df827080c85777a5c8f51be736ae5f53dcda661e20760250d382f64b53f1",
     name: "USDC Vault",
     description: (
       <div>
@@ -50,6 +50,25 @@ export const VAULT_METADATA: Record<string, VaultMetadata> = {
     ),
     image: "/assets/tokens/USDC.png",
     queryParam: "usdc-vault",
+  },
+  ["0xe3bace2bef51f8fd9ed573754c7657a896eef2fc1305ba70cd8680c2c22bd018"]: {
+    id: "0xe3bace2bef51f8fd9ed573754c7657a896eef2fc1305ba70cd8680c2c22bd018",
+    name: "SUI Vault",
+    description: (
+      <div>
+        SUI Prime is a conservative lending strategy designed to deliver
+        consistent, risk-adjusted yields by allocating funds across highly
+        liquid markets and premium collateral.
+        <br />
+        <br />
+        Managed by Steakhouse Financial, this vault optimizes returns by lending
+        SUI against both core collateral markets (ain/JLP) and select
+        real-world asset (RWA) pools, dynamically adapting to market conditions
+        to ensure robust yield performance and capital preservation.
+      </div>
+    ),
+    image: "/assets/tokens/SUI.png",
+    queryParam: "sui-vault",
   },
 };
 
@@ -158,7 +177,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
   const { data: vaultHistory } = useFetchVaultHistory();
   const { data: userVaultHistory } = useFetchVaultHistory(undefined, address);
 
-  const { data: vaultData, isLoading: isLoadingVaultData } =
+  const { data: vaultData, isLoading: isLoadingVaultData, mutate: mutateVault } =
     useFetchVault(vaultId);
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
@@ -234,7 +253,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
             return acc;
           }, new BigNumber(0)) ?? new BigNumber(0);
         acc[vault.id] = vaultHistory?.length
-          ? vault.userSharesBalance.minus(netDepositAmount)
+          ? vault.userSharesToken.minus(netDepositAmount)
           : undefined;
         return acc;
       },
@@ -370,6 +389,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ),
           duration: TX_TOAST_DURATION,
         });
+        mutateVault();
       },
 
       deployFunds: async ({ vault, lendingMarketId, amount }) => {
@@ -413,7 +433,10 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ],
         });
 
-        const lendingMarketType = pricingMarket.type;
+        const lendingMarketType = resolvedAgg.find((m) => m.id === lendingMarketId)?.type;
+
+        if (!lendingMarketType) throw new Error("Lending market type not found");
+
         const obligationIndex = obligations.find(
           (o) => o.lendingMarketId === pricingMarket.id,
         )?.index;
@@ -449,6 +472,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ),
           duration: TX_TOAST_DURATION,
         });
+        mutateVault();
       },
 
       withdrawDeployedFunds: async ({
@@ -497,7 +521,10 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           ],
         });
 
-        const lendingMarketType = pricingMarket.type;
+        const lendingMarketType = resolvedAgg.find((m) => m.id === lendingMarketId)?.type;
+
+        if (!lendingMarketType) throw new Error("Lending market type not found");
+
         const obligationIndex = obligations.find(
           (o) => o.lendingMarketId === pricingMarket.id,
         )?.index;
@@ -560,27 +587,40 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
           );
         }
 
-        // Prepare Coin<T> of baseCoinType from user's coins
-        const coinsRes = await suiClient.getCoins({
-          owner: address,
-          coinType: vault.baseCoinType,
-          limit: 200,
-        });
-        const coins = coinsRes.data || [];
-        const amountU64 = BigInt(amountMinor);
-        let total: bigint = BigInt(0);
-        for (const c of coins) total += BigInt(c.balance);
-        if (total < amountU64)
-          throw new Error("Insufficient balance of base coin");
-        const primary = coins[0];
-        const primaryObj = transaction.object(primary.coinObjectId);
-        const others = coins
-          .slice(1)
-          .map((c) => transaction.object(c.coinObjectId));
-        if (others.length > 0) transaction.mergeCoins(primaryObj, others);
-        const [inputCoin] = transaction.splitCoins(primaryObj, [
-          transaction.pure.u64(amountMinor),
-        ]);
+        // Prepare Coin<T> of baseCoinType
+        // Special case: when base asset is SUI, source funds from the gas coin
+        // to avoid consuming every SUI coin as an input (which would leave no
+        // valid gas coin for the transaction).
+        const isBaseSui = vault.baseCoinType === NORMALIZED_SUI_COINTYPE;
+        let inputCoin: any;
+        if (isBaseSui) {
+          const split = transaction.splitCoins(transaction.gas, [
+            transaction.pure.u64(amountMinor),
+          ]);
+          inputCoin = split[0];
+        } else {
+          const coinsRes = await suiClient.getCoins({
+            owner: address,
+            coinType: vault.baseCoinType,
+            limit: 200,
+          });
+          const coins = coinsRes.data || [];
+          const amountU64 = BigInt(amountMinor);
+          let total: bigint = BigInt(0);
+          for (const c of coins) total += BigInt(c.balance);
+          if (total < amountU64)
+            throw new Error("Insufficient balance of base coin");
+          const primary = coins[0];
+          const primaryObj = transaction.object(primary.coinObjectId);
+          const others = coins
+            .slice(1)
+            .map((c) => transaction.object(c.coinObjectId));
+          if (others.length > 0) transaction.mergeCoins(primaryObj, others);
+          const split = transaction.splitCoins(primaryObj, [
+            transaction.pure.u64(amountMinor),
+          ]);
+          inputCoin = split[0];
+        }
 
         // Resolve market type once
         const marketType = vault.pricingLendingMarketType;
@@ -630,6 +670,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         );
 
         const res = await signExecuteAndWaitForTransaction(transaction);
+        mutateVault();
         return res;
       },
 

@@ -40,8 +40,7 @@ export default function VaultCard({ vault }: VaultCardProps) {
   }, [vault?.metadata?.queryParam]);
 
   const globalTvlAmountUsd = vault.deployedAmount
-    .plus(vault.undeployedAmount)
-    .times(appDataMainMarket.reserveMap[vault.baseCoinType].price);
+    .plus(vault.undeployedAmount);
   const hasPosition = vault.userSharesBalance.gt(0);
 
   const totalPnl = userPnls[vault.id];
@@ -120,19 +119,19 @@ export default function VaultCard({ vault }: VaultCardProps) {
                 horizontal
                 customChild={
                   <div className="flex flex-row items-baseline gap-2">
-                    <Tooltip title={`${formatUsd(vault.tvl, { exact: true })}`}>
-                      <TLabel>{formatUsd(vault.tvl)}</TLabel>
+                    <Tooltip title={`${formatUsd(vault.userSharesBalance, { exact: true })}`}>
+                      <TLabel>{formatUsd(vault.userSharesBalance)}</TLabel>
                     </Tooltip>
 
                     <Tooltip
-                      title={`${formatToken(vault.tvl, {
+                      title={`${formatToken(vault.userSharesToken, {
                         dp: appDataMainMarket.coinMetadataMap[
                           vault.baseCoinType
                         ].decimals,
                       })} ${appDataMainMarket.coinMetadataMap[vault.baseCoinType].symbol}`}
                     >
                       <TBody>
-                        {formatToken(vault.tvl, { exact: false })}{" "}
+                        {formatToken(vault.userSharesToken, { exact: false })}{" "}
                         {
                           appDataMainMarket.coinMetadataMap[vault.baseCoinType]
                             .symbol
@@ -155,12 +154,6 @@ export default function VaultCard({ vault }: VaultCardProps) {
                 label="Utilization"
                 value={`${formatPercent(vault.utilization.times(100), { dp: 1 })}`}
                 valueTooltip={`${formatPercent(vault.utilization.times(100), { dp: 6 })}`}
-                horizontal
-              />
-
-              <LabelWithValue
-                label="mNAV"
-                value={`${formatToken(vault.navPerShare, { dp: 2 })}x`}
                 horizontal
               />
             </div>

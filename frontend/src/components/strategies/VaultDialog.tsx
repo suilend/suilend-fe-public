@@ -20,6 +20,7 @@ import {
   formatInteger,
   formatPercent,
   formatToken,
+  formatUsd,
   isSui,
 } from "@suilend/sui-fe";
 import {
@@ -154,7 +155,7 @@ export default function VaultDialog({ vault, children }: VaultDialogProps) {
         {
           reason: "Withdraws cannot exceed deposits",
           isDisabled: true,
-          value: vault.userSharesBalance,
+          value: vault.userSharesToken,
         },
         {
           reason: `Insufficient liquidity to withdraw`,
@@ -166,7 +167,7 @@ export default function VaultDialog({ vault, children }: VaultDialogProps) {
       return result;
     }
   }, [
-    vault.userSharesBalance,
+    vault.userSharesToken,
     coinBalanceForReserve,
     selectedTab,
     vault.tvl,
@@ -471,18 +472,18 @@ export default function VaultDialog({ vault, children }: VaultDialogProps) {
                     <Download className="h-3 w-3 text-foreground" />
                     <Tooltip
                       title={
-                        !vault.userSharesBalance.isNaN() &&
-                        vault.userSharesBalance.gt(0)
-                          ? `${formatToken(vault.userSharesBalance, {
+                        !vault.userSharesToken.isNaN() &&
+                        vault.userSharesToken.gt(0)
+                          ? `${formatToken(vault.userSharesToken, {
                               dp: vault.baseCoinMetadata?.decimals ?? 0,
                             })} ${vault.baseCoinMetadata?.symbol}`
                           : undefined
                       }
                     >
                       <TBody className="text-xs">
-                        {vault.userSharesBalance.isNaN()
+                        {vault.userSharesToken.isNaN()
                           ? "-"
-                          : formatToken(vault.userSharesBalance, {
+                          : formatToken(vault.userSharesToken, {
                               exact: false,
                             })}{" "}
                         {vault.baseCoinMetadata?.symbol}
@@ -502,7 +503,7 @@ export default function VaultDialog({ vault, children }: VaultDialogProps) {
                   label="Vault TVL"
                   value={
                     <>
-                      {formatToken(vault.tvl)} {vault.baseCoinMetadata?.symbol}
+                      {formatUsd(vault.tvl)}
                     </>
                   }
                   horizontal

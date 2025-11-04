@@ -61,7 +61,7 @@ function AllocationBar({ vault }: AllocationBarProps) {
                     className="flex flex-row items-center justify-between gap-4"
                   >
                     <TLabelSans>Allocation</TLabelSans>
-                    <TBody>{seg.percent.toNumber()}%</TBody>
+                    <TBody>{formatPercent(seg.percent, { dp: 0 })}</TBody>
                   </div>
                   <div
                     key={seg.name}

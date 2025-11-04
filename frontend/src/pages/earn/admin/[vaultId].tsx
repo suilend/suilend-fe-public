@@ -435,6 +435,7 @@ function Page() {
                     if (!args.lendingMarketId)
                       throw new Error("Enter lending market ID and type");
                     await createObligation(args);
+
                   } catch (err: any) {
                     console.error("Create obligation error", err);
                     toast.error(err?.message || "Failed to create obligation");

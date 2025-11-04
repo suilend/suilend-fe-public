@@ -2,8 +2,6 @@ import useSWR from "swr";
 
 import { API_URL } from "@suilend/sui-fe/lib/constants";
 
-import { useLoadedAppContext } from "@/contexts/AppContext";
-
 export type FeeType =
   | "DepositFee"
   | "WithdrawalFee"
@@ -73,8 +71,6 @@ export default function useFetchVaultHistory(
   vaultId?: string,
   address?: string,
 ) {
-  const { allAppData } = useLoadedAppContext();
-
   const fetcher = async (): Promise<Record<string, VaultEvent[]>> => {
     const url = `${API_URL}/vaults/history?${new URLSearchParams({
       vaultId: vaultId ?? "",
@@ -103,7 +99,6 @@ export default function useFetchVaultHistory(
           "vaultHistory",
           vaultId,
           address ?? "",
-          allAppData.allLendingMarketData.length,
         ]
       : null,
     fetcher,

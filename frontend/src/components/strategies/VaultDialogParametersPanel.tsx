@@ -12,6 +12,7 @@ import { ParsedVault } from "@/fetchers/parseVault";
 import { cn } from "@/lib/utils";
 
 import AllocationBar from "./AllocationBar";
+import VaultChart from "./VaultChart";
 
 enum QueryParams {
   TAB = "parametersPanelTab",
@@ -40,7 +41,7 @@ function DetailsTabContent({ vault }: TabContentProps) {
           <AllocationBar vault={vault} />
         </div>
         <div className="flex flex-col gap-2">
-          <TBodySans>Historical data</TBodySans>
+          <VaultChart vaultId={vault.id} />
         </div>
       </div>
     </>
