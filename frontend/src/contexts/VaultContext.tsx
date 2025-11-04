@@ -191,7 +191,8 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
     uniqMarkets: { id: string; type: string }[],
   ) => {
     if (!uniqMarkets.length) return;
-    if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType) return;
+    if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType)
+      return;
 
     // Only crank if stale: now - last_cranked_ms > MAX_REWARDS_STALENESS_MS (1h)
     let shouldCrank = false;
@@ -201,11 +202,15 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         options: { showContent: true },
       });
       const lastCrankedMs = Number(
-        ((obj.data?.content as any)?.fields?.last_cranked_ms as string | number | undefined) ?? 0,
+        ((obj.data?.content as any)?.fields?.last_cranked_ms as
+          | string
+          | number
+          | undefined) ?? 0,
       );
       const now = Date.now();
       const MAX_REWARDS_STALENESS_MS = 3_600_000; // 1 hour
-      shouldCrank = !!lastCrankedMs && now - lastCrankedMs > MAX_REWARDS_STALENESS_MS;
+      shouldCrank =
+        !!lastCrankedMs && now - lastCrankedMs > MAX_REWARDS_STALENESS_MS;
     } catch {}
 
     if (!shouldCrank) return;
@@ -983,6 +988,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
       vaultHistory,
       userVaultHistory,
       userPnls,
+      appendCrankIfStale,
       mutateVaults,
       detectLendingMarketType,
       mutateVault,
