@@ -227,7 +227,15 @@ export default function ConnectedWalletDropdownMenu({
       }
       noItems={noItems}
       items={
-        <>
+        <div className="flex w-full flex-col gap-4">
+          {/* Disconnect */}
+          {hasDisconnectItem && (
+            <Button labelClassName="uppercase" onClick={disconnectWallet}>
+              Disconnect
+            </Button>
+          )}
+
+          {/* VIP */}
           {hasVipItem && (
             <div className="relative -mx-4 h-8 px-4">
               <div className="relative z-[2] flex h-full w-full flex-row items-center justify-between gap-2">
@@ -256,6 +264,7 @@ export default function ConnectedWalletDropdownMenu({
             </div>
           )}
 
+          {/* Net worth */}
           <div className="flex w-full flex-col gap-1">
             <div className="flex flex-row items-center justify-between gap-2">
               <TBodySans>Net worth</TBodySans>
@@ -383,138 +392,145 @@ export default function ConnectedWalletDropdownMenu({
               )}
           </div>
 
-          {hasDisconnectItem && (
-            <DropdownMenuItem className="mt-2" onClick={disconnectWallet}>
-              Disconnect
-            </DropdownMenuItem>
-          )}
-
+          {/* Accounts */}
           {hasAccounts && (
             <>
-              <Separator className="-mx-4 my-2" />
-              <TLabelSans>Accounts</TLabelSans>
+              <Separator className="-mx-4 w-auto" />
+              <div className="flex w-full flex-col gap-2">
+                <TLabelSans>Accounts</TLabelSans>
 
-              {!allAppData || !allUserData || !obligationMap ? (
-                <Skeleton className="h-[70px] w-full rounded-sm" />
-              ) : (
-                <div className="-mx-4 flex flex-col gap-px">
-                  {filteredAppData.map(
-                    (appData, appDataIndex, appDataArray) => {
-                      const userData = allUserData[appData.lendingMarket.id];
-                      const obligation =
-                        obligationMap[appData.lendingMarket.id];
+                {!allAppData || !allUserData || !obligationMap ? (
+                  <Skeleton className="h-[70px] w-full rounded-sm" />
+                ) : (
+                  <div className="-mx-4 flex flex-col gap-px">
+                    {filteredAppData.map(
+                      (appData, appDataIndex, appDataArray) => {
+                        const userData = allUserData[appData.lendingMarket.id];
+                        const obligation =
+                          obligationMap[appData.lendingMarket.id];
 
-                      return (
-                        <div key={appData.lendingMarket.id} className="w-full">
-                          <ParentLendingMarket
-                            id={`wallet-${appData.lendingMarket.id}`}
-                            lendingMarketId={appData.lendingMarket.id}
-                            count={formatInteger(userData.obligations.length)}
-                            noHeader={filteredAppData.length === 1}
+                        return (
+                          <div
+                            key={appData.lendingMarket.id}
+                            className="w-full"
                           >
-                            <div
-                              className={cn(
-                                "flex w-full flex-col gap-2 p-4",
-                                filteredAppData.length === 1 && "pt-0",
-                                appDataIndex === appDataArray.length - 1 &&
-                                  "pb-0",
-                              )}
+                            <ParentLendingMarket
+                              id={`wallet-${appData.lendingMarket.id}`}
+                              lendingMarketId={appData.lendingMarket.id}
+                              count={formatInteger(userData.obligations.length)}
+                              noHeader={filteredAppData.length === 1}
                             >
-                              {userData.obligations.map((o, oIndex) => (
-                                <DropdownMenuItem
-                                  key={o.id}
-                                  className="flex flex-col items-start gap-1"
-                                  isSelected={o.id === obligation?.id}
-                                  onClick={() =>
-                                    setObligationId(
-                                      appData.lendingMarket.id,
-                                      o.id,
-                                    )
-                                  }
-                                >
-                                  <div className="flex w-full flex-row justify-between">
-                                    <div className="flex flex-row items-center gap-1">
-                                      <TLabelSans className="text-foreground">
-                                        Account {oIndex + 1}
-                                      </TLabelSans>
+                              <div
+                                className={cn(
+                                  "flex w-full flex-col gap-2 p-4",
+                                  filteredAppData.length === 1 && "pt-0",
+                                  appDataIndex === appDataArray.length - 1 &&
+                                    "pb-0",
+                                )}
+                              >
+                                {userData.obligations.map((o, oIndex) => (
+                                  <DropdownMenuItem
+                                    key={o.id}
+                                    className="flex flex-col items-start gap-1"
+                                    isSelected={o.id === obligation?.id}
+                                    onClick={() =>
+                                      setObligationId(
+                                        appData.lendingMarket.id,
+                                        o.id,
+                                      )
+                                    }
+                                  >
+                                    <div className="flex w-full flex-row justify-between">
+                                      <div className="flex flex-row items-center gap-1">
+                                        <TLabelSans className="text-foreground">
+                                          Account {oIndex + 1}
+                                        </TLabelSans>
 
-                                      <OpenOnExplorerButton
-                                        className="h-4 w-4 hover:bg-transparent"
-                                        iconClassName="w-3 h-3"
-                                        url={explorer.buildObjectUrl(o.id)}
-                                      />
+                                        <OpenOnExplorerButton
+                                          className="h-4 w-4 hover:bg-transparent"
+                                          iconClassName="w-3 h-3"
+                                          url={explorer.buildObjectUrl(o.id)}
+                                        />
+                                      </div>
+
+                                      <TLabelSans>
+                                        {o.positionCount} position
+                                        {o.positionCount !== 1 ? "s" : ""}
+                                      </TLabelSans>
                                     </div>
 
-                                    <TLabelSans>
-                                      {o.positionCount} position
-                                      {o.positionCount !== 1 ? "s" : ""}
-                                    </TLabelSans>
-                                  </div>
+                                    <div className="flex w-full flex-row justify-between">
+                                      <TLabelSans>
+                                        {formatUsd(o.depositedAmountUsd)}{" "}
+                                        deposited
+                                      </TLabelSans>
+                                      <TLabelSans>
+                                        {formatUsd(o.borrowedAmountUsd)}{" "}
+                                        borrowed
+                                      </TLabelSans>
+                                    </div>
 
-                                  <div className="flex w-full flex-row justify-between">
-                                    <TLabelSans>
-                                      {formatUsd(o.depositedAmountUsd)}{" "}
-                                      deposited
-                                    </TLabelSans>
-                                    <TLabelSans>
-                                      {formatUsd(o.borrowedAmountUsd)} borrowed
-                                    </TLabelSans>
-                                  </div>
-
-                                  <div className="mt-2 w-full">
-                                    <UtilizationBar obligation={o} noTooltip />
-                                  </div>
-                                </DropdownMenuItem>
-                              ))}
-                            </div>
-                          </ParentLendingMarket>
-                        </div>
-                      );
-                    },
-                  )}
-                </div>
-              )}
-            </>
-          )}
-
-          {hasWallets && (
-            <>
-              <Separator className="-mx-4 my-2" />
-              <TLabelSans>Wallets</TLabelSans>
-
-              {accounts.map((a) => (
-                <DropdownMenuItem
-                  key={a.address}
-                  className="flex flex-col items-start gap-1"
-                  isSelected={a.address === address}
-                  onClick={() =>
-                    switchAccount(a, addressNameServiceNameMap[a.address])
-                  }
-                >
-                  <div className="flex w-full flex-row items-center justify-between gap-2">
-                    <TLabel
-                      className={cn(
-                        "uppercase text-foreground",
-                        addressNameServiceNameMap[a.address]
-                          ? "overflow-hidden text-ellipsis text-nowrap"
-                          : "shrink-0",
-                      )}
-                    >
-                      {addressNameServiceNameMap[a.address] ??
-                        formatAddress(a.address)}
-                    </TLabel>
-
-                    {a.label && (
-                      <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
-                        {a.label}
-                      </TLabelSans>
+                                    <div className="mt-2 w-full">
+                                      <UtilizationBar
+                                        obligation={o}
+                                        noTooltip
+                                      />
+                                    </div>
+                                  </DropdownMenuItem>
+                                ))}
+                              </div>
+                            </ParentLendingMarket>
+                          </div>
+                        );
+                      },
                     )}
                   </div>
-                </DropdownMenuItem>
-              ))}
+                )}
+              </div>
             </>
           )}
-        </>
+
+          {/* Wallets */}
+          {hasWallets && (
+            <>
+              <Separator className="-mx-4 w-auto" />
+              <div className="flex w-full flex-col gap-2">
+                <TLabelSans>Wallets</TLabelSans>
+
+                {accounts.map((a) => (
+                  <DropdownMenuItem
+                    key={a.address}
+                    className="flex flex-col items-start gap-1"
+                    isSelected={a.address === address}
+                    onClick={() =>
+                      switchAccount(a, addressNameServiceNameMap[a.address])
+                    }
+                  >
+                    <div className="flex w-full flex-row items-center justify-between gap-2">
+                      <TLabel
+                        className={cn(
+                          "uppercase text-foreground",
+                          addressNameServiceNameMap[a.address]
+                            ? "overflow-hidden text-ellipsis text-nowrap"
+                            : "shrink-0",
+                        )}
+                      >
+                        {addressNameServiceNameMap[a.address] ??
+                          formatAddress(a.address)}
+                      </TLabel>
+
+                      {a.label && (
+                        <TLabelSans className="overflow-hidden text-ellipsis text-nowrap">
+                          {a.label}
+                        </TLabelSans>
+                      )}
+                    </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       }
     />
   );
