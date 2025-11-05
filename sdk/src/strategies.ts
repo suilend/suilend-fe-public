@@ -2305,9 +2305,9 @@ export const strategyUnloopToExposureTx = async (
       );
 
       // 2.2) Swap
-      let baseCoin: TransactionObjectArgument;
+      let swapCoin: TransactionObjectArgument;
       try {
-        baseCoin = await cetusSdk.fixableRouterSwapV3({
+        swapCoin = await cetusSdk.fixableRouterSwapV3({
           router: routers,
           inputCoin: withdrawnRemainingLstCoin,
           slippage: 100 / 100,
@@ -2320,7 +2320,7 @@ export const strategyUnloopToExposureTx = async (
 
       // 3) Deposit base
       strategyDeposit(
-        baseCoin,
+        swapCoin,
         depositReserves.base.coinType,
         strategyOwnerCapId,
         suilendClient.findReserveArrayIndex(depositReserves.base.coinType),
@@ -2390,7 +2390,8 @@ export const strategyUnloopToExposureTx = async (
       fullRepaymentAmount.times(borrowReserve.price),
     )
       .div(depositReserves.base.price)
-      .times(1.03); // 3% buffer
+      .times(1.03) // 3% buffer
+      .decimalPlaces(depositReserves.base.token.decimals, BigNumber.ROUND_UP);
 
     console.log(
       `[unloopStrategyToExposure.fullyRepayBorrowsUsingBase] withdraw_base |`,
@@ -2477,9 +2478,9 @@ export const strategyUnloopToExposureTx = async (
     );
 
     // 3.2) Swap
-    let borrowCoin: TransactionObjectArgument;
+    let swapCoin: TransactionObjectArgument;
     try {
-      borrowCoin = await cetusSdk.fixableRouterSwapV3({
+      swapCoin = await cetusSdk.fixableRouterSwapV3({
         router: routers,
         inputCoin: withdrawnBaseCoin,
         slippage: 1 / 100,
@@ -2511,10 +2512,10 @@ export const strategyUnloopToExposureTx = async (
       suilendClient.repay(
         obligationId,
         borrowReserve.coinType,
-        borrowCoin,
+        swapCoin,
         txCopy,
       );
-      txCopy.transferObjects([borrowCoin], _address); // Transfer remaining borrow to user
+      txCopy.transferObjects([swapCoin], _address); // Transfer remaining to user
 
       await dryRunTransaction(txCopy); // Throws error if fails
       transaction = txCopy;
@@ -2522,7 +2523,7 @@ export const strategyUnloopToExposureTx = async (
       // Don't block user if fails
       console.error(err);
 
-      transaction.transferObjects([borrowCoin], _address); // Transfer borrow to user
+      transaction.transferObjects([swapCoin], _address); // Transfer to user
     }
 
     // 4.2) Update state
@@ -2546,7 +2547,7 @@ export const strategyUnloopToExposureTx = async (
       ),
     );
 
-    // 5) Swap remaining borrow to base and redeposit (not possible because coin is a mutable reference (?))
+    // 5) Swap remaining to base and redeposit (not possible because coin is a mutable reference (?))
   };
 
   for (let i = 0; i < 30; i++) {
@@ -3889,6 +3890,282 @@ export const strategyMaxWithdrawTx = async (
   return { deposits, borrowedAmount, transaction };
 };
 
+export const strategyAdjustRepayTx = async (
+  // AppContext
+  reserveMap: Record<string, ParsedReserve>,
+
+  // Strategy
+  lstMap: StrategyLstMap,
+  strategyType: StrategyType,
+
+  suiClient: SuiClient,
+  suilendClient: SuilendClient,
+  cetusSdk: CetusSdk,
+  cetusPartnerId: string,
+
+  _address: string,
+  strategyOwnerCapId: TransactionObjectInput,
+  obligationId: string,
+  _deposits: StrategyDeposit[],
+  _borrowedAmount: BigNumber,
+  flashLoanBorrowedAmount: BigNumber,
+  transaction: Transaction,
+  dryRunTransaction: (
+    transaction: Transaction,
+    setGasBudget?: boolean,
+  ) => Promise<DevInspectResults>,
+): Promise<{
+  deposits: StrategyDeposit[];
+  borrowedAmount: BigNumber;
+  transaction: Transaction;
+}> => {
+  const strategyInfo = STRATEGY_TYPE_INFO_MAP[strategyType];
+  const lst =
+    strategyInfo.depositLstCoinType !== undefined
+      ? lstMap[strategyInfo.depositLstCoinType]
+      : undefined;
+
+  const depositReserves = getStrategyDepositReserves(reserveMap, strategyType);
+  const borrowReserve = getStrategyBorrowReserve(reserveMap, strategyType);
+  const defaultCurrencyReserve = getStrategyDefaultCurrencyReserve(
+    reserveMap,
+    strategyType,
+  );
+
+  const adjustRepayExposure = STRATEGY_TYPE_EXPOSURE_MAP[strategyType].min;
+
+  console.log(
+    `[strategyAdjustRepay] args |`,
+    JSON.stringify(
+      {
+        _address,
+        strategyOwnerCapId,
+        obligationId,
+        _deposits: _deposits.map((d) => ({
+          coinType: d.coinType,
+          depositedAmount: d.depositedAmount.toFixed(20),
+        })),
+        _borrowedAmount: _borrowedAmount.toFixed(20),
+        flashLoanBorrowedAmount: flashLoanBorrowedAmount.toFixed(20),
+      },
+      null,
+      2,
+    ),
+  );
+
+  // const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
+  if (!depositReserves.base) throw new Error("Base reserve not found");
+
+  //
+
+  let deposits = cloneDeep(_deposits);
+  let borrowedAmount = _borrowedAmount;
+
+  // 1) Flash loan base
+  const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
+
+  let borrowedBalanceA, borrowedBalanceB, receipt;
+  if (flashLoanObj.provider === StrategyFlashLoanProvider.MMT) {
+    [borrowedBalanceA, borrowedBalanceB, receipt] = transaction.moveCall({
+      target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_loan`,
+      typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+      arguments: [
+        transaction.object(flashLoanObj.poolId),
+        transaction.pure.u64(
+          flashLoanObj.borrowA
+            ? flashLoanBorrowedAmount
+                .times(10 ** depositReserves.base.token.decimals)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString()
+            : 0,
+        ),
+        transaction.pure.u64(
+          flashLoanObj.borrowA
+            ? 0
+            : flashLoanBorrowedAmount
+                .times(10 ** depositReserves.base.token.decimals)
+                .integerValue(BigNumber.ROUND_DOWN)
+                .toString(),
+        ),
+        transaction.object(MMT_VERSION_OBJECT_ID),
+      ],
+    });
+  } else {
+    throw new Error("Invalid flash loan provider");
+  }
+
+  const flashLoanBorrowedCoin: any = transaction.moveCall({
+    target: "0x2::coin::from_balance",
+    typeArguments: [
+      flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
+    ],
+    arguments: [flashLoanObj.borrowA ? borrowedBalanceA : borrowedBalanceB],
+  });
+
+  // 2) Swap flash loaned base for borrow
+  // 2.1) Get routers
+  const routers = await cetusSdk.findRouters({
+    from: depositReserves.base.coinType,
+    target: borrowReserve.coinType,
+    amount: new BN(
+      flashLoanBorrowedAmount
+        .times(10 ** depositReserves.base.token.decimals)
+        .integerValue(BigNumber.ROUND_DOWN)
+        .toString(),
+    ),
+    byAmountIn: true,
+  });
+  if (!routers) throw new Error("No swap quote found");
+
+  console.log(
+    `[strategyAdjustRepay] swap_flash_loan_base_for_borrows.get_routers`,
+    {
+      routers,
+      amountIn: new BigNumber(routers.amountIn.toString())
+        .div(10 ** depositReserves.base.token.decimals)
+        .decimalPlaces(
+          depositReserves.base.token.decimals,
+          BigNumber.ROUND_DOWN,
+        )
+        .toFixed(20),
+      amountOut: new BigNumber(routers.amountOut.toString())
+        .div(10 ** borrowReserve.token.decimals)
+        .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_DOWN)
+        .toFixed(20),
+    },
+  );
+
+  // 2.2) Swap
+  let swapCoin: TransactionObjectArgument;
+  try {
+    swapCoin = await cetusSdk.fixableRouterSwapV3({
+      router: routers,
+      inputCoin: flashLoanBorrowedCoin,
+      slippage: 1 / 100,
+      txb: transaction,
+      partner: cetusPartnerId,
+    });
+  } catch (err) {
+    throw new Error("No swap quote found");
+  }
+
+  // 3) Fully repay borrows
+  // 3.1) Repay
+  suilendClient.repay(
+    obligationId,
+    borrowReserve.coinType,
+    swapCoin,
+    transaction,
+  );
+  transaction.transferObjects([swapCoin], _address); // Transfer remaining to user
+
+  // 3.2) Update state
+  borrowedAmount = new BigNumber(0);
+
+  console.log(
+    `[strategyAdjustRepay] repay_borrows.update_state |`,
+    JSON.stringify(
+      {
+        deposits: deposits.map((d) => ({
+          coinType: d.coinType,
+          depositedAmount: d.depositedAmount.toFixed(20),
+        })),
+        borrowedAmount: borrowedAmount.toFixed(20),
+      },
+      null,
+      2,
+    ),
+  );
+
+  // 4) Swap remaining to base and redeposit (not possible because coin is a mutable reference (?))
+
+  // 5) Repay flash loan + fee
+  const receiptDebts = transaction.moveCall({
+    target: `${MMT_CONTRACT_PACKAGE_ID}::trade::flash_receipt_debts`,
+    typeArguments: [],
+    arguments: [receipt],
+  });
+  const dryRunResults = await dryRunTransaction(transaction);
+  const flashLoanRepayAmount = new BigNumber(
+    bcs
+      .u64()
+      .parse(
+        new Uint8Array(
+          dryRunResults.results?.find(
+            (r, index) => index === receiptDebts.Result,
+          )?.returnValues?.[flashLoanObj.borrowA ? 0 : 1][0] ?? [0],
+        ),
+      ),
+  )
+    .div(10 ** depositReserves.base.token.decimals)
+    .decimalPlaces(depositReserves.base.token.decimals, BigNumber.ROUND_UP);
+
+  // 5.1) Withdraw base + fee
+  const withdrawnAmount = flashLoanRepayAmount;
+
+  const {
+    deposits: newDeposits2,
+    borrowedAmount: newBorrowedAmount2,
+    transaction: newTransaction2,
+    withdrawnCoin,
+  } = await strategyWithdrawTx(
+    reserveMap,
+    lstMap,
+    strategyType,
+
+    suiClient,
+    suilendClient,
+    cetusSdk,
+    cetusPartnerId,
+
+    _address,
+    strategyOwnerCapId,
+    obligationId,
+    deposits,
+    borrowedAmount,
+    {
+      coinType: depositReserves.base.coinType,
+      withdrawnAmount,
+    },
+    transaction,
+    dryRunTransaction,
+    true, // returnWithdrawnCoin
+  );
+  if (!withdrawnCoin) throw new Error("Withdrawn coin not found");
+
+  // 5.2) Update state
+  deposits = newDeposits2;
+  borrowedAmount = newBorrowedAmount2;
+  transaction = newTransaction2;
+
+  // 5.3) Repay flash loan
+  const flashLoanRepayCoin = withdrawnCoin;
+  const flashLoanRepayBalance = transaction.moveCall({
+    target: "0x2::coin::into_balance",
+    typeArguments: [
+      flashLoanObj.borrowA ? flashLoanObj.coinTypeA : flashLoanObj.coinTypeB,
+    ],
+    arguments: [flashLoanRepayCoin],
+  });
+  if (flashLoanObj.provider === StrategyFlashLoanProvider.MMT) {
+    transaction.moveCall({
+      target: `${MMT_CONTRACT_PACKAGE_ID}::trade::repay_flash_loan`,
+      typeArguments: [flashLoanObj.coinTypeA, flashLoanObj.coinTypeB],
+      arguments: [
+        transaction.object(flashLoanObj.poolId),
+        receipt,
+        flashLoanObj.borrowA ? flashLoanRepayBalance : borrowedBalanceA,
+        flashLoanObj.borrowA ? borrowedBalanceB : flashLoanRepayBalance,
+        transaction.object(MMT_VERSION_OBJECT_ID),
+      ],
+    });
+  } else {
+    throw new Error("Invalid flash loan provider");
+  }
+
+  return { deposits, borrowedAmount, transaction };
+};
+
 export const strategyDepositAdjustWithdrawTx = async (
   // AppContext
   reserveMap: Record<string, ParsedReserve>,
@@ -3960,7 +4237,7 @@ export const strategyDepositAdjustWithdrawTx = async (
   let deposits = cloneDeep(_deposits);
   let borrowedAmount = _borrowedAmount;
 
-  // 1) Flash loan borrow
+  // 1) Flash loan base/LST
   const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
 
   if (depositReserve.coinType === depositReserves.lst?.coinType) {

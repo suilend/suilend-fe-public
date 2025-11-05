@@ -27,6 +27,7 @@ import {
   STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP,
   StrategyDeposit,
   StrategyWithdraw,
+  strategyAdjustRepayTx as _adjustRepayTx,
   strategyAdjustTx as _adjustTx,
   strategyDepositAdjustWithdrawTx as _depositAdjustWithdrawTx,
   strategyDepositAndLoopToExposureTx as _depositAndLoopToExposureTx,
@@ -219,16 +220,78 @@ export default function LstStrategyDialog({
   );
 
   // Tabs
-  const canAdjust = getHealthPercent(
-    strategyType,
+  const adjustType: "repay" | "flashLoan" | "normal" = useMemo(() => {
+    if (
+      depositReserves.base !== undefined &&
+      (
+        obligation?.deposits.find(
+          (d) => d.coinType === depositReserves.base!.coinType,
+        )?.depositedAmount ?? new BigNumber(0)
+      ).gt(0) &&
+      (
+        obligation?.deposits.find(
+          (d) => d.coinType === depositReserves.lst!.coinType,
+        )?.depositedAmount ?? new BigNumber(0)
+      ).eq(0) &&
+      (
+        obligation?.borrows.find((b) => b.coinType === borrowReserve.coinType)
+          ?.borrowedAmount ?? new BigNumber(0)
+      ).gt(0)
+    )
+      return "repay"; // E.g. USDC deposits + SUI borrows, no sSUI deposits
+    if (
+      !getHealthPercent(
+        strategyType,
+        obligation,
+        !!obligation && hasPosition(obligation)
+          ? getExposure(strategyType, obligation)
+          : new BigNumber(1),
+      ).eq(100)
+    )
+      return "flashLoan";
+    return "normal";
+  }, [
+    depositReserves.base,
     obligation,
-    !!obligation && hasPosition(obligation)
-      ? getExposure(strategyType, obligation)
-      : new BigNumber(1),
-  ).eq(100);
+    depositReserves.lst,
+    borrowReserve.coinType,
+    getHealthPercent,
+    strategyType,
+    hasPosition,
+    getExposure,
+  ]);
+
+  const adjustRepayFlashLoanAmount = useMemo(() => {
+    if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
+    if (adjustType !== "repay") return new BigNumber(0);
+
+    const fullRepaymentAmount = obligation.borrows[0].borrowedAmount
+      .times(1.01) // 1% buffer
+      .decimalPlaces(borrowReserve.token.decimals, BigNumber.ROUND_UP);
+    const baseWithdrawnAmount = new BigNumber(
+      fullRepaymentAmount.times(borrowReserve.price),
+    )
+      .div(depositReserves.base!.price)
+      .times(1.03) // 3% buffer
+      .decimalPlaces(depositReserves.base!.token.decimals, BigNumber.ROUND_UP);
+
+    console.log("XXX [adjustRepayFlashLoanAmount]", {
+      fullRepaymentAmount: fullRepaymentAmount.toFixed(20),
+      baseWithdrawnAmount: baseWithdrawnAmount.toFixed(20),
+    });
+
+    return baseWithdrawnAmount;
+  }, [
+    obligation,
+    hasPosition,
+    adjustType,
+    borrowReserve.token.decimals,
+    borrowReserve.price,
+    depositReserves.base,
+  ]);
   const depositAdjustWithdrawAdditionalDepositedAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
-    if (canAdjust) return new BigNumber(0);
+    if (adjustType !== "flashLoan") return new BigNumber(0);
 
     const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
@@ -294,7 +357,6 @@ export default function LstStrategyDialog({
     const additionalDepositedAmount = targetDepositedAmount
       .minus(depositedAmount)
       .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
-
     console.log("XXX [depositAdjustWithdrawAdditionalDepositedAmount]", {
       depositedAmount: depositedAmount.toFixed(20),
       targetDepositedAmount1: targetDepositedAmount1.toFixed(20),
@@ -310,7 +372,7 @@ export default function LstStrategyDialog({
   }, [
     obligation,
     hasPosition,
-    canAdjust,
+    adjustType,
     depositReserves.base,
     depositReserves.lst,
     getSimulatedObligation,
@@ -481,6 +543,7 @@ export default function LstStrategyDialog({
         : new BigNumber(depositSliderValue),
     [obligation, hasPosition, getExposure, strategyType, depositSliderValue],
   );
+  const adjustRepayExposure = useMemo(() => minExposure, [minExposure]);
   const depositAdjustWithdrawExposure = useMemo(
     () => maxExposure,
     [maxExposure],
@@ -932,6 +995,11 @@ export default function LstStrategyDialog({
 
   // Stats - Health
   const healthPercent = getHealthPercent(strategyType, obligation, exposure);
+  const adjustRepayHealthPercent = getHealthPercent(
+    strategyType,
+    undefined,
+    adjustRepayExposure,
+  );
   const depositAdjustWithdrawHealthPercent = getHealthPercent(
     strategyType,
     undefined,
@@ -949,6 +1017,11 @@ export default function LstStrategyDialog({
     obligation,
     exposure,
   );
+  const adjustRepayLiquidationPrice = getLiquidationPrice(
+    strategyType,
+    undefined,
+    adjustRepayExposure,
+  );
   const depositAdjustWithdrawLiquidationPrice = getLiquidationPrice(
     strategyType,
     undefined,
@@ -962,6 +1035,11 @@ export default function LstStrategyDialog({
 
   // Stats - APR
   const aprPercent = getAprPercent(strategyType, obligation, exposure);
+  const adjustRepayAprPercent = getAprPercent(
+    strategyType,
+    undefined,
+    adjustRepayExposure,
+  );
   const depositAdjustWithdrawAprPercent = getAprPercent(
     strategyType,
     undefined,
@@ -1126,6 +1204,20 @@ export default function LstStrategyDialog({
     currencyReserve.token.decimals,
   ]);
 
+  const adjustRepayFeesAmount = useMemo(() => {
+    if (adjustType !== "repay") return new BigNumber(0);
+
+    const flashLoanObj = STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP[strategyType];
+
+    return adjustRepayFlashLoanAmount
+      .times(flashLoanObj.feePercent / 100)
+      .decimalPlaces(depositReserves.base!.token.decimals, BigNumber.ROUND_UP);
+  }, [
+    adjustType,
+    strategyType,
+    adjustRepayFlashLoanAmount,
+    depositReserves.base,
+  ]);
   const depositAdjustWithdrawFeesAmount = useMemo(() => {
     const depositReserve = (depositReserves.base ?? depositReserves.lst)!; // Must have LST if no base
 
@@ -1141,7 +1233,6 @@ export default function LstStrategyDialog({
     strategyType,
     depositAdjustWithdrawAdditionalDepositedAmount,
   ]);
-
   const adjustFeesAmount = useMemo(() => {
     if (!obligation || !hasPosition(obligation)) return new BigNumber(0);
 
@@ -1202,7 +1293,13 @@ export default function LstStrategyDialog({
   // Submit
   const getSubmitButtonNoValueState = (): SubmitButtonState | undefined => {
     if (selectedTab === Tab.DEPOSIT || selectedTab === Tab.WITHDRAW) {
-      if (!canAdjust)
+      if (adjustType === "repay")
+        return {
+          isDisabled: true,
+          title: "Disabled until all borrows are repaid",
+          description: "Please adjust your leverage",
+        };
+      else if (adjustType === "flashLoan")
         return {
           isDisabled: true,
           title: "Disabled until back at 100% health",
@@ -1323,9 +1420,9 @@ export default function LstStrategyDialog({
         return { isDisabled: true, title: "Enter a +ve amount" };
       if (new BigNumber(value).eq(0))
         return { isDisabled: true, title: "Enter a non-zero amount" };
-    } else if (selectedTab === Tab.ADJUST && !canAdjust) {
+    } else if (selectedTab === Tab.ADJUST && adjustType !== "normal") {
       // N/A
-    } else if (selectedTab === Tab.ADJUST && canAdjust) {
+    } else if (selectedTab === Tab.ADJUST && adjustType === "normal") {
       // N/A
     }
 
@@ -1345,9 +1442,11 @@ export default function LstStrategyDialog({
                 trimTrailingZeros: true,
               })} ${currencyReserve.token.symbol}`
             : selectedTab === Tab.ADJUST
-              ? `Adjust leverage to ${(!canAdjust
-                  ? depositAdjustWithdrawExposure
-                  : adjustExposure
+              ? `Adjust leverage to ${(adjustType === "repay"
+                  ? adjustRepayExposure
+                  : adjustType === "flashLoan"
+                    ? depositAdjustWithdrawExposure
+                    : adjustExposure
                 ).toFixed(1)}x`
               : "--", // Should not happen
     };
@@ -1455,6 +1554,39 @@ export default function LstStrategyDialog({
       _deposits,
       _borrowedAmount,
       withdrawCoinType,
+      transaction,
+      dryRunTransaction,
+    );
+
+  const adjustRepayTx = async (
+    _address: string,
+    strategyOwnerCapId: TransactionObjectInput,
+    obligationId: string,
+    _deposits: StrategyDeposit[],
+    _borrowedAmount: BigNumber,
+    flashLoanBorrowedAmount: BigNumber,
+    transaction: Transaction,
+  ): Promise<{
+    deposits: StrategyDeposit[];
+    borrowedAmount: BigNumber;
+    transaction: Transaction;
+  }> =>
+    _adjustRepayTx(
+      appDataMainMarket.reserveMap,
+      lstMap,
+      strategyType,
+
+      suiClient,
+      appDataMainMarket.suilendClient,
+      cetusSdk,
+      CETUS_PARTNER_ID,
+
+      _address,
+      strategyOwnerCapId,
+      obligationId,
+      _deposits,
+      _borrowedAmount,
+      flashLoanBorrowedAmount,
       transaction,
       dryRunTransaction,
     );
@@ -2018,13 +2150,28 @@ export default function LstStrategyDialog({
         if (!strategyOwnerCap || !obligation)
           throw Error("StrategyOwnerCap or Obligation not found");
 
-        // 3) Deposit-adjust-withdraw or adjust
+        // 3) Repay, deposit-adjust-withdraw, or adjust
         const prevExposure = exposure;
-        const newExposure = !canAdjust
-          ? depositAdjustWithdrawExposure
-          : adjustExposure;
+        const newExposure =
+          adjustType === "repay"
+            ? adjustRepayExposure
+            : adjustType === "flashLoan"
+              ? depositAdjustWithdrawExposure
+              : adjustExposure;
 
-        if (!canAdjust) {
+        if (adjustType === "repay") {
+          // Repay
+          const { transaction: adjustRepayTransaction } = await adjustRepayTx(
+            address,
+            strategyOwnerCap.id,
+            obligation.id,
+            obligation.deposits,
+            obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
+            adjustRepayFlashLoanAmount,
+            transaction,
+          );
+          transaction = adjustRepayTransaction;
+        } else if (adjustType === "flashLoan") {
           // Deposit-adjust-withdraw
           const { transaction: depositAdjustWithdrawTransaction } =
             await depositAdjustWithdrawTx(
@@ -2073,9 +2220,11 @@ export default function LstStrategyDialog({
         });
 
         toast.success(
-          `Adjusted leverage to ${(!canAdjust
-            ? depositAdjustWithdrawExposure
-            : adjustExposure
+          `Adjusted leverage to ${(adjustType === "repay"
+            ? adjustRepayExposure
+            : adjustType === "flashLoan"
+              ? depositAdjustWithdrawExposure
+              : adjustExposure
           ).toFixed(1)}x`,
           {
             action: (
@@ -2375,7 +2524,7 @@ export default function LstStrategyDialog({
             {/* Exposure */}
             {((selectedTab === Tab.DEPOSIT &&
               (!obligation || !hasPosition(obligation))) ||
-              (selectedTab === Tab.ADJUST && canAdjust)) && (
+              (selectedTab === Tab.ADJUST && adjustType === "normal")) && (
               <div className="flex w-full flex-col gap-2">
                 {/* Slider */}
                 <div className="relative flex h-4 w-full flex-row items-center">
@@ -2477,12 +2626,19 @@ export default function LstStrategyDialog({
                       {exposure.toFixed(selectedTab === Tab.ADJUST ? 6 : 1)}x
                       {selectedTab === Tab.ADJUST &&
                         `${exposure.toFixed(6)}x` !==
-                          `${(!canAdjust ? depositAdjustWithdrawExposure : adjustExposure).toFixed(1)}x` && (
-                          <>
-                            <FromToArrow />
-                            {(!canAdjust
+                          `${(adjustType === "repay"
+                            ? adjustRepayExposure
+                            : adjustType === "flashLoan"
                               ? depositAdjustWithdrawExposure
                               : adjustExposure
+                          ).toFixed(1)}x` && (
+                          <>
+                            <FromToArrow />
+                            {(adjustType === "repay"
+                              ? adjustRepayExposure
+                              : adjustType === "flashLoan"
+                                ? depositAdjustWithdrawExposure
+                                : adjustExposure
                             ).toFixed(1)}
                             x
                           </>
@@ -2505,16 +2661,20 @@ export default function LstStrategyDialog({
                       {selectedTab === Tab.ADJUST &&
                         formatPercent(aprPercent) !==
                           formatPercent(
-                            !canAdjust
-                              ? depositAdjustWithdrawAprPercent
-                              : adjustAprPercent,
+                            adjustType === "repay"
+                              ? adjustRepayAprPercent
+                              : adjustType === "flashLoan"
+                                ? depositAdjustWithdrawAprPercent
+                                : adjustAprPercent,
                           ) && (
                           <>
                             <FromToArrow />
                             {formatPercent(
-                              !canAdjust
-                                ? depositAdjustWithdrawAprPercent
-                                : adjustAprPercent,
+                              adjustType === "repay"
+                                ? adjustRepayAprPercent
+                                : adjustType === "flashLoan"
+                                  ? depositAdjustWithdrawAprPercent
+                                  : adjustAprPercent,
                             )}
                           </>
                         )}
@@ -2533,18 +2693,22 @@ export default function LstStrategyDialog({
                       {selectedTab === Tab.ADJUST &&
                         formatNumber(healthPercent, { dp: 2 }) !==
                           formatNumber(
-                            !canAdjust
-                              ? depositAdjustWithdrawHealthPercent
-                              : adjustHealthPercent,
-                            { dp: !canAdjust ? 2 : 0 },
+                            adjustType === "repay"
+                              ? adjustRepayHealthPercent
+                              : adjustType === "flashLoan"
+                                ? depositAdjustWithdrawHealthPercent
+                                : adjustHealthPercent,
+                            { dp: adjustType !== "normal" ? 2 : 0 },
                           ) && (
                           <>
                             <FromToArrow />
                             {formatPercent(
-                              !canAdjust
-                                ? depositAdjustWithdrawHealthPercent
-                                : adjustHealthPercent,
-                              { dp: !canAdjust ? 2 : 0 },
+                              adjustType === "repay"
+                                ? adjustRepayHealthPercent
+                                : adjustType === "flashLoan"
+                                  ? depositAdjustWithdrawHealthPercent
+                                  : adjustHealthPercent,
+                              { dp: adjustType !== "normal" ? 2 : 0 },
                             )}
                           </>
                         )}
@@ -2577,24 +2741,32 @@ export default function LstStrategyDialog({
                           (liquidationPrice !== null
                             ? formatUsd(liquidationPrice)
                             : "--") !==
-                            ((!canAdjust
-                              ? depositAdjustWithdrawLiquidationPrice
-                              : adjustLiquidationPrice) !== null
+                            ((adjustType === "repay"
+                              ? adjustRepayLiquidationPrice
+                              : adjustType === "flashLoan"
+                                ? depositAdjustWithdrawLiquidationPrice
+                                : adjustLiquidationPrice) !== null
                               ? formatUsd(
-                                  (!canAdjust
-                                    ? depositAdjustWithdrawLiquidationPrice
-                                    : adjustLiquidationPrice)!,
+                                  (adjustType === "repay"
+                                    ? adjustRepayLiquidationPrice
+                                    : adjustType === "flashLoan"
+                                      ? depositAdjustWithdrawLiquidationPrice
+                                      : adjustLiquidationPrice)!,
                                 )
                               : "--") && (
                             <>
                               <FromToArrow />
-                              {(!canAdjust
-                                ? depositAdjustWithdrawLiquidationPrice
-                                : adjustLiquidationPrice) !== null
+                              {(adjustType === "repay"
+                                ? adjustRepayLiquidationPrice
+                                : adjustType === "flashLoan"
+                                  ? depositAdjustWithdrawLiquidationPrice
+                                  : adjustLiquidationPrice) !== null
                                 ? formatUsd(
-                                    (!canAdjust
-                                      ? depositAdjustWithdrawLiquidationPrice
-                                      : adjustLiquidationPrice)!,
+                                    (adjustType === "repay"
+                                      ? adjustRepayLiquidationPrice
+                                      : adjustType === "flashLoan"
+                                        ? depositAdjustWithdrawLiquidationPrice
+                                        : adjustLiquidationPrice)!,
                                   )
                                 : "--"}
                             </>
@@ -2641,7 +2813,16 @@ export default function LstStrategyDialog({
                     )} ${currencyReserve.token.symbol}`}
                     horizontal
                   />
-                ) : selectedTab === Tab.ADJUST && !canAdjust ? (
+                ) : selectedTab === Tab.ADJUST && adjustType === "repay" ? (
+                  <LabelWithValue
+                    label="Adjust fee"
+                    value={`${formatToken(adjustRepayFeesAmount, {
+                      dp: depositReserves.base!.token.decimals,
+                      trimTrailingZeros: true,
+                    })} ${depositReserves.base!.token.symbol}`} // Shown as base symbol
+                    horizontal
+                  />
+                ) : selectedTab === Tab.ADJUST && adjustType === "flashLoan" ? (
                   <LabelWithValue
                     label="Adjust fee"
                     value={`${formatToken(depositAdjustWithdrawFeesAmount, {
@@ -2654,7 +2835,7 @@ export default function LstStrategyDialog({
                     }`} // Shown as base or LST symbol (sSUI, USDC, AUSD, etc.)
                     horizontal
                   />
-                ) : selectedTab === Tab.ADJUST && canAdjust ? (
+                ) : selectedTab === Tab.ADJUST && adjustType === "normal" ? (
                   <LabelWithValue
                     label="Adjust fee"
                     value={`${formatToken(adjustFeesAmount, {
