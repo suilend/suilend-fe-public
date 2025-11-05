@@ -425,21 +425,26 @@ export const strategyClaimRewardsAndSwapForCoinType = async (
       coinType,
     );
 
-    let coinOut: TransactionObjectArgument;
     try {
-      coinOut = await cetusSdk.fixableRouterSwapV3({
-        router: routers,
-        inputCoin: coinIn,
-        slippage: 3 / 100,
-        txb: transaction,
-        partner: cetusPartnerId,
-      });
-    } catch (err) {
-      throw new Error(`No swap quote found for ${coinType}`);
-    }
+      let coinOut: TransactionObjectArgument;
+      try {
+        coinOut = await cetusSdk.fixableRouterSwapV3({
+          router: routers,
+          inputCoin: coinIn,
+          slippage: 3 / 100,
+          txb: transaction,
+          partner: cetusPartnerId,
+        });
 
-    if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
-    else resultCoin = coinOut;
+        if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
+        else resultCoin = coinOut;
+      } catch (err) {
+        throw new Error(`No swap quote found for ${coinType}`);
+      }
+    } catch (err) {
+      console.error(err);
+      continue; // Skip coin if swap fails
+    }
   }
 
   // 4) Deposit
@@ -520,34 +525,39 @@ export const strategySwapSomeDepositsForCoinType = async (
     string,
     {
       coin: TransactionObjectArgument;
-      routers: CetusQuote;
+      routers: CetusQuote | undefined;
     }
   > = Object.fromEntries(
     await Promise.all(
       Object.entries(withdrawnCoinsMap).map(([coinType, { deposit, coin }]) =>
         (async () => {
-          // Get amount
-          const amount = new BigNumber(
-            deposit.depositedAmount.times(swapPercent.div(100)),
-          )
-            .times(10 ** deposit.reserve.token.decimals)
-            .integerValue(BigNumber.ROUND_DOWN); // Use underestimate (deposits keep accruing if deposit APR >0)
+          try {
+            // Get amount
+            const amount = new BigNumber(
+              deposit.depositedAmount.times(swapPercent.div(100)),
+            )
+              .times(10 ** deposit.reserve.token.decimals)
+              .integerValue(BigNumber.ROUND_DOWN); // Use underestimate (deposits keep accruing if deposit APR >0)
 
-          // Get routes
-          const routers = await cetusSdk.findRouters({
-            from: deposit.coinType,
-            target: depositReserve.coinType,
-            amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
-            byAmountIn: true,
-          });
-          if (!routers)
-            throw new Error(`No swap quote found for ${deposit.coinType}`);
-          console.log("[strategySwapSomeDepositsForCoinType] routers", {
-            coinType: deposit.coinType,
-            routers,
-          });
+            // Get routes
+            const routers = await cetusSdk.findRouters({
+              from: deposit.coinType,
+              target: depositReserve.coinType,
+              amount: new BN(amount.toString()), // Underestimate (deposits keep accruing if deposit APR >0)
+              byAmountIn: true,
+            });
+            if (!routers)
+              throw new Error(`No swap quote found for ${deposit.coinType}`);
+            console.log("[strategySwapSomeDepositsForCoinType] routers", {
+              coinType: deposit.coinType,
+              routers,
+            });
 
-          return [deposit.coinType, { coin, routers }];
+            return [deposit.coinType, { coin, routers }];
+          } catch (err) {
+            console.error(err);
+            return [coinType, { coin, routers: undefined }];
+          }
         })(),
       ),
     ),
@@ -561,26 +571,32 @@ export const strategySwapSomeDepositsForCoinType = async (
   for (const [coinType, { coin: coinIn, routers }] of Object.entries(
     amountsAndSortedQuotesMap,
   )) {
+    if (routers === undefined) continue; // Skip coin if no swap quote found
     console.log(
       "[strategySwapSomeDepositsForCoinType] swapping coinType",
       coinType,
     );
 
-    let coinOut: TransactionObjectArgument;
     try {
-      coinOut = await cetusSdk.fixableRouterSwapV3({
-        router: routers,
-        inputCoin: coinIn,
-        slippage: 3 / 100,
-        txb: transaction,
-        partner: cetusPartnerId,
-      });
-    } catch (err) {
-      throw new Error(`No swap quote found for ${coinType}`);
-    }
+      let coinOut: TransactionObjectArgument;
+      try {
+        coinOut = await cetusSdk.fixableRouterSwapV3({
+          router: routers,
+          inputCoin: coinIn,
+          slippage: 3 / 100,
+          txb: transaction,
+          partner: cetusPartnerId,
+        });
+      } catch (err) {
+        throw new Error(`No swap quote found for ${coinType}`);
+      }
 
-    if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
-    else resultCoin = coinOut;
+      if (resultCoin) transaction.mergeCoins(resultCoin, [coinOut]);
+      else resultCoin = coinOut;
+    } catch (err) {
+      console.error(err);
+      continue; // Skip coin if swap fails
+    }
   }
 
   // 3) Deposit
