@@ -223,6 +223,7 @@ export default function LstStrategyDialog({
   const adjustType: "repay" | "flashLoan" | "normal" = useMemo(() => {
     if (
       depositReserves.base !== undefined &&
+      depositReserves.lst !== undefined &&
       (
         obligation?.deposits.find(
           (d) => d.coinType === depositReserves.base!.coinType,
@@ -252,8 +253,8 @@ export default function LstStrategyDialog({
     return "normal";
   }, [
     depositReserves.base,
-    obligation,
     depositReserves.lst,
+    obligation,
     borrowReserve.coinType,
     getHealthPercent,
     strategyType,
