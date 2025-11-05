@@ -10,6 +10,7 @@ import {
   NORMALIZED_SEND_COINTYPE,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
+  NORMALIZED_sSUI_COINTYPE,
   Token,
   formatList,
   getToken,
@@ -94,8 +95,9 @@ export default function ClaimRewardsDropdownMenu({
     {} as Record<string, boolean>,
   );
 
-  // Claim and deposit as SUI/USDC/SEND
+  // Claim and deposit as sSUI/SUI/USDC/SEND
   const canDepositAsMap: Record<string, boolean> = [
+    NORMALIZED_sSUI_COINTYPE,
     NORMALIZED_SUI_COINTYPE,
     NORMALIZED_USDC_COINTYPE,
     NORMALIZED_SEND_COINTYPE,
@@ -124,7 +126,7 @@ export default function ClaimRewardsDropdownMenu({
   );
   const [swappingToCoinType, setSwappingToCoinType] = useLocalStorage<string>(
     "claimRewards_swappingToCoinType",
-    NORMALIZED_SUI_COINTYPE,
+    NORMALIZED_sSUI_COINTYPE,
   );
   const [isDepositing, setIsDepositing] = useLocalStorage<boolean>(
     "claimRewards_isDepositing",
