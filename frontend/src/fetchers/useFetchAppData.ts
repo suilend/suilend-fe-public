@@ -46,6 +46,15 @@ export const LENDING_MARKET_METADATA_MAP: Record<
     name: "STEAMM LM",
     isHidden: true,
   },
+  "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82": {
+    id: "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82",
+    type: "0xd382f7d6e7596585b3063d5f4607de30a7a81adeb521d6b862b4c57defca746e::Matrixdock_gold::MATRIXDOCK_GOLD",
+    lendingMarketOwnerCapId:
+      "0xb4940c255a6498eb3db91db94881397004d30659b836568356f279a69f2eca3c",
+
+    name: "Matrixdock Gold Market",
+    isHidden: false,
+  },
   "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2": {
     id: "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2",
     type: "0x3628b6ea618a6cca71793bab63e88ea69e10d3a99b5c7b3df88ba01f165015d4::elixir::ELIXIR",
@@ -54,15 +63,6 @@ export const LENDING_MARKET_METADATA_MAP: Record<
 
     name: "Elixir Market",
     isHidden: false,
-  },
-  "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82": {
-    id: "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82",
-    type: "0xd382f7d6e7596585b3063d5f4607de30a7a81adeb521d6b862b4c57defca746e::Matrixdock_gold::MATRIXDOCK_GOLD",
-    lendingMarketOwnerCapId:
-      "0xb4940c255a6498eb3db91db94881397004d30659b836568356f279a69f2eca3c",
-
-    name: "Matrixdock Gold Market",
-    isHidden: Date.now() < 1761289200000, // Friday, 24 October 2025 07:00:00 (GMT)
   },
 };
 
