@@ -237,7 +237,7 @@ export default function LstStrategyDialog({
         ?.depositedAmount ?? new BigNumber(0);
     if (depositedAmount.lte(0)) return new BigNumber(0);
 
-    const targetDepositedAmount = bisectionMethod(
+    const targetDepositedAmount1 = bisectionMethod(
       depositedAmount.times(1), // left boundary: 1x original deposit
       depositedAmount.times(2), // right boundary: 2x original deposit
       (newDepositedAmount: BigNumber) => {
@@ -259,16 +259,50 @@ export default function LstStrategyDialog({
         //   undefined,
         // );
 
-        return newExposure.lte(maxExposure);
+        return newExposure.lte(maxExposure); // Exposure <= max exposure: Try a smaller additional deposit amount
       },
+    );
+    const targetDepositedAmount2 = bisectionMethod(
+      depositedAmount.times(1), // left boundary: 1x original deposit
+      depositedAmount.times(2), // right boundary: 2x original deposit
+      (newDepositedAmount: BigNumber) => {
+        const additionalDepositedAmount =
+          newDepositedAmount.minus(depositedAmount);
+
+        const newObligation = getSimulatedObligation(
+          strategyType,
+          addOrInsertDeposit(obligation.deposits, {
+            coinType: depositReserve.coinType,
+            depositedAmount: additionalDepositedAmount,
+          }),
+          obligation.borrows[0]?.borrowedAmount ?? new BigNumber(0), // Assume up to 1 borrow
+        );
+        const newHealthPercent = getHealthPercent(
+          strategyType,
+          newObligation,
+          undefined,
+        );
+
+        return newHealthPercent.eq(100); // Health percent = 100%: Try a smaller additional deposit amount
+      },
+    );
+    const targetDepositedAmount = BigNumber.max(
+      targetDepositedAmount1,
+      targetDepositedAmount2,
     );
 
     const additionalDepositedAmount = targetDepositedAmount
       .minus(depositedAmount)
       .decimalPlaces(depositReserve.token.decimals, BigNumber.ROUND_UP);
+
     console.log("XXX [depositAdjustWithdrawAdditionalDepositedAmount]", {
       depositedAmount: depositedAmount.toFixed(20),
-      targetDepositedAmount: targetDepositedAmount.toFixed(20),
+      targetDepositedAmount1: targetDepositedAmount1.toFixed(20),
+      targetDepositedAmount2: targetDepositedAmount2.toFixed(20),
+      targetDepositedAmount: BigNumber.max(
+        targetDepositedAmount1,
+        targetDepositedAmount2,
+      ).toFixed(20),
       additionalDepositedAmount: additionalDepositedAmount.toFixed(20),
     });
 
@@ -283,6 +317,7 @@ export default function LstStrategyDialog({
     strategyType,
     getExposure,
     maxExposure,
+    getHealthPercent,
   ]);
 
   const tabs = [
