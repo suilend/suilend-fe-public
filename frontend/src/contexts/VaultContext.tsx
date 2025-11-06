@@ -1,5 +1,11 @@
 import { useRouter } from "next/router";
-import { PropsWithChildren, createContext, useCallback, useContext, useMemo } from "react";
+import {
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+} from "react";
 
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
@@ -186,63 +192,66 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
 
-  const appendCrankIfStale = useCallback(async (
-    transaction: Transaction,
-    vault: ParsedVault,
-    uniqMarkets: { id: string; type: string }[],
-  ): Promise<void> => {
-    if (!uniqMarkets.length) return;
-    if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType)
-      return;
+  const appendCrankIfStale = useCallback(
+    async (
+      transaction: Transaction,
+      vault: ParsedVault,
+      uniqMarkets: { id: string; type: string }[],
+    ): Promise<void> => {
+      if (!uniqMarkets.length) return;
+      if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType)
+        return;
 
-    // Only crank if stale: now - last_cranked_ms > MAX_REWARDS_STALENESS_MS (1h)
-    let shouldCrank = false;
-    try {
-      const obj = await suiClient.getObject({
-        id: vault.id,
-        options: { showContent: true },
+      // Only crank if stale: now - last_cranked_ms > MAX_REWARDS_STALENESS_MS (1h)
+      let shouldCrank = false;
+      try {
+        const obj = await suiClient.getObject({
+          id: vault.id,
+          options: { showContent: true },
+        });
+        const lastCrankedMs = Number(
+          ((obj.data?.content as any)?.fields?.last_cranked_ms as
+            | string
+            | number
+            | undefined) ?? 0,
+        );
+        const now = Date.now();
+        const MAX_REWARDS_STALENESS_MS = 3_600_000; // 1 hour
+        shouldCrank =
+          !!lastCrankedMs && now - lastCrankedMs > MAX_REWARDS_STALENESS_MS;
+      } catch {}
+
+      if (!shouldCrank) return;
+
+      const acc = transaction.moveCall({
+        target: `${VAULTS_PACKAGE_ID}::vault::create_vault_crank_accumulator`,
+        typeArguments: [vault.shareType, vault.baseCoinType],
+        arguments: [transaction.object(vault.id)],
       });
-      const lastCrankedMs = Number(
-        ((obj.data?.content as any)?.fields?.last_cranked_ms as
-          | string
-          | number
-          | undefined) ?? 0,
-      );
-      const now = Date.now();
-      const MAX_REWARDS_STALENESS_MS = 3_600_000; // 1 hour
-      shouldCrank =
-        !!lastCrankedMs && now - lastCrankedMs > MAX_REWARDS_STALENESS_MS;
-    } catch {}
-
-    if (!shouldCrank) return;
-
-    const acc = transaction.moveCall({
-      target: `${VAULTS_PACKAGE_ID}::vault::create_vault_crank_accumulator`,
-      typeArguments: [vault.shareType, vault.baseCoinType],
-      arguments: [transaction.object(vault.id)],
-    });
-    for (const m of uniqMarkets) {
+      for (const m of uniqMarkets) {
+        transaction.moveCall({
+          target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market_for_crank`,
+          typeArguments: [m.type],
+          arguments: [acc, transaction.object(m.id)],
+        });
+      }
       transaction.moveCall({
-        target: `${VAULTS_PACKAGE_ID}::vault::process_lending_market_for_crank`,
-        typeArguments: [m.type],
-        arguments: [acc, transaction.object(m.id)],
+        target: `${VAULTS_PACKAGE_ID}::vault::finalize_vault_crank`,
+        typeArguments: [
+          vault.shareType,
+          vault.pricingLendingMarketType,
+          vault.baseCoinType,
+        ],
+        arguments: [
+          transaction.object(vault.id),
+          acc,
+          transaction.object(vault.pricingLendingMarketId),
+          transaction.object(SUI_CLOCK_OBJECT_ID),
+        ],
       });
-    }
-    transaction.moveCall({
-      target: `${VAULTS_PACKAGE_ID}::vault::finalize_vault_crank`,
-      typeArguments: [
-        vault.shareType,
-        vault.pricingLendingMarketType,
-        vault.baseCoinType,
-      ],
-      arguments: [
-        transaction.object(vault.id),
-        acc,
-        transaction.object(vault.pricingLendingMarketId),
-        transaction.object(SUI_CLOCK_OBJECT_ID),
-      ],
-    });
-  }, [suiClient]);
+    },
+    [suiClient],
+  );
 
   const getInnerType = (fullType: string, base: string): string | undefined => {
     const anchor = `${base}<`;
@@ -282,24 +291,25 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
     return parts[0];
   };
 
-  const detectLendingMarketType = useCallback(async (
-    lendingMarketId: string,
-  ): Promise<string> => {
-    const obj = await suiClient.getObject({
-      id: lendingMarketId,
-      options: { showContent: true },
-    });
-    const typeStr = (obj.data?.content as any)?.type as string | undefined;
-    if (!typeStr) throw new Error("Invalid lending market object");
-    const lmBase = "::lending_market::LendingMarket";
-    const idx = typeStr.indexOf(lmBase);
-    if (idx === -1) throw new Error("Object is not a LendingMarket");
-    const pkgAndMod = typeStr.substring(0, idx);
-    const base = `${pkgAndMod}${lmBase}`;
-    const inner = getInnerType(typeStr, base);
-    if (!inner) throw new Error("Failed to detect LendingMarket type");
-    return inner;
-  }, [suiClient]);
+  const detectLendingMarketType = useCallback(
+    async (lendingMarketId: string): Promise<string> => {
+      const obj = await suiClient.getObject({
+        id: lendingMarketId,
+        options: { showContent: true },
+      });
+      const typeStr = (obj.data?.content as any)?.type as string | undefined;
+      if (!typeStr) throw new Error("Invalid lending market object");
+      const lmBase = "::lending_market::LendingMarket";
+      const idx = typeStr.indexOf(lmBase);
+      if (idx === -1) throw new Error("Object is not a LendingMarket");
+      const pkgAndMod = typeStr.substring(0, idx);
+      const base = `${pkgAndMod}${lmBase}`;
+      const inner = getInnerType(typeStr, base);
+      if (!inner) throw new Error("Failed to detect LendingMarket type");
+      return inner;
+    },
+    [suiClient],
+  );
 
   const userPnls = useMemo(() => {
     return fetchedVaults.reduce(

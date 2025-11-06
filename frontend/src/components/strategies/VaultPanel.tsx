@@ -28,16 +28,12 @@ export default function VaultPanel() {
   const usedVaults = vaults.filter((vault) => vault.userShares.gt(0));
   const unusedVaults = vaults.filter((vault) => vault.userShares.eq(0));
 
-  const openVaultDialog = useCallback(
-    (vault: ParsedVault) => {
-      shallowPushQuery(router, {
-        ...router.query,
-        [LstStrategyDialogQueryParams.STRATEGY_NAME]:
-          vault.metadata?.queryParam,
-      });
-    },
-    [router],
-  );
+  const openVaultDialog = useCallback((vault: ParsedVault) => {
+    shallowPushQuery(router, {
+      ...router.query,
+      [LstStrategyDialogQueryParams.STRATEGY_NAME]: vault.metadata?.queryParam,
+    });
+  }, []);
 
   return (
     <>

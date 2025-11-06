@@ -6,18 +6,17 @@ import { capitalize } from "lodash";
 import { ExternalLink } from "lucide-react";
 
 import { LENDING_MARKET_ID } from "@suilend/sdk";
-import { formatToken, formatUsd } from "@suilend/sui-fe";
+import { formatToken } from "@suilend/sui-fe";
 import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { useAppContext } from "@/contexts/AppContext";
-import { VAULT_METADATA, useVaultContext } from "@/contexts/VaultContext";
+import { useVaultContext } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
 import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
 import { cn } from "@/lib/utils";
 
-import AllocationBar from "./AllocationBar";
 import AllocationPie from "./AllocationPie";
 import VaultChart from "./VaultChart";
 
@@ -27,7 +26,7 @@ enum QueryParams {
 
 enum Tab {
   DETAILS = "details",
-  ALLOCATION = "allocation",
+  ALLOCATION = "activity",
   HISTORY = "history",
 }
 
@@ -48,12 +47,12 @@ function DetailsTabContent({ vault }: TabContentProps) {
     <>
       <div className="flex w-full flex-col gap-4 rounded-sm border p-4">
         <div className="flex flex-col gap-2">
-          <TBodySans>Vault overview</TBodySans>
+          <TBodySans>Overview</TBodySans>
           <TLabelSans>{vault.metadata?.description}</TLabelSans>
         </div>
         <div className="flex flex-col gap-2">
-          <TBodySans>Vault allocation</TBodySans>
-          <AllocationBar vault={vault} />
+          <TBodySans>Allocation</TBodySans>
+          <AllocationPie vault={vault} />
         </div>
         <div className="flex flex-col gap-2">
           <VaultChart vaultId={vault.id} />
@@ -164,9 +163,7 @@ function AllocationTabContent({ vault }: TabContentProps) {
         </div>
       ) : (
         <div className="flex w-full flex-col gap-3">
-          <div className="rounded-sm border p-4">
-            <AllocationPie vault={vault} title="Allocation" />
-          </div>
+          <AllocationPie vault={vault} />
           {filtered.map((e, idx) => {
             const ts = e.timestamp ? new Date(Number(e.timestamp)) : undefined;
             const tsText = ts ? ts.toLocaleString() : "";

@@ -6,7 +6,7 @@ import { ParsedVault } from "@/fetchers/parseVault";
 import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
 
 import Tooltip from "../shared/Tooltip";
-import { TBody, TLabelSans, TTitle } from "../shared/Typography";
+import { TBody, TLabelSans } from "../shared/Typography";
 
 const ALLOCATION_SEGMENT_COLORS = ["#457AE4", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
@@ -14,7 +14,6 @@ interface AllocationPieProps {
   vault: ParsedVault;
   size?: number; // px
   strokeWidth?: number; // px slice thickness
-  title?: string;
 }
 
 type AllocationSegment = {
@@ -64,7 +63,6 @@ export default function AllocationPie({
   vault,
   size = 160,
   strokeWidth = 20,
-  title,
 }: AllocationPieProps) {
   const totalTvl = vault.tvl;
   const allocationSegments = (
@@ -102,7 +100,6 @@ export default function AllocationPie({
 
   return (
     <div className="flex w-full flex-col gap-3">
-      {title && <TTitle>{title}</TTitle>}
       <div className="flex w-full flex-row items-start gap-4">
         <div style={{ width: size, height: size, position: "relative" }}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>

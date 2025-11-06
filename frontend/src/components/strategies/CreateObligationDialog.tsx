@@ -64,21 +64,21 @@ export default function CreateObligationDialog({
       <form onSubmit={onSubmit}>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-          <TLabelSans>Lending market</TLabelSans>
-          <Select value={lendingMarketId} onValueChange={setLendingMarketId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a lending market" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(LENDING_MARKET_METADATA_MAP).map(
-                (lendingMarket) => (
-                  <SelectItem key={lendingMarket.id} value={lendingMarket.id}>
-                    {lendingMarket.name}
-                  </SelectItem>
-                ),
-              )}
-            </SelectContent>
-          </Select>
+            <TLabelSans>Lending market</TLabelSans>
+            <Select value={lendingMarketId} onValueChange={setLendingMarketId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a lending market" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.values(LENDING_MARKET_METADATA_MAP).map(
+                  (lendingMarket) => (
+                    <SelectItem key={lendingMarket.id} value={lendingMarket.id}>
+                      {lendingMarket.name}
+                    </SelectItem>
+                  ),
+                )}
+              </SelectContent>
+            </Select>
           </div>
           <Button type="submit" className="w-full">
             CREATE
