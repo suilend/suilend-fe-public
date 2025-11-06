@@ -346,8 +346,8 @@ export default function LiquidateDialog({
       const borrowedAmount = borrow.borrowedAmount;
       const borrowedAmountUsd = borrowedAmount.times(borrow.reserve.price);
       const fullRepaymentAmount = (
-        borrowedAmountUsd.lt(0.02)
-          ? new BigNumber(0.02).div(borrow.reserve.price) // $0.02 in borrow coinType
+        borrowedAmountUsd.lt(0.1)
+          ? new BigNumber(0.1).div(borrow.reserve.price) // $0.1 in borrow coinType
           : borrowedAmountUsd.lt(1)
             ? borrowedAmount.times(1.1) // 10% buffer
             : borrowedAmountUsd.lt(10)
