@@ -34,14 +34,13 @@ export type VaultMetadata = {
   id: string;
   name: string;
   description: React.ReactNode;
-  image: string;
   queryParam: string;
 };
 
 export const VAULT_METADATA: Record<string, VaultMetadata> = {
   ["0xfd25df827080c85777a5c8f51be736ae5f53dcda661e20760250d382f64b53f1"]: {
     id: "0xfd25df827080c85777a5c8f51be736ae5f53dcda661e20760250d382f64b53f1",
-    name: "USDC Vault",
+    name: "USDC",
     description: (
       <div>
         USDC Prime is a conservative lending strategy designed to deliver
@@ -55,12 +54,11 @@ export const VAULT_METADATA: Record<string, VaultMetadata> = {
         to ensure robust yield performance and capital preservation.
       </div>
     ),
-    image: "/assets/tokens/USDC.png",
     queryParam: "usdc-vault",
   },
   ["0xe3bace2bef51f8fd9ed573754c7657a896eef2fc1305ba70cd8680c2c22bd018"]: {
     id: "0xe3bace2bef51f8fd9ed573754c7657a896eef2fc1305ba70cd8680c2c22bd018",
-    name: "SUI Vault",
+    name: "SUI",
     description: (
       <div>
         SUI Prime is a conservative lending strategy designed to deliver
@@ -74,7 +72,6 @@ export const VAULT_METADATA: Record<string, VaultMetadata> = {
         robust yield performance and capital preservation.
       </div>
     ),
-    image: "/assets/tokens/SUI.png",
     queryParam: "sui-vault",
   },
 };
