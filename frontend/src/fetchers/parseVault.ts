@@ -4,6 +4,7 @@ import BigNumber from "bignumber.js";
 
 import {
   LENDING_MARKET_ID,
+  ParsedObligation,
   SuilendClient,
   WAD,
   getNetAprPercent,
@@ -15,7 +16,7 @@ import { UserData } from "@/contexts/UserContext";
 import { VAULT_METADATA, VaultMetadata } from "@/contexts/VaultContext";
 import { VAULTS_PACKAGE_ID, VAULT_OWNER } from "@/lib/constants";
 
-export type ParsedObligation = {
+export type VaultParsedObligation = {
   obligationId: string;
   lendingMarketId: string;
   marketType: string;
@@ -23,6 +24,8 @@ export type ParsedObligation = {
   deployedAmountToken: BigNumber; // USD
   apr: BigNumber;
   index: number;
+  parsedObligation: ParsedObligation | null;
+  depositedCTokenAmount: BigNumber;
 };
 
 interface VaultFields {
@@ -34,8 +37,14 @@ interface VaultFields {
   total_shares: string;
   fee_receiver: string;
   management_fee_bps: string;
+  manager_fees: string;
   performance_fee_bps: string;
   deposit_fee_bps: string;
+  nav_high_water_mark: {
+    fields: {
+      value: string;
+    };
+  };
   withdrawal_fee_bps: string;
   utilization_rate_bps: string;
   last_nav_per_share: string;
@@ -51,15 +60,17 @@ export type ParsedVault = {
   tvlToken: BigNumber;
   totalShares: string;
   managementFeeBps: string;
+  managerFees: string;
   performanceFeeBps: string;
   depositFeeBps: string;
   withdrawalFeeBps: string;
-  utilizationRateBps: string;
+  navHighWaterMark: string;
+  undeployedAmountToken: BigNumber;
   lastNavPerShare: string;
   feeLastUpdateTimestampS: string;
   baseCoinMetadata: CoinMetadata | null;
   apr: BigNumber;
-  obligations: ParsedObligation[];
+  obligations: VaultParsedObligation[];
   pricingLendingMarketId?: string;
   pricingLendingMarketType?: string;
   shareType: string;
@@ -193,7 +204,7 @@ export const parseVault = async (
 
   const oblFields = fields?.obligations?.fields;
   const vmContents = oblFields?.contents ?? oblFields?.values ?? [];
-  const obligations: ParsedObligation[] = [];
+  const obligations: VaultParsedObligation[] = [];
   for (const entry of vmContents) {
     const keyName = entry.fields?.key?.fields?.name as string | undefined;
     if (!keyName) throw new Error("Invalid obligation entry");
@@ -212,6 +223,8 @@ export const parseVault = async (
         deployedAmountToken: new BigNumber(0),
         index: i,
         apr: new BigNumber(0),
+        depositedCTokenAmount: new BigNumber(0),
+        parsedObligation: null, // populated later
       });
     }
   }
@@ -231,7 +244,7 @@ export const parseVault = async (
 
         const parsedObligation = parseObligation(
           rawObligation,
-          allAppData.allLendingMarketData[LENDING_MARKET_ID].reserveMap,
+          allAppData.allLendingMarketData[o.lendingMarketId].reserveMap,
         );
 
         const netAprPercent = getNetAprPercent(
@@ -248,10 +261,13 @@ export const parseVault = async (
           rawObligation.unweightedBorrowedValueUsd.value.toString(),
         ).div(WAD);
 
+        o.depositedCTokenAmount =
+          parsedObligation.deposits[0].depositedCtokenAmount;
         o.deployedAmount = depositedUsd.minus(borrowedUsd);
         o.deployedAmountToken = o.deployedAmount.div(baseAssetPrice);
         o.apr = netAprPercent;
         interestSum = interestSum.plus(o.deployedAmount.times(netAprPercent));
+        o.parsedObligation = parsedObligation;
       } catch (e) {
         console.log("error", e);
       }
@@ -302,10 +318,12 @@ export const parseVault = async (
     utilization,
     totalShares: fields.total_shares,
     managementFeeBps: fields.management_fee_bps,
+    managerFees: fields.manager_fees,
+    undeployedAmountToken,
     performanceFeeBps: fields.performance_fee_bps,
     depositFeeBps: fields.deposit_fee_bps,
     withdrawalFeeBps: fields.withdrawal_fee_bps,
-    utilizationRateBps: fields.utilization_rate_bps,
+    navHighWaterMark: fields.nav_high_water_mark.fields.value,
     lastNavPerShare: fields.last_nav_per_share,
     feeLastUpdateTimestampS: fields.fee_last_update_timestamp_s,
     apr: interestSum.div(totalAmount),

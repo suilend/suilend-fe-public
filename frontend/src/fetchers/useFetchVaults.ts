@@ -14,8 +14,9 @@ export default function useFetchVaults() {
   const { allUserData } = useLoadedUserContext();
 
   const fetcher = async (): Promise<ParsedVault[]> => {
+    if (!address) return [];
     const res = await suiClient.getOwnedObjects({
-      owner: VAULT_OWNER,
+      owner: address,
       options: { showContent: true },
       filter: {
         MoveModule: {
@@ -59,8 +60,6 @@ export default function useFetchVaults() {
     ],
     fetcher,
   );
-
-  console.log("error", error);
 
   return { data: data ?? [], isLoading, isValidating, error, mutate };
 }

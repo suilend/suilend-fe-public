@@ -1,6 +1,3 @@
-import router from "next/router";
-import { useCallback } from "react";
-
 import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
   formatPercent,
@@ -8,13 +5,11 @@ import {
   formatUsd,
   getToken,
 } from "@suilend/sui-fe";
-import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import LabelWithValue from "@/components/shared/LabelWithValue";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import EarnHeader from "@/components/strategies/EarnHeader";
-import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import PnlLabelWithValue from "@/components/strategies/PnlLabelWithValue";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,20 +20,13 @@ import { ASSETS_URL } from "@/lib/constants";
 
 interface VaultCardProps {
   vault: ParsedVault;
+  onClick?: () => void;
 }
 
-export default function VaultCard({ vault }: VaultCardProps) {
+export default function VaultCard({ vault, onClick }: VaultCardProps) {
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
   const { userPnls } = useVaultContext();
-  // Open
-  const openVaultDialog = useCallback(() => {
-    shallowPushQuery(router, {
-      ...router.query,
-      [LstStrategyDialogQueryParams.STRATEGY_NAME]: vault?.metadata?.queryParam,
-    });
-  }, [vault?.metadata?.queryParam]);
-
   const globalTvlAmountUsd = vault.deployedAmount.plus(vault.undeployedAmount);
   const hasPosition = vault.userSharesBalance.gt(0);
 
@@ -47,7 +35,7 @@ export default function VaultCard({ vault }: VaultCardProps) {
   return (
     <div
       className="group relative w-full cursor-pointer rounded-[4px] bg-gradient-to-tr from-border via-border to-[#457AE4] p-[1px]"
-      onClick={openVaultDialog}
+      onClick={onClick}
     >
       {vault.new && (
         <div className="absolute -left-0.5 -top-0.5 z-[4] rounded-[4px] bg-secondary px-1">

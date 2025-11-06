@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { PropsWithChildren, createContext, useContext, useMemo } from "react";
+import { PropsWithChildren, createContext, useCallback, useContext, useMemo } from "react";
 
 import { SuiTransactionBlockResponse } from "@mysten/sui/client";
 import { Transaction } from "@mysten/sui/transactions";
@@ -15,6 +15,7 @@ import { ParsedVault } from "@/fetchers/parseVault";
 import useFetchVault from "@/fetchers/useFetchVault";
 import useFetchVaultHistory, {
   VaultEvent,
+  useFetchUserVaultHistory,
 } from "@/fetchers/useFetchVaultHistory";
 import useFetchVaults from "@/fetchers/useFetchVaults";
 import {
@@ -175,7 +176,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
   const router = useRouter();
   const { vaultId } = router.query as { vaultId?: string };
   const { data: vaultHistory } = useFetchVaultHistory();
-  const { data: userVaultHistory } = useFetchVaultHistory(undefined, address);
+  const { data: userVaultHistory } = useFetchUserVaultHistory(address);
 
   const {
     data: vaultData,
@@ -185,11 +186,11 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
 
   const { data: fetchedVaults, mutate: mutateVaults } = useFetchVaults();
 
-  const appendCrankIfStale = async (
+  const appendCrankIfStale = useCallback(async (
     transaction: Transaction,
     vault: ParsedVault,
     uniqMarkets: { id: string; type: string }[],
-  ) => {
+  ): Promise<void> => {
     if (!uniqMarkets.length) return;
     if (!vault.pricingLendingMarketId || !vault.pricingLendingMarketType)
       return;
@@ -241,7 +242,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
         transaction.object(SUI_CLOCK_OBJECT_ID),
       ],
     });
-  };
+  }, [suiClient]);
 
   const getInnerType = (fullType: string, base: string): string | undefined => {
     const anchor = `${base}<`;
@@ -281,7 +282,7 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
     return parts[0];
   };
 
-  const detectLendingMarketType = async (
+  const detectLendingMarketType = useCallback(async (
     lendingMarketId: string,
   ): Promise<string> => {
     const obj = await suiClient.getObject({
@@ -298,21 +299,25 @@ export function VaultContextProvider({ children }: PropsWithChildren) {
     const inner = getInnerType(typeStr, base);
     if (!inner) throw new Error("Failed to detect LendingMarket type");
     return inner;
-  };
+  }, [suiClient]);
 
   const userPnls = useMemo(() => {
     return fetchedVaults.reduce(
       (acc, vault) => {
         const vaultHistory = userVaultHistory?.[vault.id];
         const netDepositAmount =
-          vaultHistory?.reduce((acc, event) => {
-            if (event.type === "VaultDepositEvent") {
-              acc.plus(event.deposit_amount);
-            } else if (event.type === "VaultWithdrawEvent") {
-              acc.minus(event.amount);
-            }
-            return acc;
-          }, new BigNumber(0)) ?? new BigNumber(0);
+          vaultHistory
+            ?.reduce((acc, event) => {
+              if (event.type === "VaultDepositEvent") {
+                return acc.plus(new BigNumber(event.depositAmount));
+              } else if (event.type === "VaultWithdrawEvent") {
+                return acc.minus(new BigNumber(event.amount));
+              }
+              return acc;
+            }, new BigNumber(0))
+            .div(
+              new BigNumber(10).pow(vault.baseCoinMetadata?.decimals ?? 0),
+            ) ?? new BigNumber(0);
         acc[vault.id] = vaultHistory?.length
           ? vault.userSharesToken.minus(netDepositAmount)
           : undefined;

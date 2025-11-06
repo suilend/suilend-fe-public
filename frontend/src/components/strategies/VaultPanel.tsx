@@ -1,9 +1,15 @@
+import router from "next/router";
+import { useCallback } from "react";
+
 import BigNumber from "bignumber.js";
 
 import { formatUsd } from "@suilend/sui-fe";
+import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import { QueryParams as LstStrategyDialogQueryParams } from "@/components/strategies/LstStrategyDialog";
 import { useVaultContext } from "@/contexts/VaultContext";
+import { ParsedVault } from "@/fetchers/parseVault";
 
 import VaultCard from "./VaultCard";
 import VaultDialog from "./VaultDialog";
@@ -21,6 +27,17 @@ export default function VaultPanel() {
 
   const usedVaults = vaults.filter((vault) => vault.userShares.gt(0));
   const unusedVaults = vaults.filter((vault) => vault.userShares.eq(0));
+
+  const openVaultDialog = useCallback(
+    (vault: ParsedVault) => {
+      shallowPushQuery(router, {
+        ...router.query,
+        [LstStrategyDialogQueryParams.STRATEGY_NAME]:
+          vault.metadata?.queryParam,
+      });
+    },
+    [router],
+  );
 
   return (
     <>
@@ -47,7 +64,11 @@ export default function VaultPanel() {
             {/* Min card width: 400px */}
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {usedVaults.map((vault) => (
-                <VaultCard key={vault.id} vault={vault} />
+                <VaultCard
+                  key={vault.id}
+                  vault={vault}
+                  onClick={() => openVaultDialog(vault)}
+                />
               ))}
             </div>
           </div>
@@ -60,7 +81,13 @@ export default function VaultPanel() {
           {/* Min card width: 400px */}
           <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
             {unusedVaults.map((vault) => {
-              return <VaultCard key={vault.id} vault={vault} />;
+              return (
+                <VaultCard
+                  key={vault.id}
+                  vault={vault}
+                  onClick={() => openVaultDialog(vault)}
+                />
+              );
             })}
 
             <ComingSoonStrategyCard />
