@@ -60,7 +60,7 @@ function Page() {
                   <TLabelSans>Vault not found or invalid type.</TLabelSans>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    <AllocationPie vault={vaultData} title={undefined} />
+                    <AllocationPie vault={vaultData} />
                     <LabelWithValue
                       label="Vault ID"
                       value={vaultData.id}
