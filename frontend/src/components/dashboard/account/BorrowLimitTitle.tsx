@@ -1,6 +1,7 @@
 import BigNumber from "bignumber.js";
 import { ClassValue } from "clsx";
 
+import { ParsedObligation } from "@suilend/sdk/parsers/obligation";
 import { formatUsd } from "@suilend/sui-fe";
 
 import SectionTitle from "@/components/dashboard/account/SectionTitle";
@@ -10,12 +11,14 @@ import { BORROW_LIMIT_TOOLTIP } from "@/lib/tooltips";
 interface BorrowLimitTitleProps {
   className?: ClassValue;
   noTooltip?: boolean;
+  obligation?: ParsedObligation;
   amount?: BigNumber;
 }
 
 export default function BorrowLimitTitle({
   className,
   noTooltip,
+  obligation,
   amount,
 }: BorrowLimitTitleProps) {
   return (

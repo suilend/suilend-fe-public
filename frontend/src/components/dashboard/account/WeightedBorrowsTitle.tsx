@@ -13,21 +13,25 @@ import { WEIGHTED_BORROWS_TOOLTIP } from "@/lib/tooltips";
 interface WeightedBorrowsTitleProps {
   className?: ClassValue;
   noTooltip?: boolean;
+  obligation?: ParsedObligation;
   amount?: BigNumber;
 }
 
 export default function WeightedBorrowsTitle({
   className,
   noTooltip,
+  obligation,
   amount,
 }: WeightedBorrowsTitleProps) {
   const lendingMarketContext = useLendingMarketContext();
-  const obligation = lendingMarketContext.obligation as ParsedObligation;
+  const _obligation =
+    obligation ?? (lendingMarketContext.obligation as ParsedObligation);
 
+  if (!_obligation) return null;
   return (
     <SectionTitle
       barSegmentStyle={{
-        backgroundColor: `hsl(var(--${getWeightedBorrowsColor(obligation)}))`,
+        backgroundColor: `hsl(var(--${getWeightedBorrowsColor(_obligation)}))`,
       }}
       labelClassName={className}
       tooltip={!noTooltip ? WEIGHTED_BORROWS_TOOLTIP : undefined}

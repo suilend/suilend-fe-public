@@ -244,6 +244,7 @@ export default function UtilizationBar({
               <WeightedBorrowsTitle
                 className="text-sm text-foreground"
                 noTooltip
+                obligation={obligation}
                 amount={weightedBorrowsUsd}
               />
               <TBodySans className="text-xs">
@@ -269,6 +270,7 @@ export default function UtilizationBar({
               <BorrowLimitTitle
                 className="text-sm text-foreground"
                 noTooltip
+                obligation={obligation}
                 amount={borrowLimitUsd}
               />
               <TBodySans className="text-xs">{borrowLimitTooltip}</TBodySans>
@@ -278,6 +280,7 @@ export default function UtilizationBar({
               <LiquidationThresholdTitle
                 className="text-sm text-foreground"
                 noTooltip
+                obligation={obligation}
                 amount={liquidationThresholdUsd}
               />
               <TBodySans className="text-xs">
