@@ -27,7 +27,8 @@ export const useRateLimiterConfigState = (initialConfigState: ConfigState) => {
   const setConfigStateKeyValue = (key: string) => (value: string | boolean) =>
     setConfigState((prev) => ({ ...prev, [key]: value }));
 
-  const resetConfigState = () => setConfigState(initialConfigState);
+  const resetConfigState = (newInitialConfigState: ConfigState) =>
+    setConfigState(newInitialConfigState);
 
   return {
     configState,

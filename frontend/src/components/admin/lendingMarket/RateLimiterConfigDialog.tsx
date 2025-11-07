@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Transaction } from "@mysten/sui/transactions";
 import { cloneDeep } from "lodash";
@@ -59,14 +59,29 @@ export default function RateLimiterConfigDialog() {
     maxOutflow: config.maxOutflow.toString(),
     windowDuration: config.windowDuration.toString(),
   });
-  const initialConfigStateRef = useRef<ConfigState>(
+  const [initialConfigState, setInitialConfigState] = useState<ConfigState>(
     getInitialConfigState(appData.lendingMarket.rateLimiter.config),
   );
 
-  const rateLimiterConfigState = useRateLimiterConfigState(
-    initialConfigStateRef.current,
-  );
+  const rateLimiterConfigState = useRateLimiterConfigState(initialConfigState);
   const { configState, resetConfigState } = rateLimiterConfigState;
+
+  // Reset if lending market id changes
+  const prevLendingMarketIdRef = useRef<string>(appData.lendingMarket.id);
+  useEffect(() => {
+    if (prevLendingMarketIdRef.current === appData.lendingMarket.id) return;
+    prevLendingMarketIdRef.current = appData.lendingMarket.id;
+
+    const newInitialConfigState = getInitialConfigState(
+      appData.lendingMarket.rateLimiter.config,
+    );
+    setInitialConfigState(newInitialConfigState);
+    resetConfigState(newInitialConfigState);
+  }, [
+    appData.lendingMarket.id,
+    appData.lendingMarket.rateLimiter.config,
+    resetConfigState,
+  ]);
 
   // Submit
   const submit = async () => {
@@ -87,7 +102,7 @@ export default function RateLimiterConfigDialog() {
       await signExecuteAndWaitForTransaction(transaction);
 
       toast.success("Rate limiter config updated");
-      initialConfigStateRef.current = cloneDeep(configState);
+      setInitialConfigState(cloneDeep(configState));
     } catch (err) {
       toast.error("Failed to update rate limiter config", {
         description: (err as Error)?.message || "An unknown error occurred",
@@ -119,7 +134,7 @@ export default function RateLimiterConfigDialog() {
               icon={<Undo2 />}
               variant="ghost"
               size="icon"
-              onClick={resetConfigState}
+              onClick={() => resetConfigState(initialConfigState)}
             >
               Revert changes
             </Button>
@@ -140,10 +155,7 @@ export default function RateLimiterConfigDialog() {
         <RateLimiterConfig {...rateLimiterConfigState} />
       </Grid>
 
-      <Diff
-        initialState={initialConfigStateRef.current}
-        currentState={configState}
-      />
+      <Diff initialState={initialConfigState} currentState={configState} />
     </Dialog>
   );
 }
