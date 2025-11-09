@@ -399,6 +399,20 @@ export default function HistoricalAprLineChart({
       .map((_, index) => lastTimestampS - index * sampleIntervalS)
       .reverse(); // Oldest to newest
 
+    // Include any additional timestamps from fetched LST exchange rate data
+    reserves.forEach(({ reserve }) => {
+      const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
+      if (lstExchangeRates) {
+        // Only consider timestamps after most recent midnight UTC
+        const maxTimestamp =
+          lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
+        if (maxTimestamp && maxTimestamp > lastTimestampS) {
+          timestampsS.push(maxTimestamp);
+        }
+      }
+    });
+    timestampsS.sort((a, b) => a - b);
+
     const result: (Pick<ChartData, "timestampS"> & Partial<ChartData>)[] = [];
     timestampsS.forEach((timestampS) => {
       const d: ChartData = { timestampS };
