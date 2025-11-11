@@ -445,12 +445,19 @@ export default function HistoricalAprLineChart({
         if (isLst(reserve.coinType) && side === Side.DEPOSIT) {
           d[`2_interestAprPercent_staking_yield__${reserve.coinType}`] =
             (() => {
-              const prevLstExchangeRate = lstExchangeRates!.findLast(
-                (e) => e.timestampS < timestampS,
-              );
-              const lstExchangeRate = lstExchangeRates!.find(
+              if (!lstExchangeRates) return undefined;
+              const lstExchangeRate = lstExchangeRates.find(
                 (e) => e.timestampS >= timestampS,
               );
+
+              // For the "now" (last) timestamp, use last two datapoints
+              const isLastTimestamp =
+                lstExchangeRate &&
+                lstExchangeRate.timestampS === lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
+
+              const prevLstExchangeRate = isLastTimestamp
+                ? lstExchangeRates[lstExchangeRates.length - 2]
+                : lstExchangeRates.findLast((e) => e.timestampS < timestampS);
               // console.log("XXXXXXX", [
               //   prevLstExchangeRate
               //     ? formatDate(
