@@ -101,17 +101,19 @@ export default function ClaimRewardsDropdownMenu({
     NORMALIZED_SUI_COINTYPE,
     NORMALIZED_USDC_COINTYPE,
     NORMALIZED_SEND_COINTYPE,
-  ].reduce(
-    (acc, coinType) => ({
-      ...acc,
-      [coinType]: !obligation
-        ? 1 <= MAX_DEPOSITS_PER_OBLIGATION
-        : (obligation.deposits.some((d) => d.coinType === coinType) ||
-            obligation.deposits.length + 1 <= MAX_DEPOSITS_PER_OBLIGATION) &&
-          !obligation.borrows.some((b) => b.coinType === coinType),
-    }),
-    {} as Record<string, boolean>,
-  );
+  ]
+    .filter((coinType) => !!appData.reserveMap[coinType])
+    .reduce(
+      (acc, coinType) => ({
+        ...acc,
+        [coinType]: !obligation
+          ? 1 <= MAX_DEPOSITS_PER_OBLIGATION
+          : (obligation.deposits.some((d) => d.coinType === coinType) ||
+              obligation.deposits.length + 1 <= MAX_DEPOSITS_PER_OBLIGATION) &&
+            !obligation.borrows.some((b) => b.coinType === coinType),
+      }),
+      {} as Record<string, boolean>,
+    );
 
   // State
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -121,15 +123,15 @@ export default function ClaimRewardsDropdownMenu({
   const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
   const [isSwapping, setIsSwapping] = useLocalStorage<boolean>(
-    "claimRewards_isSwapping",
+    `claimRewards_isSwapping_${lendingMarketId}`,
     false,
   );
   const [swappingToCoinType, setSwappingToCoinType] = useLocalStorage<string>(
-    "claimRewards_swappingToCoinType",
-    NORMALIZED_sSUI_COINTYPE,
+    `claimRewards_swappingToCoinType_${lendingMarketId}`,
+    Object.keys(canDepositAsMap)[0], // MUST BE VALID,
   );
   const [isDepositing, setIsDepositing] = useLocalStorage<boolean>(
-    "claimRewards_isDepositing",
+    `claimRewards_isDepositing_${lendingMarketId}`,
     false,
   );
 
@@ -246,7 +248,7 @@ export default function ClaimRewardsDropdownMenu({
           ).replace(
             "and",
             "or",
-          )} (max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions, no borrows).`,
+          )} (max ${MAX_DEPOSITS_PER_OBLIGATION} deposit positions, no borrows, or not listed).`,
         );
       if (isSwapping && !canDepositAsMap[swappingToCoinType])
         result.push(
