@@ -24,6 +24,7 @@ interface CardProps extends PropsWithChildren, CardRootProps {
     startContent?: ReactNode;
     endContent?: ReactNode;
     noSeparator?: boolean;
+    isInitiallyCollapsed?: boolean;
   };
 }
 
@@ -37,7 +38,7 @@ export default function Card({
 
   const [isCollapsed, setIsCollapsed] = useLocalStorage<boolean>(
     id ?? "",
-    false,
+    headerProps?.isInitiallyCollapsed ?? false,
   );
   const toggleIsCollapsed = () => setIsCollapsed((is) => !is);
 

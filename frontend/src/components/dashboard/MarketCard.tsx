@@ -16,6 +16,9 @@ export default function MarketCard() {
   const isFeatured = (featuredLendingMarketIds ?? []).includes(
     appData.lendingMarket.id,
   );
+  const isDeprecated =
+    appData.lendingMarket.id ===
+    "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2"; // TODO: Use LaunchDarkly flag
 
   return (
     <Card
@@ -27,7 +30,12 @@ export default function MarketCard() {
       headerProps={{
         titleContainerClassName: "max-md:h-max",
         titleClassName: cn(isFeatured && "text-secondary"),
-        title: appData.lendingMarket.name,
+        title: [
+          appData.lendingMarket.name,
+          isDeprecated ? "(DEPRECATED)" : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
         startContent: <MarketDetailsPopover />,
         endContent: (
           <div
@@ -55,6 +63,7 @@ export default function MarketCard() {
           </div>
         ),
         noSeparator: true,
+        isInitiallyCollapsed: isDeprecated,
       }}
     >
       <CardContent className="md:p-0">
