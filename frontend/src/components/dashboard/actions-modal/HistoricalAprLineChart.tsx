@@ -453,7 +453,8 @@ export default function HistoricalAprLineChart({
               // For the "now" (last) timestamp, use last two datapoints
               const isLastTimestamp =
                 lstExchangeRate &&
-                lstExchangeRate.timestampS === lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
+                lstExchangeRate.timestampS ===
+                  lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
 
               const prevLstExchangeRate = isLastTimestamp
                 ? lstExchangeRates[lstExchangeRates.length - 2]
