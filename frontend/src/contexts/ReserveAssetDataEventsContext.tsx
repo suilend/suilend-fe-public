@@ -114,10 +114,6 @@ export function ReserveAssetDataEventsContextProvider({
           .map((_, index) => lastTimestampS - index * sampleIntervalS)
           .reverse(); // Oldest to newest
 
-        // Add current timestamp to get the latest exchange rate
-        const currentTimestampS = Math.floor(Date.now() / 1000);
-        timestampsS.push(currentTimestampS);
-
         const res = await fetch(
           `${API_URL}/springsui/historical-rates?coinType=${coinType}&timestamps=${timestampsS.join(",")}`,
         );

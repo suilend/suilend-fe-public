@@ -436,18 +436,18 @@ export default function HistoricalAprLineChart({
               // For chart points at/after the most recent midnight, use the last two
               // midnight datapoints to avoid noise from partial-day accumulation
               const lastMidnightTimestamp =
-                lstExchangeRates[lstExchangeRates.length - 2]?.timestampS;
+                lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
 
               const isAfterLastMidnight =
                 lastMidnightTimestamp && timestampS >= lastMidnightTimestamp;
 
               const prevLstExchangeRate = isAfterLastMidnight
-                ? lstExchangeRates[lstExchangeRates.length - 3] ||
+                ? lstExchangeRates[lstExchangeRates.length - 2] ||
                   lstExchangeRates[0]
                 : lstExchangeRates.findLast((e) => e.timestampS < timestampS);
 
               const lstExchangeRate = isAfterLastMidnight
-                ? lstExchangeRates[lstExchangeRates.length - 2] ||
+                ? lstExchangeRates[lstExchangeRates.length - 1] ||
                   lstExchangeRates[0]
                 : lstExchangeRates.find((e) => e.timestampS >= timestampS);
               // console.log("XXXXXXX", [
