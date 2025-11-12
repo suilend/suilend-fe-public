@@ -399,20 +399,6 @@ export default function HistoricalAprLineChart({
       .map((_, index) => lastTimestampS - index * sampleIntervalS)
       .reverse(); // Oldest to newest
 
-    // Include any additional timestamps from fetched LST exchange rate data
-    reserves.forEach(({ reserve }) => {
-      const lstExchangeRates = lstExchangeRateMap?.[reserve.coinType]?.[days];
-      if (lstExchangeRates) {
-        // Only consider timestamps after most recent midnight UTC
-        const maxTimestamp =
-          lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
-        if (maxTimestamp && maxTimestamp > lastTimestampS) {
-          timestampsS.push(maxTimestamp);
-        }
-      }
-    });
-    timestampsS.sort((a, b) => a - b);
-
     const result: (Pick<ChartData, "timestampS"> & Partial<ChartData>)[] = [];
     timestampsS.forEach((timestampS) => {
       const d: ChartData = { timestampS };
@@ -446,20 +432,24 @@ export default function HistoricalAprLineChart({
           d[`2_interestAprPercent_staking_yield__${reserve.coinType}`] =
             (() => {
               if (!lstExchangeRates) return undefined;
-              const lstExchangeRate = lstExchangeRates.find(
-                (e) => e.timestampS >= timestampS,
-              );
 
-              // For the "now" (last) timestamp, use last two datapoints
-              const isNowTimestamp =
-                lstExchangeRate &&
-                lstExchangeRate.timestampS ===
-                  lstExchangeRates[lstExchangeRates.length - 1]?.timestampS;
+              // For chart points at/after the most recent midnight, use the last two
+              // midnight datapoints to avoid noise from partial-day accumulation
+              const lastMidnightTimestamp =
+                lstExchangeRates[lstExchangeRates.length - 2]?.timestampS;
 
-              const prevLstExchangeRate = isNowTimestamp
+              const isAfterLastMidnight =
+                lastMidnightTimestamp && timestampS >= lastMidnightTimestamp;
+
+              const prevLstExchangeRate = isAfterLastMidnight
                 ? lstExchangeRates[lstExchangeRates.length - 3] ||
                   lstExchangeRates[0]
                 : lstExchangeRates.findLast((e) => e.timestampS < timestampS);
+
+              const lstExchangeRate = isAfterLastMidnight
+                ? lstExchangeRates[lstExchangeRates.length - 2] ||
+                  lstExchangeRates[0]
+                : lstExchangeRates.find((e) => e.timestampS >= timestampS);
               // console.log("XXXXXXX", [
               //   prevLstExchangeRate
               //     ? formatDate(
