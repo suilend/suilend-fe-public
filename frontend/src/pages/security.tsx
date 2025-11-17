@@ -9,10 +9,7 @@ import SendHeader from "@/components/send/SendHeader";
 import Link from "@/components/shared/Link";
 import { TBodySans, TLabelSans, TTitle } from "@/components/shared/Typography";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,

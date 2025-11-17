@@ -59,5 +59,3 @@ export default function SendHeader({ className }: SendHeaderProps) {
     </div>
   );
 }
-
-
