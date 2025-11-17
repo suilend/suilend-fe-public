@@ -32,7 +32,7 @@ function More() {
     <>
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={CLAIM_URL}>Claim</Link>
-      <Link href={SECURITY_URL}>Security</Link>
+      {/* <Link href={SECURITY_URL}>Security</Link> */}
       <Link href={ABOUT_URL}>About</Link>
       {/* <Link href={VAULT_URL}>Vault</Link> */}
       {/* External */}
