@@ -306,20 +306,21 @@ export default function useFetchAppData() {
 
       // Elixir sdeUSD APR (won't throw on error)
       (async () => {
-        try {
-          const url = `${API_URL}/elixir/apy`;
-          const res = await fetch(url);
-          const json: {
-            data: {
-              apy: number;
-            };
-          } = await res.json();
+        return undefined; // Deprecated
+        // try {
+        //   const url = `${API_URL}/elixir/apy`;
+        //   const res = await fetch(url);
+        //   const json: {
+        //     data: {
+        //       apy: number;
+        //     };
+        //   } = await res.json();
 
-          return new BigNumber(json.data.apy);
-        } catch (err) {
-          console.error(err);
-          return undefined;
-        }
+        //   return new BigNumber(json.data.apy);
+        // } catch (err) {
+        //   console.error(err);
+        //   return undefined;
+        // }
       })(),
     ]);
 
