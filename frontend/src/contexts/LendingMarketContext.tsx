@@ -17,7 +17,9 @@ import { UserData, useLoadedUserContext } from "@/contexts/UserContext";
 
 interface LendingMarketContext {
   appData: AppData;
+  isFeatured: boolean;
   featuredReserveIds: string[];
+  isDeprecated: boolean;
   deprecatedReserveIds: string[];
 
   userData: UserData;
@@ -30,8 +32,11 @@ interface LendingMarketContext {
 
 const defaultContextValue: LendingMarketContext = {
   appData: {} as AppData,
+  isFeatured: false,
   featuredReserveIds: [],
+  isDeprecated: false,
   deprecatedReserveIds: [],
+
   userData: {} as UserData,
   obligation: undefined,
   obligationOwnerCap: undefined,
@@ -55,8 +60,13 @@ export function LendingMarketContextProvider({
   lendingMarketId,
   children,
 }: LendingMarketContextProviderProps) {
-  const { allAppData, featuredReserveIds, deprecatedReserveIds } =
-    useLoadedAppContext();
+  const {
+    allAppData,
+    featuredLendingMarketIds,
+    featuredReserveIds,
+    deprecatedLendingMarketIds,
+    deprecatedReserveIds,
+  } = useLoadedAppContext();
   const appData = allAppData.allLendingMarketData[lendingMarketId];
   const {
     allUserData,
@@ -107,8 +117,14 @@ export function LendingMarketContextProvider({
   const contextValue: LendingMarketContext = useMemo(
     () => ({
       appData,
+      isFeatured: (featuredLendingMarketIds ?? []).includes(
+        appData.lendingMarket.id,
+      ),
       featuredReserveIds: (featuredReserveIds ?? []).filter((id) =>
         appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
+      ),
+      isDeprecated: (deprecatedLendingMarketIds ?? []).includes(
+        appData.lendingMarket.id,
       ),
       deprecatedReserveIds: (deprecatedReserveIds ?? []).filter((id) =>
         appData.lendingMarket.reserves.some((reserve) => reserve.id === id),
@@ -123,7 +139,9 @@ export function LendingMarketContextProvider({
     }),
     [
       appData,
+      featuredLendingMarketIds,
       featuredReserveIds,
+      deprecatedLendingMarketIds,
       deprecatedReserveIds,
       userData,
       obligation,

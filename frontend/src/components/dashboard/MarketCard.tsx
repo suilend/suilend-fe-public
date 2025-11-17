@@ -5,20 +5,11 @@ import MarketTable from "@/components/dashboard/market-table/MarketTable";
 import MarketDetailsPopover from "@/components/dashboard/MarketDetailsPopover";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import { CardContent } from "@/components/ui/card";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { cn } from "@/lib/utils";
 
 export default function MarketCard() {
-  const { featuredLendingMarketIds } = useLoadedAppContext();
-  const { appData } = useLendingMarketContext();
-
-  const isFeatured = (featuredLendingMarketIds ?? []).includes(
-    appData.lendingMarket.id,
-  );
-  const isDeprecated =
-    appData.lendingMarket.id ===
-    "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2"; // TODO: Use LaunchDarkly flag
+  const { appData, isFeatured, isDeprecated } = useLendingMarketContext();
 
   return (
     <Card
