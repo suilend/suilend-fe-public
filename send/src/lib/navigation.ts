@@ -8,6 +8,7 @@ export const SEND_URL = "https://suilend.fi/claim";
 export const ABOUT_URL = "https://suilend.fi/about";
 export const ADMIN_URL = "https://suilend.fi/admin";
 export const BUYBACK_URL = "https://send.suilend.fi";
+export const SECURITY_URL = "https://suilend.fi/security";
 
 export const SUILEND_URL = "https://suilend.fi";
 export const SPRINGSUI_URL = "https://springsui.com";

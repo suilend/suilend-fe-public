@@ -14,6 +14,7 @@ import {
   LEADERBOARD_URL,
   ROOT_URL,
   SEND_URL,
+  SECURITY_URL,
   SPRINGSUI_URL,
   STEAMM_URL,
   STRATEGIES_URL,
@@ -26,6 +27,7 @@ function More() {
     <>
       <Link href={LEADERBOARD_URL}>Leaderboard</Link>
       <Link href={SEND_URL}>Claim</Link>
+      <Link href={SECURITY_URL}>Security</Link>
       <Link href={ABOUT_URL}>About</Link>
       {/* External */}
       <Link
