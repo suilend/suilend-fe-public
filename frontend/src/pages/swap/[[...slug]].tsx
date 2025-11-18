@@ -112,7 +112,7 @@ const getCtokenExchangeRate = (eventData: any) =>
 
 const PRICE_DIFFERENCE_PERCENT_WARNING_THRESHOLD = 2;
 const PRICE_DIFFERENCE_PERCENT_CRITICAL_THRESHOLD = 20;
-const PRICE_DIFFERENCE_PERCENT_CHECKBOX_THRESHOLD = 20;
+const PRICE_DIFFERENCE_PERCENT_CHECKBOX_THRESHOLD = 5;
 
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
