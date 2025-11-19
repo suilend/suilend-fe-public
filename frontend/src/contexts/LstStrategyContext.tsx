@@ -1185,11 +1185,6 @@ export function LstStrategyContextProvider({ children }: PropsWithChildren) {
           }
         }
         const tvlAmount = depositedAmount.minus(borrowedAmount);
-        if (strategyType === StrategyType.xBTC_wBTC_LOOPING) {
-          console.log(`XXX depositedAmount (final): ${depositedAmount}`);
-          console.log(`XXX borrowedAmount (final): ${borrowedAmount}`);
-          console.log(`XXX tvlAmount (final): ${tvlAmount}`);
-        }
 
         return tvlAmount;
       } catch (err) {

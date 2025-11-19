@@ -301,6 +301,12 @@ function DetailsTabContent({ strategyType }: TabContentProps) {
                 "DEEP and SEND rewards (for depositing xBTC)",
               [StrategyType.suiUSDT_sSUI_SUI_LOOPING]:
                 "sSUI rewards (for depositing sSUI, and for borrowing SUI)",
+              [StrategyType.AUSD_USDC_LOOPING]:
+                "sSUI rewards (for depositing AUSD, and for borrowing USDC)",
+              [StrategyType.AUSD_suiUSDT_LOOPING]:
+                "sSUI rewards (for depositing AUSD, and for borrowing suiUSDT)",
+              [StrategyType.USDC_suiUSDT_LOOPING]:
+                "sSUI rewards (for depositing USDC, and for borrowing suiUSDT)",
             }[strategyType]
           }{" "}
           are autoclaimed and redeposited every 2 weeks.

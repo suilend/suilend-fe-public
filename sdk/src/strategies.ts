@@ -62,7 +62,7 @@ export enum StrategyFlashLoanProvider {
 }
 
 export const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
-  string,
+  StrategyType,
   {
     provider: StrategyFlashLoanProvider;
     poolId: string;
@@ -135,6 +135,33 @@ export const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
     coinTypeA: NORMALIZED_suiUSDT_COINTYPE,
     coinTypeB: NORMALIZED_USDC_COINTYPE,
     borrowA: true,
+    feePercent: 0.001,
+  },
+  [StrategyType.AUSD_USDC_LOOPING]: {
+    provider: StrategyFlashLoanProvider.MMT,
+    poolId:
+      "0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b", // AUSD-USDC 0.01% https://app.mmt.finance/liquidity/0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b
+    coinTypeA: NORMALIZED_AUSD_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.01,
+  },
+  [StrategyType.AUSD_suiUSDT_LOOPING]: {
+    provider: StrategyFlashLoanProvider.MMT,
+    poolId:
+      "0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b", // AUSD-USDC 0.01% https://app.mmt.finance/liquidity/0x900f25b27d2b1686886277d763223988d802f3b6152d02872c382d4dce05e25b
+    coinTypeA: NORMALIZED_AUSD_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: true,
+    feePercent: 0.01,
+  },
+  [StrategyType.USDC_suiUSDT_LOOPING]: {
+    provider: StrategyFlashLoanProvider.MMT,
+    poolId:
+      "0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9", // suiUSDT-USDC 0.001% https://app.mmt.finance/liquidity/0x737ec6a4d3ed0c7e6cc18d8ba04e7ffd4806b726c97efd89867597368c4d06a9
+    coinTypeA: NORMALIZED_suiUSDT_COINTYPE,
+    coinTypeB: NORMALIZED_USDC_COINTYPE,
+    borrowA: false,
     feePercent: 0.001,
   },
 };
@@ -366,6 +393,21 @@ export const STRATEGY_TYPE_EXPOSURE_MAP: Record<
     min: new BigNumber(1),
     max: new BigNumber(3), // Actual max: 1 + (suiUSDT Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3.5666x, where suiUSDT Open LTV % = 77% and sSUI Open LTV % = 70%
     default: new BigNumber(3),
+  },
+  [StrategyType.AUSD_USDC_LOOPING]: {
+    min: new BigNumber(1),
+    max: new BigNumber(4), // Actual max: 1 / (1 - (AUSD Open LTV %)) = 4.347x, where AUSD Open LTV % = 77%
+    default: new BigNumber(4),
+  },
+  [StrategyType.AUSD_suiUSDT_LOOPING]: {
+    min: new BigNumber(1),
+    max: new BigNumber(4), // Actual max: 1 / (1 - (AUSD Open LTV %)) = 4.347x, where AUSD Open LTV % = 77%
+    default: new BigNumber(4),
+  },
+  [StrategyType.USDC_suiUSDT_LOOPING]: {
+    min: new BigNumber(1),
+    max: new BigNumber(4), // Actual max: 1 / (1 - (USDC Open LTV %)) = 4.347x, where USDC Open LTV % = 77%
+    default: new BigNumber(4),
   },
 };
 

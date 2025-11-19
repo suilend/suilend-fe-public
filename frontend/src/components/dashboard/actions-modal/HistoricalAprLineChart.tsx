@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import BigNumber from "bignumber.js";
 import { format } from "date-fns";
@@ -9,10 +9,8 @@ import { WAD, getDedupedAprRewards, reserveSort } from "@suilend/sdk";
 import { ApiReserveAssetDataEvent, Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
 import {
-  API_URL,
   COINTYPE_COLOR_MAP,
   MS_PER_YEAR,
-  NORMALIZED_sdeUSD_COINTYPE,
   formatPercent,
   getToken,
 } from "@suilend/sui-fe";
@@ -552,6 +550,23 @@ export default function HistoricalAprLineChart({
     getAprRewardReserves,
   ]);
   const isLoading = chartData === undefined;
+
+  // console.log("XXXX", chartData);
+  // if (chartData) {
+  //   let avg = 0;
+  //   for (const d of chartData) {
+  //     const nonTimestampSFields = Object.keys(d).filter(
+  //       (key) => key !== "timestampS",
+  //     );
+
+  //     avg = avg += nonTimestampSFields.reduce(
+  //       (acc, field) => acc + (d[field] ?? 0),
+  //       0,
+  //     );
+  //   }
+  //   avg = avg / chartData.length;
+  //   console.log("XXXX", avg);
+  // }
 
   // Average APR
   const averageAprPercent = useMemo(() => {

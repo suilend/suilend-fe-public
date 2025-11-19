@@ -380,10 +380,12 @@ export default function StrategyPanel() {
             <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-2 min-[1316px]:grid-cols-3">
               {Object.values(StrategyType)
                 .filter((strategyType) =>
-                  strategyType === StrategyType.xBTC_wBTC_LOOPING
-                    ? process.env.NODE_ENV === "development" ||
-                      router.query.xbtcwbtc === "true" ||
-                      Date.now() >= 1759237200000 // 2025/09/30 13:00:00 UTC
+                  [
+                    StrategyType.AUSD_USDC_LOOPING,
+                    StrategyType.AUSD_suiUSDT_LOOPING,
+                    StrategyType.USDC_suiUSDT_LOOPING,
+                  ].includes(strategyType)
+                    ? process.env.NODE_ENV === "development"
                     : true,
                 )
                 .map((strategyType) => {

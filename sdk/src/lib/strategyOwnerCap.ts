@@ -50,6 +50,9 @@ export enum StrategyType {
   xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies #0
   xBTC_wBTC_LOOPING = "101", // Used to be for Slush Strategies #1
   suiUSDT_sSUI_SUI_LOOPING = "5",
+  AUSD_USDC_LOOPING = "6",
+  AUSD_suiUSDT_LOOPING = "7",
+  USDC_suiUSDT_LOOPING = "8",
 }
 export const STRATEGY_TYPE_INFO_MAP: Record<
   StrategyType,
@@ -188,6 +191,57 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
 
     currencyCoinTypes: [NORMALIZED_suiUSDT_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_suiUSDT_COINTYPE,
+  },
+  [StrategyType.AUSD_USDC_LOOPING]: {
+    queryParam: "AUSD-USDC-looping",
+    header: {
+      coinTypes: [NORMALIZED_AUSD_COINTYPE, NORMALIZED_USDC_COINTYPE],
+      title: "AUSD/USDC",
+      tooltip:
+        "Sets up an AUSD/USDC Looping strategy by depositing AUSD and borrowing USDC to the desired leverage",
+      type: "Looping",
+    },
+
+    depositBaseCoinType: NORMALIZED_AUSD_COINTYPE,
+    depositLstCoinType: undefined,
+    borrowCoinType: NORMALIZED_USDC_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_AUSD_COINTYPE, NORMALIZED_USDC_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_AUSD_COINTYPE,
+  },
+  [StrategyType.AUSD_suiUSDT_LOOPING]: {
+    queryParam: "AUSD-suiUSDT-looping",
+    header: {
+      coinTypes: [NORMALIZED_AUSD_COINTYPE, NORMALIZED_suiUSDT_COINTYPE],
+      title: "AUSD/suiUSDT",
+      tooltip:
+        "Sets up an AUSD/suiUSDT Looping strategy by depositing AUSD and borrowing suiUSDT to the desired leverage",
+      type: "Looping",
+    },
+
+    depositBaseCoinType: NORMALIZED_AUSD_COINTYPE,
+    depositLstCoinType: undefined,
+    borrowCoinType: NORMALIZED_suiUSDT_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_AUSD_COINTYPE, NORMALIZED_suiUSDT_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_AUSD_COINTYPE,
+  },
+  [StrategyType.USDC_suiUSDT_LOOPING]: {
+    queryParam: "USDC-suiUSDT-looping",
+    header: {
+      coinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_suiUSDT_COINTYPE],
+      title: "USDC/suiUSDT",
+      tooltip:
+        "Sets up a USDC/suiUSDT Looping strategy by depositing USDC and borrowing suiUSDT to the desired leverage",
+      type: "Looping",
+    },
+
+    depositBaseCoinType: NORMALIZED_USDC_COINTYPE,
+    depositLstCoinType: undefined,
+    borrowCoinType: NORMALIZED_suiUSDT_COINTYPE,
+
+    currencyCoinTypes: [NORMALIZED_USDC_COINTYPE, NORMALIZED_suiUSDT_COINTYPE],
+    defaultCurrencyCoinType: NORMALIZED_USDC_COINTYPE,
   },
 };
 

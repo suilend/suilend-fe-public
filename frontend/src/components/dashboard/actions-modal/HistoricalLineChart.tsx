@@ -178,6 +178,12 @@ export default function HistoricalLineChart({
             content={tooltipContent}
           />
         )}
+        <Recharts.ReferenceLine
+          y={0}
+          stroke="hsla(var(--muted) / 25%)"
+          strokeWidth={1}
+          strokeDasharray="4 4"
+        />
         {average !== undefined && (
           <Recharts.ReferenceLine
             y={average}
