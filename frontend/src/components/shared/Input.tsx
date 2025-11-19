@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from "react";
+import { ReactNode, forwardRef, useEffect, useRef } from "react";
 
 import { ClassValue } from "clsx";
 import { mergeRefs } from "react-merge-refs";
@@ -14,7 +14,7 @@ export const getInputId = (id: string) => `input-${id}`;
 
 interface InputProps {
   className?: ClassValue;
-  label?: string;
+  label?: ReactNode;
   labelRight?: string;
   id: string;
   type?: "text" | "number" | "range";
