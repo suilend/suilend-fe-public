@@ -37,15 +37,6 @@ export const LENDING_MARKET_METADATA_MAP: Record<
     name: "Main Market",
     isHidden: false,
   },
-  [STEAMM_LM_LENDING_MARKET_ID]: {
-    id: STEAMM_LM_LENDING_MARKET_ID,
-    type: STEAMM_LM_LENDING_MARKET_TYPE,
-    lendingMarketOwnerCapId:
-      "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
-
-    name: "STEAMM LM",
-    isHidden: true,
-  },
   "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82": {
     id: "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82",
     type: "0xd382f7d6e7596585b3063d5f4607de30a7a81adeb521d6b862b4c57defca746e::Matrixdock_gold::MATRIXDOCK_GOLD",
@@ -72,6 +63,15 @@ export const LENDING_MARKET_METADATA_MAP: Record<
 
     name: "Elixir Market",
     isHidden: false,
+  },
+  [STEAMM_LM_LENDING_MARKET_ID]: {
+    id: STEAMM_LM_LENDING_MARKET_ID,
+    type: STEAMM_LM_LENDING_MARKET_TYPE,
+    lendingMarketOwnerCapId:
+      "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
+
+    name: "STEAMM LM",
+    isHidden: true,
   },
 };
 
