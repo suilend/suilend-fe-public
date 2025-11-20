@@ -55,6 +55,15 @@ export const LENDING_MARKET_METADATA_MAP: Record<
     name: "Matrixdock Gold Market",
     isHidden: false,
   },
+  "0xc1549fd5db74c3aad37a260c9fd251d93d6f2f3ccfacc277398a57718c275a17": {
+    id: "0xc1549fd5db74c3aad37a260c9fd251d93d6f2f3ccfacc277398a57718c275a17",
+    type: "0xfdd80974048913f1fa7fecf040099975760fef78cccda53d0b347a475819fa98::send::SEND",
+    lendingMarketOwnerCapId:
+      "0xa0384efc3fe33ec0a9308fff1015d0b7503b15aa4d3be66b4704f12d905caef1",
+
+    name: "SEND Market",
+    isHidden: true,
+  },
   "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2": {
     id: "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2",
     type: "0x3628b6ea618a6cca71793bab63e88ea69e10d3a99b5c7b3df88ba01f165015d4::elixir::ELIXIR",
