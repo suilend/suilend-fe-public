@@ -1398,7 +1398,7 @@ export const getStrategyHealthPercent = (
   const borrowLimitUsd = _obligation.minPriceBorrowLimitUsd.times(
     depositReserves.base !== undefined
       ? 0.99 // 1% buffer
-      : 0.999, // 0.1% buffer
+      : 1, // 0.1% buffer
   );
   const liquidationThresholdUsd = _obligation.unhealthyBorrowValueUsd;
 
