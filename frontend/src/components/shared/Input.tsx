@@ -14,6 +14,7 @@ export const getInputId = (id: string) => `input-${id}`;
 
 interface InputProps {
   className?: ClassValue;
+  labelClassName?: ClassValue;
   label?: ReactNode;
   labelRight?: string;
   id: string;
@@ -23,14 +24,15 @@ interface InputProps {
   value?: string | number;
   onChange: (value: string) => void;
   inputProps?: InputComponentProps;
-  startDecorator?: string;
-  endDecorator?: string;
+  startDecorator?: ReactNode;
+  endDecorator?: ReactNode;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className,
+      labelClassName,
       label,
       labelRight,
       id,
@@ -65,7 +67,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <div className="flex flex-row justify-between">
             <label htmlFor={inputId}>
-              <TLabelSans>{label}</TLabelSans>
+              <TLabelSans className={cn(labelClassName)}>{label}</TLabelSans>
             </label>
             {labelRight && <TLabelSans>{labelRight}</TLabelSans>}
           </div>

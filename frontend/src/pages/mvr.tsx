@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useCallback, useState } from "react";
 
 import { SuiObjectResponse } from "@mysten/sui/client";
+import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -15,90 +16,125 @@ import Input from "@/components/shared/Input";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
-import { TBody, TLabelSans, TTitle } from "@/components/shared/Typography";
+import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export default function Multisig() {
   const { explorer, suiClient } = useSettingsContext();
 
-  // Multisig address
-  const [multisigAddress, setMultisigAddress] = useLocalStorage<string>(
-    "multisigAddress",
-    "",
+  // Address
+  const [address, setAddress] = useLocalStorage<string>("mvr_address", "");
+
+  // Multisig
+  const [isMultisig, setIsMultisig] = useLocalStorage<boolean>(
+    "mvr_isMultisig",
+    false,
   );
 
-  // UpgradeCaps
-  const [upgradeCapObjects, setUpgradeCapObjects] = useState<
+  // Owned objects
+  const [upgradeCapObjs, setUpgradeCapObjs] = useState<
     SuiObjectResponse[] | undefined
   >(undefined);
-  const [mvrPackageMetadataObjects, setMvrPackageMetadataObjects] = useState<
+  const [mvrPackageMetadataObjs, setMvrPackageMetadataObjs] = useState<
+    SuiObjectResponse[] | undefined
+  >(undefined);
+  const [suinsDomainObjs, setSuinsDomainObjs] = useState<
     SuiObjectResponse[] | undefined
   >(undefined);
 
-  const fetchUpgradeCaps = useCallback(async () => {
+  const fetchOwnedObjects = useCallback(async () => {
     try {
-      if (multisigAddress === "") throw new Error("Enter a multisig address");
+      if (address === "") throw new Error("Enter an address");
 
-      const [upgradeCapObjs, mvrPackageMetadataObjs] = await Promise.all([
-        getAllOwnedObjects(suiClient, multisigAddress, {
-          StructType: "0x2::package::UpgradeCap",
-        }),
-        getAllOwnedObjects(suiClient, multisigAddress, {
-          StructType:
-            "0x0f6b71233780a3f362137b44ac219290f4fd34eb81e0cb62ddf4bb38d1f9a3a1::package_info::PackageInfo",
-        }),
-      ]);
-      setUpgradeCapObjects(upgradeCapObjs);
-      setMvrPackageMetadataObjects(mvrPackageMetadataObjs);
+      const [_upgradeCapObjs, _mvrPackageMetadataObjs, _suinsDomainObjs] =
+        await Promise.all([
+          getAllOwnedObjects(suiClient, address, {
+            StructType: "0x2::package::UpgradeCap",
+          }),
+          getAllOwnedObjects(suiClient, address, {
+            StructType:
+              "0x0f6b71233780a3f362137b44ac219290f4fd34eb81e0cb62ddf4bb38d1f9a3a1::package_info::PackageInfo",
+          }),
+          getAllOwnedObjects(suiClient, address, {
+            StructType:
+              "0xd22b24490e0bae52676651b4f56660a5ff8022a2576e0089f79b3c88d44e08f0::suins_registration::SuinsRegistration",
+          }),
+        ]);
+      setUpgradeCapObjs(_upgradeCapObjs);
+      setMvrPackageMetadataObjs(_mvrPackageMetadataObjs);
+      setSuinsDomainObjs(_suinsDomainObjs);
     } catch (err) {
       toast.error("Failed to fetch owned objects", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     }
-  }, [multisigAddress, suiClient]);
+  }, [address, suiClient]);
 
   return (
     <>
       <Head>
-        <title>
-          <TTitle>Multisig</TTitle>
-        </title>
+        <title>MVR</title>
       </Head>
 
       <div className="flex w-full max-w-4xl flex-col gap-8">
         {/* Form */}
         <div className="flex w-full flex-row items-end gap-4">
-          {/* Address */}
-          <Input
-            className="flex-1"
-            id="multisig-address"
-            label="Multisig address"
-            value={multisigAddress}
-            onChange={setMultisigAddress}
-            inputProps={{
-              autoFocus: true,
-            }}
-          />
+          <div className="flex flex-1 flex-col gap-4">
+            {/* Address */}
+            <Input
+              className="flex-1"
+              labelClassName="text-sm"
+              id="address"
+              label="Address"
+              value={address}
+              onChange={setAddress}
+              inputProps={{
+                autoFocus: true,
+              }}
+            />
+
+            <button
+              className="flex w-max flex-row items-center gap-2"
+              onClick={() => setIsMultisig((is) => !is)}
+            >
+              <div
+                className={cn(
+                  "flex h-5 w-5 flex-row items-center justify-center rounded-sm border border-muted-foreground",
+                  isMultisig && "border-primary bg-primary",
+                )}
+              >
+                {isMultisig && <Check className="h-4 w-4 text-foreground" />}
+              </div>
+              <TBodySans className={cn(isMultisig && "text-foreground")}>
+                Multisig
+              </TBodySans>
+            </button>
+          </div>
 
           {/* CTA */}
           <Button
-            className="w-max"
+            className="mb-9 w-max"
             labelClassName="uppercase"
             size="lg"
-            onClick={fetchUpgradeCaps}
+            onClick={fetchOwnedObjects}
           >
             Fetch UpgradeCaps
           </Button>
         </div>
 
         {/* UpgradeCaps */}
-        {upgradeCapObjects !== undefined &&
-          mvrPackageMetadataObjects !== undefined && (
+        {upgradeCapObjs !== undefined &&
+          mvrPackageMetadataObjs !== undefined &&
+          suinsDomainObjs !== undefined && (
             <>
               <Separator />
 
               <div className="flex w-full flex-col gap-4">
-                <PublishNewPackageDialog multisigAddress={multisigAddress} />
+                <PublishNewPackageDialog
+                  address={address}
+                  isMultisig={isMultisig}
+                />
 
                 <table className="w-full border">
                   <thead className="h-8 border-b">
@@ -118,19 +154,19 @@ export default function Multisig() {
                     </tr>
                   </thead>
                   <tbody>
-                    {upgradeCapObjects.length === 0 ? (
+                    {upgradeCapObjs.length === 0 ? (
                       <tr>
                         <td colSpan={4}>No UpgradeCaps</td>
                       </tr>
                     ) : (
-                      upgradeCapObjects.map((obj) => {
+                      upgradeCapObjs.map((obj) => {
                         const id = obj.data?.objectId as string;
                         const { package: packageId, version } = (
                           obj.data?.content as any
                         ).fields;
 
                         const mvrPackageMetadataObj =
-                          mvrPackageMetadataObjects.find(
+                          mvrPackageMetadataObjs.find(
                             (obj) =>
                               (obj.data?.content as any).fields
                                 .upgrade_cap_id === id,
@@ -208,9 +244,12 @@ export default function Multisig() {
                                 </div>
                               ) : (
                                 <CreatePackageMetadataObjectDialog
-                                  multisigAddress={multisigAddress}
+                                  suinsDomainObjs={suinsDomainObjs}
+                                  address={address}
+                                  isMultisig={isMultisig}
                                   upgradeCapId={id}
                                   version={version}
+                                  refresh={fetchOwnedObjects}
                                 />
                               )}
                             </td>

@@ -1,62 +1,111 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useSignTransaction } from "@mysten/dapp-kit";
+import { SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction, namedPackagesPlugin } from "@mysten/sui/transactions";
 import { DebouncedFunc, debounce } from "lodash";
 import { Box } from "lucide-react";
+import { toast } from "sonner";
 
+import { TX_TOAST_DURATION } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
 import Input from "@/components/shared/Input";
-import { TLabelSans } from "@/components/shared/Typography";
+import StandardSelect from "@/components/shared/StandardSelect";
+import TextLink from "@/components/shared/TextLink";
+import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import {
-  MVR_REGISTRY_OBJECT_ID,
-  MvrGitInfo,
-  MvrMetadata,
-  SUILEND_SUINS_OBJECT_ID,
-} from "@/lib/mvr";
+import { MVR_REGISTRY_OBJECT_ID, MvrGitInfo, MvrMetadata } from "@/lib/mvr";
+
+type Organization = { suinsDomainObjId: string; name: string };
 
 interface CreatePackageMetadataObjectDialogProps {
-  multisigAddress: string;
+  suinsDomainObjs: SuiObjectResponse[];
+  address: string;
+  isMultisig: boolean;
   upgradeCapId: string;
   version: number;
+  refresh: () => Promise<void>;
 }
 export default function CreatePackageMetadataObjectDialog({
-  multisigAddress,
+  suinsDomainObjs,
+  address,
+  isMultisig,
   upgradeCapId,
   version,
+  refresh,
 }: CreatePackageMetadataObjectDialogProps) {
-  const { suiClient } = useSettingsContext();
+  const { explorer, suiClient } = useSettingsContext();
+  const { mutateAsync: signTransaction } = useSignTransaction();
+
+  useEffect(() => {
+    const mainnetPlugin = namedPackagesPlugin({
+      url: "https://mainnet.mvr.mystenlabs.com",
+    });
+
+    Transaction.registerGlobalSerializationPlugin(
+      "namedPackagesPlugin",
+      mainnetPlugin,
+    );
+  }, []);
 
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+
+  const [suinsDomainObjId, setSuinsDomainObjId] = useState<string | undefined>(
+    undefined,
+  );
+  const getOrganizationObj = useCallback(
+    (_suinsDomainObjId: string | undefined): Organization | undefined => {
+      if (!_suinsDomainObjId) return undefined;
+
+      const suinsDomainObj = suinsDomainObjs.find(
+        (obj) => obj.data?.objectId === _suinsDomainObjId,
+      );
+      if (!suinsDomainObj) throw new Error("Suins domain object not found");
+
+      return {
+        suinsDomainObjId: _suinsDomainObjId,
+        name: `@${(suinsDomainObj.data?.content as any).fields?.domain_name
+          .split(".")
+          .slice(0, -1)
+          .join(".")}`,
+      };
+    },
+    [suinsDomainObjs],
+  );
+  useEffect(() => {
+    if (isDialogOpen) {
+      if (suinsDomainObjs.length > 0 && !suinsDomainObjId)
+        setSuinsDomainObjId(suinsDomainObjs[0].data?.objectId as string);
+    }
+  }, [isDialogOpen, suinsDomainObjs, suinsDomainObjId]);
 
   const [packageName, setPackageName] = useState<string>("");
   const [versionGitInfoMap, setVersionGitInfoMap] = useState<
     Record<number, MvrGitInfo>
   >({});
   const [metadata, setMetadata] = useState<MvrMetadata>({});
-  const [transactionJSON, setTransactionJSON] = useState<string>("");
+  const [transactionBase64, setTransactionBase64] = useState<string>("");
 
-  const getTransactionJSON = useCallback(
-    async (
-      _multisigAddress: string,
+  const getTransaction = useCallback(
+    (
+      _address: string,
       _upgradeCapId: string,
       _version: number,
+      _organizationObj: Organization | undefined,
       _packageName: string,
       _versionGitInfoMap: Record<number, MvrGitInfo>,
       _metadata: MvrMetadata,
     ) => {
+      if (!_organizationObj) throw new Error("Missing organization");
+      if (!_packageName) throw new Error("Missing package name");
+
       // 1) Publish
       const transaction = new Transaction();
-      transaction.setSender(_multisigAddress);
-
-      const mainnetPlugin = namedPackagesPlugin({
-        url: "https://mainnet.mvr.mystenlabs.com",
-      });
-      transaction.addSerializationPlugin(mainnetPlugin);
+      transaction.setSender(_address);
 
       // PackageInfo
       const packageInfo = transaction.moveCall({
@@ -76,7 +125,7 @@ export default function CreatePackageMetadataObjectDialog({
         arguments: [
           transaction.object(packageInfo),
           transaction.pure.string("default"),
-          transaction.pure.string(`@suilend/${_packageName}`),
+          transaction.pure.string(`${_organizationObj.name}/${_packageName}`),
         ],
       });
 
@@ -84,6 +133,8 @@ export default function CreatePackageMetadataObjectDialog({
       for (let v = 1; v <= _version; v++) {
         const gitInfo = _versionGitInfoMap[v];
         if (!gitInfo) continue;
+        if (!gitInfo.repository || !gitInfo.subdirectory || !gitInfo.commitHash)
+          continue;
 
         const git = transaction.moveCall({
           target: `@mvr/metadata::git::new`,
@@ -108,7 +159,7 @@ export default function CreatePackageMetadataObjectDialog({
         target: `@mvr/core::move_registry::register`,
         arguments: [
           transaction.object(MVR_REGISTRY_OBJECT_ID),
-          transaction.object(SUILEND_SUINS_OBJECT_ID),
+          transaction.object(_organizationObj.suinsDomainObjId),
           transaction.pure.string(_packageName),
           transaction.object.clock(),
         ],
@@ -168,39 +219,167 @@ export default function CreatePackageMetadataObjectDialog({
       transaction.moveCall({
         target: `@mvr/core::move_registry::assign_package`,
         arguments: [
-          transaction.object(
-            `0x0e5d473a055b6b7d014af557a13ad9075157fdc19b6d51562a18511afd397727`,
-          ),
+          transaction.object(MVR_REGISTRY_OBJECT_ID),
           transaction.object(appCap),
           transaction.object(packageInfo),
         ],
       });
 
-      const json = await transaction.toJSON({ client: suiClient });
-      setTransactionJSON(json);
+      transaction.moveCall({
+        target: `@mvr/metadata::package_info::transfer`,
+        arguments: [
+          transaction.object(packageInfo),
+          transaction.pure.address(_address),
+        ],
+      });
+      transaction.transferObjects([appCap], transaction.pure.address(_address));
+
+      return transaction;
     },
     [],
   );
-  const debouncedGetTransactionJSONRef = useRef<
-    DebouncedFunc<typeof getTransactionJSON>
-  >(debounce(getTransactionJSON, 100));
+  const getTransactionBase64 = useCallback(
+    async (
+      _address: string,
+      _upgradeCapId: string,
+      _version: number,
+      _organizationObj: Organization | undefined,
+      _packageName: string,
+      _versionGitInfoMap: Record<number, MvrGitInfo>,
+      _metadata: MvrMetadata,
+    ) => {
+      const transaction = getTransaction(
+        _address,
+        _upgradeCapId,
+        _version,
+        _organizationObj,
+        _packageName,
+        _versionGitInfoMap,
+        _metadata,
+      );
 
-  const onPackageNameChange = useCallback(
-    (_packageName: string) => {
-      setPackageName(_packageName);
-      debouncedGetTransactionJSONRef.current(
-        multisigAddress,
+      const transactionBytes = await transaction.build({ client: suiClient });
+      const base64 = Buffer.from(transactionBytes).toString("base64");
+      setTransactionBase64(base64);
+    },
+    [getTransaction, suiClient],
+  );
+  const debouncedGetTransactionBase64Ref = useRef<
+    DebouncedFunc<typeof getTransactionBase64>
+  >(debounce(getTransactionBase64, 100));
+
+  const submit = async () => {
+    try {
+      const transaction = getTransaction(
+        address,
         upgradeCapId,
         version,
-        _packageName,
+        getOrganizationObj(suinsDomainObjId),
+        packageName,
         versionGitInfoMap,
         metadata,
       );
+
+      const signedTransaction = await signTransaction({ transaction });
+      const res1 = await suiClient.executeTransactionBlock({
+        transactionBlock: signedTransaction.bytes,
+        signature: signedTransaction.signature,
+      });
+      const res = await suiClient.waitForTransaction({
+        digest: res1.digest,
+        options: {
+          showBalanceChanges: true,
+          showEffects: true,
+          showEvents: true,
+          showObjectChanges: true,
+        },
+      });
+      const txUrl = explorer.buildTxUrl(res.digest);
+
+      toast.success("Registered package", {
+        action: (
+          <TextLink className="block" href={txUrl}>
+            View tx on {explorer.name}
+          </TextLink>
+        ),
+        duration: TX_TOAST_DURATION,
+      });
+
+      setIsDialogOpen(false);
+      reset();
+    } catch (err) {
+      toast.error("Failed to register package", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    } finally {
+      refresh();
+    }
+  };
+
+  const onSuinsDomainObjIdChange = useCallback(
+    async (_suinsDomainObjId: string) => {
+      setSuinsDomainObjId(_suinsDomainObjId);
+
+      if (!isMultisig) return;
+      try {
+        await debouncedGetTransactionBase64Ref.current(
+          address,
+          upgradeCapId,
+          version,
+          getOrganizationObj(_suinsDomainObjId),
+          packageName,
+          versionGitInfoMap,
+          metadata,
+        );
+      } catch (err) {
+        console.error(err);
+        // Fail silently
+      }
     },
-    [multisigAddress, upgradeCapId, version, versionGitInfoMap, metadata],
+    [
+      isMultisig,
+      address,
+      upgradeCapId,
+      version,
+      getOrganizationObj,
+      packageName,
+      versionGitInfoMap,
+      metadata,
+    ],
+  );
+  const onPackageNameChange = useCallback(
+    async (_packageName: string) => {
+      setPackageName(_packageName);
+
+      if (!isMultisig) return;
+      try {
+        await debouncedGetTransactionBase64Ref.current(
+          address,
+          upgradeCapId,
+          version,
+          getOrganizationObj(suinsDomainObjId),
+          _packageName,
+          versionGitInfoMap,
+          metadata,
+        );
+      } catch (err) {
+        console.error(err);
+        // Fail silently
+      }
+    },
+    [
+      isMultisig,
+      address,
+      upgradeCapId,
+      version,
+      getOrganizationObj,
+      suinsDomainObjId,
+      versionGitInfoMap,
+      metadata,
+    ],
   );
   const onVersionGitInfoMapChange = useCallback(
-    (_version: number, key: keyof MvrGitInfo, value: string) => {
+    async (_version: number, key: keyof MvrGitInfo, value: string) => {
       const _versionGitInfoMap = {
         ...versionGitInfoMap,
         [_version]: {
@@ -208,46 +387,67 @@ export default function CreatePackageMetadataObjectDialog({
           [key]: value,
         },
       };
-
       setVersionGitInfoMap(_versionGitInfoMap);
-      debouncedGetTransactionJSONRef.current(
-        multisigAddress,
-        upgradeCapId,
-        version,
-        packageName,
-        _versionGitInfoMap,
-        metadata,
-      );
+
+      if (!isMultisig) return;
+      try {
+        await debouncedGetTransactionBase64Ref.current(
+          address,
+          upgradeCapId,
+          version,
+          getOrganizationObj(suinsDomainObjId),
+          packageName,
+          _versionGitInfoMap,
+          metadata,
+        );
+      } catch (err) {
+        console.error(err);
+        // Fail silently
+      }
     },
     [
-      multisigAddress,
+      isMultisig,
+      address,
       upgradeCapId,
       version,
+      getOrganizationObj,
+      suinsDomainObjId,
       packageName,
       versionGitInfoMap,
       metadata,
     ],
   );
   const onMetadataChange = useCallback(
-    (key: keyof MvrMetadata, value: string) => {
+    async (key: keyof MvrMetadata, value: string) => {
       const _metadata = {
         ...metadata,
         [key]: value,
       };
       setMetadata(_metadata);
-      debouncedGetTransactionJSONRef.current(
-        multisigAddress,
-        upgradeCapId,
-        version,
-        packageName,
-        versionGitInfoMap,
-        _metadata,
-      );
+
+      if (!isMultisig) return;
+      try {
+        await debouncedGetTransactionBase64Ref.current(
+          address,
+          upgradeCapId,
+          version,
+          getOrganizationObj(suinsDomainObjId),
+          packageName,
+          versionGitInfoMap,
+          _metadata,
+        );
+      } catch (err) {
+        console.error(err);
+        // Fail silently
+      }
     },
     [
-      multisigAddress,
+      isMultisig,
+      address,
       upgradeCapId,
       version,
+      getOrganizationObj,
+      suinsDomainObjId,
       packageName,
       versionGitInfoMap,
       metadata,
@@ -256,10 +456,11 @@ export default function CreatePackageMetadataObjectDialog({
 
   // Reset
   const reset = useCallback(() => {
+    setSuinsDomainObjId(undefined);
     setPackageName("");
     setVersionGitInfoMap({});
     setMetadata({});
-    setTransactionJSON("");
+    setTransactionBase64("");
   }, []);
 
   useEffect(() => {
@@ -275,6 +476,7 @@ export default function CreatePackageMetadataObjectDialog({
           labelClassName="uppercase"
           variant="secondary"
           startIcon={<Box />}
+          disabled={suinsDomainObjs.length === 0}
         >
           Register
         </Button>
@@ -282,78 +484,158 @@ export default function CreatePackageMetadataObjectDialog({
       headerProps={{
         title: { icon: <Box />, children: "Register package" },
       }}
+      footerProps={{
+        children: (
+          <>
+            {isMultisig ? (
+              <div className="flex w-full flex-col gap-4">
+                <Separator className="-mx-4 w-auto" />
+
+                <div className="flex w-full flex-col gap-2">
+                  <TLabelSans>Transaction base64</TLabelSans>
+                  <textarea
+                    id="transactionBase64"
+                    className="border-divider flex min-h-10 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    value={transactionBase64}
+                    readOnly
+                    rows={4}
+                  />
+                </div>
+              </div>
+            ) : (
+              <Button
+                className="w-full"
+                labelClassName="uppercase"
+                size="lg"
+                onClick={submit}
+              >
+                Submit
+              </Button>
+            )}
+          </>
+        ),
+      }}
     >
       <div className="flex w-full flex-col gap-4">
         {/* Form */}
         <div className="flex w-full flex-col gap-4">
+          {/* Suins domain */}
+          <div className="flex w-full flex-col gap-2">
+            <TLabelSans>
+              Suins domain <span className="text-red-500">*</span>
+            </TLabelSans>
+            <StandardSelect
+              viewportClassName="p-2"
+              itemClassName="font-mono text-sm h-10"
+              triggerClassName="font-mono rounded-md h-10 bg-background !text-foreground"
+              items={suinsDomainObjs.map((suinsDomainObj) => {
+                const id = suinsDomainObj.data?.objectId as string;
+
+                return {
+                  id,
+                  name: getOrganizationObj(id)?.name ?? "",
+                };
+              })}
+              value={suinsDomainObjId}
+              onChange={onSuinsDomainObjIdChange}
+            />
+          </div>
+
           {/* Package name */}
           <Input
-            className="w-full"
             label={
               <>
-                Package name <span className="text-red-500">*</span>
+                Name <span className="text-red-500">*</span>
               </>
             }
             id="packageName"
             value={packageName}
             onChange={onPackageNameChange}
-            inputProps={{ autoFocus: true }}
+            inputProps={{
+              autoFocus: true,
+              style: {
+                paddingLeft: `${3 * 4 + ((getOrganizationObj(suinsDomainObjId)?.name ?? "").length + 1) * 8.4}px`,
+              },
+            }}
+            startDecorator={
+              <TBody className="text-muted-foreground">
+                {getOrganizationObj(suinsDomainObjId)?.name ?? ""}/
+              </TBody>
+            }
           />
 
           {/* Version Git Info Map */}
-          {Array.from({ length: version }, (_, i) => i + 1).map((version) => (
-            <div key={version} className="flex w-full flex-row items-end gap-2">
-              <div className="flex h-10 flex-row items-center">
-                <TLabelSans className="pr-2">v{version}</TLabelSans>
-              </div>
+          <div className="flex w-full flex-col gap-2">
+            <TLabelSans>Git repository info</TLabelSans>
+            <div className="flex w-full flex-col gap-4 rounded-md border p-4">
+              {Array.from({ length: version }, (_, i) => i + 1).map(
+                (version) => (
+                  <div
+                    key={version}
+                    className="flex w-full flex-row items-end gap-2"
+                  >
+                    <div className="flex h-10 flex-row items-center">
+                      <TLabel className="pr-2 text-sm">v{version}</TLabel>
+                    </div>
 
-              <Input
-                className="flex-1"
-                label={
-                  <>
-                    Repository <span className="text-red-500">*</span>
-                  </>
-                }
-                id={`version${version}Repository`}
-                value={
-                  versionGitInfoMap[version as number]?.["repository"] ?? ""
-                }
-                onChange={(value) =>
-                  onVersionGitInfoMapChange(version, "repository", value)
-                }
-              />
-              <Input
-                className="flex-1"
-                label={
-                  <>
-                    Subdirectory <span className="text-red-500">*</span>
-                  </>
-                }
-                id={`version${version}Subdirectory`}
-                value={
-                  versionGitInfoMap[version as number]?.["subdirectory"] ?? ""
-                }
-                onChange={(value) =>
-                  onVersionGitInfoMapChange(version, "subdirectory", value)
-                }
-              />
-              <Input
-                className="flex-1"
-                label={
-                  <>
-                    Commit hash <span className="text-red-500">*</span>
-                  </>
-                }
-                id={`version${version}CommitHash`}
-                value={
-                  versionGitInfoMap[version as number]?.["commitHash"] ?? ""
-                }
-                onChange={(value) =>
-                  onVersionGitInfoMapChange(version, "commitHash", value)
-                }
-              />
+                    <Input
+                      className="flex-1"
+                      label={
+                        <>
+                          Repository <span className="text-red-500">*</span>
+                        </>
+                      }
+                      id={`version${version}Repository`}
+                      value={
+                        versionGitInfoMap[version as number]?.["repository"] ??
+                        ""
+                      }
+                      onChange={(value) =>
+                        onVersionGitInfoMapChange(version, "repository", value)
+                      }
+                    />
+                    <Input
+                      className="flex-1"
+                      label={
+                        <>
+                          Subdirectory <span className="text-red-500">*</span>
+                        </>
+                      }
+                      id={`version${version}Subdirectory`}
+                      value={
+                        versionGitInfoMap[version as number]?.[
+                          "subdirectory"
+                        ] ?? ""
+                      }
+                      onChange={(value) =>
+                        onVersionGitInfoMapChange(
+                          version,
+                          "subdirectory",
+                          value,
+                        )
+                      }
+                    />
+                    <Input
+                      className="flex-1"
+                      label={
+                        <>
+                          Commit hash <span className="text-red-500">*</span>
+                        </>
+                      }
+                      id={`version${version}CommitHash`}
+                      value={
+                        versionGitInfoMap[version as number]?.["commitHash"] ??
+                        ""
+                      }
+                      onChange={(value) =>
+                        onVersionGitInfoMapChange(version, "commitHash", value)
+                      }
+                    />
+                  </div>
+                ),
+              )}
             </div>
-          ))}
+          </div>
 
           {/* Metadata */}
           <div className="flex w-full flex-col gap-2">
@@ -400,20 +682,6 @@ export default function CreatePackageMetadataObjectDialog({
               />
             </div>
           </div>
-        </div>
-
-        <Separator />
-
-        {/* Transaction JSON */}
-        <div className="flex w-full flex-col gap-2">
-          <TLabelSans>Transaction JSON</TLabelSans>
-          <textarea
-            id="transactionJSON"
-            className="border-divider flex min-h-10 w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            value={transactionJSON}
-            readOnly
-            rows={16}
-          />
         </div>
       </div>
     </Dialog>

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 
 import { SelectProps as SelectRootProps } from "@radix-ui/react-select";
+import { ClassValue } from "clsx";
 
 import {
   SelectContent,
@@ -12,6 +13,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface SelectProps {
+  className?: ClassValue;
+  viewportClassName?: ClassValue;
+  itemsClassName?: ClassValue;
+  itemClassName?: ClassValue;
   rootProps?: SelectRootProps;
   trigger: ReactNode;
   items: {
@@ -24,6 +29,10 @@ export interface SelectProps {
 }
 
 export default function Select({
+  className,
+  viewportClassName,
+  itemsClassName,
+  itemClassName,
   rootProps,
   trigger,
   items,
@@ -35,10 +44,10 @@ export default function Select({
     <SelectRoot value={value} onValueChange={onChange} {...rootProps}>
       {trigger}
       <SelectContent
-        className="rounded-md"
+        className={cn("rounded-md", className)}
         align="end"
         scrollUpButton={{ className: "hidden" }}
-        viewport={{ className: "p-4" }}
+        viewport={{ className: cn("p-4", viewportClassName) }}
         scrollDownButton={{ className: "hidden" }}
         style={{
           maxHeight: "var(--radix-select-content-available-height)",
@@ -52,7 +61,7 @@ export default function Select({
               {title}
             </SelectLabel>
           )}
-          <div className="flex flex-col gap-2">
+          <div className={cn("flex flex-col gap-2", itemsClassName)}>
             {items.map((item) => (
               <SelectItem
                 key={item.id}
@@ -61,6 +70,7 @@ export default function Select({
                   "cursor-pointer border py-2 pl-3 pr-10 font-sans text-xs text-muted-foreground transition-colors focus:border-transparent focus:bg-muted/10 focus:text-foreground",
                   item.id === value &&
                     "border-transparent bg-muted/15 text-foreground",
+                  itemClassName,
                 )}
                 itemIndicatorContainer={{
                   className: "left-auto right-3 w-4 h-4",

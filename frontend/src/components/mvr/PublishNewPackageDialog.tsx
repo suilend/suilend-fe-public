@@ -10,10 +10,12 @@ import Dialog from "@/components/shared/Dialog";
 import { TLabelSans } from "@/components/shared/Typography";
 
 interface PublishNewPackageDialogProps {
-  multisigAddress: string;
+  address: string;
+  isMultisig: boolean;
 }
 export default function PublishNewPackageDialog({
-  multisigAddress,
+  address,
+  isMultisig,
 }: PublishNewPackageDialogProps) {
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -21,13 +23,10 @@ export default function PublishNewPackageDialog({
   const [bytecode, setBytecode] = useState<string>("");
   const [transactionJSON, setTransactionJSON] = useState<string>("");
 
-  const getTransactionJSON = async (
-    _multisigAddress: string,
-    _bytecode: string,
-  ) => {
+  const getTransactionJSON = async (_address: string, _bytecode: string) => {
     // 1) Publish
     const transaction = new Transaction();
-    transaction.setSender(_multisigAddress);
+    transaction.setSender(_address);
 
     const [upgradeCap] = transaction.publish({
       modules: [[...Buffer.from(_bytecode, "base64")]],
@@ -35,7 +34,7 @@ export default function PublishNewPackageDialog({
     });
     transaction.transferObjects(
       [upgradeCap],
-      transaction.pure.address(_multisigAddress),
+      transaction.pure.address(_address),
     );
 
     const json = await transaction.toJSON();
@@ -48,9 +47,9 @@ export default function PublishNewPackageDialog({
   const onBytecodeChange = useCallback(
     (_bytecode: string) => {
       setBytecode(_bytecode);
-      debouncedGetTransactionJSONRef.current(multisigAddress, _bytecode);
+      debouncedGetTransactionJSONRef.current(address, _bytecode);
     },
-    [multisigAddress],
+    [address],
   );
 
   // Reset
