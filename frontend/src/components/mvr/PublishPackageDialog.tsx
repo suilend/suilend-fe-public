@@ -46,14 +46,14 @@ export default function PublishPackageDialog({
     transaction.setSender(_address);
 
     // 1) Publish
-    const [upgradeCap] = transaction.publish({
-      modules: build.modules,
-      dependencies: build.dependencies,
-    });
-    transaction.transferObjects(
-      [upgradeCap],
-      transaction.pure.address(_address),
-    );
+    // const [upgradeCap] = transaction.publish({
+    //   modules: build.modules,
+    //   dependencies: build.dependencies,
+    // });
+    // transaction.transferObjects(
+    //   [upgradeCap],
+    //   transaction.pure.address(_address),
+    // );
 
     return transaction;
   }, []);
