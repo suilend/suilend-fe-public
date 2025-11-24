@@ -1,8 +1,10 @@
 import Head from "next/head";
+import Image from "next/image";
 import { useCallback, useState } from "react";
 
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { Check } from "lucide-react";
+import { SessionProvider, signIn, signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -18,11 +20,12 @@ import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import OpenURLButton from "@/components/shared/OpenURLButton";
 import Tooltip from "@/components/shared/Tooltip";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-export default function Multisig() {
+function Page() {
   const { explorer, suiClient } = useSettingsContext();
+
+  const { data: session } = useSession();
 
   // Address
   const [address, setAddress] = useLocalStorage<string>("mvr_address", "");
@@ -50,8 +53,6 @@ export default function Multisig() {
 
   const fetchOwnedObjects = useCallback(async () => {
     try {
-      if (address === "") throw new Error("Enter an address");
-
       const [_upgradeCapObjs, _mvrPackageMetadataObjs, _suinsDomainObjs] =
         await Promise.all([
           getAllOwnedObjects(suiClient, address, {
@@ -105,7 +106,7 @@ export default function Multisig() {
       );
       setSuinsDomainObjs(_suinsDomainObjs);
     } catch (err) {
-      toast.error("Failed to fetch owned objects", {
+      toast.error("Failed to fetch UpgradeCaps", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     }
@@ -119,12 +120,39 @@ export default function Multisig() {
 
       <div className="flex w-full max-w-4xl flex-col gap-8">
         {/* Form */}
-        <div className="flex w-full flex-row items-end gap-4">
-          <div className="flex flex-1 flex-col gap-4">
+        <div className="flex w-full flex-col gap-6">
+          {/* Content */}
+          <div className="flex w-full flex-row items-end gap-4">
+            {/* GitHub */}
+            <div className="flex w-max flex-col gap-2">
+              <TLabelSans>
+                GitHub
+                {!!session && ` (${session.user?.email})`}
+              </TLabelSans>
+
+              <div className="flex h-10 w-max flex-row items-center">
+                <Button
+                  className="w-max bg-white hover:bg-white/90"
+                  labelClassName="uppercase !text-black"
+                  size="lg"
+                  startIcon={
+                    <Image
+                      src="/github-mark.svg"
+                      alt="GitHub"
+                      width={16}
+                      height={16}
+                    />
+                  }
+                  onClick={() => (!session ? signIn("github") : signOut())}
+                >
+                  {!session ? "Sign in" : "Sign out"}
+                </Button>
+              </div>
+            </div>
+
             {/* Address */}
             <Input
               className="flex-1"
-              labelClassName="text-sm"
               id="address"
               label="Address"
               value={address}
@@ -134,8 +162,9 @@ export default function Multisig() {
               }}
             />
 
+            {/* Multisig */}
             <button
-              className="flex w-max flex-row items-center gap-2"
+              className="flex h-10 w-max flex-row items-center gap-2"
               onClick={() => setIsMultisig((is) => !is)}
             >
               <div
@@ -146,159 +175,174 @@ export default function Multisig() {
               >
                 {isMultisig && <Check className="h-4 w-4 text-foreground" />}
               </div>
-              <TBodySans className={cn(isMultisig && "text-foreground")}>
+              <TBodySans
+                className={cn(
+                  isMultisig ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
                 Multisig
               </TBodySans>
             </button>
           </div>
 
-          {/* CTA */}
-          <Button
-            className="mb-9 w-max"
-            labelClassName="uppercase"
-            size="lg"
-            onClick={fetchOwnedObjects}
-          >
-            Fetch UpgradeCaps
-          </Button>
+          {/* CTAs */}
+          <div className="flex w-full flex-row items-center gap-3">
+            {/* Publish Package */}
+            <PublishPackageDialog
+              address={address}
+              isMultisig={isMultisig}
+              refresh={fetchOwnedObjects}
+            />
+
+            {/* Fetch UpgradeCaps */}
+            <Button
+              className="w-max"
+              labelClassName="uppercase"
+              variant="secondary"
+              onClick={fetchOwnedObjects}
+              disabled={!address}
+            >
+              Fetch UpgradeCaps
+            </Button>
+          </div>
         </div>
 
         {/* UpgradeCaps */}
         {upgradeCapObjs !== undefined &&
           mvrPackageMetadataObjs !== undefined &&
           suinsDomainObjs !== undefined && (
-            <>
-              <Separator />
+            <div className="flex w-full flex-col gap-2">
+              <TLabelSans>UpgradeCaps</TLabelSans>
 
-              <div className="flex w-full flex-col gap-4">
-                <PublishPackageDialog
-                  address={address}
-                  isMultisig={isMultisig}
-                  refresh={fetchOwnedObjects}
-                />
-
-                <table className="w-full border">
-                  <thead className="h-8 border-b">
+              <table className="w-full border">
+                <thead className="h-8 border-b">
+                  <tr>
+                    <td className="border-l px-2">
+                      <TLabelSans>ID</TLabelSans>
+                    </td>
+                    <td className="border-l px-2">
+                      <TLabelSans>Package ID</TLabelSans>
+                    </td>
+                    <td className="border-l px-2">
+                      <TLabelSans>Version</TLabelSans>
+                    </td>
+                    <td className="border-l px-2">
+                      <TLabelSans>Move Package Registry</TLabelSans>
+                    </td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upgradeCapObjs.length === 0 ? (
                     <tr>
-                      <td className="border-l px-2">
-                        <TLabelSans>ID</TLabelSans>
-                      </td>
-                      <td className="border-l px-2">
-                        <TLabelSans>Package ID</TLabelSans>
-                      </td>
-                      <td className="border-l px-2">
-                        <TLabelSans>Version</TLabelSans>
-                      </td>
-                      <td className="border-l px-2">
-                        <TLabelSans>Move Package Registry</TLabelSans>
-                      </td>
+                      <td colSpan={4}>No UpgradeCaps</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {upgradeCapObjs.length === 0 ? (
-                      <tr>
-                        <td colSpan={4}>No UpgradeCaps</td>
-                      </tr>
-                    ) : (
-                      upgradeCapObjs.map((obj) => {
-                        const id = obj.data?.objectId as string;
-                        const { package: packageId, version } = (
-                          obj.data?.content as any
-                        ).fields;
+                  ) : (
+                    upgradeCapObjs.map((obj) => {
+                      const id = obj.data?.objectId as string;
+                      const { package: packageId, version } = (
+                        obj.data?.content as any
+                      ).fields;
 
-                        const mvrPackageMetadataObj =
-                          mvrPackageMetadataObjs.find(
-                            (obj) =>
-                              (obj.data?.content as any).fields
-                                .upgrade_cap_id === id,
-                          );
-                        const mvrPackageMetadataId = mvrPackageMetadataObj?.data
-                          ?.objectId as string | undefined;
-                        const mvrPackageMetadataName = (
-                          mvrPackageMetadataObj?.data?.content as any
-                        )?.fields.metadata.fields.contents[0].fields.value;
+                      const mvrPackageMetadataObj = mvrPackageMetadataObjs.find(
+                        (obj) =>
+                          (obj.data?.content as any).fields.upgrade_cap_id ===
+                          id,
+                      );
+                      const mvrPackageMetadataId = mvrPackageMetadataObj?.data
+                        ?.objectId as string | undefined;
+                      const mvrPackageMetadataName = (
+                        mvrPackageMetadataObj?.data?.content as any
+                      )?.fields.metadata.fields.contents[0].fields.value;
 
-                        return (
-                          <tr key={id} className="h-8 border-b">
-                            <td className="border-l px-2">
-                              <div className="flex flex-row items-center gap-1">
-                                <Tooltip title={id}>
-                                  <TBody className="w-max uppercase">
-                                    {formatId(id)}
-                                  </TBody>
-                                </Tooltip>
+                      return (
+                        <tr key={id} className="h-8 border-b">
+                          <td className="border-l px-2">
+                            <div className="flex flex-row items-center gap-1">
+                              <Tooltip title={id}>
+                                <TBody className="w-max uppercase">
+                                  {formatId(id)}
+                                </TBody>
+                              </Tooltip>
 
-                                <OpenOnExplorerButton
-                                  url={explorer.buildObjectUrl(id)}
-                                />
-                              </div>
-                            </td>
-                            <td className="border-l px-2">
-                              <div className="flex flex-row items-center gap-1">
-                                <Tooltip title={packageId}>
-                                  <TBody className="w-max uppercase">
-                                    {formatId(packageId)}
-                                  </TBody>
-                                </Tooltip>
+                              <OpenOnExplorerButton
+                                url={explorer.buildObjectUrl(id)}
+                              />
+                            </div>
+                          </td>
+                          <td className="border-l px-2">
+                            <div className="flex flex-row items-center gap-1">
+                              <Tooltip title={packageId}>
+                                <TBody className="w-max uppercase">
+                                  {formatId(packageId)}
+                                </TBody>
+                              </Tooltip>
 
-                                <OpenOnExplorerButton
-                                  url={explorer.buildPackageUrl(packageId)}
-                                />
-                              </div>
-                            </td>
-                            <td className="border-l px-2">
+                              <OpenOnExplorerButton
+                                url={explorer.buildPackageUrl(packageId)}
+                              />
+                            </div>
+                          </td>
+                          <td className="border-l px-2">
+                            <div className="flex flex-row items-center gap-2 py-1">
                               <TBody>{version}</TBody>
-                            </td>
-                            <td className="border-l px-2">
-                              {!!mvrPackageMetadataObj ? (
-                                <div className="flex flex-row items-center gap-2 py-1">
-                                  <ViewPackageMetadataObjectDialog
-                                    address={address}
-                                    isMultisig={isMultisig}
-                                    upgradeCapId={id}
-                                    version={version}
-                                    refresh={fetchOwnedObjects}
-                                    mvrPackageMetadataObj={
-                                      mvrPackageMetadataObj
-                                    }
-                                    mvrPackageMetadataGitVersioningObjs={
-                                      mvrPackageMetadataGitVersioningObjsMap[
-                                        mvrPackageMetadataId as string
-                                      ]
-                                    }
-                                  />
-
-                                  <div className="flex h-6 flex-row items-center gap-1">
-                                    <TBody>{mvrPackageMetadataName}</TBody>
-
-                                    <OpenURLButton
-                                      url={`https://www.moveregistry.com/package/${mvrPackageMetadataName}`}
-                                    >
-                                      Open on Move Package Registry
-                                    </OpenURLButton>
-                                  </div>
-                                </div>
-                              ) : (
-                                <CreatePackageMetadataObjectDialog
-                                  suinsDomainObjs={suinsDomainObjs}
+                              {/* <PublishPackageDialog /> */}
+                            </div>
+                          </td>
+                          <td className="border-l px-2">
+                            {!!mvrPackageMetadataObj ? (
+                              <div className="flex flex-row items-center gap-2 py-1">
+                                <ViewPackageMetadataObjectDialog
                                   address={address}
                                   isMultisig={isMultisig}
                                   upgradeCapId={id}
                                   version={version}
                                   refresh={fetchOwnedObjects}
+                                  mvrPackageMetadataObj={mvrPackageMetadataObj}
+                                  mvrPackageMetadataGitVersioningObjs={
+                                    mvrPackageMetadataGitVersioningObjsMap[
+                                      mvrPackageMetadataId as string
+                                    ]
+                                  }
                                 />
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </>
+
+                                <div className="flex h-6 flex-row items-center gap-1">
+                                  <TBody>{mvrPackageMetadataName}</TBody>
+
+                                  <OpenURLButton
+                                    url={`https://www.moveregistry.com/package/${mvrPackageMetadataName}`}
+                                  >
+                                    Open on Move Package Registry
+                                  </OpenURLButton>
+                                </div>
+                              </div>
+                            ) : (
+                              <CreatePackageMetadataObjectDialog
+                                suinsDomainObjs={suinsDomainObjs}
+                                address={address}
+                                isMultisig={isMultisig}
+                                upgradeCapId={id}
+                                version={version}
+                                refresh={fetchOwnedObjects}
+                              />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
       </div>
     </>
+  );
+}
+
+export default function MVR() {
+  return (
+    <SessionProvider>
+      <Page />
+    </SessionProvider>
   );
 }

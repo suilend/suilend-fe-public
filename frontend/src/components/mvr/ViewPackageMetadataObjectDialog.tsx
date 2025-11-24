@@ -86,11 +86,11 @@ export default function ViewPackageMetadataObjectDialog({
     } = await res.json();
 
     const parsedMetadata: MvrMetadata = {
-      description: json.metadata.description ?? undefined,
-      iconUrl: json.metadata.icon_url ?? undefined,
-      documentationUrl: json.metadata.documentation_url ?? undefined,
-      homepageUrl: json.metadata.homepage_url ?? undefined,
-      contact: json.metadata.contact ?? undefined,
+      description: json.metadata?.description ?? undefined,
+      iconUrl: json.metadata?.icon_url ?? undefined,
+      documentationUrl: json.metadata?.documentation_url ?? undefined,
+      homepageUrl: json.metadata?.homepage_url ?? undefined,
+      contact: json.metadata?.contact ?? undefined,
     };
 
     setMetadata(parsedMetadata);

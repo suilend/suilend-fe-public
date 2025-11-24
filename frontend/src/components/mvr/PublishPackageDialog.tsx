@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
-import { normalizeSuiAddress } from "@mysten/sui/utils";
 import { DebouncedFunc, debounce } from "lodash";
 import { Plus } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 
 import { TX_TOAST_DURATION } from "@suilend/sui-fe";
@@ -12,6 +12,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
+import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +31,8 @@ export default function PublishPackageDialog({
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
 
+  const { data: session } = useSession();
+
   // State
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
 
@@ -44,8 +47,8 @@ export default function PublishPackageDialog({
 
     // 1) Publish
     const [upgradeCap] = transaction.publish({
-      modules: [[...Buffer.from(_bytecode, "base64")]],
-      dependencies: [normalizeSuiAddress("0x1"), normalizeSuiAddress("0x2")],
+      modules: build.modules,
+      dependencies: build.dependencies,
     });
     transaction.transferObjects(
       [upgradeCap],
@@ -137,8 +140,8 @@ export default function PublishPackageDialog({
         <Button
           className="w-max"
           labelClassName="uppercase"
-          variant="secondary"
           startIcon={<Plus />}
+          disabled={!session || !address}
         >
           Publish package
         </Button>
@@ -178,7 +181,19 @@ export default function PublishPackageDialog({
         ),
       }}
     >
-      <div className="flex w-full flex-row gap-4">
+      <div className="flex w-full flex-col gap-4">
+        {/* Version */}
+        <Input
+          label="Version"
+          id="version"
+          value="1"
+          onChange={() => {}}
+          inputProps={{
+            className: "bg-transparent",
+            readOnly: true,
+          }}
+        />
+
         {/* Bytecode */}
         <div className="flex w-full flex-col gap-2">
           <TLabelSans>Bytecode</TLabelSans>
