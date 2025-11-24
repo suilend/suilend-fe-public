@@ -7,6 +7,7 @@ import { Eraser, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { LENDING_MARKET_REGISTRY_ID, SuilendClient } from "@suilend/sdk";
+import { TX_TOAST_DURATION } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
@@ -15,7 +16,6 @@ import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
 import { TBody } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { TX_TOAST_DURATION } from "@/lib/constants";
 
 const generate_bytecode = (module: string, type: string) => {
   const bytecode = Buffer.from(

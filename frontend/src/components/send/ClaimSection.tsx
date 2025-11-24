@@ -18,6 +18,7 @@ import {
   NORMALIZED_mSEND_SERIES_1_COINTYPE,
   NORMALIZED_mSEND_SERIES_4_COINTYPE,
   NORMALIZED_mSEND_SERIES_5_COINTYPE,
+  TX_TOAST_DURATION,
   formatInteger,
   formatPercent,
   formatToken,
@@ -55,7 +56,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedSendContext } from "@/contexts/SendContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import { TX_TOAST_DURATION } from "@/lib/constants";
 import {
   AllocationIdS1,
   AllocationIdS2,

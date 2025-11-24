@@ -13,7 +13,11 @@ import { SUI_CLOCK_OBJECT_ID } from "@mysten/sui/utils";
 import BigNumber from "bignumber.js";
 import { toast } from "sonner";
 
-import { NORMALIZED_SUI_COINTYPE, formatToken } from "@suilend/sui-fe";
+import {
+  NORMALIZED_SUI_COINTYPE,
+  TX_TOAST_DURATION,
+  formatToken,
+} from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import TextLink from "@/components/shared/TextLink";
@@ -24,11 +28,7 @@ import useFetchVaultHistory, {
   useFetchUserVaultHistory,
 } from "@/fetchers/useFetchVaultHistory";
 import useFetchVaults from "@/fetchers/useFetchVaults";
-import {
-  TX_TOAST_DURATION,
-  VAULTS_PACKAGE_ID,
-  VSHARES_BYTECODE_B64,
-} from "@/lib/constants";
+import { VAULTS_PACKAGE_ID, VSHARES_BYTECODE_B64 } from "@/lib/constants";
 
 export type VaultMetadata = {
   id: string;

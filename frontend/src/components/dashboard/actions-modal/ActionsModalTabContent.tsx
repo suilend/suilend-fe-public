@@ -17,6 +17,7 @@ import {
   NORMALIZED_HIPPO_COINTYPE,
   NORMALIZED_IKA_COINTYPE,
   TEMPORARY_PYTH_PRICE_FEED_COINTYPES,
+  TX_TOAST_DURATION,
   formatInteger,
   formatPrice,
   formatToken,
@@ -54,7 +55,6 @@ import useBreakpoint from "@/hooks/useBreakpoint";
 import {
   FIRST_DEPOSIT_DIALOG_START_DATE,
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
-  TX_TOAST_DURATION,
 } from "@/lib/constants";
 import { EventType } from "@/lib/events";
 import { SubmitButtonState } from "@/lib/types";

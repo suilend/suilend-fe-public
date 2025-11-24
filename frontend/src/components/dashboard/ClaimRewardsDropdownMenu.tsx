@@ -11,6 +11,7 @@ import {
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
+  TX_TOAST_DURATION,
   Token,
   formatList,
   getToken,
@@ -26,10 +27,7 @@ import { TLabelSans } from "@/components/shared/Typography";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useDashboardContext } from "@/contexts/DashboardContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import {
-  MAX_DEPOSITS_PER_OBLIGATION,
-  TX_TOAST_DURATION,
-} from "@/lib/constants";
+import { MAX_DEPOSITS_PER_OBLIGATION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface ClaimRewardsDropdownMenuProps {

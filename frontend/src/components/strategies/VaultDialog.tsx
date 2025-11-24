@@ -17,6 +17,7 @@ import { toast } from "sonner";
 
 import { LENDING_MARKET_ID } from "@suilend/sdk";
 import {
+  TX_TOAST_DURATION,
   formatInteger,
   formatPercent,
   formatToken,
@@ -45,10 +46,7 @@ import { useLoadedUserContext } from "@/contexts/UserContext";
 import { useVaultContext } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
 import useBreakpoint from "@/hooks/useBreakpoint";
-import {
-  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
-  TX_TOAST_DURATION,
-} from "@/lib/constants";
+import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 import { SubmitButtonState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 

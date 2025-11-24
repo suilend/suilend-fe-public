@@ -26,7 +26,13 @@ import {
   getObligationHistoryPage,
 } from "@suilend/sdk/utils/obligation";
 import * as simulate from "@suilend/sdk/utils/simulate";
-import { MAX_U64, formatToken, formatUsd, isSui } from "@suilend/sui-fe";
+import {
+  MAX_U64,
+  TX_TOAST_DURATION,
+  formatToken,
+  formatUsd,
+  isSui,
+} from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -42,10 +48,7 @@ import TextLink from "@/components/shared/TextLink";
 import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedUserContext } from "@/contexts/UserContext";
-import {
-  MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
-  TX_TOAST_DURATION,
-} from "@/lib/constants";
+import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
 
 interface RowData {
   symbol: string;

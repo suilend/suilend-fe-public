@@ -48,6 +48,7 @@ import {
   MAX_U64,
   NORMALIZED_SUI_COINTYPE,
   NORMALIZED_USDC_COINTYPE,
+  TX_TOAST_DURATION,
   Token,
   formatInteger,
   formatPercent,
@@ -96,7 +97,6 @@ import {
 import {
   MAX_BALANCE_SUI_SUBTRACTED_AMOUNT,
   MAX_DEPOSITS_PER_OBLIGATION,
-  TX_TOAST_DURATION,
 } from "@/lib/constants";
 import safaryTrack from "@/lib/safary";
 import { TokenDirection } from "@/lib/swap";

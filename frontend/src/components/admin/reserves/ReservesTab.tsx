@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import { ADMIN_ADDRESS, ParsedReserve, Side } from "@suilend/sdk";
+import { TX_TOAST_DURATION } from "@suilend/sui-fe";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 
 import { useAdminContext } from "@/components/admin/AdminContext";
@@ -34,7 +35,6 @@ import {
 } from "@/components/ui/card";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { getPoolInfo } from "@/lib/admin";
-import { TX_TOAST_DURATION } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 enum QueryParams {

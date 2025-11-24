@@ -15,6 +15,8 @@ export const getInputId = (id: string) => `input-${id}`;
 interface InputProps {
   className?: ClassValue;
   labelClassName?: ClassValue;
+  startDecoratorClassName?: ClassValue;
+  endDecoratorClassName?: ClassValue;
   label?: ReactNode;
   labelRight?: string;
   id: string;
@@ -33,6 +35,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     {
       className,
       labelClassName,
+      startDecoratorClassName,
+      endDecoratorClassName,
       label,
       labelRight,
       id,
@@ -75,7 +79,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
         <div className="relative w-full">
           {startDecorator && (
-            <TLabel className="pointer-events-none absolute left-3 top-1/2 z-[2] -translate-y-2/4">
+            <TLabel
+              className={cn(
+                "pointer-events-none absolute left-3 top-1/2 z-[2] -translate-y-1/2",
+                startDecoratorClassName,
+              )}
+            >
               {startDecorator}
             </TLabel>
           )}
@@ -100,7 +109,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           />
 
           {endDecorator && (
-            <TLabel className="pointer-events-none absolute right-3 top-1/2 z-[2] -translate-y-2/4">
+            <TLabel
+              className={cn(
+                "pointer-events-none absolute right-3 top-1/2 z-[2] -translate-y-1/2",
+                endDecoratorClassName,
+              )}
+            >
               {endDecorator}
             </TLabel>
           )}

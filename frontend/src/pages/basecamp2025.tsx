@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { useLocalStorage } from "usehooks-ts";
 import { v4 as uuidv4 } from "uuid";
 
-import { getAllOwnedObjects } from "@suilend/sui-fe";
+import { TX_TOAST_DURATION, getAllOwnedObjects } from "@suilend/sui-fe";
 import {
   showErrorToast,
   useSettingsContext,
@@ -25,7 +25,7 @@ import {
   TDisplay,
   TLabelSans,
 } from "@/components/shared/Typography";
-import { ASSETS_URL, TX_TOAST_DURATION } from "@/lib/constants";
+import { ASSETS_URL } from "@/lib/constants";
 import { SUILEND_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
