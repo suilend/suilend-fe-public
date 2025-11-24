@@ -49,12 +49,12 @@ export interface AllAppData {
       aprPercent: BigNumber;
     }
   >;
-  okxAprPercentMap:
-    | {
-        xBtcDepositAprPercent: BigNumber;
-        usdcBorrowAprPercent: BigNumber;
-      }
-    | undefined;
+  // okxAprPercentMap:
+  //   | {
+  //       xBtcDepositAprPercent: BigNumber;
+  //       usdcBorrowAprPercent: BigNumber;
+  //     }
+  //   | undefined;
   elixirSdeUsdAprPercent: BigNumber | undefined;
 }
 

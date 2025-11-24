@@ -12,14 +12,7 @@ import {
 } from "@suilend/sdk";
 import { Side } from "@suilend/sdk/lib/types";
 import { ParsedReserve } from "@suilend/sdk/parsers/reserve";
-import {
-  NORMALIZED_USDC_COINTYPE,
-  NORMALIZED_xBTC_COINTYPE,
-  Token,
-  formatToken,
-  formatUsd,
-  issSui,
-} from "@suilend/sui-fe";
+import { Token, formatToken, formatUsd, issSui } from "@suilend/sui-fe";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import DataTable, {
@@ -31,7 +24,6 @@ import BorrowAprCell from "@/components/dashboard/market-table/BorrowAprCell";
 import DepositAprCell from "@/components/dashboard/market-table/DepositAprCell";
 import MarketCardList from "@/components/dashboard/market-table/MarketCardList";
 import styles from "@/components/dashboard/market-table/MarketTable.module.scss";
-import OkxAprBadge from "@/components/dashboard/market-table/OkxAprBadge";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
@@ -278,7 +270,7 @@ export default function MarketTable() {
             <div className="flex flex-col items-end gap-2">
               <DepositAprCell {...(row.original as ReservesRowData)} />
 
-              {appData.lendingMarket.id === LENDING_MARKET_ID &&
+              {/* {appData.lendingMarket.id === LENDING_MARKET_ID &&
                 (row.original as ReservesRowData).token.coinType ===
                   NORMALIZED_xBTC_COINTYPE &&
                 allAppData.okxAprPercentMap !== undefined && (
@@ -289,7 +281,7 @@ export default function MarketTable() {
                     }
                     href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
                   />
-                )}
+                )} */}
             </div>
           );
         },
@@ -308,7 +300,7 @@ export default function MarketTable() {
             <div className="flex flex-col items-end gap-2">
               <BorrowAprCell {...(row.original as ReservesRowData)} />
 
-              {appData.lendingMarket.id === LENDING_MARKET_ID &&
+              {/* {appData.lendingMarket.id === LENDING_MARKET_ID &&
                 (row.original as ReservesRowData).token.coinType ===
                   NORMALIZED_USDC_COINTYPE &&
                 allAppData.okxAprPercentMap !== undefined && (
@@ -319,13 +311,13 @@ export default function MarketTable() {
                     }
                     href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
                   />
-                )}
+                )} */}
             </div>
           );
         },
       },
     ],
-    [featuredReserveIds, appData.lendingMarket.id, allAppData.okxAprPercentMap],
+    [featuredReserveIds],
   );
 
   // Rows

@@ -168,7 +168,7 @@ export default function useFetchAppData() {
     const [
       allLendingMarketData,
       lstStatsMap,
-      okxAprPercentMap,
+      // okxAprPercentMap,
       elixirSdeUsdAprPercent,
     ] = await Promise.all([
       // Lending markets
@@ -288,30 +288,30 @@ export default function useFetchAppData() {
       })(),
 
       // OKX APR (won't throw on error)
-      (async () => {
-        try {
-          const url = `${API_URL}/okx/apy?${new URLSearchParams({ raw: "true" })}`;
-          const res = await fetch(url);
-          const json: {
-            data: {
-              xbtc: { apy: number; baseApy: number; bonusApy: number };
-              usdc: { apy: number; baseApy: number; bonusApy: number };
-            };
-          } = await res.json();
+      // (async () => {
+      //   try {
+      //     const url = `${API_URL}/okx/apy?${new URLSearchParams({ raw: "true" })}`;
+      //     const res = await fetch(url);
+      //     const json: {
+      //       data: {
+      //         xbtc: { apy: number; baseApy: number; bonusApy: number };
+      //         usdc: { apy: number; baseApy: number; bonusApy: number };
+      //       };
+      //     } = await res.json();
 
-          return {
-            xBtcDepositAprPercent: new BigNumber(
-              Math.log(1 + json.data.xbtc.bonusApy),
-            ).times(100),
-            usdcBorrowAprPercent: new BigNumber(
-              Math.log(1 + json.data.usdc.bonusApy),
-            ).times(100),
-          };
-        } catch (err) {
-          console.error(err);
-          return undefined;
-        }
-      })(),
+      //     return {
+      //       xBtcDepositAprPercent: new BigNumber(
+      //         Math.log(1 + json.data.xbtc.bonusApy),
+      //       ).times(100),
+      //       usdcBorrowAprPercent: new BigNumber(
+      //         Math.log(1 + json.data.usdc.bonusApy),
+      //       ).times(100),
+      //     };
+      //   } catch (err) {
+      //     console.error(err);
+      //     return undefined;
+      //   }
+      // })(),
 
       // Elixir sdeUSD APR (won't throw on error)
       (async () => {
@@ -370,7 +370,6 @@ export default function useFetchAppData() {
     return {
       allLendingMarketData,
       lstStatsMap,
-      okxAprPercentMap,
       elixirSdeUsdAprPercent,
     };
   };

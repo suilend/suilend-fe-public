@@ -2,11 +2,7 @@ import { useState } from "react";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-import { LENDING_MARKET_ID, Side } from "@suilend/sdk";
-import {
-  NORMALIZED_USDC_COINTYPE,
-  NORMALIZED_xBTC_COINTYPE,
-} from "@suilend/sui-fe";
+import { LENDING_MARKET_ID } from "@suilend/sdk";
 
 import { useActionsModalContext } from "@/components/dashboard/actions-modal/ActionsModalContext";
 import Card from "@/components/dashboard/Card";
@@ -19,7 +15,6 @@ import {
   HeaderRowData,
   ReservesRowData,
 } from "@/components/dashboard/market-table/MarketTable";
-import OkxAprBadge from "@/components/dashboard/market-table/OkxAprBadge";
 import OpenLtvBwCell from "@/components/dashboard/market-table/OpenLtvBwCell";
 import TotalBorrowsCell from "@/components/dashboard/market-table/TotalBorrowsCell";
 import TotalDepositsCell from "@/components/dashboard/market-table/TotalDepositsCell";
@@ -33,7 +28,6 @@ import {
   TTitle,
 } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLendingMarketContext } from "@/contexts/LendingMarketContext";
 import { OPEN_LTV_BORROW_WEIGHT_TOOLTIP } from "@/lib/tooltips";
 import { cn, hoverUnderlineClassName } from "@/lib/utils";
@@ -48,9 +42,6 @@ interface MarketCardProps {
 }
 
 function MarketCard({ rowData, onClick }: MarketCardProps) {
-  const { allAppData } = useLoadedAppContext();
-  const { appData } = useLendingMarketContext();
-
   return (
     <Card
       className={cn(
@@ -75,7 +66,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
               <div className="flex flex-col items-end gap-2">
                 <DepositAprCell {...rowData} />
 
-                {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                {/* {appData.lendingMarket.id === LENDING_MARKET_ID &&
                   rowData.token.coinType === NORMALIZED_xBTC_COINTYPE &&
                   allAppData.okxAprPercentMap !== undefined && (
                     <OkxAprBadge
@@ -85,7 +76,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
                       }
                       href="https://web3.okx.com/earn/product/suilend-sui-xbtc-33353"
                     />
-                  )}
+                  )} */}
               </div>
             </div>
             <div className="flex w-fit flex-col items-end gap-1">
@@ -94,7 +85,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
               <div className="flex flex-col items-end gap-2">
                 <BorrowAprCell {...rowData} />
 
-                {appData.lendingMarket.id === LENDING_MARKET_ID &&
+                {/* {appData.lendingMarket.id === LENDING_MARKET_ID &&
                   rowData.token.coinType === NORMALIZED_USDC_COINTYPE &&
                   allAppData.okxAprPercentMap !== undefined && (
                     <OkxAprBadge
@@ -104,7 +95,7 @@ function MarketCard({ rowData, onClick }: MarketCardProps) {
                       }
                       href="https://web3.okx.com/earn/product/suilend-sui-usdc-41100"
                     />
-                  )}
+                  )} */}
               </div>
             </div>
           </div>
