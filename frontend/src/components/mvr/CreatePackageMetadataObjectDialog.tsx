@@ -520,172 +520,162 @@ export default function CreatePackageMetadataObjectDialog({
       }}
     >
       <div className="flex w-full flex-col gap-4">
-        {/* Form */}
-        <div className="flex w-full flex-col gap-4">
-          {/* Suins domain */}
-          <div className="flex w-full flex-col gap-2">
-            <TLabelSans>
-              Organization <span className="text-red-500">*</span>
-            </TLabelSans>
-            <StandardSelect
-              viewportClassName="p-2"
-              itemClassName="font-mono text-sm h-10"
-              triggerClassName="font-mono rounded-md h-10 bg-background !text-foreground"
-              items={suinsDomainObjs.map((suinsDomainObj) => {
-                const id = suinsDomainObj.data?.objectId as string;
+        {/* Suins domain */}
+        <div className="flex w-full flex-col gap-2">
+          <TLabelSans>
+            Organization <span className="text-red-500">*</span>
+          </TLabelSans>
+          <StandardSelect
+            viewportClassName="p-2"
+            itemClassName="font-mono text-sm h-10"
+            triggerClassName="font-mono rounded-md h-10 bg-background !text-foreground"
+            items={suinsDomainObjs.map((suinsDomainObj) => {
+              const id = suinsDomainObj.data?.objectId as string;
 
-                return {
-                  id,
-                  name: getOrganizationObj(id)?.name ?? "",
-                };
-              })}
-              value={suinsDomainObjId}
-              onChange={onSuinsDomainObjIdChange}
+              return {
+                id,
+                name: getOrganizationObj(id)?.name ?? "",
+              };
+            })}
+            value={suinsDomainObjId}
+            onChange={onSuinsDomainObjIdChange}
+          />
+        </div>
+
+        {/* Package name */}
+        <Input
+          label={
+            <>
+              Name <span className="text-red-500">*</span>
+            </>
+          }
+          id="packageName"
+          value={packageName}
+          onChange={onPackageNameChange}
+          inputProps={{
+            autoFocus: true,
+            style: {
+              paddingLeft: `${3 * 4 + ((getOrganizationObj(suinsDomainObjId)?.name ?? "").length + 1) * 8.4}px`,
+            },
+          }}
+          startDecorator={
+            <TBody className="text-muted-foreground">
+              {getOrganizationObj(suinsDomainObjId)?.name ?? ""}/
+            </TBody>
+          }
+        />
+
+        {/* Version Git Info Map */}
+        <div className="flex w-full flex-col gap-2">
+          <TLabelSans>Git repository info</TLabelSans>
+          <div className="flex w-full flex-col gap-4 rounded-md border p-4">
+            {Array.from({ length: version }, (_, i) => i + 1).map(
+              (_version) => (
+                <div
+                  key={_version}
+                  className="flex w-full flex-row items-end gap-2"
+                >
+                  <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-secondary">
+                    <TLabel className="text-sm text-background">
+                      v{_version}
+                    </TLabel>
+                  </div>
+
+                  <Input
+                    className="flex-1"
+                    label={
+                      <>
+                        Repository <span className="text-red-500">*</span>
+                      </>
+                    }
+                    id={`version${_version}Repository`}
+                    value={
+                      versionGitInfoMap[_version as number]?.["repository"] ??
+                      ""
+                    }
+                    onChange={(value) =>
+                      onVersionGitInfoMapChange(_version, "repository", value)
+                    }
+                  />
+                  <Input
+                    className="flex-1"
+                    label={
+                      <>
+                        Subdirectory <span className="text-red-500">*</span>
+                      </>
+                    }
+                    id={`version${_version}Subdirectory`}
+                    value={
+                      versionGitInfoMap[_version as number]?.["subdirectory"] ??
+                      ""
+                    }
+                    onChange={(value) =>
+                      onVersionGitInfoMapChange(_version, "subdirectory", value)
+                    }
+                  />
+                  <Input
+                    className="flex-1"
+                    label={
+                      <>
+                        Commit hash <span className="text-red-500">*</span>
+                      </>
+                    }
+                    id={`version${_version}CommitHash`}
+                    value={
+                      versionGitInfoMap[_version as number]?.["commitHash"] ??
+                      ""
+                    }
+                    onChange={(value) =>
+                      onVersionGitInfoMapChange(_version, "commitHash", value)
+                    }
+                  />
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full flex-row gap-2">
+            <Input
+              className="flex-[3]"
+              label="Description"
+              id="metadataDescription"
+              value={metadata.description ?? ""}
+              onChange={(value) => onMetadataChange("description", value)}
+            />
+            <Input
+              className="flex-1"
+              label="Contact"
+              id="metadataContact"
+              value={metadata.contact ?? ""}
+              onChange={(value) => onMetadataChange("contact", value)}
             />
           </div>
 
-          {/* Package name */}
-          <Input
-            label={
-              <>
-                Name <span className="text-red-500">*</span>
-              </>
-            }
-            id="packageName"
-            value={packageName}
-            onChange={onPackageNameChange}
-            inputProps={{
-              autoFocus: true,
-              style: {
-                paddingLeft: `${3 * 4 + ((getOrganizationObj(suinsDomainObjId)?.name ?? "").length + 1) * 8.4}px`,
-              },
-            }}
-            startDecorator={
-              <TBody className="text-muted-foreground">
-                {getOrganizationObj(suinsDomainObjId)?.name ?? ""}/
-              </TBody>
-            }
-          />
-
-          {/* Version Git Info Map */}
-          <div className="flex w-full flex-col gap-2">
-            <TLabelSans>Git repository info</TLabelSans>
-            <div className="flex w-full flex-col gap-4 rounded-md border p-4">
-              {Array.from({ length: version }, (_, i) => i + 1).map(
-                (_version) => (
-                  <div
-                    key={_version}
-                    className="flex w-full flex-row items-end gap-2"
-                  >
-                    <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-secondary">
-                      <TLabel className="text-sm text-background">
-                        v{_version}
-                      </TLabel>
-                    </div>
-
-                    <Input
-                      className="flex-1"
-                      label={
-                        <>
-                          Repository <span className="text-red-500">*</span>
-                        </>
-                      }
-                      id={`version${_version}Repository`}
-                      value={
-                        versionGitInfoMap[_version as number]?.["repository"] ??
-                        ""
-                      }
-                      onChange={(value) =>
-                        onVersionGitInfoMapChange(_version, "repository", value)
-                      }
-                    />
-                    <Input
-                      className="flex-1"
-                      label={
-                        <>
-                          Subdirectory <span className="text-red-500">*</span>
-                        </>
-                      }
-                      id={`version${_version}Subdirectory`}
-                      value={
-                        versionGitInfoMap[_version as number]?.[
-                          "subdirectory"
-                        ] ?? ""
-                      }
-                      onChange={(value) =>
-                        onVersionGitInfoMapChange(
-                          _version,
-                          "subdirectory",
-                          value,
-                        )
-                      }
-                    />
-                    <Input
-                      className="flex-1"
-                      label={
-                        <>
-                          Commit hash <span className="text-red-500">*</span>
-                        </>
-                      }
-                      id={`version${_version}CommitHash`}
-                      value={
-                        versionGitInfoMap[_version as number]?.["commitHash"] ??
-                        ""
-                      }
-                      onChange={(value) =>
-                        onVersionGitInfoMapChange(_version, "commitHash", value)
-                      }
-                    />
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex w-full flex-row gap-2">
-              <Input
-                className="flex-[3]"
-                label="Description"
-                id="metadataDescription"
-                value={metadata.description ?? ""}
-                onChange={(value) => onMetadataChange("description", value)}
-              />
-              <Input
-                className="flex-1"
-                label="Contact"
-                id="metadataContact"
-                value={metadata.contact ?? ""}
-                onChange={(value) => onMetadataChange("contact", value)}
-              />
-            </div>
-
-            <div className="flex w-full flex-row gap-2">
-              <Input
-                className="flex-1"
-                label="Icon URL"
-                id="metadataIconUrl"
-                value={metadata.iconUrl ?? ""}
-                onChange={(value) => onMetadataChange("iconUrl", value)}
-              />
-              <Input
-                className="flex-1"
-                label="Documentation URL"
-                id="metadataDocumentationUrl"
-                value={metadata.documentationUrl ?? ""}
-                onChange={(value) =>
-                  onMetadataChange("documentationUrl", value)
-                }
-              />
-              <Input
-                className="flex-1"
-                label="Homepage URL"
-                id="metadataHomepageUrl"
-                value={metadata.homepageUrl ?? ""}
-                onChange={(value) => onMetadataChange("homepageUrl", value)}
-              />
-            </div>
+          <div className="flex w-full flex-row gap-2">
+            <Input
+              className="flex-1"
+              label="Icon URL"
+              id="metadataIconUrl"
+              value={metadata.iconUrl ?? ""}
+              onChange={(value) => onMetadataChange("iconUrl", value)}
+            />
+            <Input
+              className="flex-1"
+              label="Documentation URL"
+              id="metadataDocumentationUrl"
+              value={metadata.documentationUrl ?? ""}
+              onChange={(value) => onMetadataChange("documentationUrl", value)}
+            />
+            <Input
+              className="flex-1"
+              label="Homepage URL"
+              id="metadataHomepageUrl"
+              value={metadata.homepageUrl ?? ""}
+              onChange={(value) => onMetadataChange("homepageUrl", value)}
+            />
           </div>
         </div>
       </div>

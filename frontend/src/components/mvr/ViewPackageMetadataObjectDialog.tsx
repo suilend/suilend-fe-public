@@ -16,9 +16,8 @@ import Input from "@/components/shared/Input";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TextLink from "@/components/shared/TextLink";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
+import { Separator } from "@/components/ui/separator";
 import { MvrGitInfo, MvrMetadata } from "@/lib/mvr";
-
-import { Separator } from "../ui/separator";
 
 interface ViewPackageMetadataObjectDialogProps {
   address: string;
@@ -331,242 +330,237 @@ export default function ViewPackageMetadataObjectDialog({
           }
         />
 
-        {/* Form */}
-        <div className="flex w-full flex-col gap-4">
-          {/* Package name */}
-          <Input
-            label="Name"
-            id="packageName"
-            value={packageName}
-            onChange={() => {}}
-            inputProps={{
-              className: "bg-transparent",
-              readOnly: true,
-              style: {
-                paddingLeft: `${3 * 4 + (organization.length + 1) * 8.4}px`,
+        {/* Package name */}
+        <Input
+          label="Name"
+          id="packageName"
+          value={packageName}
+          onChange={() => {}}
+          inputProps={{
+            className: "bg-transparent",
+            readOnly: true,
+            style: {
+              paddingLeft: `${3 * 4 + (organization.length + 1) * 8.4}px`,
+            },
+          }}
+          startDecorator={
+            <TBody className="text-muted-foreground">{organization}/</TBody>
+          }
+        />
+
+        {/* Version Git Info Map */}
+        <div className="flex w-full flex-col gap-2">
+          <TLabelSans>Git repository info</TLabelSans>
+          <div className="flex w-full flex-col gap-4 rounded-md border p-4">
+            {Array.from({ length: version }, (_, i) => i + 1).map(
+              (_version) => {
+                const mvrPackageMetadataGitVersioningObj =
+                  mvrPackageMetadataGitVersioningObjs.find(
+                    (obj) =>
+                      (obj.data?.content as any).fields.name ===
+                      _version.toString(),
+                  );
+
+                if (!!mvrPackageMetadataGitVersioningObj) {
+                  const repository = (
+                    mvrPackageMetadataGitVersioningObj.data?.content as any
+                  ).fields.value.fields.repository as string;
+                  const path = (
+                    mvrPackageMetadataGitVersioningObj.data?.content as any
+                  ).fields.value.fields.path as string;
+                  const tag = (
+                    mvrPackageMetadataGitVersioningObj.data?.content as any
+                  ).fields.value.fields.tag as string;
+
+                  return (
+                    <div
+                      key={_version}
+                      className="flex w-full flex-row items-end gap-2"
+                    >
+                      <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-muted">
+                        <TLabel className="text-sm text-background">
+                          v{_version}
+                        </TLabel>
+                      </div>
+
+                      <Input
+                        className="flex-1"
+                        label="Repository"
+                        id={`version${_version}Repository`}
+                        value={repository}
+                        onChange={() => {}}
+                        inputProps={{
+                          className: "bg-transparent",
+                          readOnly: true,
+                        }}
+                      />
+                      <Input
+                        className="flex-1"
+                        label="Subdirectory"
+                        id={`version${_version}Subdirectory`}
+                        value={path}
+                        onChange={() => {}}
+                        inputProps={{
+                          className: "bg-transparent",
+                          readOnly: true,
+                        }}
+                      />
+                      <Input
+                        className="flex-1"
+                        label="Commit hash"
+                        id={`version${_version}CommitHash`}
+                        value={tag}
+                        onChange={() => {}}
+                        inputProps={{
+                          className: "bg-transparent",
+                          readOnly: true,
+                        }}
+                      />
+                    </div>
+                  );
+                } else
+                  return (
+                    <div
+                      key={_version}
+                      className="flex w-full flex-row items-end gap-2"
+                    >
+                      <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-secondary">
+                        <TLabel className="text-sm text-background">
+                          v{_version}
+                        </TLabel>
+                      </div>
+
+                      <Input
+                        className="flex-1"
+                        label={
+                          <>
+                            Repository <span className="text-red-500">*</span>
+                          </>
+                        }
+                        id={`version${_version}Repository`}
+                        value={
+                          versionGitInfoMap[_version as number]?.[
+                            "repository"
+                          ] ?? ""
+                        }
+                        onChange={(value) =>
+                          onVersionGitInfoMapChange(
+                            _version,
+                            "repository",
+                            value,
+                          )
+                        }
+                      />
+                      <Input
+                        className="flex-1"
+                        label={
+                          <>
+                            Subdirectory <span className="text-red-500">*</span>
+                          </>
+                        }
+                        id={`version${_version}Subdirectory`}
+                        value={
+                          versionGitInfoMap[_version as number]?.[
+                            "subdirectory"
+                          ] ?? ""
+                        }
+                        onChange={(value) =>
+                          onVersionGitInfoMapChange(
+                            _version,
+                            "subdirectory",
+                            value,
+                          )
+                        }
+                      />
+                      <Input
+                        className="flex-1"
+                        label={
+                          <>
+                            Commit hash <span className="text-red-500">*</span>
+                          </>
+                        }
+                        id={`version${_version}CommitHash`}
+                        value={
+                          versionGitInfoMap[_version as number]?.[
+                            "commitHash"
+                          ] ?? ""
+                        }
+                        onChange={(value) =>
+                          onVersionGitInfoMapChange(
+                            _version,
+                            "commitHash",
+                            value,
+                          )
+                        }
+                      />
+                    </div>
+                  );
               },
-            }}
-            startDecorator={
-              <TBody className="text-muted-foreground">{organization}/</TBody>
-            }
-          />
+            )}
+          </div>
+        </div>
 
-          {/* Version Git Info Map */}
-          <div className="flex w-full flex-col gap-2">
-            <TLabelSans>Git repository info</TLabelSans>
-            <div className="flex w-full flex-col gap-4 rounded-md border p-4">
-              {Array.from({ length: version }, (_, i) => i + 1).map(
-                (_version) => {
-                  const mvrPackageMetadataGitVersioningObj =
-                    mvrPackageMetadataGitVersioningObjs.find(
-                      (obj) =>
-                        (obj.data?.content as any).fields.name ===
-                        _version.toString(),
-                    );
-
-                  if (!!mvrPackageMetadataGitVersioningObj) {
-                    const repository = (
-                      mvrPackageMetadataGitVersioningObj.data?.content as any
-                    ).fields.value.fields.repository as string;
-                    const path = (
-                      mvrPackageMetadataGitVersioningObj.data?.content as any
-                    ).fields.value.fields.path as string;
-                    const tag = (
-                      mvrPackageMetadataGitVersioningObj.data?.content as any
-                    ).fields.value.fields.tag as string;
-
-                    return (
-                      <div
-                        key={_version}
-                        className="flex w-full flex-row items-end gap-2"
-                      >
-                        <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-muted">
-                          <TLabel className="text-sm text-background">
-                            v{_version}
-                          </TLabel>
-                        </div>
-
-                        <Input
-                          className="flex-1"
-                          label="Repository"
-                          id={`version${_version}Repository`}
-                          value={repository}
-                          onChange={() => {}}
-                          inputProps={{
-                            className: "bg-transparent",
-                            readOnly: true,
-                          }}
-                        />
-                        <Input
-                          className="flex-1"
-                          label="Subdirectory"
-                          id={`version${_version}Subdirectory`}
-                          value={path}
-                          onChange={() => {}}
-                          inputProps={{
-                            className: "bg-transparent",
-                            readOnly: true,
-                          }}
-                        />
-                        <Input
-                          className="flex-1"
-                          label="Commit hash"
-                          id={`version${_version}CommitHash`}
-                          value={tag}
-                          onChange={() => {}}
-                          inputProps={{
-                            className: "bg-transparent",
-                            readOnly: true,
-                          }}
-                        />
-                      </div>
-                    );
-                  } else
-                    return (
-                      <div
-                        key={_version}
-                        className="flex w-full flex-row items-end gap-2"
-                      >
-                        <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-secondary">
-                          <TLabel className="text-sm text-background">
-                            v{_version}
-                          </TLabel>
-                        </div>
-
-                        <Input
-                          className="flex-1"
-                          label={
-                            <>
-                              Repository <span className="text-red-500">*</span>
-                            </>
-                          }
-                          id={`version${_version}Repository`}
-                          value={
-                            versionGitInfoMap[_version as number]?.[
-                              "repository"
-                            ] ?? ""
-                          }
-                          onChange={(value) =>
-                            onVersionGitInfoMapChange(
-                              _version,
-                              "repository",
-                              value,
-                            )
-                          }
-                        />
-                        <Input
-                          className="flex-1"
-                          label={
-                            <>
-                              Subdirectory{" "}
-                              <span className="text-red-500">*</span>
-                            </>
-                          }
-                          id={`version${_version}Subdirectory`}
-                          value={
-                            versionGitInfoMap[_version as number]?.[
-                              "subdirectory"
-                            ] ?? ""
-                          }
-                          onChange={(value) =>
-                            onVersionGitInfoMapChange(
-                              _version,
-                              "subdirectory",
-                              value,
-                            )
-                          }
-                        />
-                        <Input
-                          className="flex-1"
-                          label={
-                            <>
-                              Commit hash{" "}
-                              <span className="text-red-500">*</span>
-                            </>
-                          }
-                          id={`version${_version}CommitHash`}
-                          value={
-                            versionGitInfoMap[_version as number]?.[
-                              "commitHash"
-                            ] ?? ""
-                          }
-                          onChange={(value) =>
-                            onVersionGitInfoMapChange(
-                              _version,
-                              "commitHash",
-                              value,
-                            )
-                          }
-                        />
-                      </div>
-                    );
-                },
-              )}
-            </div>
+        {/* Metadata */}
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex w-full flex-row gap-2">
+            <Input
+              className="flex-[3]"
+              label="Description"
+              id="metadataDescription"
+              value={metadata.description ?? ""}
+              onChange={() => {}}
+              inputProps={{
+                className: "bg-transparent",
+                readOnly: true,
+              }}
+            />
+            <Input
+              className="flex-1"
+              label="Contact"
+              id="metadataContact"
+              value={metadata.contact ?? ""}
+              onChange={() => {}}
+              inputProps={{
+                className: "bg-transparent",
+                readOnly: true,
+              }}
+            />
           </div>
 
-          {/* Metadata */}
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex w-full flex-row gap-2">
-              <Input
-                className="flex-[3]"
-                label="Description"
-                id="metadataDescription"
-                value={metadata.description ?? ""}
-                onChange={() => {}}
-                inputProps={{
-                  className: "bg-transparent",
-                  readOnly: true,
-                }}
-              />
-              <Input
-                className="flex-1"
-                label="Contact"
-                id="metadataContact"
-                value={metadata.contact ?? ""}
-                onChange={() => {}}
-                inputProps={{
-                  className: "bg-transparent",
-                  readOnly: true,
-                }}
-              />
-            </div>
-
-            <div className="flex w-full flex-row gap-2">
-              <Input
-                className="flex-1"
-                label="Icon URL"
-                id="metadataIconUrl"
-                value={metadata.iconUrl ?? ""}
-                onChange={() => {}}
-                inputProps={{
-                  className: "bg-transparent",
-                  readOnly: true,
-                }}
-              />
-              <Input
-                className="flex-1"
-                label="Documentation URL"
-                id="metadataDocumentationUrl"
-                value={metadata.documentationUrl ?? ""}
-                onChange={() => {}}
-                inputProps={{
-                  className: "bg-transparent",
-                  readOnly: true,
-                }}
-              />
-              <Input
-                className="flex-1"
-                label="Homepage URL"
-                id="metadataHomepageUrl"
-                value={metadata.homepageUrl ?? ""}
-                onChange={() => {}}
-                inputProps={{
-                  className: "bg-transparent",
-                  readOnly: true,
-                }}
-              />
-            </div>
+          <div className="flex w-full flex-row gap-2">
+            <Input
+              className="flex-1"
+              label="Icon URL"
+              id="metadataIconUrl"
+              value={metadata.iconUrl ?? ""}
+              onChange={() => {}}
+              inputProps={{
+                className: "bg-transparent",
+                readOnly: true,
+              }}
+            />
+            <Input
+              className="flex-1"
+              label="Documentation URL"
+              id="metadataDocumentationUrl"
+              value={metadata.documentationUrl ?? ""}
+              onChange={() => {}}
+              inputProps={{
+                className: "bg-transparent",
+                readOnly: true,
+              }}
+            />
+            <Input
+              className="flex-1"
+              label="Homepage URL"
+              id="metadataHomepageUrl"
+              value={metadata.homepageUrl ?? ""}
+              onChange={() => {}}
+              inputProps={{
+                className: "bg-transparent",
+                readOnly: true,
+              }}
+            />
           </div>
         </div>
       </div>

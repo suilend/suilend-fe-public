@@ -10,7 +10,7 @@ import { formatId, getAllOwnedObjects } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CreatePackageMetadataObjectDialog from "@/components/mvr/CreatePackageMetadataObjectDialog";
-import PublishNewPackageDialog from "@/components/mvr/PublishNewPackageDialog";
+import PublishPackageDialog from "@/components/mvr/PublishPackageDialog";
 import ViewPackageMetadataObjectDialog from "@/components/mvr/ViewPackageMetadataObjectDialog";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
@@ -171,9 +171,10 @@ export default function Multisig() {
               <Separator />
 
               <div className="flex w-full flex-col gap-4">
-                <PublishNewPackageDialog
+                <PublishPackageDialog
                   address={address}
                   isMultisig={isMultisig}
+                  refresh={fetchOwnedObjects}
                 />
 
                 <table className="w-full border">
