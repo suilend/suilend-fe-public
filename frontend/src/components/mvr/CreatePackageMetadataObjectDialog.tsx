@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useSignTransaction } from "@mysten/dapp-kit";
+import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { SuiObjectResponse } from "@mysten/sui/client";
 import { Transaction, namedPackagesPlugin } from "@mysten/sui/transactions";
 import { DebouncedFunc, debounce } from "lodash";
@@ -17,9 +17,12 @@ import StandardSelect from "@/components/shared/StandardSelect";
 import TextLink from "@/components/shared/TextLink";
 import { TBody, TLabel, TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
-import { MVR_REGISTRY_OBJECT_ID, MvrGitInfo, MvrMetadata } from "@/lib/mvr";
-
-type Organization = { suinsDomainObjId: string; name: string };
+import {
+  MVR_REGISTRY_OBJECT_ID,
+  MvrGitInfo,
+  MvrMetadata,
+  MvrOrganization,
+} from "@/lib/mvr";
 
 interface CreatePackageMetadataObjectDialogProps {
   suinsDomainObjs: SuiObjectResponse[];
@@ -38,7 +41,8 @@ export default function CreatePackageMetadataObjectDialog({
   refresh,
 }: CreatePackageMetadataObjectDialogProps) {
   const { explorer, suiClient } = useSettingsContext();
-  const { mutateAsync: signTransaction } = useSignTransaction();
+  const { mutateAsync: signAndExecuteTransaction } =
+    useSignAndExecuteTransaction();
 
   useEffect(() => {
     const mainnetPlugin = namedPackagesPlugin({
@@ -58,7 +62,7 @@ export default function CreatePackageMetadataObjectDialog({
     undefined,
   );
   const getOrganizationObj = useCallback(
-    (_suinsDomainObjId: string | undefined): Organization | undefined => {
+    (_suinsDomainObjId: string | undefined): MvrOrganization | undefined => {
       if (!_suinsDomainObjId) return undefined;
 
       const suinsDomainObj = suinsDomainObjs.find(
@@ -88,6 +92,8 @@ export default function CreatePackageMetadataObjectDialog({
     Record<number, MvrGitInfo>
   >({});
   const [metadata, setMetadata] = useState<MvrMetadata>({});
+
+  // Transaction
   const [transactionBase64, setTransactionBase64] = useState<string>("");
 
   const getTransaction = useCallback(
@@ -95,7 +101,7 @@ export default function CreatePackageMetadataObjectDialog({
       _address: string,
       _upgradeCapId: string,
       _version: number,
-      _organizationObj: Organization | undefined,
+      _organizationObj: MvrOrganization | undefined,
       _packageName: string,
       _versionGitInfoMap: Record<number, MvrGitInfo>,
       _metadata: MvrMetadata,
@@ -103,10 +109,10 @@ export default function CreatePackageMetadataObjectDialog({
       if (!_organizationObj) throw new Error("Missing organization");
       if (!_packageName) throw new Error("Missing package name");
 
-      // 1) Publish
       const transaction = new Transaction();
       transaction.setSender(_address);
 
+      // 1) Publish
       // PackageInfo
       const packageInfo = transaction.moveCall({
         target: `@mvr/metadata::package_info::new`,
@@ -243,7 +249,7 @@ export default function CreatePackageMetadataObjectDialog({
       _address: string,
       _upgradeCapId: string,
       _version: number,
-      _organizationObj: Organization | undefined,
+      _organizationObj: MvrOrganization | undefined,
       _packageName: string,
       _versionGitInfoMap: Record<number, MvrGitInfo>,
       _metadata: MvrMetadata,
@@ -268,6 +274,19 @@ export default function CreatePackageMetadataObjectDialog({
     DebouncedFunc<typeof getTransactionBase64>
   >(debounce(getTransactionBase64, 100));
 
+  // Submit
+  const reset = useCallback(() => {
+    setSuinsDomainObjId(undefined);
+    setPackageName("");
+    setVersionGitInfoMap({});
+    setMetadata({});
+    setTransactionBase64("");
+  }, []);
+
+  useEffect(() => {
+    if (!isDialogOpen) reset();
+  }, [isDialogOpen, reset]);
+
   const submit = async () => {
     try {
       const transaction = getTransaction(
@@ -280,11 +299,7 @@ export default function CreatePackageMetadataObjectDialog({
         metadata,
       );
 
-      const signedTransaction = await signTransaction({ transaction });
-      const res1 = await suiClient.executeTransactionBlock({
-        transactionBlock: signedTransaction.bytes,
-        signature: signedTransaction.signature,
-      });
+      const res1 = await signAndExecuteTransaction({ transaction });
       const res = await suiClient.waitForTransaction({
         digest: res1.digest,
         options: {
@@ -316,6 +331,7 @@ export default function CreatePackageMetadataObjectDialog({
     }
   };
 
+  // On change
   const onSuinsDomainObjIdChange = useCallback(
     async (_suinsDomainObjId: string) => {
       setSuinsDomainObjId(_suinsDomainObjId);
@@ -406,6 +422,7 @@ export default function CreatePackageMetadataObjectDialog({
       }
     },
     [
+      versionGitInfoMap,
       isMultisig,
       address,
       upgradeCapId,
@@ -413,7 +430,6 @@ export default function CreatePackageMetadataObjectDialog({
       getOrganizationObj,
       suinsDomainObjId,
       packageName,
-      versionGitInfoMap,
       metadata,
     ],
   );
@@ -453,19 +469,6 @@ export default function CreatePackageMetadataObjectDialog({
       metadata,
     ],
   );
-
-  // Reset
-  const reset = useCallback(() => {
-    setSuinsDomainObjId(undefined);
-    setPackageName("");
-    setVersionGitInfoMap({});
-    setMetadata({});
-    setTransactionBase64("");
-  }, []);
-
-  useEffect(() => {
-    if (!isDialogOpen) reset();
-  }, [isDialogOpen, reset]);
 
   return (
     <Dialog
@@ -509,7 +512,7 @@ export default function CreatePackageMetadataObjectDialog({
                 size="lg"
                 onClick={submit}
               >
-                Submit
+                Register
               </Button>
             )}
           </>
@@ -522,7 +525,7 @@ export default function CreatePackageMetadataObjectDialog({
           {/* Suins domain */}
           <div className="flex w-full flex-col gap-2">
             <TLabelSans>
-              Suins domain <span className="text-red-500">*</span>
+              Organization <span className="text-red-500">*</span>
             </TLabelSans>
             <StandardSelect
               viewportClassName="p-2"
@@ -569,13 +572,15 @@ export default function CreatePackageMetadataObjectDialog({
             <TLabelSans>Git repository info</TLabelSans>
             <div className="flex w-full flex-col gap-4 rounded-md border p-4">
               {Array.from({ length: version }, (_, i) => i + 1).map(
-                (version) => (
+                (_version) => (
                   <div
-                    key={version}
+                    key={_version}
                     className="flex w-full flex-row items-end gap-2"
                   >
-                    <div className="flex h-10 flex-row items-center">
-                      <TLabel className="pr-2 text-sm">v{version}</TLabel>
+                    <div className="flex h-10 w-10 flex-row items-center justify-center rounded-md border bg-secondary">
+                      <TLabel className="text-sm text-background">
+                        v{_version}
+                      </TLabel>
                     </div>
 
                     <Input
@@ -585,13 +590,13 @@ export default function CreatePackageMetadataObjectDialog({
                           Repository <span className="text-red-500">*</span>
                         </>
                       }
-                      id={`version${version}Repository`}
+                      id={`version${_version}Repository`}
                       value={
-                        versionGitInfoMap[version as number]?.["repository"] ??
+                        versionGitInfoMap[_version as number]?.["repository"] ??
                         ""
                       }
                       onChange={(value) =>
-                        onVersionGitInfoMapChange(version, "repository", value)
+                        onVersionGitInfoMapChange(_version, "repository", value)
                       }
                     />
                     <Input
@@ -601,15 +606,15 @@ export default function CreatePackageMetadataObjectDialog({
                           Subdirectory <span className="text-red-500">*</span>
                         </>
                       }
-                      id={`version${version}Subdirectory`}
+                      id={`version${_version}Subdirectory`}
                       value={
-                        versionGitInfoMap[version as number]?.[
+                        versionGitInfoMap[_version as number]?.[
                           "subdirectory"
                         ] ?? ""
                       }
                       onChange={(value) =>
                         onVersionGitInfoMapChange(
-                          version,
+                          _version,
                           "subdirectory",
                           value,
                         )
@@ -622,13 +627,13 @@ export default function CreatePackageMetadataObjectDialog({
                           Commit hash <span className="text-red-500">*</span>
                         </>
                       }
-                      id={`version${version}CommitHash`}
+                      id={`version${_version}CommitHash`}
                       value={
-                        versionGitInfoMap[version as number]?.["commitHash"] ??
+                        versionGitInfoMap[_version as number]?.["commitHash"] ??
                         ""
                       }
                       onChange={(value) =>
-                        onVersionGitInfoMapChange(version, "commitHash", value)
+                        onVersionGitInfoMapChange(_version, "commitHash", value)
                       }
                     />
                   </div>

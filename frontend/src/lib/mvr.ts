@@ -5,6 +5,8 @@ export const MVR_SUILEND_SUINS_OBJECT_ID =
 export const MVR_CAM00_SUINS_OBJECT_ID =
   "0x3719deca8d64145c110df2039c447d8fe8ce9746304ec2bbb817a4f2a006d347"; // Owned by 0x6191
 
+export type MvrOrganization = { suinsDomainObjId: string; name: string };
+
 export type MvrGitInfo = {
   repository: string; // E.g. https://github.com/suilend/suilend-public
   subdirectory: string; // E.g. contracts/suilend

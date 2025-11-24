@@ -11,6 +11,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CreatePackageMetadataObjectDialog from "@/components/mvr/CreatePackageMetadataObjectDialog";
 import PublishNewPackageDialog from "@/components/mvr/PublishNewPackageDialog";
+import ViewPackageMetadataObjectDialog from "@/components/mvr/ViewPackageMetadataObjectDialog";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
@@ -39,6 +40,10 @@ export default function Multisig() {
   const [mvrPackageMetadataObjs, setMvrPackageMetadataObjs] = useState<
     SuiObjectResponse[] | undefined
   >(undefined);
+  const [
+    mvrPackageMetadataGitVersioningObjsMap,
+    setMvrPackageMetadataGitVersioningObjsMap,
+  ] = useState<Record<string, SuiObjectResponse[]>>({});
   const [suinsDomainObjs, setSuinsDomainObjs] = useState<
     SuiObjectResponse[] | undefined
   >(undefined);
@@ -61,8 +66,43 @@ export default function Multisig() {
               "0xd22b24490e0bae52676651b4f56660a5ff8022a2576e0089f79b3c88d44e08f0::suins_registration::SuinsRegistration",
           }),
         ]);
+
+      const _mvrPackageMetadataGitVersioningObjsMap: Record<
+        string,
+        SuiObjectResponse[]
+      > = {};
+      for (const obj of _mvrPackageMetadataObjs) {
+        const mvrPackageMetadataObjId = obj.data?.objectId as string;
+
+        // Git versioning
+        if (!_mvrPackageMetadataGitVersioningObjsMap[mvrPackageMetadataObjId])
+          _mvrPackageMetadataGitVersioningObjsMap[mvrPackageMetadataObjId] = [];
+
+        const gitVersioningObjId = (obj.data?.content as any).fields
+          .git_versioning.fields.id.id;
+        const gitVersioningObj = await suiClient.getDynamicFields({
+          parentId: gitVersioningObjId,
+        });
+
+        const gitVersioningObjEntryIds = gitVersioningObj.data.map(
+          (d) => d.objectId,
+        );
+        const gitVersioningObjEntryObjs = await suiClient.multiGetObjects({
+          ids: gitVersioningObjEntryIds,
+          options: {
+            showContent: true,
+          },
+        });
+        _mvrPackageMetadataGitVersioningObjsMap[mvrPackageMetadataObjId].push(
+          ...gitVersioningObjEntryObjs,
+        );
+      }
+
       setUpgradeCapObjs(_upgradeCapObjs);
       setMvrPackageMetadataObjs(_mvrPackageMetadataObjs);
+      setMvrPackageMetadataGitVersioningObjsMap(
+        _mvrPackageMetadataGitVersioningObjsMap,
+      );
       setSuinsDomainObjs(_suinsDomainObjs);
     } catch (err) {
       toast.error("Failed to fetch owned objects", {
@@ -209,28 +249,23 @@ export default function Multisig() {
                               <TBody>{version}</TBody>
                             </td>
                             <td className="border-l px-2">
-                              {mvrPackageMetadataObj ? (
-                                <div className="flex flex-col gap-1 py-1">
-                                  <div className="flex h-6 flex-row items-center gap-1">
-                                    <Tooltip
-                                      title={
-                                        mvrPackageMetadataObj.data
-                                          ?.objectId as string
-                                      }
-                                    >
-                                      <TBody className="w-max uppercase">
-                                        {formatId(
-                                          mvrPackageMetadataId as string,
-                                        )}
-                                      </TBody>
-                                    </Tooltip>
-
-                                    <OpenOnExplorerButton
-                                      url={explorer.buildObjectUrl(
-                                        mvrPackageMetadataId as string,
-                                      )}
-                                    />
-                                  </div>
+                              {!!mvrPackageMetadataObj ? (
+                                <div className="flex flex-row items-center gap-2 py-1">
+                                  <ViewPackageMetadataObjectDialog
+                                    address={address}
+                                    isMultisig={isMultisig}
+                                    upgradeCapId={id}
+                                    version={version}
+                                    refresh={fetchOwnedObjects}
+                                    mvrPackageMetadataObj={
+                                      mvrPackageMetadataObj
+                                    }
+                                    mvrPackageMetadataGitVersioningObjs={
+                                      mvrPackageMetadataGitVersioningObjsMap[
+                                        mvrPackageMetadataId as string
+                                      ]
+                                    }
+                                  />
 
                                   <div className="flex h-6 flex-row items-center gap-1">
                                     <TBody>{mvrPackageMetadataName}</TBody>
