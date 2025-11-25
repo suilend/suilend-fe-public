@@ -145,7 +145,7 @@ function Page() {
                   }
                   onClick={() => (!session ? signIn("github") : signOut())}
                 >
-                  {!session ? "Sign in" : "Sign out"}
+                  {!session ? "Connect" : "Sign out"}
                 </Button>
               </div>
             </div>

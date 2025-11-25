@@ -105,7 +105,7 @@ const StrategyInput = forwardRef<HTMLInputElement, StrategyInputProps>(
         >
           {reserveOptions.length > 1 ? (
             <StandardSelect
-              className="group h-auto w-max min-w-0 !border-0 !bg-transparent px-0 font-mono text-2xl !text-foreground"
+              triggerClassName="group h-auto w-max min-w-0 !border-0 !bg-transparent px-0 font-mono text-2xl !text-foreground"
               triggerIconClassName="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
               triggerIconOpenClassName="text-foreground"
               items={reserveOptions}

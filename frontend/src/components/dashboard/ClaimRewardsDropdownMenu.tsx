@@ -338,7 +338,7 @@ export default function ClaimRewardsDropdownMenu({
 
             {/* Select */}
             <StandardSelect
-              className={cn(
+              triggerClassName={cn(
                 "h-6 w-max min-w-0 px-2",
                 isSwapping && "text-foreground",
                 isClaiming && "pointer-events-none opacity-50", // Disable select when claiming

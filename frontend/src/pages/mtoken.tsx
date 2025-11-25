@@ -1117,7 +1117,7 @@ function Page() {
             >
               <div className="flex w-full flex-row gap-4">
                 <StandardSelect
-                  className="w-auto flex-1"
+                  triggerClassName="w-auto flex-1"
                   items={mSendManagerObjects.map(
                     ({ adminCapObjectId, mTokenCoinType }) => ({
                       id: adminCapObjectId,
