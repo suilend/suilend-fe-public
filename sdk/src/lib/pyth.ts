@@ -1,22 +1,19 @@
 export const PRIMARY_PYTH_ENDPOINT = "https://hermes.pyth.network";
 
 /**
- * Tests if a Pyth connection endpoint is working by checking the /api/live endpoint
- * @param endpoint The Pyth connection endpoint URL to test, e.g. https://hermes.pyth.network
+ * Tests if the primary Pyth connection endpoint is working by checking the /live endpoint
  * @returns true if the connection is working, false otherwise
  */
-export const testPythConnection = async (
-  endpoint: string,
-): Promise<boolean> => {
+export const testPrimaryPythConnection = async (): Promise<boolean> => {
   try {
-    const res = await fetch(`${endpoint}/live`, {
+    const res = await fetch(`${PRIMARY_PYTH_ENDPOINT}/live`, {
       signal: AbortSignal.timeout(5 * 1000), // 5 second timeout
     });
 
     return res.ok;
   } catch (err) {
     console.warn(
-      `[testPythConnection] Pyth connection test failed for ${endpoint}:`,
+      `[testPrimaryPythConnection] Pyth connection test failed for ${PRIMARY_PYTH_ENDPOINT}:`,
       err,
     );
     return false;
@@ -32,7 +29,7 @@ export const getWorkingPythEndpoint = async (
   fallbackPythEndpoint?: string,
 ): Promise<string> => {
   // Test primary endpoint first
-  const primaryWorking = await testPythConnection(PRIMARY_PYTH_ENDPOINT);
+  const primaryWorking = await testPrimaryPythConnection();
   if (primaryWorking) {
     console.log(
       `[getWorkingPythEndpoint] Using primary Pyth endpoint: ${PRIMARY_PYTH_ENDPOINT}`,
