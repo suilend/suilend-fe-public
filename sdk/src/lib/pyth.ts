@@ -40,23 +40,12 @@ export const getWorkingPythEndpoint = async (
     return PRIMARY_PYTH_ENDPOINT;
   }
 
-  // If primary fails and fallback is provided, try fallback
+  // If primary fails and fallback is provided, use fallback
   if (!!fallbackPythEndpoint) {
     console.warn(
-      `[getWorkingPythEndpoint] Primary Pyth endpoint failed, trying fallback: ${fallbackPythEndpoint}`,
+      `[getWorkingPythEndpoint] Primary Pyth endpoint failed, using fallback: ${fallbackPythEndpoint}`,
     );
-    const fallbackWorking = await testPythConnection(fallbackPythEndpoint);
-    if (fallbackWorking) {
-      console.log(
-        `[getWorkingPythEndpoint] Using fallback Pyth endpoint: ${fallbackPythEndpoint}`,
-      );
-      return fallbackPythEndpoint;
-    }
-
-    console.error(
-      `[getWorkingPythEndpoint] Fallback Pyth endpoint also failed, using primary anyway`,
-    );
-    return PRIMARY_PYTH_ENDPOINT;
+    return fallbackPythEndpoint;
   } else {
     console.error(
       `[getWorkingPythEndpoint] Primary Pyth endpoint failed, no fallback provided, using primary anyway`,
