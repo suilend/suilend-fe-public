@@ -14,6 +14,7 @@ import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/st
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { SuilendClient } from "@suilend/sdk/client";
+import { getWorkingPythEndpoint } from "@suilend/sdk/lib/pyth";
 import {
   ParsedObligation,
   parseObligation,
@@ -49,6 +50,7 @@ import { TBody } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { MAX_BALANCE_SUI_SUBTRACTED_AMOUNT } from "@/lib/constants";
+import { FALLBACK_PYTH_ENDPOINT } from "@/lib/pyth";
 
 interface RowData {
   symbol: string;
@@ -136,15 +138,17 @@ export default function LiquidateDialog({
         suiClient,
       );
       let refreshedReserves = rawLendingMarket.reserves as Reserve<string>[];
-      const connection = new SuiPriceServiceConnection(
-        "https://hermes.pyth.network",
-        { timeout: 30 * 1000 },
-      );
+
+      const pythEndpoint = await getWorkingPythEndpoint(FALLBACK_PYTH_ENDPOINT);
+      const pythConnection = new SuiPriceServiceConnection(pythEndpoint, {
+        timeout: 30 * 1000,
+      });
+
       refreshedReserves = await simulate.refreshReservePrice(
         rawLendingMarket.reserves.map((r) =>
           simulate.compoundReserveInterest(r, Math.round(Date.now() / 1000)),
         ),
-        connection,
+        pythConnection,
       );
       const refreshedObligation = simulate.refreshObligation(
         rawObligation,

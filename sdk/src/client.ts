@@ -43,7 +43,6 @@ import {
   migrate,
   newObligationOwnerCap,
   rebalanceStaker,
-  redeemCtokensAndWithdrawLiquidity,
   redeemCtokensAndWithdrawLiquidityRequest,
   refreshReservePrice,
   repay,
@@ -54,7 +53,6 @@ import {
   withdrawCtokens,
 } from "./_generated/suilend/lending-market/functions";
 import {
-  FeeReceivers,
   LendingMarket,
   ObligationOwnerCap,
 } from "./_generated/suilend/lending-market/structs";
@@ -68,6 +66,7 @@ import {
   CreateReserveConfigArgs,
   createReserveConfig,
 } from "./_generated/suilend/reserve-config/functions";
+import { PRIMARY_PYTH_ENDPOINT } from "./lib/pyth";
 import { Side } from "./lib/types";
 
 const SUI_COINTYPE = "0x2::sui::SUI";
@@ -159,10 +158,11 @@ export class SuilendClient {
       PYTH_STATE_ID,
       WORMHOLE_STATE_ID,
     );
-    this.pythConnection = new SuiPriceServiceConnection(
-      "https://hermes.pyth.network",
-      { timeout: 30 * 1000 },
-    );
+
+    const pythEndpoint = PRIMARY_PYTH_ENDPOINT; // TODO: Use getWorkingPythEndpoint
+    this.pythConnection = new SuiPriceServiceConnection(pythEndpoint, {
+      timeout: 30 * 1000,
+    });
   }
 
   static async initialize(
