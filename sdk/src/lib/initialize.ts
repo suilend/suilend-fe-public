@@ -62,6 +62,7 @@ import { ParsedReserve, parseLendingMarket, parseObligation } from "../parsers";
 import * as simulate from "../utils/simulate";
 
 import { WAD } from "./constants";
+import { getWorkingPythEndpoint } from "./pyth";
 import {
   STRATEGY_WRAPPER_PACKAGE_ID_V1,
   StrategyType,
@@ -148,6 +149,7 @@ export const initializeSuilend = async (
   suiClient: SuiClient,
   suilendClient: SuilendClient,
   lendingMarketMetadata?: LendingMarketMetadata,
+  fallbackPythEndpoint?: string,
 ) => {
   const nowMs = Date.now();
   const nowS = Math.floor(nowMs / 1000);
@@ -172,12 +174,16 @@ export const initializeSuilend = async (
     }
   }
 
+  // Get a working Pyth endpoint (try primary, fallback to fallbackPythEndpoint if provided)
+  const pythEndpoint = await getWorkingPythEndpoint(fallbackPythEndpoint);
+  const pythConnection = new SuiPriceServiceConnection(pythEndpoint, {
+    timeout: 30 * 1000,
+  });
+
   const [refreshedReservesWithoutTemporaryPythPriceFeeds] = await Promise.all([
     simulate.refreshReservePrice(
       reservesWithoutTemporaryPythPriceFeeds,
-      new SuiPriceServiceConnection("https://hermes.pyth.network", {
-        timeout: 30 * 1000,
-      }),
+      pythConnection,
     ),
     Promise.all(
       reservesWithTemporaryPythPriceFeeds.map((reserve) =>

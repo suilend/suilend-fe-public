@@ -6,6 +6,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { phantom } from "@suilend/sdk/_generated/_framework/reified";
 import { LendingMarket } from "@suilend/sdk/_generated/suilend/lending-market/structs";
 import { Obligation } from "@suilend/sdk/_generated/suilend/obligation/structs";
+import { getWorkingPythEndpoint } from "@suilend/sdk/lib/pyth";
 import {
   ParsedObligation,
   parseObligation,
@@ -25,6 +26,7 @@ import Switch from "@/components/shared/Switch";
 import { TBody, TLabelSans } from "@/components/shared/Typography";
 import UtilizationBar from "@/components/shared/UtilizationBar";
 import Value from "@/components/shared/Value";
+import { FALLBACK_PYTH_ENDPOINT } from "@/lib/pyth";
 
 export default function ObligationsDialog() {
   const { suiClient } = useSettingsContext();
@@ -54,13 +56,17 @@ export default function ObligationsDialog() {
       phantom(appData.lendingMarket.type),
       appData.lendingMarket.id,
     );
+
+    const pythEndpoint = await getWorkingPythEndpoint(FALLBACK_PYTH_ENDPOINT);
+    const pythConnection = new SuiPriceServiceConnection(pythEndpoint, {
+      timeout: 30 * 1000,
+    });
+
     const refreshedReserves = await simulate.refreshReservePrice(
       rawLendingMarket.reserves.map((r) =>
         simulate.compoundReserveInterest(r, Math.round(Date.now() / 1000)),
       ),
-      new SuiPriceServiceConnection("https://hermes.pyth.network", {
-        timeout: 30 * 1000,
-      }),
+      pythConnection,
     );
     async function chunkHandler(obligationsChunk: Obligation<string>[]) {
       setObligations((obligations) => [
