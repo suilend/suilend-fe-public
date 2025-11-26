@@ -6,8 +6,8 @@ import { SessionWithAccessToken } from "@/lib/mvr";
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
-      clientId: process.env.GITHUB_SUILEND_MVR_CLIENT_ID as string,
-      clientSecret: process.env.GITHUB_SUILEND_MVR_CLIENT_SECRET as string,
+      clientId: process.env.GITHUB_SUILEND_CLIENT_ID as string,
+      clientSecret: process.env.GITHUB_SUILEND_CLIENT_SECRET as string,
       authorization: {
         params: {
           scope: "read:user user:email repo",
