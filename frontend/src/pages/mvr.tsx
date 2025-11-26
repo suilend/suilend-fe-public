@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 function Page() {
   const { explorer, suiClient } = useSettingsContext();
 
+  // GitHub
   const { data: session } = useSession();
 
   // Address
@@ -187,23 +188,22 @@ function Page() {
 
           {/* CTAs */}
           <div className="flex w-full flex-row items-center gap-3">
+            {/* Fetch UpgradeCaps */}
+            <Button
+              className="w-max"
+              labelClassName="uppercase"
+              onClick={fetchOwnedObjects}
+              disabled={!address}
+            >
+              Fetch UpgradeCaps
+            </Button>
+
             {/* Publish Package */}
             <PublishPackageDialog
               address={address}
               isMultisig={isMultisig}
               refresh={fetchOwnedObjects}
             />
-
-            {/* Fetch UpgradeCaps */}
-            <Button
-              className="w-max"
-              labelClassName="uppercase"
-              variant="secondary"
-              onClick={fetchOwnedObjects}
-              disabled={!address}
-            >
-              Fetch UpgradeCaps
-            </Button>
           </div>
         </div>
 

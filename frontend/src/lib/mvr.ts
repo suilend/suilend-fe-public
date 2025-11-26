@@ -1,3 +1,29 @@
+import { Octokit } from "@octokit/rest";
+import { Session } from "next-auth";
+
+export type SessionWithAccessToken = Session & { accessToken: string };
+
+export type GitHubRepo = {
+  id: string;
+  owner: string;
+  name: string;
+  url: string;
+};
+
+export type GitHubWorkflowRun = {
+  id: string;
+  displayTitle: string;
+  commitSha: string;
+  createdAt: string;
+  url: string;
+};
+
+export type GitHubBuild = {
+  digest: number[];
+  modules: string[];
+  dependencies: string[];
+};
+
 export const MVR_REGISTRY_OBJECT_ID =
   "0x0e5d473a055b6b7d014af557a13ad9075157fdc19b6d51562a18511afd397727";
 export const MVR_SUILEND_SUINS_OBJECT_ID =
@@ -19,3 +45,19 @@ export type MvrMetadata = {
   homepageUrl?: string;
   contact?: string;
 };
+
+/**
+ * Creates an authenticated Octokit instance from a NextAuth session
+ * @param session - NextAuth session object with accessToken
+ * @returns Authenticated Octokit instance
+ * @throws Error if session or accessToken is missing
+ */
+export function getAuthenticatedOctokit(
+  session: SessionWithAccessToken | null,
+): Octokit | null {
+  if (!session?.accessToken) return null;
+
+  return new Octokit({
+    auth: session.accessToken,
+  });
+}

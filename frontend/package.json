@@ -27,6 +27,7 @@
     "@mysten/sui": "1.42.0",
     "@mysten/sui.js": "0.54.1",
     "@mysten/wallet-standard": "0.19.2",
+    "@octokit/rest": "^22.0.1",
     "@pythnetwork/pyth-sui-js": "^2.2.0",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
     "@radix-ui/react-collapsible": "^1.1.1",
@@ -82,6 +83,7 @@
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
+    "unzipper": "^0.12.3",
     "usehooks-ts": "^3.1.1",
     "uuid": "^11.0.3"
   },
@@ -92,6 +94,7 @@
     "@types/lodash": "^4.17.20",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/unzipper": "^0.10.11",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "prettier-plugin-tailwindcss": "^0.6.8",
