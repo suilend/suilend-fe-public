@@ -1,10 +1,13 @@
-import { SUI_COINTYPE, Token, isSui } from "@suilend/sui-fe";
+import { Wallet } from "lucide-react";
+
+import { SUI_COINTYPE, Token, formatToken, isSui } from "@suilend/sui-fe";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenSelectionDialog from "@/components/shared/TokenSelectionDialog";
-import { TLabelSans } from "@/components/shared/Typography";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface AdminTokenSelectionDialogProps {
   noLabel?: boolean;
@@ -22,6 +25,7 @@ export default function AdminTokenSelectionDialog({
   onSelectToken,
 }: AdminTokenSelectionDialogProps) {
   const { explorer } = useSettingsContext();
+  const { getBalance } = useLoadedUserContext();
 
   return (
     <div className="flex flex-col gap-2">
@@ -45,15 +49,26 @@ export default function AdminTokenSelectionDialog({
         </div>
       )}
 
-      <TokenSelectionDialog
-        triggerClassName="h-10 w-max"
-        triggerLabelSelectedClassName="!text-sm"
-        triggerLabelUnselectedClassName="!text-sm uppercase"
-        token={token}
-        tokens={tokens}
-        placeholder={placeholder}
-        onSelectToken={onSelectToken}
-      />
+      <div className="flex flex-row items-center gap-4">
+        <TokenSelectionDialog
+          triggerClassName="h-10 w-max"
+          triggerLabelSelectedClassName="!text-sm"
+          triggerLabelUnselectedClassName="!text-sm uppercase"
+          token={token}
+          tokens={tokens}
+          placeholder={placeholder}
+          onSelectToken={onSelectToken}
+        />
+
+        {token && (
+          <div className="flex flex-row items-center gap-1.5">
+            <Wallet className="h-3 w-3 text-foreground" />
+            <TBody className="text-xs">
+              {formatToken(getBalance(token.coinType), { dp: token.decimals })}
+            </TBody>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
