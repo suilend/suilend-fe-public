@@ -36,14 +36,6 @@ export default async function handler(
 
     // Extract parameters from request body
     const { owner, repo, artifact_id } = JSON.parse(req.body);
-    console.log(
-      "XXX owner:",
-      owner,
-      "repo:",
-      repo,
-      "artifact_id:",
-      artifact_id,
-    );
 
     if (!owner || !repo || !artifact_id) {
       res.status(400).json({
