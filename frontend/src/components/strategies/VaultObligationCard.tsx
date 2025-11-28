@@ -10,10 +10,10 @@ import LabelWithValue from "@/components/shared/LabelWithValue";
 import TokenLogo from "@/components/shared/TokenLogo";
 import { TBody, TBodySans } from "@/components/shared/Typography";
 import { Input } from "@/components/ui/input";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useVaultContext } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
 import { VaultParsedObligation } from "@/fetchers/parseVault";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
 import { cn } from "@/lib/utils";
 
 export default function VaultObligationCard({
@@ -23,6 +23,7 @@ export default function VaultObligationCard({
   vaultData: ParsedVault;
   obligation: VaultParsedObligation;
 }) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
   const { deployFunds, withdrawDeployedFunds } = useVaultContext();
 
   const [useMaxWithdrawAmount, setUseMaxWithdrawAmount] = useState(false);

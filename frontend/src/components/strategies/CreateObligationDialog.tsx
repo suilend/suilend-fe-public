@@ -4,18 +4,17 @@ import { PlusIcon } from "lucide-react";
 
 import Dialog from "@/components/shared/Dialog";
 import { TLabelSans } from "@/components/shared/Typography";
-import { useVaultContext } from "@/contexts/VaultContext";
-import { ParsedVault } from "@/fetchers/parseVault";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
-
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
+import { useLoadedAppContext } from "@/contexts/AppContext";
+import { useVaultContext } from "@/contexts/VaultContext";
+import { ParsedVault } from "@/fetchers/parseVault";
 
 export default function CreateObligationDialog({
   isOpen,
@@ -26,6 +25,8 @@ export default function CreateObligationDialog({
   onClose: () => void;
   vault: ParsedVault;
 }) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   const { createObligation } = useVaultContext();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [lendingMarketId, setLendingMarketId] = useState<string>("");

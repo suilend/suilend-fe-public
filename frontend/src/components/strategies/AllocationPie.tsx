@@ -2,11 +2,10 @@ import BigNumber from "bignumber.js";
 
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
+import Tooltip from "@/components/shared/Tooltip";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ParsedVault } from "@/fetchers/parseVault";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
-
-import Tooltip from "../shared/Tooltip";
-import { TBody, TLabelSans } from "../shared/Typography";
 
 const ALLOCATION_SEGMENT_COLORS = ["#457AE4", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
@@ -64,6 +63,8 @@ export default function AllocationPie({
   size = 160,
   strokeWidth = 20,
 }: AllocationPieProps) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   const totalTvl = vault.tvl;
   const allocationSegments = (
     vault.obligations.map((obligation, index) => ({

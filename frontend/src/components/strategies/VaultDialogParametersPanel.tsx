@@ -11,10 +11,9 @@ import { shallowPushQuery } from "@suilend/sui-fe-next";
 
 import Button from "@/components/shared/Button";
 import { TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { useAppContext } from "@/contexts/AppContext";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useVaultContext } from "@/contexts/VaultContext";
 import { ParsedVault } from "@/fetchers/parseVault";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
 import { cn } from "@/lib/utils";
 
 import AllocationPie from "./AllocationPie";
@@ -135,7 +134,7 @@ function HistoryTabContent({ vault }: TabContentProps) {
 
 function AllocationTabContent({ vault }: TabContentProps) {
   const { vaultHistory } = useVaultContext();
-  const { allAppData } = useAppContext();
+  const { LENDING_MARKET_METADATA_MAP, allAppData } = useLoadedAppContext();
 
   const currentHistory = useMemo(
     () => vaultHistory[vault.id] ?? [],

@@ -1,11 +1,10 @@
 import { formatPercent, formatToken } from "@suilend/sui-fe";
 
+import Tooltip from "@/components/shared/Tooltip";
+import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { ParsedVault } from "@/fetchers/parseVault";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
 import { cn } from "@/lib/utils";
-
-import Tooltip from "../shared/Tooltip";
-import { TBody, TLabelSans } from "../shared/Typography";
 
 const ALLOCATION_SEGMENT_COLORS = ["#457AE4", "#60A5FA", "#93C5FD", "#1D4ED8"];
 
@@ -22,6 +21,8 @@ type AllocationSegment = {
 };
 
 function AllocationBar({ vault }: AllocationBarProps) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   const totalTvl = vault.tvl;
   const allocationSegments = (
     vault.obligations.map((obligation, index) => ({

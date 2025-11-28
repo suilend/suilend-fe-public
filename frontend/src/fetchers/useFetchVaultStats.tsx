@@ -3,7 +3,7 @@ import useSWR from "swr";
 import { API_URL } from "@suilend/sui-fe";
 
 import { ChartData } from "@/components/strategies/VaultLineChart";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DAY_S, Days } from "@/lib/events";
 
 // Toggle to enable mock data for development/testing
@@ -36,6 +36,8 @@ type VaultStatsResponse = {
 };
 
 export default function useFetchVault(vaultId?: string, days?: Days) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   const fetcher = async (): Promise<ChartData[]> => {
     if (!vaultId) throw new Error("Missing vaultId");
 

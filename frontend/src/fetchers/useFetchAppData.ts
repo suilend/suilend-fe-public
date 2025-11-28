@@ -10,8 +10,6 @@ import {
   initializeSuilendRewards,
 } from "@suilend/sdk";
 import {
-  LENDING_MARKET_ID,
-  LENDING_MARKET_TYPE,
   STEAMM_LM_LENDING_MARKET_ID,
   STEAMM_LM_LENDING_MARKET_TYPE,
   SuilendClient,
@@ -25,57 +23,6 @@ import { showErrorToast, useSettingsContext } from "@suilend/sui-fe-next";
 import { AllAppData } from "@/contexts/AppContext";
 import { FALLBACK_PYTH_ENDPOINT } from "@/lib/pyth";
 
-export const LENDING_MARKET_METADATA_MAP: Record<
-  string,
-  LendingMarketMetadata
-> = {
-  [LENDING_MARKET_ID]: {
-    id: LENDING_MARKET_ID,
-    type: LENDING_MARKET_TYPE,
-    lendingMarketOwnerCapId:
-      "0xf7a4defe0b6566b6a2674a02a0c61c9f99bd012eed21bc741a069eaa82d35927",
-
-    name: "Main Market",
-    isHidden: false,
-  },
-  "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82": {
-    id: "0x8a8d8e138a28de1c637d0b0955e621b017da7010de388db5a18493eca99c5e82",
-    type: "0xd382f7d6e7596585b3063d5f4607de30a7a81adeb521d6b862b4c57defca746e::Matrixdock_gold::MATRIXDOCK_GOLD",
-    lendingMarketOwnerCapId:
-      "0xb4940c255a6498eb3db91db94881397004d30659b836568356f279a69f2eca3c",
-
-    name: "Matrixdock Gold Market",
-    isHidden: false,
-  },
-  // "0xc1549fd5db74c3aad37a260c9fd251d93d6f2f3ccfacc277398a57718c275a17": {
-  //   id: "0xc1549fd5db74c3aad37a260c9fd251d93d6f2f3ccfacc277398a57718c275a17",
-  //   type: "0xfdd80974048913f1fa7fecf040099975760fef78cccda53d0b347a475819fa98::send::SEND",
-  //   lendingMarketOwnerCapId:
-  //     "0xa0384efc3fe33ec0a9308fff1015d0b7503b15aa4d3be66b4704f12d905caef1",
-
-  //   name: "SEND Market",
-  //   isHidden: true,
-  // },
-  "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2": {
-    id: "0x0d3a7f758d19d11e8526f66cca43403a99da16862c570c43efe0f8c4a500f7f2",
-    type: "0x3628b6ea618a6cca71793bab63e88ea69e10d3a99b5c7b3df88ba01f165015d4::elixir::ELIXIR",
-    lendingMarketOwnerCapId:
-      "0xf93304ac799c327471237353d120411c5f55f1d8245db44a6b5f5fabf8f35a42",
-
-    name: "Elixir Market",
-    isHidden: false,
-  },
-  [STEAMM_LM_LENDING_MARKET_ID]: {
-    id: STEAMM_LM_LENDING_MARKET_ID,
-    type: STEAMM_LM_LENDING_MARKET_TYPE,
-    lendingMarketOwnerCapId:
-      "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
-
-    name: "STEAMM LM",
-    isHidden: true,
-  },
-};
-
 export default function useFetchAppData() {
   const { suiClient } = useSettingsContext();
 
@@ -83,88 +30,45 @@ export default function useFetchAppData() {
 
   // Data
   const dataFetcher = async () => {
-    // Get lending markets from registry
-    // let lendingMarketMetadataMap: Record<string, LendingMarketMetadata> = {};
-    // try {
-    //   const lendingMarketsTableObj = await suiClient.getDynamicFields({
-    //     parentId:
-    //       "0xdc00dfa5ea142a50f6809751ba8dcf84ae5c60ca5f383e51b3438c9f6d72a86e",
-    //   });
+    // Get lending markets metadata (non-hidden)
+    const lendingMarketsMetadataRes = await fetch(`${API_URL}/markets`);
+    const lendingMarketsMetadataJson: LendingMarketMetadata[] =
+      await lendingMarketsMetadataRes.json();
 
-    //   lendingMarketMetadataMap = Object.fromEntries(
-    //     (
-    //       await Promise.all(
-    //         lendingMarketsTableObj.data.map(async ({ objectId }) => {
-    //           const obj = await suiClient.getObject({
-    //             id: objectId,
-    //             options: { showContent: true },
-    //           });
+    const NON_HIDDEN_LENDING_MARKET_METADATA_MAP: Record<
+      string,
+      LendingMarketMetadata
+    > = Object.fromEntries(
+      lendingMarketsMetadataJson.map((lendingMarket) => [
+        lendingMarket.id,
+        {
+          id: lendingMarket.id,
+          type: lendingMarket.type,
+          lendingMarketOwnerCapId: lendingMarket.lendingMarketOwnerCapId,
+          name: lendingMarket.name,
+          isHidden: lendingMarket.isHidden,
+        },
+      ]),
+    );
+    const HIDDEN_LENDING_MARKET_METADATA_MAP: Record<
+      string,
+      LendingMarketMetadata
+    > = {
+      [STEAMM_LM_LENDING_MARKET_ID]: {
+        id: STEAMM_LM_LENDING_MARKET_ID,
+        type: STEAMM_LM_LENDING_MARKET_TYPE,
+        lendingMarketOwnerCapId:
+          "0x55a0f33b24e091830302726c8cfbff8cf8abd2ec1f83a4e6f4bf51c7ba3ad5ab",
 
-    //           // Lending market
-    //           const lendingMarketId: string = (obj.data?.content as any).fields
-    //             .value;
-    //           if (
-    //             [
-    //               "0x6d9478307d1cb8417470bec42e38000422b448e9638d6b43b821301179ac8caf", // STEAMM LM (old)
-    //               "0x8742d26532a245955630ff230b0d4b14aff575a0f3261efe50f571f84c4e4773", // Test 1
-    //               "0x8843ed2e29bd36683c7c99bf7e529fcee124a175388ad4b9886b48f1009e6285", // Test 2
-    //               "0x02b4b27b3aa136405c2aaa8e2e08191670f3971d495bfcd2dda17184895c20ad", // Test 3
-    //             ].includes(lendingMarketId)
-    //           )
-    //             return undefined;
+        name: "STEAMM LM",
+        isHidden: true,
+      },
+    };
 
-    //           const lendingMarketType: string = `0x${
-    //             ((obj.data?.content as any).fields.name.fields as any).name
-    //           }`;
-
-    //           // LendingMarketOwnerCap id
-    //           const firstTx = await suiClient.queryTransactionBlocks({
-    //             filter: { ChangedObject: lendingMarketId },
-    //             options: {
-    //               showObjectChanges: true,
-    //             },
-    //             limit: 1,
-    //             order: "ascending",
-    //           });
-
-    //           const lendingMarketOwnerCapId: string = (
-    //             firstTx.data[0].objectChanges?.find(
-    //               (o) =>
-    //                 o.type === "created" &&
-    //                 o.objectType.includes(
-    //                   `::lending_market::LendingMarketOwnerCap<${lendingMarketType}>`,
-    //                 ),
-    //             ) as any
-    //           ).objectId;
-
-    //           return {
-    //             id: lendingMarketId,
-    //             type: lendingMarketType,
-    //             lendingMarketOwnerCapId,
-
-    //             name:
-    //               LENDING_MARKET_METADATA_MAP[lendingMarketId]?.name ??
-    //               undefined,
-    //             isHidden:
-    //               LENDING_MARKET_METADATA_MAP[lendingMarketId]?.isHidden ??
-    //               undefined,
-    //           };
-    //         }),
-    //       )
-    //     )
-    //       .filter((x) => x !== undefined)
-    //       .map((x) => [x.id, x]),
-    //   );
-    //   console.log(
-    //     "[useFetchAppData] lendingMarketMetadataMap:",
-    //     lendingMarketMetadataMap,
-    //   );
-    // } catch (err) {
-    //   console.error(err);
-
-    //   // Fallback
-    //   lendingMarketMetadataMap = LENDING_MARKET_METADATA_MAP;
-    // }
+    const LENDING_MARKET_METADATA_MAP = {
+      ...NON_HIDDEN_LENDING_MARKET_METADATA_MAP,
+      ...HIDDEN_LENDING_MARKET_METADATA_MAP,
+    };
 
     const [
       allLendingMarketData,
@@ -370,6 +274,7 @@ export default function useFetchAppData() {
     }
 
     return {
+      LENDING_MARKET_METADATA_MAP,
       allLendingMarketData,
       lstStatsMap,
       elixirSdeUsdAprPercent,

@@ -13,6 +13,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import BigNumber from "bignumber.js";
 import { useFlags } from "launchdarkly-react-client-sdk";
 
+import { LendingMarketMetadata } from "@suilend/sdk";
 import { Reserve } from "@suilend/sdk/_generated/suilend/reserve/structs";
 import { SuilendClient } from "@suilend/sdk/client";
 import { ParsedLendingMarket } from "@suilend/sdk/parsers/lendingMarket";
@@ -41,6 +42,7 @@ export interface AppData {
   rewardCoinMetadataMap: Record<string, CoinMetadata>;
 }
 export interface AllAppData {
+  LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata>; // Includes both hidden and non-hidden lending markets
   allLendingMarketData: Record<string, AppData>;
   lstStatsMap: Record<
     string,
@@ -59,6 +61,8 @@ export interface AllAppData {
 }
 
 interface AppContext {
+  LENDING_MARKET_METADATA_MAP: Record<string, LendingMarketMetadata>; // Includes both hidden and non-hidden lending markets
+
   allAppData: AllAppData | undefined;
   featuredLendingMarketIds: string[] | undefined;
   featuredReserveIds: string[] | undefined;
@@ -80,6 +84,8 @@ type LoadedAppContext = AppContext & {
 };
 
 const AppContext = createContext<AppContext>({
+  LENDING_MARKET_METADATA_MAP: {},
+
   allAppData: undefined,
   featuredLendingMarketIds: undefined,
   featuredReserveIds: undefined,
@@ -187,6 +193,9 @@ export function AppContextProvider({ children }: PropsWithChildren) {
   // Context
   const contextValue: AppContext = useMemo(
     () => ({
+      LENDING_MARKET_METADATA_MAP:
+        allAppData?.LENDING_MARKET_METADATA_MAP ?? {},
+
       allAppData,
       featuredLendingMarketIds,
       featuredReserveIds,

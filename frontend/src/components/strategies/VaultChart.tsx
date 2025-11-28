@@ -16,7 +16,7 @@ import DropdownMenu, {
   DropdownMenuItem,
 } from "@/components/shared/DropdownMenu";
 import { TBody, TBodySans, TLabelSans } from "@/components/shared/Typography";
-import { LENDING_MARKET_METADATA_MAP } from "@/fetchers/useFetchAppData";
+import { useLoadedAppContext } from "@/contexts/AppContext";
 import useFetchVaultStats from "@/fetchers/useFetchVaultStats";
 import { ViewBox, getTooltipStyle } from "@/lib/chart";
 import { DAYS, DAYS_MAP, Days } from "@/lib/events";
@@ -72,6 +72,8 @@ function TooltipContentAllocations({
   viewBox,
   x,
 }: TooltipContentPropsBase) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   if (fields.every((field) => d[field] === undefined)) return null;
   if (viewBox === undefined || x === undefined) return null;
 
@@ -127,6 +129,8 @@ interface VaultChartProps {
 type MetricType = "TVL" | "APR" | "Allocations";
 
 export default function VaultChart({ vaultId }: VaultChartProps) {
+  const { LENDING_MARKET_METADATA_MAP } = useLoadedAppContext();
+
   const [days, setDays] = useLocalStorage<Days>("vaultChart_days", 7);
   const { data: chartData, isLoading } = useFetchVaultStats(vaultId, days);
   const [metricType, setMetricType] = useState<MetricType>("TVL");
@@ -145,7 +149,7 @@ export default function VaultChart({ vaultId }: VaultChartProps) {
       const nb = LENDING_MARKET_METADATA_MAP[b]?.name ?? b;
       return na.localeCompare(nb);
     });
-  }, [chartData]);
+  }, [chartData, LENDING_MARKET_METADATA_MAP]);
 
   const fields = useMemo(() => {
     if (metricType === "APR") return ["apr"];
