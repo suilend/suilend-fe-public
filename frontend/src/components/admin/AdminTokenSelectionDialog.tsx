@@ -6,7 +6,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 import CopyToClipboardButton from "@/components/shared/CopyToClipboardButton";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";
 import TokenSelectionDialog from "@/components/shared/TokenSelectionDialog";
-import { TBody, TLabelSans } from "@/components/shared/Typography";
+import { TLabel, TLabelSans } from "@/components/shared/Typography";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 
 interface AdminTokenSelectionDialogProps {
@@ -49,7 +49,7 @@ export default function AdminTokenSelectionDialog({
         </div>
       )}
 
-      <div className="flex flex-row items-center gap-4">
+      <div className="flex flex-col">
         <TokenSelectionDialog
           triggerClassName="h-10 w-max"
           triggerLabelSelectedClassName="!text-sm"
@@ -61,11 +61,11 @@ export default function AdminTokenSelectionDialog({
         />
 
         {token && (
-          <div className="flex flex-row items-center gap-1.5">
-            <Wallet className="h-3 w-3 text-foreground" />
-            <TBody className="text-xs">
+          <div className="-mt-1.5 flex flex-row items-center gap-1.5 pl-7">
+            <Wallet className="h-3 w-3 text-muted-foreground" />
+            <TLabel>
               {formatToken(getBalance(token.coinType), { dp: token.decimals })}
-            </TBody>
+            </TLabel>
           </div>
         )}
       </div>
