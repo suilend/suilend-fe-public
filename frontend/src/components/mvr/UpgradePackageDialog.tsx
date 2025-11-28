@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { DebouncedFunc, debounce } from "lodash";
-import { Plus } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 
 import { TX_TOAST_DURATION } from "@suilend/sui-fe";
@@ -13,22 +13,29 @@ import RepoSelect from "@/components/mvr/RepoSelect";
 import WorkflowRunSelect from "@/components/mvr/WorkflowRunSelect";
 import Button from "@/components/shared/Button";
 import Dialog from "@/components/shared/Dialog";
+import Input from "@/components/shared/Input";
 import TextLink from "@/components/shared/TextLink";
 import { TLabelSans } from "@/components/shared/Typography";
 import { Separator } from "@/components/ui/separator";
 import { GitHubBuild, useGitHubRepos } from "@/lib/mvr";
 
-interface PublishPackageDialogProps {
+interface UpgradePackageDialogProps {
   address: string;
   isMultisig: boolean;
+  packageId: string;
+  upgradeCapId: string;
+  version: number;
   refresh: () => Promise<void>;
 }
 
-export default function PublishPackageDialog({
+export default function UpgradePackageDialog({
   address,
   isMultisig,
+  packageId,
+  upgradeCapId,
+  version,
   refresh,
-}: PublishPackageDialogProps) {
+}: UpgradePackageDialogProps) {
   const { explorer, suiClient } = useSettingsContext();
   const { mutateAsync: signAndExecuteTransaction } =
     useSignAndExecuteTransaction();
@@ -87,27 +94,52 @@ export default function PublishPackageDialog({
   const [transactionBase64, setTransactionBase64] = useState<string>("");
 
   const getTransaction = useCallback(
-    (_address: string, _build: GitHubBuild) => {
+    (
+      _address: string,
+      _packageId: string,
+      _upgradeCapId: string,
+      _build: GitHubBuild,
+    ) => {
       const transaction = new Transaction();
       transaction.setSender(_address);
 
-      // 1) Publish
-      const [upgradeCap] = transaction.publish({
+      // 1) Upgrade
+      const [ticket] = transaction.moveCall({
+        target: "0x2::package::authorize_upgrade",
+        arguments: [
+          transaction.object(_upgradeCapId),
+          transaction.pure.u8(0), // Policy (0 for compatible, 1 for additive, 2 for dep_only)
+          transaction.pure.vector("u8", _build.digest), // Package digest as vector<u8>
+        ],
+      });
+      const [receipt] = transaction.upgrade({
         modules: _build.modules,
+        package: _packageId,
+        ticket,
         dependencies: _build.dependencies,
       });
-      transaction.transferObjects(
-        [upgradeCap],
-        transaction.pure.address(_address),
-      );
+      transaction.moveCall({
+        target: "0x2::package::commit_upgrade",
+        arguments: [transaction.object(_upgradeCapId), receipt],
+      });
 
       return transaction;
     },
     [],
   );
   const getTransactionBase64 = useCallback(
-    async (_address: string, _build: GitHubBuild) => {
-      const transaction = getTransaction(_address, _build);
+    async (
+      _address: string,
+      _packageId: string,
+      _upgradeCapId: string,
+      _build: GitHubBuild,
+    ) => {
+      const transaction = getTransaction(
+        _address,
+        _packageId,
+        _upgradeCapId,
+        _build,
+      );
 
       const transactionBytes = await transaction.build({ client: suiClient });
       const base64 = Buffer.from(transactionBytes).toString("base64");
@@ -139,7 +171,12 @@ export default function PublishPackageDialog({
     try {
       if (!build) return;
 
-      const transaction = getTransaction(address, build);
+      const transaction = getTransaction(
+        address,
+        packageId,
+        upgradeCapId,
+        build,
+      );
 
       const res1 = await signAndExecuteTransaction({ transaction });
       const res = await suiClient.waitForTransaction({
@@ -153,7 +190,7 @@ export default function PublishPackageDialog({
       });
       const txUrl = explorer.buildTxUrl(res.digest);
 
-      toast.success("Published package", {
+      toast.success("Upgraded package", {
         action: (
           <TextLink className="block" href={txUrl}>
             View tx on {explorer.name}
@@ -165,7 +202,7 @@ export default function PublishPackageDialog({
       setIsDialogOpen(false);
       reset();
     } catch (err) {
-      toast.error("Failed to register package", {
+      toast.error("Failed to upgrade package", {
         description: (err as Error)?.message || "An unknown error occurred",
       });
     } finally {
@@ -199,13 +236,25 @@ export default function PublishPackageDialog({
 
       if (!isMultisig) return;
       try {
-        await debouncedGetTransactionBase64Ref.current(address, _build);
+        await debouncedGetTransactionBase64Ref.current(
+          address,
+          packageId,
+          upgradeCapId,
+          _build,
+        );
       } catch (err) {
         console.error(err);
         // Fail silently
       }
     },
-    [repoId, getBuildForWorkflowRun, isMultisig, address],
+    [
+      repoId,
+      getBuildForWorkflowRun,
+      isMultisig,
+      address,
+      packageId,
+      upgradeCapId,
+    ],
   );
 
   return (
@@ -215,15 +264,14 @@ export default function PublishPackageDialog({
         <Button
           className="w-max"
           labelClassName="uppercase"
-          startIcon={<Plus />}
           variant="secondary"
-          disabled={!session || !address}
+          startIcon={<ArrowUp />}
         >
-          Publish
+          Upgrade
         </Button>
       }
       headerProps={{
-        title: { icon: <Plus />, children: "Publish package" },
+        title: { icon: <ArrowUp />, children: "Upgrade package" },
       }}
       footerProps={{
         children: (
@@ -251,7 +299,7 @@ export default function PublishPackageDialog({
                 onClick={submit}
                 disabled={!build}
               >
-                Publish
+                Upgrade
               </Button>
             )}
           </>
@@ -274,6 +322,18 @@ export default function PublishPackageDialog({
           workflowRunId={workflowRunId}
           workflowRun={workflowRun}
           onWorkflowRunIdChange={onWorkflowRunIdChange}
+        />
+
+        {/* Version */}
+        <Input
+          label="Version"
+          id="version"
+          value={`${+version + 1}`}
+          onChange={() => {}}
+          inputProps={{
+            className: "bg-transparent",
+            readOnly: true,
+          }}
         />
       </div>
     </Dialog>

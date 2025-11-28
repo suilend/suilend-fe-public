@@ -13,6 +13,7 @@ import { useSettingsContext } from "@suilend/sui-fe-next";
 
 import CreatePackageMetadataObjectDialog from "@/components/mvr/CreatePackageMetadataObjectDialog";
 import PublishPackageDialog from "@/components/mvr/PublishPackageDialog";
+import UpgradePackageDialog from "@/components/mvr/UpgradePackageDialog";
 import ViewPackageMetadataObjectDialog from "@/components/mvr/ViewPackageMetadataObjectDialog";
 import Button from "@/components/shared/Button";
 import Input from "@/components/shared/Input";
@@ -198,7 +199,7 @@ function Page() {
               Fetch UpgradeCaps
             </Button>
 
-            {/* Publish Package */}
+            {/* Publish package */}
             <PublishPackageDialog
               address={address}
               isMultisig={isMultisig}
@@ -260,7 +261,7 @@ function Page() {
                             <div className="flex flex-row items-center gap-1">
                               <Tooltip title={id}>
                                 <TBody className="w-max uppercase">
-                                  {formatId(id)}
+                                  {formatId(id).replace("×", "x")}
                                 </TBody>
                               </Tooltip>
 
@@ -273,7 +274,7 @@ function Page() {
                             <div className="flex flex-row items-center gap-1">
                               <Tooltip title={packageId}>
                                 <TBody className="w-max uppercase">
-                                  {formatId(packageId)}
+                                  {formatId(packageId).replace("×", "x")}
                                 </TBody>
                               </Tooltip>
 
@@ -283,14 +284,24 @@ function Page() {
                             </div>
                           </td>
                           <td className="border-l px-2">
-                            <div className="flex flex-row items-center gap-2 py-1">
+                            <div className="flex flex-row items-center gap-3 py-1">
+                              {/* Latest version */}
                               <TBody>{version}</TBody>
-                              {/* <PublishPackageDialog /> */}
+
+                              {/* Upgrade package */}
+                              <UpgradePackageDialog
+                                address={address}
+                                isMultisig={isMultisig}
+                                packageId={packageId}
+                                upgradeCapId={id}
+                                version={version}
+                                refresh={fetchOwnedObjects}
+                              />
                             </div>
                           </td>
                           <td className="border-l px-2">
                             {!!mvrPackageMetadataObj ? (
-                              <div className="flex flex-row items-center gap-2 py-1">
+                              <div className="flex flex-row items-center gap-3 py-1">
                                 <ViewPackageMetadataObjectDialog
                                   address={address}
                                   isMultisig={isMultisig}

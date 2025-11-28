@@ -1,5 +1,9 @@
+import { useCallback, useState } from "react";
+
 import { Octokit } from "@octokit/rest";
 import { Session } from "next-auth";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export type SessionWithAccessToken = Session & { accessToken: string };
 
@@ -61,3 +65,129 @@ export function getAuthenticatedOctokit(
     auth: session.accessToken,
   });
 }
+
+export const useGitHubRepos = () => {
+  // GitHub
+  const { data: session } = useSession();
+  const octokit = getAuthenticatedOctokit(session as SessionWithAccessToken);
+
+  const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [workflowRunsForRepo, setWorkflowRunsForRepo] = useState<
+    GitHubWorkflowRun[]
+  >([]);
+
+  // GitHub - repos
+  const getReposForUser = useCallback(async () => {
+    try {
+      if (!octokit) return;
+
+      const res = await octokit.repos.listForAuthenticatedUser({
+        visibility: "all",
+        affiliation: "owner,collaborator,organization_member",
+      });
+      const _repos = res.data
+        .map((repo) => {
+          const owner = repo.owner.html_url.split("/").pop() as string;
+          const name = repo.name;
+          const url = repo.html_url;
+          const id = `${owner}/${name}`;
+
+          return {
+            id,
+            owner,
+            name,
+            url,
+          };
+        })
+        .sort((a, b) => (a.id.toLowerCase() < b.id.toLowerCase() ? -1 : 1)); // Sort alphabetically by id
+      console.log("_repos:", _repos);
+
+      return _repos;
+    } catch (err) {
+      toast.error("Failed to get repos for user", {
+        description: (err as Error)?.message || "An unknown error occurred",
+      });
+    }
+  }, [octokit]);
+
+  // GitHub - workflow runs for repo
+  const getWorkflowRunsForRepo = useCallback(
+    async (_repoId: string) => {
+      try {
+        if (!octokit) return;
+
+        const [owner, repo] = _repoId.split("/");
+        const res = await octokit.actions.listWorkflowRunsForRepo({
+          owner,
+          repo,
+        });
+        const _workflowRuns = res.data.workflow_runs.map((workflowRun) => {
+          return {
+            id: workflowRun.id.toString(),
+            displayTitle: workflowRun.display_title,
+            commitSha: workflowRun.head_commit?.id || "",
+            createdAt: workflowRun.created_at,
+            url: workflowRun.html_url,
+          };
+        });
+        console.log("_workflowRuns:", _workflowRuns);
+
+        return _workflowRuns;
+      } catch (err) {
+        toast.error("Failed to get workflow runs for repo", {
+          description: (err as Error)?.message || "An unknown error occurred",
+        });
+      }
+    },
+    [octokit],
+  );
+
+  // GitHub - artifact build for workflow run
+  const getBuildForWorkflowRun = useCallback(
+    async (_repoId: string, _workflowRunId: string) => {
+      try {
+        if (!octokit) return;
+
+        const [owner, repo] = _repoId.split("/");
+        const res = await octokit.actions.listWorkflowRunArtifacts({
+          owner,
+          repo,
+          run_id: parseInt(_workflowRunId),
+        });
+        const _artifact = res.data.artifacts[0]; // Assume there is max one artifact
+        console.log("_artifact:", _artifact);
+        if (!_artifact) throw new Error("Workflow run has no artifacts");
+
+        const res2 = await fetch("/api/github/download-artifact", {
+          method: "POST",
+          body: JSON.stringify({
+            owner,
+            repo,
+            artifact_id: _artifact.id,
+          }),
+        });
+        const { build: _build }: { build: GitHubBuild } = await res2.json();
+        console.log("_build:", _build);
+
+        return _build;
+      } catch (err) {
+        toast.error("Failed to get artifact for workflow run", {
+          description: (err as Error)?.message || "An unknown error occurred",
+        });
+      }
+    },
+    [octokit],
+  );
+
+  return {
+    session,
+    octokit,
+    repos,
+    setRepos,
+    workflowRunsForRepo,
+    setWorkflowRunsForRepo,
+    getReposForUser,
+    getWorkflowRunsForRepo,
+    getBuildForWorkflowRun,
+  };
+};
