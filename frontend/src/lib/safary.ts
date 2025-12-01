@@ -3,6 +3,8 @@ const safaryTrack = (
   eventName: string,
   parameters?: Record<string, string | number>,
 ) => {
+  return; // TODO
+
   try {
     if (typeof window !== "undefined") {
       const safary = (window as any).safary;
