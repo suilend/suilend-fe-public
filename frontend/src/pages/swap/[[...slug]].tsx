@@ -1428,6 +1428,7 @@ function Page() {
       setIsPriceDifferenceAware(false);
 
       const mixpanelProperties: Record<string, string | number> = {
+        walletAddress: address,
         agg: QUOTE_PROVIDER_NAME_MAP[quote.provider],
         assetIn: tokenIn.symbol,
         assetOut: tokenOut.symbol,
