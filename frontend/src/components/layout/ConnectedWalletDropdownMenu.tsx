@@ -9,6 +9,7 @@ import {
   LENDING_MARKET_ID,
   StrategyLstMap,
   fetchStrategyLstMap,
+  getStrategyDefaultCurrencyReserve,
   getStrategyTvlAmount,
   hasStrategyPosition,
 } from "@suilend/sdk";
@@ -381,6 +382,11 @@ export default function ConnectedWalletDropdownMenu({
                                   lstMap ?? {},
                                   strategyOwnerCap.strategyType,
                                   obligation,
+                                ).times(
+                                  getStrategyDefaultCurrencyReserve(
+                                    appDataMainMarket.reserveMap,
+                                    strategyOwnerCap.strategyType,
+                                  ).price,
                                 ),
                               )}
                             </TLabel>
