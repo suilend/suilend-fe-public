@@ -8,7 +8,7 @@ import {
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_suiETH_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
-  NORMALIZED_wBTC_COINTYPE,
+  NORMALIZED_suiWBTC_COINTYPE,
   NORMALIZED_wUSDC_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
   Token,
@@ -59,7 +59,7 @@ export default function TokenLogo({
 
   const suiBridgeAssetMap: Record<string, string> = {
     [NORMALIZED_suiUSDT_COINTYPE]: "USDT by Sui Bridge (Ethereum-native)",
-    [NORMALIZED_wBTC_COINTYPE]: "wBTC by Sui Bridge (Ethereum-native)",
+    [NORMALIZED_suiWBTC_COINTYPE]: "wBTC by Sui Bridge (Ethereum-native)",
     [NORMALIZED_suiETH_COINTYPE]: "ETH by Sui Bridge (Ethereum-native)",
   };
   const suiBridgeAsset = token ? suiBridgeAssetMap[token.coinType] : undefined;

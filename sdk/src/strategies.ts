@@ -29,7 +29,7 @@ import {
   NORMALIZED_USDC_COINTYPE,
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
-  NORMALIZED_wBTC_COINTYPE,
+  NORMALIZED_suiWBTC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
   getAllCoins,
   isSui,
@@ -113,18 +113,18 @@ export const STRATEGY_TYPE_FLASH_LOAN_OBJ_MAP: Record<
   [StrategyType.xBTC_sSUI_SUI_LOOPING]: {
     provider: StrategyFlashLoanProvider.MMT,
     poolId:
-      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-wBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
+      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-suiWBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
     coinTypeA: NORMALIZED_xBTC_COINTYPE,
-    coinTypeB: NORMALIZED_wBTC_COINTYPE,
+    coinTypeB: NORMALIZED_suiWBTC_COINTYPE,
     borrowA: true,
     feePercent: 0.01,
   },
-  [StrategyType.xBTC_wBTC_LOOPING]: {
+  [StrategyType.xBTC_suiWBTC_LOOPING]: {
     provider: StrategyFlashLoanProvider.MMT,
     poolId:
-      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-wBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
+      "0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e", // xBTC-suiWBTC 0.01% https://app.mmt.finance/liquidity/0x57a662791cea065610455797dfd2751a3c10d929455d3ea88154a2b40cf6614e
     coinTypeA: NORMALIZED_xBTC_COINTYPE,
-    coinTypeB: NORMALIZED_wBTC_COINTYPE,
+    coinTypeB: NORMALIZED_suiWBTC_COINTYPE,
     borrowA: true,
     feePercent: 0.01,
   },
@@ -384,7 +384,7 @@ export const STRATEGY_TYPE_EXPOSURE_MAP: Record<
     max: new BigNumber(2.5), // Actual max: 1 + (xBTC Open LTV %) * (1 / (1 - (sSUI Open LTV %))) = 3x, where xBTC Open LTV % = 60% and sSUI Open LTV % = 70%
     default: new BigNumber(2.5),
   },
-  [StrategyType.xBTC_wBTC_LOOPING]: {
+  [StrategyType.xBTC_suiWBTC_LOOPING]: {
     min: new BigNumber(1),
     max: new BigNumber(2.2), // Actual max: 1 / (1 - (xBTC Open LTV %)) = 2.5x, where xBTC Open LTV % = 60%
     default: new BigNumber(2.2),
@@ -1776,7 +1776,7 @@ export const strategyLoopToExposureTx = async (
         new BigNumber(0.1)
           .times(10 ** borrowReserve.token.decimals)
           .integerValue(BigNumber.ROUND_DOWN)
-          .toString(), // e.g. 0.1 wBTC
+          .toString(), // e.g. 0.1 suiWBTC
       ),
       byAmountIn: true,
       splitCount: 0, // Use direct swap to avoid split algo
@@ -2657,7 +2657,7 @@ export const strategyUnloopToExposureTx = async (
           if (lstDeposit.depositedAmount.lte(STRATEGY_E)) {
             // 1. MAX withdraws LST (transferred to user as SUI)
             // 2. Withdraws base to cover borrows
-            // - Leftover transferred to user as borrow coinType, e.g. SUI or wBTC
+            // - Leftover transferred to user as borrow coinType, e.g. SUI or suiWBTC
             await fullyRepayBorrowsUsingBase();
             break;
           }
@@ -2666,7 +2666,7 @@ export const strategyUnloopToExposureTx = async (
           if (pendingBorrowedAmount.lte(STRATEGY_E)) {
             try {
               // 1. Withdraws LST to cover borrows
-              // - Leftover transferred to user as borrow coinType, e.g. SUI or wBTC
+              // - Leftover transferred to user as borrow coinType, e.g. SUI or suiWBTC
               // 2. MAX withdraws remaining LST and redeposits as base
               await fullyRepayBorrowsUsingLst(true);
               break;
@@ -2676,7 +2676,7 @@ export const strategyUnloopToExposureTx = async (
 
             // 1. MAX withdraws LST (transferred to user as SUI)
             // 2. Withdraws base to cover borrows
-            // - Leftover transferred to user as borrow coinType, e.g. SUI or wBTC
+            // - Leftover transferred to user as borrow coinType, e.g. SUI or suiWBTC
             await fullyRepayBorrowsUsingBase();
             break;
           }
@@ -2684,7 +2684,7 @@ export const strategyUnloopToExposureTx = async (
           // Borrows almost fully repaid
           if (pendingBorrowedAmount.lte(STRATEGY_E)) {
             // 1. Withdraws LST to cover borrows
-            // - Leftover transferred to user as borrow coinType, e.g. SUI or wBTC
+            // - Leftover transferred to user as borrow coinType, e.g. SUI or suiWBTC
             await fullyRepayBorrowsUsingLst(false);
             break;
           }
@@ -2900,7 +2900,7 @@ export const strategyUnloopToExposureTx = async (
         // Borrows almost fully repaid
         if (pendingBorrowedAmount.lte(STRATEGY_E)) {
           // 1. Withdraws base to cover borrows
-          // - Leftover transferred to user as borrow coinType, e.g. SUI or wBTC
+          // - Leftover transferred to user as borrow coinType, e.g. SUI or suiWBTC
           await fullyRepayBorrowsUsingBase();
           break;
         }

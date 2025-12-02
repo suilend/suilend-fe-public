@@ -23,7 +23,7 @@ import {
   NORMALIZED_sSUI_COINTYPE,
   NORMALIZED_stratSUI_COINTYPE,
   NORMALIZED_suiUSDT_COINTYPE,
-  NORMALIZED_wBTC_COINTYPE,
+  NORMALIZED_suiWBTC_COINTYPE,
   NORMALIZED_xBTC_COINTYPE,
   isSui,
 } from "@suilend/sui-fe";
@@ -48,7 +48,7 @@ export enum StrategyType {
   USDC_sSUI_SUI_LOOPING = "3",
   AUSD_sSUI_SUI_LOOPING = "4",
   xBTC_sSUI_SUI_LOOPING = "100", // Used to be for Slush Strategies #0
-  xBTC_wBTC_LOOPING = "101", // Used to be for Slush Strategies #1
+  xBTC_suiWBTC_LOOPING = "101", // Used to be for Slush Strategies #1
   suiUSDT_sSUI_SUI_LOOPING = "5",
   AUSD_USDC_LOOPING = "6",
   AUSD_suiUSDT_LOOPING = "7",
@@ -158,21 +158,21 @@ export const STRATEGY_TYPE_INFO_MAP: Record<
     currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
   },
-  [StrategyType.xBTC_wBTC_LOOPING]: {
-    queryParam: "xBTC-wBTC-looping",
+  [StrategyType.xBTC_suiWBTC_LOOPING]: {
+    queryParam: "xBTC-suiWBTC-looping",
     header: {
-      coinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
-      title: "xBTC/wBTC",
+      coinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_suiWBTC_COINTYPE],
+      title: "xBTC/suiWBTC",
       tooltip:
-        "Sets up an xBTC/wBTC Looping strategy by depositing xBTC and borrowing wBTC to the desired leverage",
+        "Sets up an xBTC/suiWBTC Looping strategy by depositing xBTC and borrowing suiWBTC to the desired leverage",
       type: "Looping",
     },
 
     depositBaseCoinType: NORMALIZED_xBTC_COINTYPE,
     depositLstCoinType: undefined,
-    borrowCoinType: NORMALIZED_wBTC_COINTYPE,
+    borrowCoinType: NORMALIZED_suiWBTC_COINTYPE,
 
-    currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_wBTC_COINTYPE],
+    currencyCoinTypes: [NORMALIZED_xBTC_COINTYPE, NORMALIZED_suiWBTC_COINTYPE],
     defaultCurrencyCoinType: NORMALIZED_xBTC_COINTYPE,
   },
   [StrategyType.suiUSDT_sSUI_SUI_LOOPING]: {
