@@ -43,7 +43,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@suilend/springsui-sdk": "^1.0.28",
     "@suilend/steamm-sdk": "^1.1.7",
-    "@suilend/sui-fe": "^0.3.43",
+    "@suilend/sui-fe": "^0.3.44",
     "@suilend/sui-fe-next": "^0.1.81",
     "@tanstack/react-table": "^8.20.5",
     "@vercel/analytics": "^1.4.0",
