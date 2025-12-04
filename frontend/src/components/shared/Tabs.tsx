@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface Tab {
   id: string;
-  icon?: ReactElement;
+  icon?: ReactElement<{ className?: string }>;
   title: string;
   tooltip?: string;
 }

@@ -19,7 +19,7 @@ interface CardProps extends PropsWithChildren, CardRootProps {
     className?: ClassValue;
     titleContainerClassName?: ClassValue;
     titleClassName?: ClassValue;
-    titleIcon?: ReactElement;
+    titleIcon?: ReactElement<{ className?: string }>;
     title?: string | ReactNode;
     startContent?: ReactNode;
     endContent?: ReactNode;

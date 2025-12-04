@@ -15,9 +15,9 @@ export interface ButtonProps extends ButtonComponentProps {
   labelClassName?: ClassValue;
   tooltip?: string | ReactNode;
   tooltipAlign?: TooltipContentProps["align"];
-  startIcon?: ReactElement;
-  icon?: ReactElement;
-  endIcon?: ReactElement;
+  startIcon?: ReactElement<{ className?: string }>;
+  icon?: ReactElement<{ className?: string }>;
+  endIcon?: ReactElement<{ className?: string }>;
   tag?: string;
 }
 

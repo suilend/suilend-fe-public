@@ -188,9 +188,8 @@ function Page() {
       owned:
         rawUserAllocationsS1 !== undefined
           ? new BigNumber(
-              Object.keys(
-                rawUserAllocationsS1.rootlets.ownedMsendObjectsMap,
-              ).length,
+              Object.keys(rawUserAllocationsS1.rootlets.ownedMsendObjectsMap)
+                .length,
             )
           : undefined,
       userEligibleSendMap:

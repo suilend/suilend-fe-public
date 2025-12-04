@@ -1,4 +1,10 @@
-import { CSSProperties, PropsWithChildren, useRef, useState } from "react";
+import {
+  CSSProperties,
+  PropsWithChildren,
+  RefObject,
+  useRef,
+  useState,
+} from "react";
 
 import { useResizeObserver } from "usehooks-ts";
 
@@ -23,8 +29,8 @@ export default function Layout({ children }: PropsWithChildren) {
     number | null
   >(null);
 
-  useResizeObserver<HTMLDivElement>({
-    ref: launchDarklyBannerRef,
+  useResizeObserver({
+    ref: launchDarklyBannerRef as RefObject<HTMLDivElement>,
     onResize: ({ height }) => {
       if (height === undefined) return;
       setLaunchDarklyBannerHeight(height);

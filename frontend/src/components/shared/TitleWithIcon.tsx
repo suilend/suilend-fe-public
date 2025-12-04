@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export interface TitleWithIconProps extends PropsWithChildren {
   className?: ClassValue;
   style?: CSSProperties;
-  icon?: ReactElement;
+  icon?: ReactElement<{ className?: string }>;
 }
 
 export default function TitleWithIcon({
