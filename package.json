@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "postinstall": "find node_modules -path '*/node_modules/react' -type d -not -path 'node_modules/react' -exec rm -rf {} + 2>/dev/null; find node_modules -path '*/node_modules/react-dom' -type d -not -path 'node_modules/react-dom' -exec rm -rf {} + 2>/dev/null || true"
+  },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.8",
     "@types/node": "^22.9.0",
