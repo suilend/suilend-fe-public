@@ -6,6 +6,7 @@ import {
   LST_DECIMALS,
   LendingMarketMetadata,
   ParsedReserve,
+  RESERVES_CUSTOM_ORDER,
   initializeSuilend,
   initializeSuilendRewards,
 } from "@suilend/sdk";
@@ -65,10 +66,24 @@ export default function useFetchAppData() {
       },
     };
 
-    const LENDING_MARKET_METADATA_MAP = {
-      ...NON_HIDDEN_LENDING_MARKET_METADATA_MAP,
-      ...HIDDEN_LENDING_MARKET_METADATA_MAP,
-    };
+    const LENDING_MARKET_METADATA_MAP = Object.fromEntries(
+      Object.entries({
+        ...NON_HIDDEN_LENDING_MARKET_METADATA_MAP,
+        ...HIDDEN_LENDING_MARKET_METADATA_MAP,
+      }).sort((a, b) => {
+        const aIndex = Object.keys(RESERVES_CUSTOM_ORDER).indexOf(a[0]);
+        const bIndex = Object.keys(RESERVES_CUSTOM_ORDER).indexOf(b[0]);
+
+        // Both have custom order - sort by index
+        if (aIndex > -1 && bIndex > -1) return aIndex - bIndex;
+        // Only a has custom order - a comes first
+        if (aIndex > -1) return -1;
+        // Only b has custom order - b comes first
+        if (bIndex > -1) return 1;
+        // Neither has custom order - keep original order
+        return 0;
+      }),
+    );
 
     const [
       allLendingMarketData,
