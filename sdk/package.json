@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.94",
+  "version": "1.1.95",
   "private": false,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -28,7 +28,6 @@
     "@7kprotocol/sdk-ts": "^3.5.0",
     "@cetusprotocol/aggregator-sdk": "^1.4.2",
     "@flowx-finance/sdk": "^1.14.0",
-    "@pythnetwork/pyth-sui-js": "^2.2.0",
     "@suilend/springsui-sdk": "^1.0.27",
     "aftermath-ts-sdk": "^1.3.24",
     "bignumber.js": "^9.1.2",
@@ -46,7 +45,8 @@
   "peerDependencies": {
     "@mysten/bcs": "1.8.1",
     "@mysten/sui": "1.42.0",
-    "@suilend/sui-fe": "^0.3.44"
+    "@suilend/sui-fe": "^0.3.44",
+    "@pythnetwork/pyth-sui-js": "^2.2.0"
   },
   "overrides": {
     "chalk": "5.3.0",
