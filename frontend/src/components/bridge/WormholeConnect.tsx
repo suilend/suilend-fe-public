@@ -11,7 +11,6 @@ import {
 import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext } from "@suilend/sui-fe-next";
 
-import styles from "@/components/bridge/WormholeConnect.module.scss";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DISCORD_URL } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -30,7 +29,7 @@ export default function WormholeConnectWrapper() {
   };
 
   return (
-    <div className={cn("w-full", styles.root)}>
+    <div className="w-full">
       <WormholeConnect
         config={{
           network: "Mainnet",
@@ -79,7 +78,8 @@ export default function WormholeConnectWrapper() {
           ui: {
             title: "Bridge",
             defaultInputs: {
-              toChain: "Sui",
+              source: { chain: "Ethereum" },
+              destination: { chain: "Sui" },
               requiredChain: "Sui",
             },
             getHelpUrl: DISCORD_URL,
@@ -88,15 +88,15 @@ export default function WormholeConnectWrapper() {
         }}
         theme={{
           mode: "dark",
-          input: "hsl(var(--card))",
-          primary: "hsl(var(--primary))",
-          secondary: "hsl(var(--muted))",
-          text: "hsl(var(--foreground))",
-          textSecondary: "hsl(var(--muted-foreground))",
-          error: "hsl(var(--destructive))",
-          success: "hsl(var(--success))",
-          badge: "hsl(var(--card))",
-          font: "var(--font-geist-sans)",
+          input: "#0a1526", // hsl(221 65% 9%)
+          primary: "#2463eb", // hsl(221 100% 57%)
+          secondary: "#8fa2c4", // hsl(221 34% 65%)
+          text: "#ffffff", // hsl(0 0%, 100%)
+          textSecondary: "#8fa2c4", // hsl(221 34% 65%)
+          error: "#ef4444", // hsl(0 86% 60%)
+          success: "#36b37e", // hsl(158 56% 48%)
+          badge: "#0a1526", // hsl(221 65% 9%)
+          font: "inherit",
         }}
       />
     </div>
