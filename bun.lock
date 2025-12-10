@@ -56,7 +56,7 @@
         "@radix-ui/react-tooltip": "^1.1.4",
         "@suilend/springsui-sdk": "^1.0.28",
         "@suilend/steamm-sdk": "^1.1.7",
-        "@suilend/sui-fe": "^0.3.44",
+        "@suilend/sui-fe": "^0.3.45",
         "@suilend/sui-fe-next": "^0.1.82",
         "@tanstack/react-table": "^8.20.5",
         "@vercel/analytics": "^1.4.0",
@@ -140,7 +140,7 @@
         "@mysten/bcs": "1.8.1",
         "@mysten/sui": "1.42.0",
         "@pythnetwork/pyth-sui-js": "2.2.0",
-        "@suilend/sui-fe": "^0.3.44",
+        "@suilend/sui-fe": "^0.3.45",
       },
     },
     "send": {
@@ -1419,7 +1419,7 @@
 
     "@suilend/steamm-sdk": ["@suilend/steamm-sdk@1.1.8", "", { "dependencies": { "@pythnetwork/pyth-sui-js": "^2.2.0", "@suilend/sdk": "^1.1.90", "@suilend/sui-fe": "^0.3.40", "bignumber.js": "^9.1.2", "dotenv": "^16.4.7" }, "peerDependencies": { "@mysten/sui": "1.42.0" } }, "sha512-V8rbUqZirVqpgvg9Nl8gDzJ7WEEtH8I7ekMT4DG8u2YxEPXDsip6n/bacmIAGWQgyvNIpwOqSMIskEI/wH56SQ=="],
 
-    "@suilend/sui-fe": ["@suilend/sui-fe@0.3.44", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-nNSIuLjwkfgqiKL6rImnecou1r6VGsApHvu8SHxhtIApOGG/utofjhyANd5RwmK03VmP7mThvKQe6LVd6o29+w=="],
+    "@suilend/sui-fe": ["@suilend/sui-fe@0.3.45", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-TmG2lelTwgU0FeOsFgj+/JIcQe8o1Ov2v09QEJq24ud5VcG3ZBV25fnjxHV67VKWDiEuqa08SgQJbSYRdgNcZQ=="],
 
     "@suilend/sui-fe-next": ["@suilend/sui-fe-next@0.1.82", "", { "dependencies": { "@reown/appkit": "^1.8.10", "@reown/appkit-common": "^1.8.10", "@reown/appkit-universal-connector": "^1.8.10", "@tanstack/react-query": "^5.60.2", "bignumber.js": "^9.1.2", "launchdarkly-react-client-sdk": "^3.6.0", "lodash": "^4.17.21", "next": "^15.0.3", "react": "18.3.1", "react-dom": "18.3.1", "react-responsive": "^10.0.0", "shio-sdk": "^1.0.8", "sonner": "1.4.41", "swr": "^2.2.5", "tailwind-merge": "^2.5.4", "usehooks-ts": "^3.1.1" }, "peerDependencies": { "@mysten/dapp-kit": "0.19.4", "@mysten/sui": "1.42.0", "@mysten/wallet-standard": "0.19.2", "@suilend/sui-fe": "^0.3.42" } }, "sha512-DaCNmFc6jhK8oCKv6F7lS5HdR2Eh0GgXcRZO2ooH0p4bXjQ/JdjgMkNJeIOZXb7gVOGruPjux/ZmTQ9ce2j4mQ=="],
 
@@ -4444,6 +4444,8 @@
     "@solflare-wallet/sdk/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
 
     "@stacks/transactions/@noble/hashes": ["@noble/hashes@1.1.5", "", {}, "sha512-LTMZiiLc+V4v1Yi16TD6aX2gmtKszNye0pQgbaLqkvhIqP7nVsSaJsWloGQjJfJ8offaoP5GtX3yY5swbcJxxQ=="],
+
+    "@suilend/steamm-sdk/@suilend/sui-fe": ["@suilend/sui-fe@0.3.44", "", { "dependencies": { "@mysten/wallet-standard": "0.19.2", "bignumber.js": "^9.1.2", "blake2b": "^2.1.4", "lodash": "^4.17.21", "mixpanel-browser": "^2.71.0", "next": "^15.0.3", "p-limit": "3.1.0" }, "peerDependencies": { "@mysten/sui": "1.42.0", "date-fns": "^4.1.0" } }, "sha512-nNSIuLjwkfgqiKL6rImnecou1r6VGsApHvu8SHxhtIApOGG/utofjhyANd5RwmK03VmP7mThvKQe6LVd6o29+w=="],
 
     "@suilend/sui-fe-next/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
 
