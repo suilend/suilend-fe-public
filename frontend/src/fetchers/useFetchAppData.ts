@@ -32,7 +32,9 @@ export default function useFetchAppData() {
   // Data
   const dataFetcher = async () => {
     // Get lending markets metadata (non-hidden)
-    const lendingMarketsMetadataRes = await fetch(`${API_URL}/markets`);
+    const lendingMarketsMetadataRes = await fetch(
+      `${API_URL}/markets?includeHidden=true`,
+    );
     const lendingMarketsMetadataJson: LendingMarketMetadata[] =
       await lendingMarketsMetadataRes.json();
 
@@ -46,7 +48,11 @@ export default function useFetchAppData() {
           id: lendingMarket.id,
           type: lendingMarket.type,
           lendingMarketOwnerCapId: lendingMarket.lendingMarketOwnerCapId,
-          name: lendingMarket.name,
+          name:
+            lendingMarket.id ===
+            "0xd12df5fede59f1ac5e1f8413bc86bd6bc77fff2001366878df58ef6a26d58c67"
+              ? "Bucket Market" // TODO: Remove this once the name is updated in the db
+              : lendingMarket.name,
           isHidden: lendingMarket.isHidden,
         },
       ]),

@@ -45,7 +45,7 @@
   "peerDependencies": {
     "@mysten/bcs": "1.8.1",
     "@mysten/sui": "1.42.0",
-    "@suilend/sui-fe": "^0.3.45",
+    "@suilend/sui-fe": "^0.3.46",
     "@pythnetwork/pyth-sui-js": "2.2.0"
   },
   "overrides": {
