@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 import * as Recharts from "recharts";
 
@@ -10,7 +11,8 @@ import {
   getPriceChart,
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
-import { toCompactCurrency } from "@/lib/utils";
+import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
+import { ASSETS_URL } from "@/lib/constants";
 
 type EnabledMetrics = {
   suilendRevenue: boolean;
@@ -35,6 +37,7 @@ type RawPoint = {
   springSuiRevenue: number; // USD
   mSendRevenue: number; // USD
   buybacks: number; // USD
+  sendAmount: number; // SEND
   price?: number; // USD (undefined when no datapoint)
 };
 
@@ -155,6 +158,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         steammRevenue: rev?.steammRevenue ?? 0,
         springSuiRevenue: rev?.springSuiRevenue ?? 0,
         buybacks: buy?.usdValue ?? 0,
+        sendAmount: buy?.sendAmount ?? 0,
         mSendRevenue: rev?.mSendRevenue ?? 0,
         price,
       };
@@ -174,6 +178,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         r3: number;
         r4: number;
         b: number;
+        s: number;
         pSum: number;
         pCount: number;
       }
@@ -190,6 +195,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
           r3: pt.springSuiRevenue,
           r4: pt.mSendRevenue,
           b: pt.buybacks,
+          s: pt.sendAmount,
           pSum: pt.price ?? 0,
           pCount: pt.price != null ? 1 : 0,
         });
@@ -199,6 +205,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         cur.r3 += pt.springSuiRevenue;
         cur.r4 += pt.mSendRevenue;
         cur.b += pt.buybacks;
+        cur.s += pt.sendAmount;
         if (pt.price != null) {
           cur.pSum += pt.price;
           cur.pCount += 1;
@@ -214,6 +221,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
       springSuiRevenue: v.r3,
       mSendRevenue: v.r4,
       buybacks: v.b,
+      sendAmount: v.s,
       price: v.pCount > 0 ? v.pSum / v.pCount : undefined,
     }));
   }, [raw, period]);
@@ -227,6 +235,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         steamm: { revenue: number; buybacks: number };
         springSuiRevenue: number;
         mSendRevenue: number;
+        sendAmount: number;
         price: number;
       }>;
 
@@ -238,6 +247,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         steamm: { revenue: pt.steammRevenue, buybacks: 0 },
         springSuiRevenue: pt.springSuiRevenue,
         mSendRevenue: pt.mSendRevenue,
+        sendAmount: pt.sendAmount,
         price: pt.price,
       }));
     }
@@ -247,12 +257,14 @@ function useProcessedData(period: Period, isCumulative: boolean) {
     let cumBuy = 0;
     let cumSpring = 0;
     let cumMSend = 0;
+    let cumSendAmount = 0;
     return effectiveRaw.map((pt) => {
       cumSuilend += pt.suilendRevenue;
       cumSteamm += pt.steammRevenue;
       cumBuy += pt.buybacks;
       cumSpring += pt.springSuiRevenue;
       cumMSend += pt.mSendRevenue;
+      cumSendAmount += pt.sendAmount;
       return {
         timestamp: pt.timestamp,
         label: pt.label,
@@ -260,6 +272,7 @@ function useProcessedData(period: Period, isCumulative: boolean) {
         steamm: { revenue: cumSteamm, buybacks: 0 },
         springSuiRevenue: cumSpring,
         mSendRevenue: cumMSend,
+        sendAmount: cumSendAmount,
         price: pt.price,
       };
     });
@@ -339,6 +352,7 @@ const RevenueChart = ({
           ? d.springSuiRevenue
           : 0,
         buybacks: enabledMetrics.buybacks ? d.suilend.buybacks : 0,
+        sendAmount: enabledMetrics.buybacks ? d.sendAmount : 0,
         price: d.price,
       })),
     [visibleData, enabledMetrics],
@@ -398,6 +412,7 @@ const RevenueChart = ({
         mSendRevenue: number;
         springSuiRevenue: number;
         buybacks: number;
+        sendAmount: number;
         price: number;
         timestamp: number;
       };
@@ -454,7 +469,26 @@ const RevenueChart = ({
               />
               <span className="font-sans text-muted-foreground">{r.label}</span>
             </div>
-            <span>{toCompactCurrency(r.value)}</span>
+            {r.label !== "Buybacks" ? (
+              <span>{toCompactCurrency(r.value)}</span>
+            ) : (
+              <div className="flex items-center gap-2">
+                {enabledMetrics.buybacks && d.sendAmount > 0 ? (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span>{toCompactNumber(d.sendAmount)}</span>
+                    <Image
+                      src={`${ASSETS_URL}/SEND/SEND.svg`}
+                      alt="SEND"
+                      width={12}
+                      height={12}
+                      quality={100}
+                      style={{ width: 12, height: 12 }}
+                    />
+                  </span>
+                ) : null}
+                <span>{toCompactCurrency(r.value)}</span>
+              </div>
+            )}
           </div>
         ))}
         {enabledMetrics.price && d.price > 0 && (

@@ -92,8 +92,8 @@ const MetricsSection = () => {
           </div>
           <div className="flex flex-col items-center">
             <div className="text-xs font-sans text-muted-foreground mb-2 text-left">
-              <span className="hidden lg:block">FDV</span>
-              <span className="block lg:hidden">FDV</span>
+              <span className="hidden lg:block">Market Cap</span>
+              <span className="block lg:hidden">Mcap</span>
             </div>
             <div className="text-[13px] lg:text-[15px] text-left">
               {isLoading ? (
