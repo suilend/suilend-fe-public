@@ -29,11 +29,11 @@ import {
   NORMALIZED_WAL_COINTYPE,
   getAllOwnedObjects,
 } from "@suilend/sui-fe";
-import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
 import useFetchBalances from "@suilend/sui-fe-next/fetchers/useFetchBalances";
 import useCoinMetadataMap from "@suilend/sui-fe-next/hooks/useCoinMetadataMap";
 import useRefreshOnBalancesChange from "@suilend/sui-fe-next/hooks/useRefreshOnBalancesChange";
+import mixpanelTrack from "@suilend/sui-fe-next/lib/track";
 
 import { useAppContext } from "@/contexts/AppContext";
 import useFetchUserData from "@/fetchers/useFetchUserData";

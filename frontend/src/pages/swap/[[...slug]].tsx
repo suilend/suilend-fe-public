@@ -57,12 +57,12 @@ import {
   getBalanceChange,
   isSui,
 } from "@suilend/sui-fe";
-import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import {
   showErrorToast,
   useSettingsContext,
   useWalletContext,
 } from "@suilend/sui-fe-next";
+import mixpanelTrack from "@suilend/sui-fe-next/lib/track";
 
 import Button from "@/components/shared/Button";
 import Spinner from "@/components/shared/Spinner";

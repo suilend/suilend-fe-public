@@ -25,8 +25,8 @@ import {
   mergeAllCoins,
   returnAllOwnedObjectsAndSuiToUser,
 } from "@suilend/sui-fe";
-import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext, useWalletContext } from "@suilend/sui-fe-next";
+import mixpanelTrack from "@suilend/sui-fe-next/lib/track";
 
 import Button from "@/components/shared/Button";
 import OpenOnExplorerButton from "@/components/shared/OpenOnExplorerButton";

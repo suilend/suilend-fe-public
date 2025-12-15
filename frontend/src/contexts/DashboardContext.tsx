@@ -23,8 +23,8 @@ import {
   LENDING_MARKET_ID,
   RewardsMap,
 } from "@suilend/sdk";
-import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useWalletContext } from "@suilend/sui-fe-next";
+import mixpanelTrack from "@suilend/sui-fe-next/lib/track";
 
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { LendingMarketContextProvider } from "@/contexts/LendingMarketContext";

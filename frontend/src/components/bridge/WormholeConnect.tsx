@@ -8,12 +8,11 @@ import {
   NORMALIZED_WETH_COINTYPE,
   NORMALIZED_wUSDT_COINTYPE,
 } from "@suilend/sui-fe";
-import mixpanelTrack from "@suilend/sui-fe/lib/track";
 import { useSettingsContext } from "@suilend/sui-fe-next";
+import mixpanelTrack from "@suilend/sui-fe-next/lib/track";
 
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DISCORD_URL } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
 
 export default function WormholeConnectWrapper() {
   const { rpc } = useSettingsContext();
