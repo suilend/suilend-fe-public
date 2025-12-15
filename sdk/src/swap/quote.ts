@@ -1,7 +1,7 @@
 import {
-  QuoteResponse as _7kQuote,
-  getQuote as get7kQuoteOriginal,
-} from "@7kprotocol/sdk-ts/cjs";
+  QuoteResponse as Bluefin7kQuote,
+  getQuote as getBluefin7kQuoteOriginal,
+} from "@bluefin-exchange/bluefin7k-aggregator-sdk/cjs";
 import {
   Path as CetusPath,
   RouterDataV3 as CetusQuote,
@@ -27,13 +27,13 @@ import { WAD } from "../lib";
 export enum QuoteProvider {
   AFTERMATH = "aftermath",
   CETUS = "cetus",
-  _7K = "7k",
+  BLUEFIN7K = "bluefin7k",
   FLOWX = "flowx",
 }
 export const QUOTE_PROVIDER_NAME_MAP = {
   [QuoteProvider.AFTERMATH]: "Aftermath",
   [QuoteProvider.CETUS]: "Cetus",
-  [QuoteProvider._7K]: "7K",
+  [QuoteProvider.BLUEFIN7K]: "Bluefin7k",
   [QuoteProvider.FLOWX]: "FlowX",
 };
 
@@ -77,7 +77,7 @@ export type StandardizedQuote = {
 } & (
   | { provider: QuoteProvider.AFTERMATH; quote: AftermathQuote }
   | { provider: QuoteProvider.CETUS; quote: CetusQuote }
-  | { provider: QuoteProvider._7K; quote: _7kQuote }
+  | { provider: QuoteProvider.BLUEFIN7K; quote: Bluefin7kQuote }
   | { provider: QuoteProvider.FLOWX; quote: FlowXGetRoutesResult<any, any> }
 );
 
@@ -277,12 +277,12 @@ const getCetusQuote = async (
 
   return standardizedQuote;
 };
-const get7kQuote = async (
+const getBluefin7kQuote = async (
   tokenIn: Token,
   tokenOut: Token,
   amountIn: string,
 ) => {
-  const quote = await get7kQuoteOriginal({
+  const quote = await getBluefin7kQuoteOriginal({
     tokenIn: tokenIn.coinType,
     tokenOut: tokenOut.coinType,
     amountIn,
@@ -290,7 +290,7 @@ const get7kQuote = async (
 
   const standardizedQuote: StandardizedQuote = {
     id: uuidv4(),
-    provider: QuoteProvider._7K,
+    provider: QuoteProvider.BLUEFIN7K,
     in: {
       coinType: tokenIn.coinType,
       amount: new BigNumber(quote.swapAmountWithDecimal).div(
@@ -446,12 +446,12 @@ export const getAggQuotes = async (
     })();
   }
 
-  // 7K
-  if (activeProviders.includes(QuoteProvider._7K)) {
+  // Bluefin7k
+  if (activeProviders.includes(QuoteProvider.BLUEFIN7K)) {
     (async () => {
       const standardizedQuote = await getAggQuoteWrapper(
-        QuoteProvider._7K,
-        () => get7kQuote(tokenIn, tokenOut, amountIn),
+        QuoteProvider.BLUEFIN7K,
+        () => getBluefin7kQuote(tokenIn, tokenOut, amountIn),
         timeoutMs,
       );
 
@@ -520,10 +520,10 @@ export const getAggSortedQuotesAll = async (
             timeoutMs,
           )
         : null,
-      activeProviders.includes(QuoteProvider._7K)
+      activeProviders.includes(QuoteProvider.BLUEFIN7K)
         ? getAggQuoteWrapper(
-            QuoteProvider._7K,
-            () => get7kQuote(tokenIn, tokenOut, amountIn),
+            QuoteProvider.BLUEFIN7K,
+            () => getBluefin7kQuote(tokenIn, tokenOut, amountIn),
             timeoutMs,
           )
         : null,

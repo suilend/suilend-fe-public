@@ -1,7 +1,7 @@
 import {
   BluefinXTx,
-  buildTx as build7kTransaction,
-} from "@7kprotocol/sdk-ts/cjs";
+  buildTx as buildBluefin7kTransaction,
+} from "@bluefin-exchange/bluefin7k-aggregator-sdk/cjs";
 import { AggregatorClient as CetusSdk } from "@cetusprotocol/aggregator-sdk";
 import {
   AggregatorQuoter as FlowXAggregatorQuoter,
@@ -62,7 +62,7 @@ export const getSwapTransaction = async (
   },
   partnerIdMap: {
     [QuoteProvider.CETUS]: string;
-    [QuoteProvider._7K]: string;
+    [QuoteProvider.BLUEFIN7K]: string;
     [QuoteProvider.FLOWX]: string;
   },
   transaction: Transaction,
@@ -116,14 +116,14 @@ export const getSwapTransaction = async (
 
       return { transaction, coinOut };
     });
-  } else if (quote.provider === QuoteProvider._7K) {
-    return getSwapTransactionWrapper(QuoteProvider._7K, async () => {
-      const { tx: transaction2, coinOut } = await build7kTransaction({
+  } else if (quote.provider === QuoteProvider.BLUEFIN7K) {
+    return getSwapTransactionWrapper(QuoteProvider.BLUEFIN7K, async () => {
+      const { tx: transaction2, coinOut } = await buildBluefin7kTransaction({
         quoteResponse: quote.quote,
         accountAddress: address,
         slippage: slippagePercent / 100,
         commission: {
-          partner: partnerIdMap[QuoteProvider._7K],
+          partner: partnerIdMap[QuoteProvider.BLUEFIN7K],
           commissionBps: 0,
         },
         extendTx: {

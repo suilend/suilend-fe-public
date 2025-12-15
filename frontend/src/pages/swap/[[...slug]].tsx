@@ -144,7 +144,7 @@ function Page() {
 
   // send.ag
   const activeProviders = useMemo(
-    () => [QuoteProvider.CETUS, QuoteProvider._7K, QuoteProvider.FLOWX],
+    () => [QuoteProvider.CETUS, QuoteProvider.BLUEFIN7K, QuoteProvider.FLOWX],
     [],
   );
 
@@ -2023,10 +2023,10 @@ function Page() {
           {", "}
           <TextLink
             className="text-muted-foreground decoration-muted-foreground/50 hover:text-foreground hover:decoration-foreground/50"
-            href="https://7k.ag"
+            href="https://trade.bluefin.io/swap"
             noIcon
           >
-            7K
+            Bluefin7k
           </TextLink>
           {", and "}
           <TextLink
