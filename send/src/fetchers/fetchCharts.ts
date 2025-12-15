@@ -18,28 +18,6 @@ export type RevenuePoint = {
   mSendRevenue: number;
 };
 
-// --- Test mode helpers (1y fake data) ---
-function isTestMode1Y(): boolean {
-  // Prefer runtime toggle via localStorage to avoid env churn
-  try {
-    if (typeof window !== "undefined") {
-      const v = window.localStorage.getItem("SEND_TEST_CHARTS_1Y");
-      if (v != null) return v === "true" || v === "1";
-    }
-  } catch {}
-  // Fallback to NEXT_PUBLIC env if provided
-  try {
-    return process.env.NEXT_PUBLIC_SEND_TEST_CHARTS_1Y === "true";
-  } catch {
-    return false;
-  }
-}
-
-function startOfUtcDay(ms: number): number {
-  const d = new Date(ms);
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-}
-
 function parseTimestampSecondsToMs(ts: unknown): number | undefined {
   if (typeof ts !== "number") return undefined;
   // API appears to return seconds for charts; convert to ms for charts/UI

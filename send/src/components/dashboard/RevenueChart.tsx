@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 
 import * as Recharts from "recharts";
 
@@ -11,8 +11,8 @@ import {
   getPriceChart,
   getRevenueChart,
 } from "@/fetchers/fetchCharts";
-import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
 import { ASSETS_URL } from "@/lib/constants";
+import { toCompactCurrency, toCompactNumber } from "@/lib/utils";
 
 type EnabledMetrics = {
   suilendRevenue: boolean;
