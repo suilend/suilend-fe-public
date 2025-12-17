@@ -21,7 +21,7 @@
       "name": "frontend",
       "version": "0.1.0",
       "dependencies": {
-        "@bluefin-exchange/bluefin7k-aggregator-sdk": "5.1.5",
+        "@bluefin-exchange/bluefin7k-aggregator-sdk": "^5.1.5",
         "@cetusprotocol/aggregator-sdk": "^1.4.2",
         "@cetusprotocol/cetus-sui-clmm-sdk": "^5.4.0",
         "@emotion/react": "^11.14.0",
@@ -119,7 +119,7 @@
       "name": "@suilend/sdk-local",
       "version": "1.1.98",
       "dependencies": {
-        "@bluefin-exchange/bluefin7k-aggregator-sdk": "5.1.5",
+        "@bluefin-exchange/bluefin7k-aggregator-sdk": "^5.1.5",
         "@cetusprotocol/aggregator-sdk": "^1.4.2",
         "@flowx-finance/sdk": "^1.14.0",
         "@suilend/springsui-sdk": "^1.0.27",

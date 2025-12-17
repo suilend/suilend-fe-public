@@ -1,6 +1,6 @@
 {
   "name": "@suilend/sdk-local",
-  "version": "1.1.99",
+  "version": "1.1.98",
   "private": false,
   "description": "A TypeScript SDK for interacting with the Suilend program",
   "author": "Suilend",
@@ -25,7 +25,7 @@
     "url": "https://github.com/suilend/suilend-fe-public/issues"
   },
   "dependencies": {
-    "@bluefin-exchange/bluefin7k-aggregator-sdk": "5.1.5",
+    "@bluefin-exchange/bluefin7k-aggregator-sdk": "^5.1.5",
     "@cetusprotocol/aggregator-sdk": "^1.4.2",
     "@flowx-finance/sdk": "^1.14.0",
     "@suilend/springsui-sdk": "^1.0.27",
