@@ -48,12 +48,12 @@ export default function useFetchAppData() {
           id: lendingMarket.id,
           type: lendingMarket.type,
           lendingMarketOwnerCapId: lendingMarket.lendingMarketOwnerCapId,
-          name:
+          name: lendingMarket.name,
+          isHidden:
             lendingMarket.id ===
             "0xd12df5fede59f1ac5e1f8413bc86bd6bc77fff2001366878df58ef6a26d58c67"
-              ? "Bucket Market" // TODO: Remove this once the name is updated in the db
-              : lendingMarket.name,
-          isHidden: lendingMarket.isHidden,
+              ? !(Date.now() > 1765972800000) // 2025-12-17 12:00:00 UTC
+              : lendingMarket.isHidden,
         },
       ]),
     );
