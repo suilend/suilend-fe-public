@@ -58,6 +58,7 @@ export interface AllAppData {
   //     }
   //   | undefined;
   elixirSdeUsdAprPercent: BigNumber | undefined;
+  pythPriceIdentifierSymbolMap: Record<string, string>;
 }
 
 interface AppContext {

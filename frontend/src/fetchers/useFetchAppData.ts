@@ -15,6 +15,7 @@ import {
   STEAMM_LM_LENDING_MARKET_TYPE,
   SuilendClient,
 } from "@suilend/sdk/client";
+import { getWorkingPythEndpoint } from "@suilend/sdk/lib/pyth";
 import { LiquidStakingObjectInfo } from "@suilend/springsui-sdk";
 import { LiquidStakingInfo } from "@suilend/springsui-sdk/_generated/liquid_staking/liquid-staking/structs";
 import { WeightHook } from "@suilend/springsui-sdk/_generated/liquid_staking/weight/structs";
@@ -96,6 +97,7 @@ export default function useFetchAppData() {
       lstStatsMap,
       // okxAprPercentMap,
       elixirSdeUsdAprPercent,
+      pythPriceIdentifierSymbolMap,
     ] = await Promise.all([
       // Lending markets
       (async () => {
@@ -258,6 +260,31 @@ export default function useFetchAppData() {
         //   return undefined;
         // }
       })(),
+
+      // Pyth price identifier -> symbol map (won't throw on error)
+      (async () => {
+        try {
+          const pythEndpoint = await getWorkingPythEndpoint(
+            FALLBACK_PYTH_ENDPOINT,
+          );
+
+          const res = await fetch(
+            `${pythEndpoint}/v2/price_feeds?asset_type=crypto`,
+          );
+          const json: {
+            id: string;
+            attributes: { symbol: string };
+          }[] = await res.json();
+
+          return json.reduce(
+            (acc, d) => ({ ...acc, [d.id]: d.attributes.symbol }),
+            {} as Record<string, string>,
+          );
+        } catch (err) {
+          console.error(err);
+          return {};
+        }
+      })(),
     ]);
 
     const isEcosystemLst = (coinType: string) =>
@@ -299,6 +326,7 @@ export default function useFetchAppData() {
       allLendingMarketData,
       lstStatsMap,
       elixirSdeUsdAprPercent,
+      pythPriceIdentifierSymbolMap,
     };
   };
 
