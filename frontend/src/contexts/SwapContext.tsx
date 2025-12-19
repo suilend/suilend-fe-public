@@ -406,7 +406,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         fetchTokenUsdPrice(newTokenOut);
 
       router.replace(
-        { pathname: getSwapUrl(newTokenIn.symbol, newTokenOut.symbol) },
+        {
+          pathname: getSwapUrl(newTokenIn.symbol, newTokenOut.symbol),
+          query: router.query.wallet
+            ? { wallet: router.query.wallet }
+            : undefined,
+        },
         undefined,
         { shallow: true },
       );
@@ -437,7 +442,16 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
       slug[0].split("-").length !== 2 ||
       slug[0].split("-")[0] === slug[0].split("-")[1]
     )
-      router.replace({ pathname: getSwapUrl() }, undefined, { shallow: true });
+      router.replace(
+        {
+          pathname: getSwapUrl(),
+          query: router.query.wallet
+            ? { wallet: router.query.wallet }
+            : undefined,
+        },
+        undefined,
+        { shallow: true },
+      );
   }, [slug, router, getSwapUrl]);
 
   const setTokenSymbol = useCallback(
@@ -450,6 +464,9 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
             direction === TokenDirection.IN ? newTokenSymbol : tokenInSymbol,
             direction === TokenDirection.IN ? tokenOutSymbol : newTokenSymbol,
           ),
+          query: router.query.wallet
+            ? { wallet: router.query.wallet }
+            : undefined,
         },
         undefined,
         { shallow: true },
@@ -463,7 +480,12 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
     if (!tokenInSymbol || !tokenOutSymbol) return;
 
     router.push(
-      { pathname: getSwapUrl(tokenOutSymbol, tokenInSymbol) },
+      {
+        pathname: getSwapUrl(tokenOutSymbol, tokenInSymbol),
+        query: router.query.wallet
+          ? { wallet: router.query.wallet }
+          : undefined,
+      },
       undefined,
       { shallow: true },
     );

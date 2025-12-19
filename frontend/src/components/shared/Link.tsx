@@ -1,6 +1,6 @@
 import NextLink, { LinkProps as NextLinkProps } from "next/link";
 import { useRouter } from "next/router";
-import { PropsWithChildren, ReactNode } from "react";
+import { PropsWithChildren, ReactNode, useMemo } from "react";
 
 import { ClassValue } from "clsx";
 
@@ -42,11 +42,27 @@ export default function Link({
     ? router.asPath.startsWith(startsWithHref)
     : router.asPath.split("?")[0] === href;
 
+  const finalHref = useMemo(() => {
+    if (isExternal) return href;
+
+    const wallet = router.query.wallet;
+    if (!wallet) return href;
+
+    const [basePath, existingQueryString] = href.split("?");
+    const existingParams = new URLSearchParams(existingQueryString || "");
+
+    if (!existingParams.has("wallet"))
+      existingParams.set("wallet", wallet as string);
+
+    const queryString = existingParams.toString();
+    return queryString ? `${basePath}?${queryString}` : basePath;
+  }, [isExternal, href, router.query.wallet]);
+
   const Component = isExternal ? "a" : NextLink;
 
   return (
     <Component
-      href={href}
+      href={finalHref}
       target={isExternal ? "_blank" : undefined}
       className={cn(
         labelSansClassNames,
