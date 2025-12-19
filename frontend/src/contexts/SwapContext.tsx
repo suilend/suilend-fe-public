@@ -304,6 +304,7 @@ export function SwapContextProvider({ children }: PropsWithChildren) {
         const _verifiedCoinTypes = [
           ..._cetusVerifiedCoinTypes,
           "0x8556539cf20b8640738d919ce3fe9d79b982f7d14a0861b650ff24b3cbd80e73::strat::STRAT",
+          "0xbed271d110b7299f02f1b4737d88c9060983199d25ce43a9664a39e8c8a74bac::rootlets::ROOTLETS",
         ].map(normalizeStructTag);
 
         setVerifiedCoinTypes(_verifiedCoinTypes);
