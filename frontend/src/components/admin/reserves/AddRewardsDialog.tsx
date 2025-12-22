@@ -274,7 +274,7 @@ export default function AddRewardsDialog() {
           />
 
           <div className="flex flex-row gap-2">
-            {[0, 1, 2].map((offsetWeeks) => (
+            {[0, 1, 2, 3, 4].map((offsetWeeks) => (
               <Button
                 key={offsetWeeks}
                 className="rounded-full"
@@ -292,7 +292,7 @@ export default function AddRewardsDialog() {
                   );
                 }}
               >
-                Next+{offsetWeeks}
+                N+{offsetWeeks}
               </Button>
             ))}
           </div>
@@ -313,7 +313,7 @@ export default function AddRewardsDialog() {
           />
 
           <div className="flex flex-row gap-2">
-            {[0, 1, 2].map((offsetWeeks) => (
+            {[0, 1, 2, 3, 4].map((offsetWeeks) => (
               <Button
                 key={offsetWeeks}
                 className="rounded-full"
@@ -331,7 +331,7 @@ export default function AddRewardsDialog() {
                   );
                 }}
               >
-                Next+{offsetWeeks}
+                N+{offsetWeeks}
               </Button>
             ))}
           </div>
