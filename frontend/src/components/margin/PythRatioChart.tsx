@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import {
+  CandlestickSeries,
   ColorType,
   CrosshairMode,
   IChartApi,
   IRange,
   ISeriesApi,
-  LineSeries,
   LineStyle,
   Time,
   createChart,
@@ -16,7 +16,7 @@ import { DebouncedFunc, debounce } from "lodash";
 import Spinner from "@/components/shared/Spinner";
 import { TLabel } from "@/components/shared/Typography";
 import {
-  RatioDataPoint,
+  CandlestickDataPoint,
   TimeRange,
   useMarginContext,
 } from "@/contexts/MarginContext";
@@ -30,22 +30,22 @@ export default function PythRatioChart() {
     setTimeRange,
     isLoading,
     error,
-    ratioData,
+    candlestickData,
     fetchData,
   } = useMarginContext();
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
 
   // Refs to track current values for the handler
-  const ratioDataRef = useRef<RatioDataPoint[]>(ratioData);
+  const candlestickDataRef = useRef<CandlestickDataPoint[]>(candlestickData);
   const timeRangeRef = useRef<TimeRange>(timeRange);
 
   // Keep refs in sync
   useEffect(() => {
-    ratioDataRef.current = ratioData;
-  }, [ratioData]);
+    candlestickDataRef.current = candlestickData;
+  }, [candlestickData]);
   useEffect(() => {
     timeRangeRef.current = timeRange;
   }, [timeRange]);
@@ -107,11 +107,13 @@ export default function PythRatioChart() {
       },
     });
 
-    seriesRef.current = chartRef.current.addSeries(LineSeries, {
-      color: "#ffffff", // foreground
-      lineWidth: 2,
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 3,
+    seriesRef.current = chartRef.current.addSeries(CandlestickSeries, {
+      upColor: "#36BF8D", // green for bullish candles
+      downColor: "#CA5149", // red for bearish candles
+      borderUpColor: "#36BF8D",
+      borderDownColor: "#CA5149",
+      wickUpColor: "#36BF8D",
+      wickDownColor: "#CA5149",
       priceFormat: {
         type: "price",
         precision: 4,
@@ -138,13 +140,13 @@ export default function PythRatioChart() {
     };
   }, []);
 
-  // Update series data when ratioData changes
+  // Update series data when candlestickData changes
   useEffect(() => {
     if (!chartRef.current || !seriesRef.current) return;
-    if (ratioData.length === 0) return;
+    if (candlestickData.length === 0) return;
 
-    seriesRef.current.setData(ratioData);
-  }, [ratioData]);
+    seriesRef.current.setData(candlestickData);
+  }, [candlestickData]);
 
   // Subscribe to visible range changes - fetch more data if needed
   const handleVisibleRangeChange = useCallback(
@@ -155,9 +157,10 @@ export default function PythRatioChart() {
       const visibleFrom = newTimeRange.from as number;
       const visibleTo = newTimeRange.to as number;
 
-      if (ratioDataRef.current.length === 0) return;
-      const dataFrom = ratioDataRef.current[0].time;
-      const dataTo = ratioDataRef.current[ratioDataRef.current.length - 1].time;
+      if (candlestickDataRef.current.length === 0) return;
+      const dataFrom = candlestickDataRef.current[0].time;
+      const dataTo =
+        candlestickDataRef.current[candlestickDataRef.current.length - 1].time;
 
       const needsEarlierData = visibleFrom < dataFrom;
       const needsLaterData = visibleTo > dataTo;
@@ -203,7 +206,7 @@ export default function PythRatioChart() {
     };
   }, []);
 
-  const hasData = ratioData.length > 0;
+  const hasData = candlestickData.length > 0;
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-sm border">

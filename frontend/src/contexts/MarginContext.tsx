@@ -84,7 +84,7 @@ const fetchPythHistory = async (
       },
     )}`;
     const res = await fetch(url);
-    const json = await res.json();
+    const json: PythHistoryResponse = await res.json();
 
     return json;
   } catch (err) {
@@ -93,9 +93,12 @@ const fetchPythHistory = async (
   }
 };
 
-export type RatioDataPoint = {
+export type CandlestickDataPoint = {
   time: UTCTimestamp;
-  value: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 };
 
 interface MarginContext {
@@ -114,7 +117,7 @@ interface MarginContext {
   isLoading: boolean;
   error: string | null;
 
-  ratioData: RatioDataPoint[];
+  candlestickData: CandlestickDataPoint[];
 
   fetchData: () => Promise<void>;
 }
@@ -141,7 +144,7 @@ const defaultContextValue: MarginContext = {
   isLoading: true,
   error: null,
 
-  ratioData: [],
+  candlestickData: [],
 
   fetchData: async () => {
     throw Error("MarginContextProvider not initialized");
@@ -231,14 +234,14 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       });
 
       // Calculate ratio for each matching timestamp
-      const data: RatioDataPoint[] = [];
+      const data: Pick<CandlestickDataPoint, "time" | "close">[] = [];
       history1.t.forEach((timestamp, i) => {
         const price2 = token2PriceMap.get(timestamp);
         if (price2 && price2 !== 0) {
           const ratio = history1.c[i] / price2;
           data.push({
             time: timestamp as UTCTimestamp,
-            value: ratio,
+            close: ratio,
           });
         }
       });
@@ -248,13 +251,13 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       if (sortedData.length === 0) throw new Error("No price data");
 
       // Get current price (latest) and 24h ago price (closest to 24h ago)
-      const currentPrice = sortedData[sortedData.length - 1].value;
+      const currentPrice = sortedData[sortedData.length - 1].close;
 
       // Find the price closest to 24h ago
-      let price24hAgo = sortedData[0].value;
+      let price24hAgo = sortedData[0].close;
       for (const ratio of sortedData) {
         if (ratio.time <= oneDayAgoS) {
-          price24hAgo = ratio.value;
+          price24hAgo = ratio.close;
         } else {
           break;
         }
@@ -272,7 +275,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
   }, [fetch24hChange]);
 
   // Chart
-  const [resolution, setResolution] = useState<Resolution>("15");
+  const [resolution, setResolution] = useState<Resolution>("15"); // 15 minutes
   const [timeRange, setTimeRange] = useState<TimeRange>(() => {
     const nowS = Math.round(Date.now() / 1000);
     return { fromS: nowS - 24 * 60 * 60, toS: nowS }; // 1 day ago to now
@@ -280,7 +283,9 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [ratioData, setRatioData] = useState<RatioDataPoint[]>([]);
+  const [candlestickData, setCandlestickData] = useState<
+    CandlestickDataPoint[]
+  >([]);
 
   // Fetch data for a specific time range
   const fetchData = useCallback(async () => {
@@ -314,31 +319,49 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       // Get timezone offset in seconds (to convert UTC to local display time)
       const timezoneOffsetS = new Date().getTimezoneOffset() * 60;
 
-      // Create a map of timestamps to prices for token2
-      const token2PriceMap = new Map<number, number>();
-      history2.t.forEach((timestamp, i) => {
-        token2PriceMap.set(timestamp, history2.c[i]);
+      // Create a map of timestamps to OHLC prices for token2
+      const token2OhlcMap = new Map<
+        number,
+        { o: number; h: number; l: number; c: number }
+      >();
+      history2.t.forEach((t, i) => {
+        token2OhlcMap.set(t, {
+          o: history2.o[i],
+          h: history2.h[i],
+          l: history2.l[i],
+          c: history2.c[i],
+        });
       });
 
-      // Calculate ratio for each matching timestamp
-      const data: RatioDataPoint[] = [];
-      history1.t.forEach((timestamp, i) => {
-        const price2 = token2PriceMap.get(timestamp);
-        if (price2 && price2 !== 0) {
-          const ratio = history1.c[i] / price2;
-          data.push({
-            time: (timestamp - timezoneOffsetS) as UTCTimestamp,
-            value: ratio,
+      // Calculate OHLC ratios for candlestick chart
+      const _candlestickData: CandlestickDataPoint[] = [];
+
+      history1.t.forEach((t, i) => {
+        const ohlc2 = token2OhlcMap.get(t);
+        if (!!ohlc2 && ohlc2.c !== 0) {
+          const ratioOpen = history1.o[i] / ohlc2.o;
+          const ratioClose = history1.c[i] / ohlc2.c;
+          const ratioHigh = history1.h[i] / ohlc2.l; // token1 high / token2 low = max ratio
+          const ratioLow = history1.l[i] / ohlc2.h; // token1 low / token2 high = min ratio
+
+          _candlestickData.push({
+            time: (t - timezoneOffsetS) as UTCTimestamp,
+            open: ratioOpen,
+            high: Math.max(ratioOpen, ratioClose, ratioHigh),
+            low: Math.min(ratioOpen, ratioClose, ratioLow),
+            close: ratioClose,
           });
         }
       });
 
-      // Sort by timestamp
-      const sortedData = data.slice().sort((a, b) => a.time - b.time);
-      if (sortedData.length === 0) throw new Error("No price data");
+      // Sort by timestamp (ascending)
+      const sortedCandlestickData = _candlestickData
+        .slice()
+        .sort((a, b) => a.time - b.time);
+      if (sortedCandlestickData.length === 0) throw new Error("No price data");
 
       setIsLoading(false);
-      setRatioData(sortedData);
+      setCandlestickData(sortedCandlestickData);
     } catch (err) {
       console.error(err);
       setIsLoading(false);
@@ -374,7 +397,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       isLoading,
       error,
 
-      ratioData,
+      candlestickData,
 
       fetchData,
     }),
@@ -387,7 +410,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       timeRange,
       isLoading,
       error,
-      ratioData,
+      candlestickData,
       fetchData,
     ],
   );
