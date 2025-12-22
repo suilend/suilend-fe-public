@@ -65,6 +65,9 @@ module.exports = {
         gold: "hsl(var(--gold))",
         silver: "hsl(var(--silver))",
         bronze: "hsl(var(--bronze))",
+
+        long: "#36BF8D",
+        short: "#CA5149",
       },
       borderRadius: {
         lg: "var(--radius)",

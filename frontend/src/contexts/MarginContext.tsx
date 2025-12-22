@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -162,6 +163,10 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
   const { allAppData } = useLoadedAppContext();
   const appDataMainMarket = allAppData.allLendingMarketData[LENDING_MARKET_ID];
 
+  const [pythPriceIdentifierSymbolMap] = useState<Record<string, string>>(
+    allAppData.pythPriceIdentifierSymbolMap,
+  );
+
   // Tokens
   const coinTypes: [string, string] = useMemo(() => {
     if (slug === undefined)
@@ -195,13 +200,33 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
   );
 
   // Price identifiers (without 0x prefix)
-  const priceIdentifiers: [string, string] = useMemo(
-    () => [
+  const getPriceIdentifiers = useCallback(
+    (): [string, string] => [
       reserves[0].priceIdentifier.replace(/^0x/, ""),
       reserves[1].priceIdentifier.replace(/^0x/, ""),
     ],
     [reserves],
   );
+
+  const prevPriceIdentifiersRef = useRef<[string, string]>(
+    getPriceIdentifiers(),
+  );
+  const [priceIdentifiers, setPriceIdentifiers] = useState<[string, string]>(
+    prevPriceIdentifiersRef.current,
+  );
+
+  useEffect(() => {
+    const newPriceIdentifiers = getPriceIdentifiers();
+    if (
+      newPriceIdentifiers[0] === prevPriceIdentifiersRef.current[0] &&
+      newPriceIdentifiers[1] === prevPriceIdentifiersRef.current[1]
+    ) {
+      return;
+    }
+
+    prevPriceIdentifiersRef.current = newPriceIdentifiers;
+    setPriceIdentifiers(newPriceIdentifiers);
+  }, [getPriceIdentifiers]);
 
   // Current price and 24h price change
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -211,10 +236,8 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
     console.log("xxx fetch24hChange");
 
     try {
-      const pythSymbol1 =
-        allAppData.pythPriceIdentifierSymbolMap[priceIdentifiers[0]];
-      const pythSymbol2 =
-        allAppData.pythPriceIdentifierSymbolMap[priceIdentifiers[1]];
+      const pythSymbol1 = pythPriceIdentifierSymbolMap[priceIdentifiers[0]];
+      const pythSymbol2 = pythPriceIdentifierSymbolMap[priceIdentifiers[1]];
       if (!pythSymbol1 || !pythSymbol2)
         throw new Error("Pyth price feeds not available");
 
@@ -268,7 +291,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
     } catch (err) {
       console.error(err);
     }
-  }, [allAppData.pythPriceIdentifierSymbolMap, priceIdentifiers]);
+  }, [pythPriceIdentifierSymbolMap, priceIdentifiers]);
 
   useEffect(() => {
     fetch24hChange();
@@ -278,7 +301,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
   const [resolution, setResolution] = useState<Resolution>("15"); // 15 minutes
   const [timeRange, setTimeRange] = useState<TimeRange>(() => {
     const nowS = Math.round(Date.now() / 1000);
-    return { fromS: nowS - 24 * 60 * 60, toS: nowS }; // 1 day ago to now
+    return { fromS: nowS - 2 * 24 * 60 * 60, toS: nowS }; // 2 days ago to now
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -289,14 +312,14 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
 
   // Fetch data for a specific time range
   const fetchData = useCallback(async () => {
+    console.log("xxx fetchData");
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const pythSymbol1 =
-        allAppData.pythPriceIdentifierSymbolMap[priceIdentifiers[0]];
-      const pythSymbol2 =
-        allAppData.pythPriceIdentifierSymbolMap[priceIdentifiers[1]];
+      const pythSymbol1 = pythPriceIdentifierSymbolMap[priceIdentifiers[0]];
+      const pythSymbol2 = pythPriceIdentifierSymbolMap[priceIdentifiers[1]];
       if (!pythSymbol1 || !pythSymbol2)
         throw new Error("Pyth price feeds not available");
 
@@ -315,9 +338,6 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
         ),
       ]);
       if (!history1 || !history2) throw new Error("Failed to fetch price data");
-
-      // Get timezone offset in seconds (to convert UTC to local display time)
-      const timezoneOffsetS = new Date().getTimezoneOffset() * 60;
 
       // Create a map of timestamps to OHLC prices for token2
       const token2OhlcMap = new Map<
@@ -345,7 +365,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
           const ratioLow = history1.l[i] / ohlc2.h; // token1 low / token2 high = min ratio
 
           _candlestickData.push({
-            time: (t - timezoneOffsetS) as UTCTimestamp,
+            time: t as UTCTimestamp,
             open: ratioOpen,
             high: Math.max(ratioOpen, ratioClose, ratioHigh),
             low: Math.min(ratioOpen, ratioClose, ratioLow),
@@ -368,7 +388,7 @@ export function MarginContextProvider({ children }: PropsWithChildren) {
       setError("Failed to fetch price data");
     }
   }, [
-    allAppData.pythPriceIdentifierSymbolMap,
+    pythPriceIdentifierSymbolMap,
     priceIdentifiers,
     resolution,
     timeRange.fromS,

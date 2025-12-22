@@ -4,7 +4,7 @@ import { useState } from "react";
 import BigNumber from "bignumber.js";
 
 import { LENDING_MARKET_ID } from "@suilend/sdk";
-import { formatPercent, formatToken, formatUsd } from "@suilend/sui-fe";
+import { formatPercent, formatPrice, formatToken } from "@suilend/sui-fe";
 
 import PythRatioChart from "@/components/margin/PythRatioChart";
 import TokenLogos from "@/components/shared/TokenLogos";
@@ -45,9 +45,11 @@ function Page() {
           <div className="flex h-8 flex-col justify-center gap-0.5">
             {currentPrice !== null ? (
               <>
-                <TBody>{formatToken(new BigNumber(currentPrice))}</TBody>
+                <TBody>
+                  {formatToken(new BigNumber(currentPrice), { dp: 4 })}
+                </TBody>
                 <TLabel>
-                  {formatUsd(
+                  {formatPrice(
                     new BigNumber(currentPrice).times(reserves[1].price),
                   )}
                 </TLabel>
@@ -74,6 +76,7 @@ function Page() {
                 {currentPrice - price24hAgo > 0 ? "+" : "-"}
                 {formatToken(
                   new BigNumber(Math.abs(currentPrice - price24hAgo)),
+                  { dp: 4 },
                 )}{" "}
                 {currentPrice - price24hAgo > 0 ? "+" : "-"}
                 {formatPercent(
@@ -128,8 +131,8 @@ function Page() {
                 className={cn(
                   "group flex h-full flex-1 flex-row items-center justify-center rounded-md border transition-colors",
                   isLong
-                    ? "border-[#36BF8D]/25 bg-[#36BF8D]/10"
-                    : "hover:border-[#36BF8D]/25 hover:bg-[#36BF8D]/10 focus-visible:border-[#36BF8D]/25 focus-visible:bg-[#36BF8D]/10",
+                    ? "border-long/25 bg-long/10"
+                    : "hover:border-long/25 hover:bg-long/10 focus-visible:border-long/25 focus-visible:bg-long/10",
                 )}
                 onClick={() => setIsLong(true)}
               >
@@ -137,8 +140,8 @@ function Page() {
                   className={cn(
                     "w-max uppercase text-muted-foreground transition-colors",
                     isLong
-                      ? "text-[#36BF8D]"
-                      : "group-hover:text-[#36BF8D] group-focus-visible:text-[#36BF8D]",
+                      ? "text-long"
+                      : "group-hover:text-long group-focus-visible:text-long",
                   )}
                 >
                   Long
@@ -150,8 +153,8 @@ function Page() {
                 className={cn(
                   "group flex h-full flex-1 flex-row items-center justify-center rounded-md border transition-colors",
                   !isLong
-                    ? "border-[#CA5149]/25 bg-[#CA5149]/10"
-                    : "hover:border-[#CA5149]/25 hover:bg-[#CA5149]/10 focus-visible:border-[#CA5149]/25 focus-visible:bg-[#CA5149]/10",
+                    ? "border-short/25 bg-short/10"
+                    : "hover:border-short/25 hover:bg-short/10 focus-visible:border-short/25 focus-visible:bg-short/10",
                 )}
                 onClick={() => setIsLong(false)}
               >
@@ -159,8 +162,8 @@ function Page() {
                   className={cn(
                     "w-max uppercase text-muted-foreground transition-colors",
                     !isLong
-                      ? "text-[#CA5149]"
-                      : "group-hover:text-[#CA5149] group-focus-visible:text-[#CA5149]",
+                      ? "text-short"
+                      : "group-hover:text-short group-focus-visible:text-short",
                   )}
                 >
                   Short

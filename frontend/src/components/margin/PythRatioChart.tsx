@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import BigNumber from "bignumber.js";
+import { formatDate } from "date-fns";
 import {
+  CandlestickData,
   CandlestickSeries,
   ColorType,
   CrosshairMode,
@@ -8,10 +11,14 @@ import {
   IRange,
   ISeriesApi,
   LineStyle,
+  MouseEventParams,
   Time,
+  UTCTimestamp,
   createChart,
 } from "lightweight-charts";
-import { DebouncedFunc, debounce } from "lodash";
+import { debounce } from "lodash";
+
+import { formatPercent, formatToken } from "@suilend/sui-fe";
 
 import Spinner from "@/components/shared/Spinner";
 import { TLabel } from "@/components/shared/Typography";
@@ -42,6 +49,11 @@ export default function PythRatioChart() {
   const candlestickDataRef = useRef<CandlestickDataPoint[]>(candlestickData);
   const timeRangeRef = useRef<TimeRange>(timeRange);
 
+  // State for hovered candle OHLC display
+  const [hoveredCandle, setHoveredCandle] = useState<CandlestickData | null>(
+    null,
+  );
+
   // Keep refs in sync
   useEffect(() => {
     candlestickDataRef.current = candlestickData;
@@ -53,6 +65,9 @@ export default function PythRatioChart() {
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
+
+    const timeFormatter = (time: number) =>
+      formatDate(new Date(time * 1000), "yyyy/MM/dd HH:mm");
 
     chartRef.current = createChart(chartContainerRef.current, {
       layout: {
@@ -97,6 +112,11 @@ export default function PythRatioChart() {
         borderVisible: false,
         timeVisible: true,
         secondsVisible: false,
+        tickMarkFormatter: (time: number) =>
+          formatDate(new Date(time * 1000), "HH:mm"),
+      },
+      localization: {
+        timeFormatter,
       },
       handleScale: {
         axisPressedMouseMove: true,
@@ -121,36 +141,23 @@ export default function PythRatioChart() {
       },
     });
 
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
+    // Handle crosshair move to show OHLC
+    const handleCrosshairMove = (param: MouseEventParams) => {
+      if (!param.time || !seriesRef.current) {
+        setHoveredCandle(null);
+        return;
       }
+
+      const data = param.seriesData.get(seriesRef.current) as
+        | CandlestickData
+        | undefined;
+      if (!!data) setHoveredCandle(data);
+      else setHoveredCandle(null);
     };
+    chartRef.current.subscribeCrosshairMove(handleCrosshairMove);
 
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      chartRef.current?.remove();
-    };
-  }, []);
-
-  // Update series data when candlestickData changes
-  useEffect(() => {
-    if (!chartRef.current || !seriesRef.current) return;
-    if (candlestickData.length === 0) return;
-
-    seriesRef.current.setData(candlestickData);
-  }, [candlestickData]);
-
-  // Subscribe to visible range changes - fetch more data if needed
-  const handleVisibleRangeChange = useCallback(
-    (newTimeRange: IRange<Time> | null) => {
+    // Subscribe to visible range changes - fetch more data if needed
+    const handleVisibleRangeChange = (newTimeRange: IRange<Time> | null) => {
       console.log("xxx handleVisibleRangeChange", newTimeRange);
       if (!newTimeRange) return;
 
@@ -181,32 +188,68 @@ export default function PythRatioChart() {
 
         setTimeRange({ fromS: newFromS, toS: newToS });
       }
-    },
-    [setTimeRange],
-  );
-  const debouncedHandleVisibleRangeChangeRef = useRef<
-    DebouncedFunc<typeof handleVisibleRangeChange>
-  >(debounce(handleVisibleRangeChange, 1000));
-
-  useEffect(() => {
-    if (!chartRef.current || !seriesRef.current) return;
-    const chart = chartRef.current;
-
-    const debouncedHandleVisibleRangeChange =
-      debouncedHandleVisibleRangeChangeRef.current;
-    chart
+    };
+    const debouncedHandleVisibleRangeChange = debounce(
+      handleVisibleRangeChange,
+      1000,
+    );
+    chartRef.current
       .timeScale()
       .subscribeVisibleTimeRangeChange(debouncedHandleVisibleRangeChange);
 
+    // Handle resize
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: chartContainerRef.current.clientWidth,
+          height: chartContainerRef.current.clientHeight,
+        });
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
     return () => {
-      chart
-        .timeScale()
+      chartRef.current?.unsubscribeCrosshairMove(handleCrosshairMove);
+
+      chartRef.current
+        ?.timeScale()
         .unsubscribeVisibleTimeRangeChange(debouncedHandleVisibleRangeChange);
       debouncedHandleVisibleRangeChange.cancel();
+
+      window.removeEventListener("resize", handleResize);
+
+      chartRef.current?.remove();
     };
-  }, []);
+  }, [setTimeRange]);
+
+  // Update series data when candlestickData changes
+  useEffect(() => {
+    if (!chartRef.current || !seriesRef.current) return;
+    if (candlestickData.length === 0) return;
+
+    seriesRef.current.setData(candlestickData);
+  }, [candlestickData]);
 
   const hasData = candlestickData.length > 0;
+
+  // Use hovered candle or latest candle for display
+  const displayCandlestickDataPoint: CandlestickDataPoint | null =
+    hoveredCandle !== null
+      ? {
+          time: hoveredCandle.time as UTCTimestamp,
+          open: hoveredCandle.open,
+          high: hoveredCandle.high,
+          low: hoveredCandle.low,
+          close: hoveredCandle.close,
+        }
+      : (candlestickData[candlestickData.length - 1] ?? null);
+
+  const isBullish =
+    displayCandlestickDataPoint !== null
+      ? displayCandlestickDataPoint.close >= displayCandlestickDataPoint.open
+      : false; // No data to display
 
   return (
     <div className="relative h-full w-full overflow-hidden rounded-sm border">
@@ -227,6 +270,73 @@ export default function PythRatioChart() {
       {!!error && (
         <div className="absolute inset-0 z-[2] flex items-center justify-center">
           <TLabel className="text-destructive">{error}</TLabel>
+        </div>
+      )}
+
+      {/* OHLC Display */}
+      {hasData && displayCandlestickDataPoint !== null && (
+        <div className="absolute inset-x-0 top-0 z-[2] flex flex-row flex-wrap items-center gap-x-3 gap-y-1 bg-background/50 px-3 py-2">
+          {/* Timestamp */}
+          <TLabel className="uppercase">
+            {formatDate(
+              new Date(displayCandlestickDataPoint.time * 1000),
+              "yyyy/MM/dd HH:mm",
+            )}
+          </TLabel>
+
+          {/* Open */}
+          <TLabel className="uppercase">
+            Open{" "}
+            <span className={isBullish ? "text-long" : "text-short"}>
+              {formatToken(new BigNumber(displayCandlestickDataPoint.open), {
+                dp: 4,
+              })}
+            </span>
+          </TLabel>
+
+          {/* High */}
+          <TLabel className="uppercase">
+            High{" "}
+            <span className={isBullish ? "text-long" : "text-short"}>
+              {formatToken(new BigNumber(displayCandlestickDataPoint.high), {
+                dp: 4,
+              })}
+            </span>
+          </TLabel>
+
+          {/* Low */}
+          <TLabel className="uppercase">
+            Low{" "}
+            <span className={isBullish ? "text-long" : "text-short"}>
+              {formatToken(new BigNumber(displayCandlestickDataPoint.low), {
+                dp: 4,
+              })}
+            </span>
+          </TLabel>
+
+          {/* Close */}
+          <TLabel className="uppercase">
+            Close{" "}
+            <span className={isBullish ? "text-long" : "text-short"}>
+              {formatToken(new BigNumber(displayCandlestickDataPoint.close), {
+                dp: 4,
+              })}
+            </span>
+          </TLabel>
+
+          {/* Range */}
+          <TLabel className="uppercase">
+            Range{" "}
+            <span className={isBullish ? "text-long" : "text-short"}>
+              {formatPercent(
+                new BigNumber(
+                  (displayCandlestickDataPoint.high -
+                    displayCandlestickDataPoint.low) /
+                    displayCandlestickDataPoint.open,
+                ),
+              )}
+            </span>
+          </TLabel>
         </div>
       )}
 
