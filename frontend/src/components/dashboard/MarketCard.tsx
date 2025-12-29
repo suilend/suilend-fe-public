@@ -49,7 +49,7 @@ export default function MarketCard() {
           </div>
         ),
         noSeparator: true,
-        isInitiallyCollapsed: isDeprecated,
+        isInitiallyCollapsed: false,
       }}
     >
       <CardContent className="md:p-0">
