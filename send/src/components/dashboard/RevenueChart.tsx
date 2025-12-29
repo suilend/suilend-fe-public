@@ -874,29 +874,27 @@ const RevenueChart = ({
             </Recharts.Bar>
           )}
           {enabledMetrics.price && (
-            <>
-              {/* Invisible reference line segments to extend to axes */}
-              <Recharts.Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="price"
-                stroke="transparent"
-                dot={false}
-                isAnimationActive={false}
-                points={undefined}
-              />
-              {/* Real line draws; connect across missing points */}
-              <Recharts.Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="price"
-                stroke={COLOR_PRICE_LINE}
-                strokeWidth={isSmall ? 1.5 : 2.5}
-                dot={chartData.length <= 100 ? { r: 1 } : undefined}
-                isAnimationActive={false}
-                connectNulls
-              />
-            </>
+            <Recharts.Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="price"
+              stroke="transparent"
+              dot={false}
+              isAnimationActive={false}
+              points={undefined}
+            />
+          )}
+          {enabledMetrics.price && (
+            <Recharts.Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="price"
+              stroke={COLOR_PRICE_LINE}
+              strokeWidth={isSmall ? 1.5 : 2.5}
+              dot={chartData.length <= 100 ? { r: 1 } : undefined}
+              isAnimationActive={false}
+              connectNulls
+            />
           )}
           <Recharts.Tooltip content={<TooltipCard />} />
         </Recharts.ComposedChart>
