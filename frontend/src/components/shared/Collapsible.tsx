@@ -1,4 +1,4 @@
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, ReactNode } from "react";
 
 import { ClassValue } from "clsx";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -15,12 +15,13 @@ import { cn } from "@/lib/utils";
 interface CollapsibleProps extends PropsWithChildren {
   open: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  title?: string;
-  closedTitle?: string;
-  openTitle?: string;
+  title?: ReactNode;
+  closedTitle?: ReactNode;
+  openTitle?: ReactNode;
   buttonClassName?: ClassValue;
   buttonLabelClassName?: ClassValue;
   hasSeparator?: boolean;
+  isEndIcon?: boolean;
 }
 
 export default function Collapsible({
@@ -32,6 +33,7 @@ export default function Collapsible({
   buttonClassName,
   buttonLabelClassName,
   hasSeparator,
+  isEndIcon = true,
   children,
 }: CollapsibleProps) {
   const Icon = open ? ChevronUp : ChevronDown;
@@ -46,7 +48,8 @@ export default function Collapsible({
             buttonClassName,
           )}
           labelClassName={buttonLabelClassName}
-          endIcon={<Icon className="h-4 w-4" />}
+          startIcon={!isEndIcon ? <Icon className="h-4 w-4" /> : undefined}
+          endIcon={isEndIcon ? <Icon className="h-4 w-4" /> : undefined}
           variant="ghost"
           size="sm"
           tag="div"

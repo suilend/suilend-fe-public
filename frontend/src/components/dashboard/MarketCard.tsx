@@ -21,12 +21,7 @@ export default function MarketCard() {
       headerProps={{
         titleContainerClassName: "max-md:h-max",
         titleClassName: cn(isFeatured && "text-secondary"),
-        title: [
-          appData.lendingMarket.name,
-          isDeprecated ? "(DEPRECATED)" : null,
-        ]
-          .filter(Boolean)
-          .join(" "),
+        title: appData.lendingMarket.name,
         startContent: <MarketDetailsPopover />,
         endContent: (
           <div

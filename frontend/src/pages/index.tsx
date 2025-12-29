@@ -1,5 +1,7 @@
 import Head from "next/head";
 
+import { useLocalStorage } from "usehooks-ts";
+
 import { ADMIN_ADDRESS } from "@suilend/sdk";
 import { useWalletContext } from "@suilend/sui-fe-next";
 
@@ -13,6 +15,7 @@ import FirstDepositDialog from "@/components/dashboard/FirstDepositDialog";
 import MarketCard from "@/components/dashboard/MarketCard";
 import UnclaimedRewardsCard from "@/components/dashboard/UnclaimedRewardsCard";
 import WalletCard from "@/components/dashboard/WalletCard";
+import Collapsible from "@/components/shared/Collapsible";
 import ImpersonationModeBanner from "@/components/shared/ImpersonationModeBanner";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { DashboardContextProvider } from "@/contexts/DashboardContext";
@@ -34,7 +37,8 @@ function Cards() {
 
 function Page() {
   const { address } = useWalletContext();
-  const { allAppData, featuredLendingMarketIds } = useLoadedAppContext();
+  const { allAppData, featuredLendingMarketIds, deprecatedLendingMarketIds } =
+    useLoadedAppContext();
 
   const { lg } = useBreakpoint();
 
@@ -43,12 +47,23 @@ function Page() {
     (lendingMarket) =>
       !(lendingMarket.lendingMarket.isHidden && address !== ADMIN_ADDRESS),
   );
-  const featuredAppDataList = appDataList.filter((appData) =>
-    (featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id),
+  const featuredAppDataList = appDataList.filter(
+    (appData) =>
+      (featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id) &&
+      !(deprecatedLendingMarketIds ?? []).includes(appData.lendingMarket.id),
   );
   const nonFeaturedAppDataList = appDataList.filter(
     (appData) =>
-      !(featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id),
+      !(featuredLendingMarketIds ?? []).includes(appData.lendingMarket.id) &&
+      !(deprecatedLendingMarketIds ?? []).includes(appData.lendingMarket.id),
+  );
+  const deprecatedAppDataList = appDataList.filter((appData) =>
+    (deprecatedLendingMarketIds ?? []).includes(appData.lendingMarket.id),
+  );
+
+  const [isDeprecatedOpen, setIsDeprecatedOpen] = useLocalStorage<boolean>(
+    "Lend_isDeprecatedOpen",
+    false,
   );
 
   return (
@@ -80,6 +95,34 @@ function Page() {
                   </LendingMarketContextProvider>
                 ),
               )}
+
+              <Collapsible
+                open={isDeprecatedOpen}
+                onOpenChange={setIsDeprecatedOpen}
+                title={
+                  <>
+                    Deprecated markets
+                    <span className="text-xs text-muted-foreground">
+                      {deprecatedAppDataList.length}
+                    </span>
+                  </>
+                }
+                buttonClassName="gap-2 !text-primary w-full"
+                buttonLabelClassName="flex-1 flex flex-row items-center gap-2"
+                hasSeparator
+                isEndIcon={false}
+              >
+                <div className="flex w-full flex-col gap-4 pt-4">
+                  {deprecatedAppDataList.map((appData) => (
+                    <LendingMarketContextProvider
+                      key={appData.lendingMarket.id}
+                      lendingMarketId={appData.lendingMarket.id}
+                    >
+                      <MarketCard />
+                    </LendingMarketContextProvider>
+                  ))}
+                </div>
+              </Collapsible>
             </div>
           </div>
         ) : (
@@ -101,6 +144,34 @@ function Page() {
                     </LendingMarketContextProvider>
                   ),
                 )}
+
+                <Collapsible
+                  open={isDeprecatedOpen}
+                  onOpenChange={setIsDeprecatedOpen}
+                  title={
+                    <>
+                      Deprecated markets
+                      <span className="text-xs text-muted-foreground">
+                        {deprecatedAppDataList.length}
+                      </span>
+                    </>
+                  }
+                  buttonClassName="gap-2 !text-primary w-full"
+                  buttonLabelClassName="flex-1 flex flex-row items-center gap-2"
+                  hasSeparator
+                  isEndIcon={false}
+                >
+                  <div className="flex w-full flex-col gap-4 pt-4">
+                    {deprecatedAppDataList.map((appData) => (
+                      <LendingMarketContextProvider
+                        key={appData.lendingMarket.id}
+                        lendingMarketId={appData.lendingMarket.id}
+                      >
+                        <MarketCard />
+                      </LendingMarketContextProvider>
+                    ))}
+                  </div>
+                </Collapsible>
               </div>
             </div>
 
