@@ -14,7 +14,6 @@ import {
   ReturnAllOwnedObjectsAndSuiToUserResult,
   TX_TOAST_DURATION,
   Token,
-  createKeypair,
   formatPercent,
   formatToken,
   fundKeypair,
@@ -38,6 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useLoadedAppContext } from "@/contexts/AppContext";
 import { useLoadedUserContext } from "@/contexts/UserContext";
 import { CETUS_PARTNER_ID } from "@/lib/cetus";
+import { createKeypairAndSaveMapping } from "@/lib/keypair";
 import { useCetusSdk } from "@/lib/swap";
 import { cn } from "@/lib/utils";
 
@@ -118,7 +118,10 @@ export default function BulkSwapCard({ tokenOut }: BulkSwapCardProps) {
       setProgress(`0/${selectedCoinTypes.length}`);
 
       // 1) Create keypair
-      const createKeypairResult = await createKeypair(signPersonalMessage);
+      const createKeypairResult = await createKeypairAndSaveMapping(
+        address,
+        signPersonalMessage,
+      );
       const keypair = createKeypairResult.keypair;
       const keypairAddress = createKeypairResult.address;
 
